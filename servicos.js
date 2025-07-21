@@ -6,10 +6,11 @@ const servicosCollection = collection(db, "servicos");
 const listaServicosDiv = document.getElementById('lista-servicos');
 
 async function carregarServicosDoFirebase() {
+  listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
   try {
     const snapshot = await getDocs(servicosCollection);
     if (snapshot.empty) {
-      listaServicosDiv.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
+      listaServicosDiv.innerHTML = '<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>';
       return;
     }
     listaServicosDiv.innerHTML = '';
@@ -33,19 +34,19 @@ async function carregarServicosDoFirebase() {
     });
   } catch (error) {
     console.error("Erro ao buscar serviços:", error);
-    listaServicosDiv.innerHTML = '<p style="color:red;">Erro ao carregar serviços.</p>';
+    listaServicosDiv.innerHTML = '<p style="color:red;">Ocorreu uma falha ao carregar os serviços.</p>';
   }
 }
 
 async function excluirServico(id) {
-    if (confirm("Tem certeza que deseja excluir este serviço?")) {
+    if (confirm("Você tem certeza? Esta ação é permanente e não pode ser desfeita.")) {
         try {
             await deleteDoc(doc(db, "servicos", id));
-            Toastify({ text: "Serviço excluído com sucesso!", style: { background: "#dc3545" } }).showToast();
+            Toastify({ text: "Serviço excluído com sucesso.", style: { background: "var(--cor-perigo)" } }).showToast();
             carregarServicosDoFirebase();
         } catch (error) {
             console.error("Erro ao excluir serviço: ", error);
-            Toastify({ text: "Erro ao excluir o serviço.", style: { background: "red" } }).showToast();
+            Toastify({ text: "Falha ao excluir o serviço.", style: { background: "var(--cor-perigo)" } }).showToast();
         }
     }
 }

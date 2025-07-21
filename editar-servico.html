@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Editar Serviço</title>
+  <title>Pronti - Novo Serviço</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </head>
 <body>
 
@@ -21,10 +23,10 @@
   </aside>
 
   <main class="main-content">
-    <h1>Editar Serviço</h1>
-    <p>Altere os dados do serviço abaixo e clique em salvar.</p>
+    <h1>Adicionar Novo Serviço</h1>
+    <p>Preencha os dados do novo serviço que você oferece.</p>
 
-    <form id="form-editar-servico" class="form-card">
+    <form id="form-servico" class="form-card">
       <div class="form-group">
         <label for="nome-servico">Nome do Serviço:</label>
         <input type="text" id="nome-servico" required>
@@ -35,16 +37,16 @@
       </div>
       <div class="form-group">
         <label for="preco-servico">Preço (R$):</label>
-        <input type="number" id="preco-servico" min="0" step="0.01" required>
+        <input type="number" id="preco-servico" min="0" step="0.01" placeholder="Ex: 35.50" required>
       </div>
       <div class="form-group">
         <label for="duracao-servico">Duração (em minutos):</label>
-        <input type="number" id="duracao-servico" min="5" step="5" required>
+        <input type="number" id="duracao-servico" min="5" step="5" placeholder="Ex: 45" required>
       </div>
-      <button type="submit" class="btn-submit">Salvar Alterações</button>
+      <button type="submit" class="btn-submit">Salvar Serviço</button>
     </form>
   </main>
 
-  <script src="editar-servico.js" type="module"></script>
+  <script src="novo-servico.js" type="module"></script>
 </body>
 </html>

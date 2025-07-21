@@ -147,3 +147,74 @@ h1, h2, h3 {
 /* --- DASHBOARD --- */
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
 .chart-container.full-width { grid-column: 1 / -1; }
+/* --- ESTILOS PARA O MODAL DE CONFIRMAÇÃO --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden; /* Começa escondido */
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-card {
+  background: var(--cor-branco);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  width: 90%;
+  max-width: 400px;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+/* Estilos para quando o modal estiver visível */
+.modal-overlay.visivel {
+  opacity: 1;
+  visibility: visible;
+}
+.modal-overlay.visivel .modal-card {
+  transform: scale(1);
+}
+
+.modal-card h3 {
+  margin-top: 0;
+  color: var(--cor-texto);
+}
+
+.modal-card p {
+  color: var(--cor-texto-leve);
+}
+
+.modal-botoes {
+  margin-top: 25px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.btn-modal {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.btn-modal.btn-confirmar {
+  background-color: var(--cor-perigo);
+  color: var(--cor-branco);
+}
+
+.btn-modal.btn-cancelar {
+  background-color: #e5e7eb;
+  color: var(--cor-texto);
+}

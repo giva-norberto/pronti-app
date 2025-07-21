@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pronti - Agenda</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 </head>
 <body>
 
@@ -22,17 +24,24 @@
 
   <main class="main-content">
     <h1>Agenda de Compromissos</h1>
-
     <a href="novo-agendamento.html" class="btn-new">Novo Agendamento</a>
-
     <div class="filtro-data">
       <label for="data-agenda">Filtrar por data:</label>
       <input type="date" id="data-agenda">
     </div>
-
-    <div id="lista-agendamentos">
-      </div>
+    <div id="lista-agendamentos"></div>
   </main>
+
+  <div id="modal-confirmacao" class="modal-overlay">
+    <div class="modal-card">
+      <h3 id="modal-titulo">Confirmar Ação</h3>
+      <p id="modal-mensagem">Você tem certeza?</p>
+      <div class="modal-botoes">
+        <button id="btn-modal-cancelar" class="btn-modal btn-cancelar">Voltar</button>
+        <button id="btn-modal-confirmar" class="btn-modal btn-confirmar">Confirmar</button>
+      </div>
+    </div>
+  </div>
 
   <script src="agenda.js" type="module"></script>
 </body>
