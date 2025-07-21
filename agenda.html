@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Início</title>
+  <title>Pronti - Agenda</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -12,25 +12,28 @@
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <div class="sidebar-links">
       <a href="dashboard.html">Dashboard</a>
-      <a href="index.html" class="active">Home</a>
+      <a href="index.html">Home</a>
       <a href="servicos.html">Serviços</a>
-      <a href="agenda.html">Agenda</a>
+      <a href="agenda.html" class="active">Agenda</a>
       <a href="clientes.html">Clientes</a>
       <a href="contato.html">Contato</a>
     </div>
   </aside>
 
   <main class="main-content">
-    <h1>Bem-vindo ao Pronti App!</h1>
-    <p>A solução completa para gerenciar seus agendamentos.</p>
-    <a href="novo-cliente.html" class="btn-new" style="background-color: #ffc107;">Cadastrar Novo Cliente</a>
-  </main>
-  <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-      lucide.createIcons();
-    </script>
+    <h1>Agenda de Compromissos</h1>
 
-  </body>
-  </html>
+    <a href="novo-agendamento.html" class="btn-new">Novo Agendamento</a>
+
+    <div class="filtro-data">
+      <label for="data-agenda">Filtrar por data:</label>
+      <input type="date" id="data-agenda">
+    </div>
+
+    <div id="lista-agendamentos">
+      </div>
+  </main>
+
+  <script src="agenda.js" type="module"></script>
 </body>
 </html>

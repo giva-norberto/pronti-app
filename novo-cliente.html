@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pronti - Novo Cliente</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <div class="sidebar-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="index.html">Home</a>
+      <a href="servicos.html">Serviços</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="clientes.html" class="active">Clientes</a>
+      <a href="contato.html">Contato</a>
+    </div>
+  </aside>
+  <main class="main-content">
+    <h1>Cadastrar Novo Cliente</h1>
+    <p>Preencha os dados do novo cliente.</p>
+    <form id="form-cliente" class="form-card">
+      <div class="form-group">
+        <label for="nome-cliente">Nome Completo:</label>
+        <input type="text" id="nome-cliente" required>
+      </div>
+      <div class="form-group">
+        <label for="telefone-cliente">Telefone:</label>
+        <input type="tel" id="telefone-cliente" placeholder="(XX) XXXXX-XXXX">
+      </div>
+      <div class="form-group">
+        <label for="email-cliente">Email:</label>
+        <input type="email" id="email-cliente">
+      </div>
+      <button type="submit" class="btn-submit">Salvar Cliente</button>
+    </form>
+  </main>
+  <script src="novo-cliente.js" type="module"></script>
+</body>
+</html>

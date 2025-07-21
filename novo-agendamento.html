@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pronti - Novo Agendamento</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <div class="sidebar-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="index.html">Home</a>
+      <a href="servicos.html">Serviços</a>
+      <a href="agenda.html" class="active">Agenda</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="contato.html">Contato</a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <h1>Novo Agendamento</h1>
+    <p>Preencha os dados abaixo para criar um novo agendamento.</p>
+
+    <form id="form-agendamento" class="form-card">
+      <div class="form-group">
+        <label for="cliente">Nome do Cliente:</label>
+        <input type="text" id="cliente" name="cliente" required>
+      </div>
+      <div class="form-group">
+        <label for="servico">1. Escolha o Serviço:</label>
+        <select id="servico" name="servico" required>
+          <option value="">Selecione um serviço</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="dia">2. Escolha o Dia:</label>
+        <input type="date" id="dia" name="dia" required>
+      </div>
+      <div class="form-group">
+        <label>3. Escolha o Horário Disponível:</label>
+        <div id="grade-horarios">
+          <p class="aviso-horarios">Por favor, selecione um serviço e uma data.</p>
+        </div>
+        <input type="hidden" id="horario-final" name="horario-final">
+      </div>
+      <button type="submit" class="btn-submit">Salvar Agendamento</button>
+    </form>
+  </main>
+
+  <script src="novo-agendamento.js" type="module"></script>
+</body>
+</html>

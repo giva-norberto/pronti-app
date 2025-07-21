@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pronti - Nossos Serviços</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <style>
+    /* Estilos adicionais só para esta página pública */
+    body {
+      display: block; /* Remove o layout de menu lateral */
+    }
+    .header-publico {
+      background-color: #fff;
+      padding: 20px 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .header-publico h1 {
+      font-size: 2em;
+      color: #0d6efd;
+      margin: 0;
+    }
+    .main-content {
+      margin-left: 0; /* Remove a margem do menu lateral */
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header-publico">
+    <h1>Pronti</h1>
+    <p>Conheça nossos serviços e agende seu horário!</p>
+  </header>
+
+  <main class="main-content">
+    <div id="lista-servicos">
+      </div>
+  </main>
+
+  <script src="servicos.js" type="module"></script>
+</body>
+</html>

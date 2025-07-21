@@ -1,30 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+  <title>Pronti - Serviços</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Início</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-
   <aside class="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <div class="sidebar-links">
       <a href="dashboard.html">Dashboard</a>
-      <a href="index.html" class="active">Home</a>
-      <a href="servicos.html">Serviços</a>
+      <a href="index.html">Home</a>
+      <a href="servicos.html" class="active">Serviços</a>
       <a href="agenda.html">Agenda</a>
       <a href="clientes.html">Clientes</a>
       <a href="contato.html">Contato</a>
     </div>
   </aside>
-
   <main class="main-content">
-    <h1>Bem-vindo ao Pronti App!</h1>
-    <p>A solução completa para gerenciar seus agendamentos.</p>
-    <a href="novo-cliente.html" class="btn-new" style="background-color: #ffc107;">Cadastrar Novo Cliente</a>
+    <h1>Nossos Serviços</h1>
+    <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
+    <div id="lista-servicos" style="margin-top:20px;"></div>
   </main>
+  <script src="servicos.js" type="module"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
     <script>
       lucide.createIcons();
