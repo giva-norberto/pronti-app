@@ -12,40 +12,43 @@ function getUidFromUrl() {
 async function carregarVitrine() {
   const uid = getUidFromUrl();
   if (!uid) {
-    if(listaServicosContainer)
-      listaServicosContainer.innerHTML = "<p style='color:red;'>UID do empresário não informado na URL.</p>";
+    if (listaServicosContainer)
+      listaServicosContainer.innerHTML =
+        "<p style='color:red; text-align:center;'>UID do empresário não informado na URL.</p>";
+    if (nomeEstabelecimentoEl) nomeEstabelecimentoEl.textContent = "";
     return;
   }
 
   try {
-    // Busca o nome do estabelecimento
+    // Busca nome do estabelecimento
     const userDocRef = doc(db, "users", uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-      listaServicosContainer.innerHTML = "<p style='color:red;'>Empresário não encontrado.</p>";
+      listaServicosContainer.innerHTML =
+        "<p style='color:red; text-align:center;'>Empresário não encontrado.</p>";
+      nomeEstabelecimentoEl.textContent = "";
       return;
     }
 
     const userData = userDocSnap.data();
     const nomeEstab = userData.nomeEstabelecimento || "Estabelecimento";
 
-    if (nomeEstabelecimentoEl)
-      nomeEstabelecimentoEl.textContent = nomeEstab;
+    nomeEstabelecimentoEl.textContent = nomeEstab;
 
-    // Busca os serviços do empresário
+    // Busca serviços
     const servicosColRef = collection(db, "users", uid, "servicos");
     const servicosSnap = await getDocs(servicosColRef);
 
     if (servicosSnap.empty) {
-      listaServicosContainer.innerHTML = "<p>Nenhum serviço disponível no momento.</p>";
+      listaServicosContainer.innerHTML =
+        "<p style='text-align:center;'>Nenhum serviço disponível no momento.</p>";
       return;
     }
 
-    // Limpa container para renderizar os serviços
     listaServicosContainer.innerHTML = "";
 
-    servicosSnap.forEach(docSnap => {
+    servicosSnap.forEach((docSnap) => {
       const servico = docSnap.data();
       const servicoId = docSnap.id;
 
@@ -64,7 +67,9 @@ async function carregarVitrine() {
           </div>
           <div class="meta-item">
             <strong>Preço</strong>
-            <span>R$ ${parseFloat(servico.preco || 0).toFixed(2).replace(".", ",")}</span>
+            <span>R$ ${parseFloat(servico.preco || 0)
+              .toFixed(2)
+              .replace(".", ",")}</span>
           </div>
           <a href="novo-agendamento.html?uid=${uid}&servico=${servicoId}" class="btn-new">Agendar</a>
         </div>
@@ -72,10 +77,11 @@ async function carregarVitrine() {
 
       listaServicosContainer.appendChild(card);
     });
-
   } catch (error) {
     console.error("Erro ao carregar vitrine:", error);
-    listaServicosContainer.innerHTML = "<p style='color:red;'>Erro ao carregar os serviços. Tente novamente mais tarde.</p>";
+    listaServicosContainer.innerHTML =
+      "<p style='color:red; text-align:center;'>Erro ao carregar os serviços. Tente novamente mais tarde.</p>";
+    nomeEstabelecimentoEl.textContent = "";
   }
 }
 
