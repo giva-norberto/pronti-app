@@ -34,24 +34,26 @@ function mostrarConfirmacao(titulo, mensagem) {
   });
 }
 
-// FUNÇÃO PRINCIPAL (AGORA COM FILTRO POR DATA)
+// FUNÇÃO PRINCIPAL COM FILTRO POR DATA (campo 'horario' como Timestamp Firestore)
 async function carregarAgendamentosDoFirebase(dataFiltro) {
   listaAgendamentosDiv.innerHTML = `<p>Buscando agendamentos para ${new Date(dataFiltro + 'T00:00:00').toLocaleDateString('pt-BR')}...</p>`;
 
   try {
+    // Carrega serviços para mostrar nome do serviço no agendamento
     const servicosSnapshot = await getDocs(servicosCollection);
     const servicosMap = new Map();
     servicosSnapshot.forEach(doc => { servicosMap.set(doc.id, doc.data()); });
 
-    // A MÁGICA DO FILTRO: Cria a consulta ao Firebase
-    const inicioDoDia = new Date(`${dataFiltro}T00:00:00`).toISOString();
-    const fimDoDia = new Date(`${dataFiltro}T23:59:59`).toISOString();
+    // Cria objetos Date para início e fim do dia (UTC)
+    const inicioDoDia = new Date(`${dataFiltro}T00:00:00.000Z`);
+    const fimDoDia = new Date(`${dataFiltro}T23:59:59.999Z`);
 
+    // Consulta com filtro por campo Timestamp 'horario'
     const agendamentosQuery = query(
       agendamentosCollection, 
       where("horario", ">=", inicioDoDia), 
       where("horario", "<=", fimDoDia),
-      orderBy("horario", "asc") // Ordena do mais cedo para o mais tarde
+      orderBy("horario", "asc")
     );
 
     const agendamentosSnapshot = await getDocs(agendamentosQuery);
@@ -63,14 +65,19 @@ async function carregarAgendamentosDoFirebase(dataFiltro) {
 
     listaAgendamentosDiv.innerHTML = '';
     agendamentosSnapshot.forEach(doc => {
-      const agendamento = doc.data(); const agendamentoId = doc.id;
+      const agendamento = doc.data();
+      const agendamentoId = doc.id;
+
       const servicoDoAgendamento = servicosMap.get(agendamento.servicoId);
       const nomeServico = servicoDoAgendamento ? servicoDoAgendamento.nome : 'Serviço Inválido';
-      const dataHora = new Date(agendamento.horario);
+
+      // Converte Timestamp para Date
+      const dataHora = agendamento.horario.toDate(); 
       const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
       const el = document.createElement('div');
-      el.classList.add('agendamento-item'); el.dataset.id = agendamentoId;
+      el.classList.add('agendamento-item');
+      el.dataset.id = agendamentoId;
       el.innerHTML = `
         <div class="agendamento-info">
           <h3>${nomeServico}</h3>
@@ -95,46 +102,44 @@ async function carregarAgendamentosDoFirebase(dataFiltro) {
 }
 
 async function cancelarAgendamento(id) {
-    const confirmado = await mostrarConfirmacao("Cancelar Agendamento", "Tem certeza? Esta ação é permanente.");
-    if (confirmado) {
-        try {
-            await deleteDoc(doc(db, "agendamentos", id));
-            Toastify({ text: "Agendamento cancelado.", style: { background: "var(--cor-perigo)" } }).showToast();
-            carregarAgendamentosDoFirebase(dataInput.value); // Recarrega a lista para a data atual
-        } catch (error) {
-            console.error("Erro ao cancelar agendamento:", error);
-            Toastify({ text: "Falha ao cancelar o agendamento.", style: { background: "var(--cor-perigo)" } }).showToast();
-        }
+  const confirmado = await mostrarConfirmacao("Cancelar Agendamento", "Tem certeza? Esta ação é permanente.");
+  if (confirmado) {
+    try {
+      await deleteDoc(doc(db, "agendamentos", id));
+      Toastify({ text: "Agendamento cancelado.", style: { background: "var(--cor-perigo)" } }).showToast();
+      carregarAgendamentosDoFirebase(dataInput.value); // Recarrega a lista para a data atual
+    } catch (error) {
+      console.error("Erro ao cancelar agendamento:", error);
+      Toastify({ text: "Falha ao cancelar o agendamento.", style: { background: "var(--cor-perigo)" } }).showToast();
     }
+  }
 }
 
-// "OUVINTE" DE CLIQUES (para o botão cancelar)
+// Ouvinte para botão cancelar
 listaAgendamentosDiv.addEventListener('click', (event) => {
-    if (event.target && event.target.classList.contains('btn-cancelar')) {
-        cancelarAgendamento(event.target.dataset.id);
-    }
+  if (event.target && event.target.classList.contains('btn-cancelar')) {
+    cancelarAgendamento(event.target.dataset.id);
+  }
 });
 
-// "OUVINTE" DE MUDANÇA DE DATA (para o filtro funcionar)
+// Ouvinte para mudança da data do filtro
 dataInput.addEventListener('change', () => {
-    const dataSelecionada = dataInput.value;
-    if (dataSelecionada) {
-        carregarAgendamentosDoFirebase(dataSelecionada);
-    }
+  const dataSelecionada = dataInput.value;
+  if (dataSelecionada) {
+    carregarAgendamentosDoFirebase(dataSelecionada);
+  }
 });
 
-
-// --- INICIALIZAÇÃO DA PÁGINA ---
-// Função que pega a data de hoje e formata para AAAA-MM-DD
+// Função para formatar data de hoje no formato YYYY-MM-DD
 function getHojeFormatado() {
-    const hoje = new Date();
-    const ano = hoje.getFullYear();
-    const mes = String(hoje.getMonth() + 1).padStart(2, '0'); // +1 porque os meses começam do 0
-    const dia = String(hoje.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
 }
 
-// Define a data de hoje no campo e carrega os agendamentos
+// Inicializa a página com a data de hoje e carrega os agendamentos
 const hoje = getHojeFormatado();
 dataInput.value = hoje;
 carregarAgendamentosDoFirebase(hoje);
