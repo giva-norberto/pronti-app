@@ -1,7 +1,7 @@
 /**
- * servicos.js (Painel do Dono - Lógica Original Restaurada)
- * * Este script foi revisado para manter a estrutura original de "buscar e exibir",
- * * apenas adaptando o local da busca para a pasta segura do usuário logado.
+ * servicos.js (Painel do Dono - Versão Estável e Corrigida)
+ * * Este script foi revisado para garantir que a função de carregamento
+ * * execute apenas uma vez, evitando repetições, e mantém a lógica original.
  */
 
 import { getFirestore, collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -12,13 +12,16 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 const listaServicosContainer = document.getElementById('lista-servicos');
+let isInitialized = false; // Flag para controlar a execução inicial.
 
 // A verificação de login é o "porteiro" da página.
 onAuthStateChanged(auth, (user) => {
-  if (user) {
+  // A flag 'isInitialized' garante que o código só rode uma vez.
+  if (user && !isInitialized) {
+    isInitialized = true; // Marca que a inicialização já ocorreu.
     // Se o usuário está logado, executa a função principal para carregar seus dados.
     carregarEExibirServicos(user.uid);
-  } else {
+  } else if (!user) {
     // Se não, redireciona para a tela de login.
     console.log("Nenhum usuário logado. Redirecionando para login.html...");
     window.location.href = 'login.html';
@@ -36,11 +39,13 @@ async function carregarEExibirServicos(uid) {
   }
   
   listaServicosContainer.innerHTML = '<p>Carregando seus serviços...</p>';
+  console.log(`Carregando serviços para o usuário: ${uid}`);
 
   try {
     // A ÚNICA MUDANÇA ESTRUTURAL: Aponta para a coleção segura do usuário.
     const servicosUserCollection = collection(db, "users", uid, "servicos");
     const querySnapshot = await getDocs(servicosUserCollection);
+    console.log(`Encontrados ${querySnapshot.size} serviços.`);
 
     if (querySnapshot.empty) {
       listaServicosContainer.innerHTML = '<p>Você ainda não cadastrou nenhum serviço. Clique em "Novo Serviço" para começar.</p>';
@@ -72,30 +77,43 @@ async function carregarEExibirServicos(uid) {
     });
 
     // Adiciona os eventos aos botões recém-criados.
-    listaServicosContainer.querySelectorAll('.btn-editar').forEach(button => {
-      button.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
-        window.location.href = `editar-servico.html?id=${id}`;
-      });
-    });
-
-    listaServicosContainer.querySelectorAll('.btn-excluir').forEach(button => {
-      button.addEventListener('click', async (e) => {
-        const id = e.target.dataset.id;
-        // AVISO: A exclusão é imediata. Uma modal de confirmação customizada é ideal no futuro.
-        try {
-          const servicoRef = doc(db, "users", uid, "servicos", id);
-          await deleteDoc(servicoRef);
-          carregarEExibirServicos(uid); // Recarrega a lista para refletir a exclusão.
-        } catch (error) {
-          console.error("Erro ao excluir o serviço:", error);
-          alert("Não foi possível excluir o serviço.");
-        }
-      });
-    });
+    adicionarListenersDeAcao(uid);
 
   } catch (error) {
     console.error("Erro ao carregar serviços:", error);
     listaServicosContainer.innerHTML = '<p style="color:red;">Ocorreu um erro ao carregar seus serviços.</p>';
   }
+}
+
+/**
+ * Adiciona os listeners para os botões de editar e excluir de forma segura.
+ * @param {string} uid - O ID do usuário logado.
+ */
+function adicionarListenersDeAcao(uid) {
+    listaServicosContainer.addEventListener('click', async (e) => {
+        const target = e.target;
+
+        // Ação de Editar
+        if (target.classList.contains('btn-editar')) {
+            const id = target.dataset.id;
+            console.log(`Botão Editar clicado para o ID: ${id}`);
+            window.location.href = `editar-servico.html?id=${id}`;
+        }
+
+        // Ação de Excluir
+        if (target.classList.contains('btn-excluir')) {
+            const id = target.dataset.id;
+            console.log(`Botão Excluir clicado para o ID: ${id}`);
+            // AVISO: A exclusão é imediata. Uma modal de confirmação customizada é ideal no futuro.
+            try {
+              const servicoRef = doc(db, "users", uid, "servicos", id);
+              await deleteDoc(servicoRef);
+              console.log("Serviço excluído. Recarregando a lista...");
+              carregarEExibirServicos(uid); // Recarrega a lista para refletir a exclusão.
+            } catch (error) {
+              console.error("Erro ao excluir o serviço:", error);
+              alert("Não foi possível excluir o serviço.");
+            }
+        }
+    });
 }
