@@ -24,23 +24,18 @@
     <h1>Dashboard</h1>
     <p>Métricas e insights sobre o seu negócio.</p>
 
-    <!-- ==================================================== -->
-    <!--      👇 ADIÇÃO CRÍTICA: Container para a IA 👇      -->
-    <!-- ==================================================== -->
+    <!-- Container para o Resumo Diário Inteligente -->
     <div id="resumo-diario-container"></div>
-
 
     <div class="dashboard-grid">
       <div class="chart-container">
         <h2>Serviços Mais Agendados</h2>
         <canvas id="graficoServicos"></canvas>
       </div>
-
       <div class="chart-container">
         <h2>Faturamento por Serviço</h2>
         <canvas id="graficoFaturamento"></canvas>
       </div>
-
       <div class="chart-container full-width">
         <h2>Agendamentos por Mês</h2>
         <canvas id="graficoMensal"></canvas>
@@ -48,17 +43,18 @@
     </div>
   </main>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Garanta que todos os scripts necessários sejam carregados como módulos -->
+  
+  <!-- Carrega os scripts como módulos na ordem correta -->
   <script src="firebase-config.js" type="module"></script>
   <script src="inteligencia.js" type="module"></script>
   <script src="dashboard.js" type="module"></script>
   
   <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-      lucide.createIcons();
-    </script>
+  <script>
+    lucide.createIcons();
+  </script>
 
-  </body>
+</body>
 </html>
