@@ -25,8 +25,7 @@
     <p>Métricas e insights sobre o seu negócio.</p>
 
     <!-- ==================================================== -->
-    <!--           👇 ÁREA DO RESUMO INTELIGENTE 👇           -->
-    <!-- O conteúdo será inserido aqui pelo dashboard.js      -->
+    <!--      👇 ADIÇÃO CRÍTICA: Container para a IA 👇      -->
     <!-- ==================================================== -->
     <div id="resumo-diario-container"></div>
 
@@ -49,13 +48,11 @@
     </div>
   </main>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <!-- Carrega o firebase-config.js como um módulo para que possa ser importado -->
+
+  <!-- Garanta que todos os scripts necessários sejam carregados como módulos -->
   <script src="firebase-config.js" type="module"></script>
-  
-  <!-- Carrega o dashboard.js, que agora vai importar o inteligencia.js -->
+  <script src="inteligencia.js" type="module"></script>
   <script src="dashboard.js" type="module"></script>
   
   <script src="https://unpkg.com/lucide@latest"></script>
