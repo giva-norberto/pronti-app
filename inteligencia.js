@@ -1,14 +1,16 @@
-// --- Início do código para inteligencia.js ---
+/**
+ * inteligencia.js
+ * * Contém a função "cérebro" do Pronti IA para análises locais.
+ * A função agora é exportada para poder ser usada em outros scripts (módulos).
+ */
 
 /**
  * Analisa uma lista de agendamentos do dia e gera um resumo inteligente.
- * Esta função é o "cérebro" da IA do Pronti, rodando localmente.
- *
  * @param {Array<Object>} agendamentosDoDia - Um array de objetos de agendamento.
- * @returns {Object|null} Um objeto com o resumo ou null se não houver agendamentos.
+ * @returns {Object} Um objeto com os dados do resumo.
  */
-function gerarResumoDiarioInteligente(agendamentosDoDia) {
-  // Passo 1: Verificar se existem agendamentos para o dia.
+export function gerarResumoDiarioInteligente(agendamentosDoDia) {
+  // Passo 1: Verifica se existem agendamentos.
   if (!agendamentosDoDia || agendamentosDoDia.length === 0) {
     return {
       totalAtendimentos: 0,
@@ -16,34 +18,29 @@ function gerarResumoDiarioInteligente(agendamentosDoDia) {
     };
   }
 
-  // Passo 2: Ordenar os agendamentos por hora de início para facilitar os cálculos.
+  // Passo 2: Ordena os agendamentos por hora de início.
   const agendamentosOrdenados = [...agendamentosDoDia].sort((a, b) => {
-    return new Date(a.inicio) - new Date(b.inicio);
+    // Garante que a.inicio e b.inicio são objetos Date
+    const dateA = a.inicio instanceof Date ? a.inicio : new Date(a.inicio);
+    const dateB = b.inicio instanceof Date ? b.inicio : new Date(b.inicio);
+    return dateA - dateB;
   });
 
-  // Passo 3: Identificar primeiro e último atendimento.
+  // Passo 3: Identifica primeiro e último atendimento.
   const primeiroAtendimento = agendamentosOrdenados[0];
   const ultimoAtendimento = agendamentosOrdenados[agendamentosOrdenados.length - 1];
 
-  // Passo 4: Calcular a estimativa de faturamento usando reduce.
+  // Passo 4: Calcula a estimativa de faturamento.
   const faturamentoEstimado = agendamentosOrdenados.reduce((total, agendamento) => {
     const preco = parseFloat(agendamento.servico.preco) || 0;
     return total + preco;
   }, 0);
 
-  // Passo 5: Encontrar o maior intervalo livre entre os atendimentos.
-  let maiorIntervalo = {
-    duracao: 0, // em milissegundos
-    inicio: null,
-    fim: null
-  };
-
+  // Passo 5: Encontra o maior intervalo livre.
+  let maiorIntervalo = { duracao: 0, inicio: null, fim: null };
   for (let i = 0; i < agendamentosOrdenados.length - 1; i++) {
-    const agendamentoAtual = agendamentosOrdenados[i];
-    const proximoAgendamento = agendamentosOrdenados[i + 1];
-
-    const fimAtual = new Date(agendamentoAtual.fim);
-    const inicioProximo = new Date(proximoAgendamento.inicio);
+    const fimAtual = new Date(agendamentosOrdenados[i].fim);
+    const inicioProximo = new Date(agendamentosOrdenados[i + 1].inicio);
     const duracaoIntervalo = inicioProximo - fimAtual;
 
     if (duracaoIntervalo > maiorIntervalo.duracao) {
@@ -55,7 +52,7 @@ function gerarResumoDiarioInteligente(agendamentosDoDia) {
     }
   }
 
-  // Passo 6: Montar o objeto final de resumo.
+  // Passo 6: Monta o objeto final de resumo.
   const resumo = {
     totalAtendimentos: agendamentosOrdenados.length,
     primeiro: {
@@ -75,6 +72,10 @@ function gerarResumoDiarioInteligente(agendamentosDoDia) {
         duracaoMinutos: Math.round(maiorIntervalo.duracao / (1000 * 60))
       } : null
   };
+
+  return resumo;
+}
+
 
   return resumo;
 }
