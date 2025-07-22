@@ -24,6 +24,13 @@
     <h1>Dashboard</h1>
     <p>Métricas e insights sobre o seu negócio.</p>
 
+    <!-- ==================================================== -->
+    <!--           👇 ÁREA DO RESUMO INTELIGENTE 👇           -->
+    <!-- O conteúdo será inserido aqui pelo dashboard.js      -->
+    <!-- ==================================================== -->
+    <div id="resumo-diario-container"></div>
+
+
     <div class="dashboard-grid">
       <div class="chart-container">
         <h2>Serviços Mais Agendados</h2>
@@ -42,15 +49,19 @@
     </div>
   </main>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  
+  <!-- Carrega o firebase-config.js como um módulo para que possa ser importado -->
+  <script src="firebase-config.js" type="module"></script>
+  
+  <!-- Carrega o dashboard.js, que agora vai importar o inteligencia.js -->
   <script src="dashboard.js" type="module"></script>
+  
   <script src="https://unpkg.com/lucide@latest"></script>
     <script>
       lucide.createIcons();
     </script>
 
   </body>
-  </html>
-</body>
 </html>
