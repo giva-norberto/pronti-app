@@ -3,41 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Nossos Serviços</title>
+  <title>Nossos Serviços - Pronti IA</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    /* Estilos adicionais só para esta página pública */
+    /* Estilos específicos para a página pública, para não usar o menu lateral */
     body {
-      display: block; /* Remove o layout de menu lateral */
+      display: block; /* Remove o layout flex da barra lateral */
+      background: var(--cor-fundo); /* Usa o fundo padrão, mas sem o gradiente complexo */
     }
+
     .header-publico {
-      background-color: #fff;
-      padding: 20px 30px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background-color: var(--cor-branco);
+      padding: 20px 40px;
+      box-shadow: var(--sombra);
       text-align: center;
+      border-bottom: 1px solid #e5e7eb;
     }
+
     .header-publico h1 {
       font-size: 2em;
-      color: #0d6efd;
+      color: var(--cor-primaria);
       margin: 0;
     }
+    
+    .header-publico p {
+        margin: 5px 0 0 0;
+        color: var(--cor-texto-leve);
+    }
+
+    /* Ajusta o conteúdo principal para ocupar a tela toda */
     .main-content {
-      margin-left: 0; /* Remove a margem do menu lateral */
+      margin-left: 0;
+      max-width: 1200px; /* Limita a largura para melhor leitura em telas grandes */
+      margin: 0 auto; /* Centraliza o conteúdo */
+      padding: 40px 20px; /* Adiciona padding para mobile */
     }
   </style>
 </head>
 <body>
 
+  <!-- Cabeçalho da página pública -->
   <header class="header-publico">
-    <h1>Pronti</h1>
-    <p>Conheça nossos serviços e agende seu horário!</p>
+    <!-- Você pode tornar este nome dinâmico no futuro -->
+    <h1>Nome do seu Salão</h1> 
+    <p>Conheça nossos serviços e agende seu horário de forma fácil e rápida!</p>
   </header>
 
+  <!-- Conteúdo Principal -->
   <main class="main-content">
+    <h2>Nossos Serviços</h2>
+    
+    <!-- O JavaScript (servicos.js) irá inserir os cards de serviço aqui -->
     <div id="lista-servicos">
-      </div>
+      <!-- Mensagem de carregamento inicial -->
+      <p>Carregando nossos serviços...</p>
+    </div>
   </main>
 
+  <!-- Scripts necessários para a página funcionar -->
+  <script src="firebase-config.js" type="module"></script>
   <script src="servicos.js" type="module"></script>
+
 </body>
 </html>
