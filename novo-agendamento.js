@@ -1,18 +1,9 @@
-/**
- * novo-agendamento.js (Versão Inteligente)
- * * Este script agora detecta se um serviço foi pré-selecionado
- * a partir da página da vitrine e o seleciona automaticamente.
- * Nenhuma lógica de cálculo existente foi alterada.
- */
-
 import { getFirestore, collection, getDocs, addDoc, query, where } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
-const servicosCollection = collection(db, "servicos");
-const agendamentosCollection = collection(db, "agendamentos");
 
-// Seus elementos do HTML originais
+// Elementos do HTML
 const form = document.getElementById('form-agendamento');
 const clienteInput = document.getElementById('cliente');
 const servicoSelect = document.getElementById('servico');
@@ -20,18 +11,25 @@ const diaInput = document.getElementById('dia');
 const gradeHorariosDiv = document.getElementById('grade-horarios');
 const horarioFinalInput = document.getElementById('horario-final');
 
-// Suas constantes originais
 const HORA_INICIO = 9;
 const HORA_FIM = 18;
 const INTERVALO_MINUTOS = 30;
 
-// =======================================================
-// SUAS FUNÇÕES ORIGINAIS (INTACTAS)
-// =======================================================
+// FUNÇÃO PARA PEGAR O UID do empresário (você pode adaptar de acordo com seu contexto)
+// Se estiver passando na URL, descomente essa linha:
+const urlParams = new URLSearchParams(window.location.search);
+const uid = urlParams.get('uid'); // Certifique-se de passar isso na URL ou definir de outra forma
 
+if (!uid) {
+  alert("UID do empresário não fornecido. Verifique a URL.");
+  throw new Error("UID do empresário não fornecido.");
+}
+
+// Carrega os serviços do Firestore na coleção do usuário
 async function carregarServicosDoFirebase() {
   servicoSelect.innerHTML = '<option value="">Selecione um serviço</option>';
   try {
+    const servicosCollection = collection(db, "users", uid, "servicos");
     const querySnapshot = await getDocs(servicosCollection);
     querySnapshot.forEach(doc => {
       const servico = doc.data();
@@ -40,7 +38,9 @@ async function carregarServicosDoFirebase() {
       option.textContent = `${servico.nome} (duração: ${servico.duracao} min)`;
       servicoSelect.appendChild(option);
     });
-  } catch (error) { console.error("Erro ao carregar serviços:", error); }
+  } catch (error) {
+    console.error("Erro ao carregar serviços:", error);
+  }
 }
 
 async function gerarEExibirHorarios() {
@@ -54,14 +54,19 @@ async function gerarEExibirHorarios() {
   try {
     const inicioDoDia = new Date(`${diaSelecionado}T00:00:00`).toISOString();
     const fimDoDia = new Date(`${diaSelecionado}T23:59:59`).toISOString();
+    const agendamentosCollection = collection(db, "users", uid, "agendamentos"); // buscar agendamentos do empresário
     const agendamentosQuery = query(agendamentosCollection, where("horario", ">=", inicioDoDia), where("horario", "<=", fimDoDia));
     const querySnapshot = await getDocs(agendamentosQuery);
     const agendamentosDoDia = querySnapshot.docs.map(doc => doc.data());
+
+    // Pega horários já ocupados
     const horariosOcupados = agendamentosDoDia.map(ag => {
-        const dataLocal = new Date(ag.horario);
-        return `${String(dataLocal.getHours()).padStart(2, '0')}:${String(dataLocal.getMinutes()).padStart(2, '0')}`;
+      const dataLocal = new Date(ag.horario);
+      return `${String(dataLocal.getHours()).padStart(2, '0')}:${String(dataLocal.getMinutes()).padStart(2, '0')}`;
     });
+
     gradeHorariosDiv.innerHTML = '';
+
     for (let hora = HORA_INICIO; hora < HORA_FIM; hora++) {
       for (let min = 0; min < 60; min += INTERVALO_MINUTOS) {
         const horarioParaVerificar = `${String(hora).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -84,64 +89,52 @@ async function gerarEExibirHorarios() {
         gradeHorariosDiv.appendChild(slotButton);
       }
     }
-  } catch (error) { console.error("Erro ao buscar horários:", error); }
+  } catch (error) {
+    console.error("Erro ao buscar horários:", error);
+  }
 }
 
-// Seu listener de formulário original (INTACTO)
+// Submissão do formulário
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+
   if (!horarioFinalInput.value) {
-    // Supondo que você use uma biblioteca como Toastify.js
     alert("Por favor, selecione um horário.");
     return;
   }
+
   const novoAgendamento = {
     cliente: clienteInput.value,
     servicoId: servicoSelect.value,
     horario: horarioFinalInput.value
   };
+
   try {
+    const agendamentosCollection = collection(db, "users", uid, "agendamentos");
     await addDoc(agendamentosCollection, novoAgendamento);
     alert("Agendamento salvo com sucesso!");
-    window.location.href = 'agenda.html';
+    window.location.href = 'agenda.html'; // ou outra página de confirmação
   } catch (error) {
     console.error("Erro ao salvar agendamento: ", error);
     alert("Erro ao salvar o agendamento.");
   }
 });
 
-
-// =======================================================
-// NOVA LÓGICA DE INICIALIZAÇÃO (ACRESCENTADA)
-// =======================================================
-
-/**
- * Função principal que inicializa a página.
- * Ela carrega os serviços e depois verifica se algum foi pré-selecionado.
- */
+// Inicialização da página
 async function inicializarPaginaDeAgendamento() {
-  // Passo 1: Carrega os serviços no dropdown (sua função original)
   await carregarServicosDoFirebase();
 
-  // Passo 2: Verifica a URL para pré-selecionar o serviço
-  const urlParams = new URLSearchParams(window.location.search);
   const servicoIdFromUrl = urlParams.get('servico');
-
   if (servicoIdFromUrl) {
-    console.log("Serviço pré-selecionado da vitrine:", servicoIdFromUrl);
-    
-    // Define o valor do select para o ID do serviço vindo da URL
+    console.log("Serviço pré-selecionado:", servicoIdFromUrl);
     servicoSelect.value = servicoIdFromUrl;
-
-    // Dispara o evento 'change' para que a grade de horários seja atualizada
-    // como se o próprio usuário tivesse selecionado o serviço.
     servicoSelect.dispatchEvent(new Event('change'));
   }
 }
 
-// Seus listeners de eventos originais (INTACTOS)
+// Listeners para atualizar horários
 servicoSelect.addEventListener('change', gerarEExibirHorarios);
 diaInput.addEventListener('change', gerarEExibirHorarios);
 
-// Inicia a página chamando a nova função de inicialização
+// Chama a inicialização
 inicializarPaginaDeAgendamento();
