@@ -1,7 +1,8 @@
 /**
  * novo-servico.js (Painel do Dono - Versão Corrigida e Robusta)
  * * Este script foi revisado para garantir que o botão Salvar
- * * funcione de forma confiável em todas as situações.
+ * * funcione de forma confiável e que a leitura dos campos do formulário
+ * * seja feita de maneira mais segura.
  */
 
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -44,11 +45,23 @@ async function handleFormSubmit(event, uid) {
   event.preventDefault(); // Impede o recarregamento da página.
   console.log("Botão Salvar clicado. Processando formulário...");
 
-  // Pega os valores dos campos do formulário de forma segura.
-  const nome = form.nome?.value.trim();
-  const descricao = form.descricao?.value.trim() || ""; // Garante que a descrição não cause erro se não existir.
-  const duracao = parseInt(form.duracao?.value) || 0;
-  const preco = parseFloat(form.preco?.value.replace(',', '.')) || 0;
+  // CORREÇÃO: Lendo os valores diretamente pelos IDs para maior robustez.
+  // Garanta que seus inputs no HTML tenham os IDs: 'nome', 'descricao', 'duracao', 'preco'.
+  const nomeInput = document.getElementById('nome');
+  const descricaoInput = document.getElementById('descricao');
+  const duracaoInput = document.getElementById('duracao');
+  const precoInput = document.getElementById('preco');
+
+  const nome = nomeInput ? nomeInput.value.trim() : "";
+  const descricao = descricaoInput ? descricaoInput.value.trim() : "";
+  const duracao = duracaoInput ? parseInt(duracaoInput.value) || 0 : 0;
+  const preco = precoInput ? parseFloat(precoInput.value.replace(',', '.')) || 0 : 0;
+
+  // Diagnóstico: Exibe os valores lidos no console (aperte F12 no navegador para ver).
+  console.log("Valores lidos do formulário:");
+  console.log(`Nome: '${nome}'`);
+  console.log(`Duração: ${duracao}`);
+  console.log(`Preço: ${preco}`);
 
   // Validação simples para garantir que os campos essenciais foram preenchidos.
   if (!nome || preco <= 0 || duracao <= 0) {
