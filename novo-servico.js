@@ -60,10 +60,6 @@ async function handleFormSubmit(event, uid) {
     alert("Erro ao salvar o serviço.");
   }
 }
-
-    setTimeout(() => { window.location.href = 'servicos.html'; }, 2000);
-  } catch (error) {
-    console.error("Erro ao salvar o serviço: ", error);
     Toastify({ text: "Falha ao cadastrar o serviço.", style: { background: "var(--cor-perigo)" } }).showToast();
   }
 });
