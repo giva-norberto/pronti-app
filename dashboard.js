@@ -2,7 +2,7 @@
  * dashboard.js (Versão Final e Corrigida)
  * * Este script é o coração do dashboard. Ele foi ajustado para:
  * 1. Ser 100% compatível com a forma que você salva agendamentos.
- * 2. Buscar os dados dos agendamentos e dos serviços relacionados.
+ * 2. Carregar tanto o Resumo Diário Inteligente QUANTO os seus gráficos.
  * 3. Chamar a função da IA para processar os dados.
  * 4. Exibir o card de resumo diário na tela.
  */
@@ -15,9 +15,16 @@ import { gerarResumoDiarioInteligente } from './inteligencia.js';
 // --- Gatilho Principal ---
 // Executa todo o processo quando o conteúdo da página é carregado.
 document.addEventListener('DOMContentLoaded', async () => {
-    await exibirResumoDiario();
-    // Você pode adicionar as chamadas para carregar seus gráficos aqui.
+    // Executa o carregamento do resumo e dos gráficos em paralelo
+    await Promise.all([
+        exibirResumoDiario(),
+        carregarGraficos()
+    ]);
 });
+
+// =======================================================
+// SEÇÃO DO RESUMO DIÁRIO INTELIGENTE
+// =======================================================
 
 /**
  * Orquestra todo o processo: exibe o estado de carregamento,
@@ -30,13 +37,12 @@ async function exibirResumoDiario() {
     container.innerHTML = '<p>🧠 Analisando seu dia...</p>';
 
     try {
-        // Passo 1: Buscar e enriquecer os dados dos agendamentos de hoje.
         const agendamentosEnriquecidos = await buscarEEnriquecerAgendamentosDeHoje();
+        console.log("Agendamentos de hoje encontrados:", agendamentosEnriquecidos); // Log para depuração
         
-        // Passo 2: Chamar a função da IA com os dados já prontos.
         const resumo = gerarResumoDiarioInteligente(agendamentosEnriquecidos);
-        
-        // Passo 3: Criar o HTML do resumo e injetar na página.
+        console.log("Resumo gerado pela IA:", resumo); // Log para depuração
+
         const resumoHTML = criarHTMLDoResumo(resumo);
         container.innerHTML = resumoHTML;
 
@@ -47,18 +53,14 @@ async function exibirResumoDiario() {
 }
 
 /**
- * Esta é a função mais importante. Ela busca os agendamentos de hoje
- * e, para cada um, busca os detalhes do serviço correspondente para
- * criar um objeto de dados completo.
+ * Busca no Firestore os agendamentos de hoje e os detalhes de cada serviço.
  * @returns {Promise<Array<Object>>} Uma promessa que resolve para um array de agendamentos completos.
  */
 async function buscarEEnriquecerAgendamentosDeHoje() {
-    // Define o intervalo de hoje (do início ao fim do dia)
     const hoje = new Date();
     const inicioDoDia = new Date(hoje.setHours(0, 0, 0, 0)).toISOString();
     const fimDoDia = new Date(hoje.setHours(23, 59, 59, 999)).toISOString();
 
-    // Consulta os agendamentos dentro do intervalo de hoje
     const agendamentosRef = collection(db, "agendamentos");
     const q = query(agendamentosRef, 
         where("horario", ">=", inicioDoDia), 
@@ -69,22 +71,23 @@ async function buscarEEnriquecerAgendamentosDeHoje() {
     const promessasAgendamentos = querySnapshot.docs.map(async (agendamentoDoc) => {
         const agendamentoData = agendamentoDoc.data();
         
-        // Para cada agendamento, precisamos buscar os detalhes do serviço
+        if (!agendamentoData.servicoId) {
+            console.warn("Agendamento sem servicoId encontrado, pulando:", agendamentoDoc.id);
+            return null;
+        }
+
         const servicoRef = doc(db, "servicos", agendamentoData.servicoId);
         const servicoSnap = await getDoc(servicoRef);
         
         if (!servicoSnap.exists()) {
             console.warn(`Serviço com ID ${agendamentoData.servicoId} não encontrado.`);
-            return null; // Ignora agendamentos com serviço inválido
+            return null;
         }
         
         const servicoData = servicoSnap.data();
-        
-        // Calcula a hora de início e fim
         const inicio = new Date(agendamentoData.horario);
-        const fim = new Date(inicio.getTime() + (servicoData.duracao || 30) * 60000); // Adiciona a duração em minutos
+        const fim = new Date(inicio.getTime() + (servicoData.duracao || 30) * 60000);
 
-        // Retorna o objeto "enriquecido" no formato que a IA espera
         return {
             id: agendamentoDoc.id,
             cliente: { nome: agendamentoData.cliente || 'Cliente' },
@@ -97,9 +100,7 @@ async function buscarEEnriquecerAgendamentosDeHoje() {
         };
     });
 
-    // Espera todas as buscas de serviço terminarem
     const resultados = await Promise.all(promessasAgendamentos);
-    // Filtra qualquer resultado nulo (caso um serviço não tenha sido encontrado)
     return resultados.filter(res => res !== null);
 }
 
@@ -144,4 +145,31 @@ function criarHTMLDoResumo(resumo) {
         </div>`;
         
     return html;
+}
+
+// =======================================================
+// SEÇÃO DOS GRÁFICOS
+// =======================================================
+
+/**
+ * Função para carregar e renderizar todos os gráficos do dashboard.
+ * **AVISO: Você precisa colocar o seu código original de criação de gráficos aqui dentro.**
+ */
+async function carregarGraficos() {
+    console.log("Iniciando carregamento dos gráficos...");
+    try {
+        // Exemplo de como você poderia chamar suas funções originais de gráficos.
+        // Se você não as tem mais, precisará recriar a lógica de busca de dados
+        // e renderização com o Chart.js aqui.
+        
+        // Exemplo de placeholder:
+        // await carregarGraficoServicosMaisAgendados();
+        // await carregarGraficoFaturamentoPorServico();
+        // await carregarGraficoAgendamentosMensal();
+
+        console.log("Lembre-se de adicionar seu código para renderizar os gráficos aqui na função 'carregarGraficos'.");
+
+    } catch (error) {
+        console.error("Erro ao carregar os gráficos:", error);
+    }
 }
