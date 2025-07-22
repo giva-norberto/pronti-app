@@ -3,7 +3,7 @@
 
 :root {
   --cor-primaria: #6366f1;         /* Indigo-Violeta mais vibrante */
-  --cor-primaria-leve: #e0e7ff;    /* Adicionando uma versão leve para uso em gradientes e hovers */
+  --cor-primaria-leve: #e0e7ff;    /* Adicionado para uso em gradientes e hovers */
   --cor-secundaria: #ec4899;        /* Rosa vibrante */
   --cor-sucesso: #22c55e;           /* Verde forte */
   --cor-perigo: #ef4444;           /* Vermelho claro */
@@ -25,8 +25,6 @@ body {
   color: var(--cor-texto);
   display: flex;
   flex-direction: row; /* Padrão para desktop */
-
-  /* Gradiente de fundo mais perceptível para o body */
   background: linear-gradient(135deg, var(--cor-fundo), #e0e7ff);
   background-attachment: fixed;
 }
@@ -34,12 +32,11 @@ body {
 /* --- BARRA LATERAL (MENU / CABEÇALHO) --- */
 .sidebar {
   width: 240px;
-  /* Gradiente mais evidente para o fundo do menu/cabeçalho */
   background: linear-gradient(180deg, #f8faff, var(--cor-primaria-leve));
   height: 100vh;
   position: fixed;
   padding: 20px;
-  box-shadow: var(--sombra-elevada); /* Usa a sombra MUITO elevada para mais impacto */
+  box-shadow: var(--sombra-elevada);
   box-sizing: border-box;
   border-right: 1px solid #e5e7eb;
   z-index: 999;
@@ -52,7 +49,6 @@ body {
   text-decoration: none;
   display: block;
   text-align: center;
-  /* Adiciona uma linha de separação e mais espaço */
   padding-bottom: 20px;
   margin-bottom: 30px;
   border-bottom: 1px solid rgba(0,0,0,0.1);
@@ -65,35 +61,31 @@ body {
   text-decoration: none;
   border-radius: 8px;
   font-size: 1em;
-  font-weight: 600; /* Mais negrito por padrão */
-  transition: all 0.3s ease-in-out;
-
-  /* ESTADO PADRÃO COMO CARD SALIENTE */
-  padding: 15px 20px; /* Mais padding para parecer um card */
-  margin-bottom: 12px; /* Mais espaçamento entre os "cards" */
-  background-color: var(--cor-branco); /* Fundo branco claro para cada "card" */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra sutil para "levantar" o card */
-  color: var(--cor-texto); /* Texto mais escuro para melhor legibilidade no card */
-}
-
-/* Estado ATIVO (clicado ou página atual) - Forte destaque como um card vibrante */
-.sidebar-links a.active {
-  background: var(--cor-primaria); /* Cor primária sólida */
-  color: var(--cor-branco); /* Texto branco para alto contraste */
-  font-weight: 700; /* Super negrito */
-  transform: translateX(8px) translateY(-2px); /* Deslize e leve elevação para "pop" */
-  box-shadow: var(--sombra-elevada); /* Sombra elevada para "flutuar" dramaticamente */
-  border-right: 4px solid var(--cor-secundaria); /* Borda lateral com cor secundária (rosa) para contraste máximo */
-}
-
-/* Estado HOVER (mouse sobre) - Destaque vibrante como um card interativo */
-.sidebar-links a:hover {
-  background: linear-gradient(90deg, var(--cor-primaria-leve), #d3d6f7); /* Gradiente de claro para um azul-violeta mais vibrante */
-  color: var(--cor-primaria); /* Cor primária para o texto */
   font-weight: 600;
-  transform: translateX(4px) translateY(-1px); /* Deslize sutil e leve elevação */
-  box-shadow: var(--sombra); /* Sombra padrão para leve "flutuação" */
-  border-right: 4px solid var(--cor-primaria); /* Borda lateral com cor primária */
+  transition: all 0.3s ease-in-out;
+  padding: 15px 20px;
+  margin-bottom: 12px;
+  background-color: var(--cor-branco);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  color: var(--cor-texto);
+}
+
+.sidebar-links a.active {
+  background: var(--cor-primaria);
+  color: var(--cor-branco);
+  font-weight: 700;
+  transform: translateX(8px) translateY(-2px);
+  box-shadow: var(--sombra-elevada);
+  border-right: 4px solid var(--cor-secundaria);
+}
+
+.sidebar-links a:hover {
+  background: linear-gradient(90deg, var(--cor-primaria-leve), #d3d6f7);
+  color: var(--cor-primaria);
+  font-weight: 600;
+  transform: translateX(4px) translateY(-1px);
+  box-shadow: var(--sombra);
+  border-right: 4px solid var(--cor-primaria);
 }
 
 /* --- CONTEÚDO PRINCIPAL --- */
@@ -118,11 +110,10 @@ h1, h2, h3 {
   box-shadow: var(--sombra);
   border: 1px solid #e5e7eb;
   transition: all 0.2s ease-in-out;
-  position: relative; /* Necessário para o pseudo-elemento ::before */
-  overflow: hidden; /* Garante que a borda não saia para fora */
+  position: relative;
+  overflow: hidden;
 }
 
-/* Fita colorida no canto dos cards */
 .servico-item::before,
 .agendamento-item::before,
 .cliente-item::before,
@@ -135,17 +126,16 @@ h1, h2, h3 {
   left: 0;
   width: 6px;
   height: 100%;
-  background: var(--cor-primaria); /* Padrão: cor primária */
+  background: var(--cor-primaria);
   border-radius: 12px 0 0 12px;
-  z-index: 1; /* Garante que a "fita" fique por cima de qualquer fundo do card */
+  z-index: 1;
 }
 
-/* Ajustes específicos para a fita de agendamento */
 .agendamento-item {
-    border-left: none; /* Remove a borda existente para não conflitar com o ::before */
+    border-left: none;
 }
 .agendamento-item::before {
-    background: var(--cor-sucesso); /* Fita verde para agendamentos */
+    background: var(--cor-sucesso);
 }
 .agendamento-item h3 { margin-top: 0; color: var(--cor-sucesso); }
 
@@ -175,7 +165,6 @@ h1, h2, h3 {
     box-shadow: var(--sombra);
 }
 
-/* Botão principal com gradiente e sombra aprimorada */
 .btn-new {
   background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
   color: var(--cor-branco);
@@ -187,7 +176,6 @@ h1, h2, h3 {
   transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
-
 
 .btn-submit { background-color: var(--cor-sucesso); color: var(--cor-branco); width: 100%; padding: 12px; font-size: 1.1em; }
 .btn-cancelar, .btn-excluir { background-color: var(--cor-perigo); color: var(--cor-branco); padding: 8px 12px; }
@@ -300,46 +288,42 @@ h1, h2, h3 {
         box-shadow: var(--sombra-elevada);
         border-right: none;
         border-bottom: 1px solid #e5e7eb;
-        /* Gradiente sutil horizontalmente para o cabeçalho mobile */
         background: linear-gradient(90deg, #f8faff, var(--cor-primaria-leve));
-        padding: 15px 10px; /* Ajusta o padding do cabeçalho */
+        padding: 15px 10px;
     }
 
     .sidebar-brand {
-        margin-bottom: 15px; /* Reduz margem inferior no cabeçalho mobile */
-        padding-bottom: 15px; /* Reduz padding inferior */
+        margin-bottom: 15px;
+        padding-bottom: 15px;
     }
 
     .sidebar-links {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 8px; /* Reduz um pouco o espaçamento entre os cards no mobile */
+        gap: 8px;
     }
 
     .sidebar-links a {
-        /* BOTÕES DO MENU MOBILE: ESTADO PADRÃO COMO CARD */
-        padding: 10px 15px; /* Ajusta padding para o visual de card */
-        margin-bottom: 0; /* Remove margem vertical extra */
-        background-color: var(--cor-branco); /* Fundo branco para cada card de menu */
-        box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* Sombra sutil para "levantar" o card */
-        color: var(--cor-texto); /* Cor de texto padrão, mais escura */
-        font-weight: 600; /* Mais negrito por padrão */
-        text-align: center; /* Centraliza o texto */
-        flex-grow: 1; /* Permite que os itens cresçam para preencher o espaço */
-        max-width: calc(33% - 16px); /* Exemplo: até 3 itens por linha com gap (2 * gap) */
-        /* Ajuste o max-width dependendo de quantos itens você quer por linha */
+        padding: 10px 15px;
+        margin-bottom: 0;
+        background-color: var(--cor-branco);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        color: var(--cor-texto);
+        font-weight: 600;
+        text-align: center;
+        flex-grow: 1;
+        max-width: calc(33% - 16px);
     }
 
-    /* BOTÕES DO MENU MOBILE: ESTADOS HOVER/ACTIVE */
     .sidebar-links a.active,
     .sidebar-links a:hover {
-        background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria)); /* Gradiente vibrante como os botões de ação */
-        color: var(--cor-branco); /* Texto branco para alto contraste */
-        font-weight: 700; /* Super negrito */
-        transform: translateY(-2px); /* Leve elevação ao tocar/passar o mouse */
-        box-shadow: var(--sombra); /* Usa a sombra padrão para destaque */
-        border-right: none; /* Remove a borda lateral que não se encaixa aqui */
+        background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+        color: var(--cor-branco);
+        font-weight: 700;
+        transform: translateY(-2px);
+        box-shadow: var(--sombra);
+        border-right: none;
     }
 
     .main-content {
@@ -428,7 +412,7 @@ h1, h2, h3 {
 
 
 /* =================================================================== */
-/* --- ESTILOS PARA O RESUMO DIÁRIO INTELIGENTE (INTEGRADO) --- */
+/* --- ESTILOS PARA O RESUMO DIÁRIO INTELIGENTE (ACRESCENTADO) --- */
 /* =================================================================== */
 
 #resumo-diario-container {
@@ -518,24 +502,4 @@ h1, h2, h3 {
 .erro {
     color: var(--cor-perigo); /* Usa a cor de perigo da sua marca */
     font-weight: 500;
-}
-
-    .btn-modal {
-        width: 100%;
-        padding: 12px;
-    }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-    .sidebar {
-        width: 200px;
-    }
-    .main-content {
-        margin-left: 200px;
-        padding: 30px;
-    }
-    .dashboard-grid {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-    }
 }
