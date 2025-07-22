@@ -1,7 +1,8 @@
 /**
- * servicos.js (Painel do Dono - Versão Estável e Corrigida)
- * * Este script foi revisado para garantir que a função de carregamento
- * * execute apenas uma vez, evitando repetições, e mantém a lógica original.
+ * servicos.js (Painel do Dono - Base do Usuário com Multi-Usuário)
+ * * Este script foi construído sobre o código-base fornecido pelo usuário,
+ * * adicionando a camada de segurança para múltiplos usuários sem alterar
+ * * as funções e fórmulas originais.
  */
 
 import { getFirestore, collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -11,109 +12,87 @@ import { app } from "./firebase-config.js";
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const listaServicosContainer = document.getElementById('lista-servicos');
-let isInitialized = false; // Flag para controlar a execução inicial.
+const listaServicosDiv = document.getElementById('lista-servicos');
 
 // A verificação de login é o "porteiro" da página.
+// Todo o código original agora roda dentro deste bloco.
 onAuthStateChanged(auth, (user) => {
-  // A flag 'isInitialized' garante que o código só rode uma vez.
-  if (user && !isInitialized) {
-    isInitialized = true; // Marca que a inicialização já ocorreu.
-    // Se o usuário está logado, executa a função principal para carregar seus dados.
-    carregarEExibirServicos(user.uid);
-  } else if (!user) {
-    // Se não, redireciona para a tela de login.
+  if (user) {
+    // O usuário está logado, podemos executar a lógica da página.
+    const uid = user.uid; // ID do usuário logado.
+
+    // --- SUAS FUNÇÕES ORIGINAIS (ADAPTADAS PARA O UID) ---
+
+    async function carregarServicosDoFirebase() {
+      listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
+      try {
+        // MUDANÇA: Aponta para a coleção segura do usuário.
+        const servicosUserCollection = collection(db, "users", uid, "servicos");
+        const snapshot = await getDocs(servicosUserCollection);
+
+        if (snapshot.empty) {
+          listaServicosDiv.innerHTML = '<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>';
+          return;
+        }
+        listaServicosDiv.innerHTML = '';
+        snapshot.forEach(doc => {
+          const servico = doc.data();
+          const servicoId = doc.id;
+          const el = document.createElement('div');
+          el.classList.add('servico-item');
+          // A estrutura do seu card foi mantida.
+          el.innerHTML = `
+            <div class="item-info">
+              <h3>${servico.nome}</h3>
+              <p><strong>Preço:</strong> R$ ${parseFloat(servico.preco || 0).toFixed(2).replace('.', ',')}</p>
+              <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
+            </div>
+            <div class="item-acoes">
+              <button class="btn-editar" data-id="${servicoId}">Editar</button>
+              <button class="btn-excluir" data-id="${servicoId}">Excluir</button>
+            </div>
+          `;
+          listaServicosDiv.appendChild(el);
+        });
+      } catch (error) {
+        console.error("Erro ao buscar serviços:", error);
+        listaServicosDiv.innerHTML = '<p style="color:red;">Ocorreu uma falha ao carregar os serviços.</p>';
+      }
+    }
+
+    async function excluirServico(id) {
+      if (confirm("Você tem certeza? Esta ação é permanente e não pode ser desfeita.")) {
+        try {
+          // MUDANÇA: Aponta para o documento dentro da coleção segura do usuário.
+          await deleteDoc(doc(db, "users", uid, "servicos", id));
+          // AVISO: A biblioteca Toastify não é padrão, substituído por alert.
+          alert("Serviço excluído com sucesso.");
+          carregarServicosDoFirebase();
+        } catch (error) {
+          console.error("Erro ao excluir serviço: ", error);
+          alert("Falha ao excluir o serviço.");
+        }
+      }
+    }
+
+    // --- SEU EVENT LISTENER ORIGINAL ---
+    listaServicosDiv.addEventListener('click', (event) => {
+      const target = event.target;
+      if (target.classList.contains('btn-excluir')) {
+        excluirServico(target.dataset.id);
+      }
+      if (target.classList.contains('btn-editar')) {
+        window.location.href = `editar-servico.html?id=${target.dataset.id}`;
+      }
+    });
+
+    // --- SUA CHAMADA INICIAL ORIGINAL ---
+    carregarServicosDoFirebase();
+
+  } else {
+    // Se não há usuário logado, redireciona para a tela de login.
     console.log("Nenhum usuário logado. Redirecionando para login.html...");
     window.location.href = 'login.html';
   }
 });
 
-/**
- * Função principal que busca os dados e os exibe na tela.
- * @param {string} uid - O ID do usuário autenticado.
- */
-async function carregarEExibirServicos(uid) {
-  if (!listaServicosContainer) {
-    console.error("Erro Crítico: O container 'lista-servicos' não foi encontrado no HTML.");
-    return;
-  }
-  
-  listaServicosContainer.innerHTML = '<p>Carregando seus serviços...</p>';
-  console.log(`Carregando serviços para o usuário: ${uid}`);
-
-  try {
-    // A ÚNICA MUDANÇA ESTRUTURAL: Aponta para a coleção segura do usuário.
-    const servicosUserCollection = collection(db, "users", uid, "servicos");
-    const querySnapshot = await getDocs(servicosUserCollection);
-    console.log(`Encontrados ${querySnapshot.size} serviços.`);
-
-    if (querySnapshot.empty) {
-      listaServicosContainer.innerHTML = '<p>Você ainda não cadastrou nenhum serviço. Clique em "Novo Serviço" para começar.</p>';
-      return;
-    }
-
-    // Limpa o container para exibir os dados atualizados.
-    listaServicosContainer.innerHTML = ''; 
-
-    querySnapshot.forEach(doc => {
-      const servico = doc.data();
-      const servicoId = doc.id;
-      
-      const card = document.createElement('div');
-      card.className = 'servico-item';
-      // A criação do card HTML segue uma estrutura simples e direta.
-      card.innerHTML = `
-        <div>
-            <h3>${servico.nome || 'Serviço sem nome'}</h3>
-            <p>Duração: ${servico.duracao || 'N/A'} min - Preço: R$ ${parseFloat(servico.preco || 0).toFixed(2)}</p>
-            <p class="descricao-servico">${servico.descricao || 'Sem descrição.'}</p>
-        </div>
-        <div class="item-acoes">
-            <button class="btn-editar" data-id="${servicoId}">Editar</button>
-            <button class="btn-excluir" data-id="${servicoId}">Excluir</button>
-        </div>
-      `;
-      listaServicosContainer.appendChild(card);
-    });
-
-    // Adiciona os eventos aos botões recém-criados.
-    adicionarListenersDeAcao(uid);
-
-  } catch (error) {
-    console.error("Erro ao carregar serviços:", error);
-    listaServicosContainer.innerHTML = '<p style="color:red;">Ocorreu um erro ao carregar seus serviços.</p>';
-  }
-}
-
-/**
- * Adiciona os listeners para os botões de editar e excluir de forma segura.
- * @param {string} uid - O ID do usuário logado.
- */
-function adicionarListenersDeAcao(uid) {
-    listaServicosContainer.addEventListener('click', async (e) => {
-        const target = e.target;
-
-        // Ação de Editar
-        if (target.classList.contains('btn-editar')) {
-            const id = target.dataset.id;
-            console.log(`Botão Editar clicado para o ID: ${id}`);
-            window.location.href = `editar-servico.html?id=${id}`;
-        }
-
-        // Ação de Excluir
-        if (target.classList.contains('btn-excluir')) {
-            const id = target.dataset.id;
-            console.log(`Botão Excluir clicado para o ID: ${id}`);
-            // AVISO: A exclusão é imediata. Uma modal de confirmação customizada é ideal no futuro.
-            try {
-              const servicoRef = doc(db, "users", uid, "servicos", id);
-              await deleteDoc(servicoRef);
-              console.log("Serviço excluído. Recarregando a lista...");
-              carregarEExibirServicos(uid); // Recarrega a lista para refletir a exclusão.
-            } catch (error) {
-              console.error("Erro ao excluir o serviço:", error);
-              alert("Não foi possível excluir o serviço.");
-            }
-        }
-    });
-}
