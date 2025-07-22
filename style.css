@@ -2,38 +2,46 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 :root {
-  --cor-primaria: #4f46e5;
-  --cor-primaria-leve: #e0e7ff;
-  --cor-sucesso: #16a34a;
-  --cor-perigo: #dc2626;
-  --cor-aviso: #f59e0b;
-  --cor-texto: #374151;
-  --cor-texto-leve: #6b7280;
-  --cor-fundo: #f3f4f6;
+  --cor-primaria: #6366f1;          /* Indigo-Violeta mais vibrante */
+  --cor-secundaria: #ec4899;        /* Rosa vibrante */
+  --cor-sucesso: #22c55e;           /* Verde forte */
+  --cor-perigo: #ef4444;            /* Vermelho claro */
+  --cor-aviso: #f59e0b;             /* Laranja vivo */
+  --cor-fundo: #f3f4f6;             /* Cinza claro (para o gradiente do body) */
   --cor-branco: #ffffff;
-  --sombra: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --sombra-elevada: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --cor-texto: #1f2937;             /* Cinza escuro */
+  --cor-texto-leve: #6b7280;        /* Cinza médio */
+
+  /* Sombras mais intensas para mais profundidade e impacto */
+  --sombra: 0 6px 12px rgba(0, 0, 0, 0.15);
+  --sombra-elevada: 0 15px 30px rgba(0, 0, 0, 0.25);
 }
 
 /* --- ESTRUTURA GERAL --- */
 body {
   font-family: 'Poppins', sans-serif;
   margin: 0;
-  background-color: var(--cor-fundo);
   color: var(--cor-texto);
   display: flex;
+  flex-direction: row; /* Padrão para desktop */
+
+  /* Gradiente de fundo mais perceptível para o body */
+  background: linear-gradient(135deg, var(--cor-fundo), #e0e7ff);
+  background-attachment: fixed;
 }
 
-/* --- BARRA LATERAL (MENU) --- */
+/* --- BARRA LATERAL (MENU / CABEÇALHO) --- */
 .sidebar {
   width: 240px;
-  background-color: var(--cor-branco);
+  /* Gradiente mais evidente para o fundo do menu/cabeçalho */
+  background: linear-gradient(180deg, #f8faff, var(--cor-primaria-leve));
   height: 100vh;
   position: fixed;
   padding: 20px;
-  box-shadow: var(--sombra);
+  box-shadow: var(--sombra-elevada); /* Usa a sombra MUITO elevada para mais impacto */
   box-sizing: border-box;
   border-right: 1px solid #e5e7eb;
+  z-index: 999;
 }
 
 .sidebar-brand {
@@ -42,30 +50,49 @@ body {
   color: var(--cor-primaria);
   text-decoration: none;
   display: block;
-  margin-bottom: 40px;
   text-align: center;
+  /* Adiciona uma linha de separação e mais espaço */
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .sidebar-links a {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--cor-texto-leve);
   text-decoration: none;
-  padding: 12px 15px;
-  margin-bottom: 8px;
   border-radius: 8px;
   font-size: 1em;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
+  font-weight: 600; /* Mais negrito por padrão */
+  transition: all 0.3s ease-in-out;
+
+  /* ESTADO PADRÃO COMO CARD SALIENTE */
+  padding: 15px 20px; /* Mais padding para parecer um card */
+  margin-bottom: 12px; /* Mais espaçamento entre os "cards" */
+  background-color: var(--cor-branco); /* Fundo branco claro para cada "card" */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Sombra sutil para "levantar" o card */
+  color: var(--cor-texto); /* Texto mais escuro para melhor legibilidade no card */
 }
 
-.sidebar-links a.active,
+/* Estado ATIVO (clicado ou página atual) - Forte destaque como um card vibrante */
+.sidebar-links a.active {
+  background: var(--cor-primaria); /* Cor primária sólida */
+  color: var(--cor-branco); /* Texto branco para alto contraste */
+  font-weight: 700; /* Super negrito */
+  transform: translateX(8px) translateY(-2px); /* Deslize e leve elevação para "pop" */
+  box-shadow: var(--sombra-elevada); /* Sombra elevada para "flutuar" dramaticamente */
+  border-right: 4px solid var(--cor-secundaria); /* Borda lateral com cor secundária (rosa) para contraste máximo */
+}
+
+/* Estado HOVER (mouse sobre) - Destaque vibrante como um card interativo */
 .sidebar-links a:hover {
-  background-color: var(--cor-primaria-leve);
-  color: var(--cor-primaria);
+  background: linear-gradient(90deg, var(--cor-primaria-leve), #d3d6f7); /* Gradiente de claro para um azul-violeta mais vibrante */
+  color: var(--cor-primaria); /* Cor primária para o texto */
   font-weight: 600;
-  transform: translateX(4px);
+  transform: translateX(4px) translateY(-1px); /* Deslize sutil e leve elevação */
+  box-shadow: var(--sombra); /* Sombra padrão para leve "flutuação" */
+  border-right: 4px solid var(--cor-primaria); /* Borda lateral com cor primária */
 }
 
 /* --- CONTEÚDO PRINCIPAL --- */
@@ -77,20 +104,49 @@ body {
 }
 
 /* --- ESTILOS DOS COMPONENTES (CARDS) --- */
-h1, h2, h3 { 
-  color: var(--cor-texto); 
+h1, h2, h3 {
+  color: var(--cor-texto);
   font-weight: 600;
 }
 
 .servico-item, .agendamento-item, .cliente-item, .form-card, .info-card, .chart-container {
-  background-color: var(--cor-branco); 
+  background-color: var(--cor-branco);
   border-radius: 12px;
-  padding: 25px; 
-  margin-bottom: 25px; 
+  padding: 25px;
+  margin-bottom: 25px;
   box-shadow: var(--sombra);
   border: 1px solid #e5e7eb;
   transition: all 0.2s ease-in-out;
+  position: relative; /* Necessário para o pseudo-elemento ::before */
+  overflow: hidden; /* Garante que a borda não saia para fora */
 }
+
+/* Fita colorida no canto dos cards */
+.servico-item::before,
+.agendamento-item::before,
+.cliente-item::before,
+.form-card::before,
+.info-card::before,
+.chart-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--cor-primaria); /* Padrão: cor primária */
+  border-radius: 12px 0 0 12px;
+  z-index: 1; /* Garante que a "fita" fique por cima de qualquer fundo do card */
+}
+
+/* Ajustes específicos para a fita de agendamento */
+.agendamento-item {
+    border-left: none; /* Remove a borda existente para não conflitar com o ::before */
+}
+.agendamento-item::before {
+    background: var(--cor-sucesso); /* Fita verde para agendamentos */
+}
+.agendamento-item h3 { margin-top: 0; color: var(--cor-sucesso); }
 
 .servico-item:hover, .agendamento-item:hover, .cliente-item:hover, .info-card:hover {
   transform: translateY(-4px);
@@ -98,21 +154,18 @@ h1, h2, h3 {
 }
 
 .servico-item h3 { margin-top: 0; color: var(--cor-primaria); }
-.agendamento-item { border-left: 5px solid var(--cor-sucesso); display: flex; justify-content: space-between; align-items: center; }
-.agendamento-item h3 { margin-top: 0; color: var(--cor-sucesso); }
-.cliente-item { display: flex; justify-content: space-between; align-items: center; }
 .cliente-item h3 { margin: 0; }
 .info-card h3 { margin-top: 0; }
 
 /* --- BOTÕES --- */
 .btn-new, .btn-submit, .btn-cancelar, .btn-editar, .btn-excluir, .cliente-item a {
-  display: inline-block; 
-  padding: 10px 20px; 
-  font-size: 1em; 
-  font-weight: 600; 
-  text-decoration: none; 
-  cursor: pointer; 
-  border: none; 
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 1em;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
   border-radius: 8px;
   transition: all 0.2s ease-in-out;
 }
@@ -121,7 +174,20 @@ h1, h2, h3 {
     box-shadow: var(--sombra);
 }
 
-.btn-new { background-color: var(--cor-primaria); color: var(--cor-branco); margin-bottom: 20px; }
+/* Botão principal com gradiente e sombra aprimorada */
+.btn-new {
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+  color: var(--cor-branco);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  border: none;
+  margin-bottom: 20px;
+}
+.btn-new:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
+
 .btn-submit { background-color: var(--cor-sucesso); color: var(--cor-branco); width: 100%; padding: 12px; font-size: 1.1em; }
 .btn-cancelar, .btn-excluir { background-color: var(--cor-perigo); color: var(--cor-branco); padding: 8px 12px; }
 .btn-editar { background-color: var(--cor-aviso); color: #333; padding: 8px 12px; }
@@ -147,6 +213,7 @@ h1, h2, h3 {
 /* --- DASHBOARD --- */
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
 .chart-container.full-width { grid-column: 1 / -1; }
+
 /* --- ESTILOS PARA O MODAL DE CONFIRMAÇÃO --- */
 .modal-overlay {
   position: fixed;
@@ -160,7 +227,7 @@ h1, h2, h3 {
   align-items: center;
   z-index: 1000;
   opacity: 0;
-  visibility: hidden; /* Começa escondido */
+  visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
@@ -175,7 +242,6 @@ h1, h2, h3 {
   transition: transform 0.3s ease;
 }
 
-/* Estilos para quando o modal estiver visível */
 .modal-overlay.visivel {
   opacity: 1;
   visibility: visible;
@@ -217,4 +283,144 @@ h1, h2, h3 {
 .btn-modal.btn-cancelar {
   background-color: #e5e7eb;
   color: var(--cor-texto);
+}
+
+/* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
+
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        box-shadow: var(--sombra-elevada);
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        /* Gradiente sutil horizontalmente para o cabeçalho mobile */
+        background: linear-gradient(90deg, #f8faff, var(--cor-primaria-leve));
+        padding: 15px 10px; /* Ajusta o padding do cabeçalho */
+    }
+
+    .sidebar-brand {
+        margin-bottom: 15px; /* Reduz margem inferior no cabeçalho mobile */
+        padding-bottom: 15px; /* Reduz padding inferior */
+    }
+
+    .sidebar-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px; /* Reduz um pouco o espaçamento entre os cards no mobile */
+    }
+
+    .sidebar-links a {
+        /* BOTÕES DO MENU MOBILE: ESTADO PADRÃO COMO CARD */
+        padding: 10px 15px; /* Ajusta padding para o visual de card */
+        margin-bottom: 0; /* Remove margem vertical extra */
+        background-color: var(--cor-branco); /* Fundo branco para cada card de menu */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* Sombra sutil para "levantar" o card */
+        color: var(--cor-texto); /* Cor de texto padrão, mais escura */
+        font-weight: 600; /* Mais negrito por padrão */
+        text-align: center; /* Centraliza o texto */
+        flex-grow: 1; /* Permite que os itens cresçam para preencher o espaço */
+        max-width: calc(33% - 16px); /* Exemplo: até 3 itens por linha com gap (2 * gap) */
+        /* Ajuste o max-width dependendo de quantos itens você quer por linha */
+    }
+
+    /* BOTÕES DO MENU MOBILE: ESTADOS HOVER/ACTIVE */
+    .sidebar-links a.active,
+    .sidebar-links a:hover {
+        background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria)); /* Gradiente vibrante como os botões de ação */
+        color: var(--cor-branco); /* Texto branco para alto contraste */
+        font-weight: 700; /* Super negrito */
+        transform: translateY(-2px); /* Leve elevação ao tocar/passar o mouse */
+        box-shadow: var(--sombra); /* Usa a sombra padrão para destaque */
+        border-right: none; /* Remove a borda lateral que não se encaixa aqui */
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .servico-item, .agendamento-item, .cliente-item, .form-card, .info-card, .chart-container {
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .servico-item::before,
+    .agendamento-item::before,
+    .cliente-item::before,
+    .form-card::before,
+    .info-card::before,
+    .chart-container::before {
+        width: 4px;
+    }
+
+
+    .agendamento-item, .cliente-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .item-acoes {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+
+    .item-acoes button {
+        margin-left: 0;
+        margin-right: 10px;
+        flex-grow: 1;
+        max-width: 48%;
+    }
+    .item-acoes button:last-child {
+        margin-right: 0;
+    }
+
+    .btn-new, .btn-submit, .btn-cancelar, .btn-editar, .btn-excluir, .cliente-item a {
+        padding: 12px 15px;
+        font-size: 0.95em;
+    }
+    .btn-submit {
+        padding: 15px;
+        font-size: 1.2em;
+    }
+
+    .modal-card {
+        padding: 20px;
+        width: 95%;
+    }
+    .modal-botoes {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .btn-modal {
+        width: 100%;
+        padding: 12px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 200px;
+    }
+    .main-content {
+        margin-left: 200px;
+        padding: 30px;
+    }
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
 }
