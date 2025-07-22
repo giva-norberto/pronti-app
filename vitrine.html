@@ -1,68 +1,83 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nossos Serviços - Pronti IA</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vitrine Pronti</title>
   <style>
-    /* Estilos específicos para a página pública, para não usar o menu lateral */
     body {
-      display: block; /* Remove o layout flex da barra lateral */
-      background: var(--cor-fundo); /* Usa o fundo padrão, mas sem o gradiente complexo */
+      font-family: Arial, sans-serif;
+      margin: 1rem;
+      background: #f9f9f9;
+      color: #333;
     }
-
-    .header-publico {
-      background-color: var(--cor-branco);
-      padding: 20px 40px;
-      box-shadow: var(--sombra);
+    h1#nome-estabelecimento {
       text-align: center;
-      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 2rem;
+      font-size: 2rem;
     }
-
-    .header-publico h1 {
-      font-size: 2em;
-      color: var(--cor-primaria);
-      margin: 0;
+    #lista-servicos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
     }
-    
-    .header-publico p {
-        margin: 5px 0 0 0;
-        color: var(--cor-texto-leve);
+    .servico-item {
+      background: white;
+      padding: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
-
-    /* Ajusta o conteúdo principal para ocupar a tela toda */
-    .main-content {
-      margin-left: 0;
-      max-width: 1200px; /* Limita a largura para melhor leitura em telas grandes */
-      margin: 0 auto; /* Centraliza o conteúdo */
-      padding: 40px 20px; /* Adiciona padding para mobile */
+    .servico-info h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+    }
+    .servico-info p {
+      margin: 0 0 1rem 0;
+      color: #666;
+      font-size: 0.95rem;
+      flex-grow: 1;
+    }
+    .servico-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      border-top: 1px solid #eee;
+      padding-top: 0.75rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+      min-width: 70px;
+    }
+    .btn-new {
+      padding: 0.4rem 0.9rem;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 600;
+      transition: background-color 0.3s;
+    }
+    .btn-new:hover {
+      background-color: #0056b3;
+    }
+    p {
+      text-align: center;
+      font-size: 1.1rem;
     }
   </style>
 </head>
 <body>
+  <h1 id="nome-estabelecimento">Carregando...</h1>
+  <div id="lista-servicos">Carregando serviços...</div>
 
-  <!-- Cabeçalho da página pública -->
-  <header class="header-publico">
-    <!-- Você pode tornar este nome dinâmico no futuro -->
-    <h1>Nome do seu Salão</h1> 
-    <p>Conheça nossos serviços e agende seu horário de forma fácil e rápida!</p>
-  </header>
-
-  <!-- Conteúdo Principal -->
-  <main class="main-content">
-    <h2>Nossos Serviços</h2>
-    
-    <!-- O JavaScript (servicos.js) irá inserir os cards de serviço aqui -->
-    <div id="lista-servicos">
-      <!-- Mensagem de carregamento inicial -->
-      <p>Carregando nossos serviços...</p>
-    </div>
-  </main>
-
-  <!-- Scripts necessários para a página funcionar -->
-  <script src="firebase-config.js" type="module"></script>
-  <script src="servicos.js" type="module"></script>
-
+  <script type="module" src="./vitrine.js"></script>
 </body>
 </html>
