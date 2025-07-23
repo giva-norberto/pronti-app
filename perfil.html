@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meu Perfil - Pronti IA</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meu Perfil - Pronti</title>
+  <link href="style.css" rel="stylesheet" />
 </head>
 <body>
 
@@ -15,7 +15,6 @@
       <a href="servicos.html">Serviços</a>
       <a href="agenda.html">Agenda</a>
       <a href="clientes.html">Clientes</a>
-      <!-- Adicione o link para a nova página de perfil -->
       <a href="perfil.html" class="active">Meu Perfil</a>
       <a href="contato.html">Contato</a>
     </div>
@@ -29,26 +28,29 @@
       <form id="form-perfil">
         <div class="form-group">
           <label for="nomeNegocio">Nome do Negócio</label>
-          <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
+          <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required />
         </div>
+
         <div class="form-group">
           <label for="slug">URL da sua Vitrine (slug)</label>
-          <input type="text" id="slug" placeholder="Ex: barbearia-do-joao" required>
-          <small>Use apenas letras minúsculas, números e hífens (-). Este será o seu link público.</small>
+          <input type="text" id="slug" placeholder="Ex: barbearia-do-joao" required />
+          <small>Use apenas letras minúsculas, números e hífens (-).</small>
         </div>
+
         <div class="form-group">
           <label for="descricao">Descrição Curta</label>
-          <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
+          <textarea id="descricao" rows="3" placeholder="Fale um pouco sobre seu serviço."></textarea>
         </div>
-        
+
+        <div id="linkVitrine" style="margin-top: 10px;"></div>
+
         <button type="submit" class="btn-submit">Salvar Perfil</button>
       </form>
     </div>
   </main>
 
-  <!-- Scripts -->
   <script src="firebase-config.js" type="module"></script>
   <script src="perfil.js" type="module"></script>
-
 </body>
 </html>
+
