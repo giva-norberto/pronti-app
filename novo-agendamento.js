@@ -1,7 +1,7 @@
 /**
- * novo-agendamento.js (Painel do Dono - Corrigido para Multi-Usuário)
- * * Este script foi atualizado para carregar os serviços e salvar os agendamentos
- * * na pasta segura do utilizador que está autenticado.
+ * novo-agendamento.js (Painel do Dono - Versão Revisada e Estável)
+ * * Este script foi reestruturado para garantir maior estabilidade e
+ * * resolver problemas de inicialização, sem alterar a lógica de negócio.
  */
 
 import { getFirestore, collection, getDocs, addDoc, query, where } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -11,41 +11,50 @@ import { app } from "./firebase-config.js";
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Elementos do formulário
-const form = document.getElementById('form-agendamento');
-const clienteInput = document.getElementById('cliente');
-const servicoSelect = document.getElementById('servico');
-const diaInput = document.getElementById('dia');
-const gradeHorariosDiv = document.getElementById('grade-horarios');
-const horarioFinalInput = document.getElementById('horario-final');
+// --- INICIALIZAÇÃO DA PÁGINA ---
+// Espera o HTML ser completamente carregado antes de executar o script.
+document.addEventListener('DOMContentLoaded', () => {
+    // Elementos do formulário
+    const form = document.getElementById('form-agendamento');
+    const clienteInput = document.getElementById('cliente');
+    const servicoSelect = document.getElementById('servico');
+    const diaInput = document.getElementById('dia');
+    const gradeHorariosDiv = document.getElementById('grade-horarios');
+    const horarioFinalInput = document.getElementById('horario-final');
 
-// Constantes de horário
-const HORA_INICIO = 9;
-const HORA_FIM = 18;
-const INTERVALO_MINUTOS = 30;
-
-// --- ESTRUTURA DE INICIALIZAÇÃO SEGURA ---
-// Garante que o código só rode após a confirmação do login.
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        // O utilizador está autenticado.
-        const uid = user.uid;
-        inicializarPaginaDeAgendamento(uid);
-    } else {
-        // O utilizador não está autenticado.
-        console.log("Nenhum utilizador autenticado. A redirecionar para o login...");
-        window.location.href = 'login.html';
+    // Verifica se todos os elementos essenciais existem.
+    if (!form || !servicoSelect || !diaInput || !gradeHorariosDiv) {
+        console.error("Erro Crítico: Um ou mais elementos do formulário não foram encontrados no HTML. Verifique os IDs.");
+        return;
     }
+
+    let isInitialized = false; // Flag para controlar a inicialização
+
+    // A verificação de login é o "porteiro" da página.
+    onAuthStateChanged(auth, (user) => {
+        if (user && !isInitialized) {
+            isInitialized = true; // Impede que o código seja executado novamente
+            const uid = user.uid;
+            console.log("Utilizador autenticado:", uid);
+            // Inicia a lógica da página com os elementos e o UID do utilizador.
+            inicializarPaginaDeAgendamento(uid, { form, clienteInput, servicoSelect, diaInput, gradeHorariosDiv, horarioFinalInput });
+        } else if (!user && !isInitialized) {
+            console.log("Nenhum utilizador autenticado. A redirecionar para o login...");
+            window.location.href = 'login.html';
+        }
+    });
 });
 
 /**
  * Função principal que inicializa a página.
- * Ela carrega os serviços e depois verifica se algum foi pré-selecionado.
  * @param {string} uid - O ID do utilizador autenticado.
+ * @param {Object} elements - Um objeto contendo as referências aos elementos do DOM.
  */
-async function inicializarPaginaDeAgendamento(uid) {
+async function inicializarPaginaDeAgendamento(uid, elements) {
+  const { form, clienteInput, servicoSelect, diaInput, gradeHorariosDiv, horarioFinalInput } = elements;
+  
   // Carrega os serviços no dropdown.
-  await carregarServicosDoFirebase(uid);
+  await carregarServicosDoFirebase(uid, servicoSelect);
 
   // Verifica a URL para pré-selecionar o serviço (vindo da vitrine).
   const urlParams = new URLSearchParams(window.location.search);
@@ -53,25 +62,25 @@ async function inicializarPaginaDeAgendamento(uid) {
 
   if (servicoIdFromUrl) {
     servicoSelect.value = servicoIdFromUrl;
-    // Dispara o evento 'change' para que a grelha de horários seja atualizada.
     servicoSelect.dispatchEvent(new Event('change'));
   }
 
-  // Adiciona os listeners de eventos.
-  servicoSelect.addEventListener('change', () => gerarEExibirHorarios(uid));
-  diaInput.addEventListener('change', () => gerarEExibirHorarios(uid));
-  form.addEventListener('submit', (event) => handleFormSubmit(event, uid));
+  // Adiciona os listeners de eventos uma única vez.
+  servicoSelect.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
+  diaInput.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
+  form.addEventListener('submit', (event) => handleFormSubmit(event, uid, { clienteInput, servicoSelect, horarioFinalInput }));
 }
 
+// --- FUNÇÕES DE LÓGICA DE NEGÓCIO (SUAS FUNÇÕES ORIGINAIS) ---
 
-// --- SUAS FUNÇÕES ORIGINAIS (ADAPTADAS PARA O UID) ---
-
-async function carregarServicosDoFirebase(uid) {
+async function carregarServicosDoFirebase(uid, servicoSelect) {
   servicoSelect.innerHTML = '<option value="">Selecione um serviço</option>';
+  console.log(`A carregar serviços para o utilizador: ${uid}`);
   try {
-    // MUDANÇA: Aponta para a coleção segura do utilizador.
     const servicosUserCollection = collection(db, "users", uid, "servicos");
     const querySnapshot = await getDocs(servicosUserCollection);
+    console.log(`Encontrados ${querySnapshot.size} serviços.`);
+    
     querySnapshot.forEach(doc => {
       const servico = doc.data();
       const option = document.createElement('option');
@@ -79,12 +88,19 @@ async function carregarServicosDoFirebase(uid) {
       option.textContent = `${servico.nome} (duração: ${servico.duracao} min)`;
       servicoSelect.appendChild(option);
     });
-  } catch (error) { console.error("Erro ao carregar serviços:", error); }
+  } catch (error) { 
+    console.error("Erro ao carregar serviços:", error); 
+  }
 }
 
-async function gerarEExibirHorarios(uid) {
+async function gerarEExibirHorarios(uid, elements) {
+  const { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput } = elements;
   const diaSelecionado = diaInput.value;
   const servicoId = servicoSelect.value;
+  const HORA_INICIO = 9;
+  const HORA_FIM = 18;
+  const INTERVALO_MINUTOS = 30;
+
   if (!diaSelecionado || !servicoId) {
     gradeHorariosDiv.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
     return;
@@ -94,7 +110,6 @@ async function gerarEExibirHorarios(uid) {
     const inicioDoDia = new Date(`${diaSelecionado}T00:00:00`).toISOString();
     const fimDoDia = new Date(`${diaSelecionado}T23:59:59`).toISOString();
     
-    // MUDANÇA: Aponta para a coleção segura do utilizador.
     const agendamentosUserCollection = collection(db, "users", uid, "agendamentos");
     const agendamentosQuery = query(agendamentosUserCollection, where("horario", ">=", inicioDoDia), where("horario", "<=", fimDoDia));
     
@@ -104,7 +119,9 @@ async function gerarEExibirHorarios(uid) {
         const dataLocal = new Date(ag.horario);
         return `${String(dataLocal.getHours()).padStart(2, '0')}:${String(dataLocal.getMinutes()).padStart(2, '0')}`;
     });
+
     gradeHorariosDiv.innerHTML = '';
+
     for (let hora = HORA_INICIO; hora < HORA_FIM; hora++) {
       for (let min = 0; min < 60; min += INTERVALO_MINUTOS) {
         const horarioParaVerificar = `${String(hora).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
@@ -130,7 +147,8 @@ async function gerarEExibirHorarios(uid) {
   } catch (error) { console.error("Erro ao buscar horários:", error); }
 }
 
-async function handleFormSubmit(event, uid) {
+async function handleFormSubmit(event, uid, elements) {
+  const { clienteInput, servicoSelect, horarioFinalInput } = elements;
   event.preventDefault();
   if (!horarioFinalInput.value) {
     alert("Por favor, selecione um horário.");
@@ -142,7 +160,6 @@ async function handleFormSubmit(event, uid) {
     horario: horarioFinalInput.value
   };
   try {
-    // MUDANÇA: Aponta para a coleção segura do utilizador.
     const agendamentosUserCollection = collection(db, "users", uid, "agendamentos");
     await addDoc(agendamentosUserCollection, novoAgendamento);
     alert("Agendamento salvo com sucesso!");
@@ -152,5 +169,6 @@ async function handleFormSubmit(event, uid) {
     alert("Erro ao salvar o agendamento.");
   }
 }
+
 
 
