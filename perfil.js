@@ -1,8 +1,8 @@
 /**
- * perfil.js (Versão Estável Restaurada)
- * * Este script gere a página de perfil do profissional, focando em salvar
- * * os dados de texto e exibir o link da vitrine. A funcionalidade de
- * * upload de logótipo foi removida temporariamente para garantir a estabilidade.
+ * perfil.js (Versão Final e Estável)
+ * * Este script gere a página de perfil do profissional, lida com o
+ * * carregamento, validação e salvamento dos dados públicos, e exibe
+ * * o link da vitrine para ser partilhado.
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -22,19 +22,28 @@ const linkContainer = document.getElementById('link-vitrine-container');
 const linkGeradoInput = document.getElementById('link-gerado');
 const btnCopiarLink = document.getElementById('btn-copiar-link');
 
-let uid;
+let uid; // Variável para guardar o UID do utilizador autenticado
 
+/**
+ * Gera um 'slug' amigável para URL a partir de um texto.
+ * @param {string} texto - O texto a ser convertido.
+ * @returns {string} O slug gerado.
+ */
 function gerarSlug(texto) {
   if (!texto) return "";
   return texto.toString().toLowerCase().trim()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/\s+/g, '-')           // Substitui espaços por -
+    .replace(/[^\w\-]+/g, '')       // Remove caracteres especiais
+    .replace(/\-\-+/g, '-');        // Remove hífens duplicados
 }
 
+// Gera o slug automaticamente enquanto o utilizador digita o nome do negócio
 nomeNegocioInput.addEventListener('keyup', () => {
     slugInput.value = gerarSlug(nomeNegocioInput.value);
 });
 
+// A verificação de login é o "porteiro" da página
 onAuthStateChanged(auth, (user) => {
   if (user) {
     uid = user.uid;
@@ -48,6 +57,10 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
+/**
+ * Carrega os dados do perfil do Firestore e preenche o formulário.
+ * @param {string} userId - O ID do utilizador autenticado.
+ */
 async function carregarDadosDoPerfil(userId) {
   try {
     const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
@@ -57,6 +70,7 @@ async function carregarDadosDoPerfil(userId) {
       nomeNegocioInput.value = data.nomeNegocio || '';
       slugInput.value = data.slug || '';
       descricaoInput.value = data.descricao || '';
+      // Se já houver um slug salvo, mostra o link
       if (data.slug && linkContainer) {
         mostrarLinkGerado(data.slug);
       }
@@ -66,6 +80,10 @@ async function carregarDadosDoPerfil(userId) {
   }
 }
 
+/**
+ * Lida com o envio do formulário para salvar/atualizar o perfil.
+ * @param {Event} event - O evento de submit.
+ */
 async function handleFormSubmit(event) {
   event.preventDefault();
   btnSalvar.disabled = true;
@@ -86,6 +104,7 @@ async function handleFormSubmit(event) {
   }
 
   try {
+    // Verifica se o slug já está a ser utilizado por outro profissional
     const publicProfilesRef = collection(db, "publicProfiles");
     const q = query(publicProfilesRef, where("slug", "==", perfilData.slug));
     const querySnapshot = await getDocs(q);
@@ -106,9 +125,11 @@ async function handleFormSubmit(event) {
 
     btnSalvar.textContent = 'A salvar...';
 
+    // Salva na pasta segura do utilizador
     const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
     await setDoc(perfilPrivadoRef, perfilData);
 
+    // Salva na coleção pública para a busca da vitrine
     const perfilPublicoRef = doc(db, "publicProfiles", uid);
     await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid });
     
@@ -126,6 +147,10 @@ async function handleFormSubmit(event) {
   }
 }
 
+/**
+ * Mostra a secção do link da vitrine com o URL completo.
+ * @param {string} slug - O slug do perfil do utilizador.
+ */
 function mostrarLinkGerado(slug) {
     if (!linkContainer || !linkGeradoInput) return;
     const urlBase = "https://pronti-app.netlify.app/vitrine.html";
@@ -134,6 +159,9 @@ function mostrarLinkGerado(slug) {
     linkContainer.style.display = 'block';
 }
 
+/**
+ * Copia o link da vitrine para a área de transferência.
+ */
 function copiarLink() {
     if (!linkGeradoInput) return;
     linkGeradoInput.select();
