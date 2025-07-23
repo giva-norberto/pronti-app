@@ -1,90 +1,87 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Configurar Vitrine - Pronti IA</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
-  <style>
-    /* Estilos para o botão toggle (Sim/Não) */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 34px;
-    }
-    .switch input { 
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 34px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 26px;
-      width: 26px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider {
-      background-color: var(--cor-sucesso);
-    }
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Minha Vitrine - Pronti IA</title>
+  <link href="style.css" rel="stylesheet" />
 </head>
 <body>
 
-  <aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <div class="sidebar-links">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="index.html">Home</a>
-      <a href="servicos.html">Serviços</a>
-      <a href="agenda.html">Agenda</a>
-      <a href="clientes.html">Clientes</a>
-      <a href="perfil.html">Meu Perfil</a>
-      <!-- 👇 Novo link do menu aqui 👇 -->
-      <a href="config-vitrine.html" class="active">Minha Vitrine</a>
-      <a href="contato.html">Contato</a>
-    </div>
-  </aside>
-
   <main class="main-content">
-    <h1>Configurar Minha Vitrine</h1>
-    <p>Escolha quais serviços serão exibidos na sua página pública de agendamento.</p>
-
-    <!-- Botão para pré-visualizar a vitrine -->
-    <button id="btn-preview-vitrine" class="btn-new" style="margin-bottom: 25px;">Pré-visualizar Minha Vitrine</button>
-
-    <div class="info-card">
-        <h3>Serviços Visíveis para Clientes</h3>
-        <!-- O JavaScript irá preencher esta lista -->
-        <div id="lista-servicos-vitrine">
-            <p>A carregar os seus serviços...</p>
-        </div>
+    <h1>Minha Vitrine</h1>
+    <div id="lista-servicos-vitrine">
+      <p>Carregando serviços...</p>
     </div>
   </main>
 
-  <!-- Scripts -->
-  <script src="firebase-config.js" type="module"></script>
-  <!-- Precisaremos de um novo ficheiro JS para esta página -->
-  <script src="config-vitrine.js" type="module"></script>
+  <script type="module">
+    import { firestore } from './firebase-config.js';
+    import { doc, collection, getDoc, getDocs } from 'firebase/firestore';
+
+    // Função para pegar parâmetro da URL
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const listaServicosContainer = document.getElementById('lista-servicos-vitrine');
+
+    async function carregarVitrine(userUid) {
+      try {
+        // 1. Pegar config da vitrine
+        const configRef = doc(firestore, 'users', userUid, 'publicProfile', 'vitrineConfig');
+        const configSnap = await getDoc(configRef);
+        if (!configSnap.exists()) {
+          listaServicosContainer.innerHTML = '<p>Usuário não configurou a vitrine ainda.</p>';
+          return;
+        }
+        const { servicosVisiveis } = configSnap.data();
+
+        if (!servicosVisiveis || servicosVisiveis.length === 0) {
+          listaServicosContainer.innerHTML = '<p>Não há serviços visíveis na vitrine.</p>';
+          return;
+        }
+
+        // 2. Buscar dados dos serviços selecionados
+        const servicesRef = collection(firestore, 'users', userUid, 'services');
+        const querySnapshot = await getDocs(servicesRef);
+
+        // Filtrar só os serviços que estão na lista servicosVisiveis
+        const servicos = [];
+        querySnapshot.forEach(docSnap => {
+          if (servicosVisiveis.includes(docSnap.id)) {
+            servicos.push({ id: docSnap.id, ...docSnap.data() });
+          }
+        });
+
+        if (servicos.length === 0) {
+          listaServicosContainer.innerHTML = '<p>Nenhum serviço encontrado para exibir.</p>';
+          return;
+        }
+
+        // 3. Renderizar os serviços na página
+        const html = servicos.map(s => `
+          <div class="info-card" style="margin-bottom: 16px;">
+            <h3>${s.nome}</h3>
+            <p>${s.descricao || ''}</p>
+          </div>
+        `).join('');
+        listaServicosContainer.innerHTML = html;
+
+      } catch (error) {
+        console.error('Erro ao carregar vitrine:', error);
+        listaServicosContainer.innerHTML = '<p>Erro ao carregar a vitrine.</p>';
+      }
+    }
+
+    const userUid = getQueryParam('user');
+    if (!userUid) {
+      listaServicosContainer.innerHTML = '<p>Usuário não especificado na URL.</p>';
+    } else {
+      carregarVitrine(userUid);
+    }
+  </script>
 
 </body>
 </html>
