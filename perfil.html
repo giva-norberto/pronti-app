@@ -31,28 +31,27 @@
             <label for="nomeNegocio">Nome do Negócio</label>
             <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
           </div>
+          
+          <!-- 👇 CAMPO DO LINK ALTERADO 👇 -->
           <div class="form-group">
-            <label for="slug">URL da sua Vitrine (slug)</label>
-            <input type="text" id="slug" placeholder="Ex: barbearia-do-joao" required>
-            <small>Use apenas letras minúsculas, números e hífens (-). Este será o seu link público.</small>
+            <label for="slug">URL da sua Vitrine</label>
+            <div style="display: flex; align-items: center; border: 1px solid #d1d5db; border-radius: 8px; padding-left: 12px; background-color: #f9fafb;">
+              <span style="color: var(--cor-texto-leve); font-size: 0.9em; white-space: nowrap;">https://pronti-app.netlify.app/vitrine.html?slug=</span>
+              <input type="text" id="slug" placeholder="barbearia-do-joao" required style="border: none; background: transparent; padding: 12px 10px; flex-grow: 1; outline: none; font-weight: 600; color: var(--cor-primaria);">
+            </div>
+            <small>Use apenas letras minúsculas, números e hífens (-).</small>
           </div>
+
           <div class="form-group">
             <label for="descricao">Descrição Curta</label>
             <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
           </div>
           
+          <!-- 👇 BOTÃO DE COPIAR ADICIONADO ANTES DO BOTÃO DE SALVAR 👇 -->
+          <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-bottom: 15px; background: var(--cor-aviso);">Copiar Link da Vitrine</button>
+
           <button type="submit" class="btn-submit">Salvar Perfil</button>
         </form>
-      </div>
-
-      <!-- 👇 NOVA SECÇÃO PARA MOSTRAR O LINK GERADO 👇 -->
-      <div id="link-vitrine-container" class="info-card" style="display: none; margin-top: 25px; border-color: var(--cor-sucesso);">
-        <h3>✅ Seu link da vitrine está pronto!</h3>
-        <p>Copie o link abaixo e partilhe com os seus clientes nas redes sociais.</p>
-        <div class="form-group" style="margin-bottom: 0;">
-          <input type="text" id="link-gerado" readonly style="background-color: #f3f4f6; text-align: center; font-weight: 600;">
-          <button type="button" id="btn-copiar-link" class="btn-submit" style="margin-top: 10px;">Copiar Link</button>
-        </div>
       </div>
 
     </main>
@@ -63,5 +62,6 @@
 
   </body>
   </html>
+
 
 
