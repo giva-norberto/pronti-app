@@ -1,11 +1,10 @@
 /**
- * perfil.js (Versão Simplificada para Teste)
- * * Este script remove temporariamente a lógica de upload de logótipo
- * * para isolar e corrigir o erro ao salvar o perfil.
+ * perfil.js (Versão com Diagnóstico de Erros)
+ * * Este script foi atualizado com mensagens detalhadas na consola
+ * * para nos ajudar a identificar a causa exata do erro ao salvar.
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-// Removida a importação do Storage por enquanto
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -18,7 +17,6 @@ const nomeNegocioInput = document.getElementById('nomeNegocio');
 const slugInput = document.getElementById('slug');
 const descricaoInput = document.getElementById('descricao');
 const btnSalvar = form.querySelector('button[type="submit"]');
-// Elementos do link (mantidos para consistência)
 const linkContainer = document.getElementById('link-vitrine-container');
 const linkGeradoInput = document.getElementById('link-gerado');
 const btnCopiarLink = document.getElementById('btn-copiar-link');
@@ -87,10 +85,13 @@ async function handleFormSubmit(event) {
   }
 
   try {
-    // A lógica de verificação de slug e salvamento no Firestore permanece
+    // Passo 1: Verificar se o slug já existe
+    console.log("Passo 1: A verificar se o slug já existe...");
     const publicProfilesRef = collection(db, "publicProfiles");
     const q = query(publicProfilesRef, where("slug", "==", perfilData.slug));
     const querySnapshot = await getDocs(q);
+    console.log("Verificação de slug concluída.");
+
     let slugJaExiste = false;
     querySnapshot.forEach((doc) => {
         if (doc.data().ownerId !== uid) {
@@ -105,12 +106,17 @@ async function handleFormSubmit(event) {
         return;
     }
 
-    // Salva os dados de texto no perfil privado e público
+    // Passo 2: Salvar o perfil privado
+    console.log("Passo 2: A salvar o perfil privado em /users/...");
     const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
     await setDoc(perfilPrivadoRef, perfilData);
+    console.log("Perfil privado salvo com sucesso.");
 
+    // Passo 3: Salvar o perfil público
+    console.log("Passo 3: A salvar o perfil público em /publicProfiles/...");
     const perfilPublicoRef = doc(db, "publicProfiles", uid);
     await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid });
+    console.log("Perfil público salvo com sucesso.");
     
     alert("Perfil salvo com sucesso!");
     if (linkContainer) {
@@ -118,8 +124,9 @@ async function handleFormSubmit(event) {
     }
 
   } catch (error) {
-    console.error("Erro ao salvar perfil:", error);
-    alert("Erro ao salvar o perfil."); // Este é o erro que você está a ver
+    // ERRO DETALHADO: Esta mensagem será muito mais útil.
+    console.error("ERRO DETALHADO AO SALVAR PERFIL:", error);
+    alert("Ocorreu um erro ao salvar o perfil. Por favor, abra a consola do navegador (F12) e envie o erro detalhado para o suporte.");
   } finally {
     btnSalvar.disabled = false;
     btnSalvar.textContent = 'Salvar Perfil';
