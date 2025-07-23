@@ -1,56 +1,57 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Meu Perfil - Pronti</title>
-  <link href="style.css" rel="stylesheet" />
-</head>
-<body>
+  <!DOCTYPE html>
+  <html lang="pt-br">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Pronti IA</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
 
-  <aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <div class="sidebar-links">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="servicos.html">Serviços</a>
-      <a href="agenda.html">Agenda</a>
-      <a href="clientes.html">Clientes</a>
-      <a href="perfil.html" class="active">Meu Perfil</a>
-      <a href="contato.html">Contato</a>
-    </div>
-  </aside>
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-brand">Pronti</a>
+      <div class="sidebar-links">
+        <a href="dashboard.html">Dashboard</a>
+        <!-- 👇 Link adicionado aqui 👇 -->
+        <a href="index.html">Home</a>
+        <a href="servicos.html">Serviços</a>
+        <a href="agenda.html">Agenda</a>
+        <a href="clientes.html">Clientes</a>
+        <a href="perfil.html" class="active">Meu Perfil</a>
+        <a href="contato.html">Contato</a>
+      </div>
+    </aside>
 
-  <main class="main-content">
-    <h1>Meu Perfil Público</h1>
-    <p>Estas são as informações que seus clientes verão na sua página de agendamento.</p>
+    <main class="main-content">
+      <h1>Meu Perfil Público</h1>
+      <p>Estas são as informações que os seus clientes verão na sua página de agendamento.</p>
 
-    <div class="form-card">
-      <form id="form-perfil">
-        <div class="form-group">
-          <label for="nomeNegocio">Nome do Negócio</label>
-          <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required />
-        </div>
+      <div class="form-card">
+        <form id="form-perfil">
+          <div class="form-group">
+            <label for="nomeNegocio">Nome do Negócio</label>
+            <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
+          </div>
+          <div class="form-group">
+            <label for="slug">URL da sua Vitrine (slug)</label>
+            <input type="text" id="slug" placeholder="Ex: barbearia-do-joao" required>
+            <small>Use apenas letras minúsculas, números e hífens (-). Este será o seu link público.</small>
+          </div>
+          <div class="form-group">
+            <label for="descricao">Descrição Curta</label>
+            <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
+          </div>
+          
+          <button type="submit" class="btn-submit">Salvar Perfil</button>
+        </form>
+      </div>
+    </main>
 
-        <div class="form-group">
-          <label for="slug">URL da sua Vitrine (slug)</label>
-          <input type="text" id="slug" placeholder="Ex: barbearia-do-joao" required />
-          <small>Use apenas letras minúsculas, números e hífens (-).</small>
-        </div>
+    <!-- Scripts -->
+    <script src="firebase-config.js" type="module"></script>
+    <script src="perfil.js" type="module"></script>
 
-        <div class="form-group">
-          <label for="descricao">Descrição Curta</label>
-          <textarea id="descricao" rows="3" placeholder="Fale um pouco sobre seu serviço."></textarea>
-        </div>
+  </body>
+  </html>
 
-        <div id="linkVitrine" style="margin-top: 10px;"></div>
-
-        <button type="submit" class="btn-submit">Salvar Perfil</button>
-      </form>
-    </div>
-  </main>
-
-  <script src="firebase-config.js" type="module"></script>
-  <script src="perfil.js" type="module"></script>
-</body>
-</html>
 
