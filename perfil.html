@@ -12,7 +12,6 @@
       <a href="index.html" class="sidebar-brand">Pronti</a>
       <div class="sidebar-links">
         <a href="dashboard.html">Dashboard</a>
-        <!-- 👇 Link adicionado aqui 👇 -->
         <a href="index.html">Home</a>
         <a href="servicos.html">Serviços</a>
         <a href="agenda.html">Agenda</a>
@@ -45,6 +44,17 @@
           <button type="submit" class="btn-submit">Salvar Perfil</button>
         </form>
       </div>
+
+      <!-- 👇 NOVA SECÇÃO PARA MOSTRAR O LINK GERADO 👇 -->
+      <div id="link-vitrine-container" class="info-card" style="display: none; margin-top: 25px; border-color: var(--cor-sucesso);">
+        <h3>✅ Seu link da vitrine está pronto!</h3>
+        <p>Copie o link abaixo e partilhe com os seus clientes nas redes sociais.</p>
+        <div class="form-group" style="margin-bottom: 0;">
+          <input type="text" id="link-gerado" readonly style="background-color: #f3f4f6; text-align: center; font-weight: 600;">
+          <button type="button" id="btn-copiar-link" class="btn-submit" style="margin-top: 10px;">Copiar Link</button>
+        </div>
+      </div>
+
     </main>
 
     <!-- Scripts -->
