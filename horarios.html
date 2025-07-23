@@ -6,36 +6,14 @@
   <title>Meus Horários - Pronti IA</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    .dia-semana {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 15px 0;
-      border-bottom: 1px solid var(--cor-fundo);
-    }
-    .dia-semana:last-child {
-      border-bottom: none;
-    }
-    .dia-semana-nome {
-      font-weight: 600;
-      width: 120px;
-    }
-    .dia-semana-controles {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .dia-semana-controles input[type="time"] {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    .toggle-atendimento {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--cor-texto-leve);
-    }
+    .dia-semana { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--cor-fundo); flex-wrap: wrap; }
+    .dia-semana:last-child { border-bottom: none; }
+    .dia-semana-nome { font-weight: 600; width: 120px; }
+    .horarios-blocos { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
+    .bloco-horario { display: flex; align-items: center; gap: 10px; }
+    .bloco-horario input[type="time"] { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
+    .btn-remover-bloco { background: var(--cor-perigo); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; }
+    .btn-adicionar-bloco { background: var(--cor-sucesso); color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -49,7 +27,6 @@
       <a href="agenda.html">Agenda</a>
       <a href="clientes.html">Clientes</a>
       <a href="perfil.html">Meu Perfil</a>
-      <!-- 👇 Novo link do menu aqui 👇 -->
       <a href="horarios.html" class="active">Meus Horários</a>
       <a href="config-vitrine.html">Minha Vitrine</a>
       <a href="contato.html">Contato</a>
@@ -58,101 +35,23 @@
 
   <main class="main-content">
     <h1>Meus Horários de Atendimento</h1>
-    <p>Defina os horários em que você está disponível para receber agendamentos na sua vitrine.</p>
+    <p>Defina os seus horários e a duração padrão dos seus atendimentos.</p>
 
     <div class="form-card">
       <form id="form-horarios">
-        <!-- Segunda-feira -->
-        <div class="dia-semana">
-          <span class="dia-semana-nome">Segunda-feira</span>
-          <div class="dia-semana-controles">
-            <input type="time" id="seg-inicio" value="09:00">
-            <span>até</span>
-            <input type="time" id="seg-fim" value="18:00">
-            <div class="toggle-atendimento">
-              <input type="checkbox" id="seg-ativo" checked>
-              <label for="seg-ativo">Atendo</label>
-            </div>
-          </div>
+        <div class="form-group">
+            <label for="intervalo-atendimento">Duração Padrão dos Atendimentos (Intervalo na Agenda)</label>
+            <select id="intervalo-atendimento">
+                <option value="15">15 minutos</option>
+                <option value="30" selected>30 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="60">60 minutos</option>
+            </select>
         </div>
-        <!-- Terça-feira -->
-        <div class="dia-semana">
-            <span class="dia-semana-nome">Terça-feira</span>
-            <div class="dia-semana-controles">
-              <input type="time" id="ter-inicio" value="09:00">
-              <span>até</span>
-              <input type="time" id="ter-fim" value="18:00">
-              <div class="toggle-atendimento">
-                <input type="checkbox" id="ter-ativo" checked>
-                <label for="ter-ativo">Atendo</label>
-              </div>
-            </div>
-        </div>
-        <!-- E assim por diante para os outros dias... -->
-        <!-- Quarta-feira -->
-        <div class="dia-semana">
-            <span class="dia-semana-nome">Quarta-feira</span>
-            <div class="dia-semana-controles">
-              <input type="time" id="qua-inicio" value="09:00">
-              <span>até</span>
-              <input type="time" id="qua-fim" value="18:00">
-              <div class="toggle-atendimento">
-                <input type="checkbox" id="qua-ativo" checked>
-                <label for="qua-ativo">Atendo</label>
-              </div>
-            </div>
-        </div>
-        <!-- Quinta-feira -->
-        <div class="dia-semana">
-            <span class="dia-semana-nome">Quinta-feira</span>
-            <div class="dia-semana-controles">
-              <input type="time" id="qui-inicio" value="09:00">
-              <span>até</span>
-              <input type="time" id="qui-fim" value="18:00">
-              <div class="toggle-atendimento">
-                <input type="checkbox" id="qui-ativo" checked>
-                <label for="qui-ativo">Atendo</label>
-              </div>
-            </div>
-        </div>
-        <!-- Sexta-feira -->
-        <div class="dia-semana">
-            <span class="dia-semana-nome">Sexta-feira</span>
-            <div class="dia-semana-controles">
-              <input type="time" id="sex-inicio" value="09:00">
-              <span>até</span>
-              <input type="time" id="sex-fim" value="18:00">
-              <div class="toggle-atendimento">
-                <input type="checkbox" id="sex-ativo" checked>
-                <label for="sex-ativo">Atendo</label>
-              </div>
-            </div>
-        </div>
-        <!-- Sábado -->
-        <div class="dia-semana">
-            <span class="dia-semana-nome">Sábado</span>
-            <div class="dia-semana-controles">
-              <input type="time" id="sab-inicio" value="09:00">
-              <span>até</span>
-              <input type="time" id="sab-fim" value="13:00">
-              <div class="toggle-atendimento">
-                <input type="checkbox" id="sab-ativo" checked>
-                <label for="sab-ativo">Atendo</label>
-              </div>
-            </div>
-        </div>
-        <!-- Domingo -->
-        <div class="dia-semana">
-            <span class="dia-semana-nome">Domingo</span>
-            <div class="dia-semana-controles">
-              <input type="time" id="dom-inicio" value="09:00" disabled>
-              <span>até</span>
-              <input type="time" id="dom-fim" value="18:00" disabled>
-              <div class="toggle-atendimento">
-                <input type="checkbox" id="dom-ativo">
-                <label for="dom-ativo">Atendo</label>
-              </div>
-            </div>
+        
+        <!-- Dias da Semana -->
+        <div id="dias-container">
+            <!-- O JavaScript irá gerar os dias aqui -->
         </div>
 
         <button type="submit" class="btn-submit" style="margin-top: 25px;">Salvar Horários</button>
