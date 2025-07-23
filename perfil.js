@@ -1,11 +1,11 @@
 /**
- * perfil.js (Versão Corrigida com Escrita Pública)
- * * Este script agora salva o perfil em dois locais:
- * 1. Na pasta segura do utilizador (para gestão).
- * 2. Numa nova coleção pública 'publicProfiles' (para a vitrine encontrar o slug).
+ * perfil.js (Versão Simplificada para Teste)
+ * * Este script remove temporariamente a lógica de upload de logótipo
+ * * para isolar e corrigir o erro ao salvar o perfil.
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+// Removida a importação do Storage por enquanto
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -18,8 +18,12 @@ const nomeNegocioInput = document.getElementById('nomeNegocio');
 const slugInput = document.getElementById('slug');
 const descricaoInput = document.getElementById('descricao');
 const btnSalvar = form.querySelector('button[type="submit"]');
+// Elementos do link (mantidos para consistência)
+const linkContainer = document.getElementById('link-vitrine-container');
+const linkGeradoInput = document.getElementById('link-gerado');
+const btnCopiarLink = document.getElementById('btn-copiar-link');
 
-let uid; // Variável para guardar o UID do utilizador autenticado
+let uid;
 
 function gerarSlug(texto) {
   if (!texto) return "";
@@ -37,6 +41,9 @@ onAuthStateChanged(auth, (user) => {
     uid = user.uid;
     carregarDadosDoPerfil(uid);
     form.addEventListener('submit', handleFormSubmit);
+    if (btnCopiarLink) {
+        btnCopiarLink.addEventListener('click', copiarLink);
+    }
   } else {
     window.location.href = 'login.html';
   }
@@ -51,6 +58,9 @@ async function carregarDadosDoPerfil(userId) {
       nomeNegocioInput.value = data.nomeNegocio || '';
       slugInput.value = data.slug || '';
       descricaoInput.value = data.descricao || '';
+      if (data.slug && linkContainer) {
+        mostrarLinkGerado(data.slug);
+      }
     }
   } catch (error) {
     console.error("Erro ao carregar perfil:", error);
@@ -60,7 +70,7 @@ async function carregarDadosDoPerfil(userId) {
 async function handleFormSubmit(event) {
   event.preventDefault();
   btnSalvar.disabled = true;
-  btnSalvar.textContent = 'A verificar...';
+  btnSalvar.textContent = 'A salvar...';
 
   const perfilData = {
     nomeNegocio: nomeNegocioInput.value.trim(),
@@ -77,11 +87,10 @@ async function handleFormSubmit(event) {
   }
 
   try {
-    // Verifica se o slug já está a ser utilizado por outro profissional
+    // A lógica de verificação de slug e salvamento no Firestore permanece
     const publicProfilesRef = collection(db, "publicProfiles");
     const q = query(publicProfilesRef, where("slug", "==", perfilData.slug));
     const querySnapshot = await getDocs(q);
-    
     let slugJaExiste = false;
     querySnapshot.forEach((doc) => {
         if (doc.data().ownerId !== uid) {
@@ -91,26 +100,45 @@ async function handleFormSubmit(event) {
 
     if (slugJaExiste) {
         alert(`O endereço "${perfilData.slug}" já está a ser utilizado. Por favor, escolha outro.`);
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar Perfil';
         return;
     }
 
-    btnSalvar.textContent = 'A salvar...';
-
-    // Salva na pasta segura do utilizador
+    // Salva os dados de texto no perfil privado e público
     const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
     await setDoc(perfilPrivadoRef, perfilData);
 
-    // Salva na nova coleção pública para busca
     const perfilPublicoRef = doc(db, "publicProfiles", uid);
     await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid });
     
     alert("Perfil salvo com sucesso!");
+    if (linkContainer) {
+        mostrarLinkGerado(perfilData.slug);
+    }
+
   } catch (error) {
     console.error("Erro ao salvar perfil:", error);
-    alert("Erro ao salvar o perfil.");
+    alert("Erro ao salvar o perfil."); // Este é o erro que você está a ver
   } finally {
     btnSalvar.disabled = false;
     btnSalvar.textContent = 'Salvar Perfil';
   }
 }
+
+function mostrarLinkGerado(slug) {
+    if (!linkContainer || !linkGeradoInput) return;
+    const urlBase = "https://pronti-app.netlify.app/vitrine.html";
+    const urlCompleta = `${urlBase}?slug=${slug}`;
+    linkGeradoInput.value = urlCompleta;
+    linkContainer.style.display = 'block';
+}
+
+function copiarLink() {
+    if (!linkGeradoInput) return;
+    linkGeradoInput.select();
+    document.execCommand('copy');
+    alert("Link copiado para a área de transferência!");
+}
+
 
