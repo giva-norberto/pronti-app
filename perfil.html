@@ -1,102 +1,166 @@
-<!DOCTYPE html>
-  <html lang="pt-br">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Perfil - Pronti IA</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-  </head>
-  <body>
+/**
+ * perfil.js
+ * * Versão completa e corrigida que gere o upload do logótipo para o Firebase Storage
+ * * e salva o URL no perfil do profissional.
+ */
 
-    <aside class="sidebar">
-      <a href="index.html" class="sidebar-brand">Pronti</a>
-      <div class="sidebar-links">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="index.html">Home</a>
-        <a href="servicos.html">Serviços</a>
-        <a href="agenda.html">Agenda</a>
-        <a href="clientes.html">Clientes</a>
-        <a href="perfil.html" class="active">Meu Perfil</a>
-        <a href="contato.html">Contato</a>
-      </div>
-    </aside>
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { app } from "./firebase-config.js";
 
-    <main class="main-content">
-      <h1>Meu Perfil Público</h1>
-      <p>Estas são as informações que os seus clientes verão na sua página de agendamento.</p>
+const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app); // Inicializa o Firebase Storage
 
-      <div class="form-card">
-        <form id="form-perfil">
-          <div class="form-group">
-            <label for="nomeNegocio">Nome do Negócio</label>
-            <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="slug">URL da sua Vitrine</label>
-            <div style="display: flex; align-items: center; border: 1px solid #d1d5db; border-radius: 8px; padding-left: 12px; background-color: #f9fafb;">
-              <span style="color: var(--cor-texto-leve); font-size: 0.9em; white-space: nowrap;">https://pronti-app.netlify.app/vitrine.html?slug=</span>
-              <input type="text" id="slug" placeholder="barbearia-do-joao" required style="border: none; background: transparent; padding: 12px 10px; flex-grow: 1; outline: none; font-weight: 600; color: var(--cor-primaria);">
-            </div>
-            <small>Use apenas letras minúsculas, números e hífens (-).</small>
-          </div>
+// Elementos do formulário
+const form = document.getElementById('form-perfil');
+const nomeNegocioInput = document.getElementById('nomeNegocio');
+const slugInput = document.getElementById('slug');
+const descricaoInput = document.getElementById('descricao');
+const logoInput = document.getElementById('logoNegocio');
+const logoPreview = document.getElementById('logo-preview');
+const btnSalvar = form.querySelector('button[type="submit"]');
+const linkContainer = document.getElementById('link-vitrine-container');
+const linkGeradoInput = document.getElementById('link-gerado');
+const btnCopiarLink = document.getElementById('btn-copiar-link');
 
-          <!-- 👇 NOVA SECÇÃO PARA UPLOAD DE LOGÓTIPO 👇 -->
-          <div class="form-group">
-            <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <img id="logo-preview" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Pré-visualização do logótipo" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #d1d5db;">
-                <div>
-                  <input type="file" id="logoNegocio" name="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                  <button type="button" id="btn-upload-logo" class="btn-submit" style="background: var(--cor-texto-leve);">Escolher Ficheiro</button>
-                  <small style="display: block; margin-top: 10px;">Recomendado: imagem quadrada (ex: 200x200 pixels).</small>
-                </div>
-            </div>
-          </div>
+let uid;
 
-          <div class="form-group">
-            <label for="descricao">Descrição Curta</label>
-            <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
-          </div>
-          
-          <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-bottom: 15px; background: var(--cor-aviso);">Copiar Link da Vitrine</button>
+function gerarSlug(texto) {
+  if (!texto) return "";
+  return texto.toString().toLowerCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
+}
 
-          <button type="submit" class="btn-submit">Salvar Perfil</button>
-        </form>
-      </div>
+nomeNegocioInput.addEventListener('keyup', () => {
+    slugInput.value = gerarSlug(nomeNegocioInput.value);
+});
 
-    </main>
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    uid = user.uid;
+    carregarDadosDoPerfil(uid);
+    form.addEventListener('submit', handleFormSubmit);
+    if (btnCopiarLink) {
+        btnCopiarLink.addEventListener('click', copiarLink);
+    }
+  } else {
+    window.location.href = 'login.html';
+  }
+});
 
-    <!-- Scripts -->
-    <script src="firebase-config.js" type="module"></script>
-    <script src="perfil.js" type="module"></script>
-    
-    <!-- Script para a interatividade do upload de logótipo -->
-    <script>
-      const btnUploadLogo = document.getElementById('btn-upload-logo');
-      const logoInput = document.getElementById('logoNegocio');
-      const logoPreview = document.getElementById('logo-preview');
+async function carregarDadosDoPerfil(userId) {
+  try {
+    const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
+    const docSnap = await getDoc(perfilRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      nomeNegocioInput.value = data.nomeNegocio || '';
+      slugInput.value = data.slug || '';
+      descricaoInput.value = data.descricao || '';
+      if (data.logoUrl) {
+        logoPreview.src = data.logoUrl;
+      }
+      if (data.slug && linkContainer) {
+        mostrarLinkGerado(data.slug);
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao carregar perfil:", error);
+  }
+}
 
-      // Ao clicar no botão, aciona o input de ficheiro escondido
-      btnUploadLogo.addEventListener('click', () => {
-        logoInput.click();
-      });
+async function handleFormSubmit(event) {
+  event.preventDefault();
+  btnSalvar.disabled = true;
+  btnSalvar.textContent = 'A salvar...';
 
-      // Ao selecionar um ficheiro, atualiza a pré-visualização
-      logoInput.addEventListener('change', () => {
-        const file = logoInput.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            logoPreview.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
+  const slug = slugInput.value.trim();
+  const nomeNegocio = nomeNegocioInput.value.trim();
+  const descricao = descricaoInput.value.trim();
+  const logoFile = logoInput.files[0];
+
+  if (!nomeNegocio || !slug) {
+      alert("O Nome do Negócio e a URL da Vitrine (slug) são obrigatórios.");
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = 'Salvar Perfil';
+      return;
+  }
+
+  try {
+    // Lógica de verificação de slug
+    const publicProfilesRef = collection(db, "publicProfiles");
+    const q = query(publicProfilesRef, where("slug", "==", slug));
+    const querySnapshot = await getDocs(q);
+    let slugJaExiste = false;
+    querySnapshot.forEach((doc) => {
+        if (doc.data().ownerId !== uid) {
+            slugJaExiste = true;
         }
-      });
-    </script>
+    });
 
-  </body>
-  </html>
+    if (slugJaExiste) {
+        alert(`O endereço "${slug}" já está a ser utilizado. Por favor, escolha outro.`);
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar Perfil';
+        return;
+    }
+
+    let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
+
+    // Se um novo ficheiro de logótipo foi selecionado, faz o upload
+    if (logoFile) {
+        btnSalvar.textContent = 'A enviar logótipo...';
+        const storageRef = ref(storage, `logos/${uid}/${logoFile.name}`);
+        const uploadResult = await uploadBytes(storageRef, logoFile);
+        logoUrl = await getDownloadURL(uploadResult.ref);
+    }
+
+    btnSalvar.textContent = 'A salvar perfil...';
+    
+    const perfilData = {
+        nomeNegocio,
+        slug,
+        descricao,
+        logoUrl, // Adiciona o URL do logótipo aos dados
+        ownerId: uid
+    };
+
+    // Salva os dados no perfil privado e público
+    const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
+    await setDoc(perfilPrivadoRef, perfilData);
+
+    const perfilPublicoRef = doc(db, "publicProfiles", uid);
+    await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid });
+    
+    alert("Perfil salvo com sucesso!");
+    if (linkContainer) {
+        mostrarLinkGerado(slug);
+    }
+
+  } catch (error) {
+    console.error("Erro ao salvar perfil:", error);
+    alert("Erro ao salvar o perfil.");
+  } finally {
+    btnSalvar.disabled = false;
+    btnSalvar.textContent = 'Salvar Perfil';
+  }
+}
+
+function mostrarLinkGerado(slug) {
+    const urlBase = "https://pronti-app.netlify.app/vitrine.html";
+    const urlCompleta = `${urlBase}?slug=${slug}`;
+    linkGeradoInput.value = urlCompleta;
+    linkContainer.style.display = 'block';
+}
+
+function copiarLink() {
+    linkGeradoInput.select();
+    document.execCommand('copy');
+    alert("Link copiado para a área de transferência!");
+}
 
 
 
