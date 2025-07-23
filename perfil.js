@@ -1,8 +1,7 @@
 /**
- * perfil.js (Versão Final, Completa e Corrigida)
- * * Este script gere a página de perfil do profissional, incluindo o
- * * upload de logótipo, validação, salvamento de dados e a funcionalidade
- * * de copiar o link da vitrine.
+ * perfil.js (Versão de Diagnóstico)
+ * * Este script remove temporariamente a verificação de slug duplicado
+ * * para isolar a causa do erro de permissões ao salvar.
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -95,23 +94,7 @@ async function handleFormSubmit(event) {
   }
 
   try {
-    // Lógica de verificação de slug (mantida)
-    const publicProfilesRef = collection(db, "publicProfiles");
-    const q = query(publicProfilesRef, where("slug", "==", slug));
-    const querySnapshot = await getDocs(q);
-    let slugJaExiste = false;
-    querySnapshot.forEach((doc) => {
-        if (doc.data().ownerId !== uid) {
-            slugJaExiste = true;
-        }
-    });
-
-    if (slugJaExiste) {
-        alert(`O endereço "${slug}" já está a ser utilizado. Por favor, escolha outro.`);
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Perfil';
-        return;
-    }
+    // --- VERIFICAÇÃO DE SLUG REMOVIDA TEMPORARIAMENTE PARA TESTE ---
 
     let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
 
