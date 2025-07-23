@@ -1,169 +1,125 @@
-/**
- * perfil.js (Versão Focada em Salvar Texto)
- * * Este script foi simplificado para salvar apenas os dados de texto do perfil,
- * * contornando temporariamente o erro de CORS do upload de logótipo.
- */
-
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-// A importação do Storage foi removida temporariamente
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { app } from "./firebase-config.js";
 
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-// Elementos do formulário
-const form = document.getElementById('form-perfil');
-const nomeNegocioInput = document.getElementById('nomeNegocio');
-const slugInput = document.getElementById('slug');
-const descricaoInput = document.getElementById('descricao');
-const btnSalvar = form.querySelector('button[type="submit"]');
-const btnCopiarLink = document.getElementById('btn-copiar-link');
-const linkContainer = document.getElementById('link-vitrine-container');
-const linkGeradoInput = document.getElementById('link-gerado');
+const diasSemana = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+const diasContainer = document.getElementById("dias-container");
 
-let uid; // Variável para guardar o UID do utilizador autenticado
+function gerarCamposHorarios(dadosSalvos = {}) {
+  diasContainer.innerHTML = ""; // limpa antes de gerar
+  diasSemana.forEach((dia, index) => {
+    const id = dia.toLowerCase();
+    const diaSalvo = dadosSalvos[id] || {};
+    const ativo = diaSalvo.ativo ?? true;
+    const inicio = diaSalvo.inicio || "08:00";
+    const fim = diaSalvo.fim || "17:00";
 
-/**
- * Gera um 'slug' amigável para URL a partir de um texto.
- */
-function gerarSlug(texto) {
-  if (!texto) return "";
-  return texto.toString().toLowerCase().trim()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
+    const div = document.createElement("div");
+    div.classList.add("dia-semana");
+    div.innerHTML = `
+      <div class="dia-semana-nome">${dia}</div>
+      <div class="horarios-controles">
+        <label class="switch">
+          <input type="checkbox" id="atendimento-${id}" ${ativo ? "checked" : ""}>
+          <span class="slider"></span>
+        </label>
+        <input type="time" id="inicio-${id}" value="${inicio}">
+        <span>às</span>
+        <input type="time" id="fim-${id}" value="${fim}">
+      </div>
+    `;
+    diasContainer.appendChild(div);
+  });
 }
 
-// Gera o slug automaticamente enquanto o utilizador digita o nome do negócio
-nomeNegocioInput.addEventListener('keyup', () => {
-    slugInput.value = gerarSlug(nomeNegocioInput.value);
-});
+function coletarHorariosDoFormulario() {
+  const horarios = {};
+  diasSemana.forEach((dia) => {
+    const id = dia.toLowerCase();
+    horarios[id] = {
+      ativo: document.getElementById(`atendimento-${id}`).checked,
+      inicio: document.getElementById(`inicio-${id}`).value,
+      fim: document.getElementById(`fim-${id}`).value,
+    };
+  });
+  return horarios;
+}
 
-// A verificação de login é o "porteiro" da página
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
-    uid = user.uid;
-    carregarDadosDoPerfil(uid);
-    form.addEventListener('submit', handleFormSubmit);
-    btnCopiarLink.addEventListener('click', copiarLink);
-  } else {
-    window.location.href = 'login.html';
-  }
-});
-
-/**
- * Carrega os dados do perfil do Firestore e preenche o formulário.
- */
-async function carregarDadosDoPerfil(userId) {
-  try {
-    const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
-    const docSnap = await getDoc(perfilRef);
+    const uid = user.uid;
+    const docRef = doc(db, "users", uid, "publicProfile", "profile");
+    const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      nomeNegocioInput.value = data.nomeNegocio || '';
-      slugInput.value = data.slug || '';
-      descricaoInput.value = data.descricao || '';
-      // Se já houver um slug salvo, mostra o link
-      if (data.slug) {
-        mostrarLinkGerado(data.slug);
+      document.getElementById("nomeNegocio").value = data.nomeNegocio || "";
+      document.getElementById("slug").value = data.slug || "";
+      document.getElementById("descricao").value = data.descricao || "";
+      document.getElementById("intervalo-atendimento").value = data.intervalo || "30";
+      document.getElementById("url-base").textContent = `https://pronti.app.br/${user.uid}/`;
+
+      if (data.logoUrl) {
+        document.getElementById("logo-preview").src = data.logoUrl;
       }
+
+      gerarCamposHorarios(data.horarios);
+    } else {
+      gerarCamposHorarios(); // se não houver dados salvos
     }
-  } catch (error) {
-    console.error("Erro ao carregar perfil:", error);
-  }
-}
 
-/**
- * Lida com o envio do formulário para salvar/atualizar o perfil (sem logótipo).
- */
-async function handleFormSubmit(event) {
-  event.preventDefault();
-  btnSalvar.disabled = true;
-  btnSalvar.textContent = 'A verificar...';
+    document.getElementById("form-perfil").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  const perfilData = {
-    nomeNegocio: nomeNegocioInput.value.trim(),
-    slug: slugInput.value.trim(),
-    descricao: descricaoInput.value.trim(),
-    ownerId: uid
-  };
+      const nomeNegocio = document.getElementById("nomeNegocio").value;
+      const slug = document.getElementById("slug").value;
+      const descricao = document.getElementById("descricao").value;
+      const intervalo = document.getElementById("intervalo-atendimento").value;
+      const horarios = coletarHorariosDoFormulario();
 
-  if (!perfilData.nomeNegocio || !perfilData.slug) {
-      alert("O Nome do Negócio e a URL da Vitrine (slug) são obrigatórios.");
-      btnSalvar.disabled = false;
-      btnSalvar.textContent = 'Salvar Perfil';
-      return;
-  }
+      let logoUrl = document.getElementById("logo-preview").src;
+      const logoFile = document.getElementById("logoNegocio").files[0];
+      if (logoFile) {
+        const storageRef = ref(storage, `users/${uid}/logo.jpg`);
+        await uploadBytes(storageRef, logoFile);
+        logoUrl = await getDownloadURL(storageRef);
+      }
 
-  try {
-    const publicProfilesRef = collection(db, "publicProfiles");
-    const q = query(publicProfilesRef, where("slug", "==", perfilData.slug));
-    const querySnapshot = await getDocs(q);
-    
-    let slugJaExiste = false;
-    querySnapshot.forEach((doc) => {
-        if (doc.data().ownerId !== uid) {
-            slugJaExiste = true;
-        }
+      await setDoc(docRef, {
+        nomeNegocio,
+        slug,
+        descricao,
+        intervalo,
+        horarios,
+        logoUrl,
+      });
+
+      alert("Dados salvos com sucesso!");
     });
 
-    if (slugJaExiste) {
-        alert(`O endereço "${perfilData.slug}" já está a ser utilizado. Por favor, escolha outro.`);
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Perfil';
-        return;
-    }
-
-    btnSalvar.textContent = 'A salvar...';
-
-    const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
-    await setDoc(perfilPrivadoRef, perfilData);
-
-    const perfilPublicoRef = doc(db, "publicProfiles", uid);
-    await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid });
-    
-    alert("Perfil salvo com sucesso!");
-    mostrarLinkGerado(perfilData.slug);
-
-  } catch (error) {
-    console.error("Erro ao salvar perfil:", error);
-    alert("Erro ao salvar o perfil.");
-  } finally {
-    btnSalvar.disabled = false;
-    btnSalvar.textContent = 'Salvar Perfil';
+    // Botão copiar link
+    const btnCopiar = document.getElementById("btn-copiar-link");
+    btnCopiar.addEventListener("click", () => {
+      const slug = document.getElementById("slug").value;
+      const url = `https://pronti.app.br/${uid}/${slug}`;
+      navigator.clipboard.writeText(url);
+      alert("Link copiado: " + url);
+    });
+  } else {
+    window.location.href = "login.html";
   }
-}
-
-/**
- * Mostra a secção do link da vitrine com o URL completo.
- */
-function mostrarLinkGerado(slug) {
-    if (!linkContainer || !linkGeradoInput) return;
-    const urlBase = "https://pronti-app.netlify.app/vitrine.html";
-    const urlCompleta = `${urlBase}?slug=${slug}`;
-    linkGeradoInput.value = urlCompleta;
-    linkContainer.style.display = 'block';
-}
-
-/**
- * Copia o link da vitrine para a área de transferência.
- */
-function copiarLink() {
-    const slug = slugInput.value.trim();
-    if (!slug) {
-        alert("Preencha o campo 'URL da sua Vitrine' para poder copiar o link.");
-        return;
-    }
-    const urlBase = "https://pronti-app.netlify.app/vitrine.html";
-    const urlCompleta = `${urlBase}?slug=${slug}`;
-    
-    const tempInput = document.createElement('input');
-    tempInput.value = urlCompleta;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInput);
-
-    alert("Link copiado para a área de transferência!");
-}
-
+});
