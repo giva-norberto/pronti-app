@@ -1,27 +1,26 @@
 /**
- * perfil.js (Versão de Diagnóstico)
- * * Este script remove temporariamente a verificação de slug duplicado
- * * para isolar a causa do erro de permissões ao salvar.
+ * perfil.js (Versão Focada em Salvar Texto)
+ * * Este script foi simplificado para salvar apenas os dados de texto do perfil,
+ * * contornando temporariamente o erro de CORS do upload de logótipo.
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
+// A importação do Storage foi removida temporariamente
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
-const storage = getStorage(app); // Inicializa o Firebase Storage
 
 // Elementos do formulário
 const form = document.getElementById('form-perfil');
 const nomeNegocioInput = document.getElementById('nomeNegocio');
 const slugInput = document.getElementById('slug');
 const descricaoInput = document.getElementById('descricao');
-const logoInput = document.getElementById('logoNegocio');
-const logoPreview = document.getElementById('logo-preview');
 const btnSalvar = form.querySelector('button[type="submit"]');
 const btnCopiarLink = document.getElementById('btn-copiar-link');
+const linkContainer = document.getElementById('link-vitrine-container');
+const linkGeradoInput = document.getElementById('link-gerado');
 
 let uid; // Variável para guardar o UID do utilizador autenticado
 
@@ -64,8 +63,9 @@ async function carregarDadosDoPerfil(userId) {
       nomeNegocioInput.value = data.nomeNegocio || '';
       slugInput.value = data.slug || '';
       descricaoInput.value = data.descricao || '';
-      if (data.logoUrl) {
-        logoPreview.src = data.logoUrl;
+      // Se já houver um slug salvo, mostra o link
+      if (data.slug) {
+        mostrarLinkGerado(data.slug);
       }
     }
   } catch (error) {
@@ -74,19 +74,21 @@ async function carregarDadosDoPerfil(userId) {
 }
 
 /**
- * Lida com o envio do formulário para salvar/atualizar o perfil.
+ * Lida com o envio do formulário para salvar/atualizar o perfil (sem logótipo).
  */
 async function handleFormSubmit(event) {
   event.preventDefault();
   btnSalvar.disabled = true;
-  btnSalvar.textContent = 'A salvar...';
+  btnSalvar.textContent = 'A verificar...';
 
-  const slug = slugInput.value.trim();
-  const nomeNegocio = nomeNegocioInput.value.trim();
-  const descricao = descricaoInput.value.trim();
-  const logoFile = logoInput.files[0];
+  const perfilData = {
+    nomeNegocio: nomeNegocioInput.value.trim(),
+    slug: slugInput.value.trim(),
+    descricao: descricaoInput.value.trim(),
+    ownerId: uid
+  };
 
-  if (!nomeNegocio || !slug) {
+  if (!perfilData.nomeNegocio || !perfilData.slug) {
       alert("O Nome do Negócio e a URL da Vitrine (slug) são obrigatórios.");
       btnSalvar.disabled = false;
       btnSalvar.textContent = 'Salvar Perfil';
@@ -94,42 +96,53 @@ async function handleFormSubmit(event) {
   }
 
   try {
-    // --- VERIFICAÇÃO DE SLUG REMOVIDA TEMPORARIAMENTE PARA TESTE ---
-
-    let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
-
-    // Se um novo ficheiro de logótipo foi selecionado, faz o upload
-    if (logoFile) {
-        btnSalvar.textContent = 'A enviar logótipo...';
-        const storageRef = ref(storage, `logos/${uid}/${logoFile.name}`);
-        const uploadResult = await uploadBytes(storageRef, logoFile);
-        logoUrl = await getDownloadURL(uploadResult.ref);
-    }
+    const publicProfilesRef = collection(db, "publicProfiles");
+    const q = query(publicProfilesRef, where("slug", "==", perfilData.slug));
+    const querySnapshot = await getDocs(q);
     
-    const perfilData = {
-        nomeNegocio,
-        slug,
-        descricao,
-        logoUrl, // Adiciona o URL do logótipo aos dados
-        ownerId: uid
-    };
+    let slugJaExiste = false;
+    querySnapshot.forEach((doc) => {
+        if (doc.data().ownerId !== uid) {
+            slugJaExiste = true;
+        }
+    });
 
-    // Salva os dados no perfil privado e público
+    if (slugJaExiste) {
+        alert(`O endereço "${perfilData.slug}" já está a ser utilizado. Por favor, escolha outro.`);
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar Perfil';
+        return;
+    }
+
+    btnSalvar.textContent = 'A salvar...';
+
     const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
     await setDoc(perfilPrivadoRef, perfilData);
 
     const perfilPublicoRef = doc(db, "publicProfiles", uid);
-    await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid, logoUrl: logoUrl, nomeNegocio: nomeNegocio });
+    await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid });
     
     alert("Perfil salvo com sucesso!");
+    mostrarLinkGerado(perfilData.slug);
 
   } catch (error) {
-    console.error("ERRO DETALHADO AO SALVAR:", error);
-    alert("Erro ao salvar o perfil. Verifique as permissões no Firebase e a consola para mais detalhes.");
+    console.error("Erro ao salvar perfil:", error);
+    alert("Erro ao salvar o perfil.");
   } finally {
     btnSalvar.disabled = false;
     btnSalvar.textContent = 'Salvar Perfil';
   }
+}
+
+/**
+ * Mostra a secção do link da vitrine com o URL completo.
+ */
+function mostrarLinkGerado(slug) {
+    if (!linkContainer || !linkGeradoInput) return;
+    const urlBase = "https://pronti-app.netlify.app/vitrine.html";
+    const urlCompleta = `${urlBase}?slug=${slug}`;
+    linkGeradoInput.value = urlCompleta;
+    linkContainer.style.display = 'block';
 }
 
 /**
@@ -144,7 +157,6 @@ function copiarLink() {
     const urlBase = "https://pronti-app.netlify.app/vitrine.html";
     const urlCompleta = `${urlBase}?slug=${slug}`;
     
-    // Cria um input temporário para copiar o texto
     const tempInput = document.createElement('input');
     tempInput.value = urlCompleta;
     document.body.appendChild(tempInput);
