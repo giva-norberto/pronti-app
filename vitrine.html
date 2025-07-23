@@ -1,18 +1,36 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vitrine do Profissional</title>
-  <link href="style.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nossos Serviços - Pronti IA</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <style>
+    body { display: block; background: var(--cor-fundo); }
+    .header-publico { background-color: var(--cor-branco); padding: 20px 40px; box-shadow: var(--sombra); text-align: center; border-bottom: 1px solid #e5e7eb; }
+    .header-publico h1 { font-size: 2em; color: var(--cor-primaria); margin: 0; }
+    .header-publico p { margin: 5px 0 0 0; color: var(--cor-texto-leve); }
+    .main-content { margin-left: 0; max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+  </style>
 </head>
 <body>
+
+  <header class="header-publico">
+    <!-- O JS irá preencher estes campos -->
+    <h1 id="nome-negocio-publico">A carregar...</h1> 
+    <p id="descricao-publica"></p>
+  </header>
+
   <main class="main-content">
-    <h1 id="nome">Carregando...</h1>
-    <p id="descricao">...</p>
+    <h2>Nossos Serviços</h2>
+    <!-- O ID "lista-servicos" é essencial para o JS funcionar -->
+    <div id="lista-servicos">
+      <p>A procurar o profissional...</p>
+    </div>
   </main>
 
   <script src="firebase-config.js" type="module"></script>
   <script src="vitrine.js" type="module"></script>
+
 </body>
 </html>
