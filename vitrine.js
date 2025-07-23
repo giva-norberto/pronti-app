@@ -1,5 +1,9 @@
-import { db } from "./firebase-config.js";
-import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { app } from "./firebase-config.js"; // importa o app que você já tem
+import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+
+const db = getFirestore(app); // cria o db aqui usando o app
+
+// resto do seu código permanece igual, só troque o import do db por isso
 
 const nomeEstabelecimentoEl = document.getElementById("nome-estabelecimento");
 const listaServicosContainer = document.getElementById("lista-servicos");
@@ -20,7 +24,6 @@ async function carregarVitrine() {
   }
 
   try {
-    // Busca nome do estabelecimento
     const userDocRef = doc(db, "users", uid);
     const userDocSnap = await getDoc(userDocRef);
 
@@ -36,7 +39,6 @@ async function carregarVitrine() {
 
     nomeEstabelecimentoEl.textContent = nomeEstab;
 
-    // Busca serviços
     const servicosColRef = collection(db, "users", uid, "servicos");
     const servicosSnap = await getDocs(servicosColRef);
 
@@ -86,3 +88,4 @@ async function carregarVitrine() {
 }
 
 carregarVitrine();
+
