@@ -3,8 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meu Perfil - Pronti IA</title>
+  <title>Meu Perfil e Horários - Pronti IA</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
+  <style>
+    /* Estilos simplificados para a secção de horários */
+    .dia-semana { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--cor-fundo); flex-wrap: wrap; gap: 15px; }
+    .dia-semana:last-child { border-bottom: none; }
+    .dia-semana-nome { font-weight: 600; min-width: 120px; }
+    .horarios-controles { display: flex; align-items: center; gap: 10px; }
+    .horarios-controles input[type="time"] { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
+    .toggle-atendimento { display: flex; align-items: center; gap: 10px; }
+    /* Estilos para o switch (pode ser movido para o style.css principal) */
+    .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--cor-sucesso); }
+    input:checked + .slider:before { transform: translateX(22px); }
+  </style>
 </head>
 <body>
 
@@ -17,81 +33,79 @@
       <a href="agenda.html">Agenda</a>
       <a href="clientes.html">Clientes</a>
       <a href="perfil.html" class="active">Meu Perfil</a>
+      <a href="config-vitrine.html">Minha Vitrine</a>
       <a href="contato.html">Contato</a>
     </div>
   </aside>
 
   <main class="main-content">
-    <h1>Meu Perfil Público</h1>
-    <p>Estas são as informações que os seus clientes verão na sua página de agendamento.</p>
+    <h1>Meu Perfil e Configurações</h1>
+    <p>Defina aqui todas as informações do seu negócio que aparecerão para os clientes.</p>
 
     <div class="form-card">
       <form id="form-perfil">
+        <!-- Secção de Perfil Público -->
+        <h3>Informações do Negócio</h3>
         <div class="form-group">
           <label for="nomeNegocio">Nome do Negócio</label>
           <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
         </div>
-        
-        <!-- CAMPO DE LINK COM A PARTE PRINCIPAL "TRAVADA" -->
         <div class="form-group">
           <label for="slug">URL da sua Vitrine</label>
           <div style="display: flex; align-items: center; border: 1px solid #d1d5db; border-radius: 8px; padding-left: 12px; background-color: #f9fafb;">
-            <span style="color: var(--cor-texto-leve); font-size: 0.9em; white-space: nowrap;">https://pronti-app.netlify.app/vitrine.html?slug=</span>
+            <span id="url-base" style="color: var(--cor-texto-leve); font-size: 0.9em; white-space: nowrap;"></span>
             <input type="text" id="slug" placeholder="barbearia-do-joao" required style="border: none; background: transparent; padding: 12px 10px; flex-grow: 1; outline: none; font-weight: 600; color: var(--cor-primaria);">
           </div>
-          <small>Este campo será preenchido automaticamente a partir do Nome do Negócio.</small>
         </div>
-
-        <!-- CAMPO PARA UPLOAD DO LOGÓTIPO -->
         <div class="form-group">
           <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
           <div style="display: flex; align-items: center; gap: 20px;">
               <img id="logo-preview" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Pré-visualização do logótipo" style="width: 100px; height: 100px; border-radius: 8px; object-fit: cover; border: 1px solid #d1d5db;">
               <div>
-                <input type="file" id="logoNegocio" name="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
+                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
                 <button type="button" id="btn-upload-logo" class="btn-submit" style="background: var(--cor-texto-leve);">Escolher Ficheiro</button>
-                <small style="display: block; margin-top: 10px;">Recomendado: imagem quadrada (ex: 200x200 pixels).</small>
               </div>
           </div>
         </div>
-
         <div class="form-group">
           <label for="descricao">Descrição Curta</label>
           <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
         </div>
-        
-        <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-bottom: 15px; background: var(--cor-aviso);">Copiar Link da Vitrine</button>
 
-        <button type="submit" class="btn-submit">Salvar Perfil</button>
+        <!-- Secção de Horários Simplificada -->
+        <h3 style="margin-top: 30px;">Horários de Atendimento</h3>
+        <div class="form-group">
+            <label for="intervalo-atendimento">Duração Padrão dos Atendimentos (Intervalo na Agenda)</label>
+            <select id="intervalo-atendimento">
+                <option value="15">15 minutos</option>
+                <option value="30" selected>30 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="60">60 minutos</option>
+            </select>
+        </div>
+        <div id="dias-container">
+            <!-- O JavaScript irá gerar os dias aqui -->
+        </div>
+
+        <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-top: 30px; margin-bottom: 15px; background: var(--cor-aviso);">Copiar Link da Vitrine</button>
+        <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
       </form>
     </div>
-
   </main>
 
-  <!-- Scripts -->
   <script src="firebase-config.js" type="module"></script>
   <script src="perfil.js" type="module"></script>
-  
-  <!-- Script para a interatividade do upload de logótipo -->
   <script>
     const btnUploadLogo = document.getElementById('btn-upload-logo');
     const logoInput = document.getElementById('logoNegocio');
     const logoPreview = document.getElementById('logo-preview');
-
-    if(btnUploadLogo && logoInput && logoPreview) {
-      // Ao clicar no botão, aciona o input de ficheiro escondido
-      btnUploadLogo.addEventListener('click', () => {
-        logoInput.click();
-      });
-
-      // Ao selecionar um ficheiro, atualiza a pré-visualização
+    if(btnUploadLogo) {
+      btnUploadLogo.addEventListener('click', () => logoInput.click());
       logoInput.addEventListener('change', () => {
         const file = logoInput.files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = (e) => {
-            logoPreview.src = e.target.result;
-          };
+          reader.onload = (e) => { logoPreview.src = e.target.result; };
           reader.readAsDataURL(file);
         }
       });
@@ -100,8 +114,6 @@
 
 </body>
 </html>
-
-
 
 
 

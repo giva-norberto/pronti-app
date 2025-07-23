@@ -1,59 +1,72 @@
 /**
- * perfil.js (Versão Focada em Salvar Texto)
- * * Este script foi simplificado para salvar apenas os dados de texto do perfil,
- * * contornando temporariamente o erro de CORS do upload de logótipo.
+ * perfil.js (Versão Unificada com Horários)
+ * * Gere a página de perfil completa, incluindo informações do negócio,
+ * * logótipo, horários de atendimento e intervalos.
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-// A importação do Storage foi removida temporariamente
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Elementos do formulário
 const form = document.getElementById('form-perfil');
 const nomeNegocioInput = document.getElementById('nomeNegocio');
 const slugInput = document.getElementById('slug');
 const descricaoInput = document.getElementById('descricao');
+const logoInput = document.getElementById('logoNegocio');
+const logoPreview = document.getElementById('logo-preview');
 const btnSalvar = form.querySelector('button[type="submit"]');
 const btnCopiarLink = document.getElementById('btn-copiar-link');
-const linkContainer = document.getElementById('link-vitrine-container');
-const linkGeradoInput = document.getElementById('link-gerado');
+const urlBaseEl = document.getElementById('url-base');
+const intervaloSelect = document.getElementById('intervalo-atendimento');
+const diasContainer = document.getElementById('dias-container');
 
-let uid; // Variável para guardar o UID do utilizador autenticado
+const diasDaSemana = [
+    { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
+    { id: 'qua', nome: 'Quarta-feira' }, { id: 'qui', nome: 'Quinta-feira' },
+    { id: 'sex', nome: 'Sexta-feira' }, { id: 'sab', nome: 'Sábado' },
+    { id: 'dom', nome: 'Domingo' }
+];
 
-/**
- * Gera um 'slug' amigável para URL a partir de um texto.
- */
-function gerarSlug(texto) {
-  if (!texto) return "";
-  return texto.toString().toLowerCase().trim()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
-}
+let uid;
 
-// Gera o slug automaticamente enquanto o utilizador digita o nome do negócio
-nomeNegocioInput.addEventListener('keyup', () => {
-    slugInput.value = gerarSlug(nomeNegocioInput.value);
-});
-
-// A verificação de login é o "porteiro" da página
+// --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, (user) => {
   if (user) {
     uid = user.uid;
-    carregarDadosDoPerfil(uid);
-    form.addEventListener('submit', handleFormSubmit);
-    btnCopiarLink.addEventListener('click', copiarLink);
+    gerarEstruturaDosDias();
+    carregarTodosOsDados(uid);
+    adicionarListenersDeEvento();
+    // Define o URL base dinamicamente
+    if (urlBaseEl) {
+        urlBaseEl.textContent = `${window.location.origin}/vitrine.html?slug=`;
+    }
   } else {
     window.location.href = 'login.html';
   }
 });
 
-/**
- * Carrega os dados do perfil do Firestore e preenche o formulário.
- */
+function adicionarListenersDeEvento() {
+    nomeNegocioInput.addEventListener('keyup', () => {
+        slugInput.value = gerarSlug(nomeNegocioInput.value);
+    });
+    form.addEventListener('submit', handleFormSubmit);
+    btnCopiarLink.addEventListener('click', copiarLink);
+}
+
+// --- LÓGICA DE CARREGAMENTO DE DADOS ---
+async function carregarTodosOsDados(userId) {
+    await Promise.all([
+        carregarDadosDoPerfil(userId),
+        carregarHorarios(userId)
+    ]);
+}
+
 async function carregarDadosDoPerfil(userId) {
   try {
     const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
@@ -63,107 +76,137 @@ async function carregarDadosDoPerfil(userId) {
       nomeNegocioInput.value = data.nomeNegocio || '';
       slugInput.value = data.slug || '';
       descricaoInput.value = data.descricao || '';
-      // Se já houver um slug salvo, mostra o link
-      if (data.slug) {
-        mostrarLinkGerado(data.slug);
-      }
+      if (data.logoUrl) logoPreview.src = data.logoUrl;
     }
-  } catch (error) {
-    console.error("Erro ao carregar perfil:", error);
-  }
+  } catch (error) { console.error("Erro ao carregar perfil:", error); }
 }
 
-/**
- * Lida com o envio do formulário para salvar/atualizar o perfil (sem logótipo).
- */
+async function carregarHorarios(userId) {
+  try {
+    const horariosRef = doc(db, "users", userId, "configuracoes", "horarios");
+    const docSnap = await getDoc(horariosRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      intervaloSelect.value = data.intervalo || '30';
+      diasDaSemana.forEach(dia => {
+        if (data[dia.id] && data[dia.id].blocos && data[dia.id].blocos.length > 0) {
+            document.getElementById(`blocos-${dia.id}`).innerHTML = ''; // Limpa blocos padrão
+            data[dia.id].blocos.forEach(bloco => {
+                adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim);
+            });
+        }
+      });
+    }
+  } catch (error) { console.error("Erro ao carregar horários:", error); }
+}
+
+// --- LÓGICA DE SALVAMENTO DE DADOS ---
 async function handleFormSubmit(event) {
   event.preventDefault();
   btnSalvar.disabled = true;
-  btnSalvar.textContent = 'A verificar...';
+  btnSalvar.textContent = 'A salvar...';
+
+  try {
+    // Salva as duas partes em paralelo
+    await Promise.all([
+        salvarDadosDoPerfil(),
+        salvarHorarios()
+    ]);
+    alert("Todas as configurações foram salvas com sucesso!");
+  } catch (error) {
+    console.error("ERRO GERAL AO SALVAR:", error);
+    alert("Ocorreu um erro ao salvar as configurações.");
+  } finally {
+    btnSalvar.disabled = false;
+    btnSalvar.textContent = 'Salvar Todas as Configurações';
+  }
+}
+
+async function salvarDadosDoPerfil() {
+  const slug = slugInput.value.trim();
+  const nomeNegocio = nomeNegocioInput.value.trim();
+  const logoFile = logoInput.files[0];
+
+  if (!nomeNegocio || !slug) throw new Error("Nome do negócio e slug são obrigatórios.");
+
+  let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
+  if (logoFile) {
+    const storageRef = ref(storage, `logos/${uid}/${logoFile.name}`);
+    const uploadResult = await uploadBytes(storageRef, logoFile);
+    logoUrl = await getDownloadURL(uploadResult.ref);
+  }
 
   const perfilData = {
-    nomeNegocio: nomeNegocioInput.value.trim(),
-    slug: slugInput.value.trim(),
+    nomeNegocio,
+    slug,
     descricao: descricaoInput.value.trim(),
+    logoUrl,
     ownerId: uid
   };
 
-  if (!perfilData.nomeNegocio || !perfilData.slug) {
-      alert("O Nome do Negócio e a URL da Vitrine (slug) são obrigatórios.");
-      btnSalvar.disabled = false;
-      btnSalvar.textContent = 'Salvar Perfil';
-      return;
-  }
+  const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
+  await setDoc(perfilPrivadoRef, perfilData);
 
-  try {
-    const publicProfilesRef = collection(db, "publicProfiles");
-    const q = query(publicProfilesRef, where("slug", "==", perfilData.slug));
-    const querySnapshot = await getDocs(q);
-    
-    let slugJaExiste = false;
-    querySnapshot.forEach((doc) => {
-        if (doc.data().ownerId !== uid) {
-            slugJaExiste = true;
-        }
+  const perfilPublicoRef = doc(db, "publicProfiles", uid);
+  await setDoc(perfilPublicoRef, { slug, ownerId: uid, logoUrl, nomeNegocio });
+}
+
+async function salvarHorarios() {
+  const horariosData = { intervalo: parseInt(intervaloSelect.value) };
+  diasDaSemana.forEach(dia => {
+    const blocos = [];
+    document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
+        const inputs = blocoEl.querySelectorAll('input[type="time"]');
+        blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
     });
+    horariosData[dia.id] = { blocos };
+  });
 
-    if (slugJaExiste) {
-        alert(`O endereço "${perfilData.slug}" já está a ser utilizado. Por favor, escolha outro.`);
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Perfil';
-        return;
-    }
-
-    btnSalvar.textContent = 'A salvar...';
-
-    const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
-    await setDoc(perfilPrivadoRef, perfilData);
-
-    const perfilPublicoRef = doc(db, "publicProfiles", uid);
-    await setDoc(perfilPublicoRef, { slug: perfilData.slug, ownerId: uid });
-    
-    alert("Perfil salvo com sucesso!");
-    mostrarLinkGerado(perfilData.slug);
-
-  } catch (error) {
-    console.error("Erro ao salvar perfil:", error);
-    alert("Erro ao salvar o perfil.");
-  } finally {
-    btnSalvar.disabled = false;
-    btnSalvar.textContent = 'Salvar Perfil';
-  }
+  const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
+  await setDoc(horariosRef, horariosData);
 }
 
-/**
- * Mostra a secção do link da vitrine com o URL completo.
- */
-function mostrarLinkGerado(slug) {
-    if (!linkContainer || !linkGeradoInput) return;
-    const urlBase = "https://pronti-app.netlify.app/vitrine.html";
-    const urlCompleta = `${urlBase}?slug=${slug}`;
-    linkGeradoInput.value = urlCompleta;
-    linkContainer.style.display = 'block';
+// --- FUNÇÕES AUXILIARES ---
+function gerarSlug(texto) {
+  if (!texto) return "";
+  return texto.toString().toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
 }
 
-/**
- * Copia o link da vitrine para a área de transferência.
- */
 function copiarLink() {
     const slug = slugInput.value.trim();
-    if (!slug) {
-        alert("Preencha o campo 'URL da sua Vitrine' para poder copiar o link.");
-        return;
-    }
-    const urlBase = "https://pronti-app.netlify.app/vitrine.html";
-    const urlCompleta = `${urlBase}?slug=${slug}`;
-    
-    const tempInput = document.createElement('input');
-    tempInput.value = urlCompleta;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInput);
-
-    alert("Link copiado para a área de transferência!");
+    if (!slug) { alert("Preencha o campo 'URL da sua Vitrine' para poder copiar o link."); return; }
+    const urlCompleta = `${window.location.origin}/vitrine.html?slug=${slug}`;
+    navigator.clipboard.writeText(urlCompleta).then(() => alert("Link copiado para a área de transferência!"));
 }
 
+function gerarEstruturaDosDias() {
+    diasDaSemana.forEach(dia => {
+        const divDia = document.createElement('div');
+        divDia.className = 'dia-semana';
+        divDia.innerHTML = `
+            <span class="dia-semana-nome">${dia.nome}</span>
+            <div class="horarios-blocos" id="blocos-${dia.id}"></div>
+            <button type="button" class="btn-adicionar-bloco" data-dia="${dia.id}">+ Adicionar Horário</button>
+        `;
+        diasContainer.appendChild(divDia);
+        // Adiciona um bloco padrão se estiver vazio
+        adicionarBlocoDeHorario(dia.id);
+    });
+    document.querySelectorAll('.btn-adicionar-bloco').forEach(btn => {
+        btn.addEventListener('click', (e) => adicionarBlocoDeHorario(e.target.dataset.dia));
+    });
+}
+
+function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
+    const container = document.getElementById(`blocos-${diaId}`);
+    const divBloco = document.createElement('div');
+    divBloco.className = 'bloco-horario';
+    divBloco.innerHTML = `
+        <input type="time" value="${inicio}">
+        <span>até</span>
+        <input type="time" value="${fim}">
+        <button type="button" class="btn-remover-bloco">-</button>
+    `;
+    container.appendChild(divBloco);
+    divBloco.querySelector('.btn-remover-bloco').addEventListener('click', (e) => e.target.parentElement.remove());
+}
