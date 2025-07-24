@@ -44,6 +44,8 @@
     .agendamento-container h2 {
       font-size: 1.2em;
       margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--cor-primaria-leve);
     }
     /* Estilos para a nova secção de agendamentos */
     #meus-agendamentos .agendamento-item {
@@ -69,7 +71,7 @@
         <p id="data-atual"></p>
       </header>
 
-      <!-- 👇 NOVA SECÇÃO PARA MOSTRAR OS AGENDAMENTOS DO CLIENTE 👇 -->
+      <!-- Secção para mostrar os agendamentos existentes do cliente -->
       <div id="meus-agendamentos" style="display: none;">
         <h2>Os Seus Próximos Agendamentos</h2>
         <div id="lista-meus-agendamentos">
@@ -77,32 +79,35 @@
         </div>
       </div>
   
-      <div class="agendamento-container">
+      <!-- Container unificado para um novo agendamento -->
+      <div class="agendamento-container form-card">
+        <h2>Faça o seu Agendamento</h2>
+        
         <!-- SERVIÇOS -->
         <div class="form-group">
-          <h2>1. Escolha um serviço</h2>
-          <div id="lista-servicos" class="servicos-botoes">
+          <label>1. Escolha um serviço</label>
+          <div id="lista-servicos">
             <!-- Botões de serviço serão inseridos aqui -->
           </div>
         </div>
         
         <!-- DATA E HORÁRIOS -->
         <div class="form-group" style="margin-top: 30px;">
-          <h2>2. Escolha uma data e horário</h2>
+          <label>2. Escolha uma data e horário</label>
           <input type="date" id="data-agendamento" style="margin-bottom: 15px;">
-          <div id="grade-horarios" class="horarios-botoes">
+          <div id="grade-horarios">
             <p class="aviso-horarios">Selecione uma data para ver os horários.</p>
           </div>
         </div>
 
         <!-- DADOS DO CLIENTE -->
         <div class="form-group" style="margin-top: 30px;">
-          <h2>3. Os seus dados</h2>
+          <label>3. Os seus dados</label>
           <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
           <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required style="margin-top: 10px;">
         </div>
 
-        <button id="btn-confirmar-agendamento" class="btn-submit btn-confirmar" disabled>Confirmar Agendamento</button>
+        <button id="btn-confirmar-agendamento" class="btn-submit" disabled>Confirmar Agendamento</button>
       </div>
     </div>
   </main>
