@@ -1,7 +1,7 @@
 /**
  * vitrine.js (Vitrine Interativa do Cliente)
- * Gere todo o fluxo de agendamento, desde a seleção de serviço
- * e horário até à confirmação final.
+ * Versão final que carrega o perfil e APENAS os serviços
+ * marcados como "visivelNaVitrine: true" pelo empresário.
  */
 
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -13,7 +13,7 @@ const db = getFirestore(app);
 let profissionalUid = null;
 let servicoSelecionado = null;
 let horarioSelecionado = null;
-let horariosConfig = {}; // Guarda as configurações de horário do profissional
+let horariosConfig = {};
 
 // --- ELEMENTOS DO DOM ---
 const loader = document.getElementById('vitrine-loader');
@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', inicializarVitrine);
 
 async function inicializarVitrine() {
   const urlParams = new URLSearchParams(window.location.search);
-  // CORREÇÃO: Procura por 'slug' na URL, que é o formato correto gerado pelo perfil.
   const slug = urlParams.get('slug');
 
   if (!slug) {
@@ -42,26 +41,20 @@ async function inicializarVitrine() {
   }
 
   try {
-    // Encontra o UID do profissional a partir do slug.
     profissionalUid = await encontrarProfissionalPeloSlug(slug);
-
     if (!profissionalUid) {
         loader.innerHTML = `<p style="color:red; text-align:center;">Profissional não encontrado. Verifique o link.</p>`;
         return;
     }
 
-    // Carrega tudo em paralelo
     await Promise.all([
         carregarPerfilPublico(),
         carregarConfiguracoesHorario(),
         carregarServicos()
     ]);
 
-    // Mostra o conteúdo e esconde o loader
     loader.style.display = 'none';
     content.style.display = 'block';
-
-    // Configura os eventos
     configurarEventos();
 
   } catch (error) {
@@ -71,19 +64,12 @@ async function inicializarVitrine() {
 }
 
 function configurarEventos() {
-    // Define a data atual e o listener
     dataInput.value = new Date().toISOString().split('T')[0];
-    dataInput.min = new Date().toISOString().split('T')[0]; // Impede de selecionar datas passadas
+    dataInput.min = new Date().toISOString().split('T')[0];
     dataInput.addEventListener('change', gerarHorariosDisponiveis);
-    
-    // Listeners para os campos do cliente para verificar o estado do botão
     nomeClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
     telefoneClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
-
-    // Listener do botão de confirmação
     btnConfirmar.addEventListener('click', salvarAgendamento);
-
-    // Gera os horários para a data de hoje
     gerarHorariosDisponiveis();
 }
 
@@ -103,7 +89,6 @@ async function carregarPerfilPublico() {
     const data = docSnap.data();
     nomeNegocioEl.textContent = data.nomeNegocio || "Nome não definido";
     if (data.logoUrl) logoEl.src = data.logoUrl;
-    // Define a data atual formatada
     dataAtualEl.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 }
@@ -114,7 +99,6 @@ async function carregarConfiguracoesHorario() {
     if (docSnap.exists()) {
         horariosConfig = docSnap.data();
     } else {
-        // Configuração padrão se o empresário não definir
         horariosConfig = { intervalo: 30 };
     }
 }
@@ -122,13 +106,12 @@ async function carregarConfiguracoesHorario() {
 async function carregarServicos() {
   servicosContainer.innerHTML = '';
   const servicosRef = collection(db, "users", profissionalUid, "servicos");
-  // ALTERAÇÃO: Mostra todos os serviços que NÃO estão marcados como "não visíveis".
-  // Isto faz com que os serviços antigos (sem a marcação) apareçam por defeito.
-  const q = query(servicosRef, where("visivelNaVitrine", "!=", false));
+  // MUDANÇA CRÍTICA: A consulta agora filtra APENAS pelos serviços visíveis.
+  const q = query(servicosRef, where("visivelNaVitrine", "==", true));
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
-    servicosContainer.innerHTML = '<p>Nenhum serviço disponível.</p>';
+    servicosContainer.innerHTML = '<p>Nenhum serviço disponível para agendamento online no momento.</p>';
     return;
   }
 
@@ -152,7 +135,7 @@ async function carregarServicos() {
 
 async function gerarHorariosDisponiveis() {
     horariosContainer.innerHTML = '<p class="aviso-horarios">A verificar...</p>';
-    horarioSelecionado = null; // Reseta o horário ao mudar a data
+    horarioSelecionado = null;
     verificarEstadoBotaoConfirmar();
 
     const diaSelecionado = new Date(dataInput.value + "T12:00:00");
@@ -164,7 +147,6 @@ async function gerarHorariosDisponiveis() {
         return;
     }
 
-    // Busca agendamentos existentes para o dia
     const inicioDoDia = new Date(dataInput.value + "T00:00:00").toISOString();
     const fimDoDia = new Date(dataInput.value + "T23:59:59").toISOString();
     const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
