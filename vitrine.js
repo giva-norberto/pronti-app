@@ -106,8 +106,9 @@ async function carregarConfiguracoesHorario() {
 async function carregarServicos() {
   servicosContainer.innerHTML = '';
   const servicosRef = collection(db, "users", profissionalUid, "servicos");
-  // MUDANÇA CRÍTICA: A consulta agora filtra APENAS pelos serviços visíveis.
-  const q = query(servicosRef, where("visivelNaVitrine", "==", true));
+  // ALTERAÇÃO: Mostra todos os serviços que NÃO estão marcados como "não visíveis".
+  // Isto faz com que os serviços antigos (sem a marcação) apareçam por defeito.
+  const q = query(servicosRef, where("visivelNaVitrine", "!=", false));
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
