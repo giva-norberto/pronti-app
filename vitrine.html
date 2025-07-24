@@ -67,6 +67,11 @@
       width: 100%;
       margin-top: 30px;
     }
+    /* Estilos para a nova secção de agendamentos */
+    #meus-agendamentos .agendamento-item {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +87,14 @@
         <h1 id="nome-negocio-publico">Nome do Negócio</h1> 
         <p id="data-atual"></p>
       </header>
+
+      <!-- 👇 NOVA SECÇÃO PARA MOSTRAR OS AGENDAMENTOS DO CLIENTE 👇 -->
+      <div id="meus-agendamentos" style="display: none;">
+        <h2>Os Seus Próximos Agendamentos</h2>
+        <div id="lista-meus-agendamentos">
+            <!-- Agendamentos do cliente serão inseridos aqui -->
+        </div>
+      </div>
   
       <div class="agendamento-container">
         <!-- SERVIÇOS -->
