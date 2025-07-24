@@ -1,284 +1,120 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vitrine - Pronti IA</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendamento Online</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    body { max-width: 600px; margin: 2rem auto; font-family: Arial, sans-serif; }
-    header { text-align: center; margin-bottom: 20px; }
-    header img { max-height: 80px; border-radius: 8px; margin-bottom: 10px; }
-    header h1 { margin: 0; }
-    #data-atual { color: #555; margin-bottom: 15px; }
-    #input-data { padding: 8px; font-size: 1rem; margin-bottom: 20px; width: 100%; }
-    .servico-btn, .horario-btn {
-      display: inline-block;
-      padding: 10px 20px;
-      margin: 5px 7px 5px 0;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.3s ease;
+    /* Estilos específicos para a página pública */
+    body { 
+      display: block; 
+      background: var(--cor-fundo); 
+      margin-left: 0;
     }
-    .servico-btn { background: #2f74f0; color: white; }
-    .servico-btn.selected { background: #244fcc; }
-    .servico-btn:hover:not(.selected) { background: #5a8bf5; }
-    .horario-btn { background: #4caf50; color: white; }
-    .horario-btn.selected { background: #2e7d32; }
-    .horario-btn:hover:not(.selected) { background: #66bb6a; }
-    #btn-confirmar {
-      width: 100%;
-      padding: 14px;
-      background-color: #f05a22;
-      border: none;
-      color: white;
-      font-size: 1.2rem;
+    .main-content {
+      margin-left: 0;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header-vitrine {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .header-vitrine img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--cor-primaria-leve);
+      margin-bottom: 10px;
+    }
+    .header-vitrine h1 {
+      font-size: 2em;
+      color: var(--cor-primaria);
+      margin: 0;
+    }
+    .header-vitrine p {
+      margin: 5px 0 0 0;
+      color: var(--cor-texto-leve);
+    }
+    .agendamento-container h2 {
+      font-size: 1.2em;
+      margin-bottom: 15px;
+    }
+    .servicos-botoes, .horarios-botoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .btn-servico, .btn-horario {
+      padding: 12px 15px;
+      border: 1px solid #ccc;
+      background: white;
       border-radius: 8px;
       cursor: pointer;
-      margin-top: 25px;
-      transition: background-color 0.3s ease;
+      transition: all 0.2s ease;
     }
-    #btn-confirmar:disabled {
-      background-color: #f0a78a;
-      cursor: not-allowed;
+    .btn-servico.selecionado, .btn-horario.selecionado {
+      background: var(--cor-primaria);
+      color: white;
+      border-color: var(--cor-primaria);
     }
-    #msg-status { margin-top: 15px; text-align: center; font-weight: bold; }
+    .btn-confirmar {
+      width: 100%;
+      margin-top: 30px;
+    }
   </style>
 </head>
 <body>
 
-<header>
-  <img id="logo-estabelecimento" src="" alt="Logo" style="display:none" />
-  <h1 id="nome-estabelecimento">Minha Vitrine</h1>
-  <div id="data-atual"></div>
-</header>
-
-<main>
-  <label for="input-data">Escolha a data:</label>
-  <input type="date" id="input-data" />
-
-  <section>
-    <h2>Serviços</h2>
-    <div id="lista-servicos">
-      <p>Carregando serviços...</p>
+  <main class="main-content">
+    <div id="vitrine-loader">
+      <p style="text-align: center;">A carregar informações do profissional...</p>
     </div>
-  </section>
 
-  <section>
-    <h2>Horários disponíveis</h2>
-    <div id="lista-horarios">
-      <p>Escolha uma data para ver horários.</p>
+    <div id="vitrine-content" style="display: none;">
+      <header class="header-vitrine">
+        <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
+        <h1 id="nome-negocio-publico">Nome do Negócio</h1> 
+        <p id="data-atual"></p>
+      </header>
+  
+      <div class="agendamento-container">
+        <!-- SERVIÇOS -->
+        <div class="form-group">
+          <h2>1. Escolha um serviço</h2>
+          <div id="lista-servicos" class="servicos-botoes">
+            <!-- Botões de serviço serão inseridos aqui -->
+          </div>
+        </div>
+        
+        <!-- DATA E HORÁRIOS -->
+        <div class="form-group" style="margin-top: 30px;">
+          <h2>2. Escolha uma data e horário</h2>
+          <input type="date" id="data-agendamento" style="margin-bottom: 15px;">
+          <div id="grade-horarios" class="horarios-botoes">
+            <p class="aviso-horarios">Selecione uma data para ver os horários.</p>
+          </div>
+        </div>
+
+        <!-- DADOS DO CLIENTE -->
+        <div class="form-group" style="margin-top: 30px;">
+          <h2>3. Os seus dados</h2>
+          <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
+          <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required style="margin-top: 10px;">
+        </div>
+
+        <button id="btn-confirmar-agendamento" class="btn-submit btn-confirmar" disabled>Confirmar Agendamento</button>
+      </div>
     </div>
-  </section>
+  </main>
 
-  <button id="btn-confirmar" disabled>Confirmar Agendamento</button>
-  <div id="msg-status"></div>
-</main>
-
-<script type="module">
-  import { firestore } from './config-vitrine.js';
-  import { doc, collection, getDoc, getDocs, query, where, addDoc } from 'firebase/firestore';
-
-  const userUid = new URLSearchParams(window.location.search).get('user');
-  if (!userUid) {
-    alert('Usuário não especificado na URL');
-    throw new Error('Usuário não especificado');
-  }
-
-  const logoElem = document.getElementById('logo-estabelecimento');
-  const nomeElem = document.getElementById('nome-estabelecimento');
-  const dataAtualElem = document.getElementById('data-atual');
-  const inputData = document.getElementById('input-data');
-  const listaServicosElem = document.getElementById('lista-servicos');
-  const listaHorariosElem = document.getElementById('lista-horarios');
-  const btnConfirmar = document.getElementById('btn-confirmar');
-  const msgStatus = document.getElementById('msg-status');
-
-  let servicos = [];
-  let servicoSelecionado = null;
-  let horariosDisponiveis = [];
-  let horarioSelecionado = null;
-
-  // Mostrar data atual formatada
-  const hoje = new Date();
-  dataAtualElem.textContent = hoje.toLocaleDateString('pt-BR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-  // Setar inputData para hoje inicialmente
-  inputData.valueAsDate = hoje;
-
-  async function carregarPerfil() {
-    const perfilRef = doc(firestore, 'users', userUid, 'publicProfile', 'profile');
-    const perfilSnap = await getDoc(perfilRef);
-    if (perfilSnap.exists()) {
-      const perfil = perfilSnap.data();
-      if (perfil.logoURL) {
-        logoElem.src = perfil.logoURL;
-        logoElem.style.display = 'block';
-      }
-      if (perfil.nomeNegocio) {
-        nomeElem.textContent = perfil.nomeNegocio;
-      }
-    }
-  }
-
-  async function carregarConfigVitrine() {
-    const configRef = doc(firestore, 'users', userUid, 'publicProfile', 'vitrineConfig');
-    const configSnap = await getDoc(configRef);
-    if (!configSnap.exists()) {
-      listaServicosElem.innerHTML = '<p>Usuário não configurou a vitrine ainda.</p>';
-      return false;
-    }
-    return configSnap.data().servicosVisiveis || [];
-  }
-
-  async function carregarServicos(servicosVisiveis) {
-    const servicosRef = collection(firestore, 'users', userUid, 'services');
-    const snapshot = await getDocs(servicosRef);
-    servicos = [];
-    snapshot.forEach(docSnap => {
-      if (servicosVisiveis.includes(docSnap.id)) {
-        servicos.push({ id: docSnap.id, ...docSnap.data() });
-      }
-    });
-  }
-
-  function renderizarServicos() {
-    listaServicosElem.innerHTML = '';
-    if (servicos.length === 0) {
-      listaServicosElem.innerHTML = '<p>Nenhum serviço disponível.</p>';
-      return;
-    }
-    servicos.forEach(servico => {
-      const btn = document.createElement('button');
-      btn.textContent = servico.nome;
-      btn.className = 'servico-btn' + (servicoSelecionado && servicoSelecionado.id === servico.id ? ' selected' : '');
-      btn.onclick = () => {
-        servicoSelecionado = servico;
-        atualizarConfirmacao();
-        renderizarServicos();
-      };
-      listaServicosElem.appendChild(btn);
-    });
-  }
-
-  async function carregarHorariosDisponiveis(dataISO) {
-    listaHorariosElem.innerHTML = 'Carregando horários...';
-    horariosDisponiveis = [];
-
-    if (!servicoSelecionado) {
-      listaHorariosElem.innerHTML = '<p>Escolha um serviço para ver horários.</p>';
-      return;
-    }
-
-    try {
-      const slotsRef = collection(firestore, 'users', userUid, 'services', servicoSelecionado.id, 'availableSlots');
-      const q = query(slotsRef, where('data', '==', dataISO));
-      const snapshot = await getDocs(q);
-
-      snapshot.forEach(docSnap => {
-        horariosDisponiveis.push({ id: docSnap.id, ...docSnap.data() });
-      });
-
-      if (horariosDisponiveis.length === 0) {
-        listaHorariosElem.innerHTML = '<p>Sem horários disponíveis para esta data.</p>';
-        horarioSelecionado = null;
-        atualizarConfirmacao();
-        return;
-      }
-
-      renderizarHorarios();
-    } catch (e) {
-      console.error(e);
-      listaHorariosElem.innerHTML = '<p>Erro ao carregar horários.</p>';
-      horarioSelecionado = null;
-      atualizarConfirmacao();
-    }
-  }
-
-  function renderizarHorarios() {
-    listaHorariosElem.innerHTML = '';
-    horariosDisponiveis.forEach(horario => {
-      const btn = document.createElement('button');
-      btn.textContent = horario.hora; // ex: "14:00"
-      btn.className = 'horario-btn' + (horarioSelecionado && horarioSelecionado.id === horario.id ? ' selected' : '');
-      btn.onclick = () => {
-        horarioSelecionado = horario;
-        atualizarConfirmacao();
-        renderizarHorarios();
-      };
-      listaHorariosElem.appendChild(btn);
-    });
-  }
-
-  function atualizarConfirmacao() {
-    btnConfirmar.disabled = !(servicoSelecionado && horarioSelecionado && inputData.value);
-    msgStatus.textContent = '';
-  }
-
-  btnConfirmar.onclick = async () => {
-    btnConfirmar.disabled = true;
-    msgStatus.textContent = 'Confirmando...';
-
-    try {
-      const agendamentosRef = collection(firestore, 'users', userUid, 'appointments');
-      await addDoc(agendamentosRef, {
-        servicoId: servicoSelecionado.id,
-        servicoNome: servicoSelecionado.nome,
-        data: inputData.value,
-        horarioId: horarioSelecionado.id,
-        horario: horarioSelecionado.hora,
-        criadoEm: new Date()
-      });
-      msgStatus.textContent = 'Agendamento confirmado com sucesso!';
-      // Limpar seleção para novo agendamento
-      servicoSelecionado = null;
-      horarioSelecionado = null;
-      renderizarServicos();
-      listaHorariosElem.innerHTML = '<p>Escolha uma data para ver horários.</p>';
-      atualizarConfirmacao();
-    } catch (e) {
-      console.error(e);
-      msgStatus.textContent = 'Erro ao confirmar agendamento.';
-      btnConfirmar.disabled = false;
-    }
-  };
-
-  inputData.onchange = () => {
-    horarioSelecionado = null;
-    if (inputData.value && servicoSelecionado) {
-      carregarHorariosDisponiveis(inputData.value);
-    } else {
-      listaHorariosElem.innerHTML = '<p>Escolha uma data para ver horários.</p>';
-      atualizarConfirmacao();
-    }
-  };
-
-  // Sempre que mudar serviço, atualiza os horários para a data atual
-  function aoSelecionarServico() {
-    if (inputData.value) {
-      carregarHorariosDisponiveis(inputData.value);
-    } else {
-      listaHorariosElem.innerHTML = '<p>Escolha uma data para ver horários.</p>';
-    }
-    horarioSelecionado = null;
-    atualizarConfirmacao();
-  }
-
-  // Atualiza seleção e horários quando serviço muda
-  listaServicosElem.addEventListener('click', () => {
-    aoSelecionarServico();
-  });
-
-  // Inicialização
-  (async () => {
-    await carregarPerfil();
-    const visiveis = await carregarConfigVitrine();
-    await carregarServicos(visiveis);
-    renderizarServicos();
-    atualizarConfirmacao();
-  })();
-
-</script>
+  <script src="firebase-config.js" type="module"></script>
+  <script src="vitrine.js" type="module"></script>
 
 </body>
 </html>
