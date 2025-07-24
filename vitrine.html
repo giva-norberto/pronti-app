@@ -45,32 +45,13 @@
       font-size: 1.2em;
       margin-bottom: 15px;
     }
-    .servicos-botoes, .horarios-botoes {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .btn-servico, .btn-horario {
-      padding: 12px 15px;
-      border: 1px solid #ccc;
-      background: white;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .btn-servico.selecionado, .btn-horario.selecionado {
-      background: var(--cor-primaria);
-      color: white;
-      border-color: var(--cor-primaria);
-    }
-    .btn-confirmar {
-      width: 100%;
-      margin-top: 30px;
-    }
     /* Estilos para a nova secção de agendamentos */
     #meus-agendamentos .agendamento-item {
         padding: 15px;
         margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
   </style>
 </head>
