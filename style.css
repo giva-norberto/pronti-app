@@ -505,92 +505,91 @@ h1, h2, h3 {
 }
 
 /* =================================================================== */
-/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (REVISADO) --- */
+/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (ACRESCENTADO) --- */
 /* =================================================================== */
 
-.servico-card {
-  /* Este é apenas um wrapper, não precisa de estilos visuais */
-  position: relative;
-  margin-bottom: 15px;
+/* Container dos cards de serviços */
+#lista-servicos {
+  display: flex;
+  flex-direction: column; /* Altera para coluna para os cards ocuparem a largura toda */
+  gap: 15px; /* Espaçamento entre os cards */
 }
 
+/* Cada serviço individual */
+.servico-card {
+  position: relative;
+  background: var(--cor-branco);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.servico-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra);
+}
+
+/* Botão principal (nome + preço) */
 .btn-servico {
-  /* Este é o botão principal que se parece com um card */
-  background-color: var(--cor-branco);
-  color: var(--cor-texto);
-  border: 1px solid #e5e7eb; /* Borda subtil como outros cards */
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05); /* Sombra mais leve */
-  border-radius: 12px; /* Consistente com outros cards */
-  padding: 20px;
-  font-weight: 600;
+  all: unset; /* Reseta os estilos de botão para o podermos estilizar livremente */
+  box-sizing: border-box;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  box-sizing: border-box; /* Garante que o padding não quebre o layout */
+  font-weight: 600;
   font-size: 1.1em;
-  transition: all 0.2s ease-in-out;
-  text-align: left;
+  padding: 20px;
+  width: 100%;
 }
 
+/* Nome e preço */
 .btn-servico .nome {
-    color: var(--cor-primaria);
-    font-weight: 700;
+  color: var(--cor-primaria);
+  font-weight: 700;
 }
-
 .btn-servico .preco {
-    color: var(--cor-texto-leve);
-    font-weight: 500;
+  color: var(--cor-texto-leve);
+  font-weight: 500;
 }
 
-.btn-servico:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--sombra); /* Usa a sombra padrão no hover */
-    border-color: var(--cor-primaria-leve);
-}
-
+/* Estado selecionado */
 .btn-servico.selecionado {
   background-color: var(--cor-primaria);
-  border-color: var(--cor-primaria);
-  transform: translateY(-3px);
-  box-shadow: var(--sombra);
 }
-
-/* Quando selecionado, o texto dentro deve ser branco */
 .btn-servico.selecionado .nome,
 .btn-servico.selecionado .preco {
-  color: var(--cor-branco);
+    color: var(--cor-branco);
 }
 
+/* Botão de detalhes */
 .btn-detalhes {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
   position: absolute;
   top: 50%;
   right: 20px;
   transform: translateY(-50%);
-  background: none;
-  border: none;
   font-size: 24px;
-  cursor: pointer;
   color: var(--cor-texto-leve);
   padding: 5px;
-  z-index: 2; /* Para ficar por cima do botão */
+  z-index: 2;
 }
 
-/* Quando o botão principal é selecionado, o botão de detalhes também fica branco */
 .btn-servico.selecionado + .btn-detalhes {
     color: var(--cor-branco);
 }
 
+/* Área oculta com descrição e duração */
 .detalhes-servico {
+  margin-top: -10px;
   background-color: var(--cor-fundo);
   padding: 15px 25px;
-  border-radius: 0 0 12px 12px;
-  margin-top: -10px; /* Puxa para cima para conectar com o botão */
-  border: 1px solid #e5e7eb;
-  border-top: none;
   font-size: 0.9em;
-  color: var(--cor-texto);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  border-top: 1px solid #e5e7eb;
+  border-radius: 0 0 12px 12px;
+  display: none; /* Começa escondido */
 }
 
