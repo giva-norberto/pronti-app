@@ -40,33 +40,12 @@
       margin: 5px 0 0 0;
       color: var(--cor-texto-leve);
     }
-
-    /* Botões de serviços */
-    .servico-btn {
-      background-color: #3b82f6;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 10px;
-      margin: 5px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.2s ease;
-    }
-    .servico-btn:hover {
-      background-color: #2563eb;
-    }
-    .servico-btn.selecionado {
-      background-color: #1d4ed8;
-    }
-
-    .agendamento-container h2 {
+    .agendamento-container h2, #agendamentos-cliente h2 {
       font-size: 1.2em;
       margin-bottom: 15px;
       padding-bottom: 10px;
       border-bottom: 2px solid var(--cor-primaria-leve);
     }
-
     #agendamentos-cliente .agendamento-item {
       padding: 15px;
       margin-bottom: 15px;
@@ -76,18 +55,6 @@
       justify-content: space-between;
       align-items: center;
       background: #f9f9f9;
-    }
-    .cancelar-btn {
-      background: #ef4444;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .cancelar-btn:hover {
-      background: #dc2626;
     }
   </style>
 </head>
@@ -105,7 +72,7 @@
         <p id="data-atual"></p>
       </header>
 
-      <!-- Aqui é onde os agendamentos do cliente aparecerão -->
+      <!-- Secção para mostrar os agendamentos existentes do cliente -->
       <div id="agendamentos-cliente" style="display: none;">
         <h2>Seus Próximos Agendamentos</h2>
         <div id="lista-meus-agendamentos">
