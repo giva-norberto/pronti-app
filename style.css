@@ -510,8 +510,8 @@ h1, h2, h3 {
 
 /* Container dos cards de serviços */
 #lista-servicos {
-  display: grid; /* Usa grid para melhor alinhamento */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Layout responsivo */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
 }
 
@@ -522,7 +522,7 @@ h1, h2, h3 {
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.07);
   transition: all 0.2s ease-in-out;
-  overflow: hidden; /* Garante que os cantos arredondados funcionem */
+  overflow: hidden;
 }
 
 .servico-card:hover {
@@ -542,7 +542,6 @@ h1, h2, h3 {
   font-size: 1.1em;
   padding: 20px;
   width: 100%;
-  border-bottom: 1px solid var(--cor-fundo);
 }
 
 /* Nome e preço */
@@ -553,6 +552,7 @@ h1, h2, h3 {
 .btn-servico .preco {
   color: var(--cor-texto);
   font-weight: 500;
+  margin-right: 40px; /* Adiciona espaço para o botão de detalhes não sobrepor */
 }
 
 /* Estado selecionado */
@@ -564,23 +564,27 @@ h1, h2, h3 {
     color: var(--cor-branco);
 }
 
-/* Botão de detalhes (agora dentro do botão principal) */
-.btn-servico .btn-detalhes {
-  background-color: var(--cor-primaria-leve);
-  color: var(--cor-primaria);
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 1.2em;
-  font-weight: bold;
+/* Botão de detalhes */
+.btn-detalhes {
+  all: unset;
+  box-sizing: border-box;
   cursor: pointer;
-  margin-left: 15px; /* Espaçamento entre o preço e o botão */
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  font-size: 24px;
+  color: var(--cor-texto-leve);
+  padding: 5px;
+  z-index: 2;
   transition: all 0.2s ease;
 }
 
+.btn-servico:hover .btn-detalhes {
+    color: var(--cor-primaria);
+}
+
 .btn-servico.selecionado .btn-detalhes {
-    background-color: rgba(255,255,255,0.2);
     color: var(--cor-branco);
 }
 
@@ -590,5 +594,7 @@ h1, h2, h3 {
   padding: 15px 25px;
   font-size: 0.9em;
   color: var(--cor-texto-leve);
+  border-top: 1px solid #e5e7eb;
   display: none; /* Começa escondido */
 }
+
