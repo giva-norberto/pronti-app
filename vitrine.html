@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agendamento Online</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
     body {
+      display: block;
       background: var(--cor-fundo);
-      margin: 0;
+      margin-left: 0;
     }
     .main-content {
+      margin-left: 0;
       max-width: 700px;
       margin: 0 auto;
       padding: 20px;
@@ -38,13 +40,34 @@
       margin: 5px 0 0 0;
       color: var(--cor-texto-leve);
     }
+
+    /* Botões de serviços */
+    .servico-btn {
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+    }
+    .servico-btn:hover {
+      background-color: #2563eb;
+    }
+    .servico-btn.selecionado {
+      background-color: #1d4ed8;
+    }
+
     .agendamento-container h2 {
       font-size: 1.2em;
       margin-bottom: 15px;
       padding-bottom: 10px;
       border-bottom: 2px solid var(--cor-primaria-leve);
     }
-    #meus-agendamentos .agendamento-item {
+
+    #agendamentos-cliente .agendamento-item {
       padding: 15px;
       margin-bottom: 15px;
       border: 1px solid #ddd;
@@ -78,24 +101,25 @@
     <div id="vitrine-content" style="display: none;">
       <header class="header-vitrine">
         <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
-        <h1 id="nome-negocio-publico">Nome do Negócio</h1> 
+        <h1 id="nome-negocio-publico">Nome do Negócio</h1>
         <p id="data-atual"></p>
       </header>
 
-      <div id="meus-agendamentos" style="display: none;">
+      <!-- Aqui é onde os agendamentos do cliente aparecerão -->
+      <div id="agendamentos-cliente" style="display: none;">
         <h2>Seus Próximos Agendamentos</h2>
         <div id="lista-meus-agendamentos">
-          <!-- Agendamentos do cliente inseridos via JavaScript -->
+          <!-- Itens de agendamento inseridos via JS -->
         </div>
       </div>
-  
+
       <div class="agendamento-container form-card">
         <h2>Faça o seu Agendamento</h2>
 
         <div class="form-group">
           <label>1. Escolha um serviço</label>
           <div id="lista-servicos">
-            <!-- Botões de serviço inseridos via JavaScript -->
+            <!-- Botões de serviço são inseridos dinamicamente aqui -->
           </div>
         </div>
 
