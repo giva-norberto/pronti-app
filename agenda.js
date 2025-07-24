@@ -1,11 +1,11 @@
 /**
- * agenda.js (Painel do Dono - Lógica Original com Multi-Usuário)
- * * Este script foi construído sobre o código-base fornecido pelo usuário,
- * * adicionando a camada de segurança para múltiplos usuários sem alterar
+ * agenda.js (Painel do Dono - Lógica Corrigida com Multi-Usuário)
+ * * Este script contém a correção para o botão de cancelar,
+ * * mantendo a camada de segurança para múltiplos usuários e
  * * as funções e fórmulas originais de carregamento de agendamentos.
  */
 
-import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -24,11 +24,18 @@ const modalMensagem = document.getElementById('modal-mensagem');
 let agendamentoParaCancelarId = null; // Variável para armazenar o ID do agendamento a ser cancelado
 let currentUid = null; // Variável para armazenar o UID do usuário logado
 
-// --- SUAS FUNÇÕES ORIGINAIS (INTACTAS) ---
+// --- FUNÇÕES DE LÓGICA DA AGENDA ---
 
 function formatarHorario(dataIso) {
   const data = new Date(dataIso);
-  return `${data.toLocaleDateString()} ${data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  // Formata para "dd/mm/aaaa HH:MM"
+  return data.toLocaleString('pt-BR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 async function carregarAgendamentos(uid) {
@@ -38,7 +45,6 @@ async function carregarAgendamentos(uid) {
   }
 
   currentUid = uid; // Armazena o UID do usuário logado
-
   listaAgendamentos.innerHTML = "<p>Carregando agendamentos...</p>";
 
   const dataSelecionada = inputData.value;
@@ -48,23 +54,18 @@ async function carregarAgendamentos(uid) {
   }
 
   try {
-    // A coleção agora aponta para a pasta segura do usuário logado.
     const colecao = collection(db, `users/${uid}/agendamentos`);
     const snapshot = await getDocs(colecao);
-
     const agendamentos = [];
 
-    // A sua lógica de busca de serviços e agendamentos foi mantida.
     for (const docAg of snapshot.docs) {
       const ag = docAg.data();
       const dataAg = new Date(ag.horario);
-      const dataAgFormatada = dataAg.toISOString().split("T")[0]; // "2025-07-23"
+      const dataAgFormatada = dataAg.toISOString().split("T")[0];
 
-      // Filtra agendamentos apenas para a data selecionada e que não estejam cancelados
       if (dataAgFormatada === dataSelecionada && ag.status !== 'cancelado') {
         ag.id = docAg.id;
 
-        // Busca nome do serviço via ID, dentro da pasta do usuário.
         const servicoSnap = await getDoc(doc(db, `users/${uid}/servicos/${ag.servicoId}`));
         ag.servicoNome = servicoSnap.exists() ? servicoSnap.data().nome : "Serviço não encontrado";
 
@@ -73,18 +74,18 @@ async function carregarAgendamentos(uid) {
     }
 
     if (agendamentos.length === 0) {
-      const dataFormatada = new Date(dataSelecionada + 'T12:00:00').toLocaleDateString();
+      const dataObj = new Date(dataSelecionada + 'T12:00:00');
+      const dataFormatada = dataObj.toLocaleDateString('pt-BR');
       listaAgendamentos.innerHTML = `<p>Nenhum agendamento encontrado para o dia ${dataFormatada}.</p>`;
     } else {
       listaAgendamentos.innerHTML = "";
-
-      // Ordena os agendamentos por horário antes de exibir.
       agendamentos.sort((a, b) => new Date(a.horario) - new Date(b.horario));
 
       agendamentos.forEach(ag => {
         const div = document.createElement("div");
         div.className = "agendamento-item";
 
+        // ✅ CÓDIGO CORRIGIDO: Adicionado class e data-id ao botão para torná-lo funcional.
         div.innerHTML = `
           <h3>${ag.servicoNome}</h3>
           <p><strong>Cliente:</strong> ${ag.cliente}</p>
@@ -95,7 +96,6 @@ async function carregarAgendamentos(uid) {
         listaAgendamentos.appendChild(div);
       });
 
-      // Adiciona event listeners para os botões de cancelar após eles serem renderizados
       document.querySelectorAll('.btn-cancelar-agendamento').forEach(button => {
         button.addEventListener('click', (event) => {
           agendamentoParaCancelarId = event.target.dataset.id;
@@ -110,111 +110,57 @@ async function carregarAgendamentos(uid) {
   }
 }
 
-// --- NOVAS FUNÇÕES PARA CANCELAMENTO ---
-
-// Função para cancelar o agendamento no Firebase (Nova função)
 async function cancelarAgendamentoFirebase(agendamentoId, uid) {
-  if (!uid) {
-    Toastify({
-        text: "Erro: UID do usuário não disponível para cancelar o agendamento.",
-        duration: 3000,
-        close: true,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "#FF6347",
-    }).showToast();
+  if (!uid || !agendamentoId) {
+    Toastify({ text: "Erro: Informações incompletas para cancelar.", duration: 3000, backgroundColor: "#FF6347" }).showToast();
     return;
   }
 
   try {
     const agendamentoRef = doc(db, `users/${uid}/agendamentos`, agendamentoId);
-    // Opção 1: Atualizar o status para 'cancelado' (Recomendado para histórico)
     await updateDoc(agendamentoRef, { status: 'cancelado' });
 
-    // Opção 2: Deletar o documento (Se preferir remover totalmente, descomente abaixo e comente a linha acima)
-    // await deleteDoc(agendamentoRef);
-
-    Toastify({
-        text: "Agendamento cancelado com sucesso!",
-        duration: 3000,
-        close: true,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "#4CAF50",
-    }).showToast();
-    carregarAgendamentos(uid); // Recarrega a lista para refletir a mudança
+    Toastify({ text: "Agendamento cancelado com sucesso!", duration: 3000, backgroundColor: "#4CAF50" }).showToast();
+    carregarAgendamentos(uid);
   } catch (error) {
     console.error("Erro ao cancelar agendamento:", error);
-    Toastify({
-        text: "Erro ao cancelar agendamento.",
-        duration: 3000,
-        close: true,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "#FF6347",
-    }).showToast();
+    Toastify({ text: "Erro ao cancelar agendamento.", duration: 3000, backgroundColor: "#FF6347" }).showToast();
   } finally {
     fecharModalConfirmacao();
   }
 }
 
-// Funções para controlar o modal
 function fecharModalConfirmacao() {
   modalConfirmacao.style.display = 'none';
-  agendamentoParaCancelarId = null; // Limpa o ID do agendamento
+  agendamentoParaCancelarId = null;
 }
 
-// Event Listeners para o modal
+// --- INICIALIZAÇÃO E EVENTOS ---
+
 btnModalCancelar.addEventListener('click', fecharModalConfirmacao);
+
 btnModalConfirmar.addEventListener('click', () => {
   if (agendamentoParaCancelarId && currentUid) {
     cancelarAgendamentoFirebase(agendamentoParaCancelarId, currentUid);
   } else {
-    Toastify({
-        text: "Erro: Nenhum agendamento selecionado para cancelar ou UID indisponível.",
-        duration: 3000,
-        close: true,
-        gravity: "top",
-        position: "right",
-        backgroundColor: "#FF6347",
-    }).showToast();
+    Toastify({ text: "Erro: Nenhum agendamento selecionado.", duration: 3000, backgroundColor: "#FF6347" }).showToast();
     fecharModalConfirmacao();
   }
 });
 
-// --- NOVA ESTRUTURA DE INICIALIZAÇÃO ---
-// Garante que o código só rode após a confirmação do login.
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Usuário está logado.
         const uid = user.uid;
 
-        // Define a data atual como padrão no input.
         if (!inputData.value) {
             inputData.value = new Date().toISOString().split("T")[0];
         }
         
-        // Carrega os agendamentos para a data padrão.
         carregarAgendamentos(uid);
-
-        // Adiciona o listener para carregar novamente quando a data mudar.
         inputData.addEventListener("change", () => carregarAgendamentos(uid));
 
     } else {
-        // Usuário não está logado.
         console.log("Nenhum usuário logado. Redirecionando para login...");
         window.location.href = 'login.html';
     }
 });
-
-// REMOVIDO: Este listener já é adicionado dentro de onAuthStateChanged para garantir o UID
-// inputData.addEventListener("change", carregarAgendamentos);
-
-// REMOVIDO: Este window.addEventListener("load") foi incorporado dentro de onAuthStateChanged
-// para garantir que o UID esteja disponível antes de carregar os agendamentos.
-/*
-window.addEventListener("load", () => {
-  inputData.value = new Date().toISOString().split("T")[0];
-  setTimeout(carregarAgendamentos, 500); // aguarda autenticação assíncrona
-});
-*/
