@@ -106,24 +106,31 @@ async function carregarConfiguracoesHorario() {
 async function carregarServicos() {
   servicosContainer.innerHTML = '';
   const servicosRef = collection(db, "users", profissionalUid, "servicos");
-  // CORREÇÃO APLICADA: A consulta agora procura explicitamente por serviços
-  // que estão marcados como visíveis.
-  const q = query(servicosRef, where("visivelNaVitrine", "==", true));
-  const snapshot = await getDocs(q);
+  // Busca todos os serviços, sem filtro na consulta
+  const snapshot = await getDocs(servicosRef);
 
-  if (snapshot.empty) {
+  const servicosVisiveis = [];
+  snapshot.forEach(doc => {
+    const servico = doc.data();
+    // A lógica de filtro agora é local:
+    // Mostra o serviço se o campo 'visivelNaVitrine' não for explicitamente 'false'.
+    if (servico.visivelNaVitrine !== false) {
+        servicosVisiveis.push({ id: doc.id, ...servico });
+    }
+  });
+
+  if (servicosVisiveis.length === 0) {
     servicosContainer.innerHTML = '<p>Nenhum serviço disponível para agendamento online no momento.</p>';
     return;
   }
 
-  snapshot.forEach(doc => {
-    const servico = doc.data();
+  servicosVisiveis.forEach(servico => {
     const btn = document.createElement('button');
     btn.className = 'btn-servico';
     btn.textContent = `${servico.nome} (R$ ${parseFloat(servico.preco).toFixed(2)})`;
-    btn.dataset.id = doc.id;
+    btn.dataset.id = servico.id;
     btn.onclick = () => {
-        servicoSelecionado = { id: doc.id, nome: servico.nome };
+        servicoSelecionado = { id: servico.id, nome: servico.nome };
         document.querySelectorAll('.btn-servico').forEach(b => b.classList.remove('selecionado'));
         btn.classList.add('selecionado');
         verificarEstadoBotaoConfirmar();
@@ -231,3 +238,4 @@ async function salvarAgendamento(event) {
         btnConfirmar.textContent = 'Confirmar Agendamento';
     }
 }
+
