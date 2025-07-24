@@ -1,7 +1,7 @@
 /**
  * vitrine.js (Vitrine Interativa do Cliente)
- * Versão final que carrega o perfil e APENAS os serviços
- * marcados como "visivelNaVitrine: true" pelo empresário.
+ * Versão final que carrega o perfil, os serviços com detalhes expansíveis,
+ * e gere todo o fluxo de agendamento.
  */
 
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -106,14 +106,11 @@ async function carregarConfiguracoesHorario() {
 async function carregarServicos() {
   servicosContainer.innerHTML = '';
   const servicosRef = collection(db, "users", profissionalUid, "servicos");
-  // Busca todos os serviços, sem filtro na consulta
   const snapshot = await getDocs(servicosRef);
 
   const servicosVisiveis = [];
   snapshot.forEach(doc => {
     const servico = doc.data();
-    // A lógica de filtro agora é local:
-    // Mostra o serviço se o campo 'visivelNaVitrine' não for explicitamente 'false'.
     if (servico.visivelNaVitrine !== false) {
         servicosVisiveis.push({ id: doc.id, ...servico });
     }
@@ -125,17 +122,40 @@ async function carregarServicos() {
   }
 
   servicosVisiveis.forEach(servico => {
-    const btn = document.createElement('button');
-    btn.className = 'btn-servico';
-    btn.textContent = `${servico.nome} (R$ ${parseFloat(servico.preco).toFixed(2)})`;
-    btn.dataset.id = servico.id;
-    btn.onclick = () => {
-        servicoSelecionado = { id: servico.id, nome: servico.nome };
+    const servicoId = servico.id;
+    const card = document.createElement('div');
+    card.className = 'servico-card';
+
+    card.innerHTML = `
+      <button class="btn-servico" data-id="${servicoId}">
+        <span class="nome">${servico.nome}</span>
+        <span class="preco">R$ ${parseFloat(servico.preco).toFixed(2)}</span>
+      </button>
+      <button class="btn-detalhes">ℹ️</button>
+      <div class="detalhes-servico" id="detalhes-${servicoId}" style="display: none;">
+        <p><strong>Descrição:</strong> ${servico.descricao || 'Não informada.'}</p>
+        <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
+      </div>
+    `;
+
+    // Adiciona os eventos aos novos botões
+    const btnServico = card.querySelector('.btn-servico');
+    const btnDetalhes = card.querySelector('.btn-detalhes');
+    const detalhesDiv = card.querySelector('.detalhes-servico');
+
+    btnServico.onclick = () => {
+        servicoSelecionado = { id: servicoId, nome: servico.nome };
         document.querySelectorAll('.btn-servico').forEach(b => b.classList.remove('selecionado'));
-        btn.classList.add('selecionado');
+        btnServico.classList.add('selecionado');
         verificarEstadoBotaoConfirmar();
     };
-    servicosContainer.appendChild(btn);
+
+    btnDetalhes.onclick = () => {
+        const isVisible = detalhesDiv.style.display === 'block';
+        detalhesDiv.style.display = isVisible ? 'none' : 'block';
+    };
+
+    servicosContainer.appendChild(card);
   });
 }
 
@@ -238,4 +258,3 @@ async function salvarAgendamento(event) {
         btnConfirmar.textContent = 'Confirmar Agendamento';
     }
 }
-
