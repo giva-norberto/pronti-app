@@ -503,3 +503,68 @@ h1, h2, h3 {
     color: var(--cor-perigo); /* Usa a cor de perigo da sua marca */
     font-weight: 500;
 }
+
+/* =================================================================== */
+/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (ACRESCENTADO) --- */
+/* =================================================================== */
+
+.servico-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--cor-branco);
+  border: 1px solid #ddd;
+  border-radius: 12px; /* Alinhado com o seu design */
+  width: 100%;
+  margin-bottom: 20px; /* Alinhado com o seu design */
+  box-shadow: var(--sombra);
+  overflow: hidden;
+}
+
+.btn-servico {
+  background-color: var(--cor-branco);
+  color: var(--cor-texto);
+  border: 2px solid transparent;
+  padding: 15px;
+  border-radius: 8px;
+  font-weight: 600; /* Alinhado com o seu design */
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 1.1em;
+  transition: all 0.2s ease;
+}
+
+.btn-servico:hover {
+    border-color: var(--cor-primaria-leve);
+}
+
+.btn-servico.selecionado {
+  background-color: var(--cor-primaria);
+  color: var(--cor-branco);
+  border-color: var(--cor-primaria);
+}
+
+.btn-detalhes {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--cor-texto-leve);
+  padding: 5px;
+}
+
+.detalhes-servico {
+  background-color: var(--cor-fundo);
+  padding: 15px 25px; /* Alinhado com o padding dos seus cards */
+  margin-top: -8px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.9em;
+  color: var(--cor-texto);
+}
+
