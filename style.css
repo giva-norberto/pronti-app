@@ -505,34 +505,34 @@ h1, h2, h3 {
 }
 
 /* =================================================================== */
-/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (ACRESCENTADO) --- */
+/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (REVISADO) --- */
 /* =================================================================== */
 
 /* Container dos cards de serviços */
 #lista-servicos {
-  display: flex;
-  flex-direction: column; /* Altera para coluna para os cards ocuparem a largura toda */
-  gap: 15px; /* Espaçamento entre os cards */
+  display: grid; /* Usa grid para melhor alinhamento */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Layout responsivo */
+  gap: 20px;
 }
 
 /* Cada serviço individual */
 .servico-card {
   position: relative;
   background: var(--cor-branco);
-  border: 1px solid #e5e7eb;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.07);
   transition: all 0.2s ease-in-out;
+  overflow: hidden; /* Garante que os cantos arredondados funcionem */
 }
 
 .servico-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
     box-shadow: var(--sombra);
 }
 
 /* Botão principal (nome + preço) */
 .btn-servico {
-  all: unset; /* Reseta os estilos de botão para o podermos estilizar livremente */
+  all: unset;
   box-sizing: border-box;
   cursor: pointer;
   display: flex;
@@ -542,6 +542,7 @@ h1, h2, h3 {
   font-size: 1.1em;
   padding: 20px;
   width: 100%;
+  border-bottom: 1px solid var(--cor-fundo);
 }
 
 /* Nome e preço */
@@ -550,7 +551,7 @@ h1, h2, h3 {
   font-weight: 700;
 }
 .btn-servico .preco {
-  color: var(--cor-texto-leve);
+  color: var(--cor-texto);
   font-weight: 500;
 }
 
@@ -563,33 +564,31 @@ h1, h2, h3 {
     color: var(--cor-branco);
 }
 
-/* Botão de detalhes */
-.btn-detalhes {
-  all: unset;
-  box-sizing: border-box;
+/* Botão de detalhes (agora dentro do botão principal) */
+.btn-servico .btn-detalhes {
+  background-color: var(--cor-primaria-leve);
+  color: var(--cor-primaria);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2em;
+  font-weight: bold;
   cursor: pointer;
-  position: absolute;
-  top: 50%;
-  right: 20px;
-  transform: translateY(-50%);
-  font-size: 24px;
-  color: var(--cor-texto-leve);
-  padding: 5px;
-  z-index: 2;
+  margin-left: 15px; /* Espaçamento entre o preço e o botão */
+  transition: all 0.2s ease;
 }
 
-.btn-servico.selecionado + .btn-detalhes {
+.btn-servico.selecionado .btn-detalhes {
+    background-color: rgba(255,255,255,0.2);
     color: var(--cor-branco);
 }
 
 /* Área oculta com descrição e duração */
 .detalhes-servico {
-  margin-top: -10px;
   background-color: var(--cor-fundo);
   padding: 15px 25px;
   font-size: 0.9em;
-  border-top: 1px solid #e5e7eb;
-  border-radius: 0 0 12px 12px;
+  color: var(--cor-texto-leve);
   display: none; /* Começa escondido */
 }
-
