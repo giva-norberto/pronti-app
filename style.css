@@ -523,6 +523,7 @@ h1, h2, h3 {
   box-shadow: 0 4px 8px rgba(0,0,0,0.07);
   transition: all 0.2s ease-in-out;
   overflow: hidden;
+  border: 1px solid #e5e7eb;
 }
 
 .servico-card:hover {
@@ -542,6 +543,7 @@ h1, h2, h3 {
   font-size: 1.1em;
   padding: 20px;
   width: 100%;
+  transition: all 0.2s ease;
 }
 
 /* Nome e preço */
@@ -558,6 +560,7 @@ h1, h2, h3 {
 /* Estado selecionado */
 .btn-servico.selecionado {
   background-color: var(--cor-primaria);
+  border-radius: 12px 12px 0 0;
 }
 .btn-servico.selecionado .nome,
 .btn-servico.selecionado .preco {
@@ -584,7 +587,7 @@ h1, h2, h3 {
     color: var(--cor-primaria);
 }
 
-.btn-servico.selecionado .btn-detalhes {
+.btn-servico.selecionado + .btn-detalhes {
     color: var(--cor-branco);
 }
 
@@ -597,4 +600,3 @@ h1, h2, h3 {
   border-top: 1px solid #e5e7eb;
   display: none; /* Começa escondido */
 }
-
