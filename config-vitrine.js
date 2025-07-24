@@ -1,106 +1,131 @@
-import { auth, firestore } from './firebase-config.js';
-import { doc, collection, getDocs, setDoc, getDoc } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
+/**
+ * config-vitrine.js
+ * * Este script gere a nova página "Minha Vitrine", permitindo ao empresário
+ * * controlar quais serviços são exibidos publicamente.
+ */
+
+import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { app } from "./firebase-config.js";
+
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 const listaServicosContainer = document.getElementById('lista-servicos-vitrine');
 const btnPreview = document.getElementById('btn-preview-vitrine');
 
-let servicos = [];
-let servicosSelecionados = new Set();
-let userUid = null;
+let uid;
 
-function renderListaServicos() {
-  if (servicos.length === 0) {
-    listaServicosContainer.innerHTML = '<p>Você não tem serviços cadastrados.</p>';
-    return;
-  }
-
-  const html = servicos.map(servico => {
-    const checked = servicosSelecionados.has(servico.id) ? 'checked' : '';
-    return `
-      <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" data-id="${servico.id}" ${checked} />
-        ${servico.nome}
-      </label>
-    `;
-  }).join('');
-  listaServicosContainer.innerHTML = html;
-
-  // Adicionar listeners nos checkboxes
-  listaServicosContainer.querySelectorAll('input[type="checkbox"]').forEach(input => {
-    input.addEventListener('change', e => {
-      const id = e.target.dataset.id;
-      if (e.target.checked) {
-        servicosSelecionados.add(id);
-      } else {
-        servicosSelecionados.delete(id);
-      }
-      salvarConfiguracao();
-    });
-  });
-}
-
-async function carregarServicos() {
-  listaServicosContainer.innerHTML = '<p>Carregando serviços...</p>';
-  try {
-    const servicesRef = collection(firestore, 'users', userUid, 'services');
-    const querySnapshot = await getDocs(servicesRef);
-    servicos = [];
-    querySnapshot.forEach(docSnap => {
-      servicos.push({ id: docSnap.id, ...docSnap.data() });
-    });
-  } catch (error) {
-    console.error('Erro ao carregar serviços:', error);
-    listaServicosContainer.innerHTML = '<p>Erro ao carregar serviços.</p>';
-  }
-}
-
-async function carregarConfiguracao() {
-  try {
-    const configRef = doc(firestore, 'users', userUid, 'publicProfile', 'vitrineConfig');
-    const configSnap = await getDoc(configRef);
-    if (configSnap.exists()) {
-      const data = configSnap.data();
-      servicosSelecionados = new Set(data.servicosVisiveis || []);
-    } else {
-      servicosSelecionados = new Set();
-    }
-  } catch (error) {
-    console.error('Erro ao carregar configuração:', error);
-    servicosSelecionados = new Set();
-  }
-}
-
-async function salvarConfiguracao() {
-  try {
-    const configRef = doc(firestore, 'users', userUid, 'publicProfile', 'vitrineConfig');
-    await setDoc(configRef, { servicosVisiveis: Array.from(servicosSelecionados) });
-    console.log('Configuração salva com sucesso!');
-  } catch (error) {
-    console.error('Erro ao salvar configuração:', error);
-  }
-}
-
-btnPreview.addEventListener('click', () => {
-  // Abrir a página pública da vitrine, pode ser um caminho fixo
-  // Exemplo: vitrine.html?user=uid
-  if (!userUid) {
-    alert('Usuário não autenticado.');
-    return;
-  }
-  const url = `vitrine.html?user=${userUid}`;
-  window.open(url, '_blank');
-});
-
-onAuthStateChanged(auth, async user => {
+onAuthStateChanged(auth, (user) => {
   if (user) {
-    userUid = user.uid;
-    await carregarServicos();
-    await carregarConfiguracao();
-    renderListaServicos();
+    uid = user.uid;
+    carregarServicosParaConfiguracao(uid);
+    configurarBotaoPreview(uid);
   } else {
-    // Se não autenticado, redirecionar para login ou mostrar mensagem
-    alert('Você precisa estar logado para acessar esta página.');
     window.location.href = 'login.html';
   }
 });
+
+/**
+ * Carrega todos os serviços do empresário e cria os controlos de visibilidade.
+ * @param {string} userId - O ID do utilizador autenticado.
+ */
+async function carregarServicosParaConfiguracao(userId) {
+  if (!listaServicosContainer) return;
+  listaServicosContainer.innerHTML = '<p>A carregar os seus serviços...</p>';
+
+  try {
+    const servicosUserCollection = collection(db, "users", userId, "servicos");
+    const querySnapshot = await getDocs(servicosUserCollection);
+
+    if (querySnapshot.empty) {
+      listaServicosContainer.innerHTML = '<p>Você ainda não cadastrou nenhum serviço. Vá para a aba "Serviços" para começar.</p>';
+      return;
+    }
+
+    listaServicosContainer.innerHTML = '';
+    querySnapshot.forEach(doc => {
+      const servico = doc.data();
+      const servicoId = doc.id;
+      
+      const item = document.createElement('div');
+      item.className = 'servico-item'; // Reutiliza o estilo de item
+      item.style.display = 'flex';
+      item.style.justifyContent = 'space-between';
+      item.style.alignItems = 'center';
+
+      // Se o campo não existir, assume-se que o serviço é visível (padrão)
+      const isVisible = servico.visivelNaVitrine !== false;
+
+      item.innerHTML = `
+        <div>
+          <h3>${servico.nome}</h3>
+          <p style="margin:0;">Preço: R$ ${parseFloat(servico.preco || 0).toFixed(2)}</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" data-id="${servicoId}" ${isVisible ? 'checked' : ''}>
+          <span class="slider"></span>
+        </label>
+      `;
+      listaServicosContainer.appendChild(item);
+    });
+
+    // Adiciona os eventos de clique aos toggles
+    adicionarListenersDeToggle(userId);
+
+  } catch (error) {
+    console.error("Erro ao carregar serviços para configuração:", error);
+    listaServicosContainer.innerHTML = '<p style="color:red;">Erro ao carregar os seus serviços.</p>';
+  }
+}
+
+/**
+ * Adiciona os "ouvintes" de eventos aos botões toggle.
+ * @param {string} userId - O ID do utilizador autenticado.
+ */
+function adicionarListenersDeToggle(userId) {
+    listaServicosContainer.querySelectorAll('.switch input[type="checkbox"]').forEach(toggle => {
+        toggle.addEventListener('change', async (e) => {
+            const servicoId = e.target.dataset.id;
+            const isChecked = e.target.checked;
+
+            try {
+                const servicoRef = doc(db, "users", userId, "servicos", servicoId);
+                // Atualiza o campo 'visivelNaVitrine' no Firestore
+                await updateDoc(servicoRef, {
+                    visivelNaVitrine: isChecked
+                });
+                // Poderia adicionar uma notificação de sucesso aqui (Toastify)
+            } catch (error) {
+                console.error("Erro ao atualizar a visibilidade do serviço:", error);
+                alert("Não foi possível alterar a visibilidade do serviço.");
+                // Reverte a mudança visual em caso de erro
+                e.target.checked = !isChecked;
+            }
+        });
+    });
+}
+
+/**
+ * Configura o botão de pré-visualização para abrir o link correto.
+ * @param {string} userId - O ID do utilizador autenticado.
+ */
+async function configurarBotaoPreview(userId) {
+    if (!btnPreview) return;
+    try {
+        const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
+        const docSnap = await getDoc(perfilRef);
+        if (docSnap.exists() && docSnap.data().slug) {
+            const slug = docSnap.data().slug;
+            const urlCompleta = `vitrine.html?slug=${slug}`;
+            btnPreview.addEventListener('click', () => {
+                window.open(urlCompleta, '_blank');
+            });
+        } else {
+            btnPreview.textContent = "Preencha seu perfil para pré-visualizar";
+            btnPreview.disabled = true;
+        }
+    } catch (error) {
+        console.error("Erro ao configurar o botão de pré-visualização:", error);
+    }
+}
