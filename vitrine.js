@@ -3,7 +3,7 @@
  * Versão com detalhes de serviço expansíveis ao clicar no próprio serviço.
  */
 
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
@@ -26,6 +26,8 @@ const horariosContainer = document.getElementById('grade-horarios');
 const nomeClienteInput = document.getElementById('nome-cliente');
 const telefoneClienteInput = document.getElementById('telefone-cliente');
 const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
+
+const agendamentosClienteContainer = document.getElementById('agendamentos-cliente'); // novo container para listar agendamentos do cliente
 
 // --- INICIALIZAÇÃO ---
 document.addEventListener('DOMContentLoaded', inicializarVitrine);
@@ -56,6 +58,10 @@ async function inicializarVitrine() {
     content.style.display = 'block';
     configurarEventos();
 
+    // Carrega agendamentos do cliente já feitos (se telefone estiver preenchido)
+    if (telefoneClienteInput.value.trim() !== '') {
+      carregarAgendamentosCliente(telefoneClienteInput.value.trim());
+    }
   } catch (error) {
     console.error("Erro ao inicializar a vitrine:", error);
     loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página deste profissional.</p>`;
@@ -67,7 +73,10 @@ function configurarEventos() {
     dataInput.min = new Date().toISOString().split('T')[0];
     dataInput.addEventListener('change', gerarHorariosDisponiveis);
     nomeClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
-    telefoneClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
+    telefoneClienteInput.addEventListener('input', () => {
+        verificarEstadoBotaoConfirmar();
+        carregarAgendamentosCliente(telefoneClienteInput.value.trim());
+    });
     btnConfirmar.addEventListener('click', salvarAgendamento);
     gerarHorariosDisponiveis();
 }
@@ -220,43 +229,92 @@ async function gerarHorariosDisponiveis() {
 // --- LÓGICA DE CONFIRMAÇÃO ---
 
 function verificarEstadoBotaoConfirmar() {
-    const nomeOk = nomeClienteInput.value.trim() !== '';
-    const telefoneOk = telefoneClienteInput.value.trim() !== '';
-    if (servicoSelecionado && horarioSelecionado && nomeOk && telefoneOk) {
-        btnConfirmar.disabled = false;
-    } else {
-        btnConfirmar.disabled = true;
+    btnConfirmar.disabled = !(servicoSelecionado && horarioSelecionado && nomeClienteInput.value.trim() && telefoneClienteInput.value.trim());
+}
+
+async function salvarAgendamento() {
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'Agendando...';
+
+    try {
+        const dataHora = new Date(dataInput.value + "T" + horarioSelecionado + ":00");
+        const agendamento = {
+            clienteNome: nomeClienteInput.value.trim(),
+            clienteTelefone: telefoneClienteInput.value.trim(),
+            servicoId: servicoSelecionado.id,
+            servicoNome: servicoSelecionado.nome,
+            horario: dataHora.toISOString(),
+            criadoEm: Timestamp.now(),
+            profissionalUid: profissionalUid,
+        };
+
+        await addDoc(collection(db, "users", profissionalUid, "agendamentos"), agendamento);
+
+        alert("Agendamento realizado com sucesso!");
+        // Reseta formulário
+        servicoSelecionado = null;
+        horarioSelecionado = null;
+        nomeClienteInput.value = '';
+        telefoneClienteInput.value = '';
+        dataInput.value = new Date().toISOString().split('T')[0];
+        gerarHorariosDisponiveis();
+        carregarAgendamentosCliente(agendamento.clienteTelefone);
+
+    } catch (error) {
+        console.error("Erro ao salvar agendamento:", error);
+        alert("Não foi possível realizar o agendamento. Tente novamente.");
+    } finally {
+        btnConfirmar.textContent = 'Confirmar Agendamento';
+        verificarEstadoBotaoConfirmar();
     }
 }
 
-async function salvarAgendamento(event) {
-    event.preventDefault();
-    btnConfirmar.disabled = true;
-    btnConfirmar.textContent = 'A agendar...';
+// --- LISTAGEM DE AGENDAMENTOS DO CLIENTE ---
 
-    const horarioFinalISO = new Date(`${dataInput.value}T${horarioSelecionado}:00`).toISOString();
-    const novoAgendamento = {
-        cliente: nomeClienteInput.value.trim(),
-        telefone: telefoneClienteInput.value.trim(),
-        servicoId: servicoSelecionado.id,
-        horario: horarioFinalISO,
-        criadoEm: Timestamp.now()
-    };
-
-    try {
-        const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
-        await addDoc(agendamentosRef, novoAgendamento);
-        content.innerHTML = `
-            <div class="info-card" style="text-align:center;">
-                <h3>✅ Agendamento Confirmado!</h3>
-                <p>O seu horário para <strong>${horarioSelecionado}</strong> do dia <strong>${new Date(dataInput.value+'T12:00:00').toLocaleDateString()}</strong> foi confirmado com sucesso.</p>
-                <p>Obrigado por agendar connosco!</p>
-            </div>
-        `;
-    } catch (error) {
-        console.error("Erro ao salvar agendamento:", error);
-        alert("Ocorreu um erro ao salvar o seu agendamento. Tente novamente.");
-        btnConfirmar.disabled = false;
-        btnConfirmar.textContent = 'Confirmar Agendamento';
+async function carregarAgendamentosCliente(telefone) {
+    if (!telefone) {
+        agendamentosClienteContainer.innerHTML = '';
+        return;
     }
+
+    agendamentosClienteContainer.innerHTML = '<p>Carregando seus agendamentos...</p>';
+
+    const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
+    const q = query(agendamentosRef, where("clienteTelefone", "==", telefone), limit(10));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        agendamentosClienteContainer.innerHTML = '<p>Nenhum agendamento encontrado para este telefone.</p>';
+        return;
+    }
+
+    agendamentosClienteContainer.innerHTML = '';
+    snapshot.forEach(doc => {
+        const ag = doc.data();
+        const id = doc.id;
+        const horarioFormatado = new Date(ag.horario).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        const card = document.createElement('div');
+        card.className = 'agendamento-card';
+        card.innerHTML = `
+            <p><strong>Serviço:</strong> ${ag.servicoNome}</p>
+            <p><strong>Data e hora:</strong> ${horarioFormatado}</p>
+            <button class="btn-cancelar" data-id="${id}">Cancelar</button>
+        `;
+
+        card.querySelector('.btn-cancelar').onclick = async () => {
+            const confirmar = confirm('Deseja realmente cancelar este agendamento?');
+            if (!confirmar) return;
+            try {
+                await deleteDoc(doc(db, "users", profissionalUid, "agendamentos", id));
+                alert('Agendamento cancelado com sucesso.');
+                carregarAgendamentosCliente(telefone);
+                gerarHorariosDisponiveis();
+            } catch (err) {
+                console.error('Erro ao cancelar:', err);
+                alert('Não foi possível cancelar o agendamento.');
+            }
+        };
+
+        agendamentosClienteContainer.appendChild(card);
+    });
 }
