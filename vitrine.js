@@ -106,9 +106,9 @@ async function carregarConfiguracoesHorario() {
 async function carregarServicos() {
   servicosContainer.innerHTML = '';
   const servicosRef = collection(db, "users", profissionalUid, "servicos");
-  // ALTERAÇÃO: Mostra todos os serviços que NÃO estão marcados como "não visíveis".
-  // Isto faz com que os serviços antigos (sem a marcação) apareçam por defeito.
-  const q = query(servicosRef, where("visivelNaVitrine", "!=", false));
+  // CORREÇÃO: A consulta agora procura explicitamente por serviços
+  // que estão marcados como visíveis.
+  const q = query(servicosRef, where("visivelNaVitrine", "==", true));
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
@@ -231,3 +231,4 @@ async function salvarAgendamento(event) {
         btnConfirmar.textContent = 'Confirmar Agendamento';
     }
 }
+
