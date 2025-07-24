@@ -4,24 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agendamento Online</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    body {
-      display: block;
-      background: var(--cor-fundo);
-      margin-left: 0;
+    :root {
+      --cor-fundo: #f5f7fa;
+      --cor-primaria: #6366f1;
+      --cor-primaria-leve: #a5b4fc;
+      --cor-texto-leve: #4b5563;
     }
-    .main-content {
-      margin-left: 0;
-      max-width: 700px;
-      margin: 0 auto;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--cor-fundo);
+      color: #333;
+      display: flex;
+      justify-content: center;
       padding: 20px;
+    }
+    main.main-content {
+      max-width: 700px;
+      width: 100%;
+      background: white;
+      border-radius: 10px;
+      padding: 25px 30px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .header-vitrine {
       text-align: center;
       margin-bottom: 30px;
-      padding-bottom: 20px;
       border-bottom: 1px solid #eee;
+      padding-bottom: 20px;
     }
     .header-vitrine img {
       width: 100px;
@@ -37,30 +48,93 @@
       margin: 0;
     }
     .header-vitrine p {
-      margin: 5px 0 0 0;
+      margin: 5px 0 0;
       color: var(--cor-texto-leve);
+      font-style: italic;
     }
-    .agendamento-container h2, #agendamentos-cliente h2 {
-      font-size: 1.2em;
+    h2 {
+      font-size: 1.3em;
       margin-bottom: 15px;
-      padding-bottom: 10px;
       border-bottom: 2px solid var(--cor-primaria-leve);
+      padding-bottom: 10px;
+      color: var(--cor-primaria);
     }
     #agendamentos-cliente .agendamento-item {
       padding: 15px;
       margin-bottom: 15px;
       border: 1px solid #ddd;
       border-radius: 8px;
+      background: #f9f9f9;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #f9f9f9;
+    }
+    .form-group {
+      margin-bottom: 25px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: var(--cor-primaria);
+    }
+    #lista-servicos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    #lista-servicos button {
+      background: var(--cor-primaria-leve);
+      border: none;
+      border-radius: 6px;
+      padding: 10px 15px;
+      cursor: pointer;
+      color: white;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+    #lista-servicos button.selected,
+    #lista-servicos button:hover {
+      background: var(--cor-primaria);
+    }
+    input[type="date"],
+    input[type="text"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    #grade-horarios {
+      margin-top: 10px;
+    }
+    .aviso-horarios {
+      font-style: italic;
+      color: #666;
+    }
+    button#btn-confirmar-agendamento {
+      background: var(--cor-primaria);
+      border: none;
+      padding: 12px 18px;
+      color: white;
+      font-size: 1.1em;
+      font-weight: 700;
+      border-radius: 8px;
+      width: 100%;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button#btn-confirmar-agendamento:disabled {
+      background: #a5b4fc80;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
-
   <main class="main-content">
+
     <div id="vitrine-loader">
       <p style="text-align: center;">A carregar informações do profissional...</p>
     </div>
@@ -72,7 +146,6 @@
         <p id="data-atual"></p>
       </header>
 
-      <!-- Secção para mostrar os agendamentos existentes do cliente -->
       <div id="agendamentos-cliente" style="display: none;">
         <h2>Seus Próximos Agendamentos</h2>
         <div id="lista-meus-agendamentos">
@@ -84,33 +157,33 @@
         <h2>Faça o seu Agendamento</h2>
 
         <div class="form-group">
-          <label>1. Escolha um serviço</label>
+          <label for="lista-servicos">1. Escolha um serviço</label>
           <div id="lista-servicos">
             <!-- Botões de serviço são inseridos dinamicamente aqui -->
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 30px;">
-          <label>2. Escolha uma data e horário</label>
-          <input type="date" id="data-agendamento" style="margin-bottom: 15px;">
+        <div class="form-group">
+          <label for="data-agendamento">2. Escolha uma data e horário</label>
+          <input type="date" id="data-agendamento" required>
           <div id="grade-horarios">
             <p class="aviso-horarios">Selecione uma data para ver os horários.</p>
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 30px;">
+        <div class="form-group">
           <label>3. Os seus dados</label>
           <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
           <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required style="margin-top: 10px;">
         </div>
 
-        <button id="btn-confirmar-agendamento" class="btn-submit" disabled>Confirmar Agendamento</button>
+        <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
       </div>
     </div>
+
   </main>
 
   <script src="firebase-config.js" type="module"></script>
   <script src="vitrine.js" type="module"></script>
-
 </body>
 </html>
