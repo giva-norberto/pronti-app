@@ -106,7 +106,7 @@ async function carregarConfiguracoesHorario() {
 async function carregarServicos() {
   servicosContainer.innerHTML = '';
   const servicosRef = collection(db, "users", profissionalUid, "servicos");
-  // CORREÇÃO: A consulta agora procura explicitamente por serviços
+  // CORREÇÃO APLICADA: A consulta agora procura explicitamente por serviços
   // que estão marcados como visíveis.
   const q = query(servicosRef, where("visivelNaVitrine", "==", true));
   const snapshot = await getDocs(q);
@@ -231,4 +231,3 @@ async function salvarAgendamento(event) {
         btnConfirmar.textContent = 'Confirmar Agendamento';
     }
 }
-
