@@ -1,146 +1,233 @@
 /**
- * vitrine.js (Visão do Cliente - Versão Inteligente)
- * * Este script agora lê um 'slug' da URL para encontrar o profissional
- * * correto no Firestore e carregar dinamicamente o seu perfil público
- * * e a sua lista de serviços.
+ * vitrine.js (Vitrine Interativa do Cliente)
+ * Gere todo o fluxo de agendamento, desde a seleção de serviço
+ * e horário até à confirmação final.
  */
 
-import { getFirestore, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
 
-// Elementos do HTML que serão preenchidos dinamicamente
-const headerPublico = document.querySelector('.header-publico');
-const listaServicosContainer = document.getElementById('lista-servicos');
+// --- ESTADO GLOBAL ---
+let profissionalUid = null;
+let servicoSelecionado = null;
+let horarioSelecionado = null;
+let horariosConfig = {}; // Guarda as configurações de horário do profissional
 
-/**
- * Função principal que inicializa a página da vitrine.
- */
+// --- ELEMENTOS DO DOM ---
+const loader = document.getElementById('vitrine-loader');
+const content = document.getElementById('vitrine-content');
+const nomeNegocioEl = document.getElementById('nome-negocio-publico');
+const dataAtualEl = document.getElementById('data-atual');
+const logoEl = document.getElementById('logo-publico');
+const servicosContainer = document.getElementById('lista-servicos');
+const dataInput = document.getElementById('data-agendamento');
+const horariosContainer = document.getElementById('grade-horarios');
+const nomeClienteInput = document.getElementById('nome-cliente');
+const telefoneClienteInput = document.getElementById('telefone-cliente');
+const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
+
+// --- INICIALIZAÇÃO ---
+document.addEventListener('DOMContentLoaded', inicializarVitrine);
+
 async function inicializarVitrine() {
-  // Passo 1: Ler o 'slug' da URL.
   const urlParams = new URLSearchParams(window.location.search);
-  const slug = urlParams.get('slug');
+  // MUDANÇA: Usa 'user' em vez de 'slug' para obter o UID
+  profissionalUid = urlParams.get('user');
 
-  if (!slug) {
-    exibirErro("Link inválido. Nenhum perfil de profissional foi especificado.");
+  if (!profissionalUid) {
+    loader.innerHTML = `<p style="color:red; text-align:center;">Link inválido. O profissional não foi especificado.</p>`;
     return;
   }
 
   try {
-    // Passo 2: Encontrar o ID do profissional que corresponde ao slug.
-    const profissionalUid = await encontrarProfissionalPeloSlug(slug);
+    // Carrega tudo em paralelo
+    await Promise.all([
+        carregarPerfilPublico(),
+        carregarConfiguracoesHorario(),
+        carregarServicos()
+    ]);
 
-    if (!profissionalUid) {
-      exibirErro(`Nenhum profissional encontrado com o endereço "${slug}". Verifique o link.`);
-      return;
-    }
+    // Mostra o conteúdo e esconde o loader
+    loader.style.display = 'none';
+    content.style.display = 'block';
 
-    // Passo 3: Carregar o perfil e os serviços do profissional encontrado.
-    await carregarPerfilPublico(profissionalUid);
-    await carregarServicosPublicos(profissionalUid);
+    // Configura os eventos
+    configurarEventos();
 
   } catch (error) {
-    console.error("Erro fatal ao inicializar a vitrine:", error);
-    exibirErro("Ocorreu um erro ao carregar a página. Tente novamente mais tarde.");
+    console.error("Erro ao inicializar a vitrine:", error);
+    loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página deste profissional.</p>`;
   }
 }
 
-/**
- * Procura na coleção 'users' por um perfil que corresponda ao slug fornecido.
- * @param {string} slug - O slug lido da URL.
- * @returns {Promise<string|null>} O UID do profissional ou null se não for encontrado.
- */
-async function encontrarProfissionalPeloSlug(slug) {
-  console.log(`A procurar profissional com o slug: ${slug}`);
-  const profilesRef = collection(db, "users");
-  // Esta consulta complexa procura dentro da subcoleção 'publicProfile'
-  const q = query(
-    collection(db, "users"),
-    where("publicProfile.profile.slug", "==", slug),
-    limit(1)
-  );
+function configurarEventos() {
+    // Define a data atual e o listener
+    dataInput.value = new Date().toISOString().split('T')[0];
+    dataInput.min = new Date().toISOString().split('T')[0]; // Impede de selecionar datas passadas
+    dataInput.addEventListener('change', gerarHorariosDisponiveis);
+    
+    // Listeners para os campos do cliente para verificar o estado do botão
+    nomeClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
+    telefoneClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
 
-  // Infelizmente, o Firestore não suporta consultas diretas em subcoleções
-  // desta forma. A abordagem correta é ter uma coleção raiz para perfis públicos.
-  // Como solução alternativa para a estrutura atual, vamos criar uma coleção 'publicProfiles'.
-  // Assumindo que criamos uma coleção 'publicProfiles' para facilitar a busca.
-  
-  const publicProfilesRef = collection(db, "publicProfiles");
-  const profileQuery = query(publicProfilesRef, where("slug", "==", slug), limit(1));
-  const querySnapshot = await getDocs(profileQuery);
+    // Listener do botão de confirmação
+    btnConfirmar.addEventListener('click', salvarAgendamento);
 
-  if (querySnapshot.empty) {
-    return null;
+    // Gera os horários para a data de hoje
+    gerarHorariosDisponiveis();
+}
+
+// --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
+
+async function carregarPerfilPublico() {
+  const perfilRef = doc(db, "users", profissionalUid, "publicProfile", "profile");
+  const docSnap = await getDoc(perfilRef);
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+    nomeNegocioEl.textContent = data.nomeNegocio || "Nome não definido";
+    if (data.logoUrl) logoEl.src = data.logoUrl;
+    // Define a data atual formatada
+    dataAtualEl.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   }
-  // Retorna o UID do dono, que está guardado no perfil público.
-  return querySnapshot.docs[0].data().ownerId;
 }
 
-
-/**
- * Carrega os dados do perfil público e atualiza o cabeçalho da página.
- * @param {string} uid - O ID do profissional.
- */
-async function carregarPerfilPublico(uid) {
-    // Esta função precisaria de ser implementada para buscar os dados de 'users/{uid}/publicProfile/profile'
-    // e preencher o headerPublico. Por agora, vamos focar nos serviços.
-    console.log(`Perfil a ser carregado para o UID: ${uid}`);
+async function carregarConfiguracoesHorario() {
+    const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
+    const docSnap = await getDoc(horariosRef);
+    if (docSnap.exists()) {
+        horariosConfig = docSnap.data();
+    } else {
+        // Configuração padrão se o empresário não definir
+        horariosConfig = { intervalo: 30 };
+    }
 }
 
-/**
- * Busca os serviços do profissional no Firestore e os renderiza na página.
- * @param {string} uid - O ID do profissional.
- */
-async function carregarServicosPublicos(uid) {
-  listaServicosContainer.innerHTML = '<p>A carregar os nossos serviços...</p>';
-  try {
-    const servicosUserCollection = collection(db, "users", uid, "servicos");
-    const querySnapshot = await getDocs(servicosUserCollection);
+async function carregarServicos() {
+  servicosContainer.innerHTML = '';
+  const servicosRef = collection(db, "users", profissionalUid, "servicos");
+  const q = query(servicosRef, where("visivelNaVitrine", "==", true));
+  const snapshot = await getDocs(q);
 
-    if (querySnapshot.empty) {
-      listaServicosContainer.innerHTML = '<p>Este profissional ainda não cadastrou nenhum serviço.</p>';
-      return;
+  if (snapshot.empty) {
+    servicosContainer.innerHTML = '<p>Nenhum serviço disponível.</p>';
+    return;
+  }
+
+  snapshot.forEach(doc => {
+    const servico = doc.data();
+    const btn = document.createElement('button');
+    btn.className = 'btn-servico';
+    btn.textContent = `${servico.nome} (R$ ${parseFloat(servico.preco).toFixed(2)})`;
+    btn.dataset.id = doc.id;
+    btn.onclick = () => {
+        servicoSelecionado = { id: doc.id, nome: servico.nome };
+        document.querySelectorAll('.btn-servico').forEach(b => b.classList.remove('selecionado'));
+        btn.classList.add('selecionado');
+        verificarEstadoBotaoConfirmar();
+    };
+    servicosContainer.appendChild(btn);
+  });
+}
+
+// --- LÓGICA DE HORÁRIOS ---
+
+async function gerarHorariosDisponiveis() {
+    horariosContainer.innerHTML = '<p class="aviso-horarios">A verificar...</p>';
+    horarioSelecionado = null; // Reseta o horário ao mudar a data
+    verificarEstadoBotaoConfirmar();
+
+    const diaSelecionado = new Date(dataInput.value + "T12:00:00");
+    const diaDaSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSelecionado.getDay()];
+    
+    const configDia = horariosConfig[diaDaSemana];
+    if (!configDia || !configDia.ativo || configDia.blocos.length === 0) {
+        horariosContainer.innerHTML = '<p class="aviso-horarios">Não há atendimento neste dia.</p>';
+        return;
     }
 
-    listaServicosContainer.innerHTML = '';
-    querySnapshot.forEach(doc => {
-      const servico = doc.data();
-      const servicoId = doc.id;
-      const card = document.createElement('div');
-      card.className = 'servico-item';
-      card.innerHTML = `
-        <div class="servico-info">
-            <h3>${servico.nome || 'Serviço sem nome'}</h3>
-            <p>${servico.descricao || 'Sem descrição disponível.'}</p>
-        </div>
-        <div class="servico-meta">
-            <div class="meta-item"><strong>Duração</strong><span>${servico.duracao || 'N/A'} min</span></div>
-            <div class="meta-item"><strong>Preço</strong><span>R$ ${parseFloat(servico.preco || 0).toFixed(2).replace('.', ',')}</span></div>
-            <a href="novo-agendamento.html?servico=${servicoId}" class="btn-new">Agendar</a>
-        </div>
-      `;
-      listaServicosContainer.appendChild(card);
+    // Busca agendamentos existentes para o dia
+    const inicioDoDia = new Date(dataInput.value + "T00:00:00").toISOString();
+    const fimDoDia = new Date(dataInput.value + "T23:59:59").toISOString();
+    const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
+    const q = query(agendamentosRef, where("horario", ">=", inicioDoDia), where("horario", "<=", fimDoDia));
+    const snapshot = await getDocs(q);
+    const horariosOcupados = snapshot.docs.map(doc => new Date(doc.data().horario).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+
+    horariosContainer.innerHTML = '';
+    let encontrouHorario = false;
+    const intervalo = horariosConfig.intervalo || 30;
+
+    configDia.blocos.forEach(bloco => {
+        const [horaInicio, minInicio] = bloco.inicio.split(':').map(Number);
+        const [horaFim, minFim] = bloco.fim.split(':').map(Number);
+        
+        for (let h = horaInicio; h <= horaFim; h++) {
+            for (let m = (h === horaInicio ? minInicio : 0); m < (h === horaFim ? minFim : 60); m += intervalo) {
+                const horario = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                if (!horariosOcupados.includes(horario)) {
+                    encontrouHorario = true;
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-horario';
+                    btn.textContent = horario;
+                    btn.onclick = () => {
+                        horarioSelecionado = horario;
+                        document.querySelectorAll('.btn-horario').forEach(b => b.classList.remove('selecionado'));
+                        btn.classList.add('selecionado');
+                        verificarEstadoBotaoConfirmar();
+                    };
+                    horariosContainer.appendChild(btn);
+                }
+            }
+        }
     });
-  } catch (error) {
-    console.error("Erro ao carregar serviços públicos:", error);
-    exibirErro("Não foi possível carregar os serviços deste profissional.");
-  }
+
+    if (!encontrouHorario) {
+        horariosContainer.innerHTML = '<p class="aviso-horarios">Todos os horários para esta data foram preenchidos.</p>';
+    }
 }
 
-/**
- * Exibe uma mensagem de erro central na tela.
- * @param {string} mensagem - A mensagem de erro a ser exibida.
- */
-function exibirErro(mensagem) {
-  if (headerPublico) headerPublico.style.display = 'none';
-  if (listaServicosContainer) {
-    listaServicosContainer.innerHTML = `<p style="color:red; text-align:center; font-size: 1.2em; padding: 40px;">${mensagem}</p>`;
-  }
+// --- LÓGICA DE CONFIRMAÇÃO ---
+
+function verificarEstadoBotaoConfirmar() {
+    const nomeOk = nomeClienteInput.value.trim() !== '';
+    const telefoneOk = telefoneClienteInput.value.trim() !== '';
+    if (servicoSelecionado && horarioSelecionado && nomeOk && telefoneOk) {
+        btnConfirmar.disabled = false;
+    } else {
+        btnConfirmar.disabled = true;
+    }
 }
 
-// Inicia a vitrine assim que a página é carregada.
-inicializarVitrine();
+async function salvarAgendamento(event) {
+    event.preventDefault();
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'A agendar...';
 
+    const horarioFinalISO = new Date(`${dataInput.value}T${horarioSelecionado}:00`).toISOString();
+    const novoAgendamento = {
+        cliente: nomeClienteInput.value.trim(),
+        telefone: telefoneClienteInput.value.trim(),
+        servicoId: servicoSelecionado.id,
+        horario: horarioFinalISO,
+        criadoEm: Timestamp.now()
+    };
 
-
+    try {
+        const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
+        await addDoc(agendamentosRef, novoAgendamento);
+        content.innerHTML = `
+            <div class="info-card" style="text-align:center;">
+                <h3>✅ Agendamento Confirmado!</h3>
+                <p>O seu horário para <strong>${horarioSelecionado}</strong> do dia <strong>${new Date(dataInput.value+'T12:00:00').toLocaleDateString()}</strong> foi confirmado com sucesso.</p>
+                <p>Obrigado por agendar connosco!</p>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Erro ao salvar agendamento:", error);
+        alert("Ocorreu um erro ao salvar o seu agendamento. Tente novamente.");
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Confirmar Agendamento';
+    }
+}
