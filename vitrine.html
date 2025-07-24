@@ -6,14 +6,11 @@
   <title>Agendamento Online</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    /* Estilos específicos para a página pública */
-    body { 
-      display: block; 
-      background: var(--cor-fundo); 
-      margin-left: 0;
+    body {
+      background: var(--cor-fundo);
+      margin: 0;
     }
     .main-content {
-      margin-left: 0;
       max-width: 700px;
       margin: 0 auto;
       padding: 20px;
@@ -47,13 +44,27 @@
       padding-bottom: 10px;
       border-bottom: 2px solid var(--cor-primaria-leve);
     }
-    /* Estilos para a nova secção de agendamentos */
     #meus-agendamentos .agendamento-item {
-        padding: 15px;
-        margin-bottom: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      padding: 15px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9f9f9;
+    }
+    .cancelar-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .cancelar-btn:hover {
+      background: #dc2626;
     }
   </style>
 </head>
@@ -71,27 +82,23 @@
         <p id="data-atual"></p>
       </header>
 
-      <!-- Secção para mostrar os agendamentos existentes do cliente -->
       <div id="meus-agendamentos" style="display: none;">
-        <h2>Os Seus Próximos Agendamentos</h2>
+        <h2>Seus Próximos Agendamentos</h2>
         <div id="lista-meus-agendamentos">
-            <!-- Agendamentos do cliente serão inseridos aqui -->
+          <!-- Agendamentos do cliente inseridos via JavaScript -->
         </div>
       </div>
   
-      <!-- Container unificado para um novo agendamento -->
       <div class="agendamento-container form-card">
         <h2>Faça o seu Agendamento</h2>
-        
-        <!-- SERVIÇOS -->
+
         <div class="form-group">
           <label>1. Escolha um serviço</label>
           <div id="lista-servicos">
-            <!-- Botões de serviço serão inseridos aqui -->
+            <!-- Botões de serviço inseridos via JavaScript -->
           </div>
         </div>
-        
-        <!-- DATA E HORÁRIOS -->
+
         <div class="form-group" style="margin-top: 30px;">
           <label>2. Escolha uma data e horário</label>
           <input type="date" id="data-agendamento" style="margin-bottom: 15px;">
@@ -100,7 +107,6 @@
           </div>
         </div>
 
-        <!-- DADOS DO CLIENTE -->
         <div class="form-group" style="margin-top: 30px;">
           <label>3. Os seus dados</label>
           <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
