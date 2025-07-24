@@ -1,10 +1,10 @@
 /**
- * vitrine.js (Vitrine Interativa do Cliente)
- * Versão final que carrega o perfil, os serviços com detalhes expansíveis,
- * e gere todo o fluxo de agendamento.
+ * vitrine.js (com Gestão de Agendamentos)
+ * Versão completa que permite ao cliente ver e cancelar os seus
+ * próprios agendamentos, além de agendar novos.
  */
 
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
@@ -27,6 +27,8 @@ const horariosContainer = document.getElementById('grade-horarios');
 const nomeClienteInput = document.getElementById('nome-cliente');
 const telefoneClienteInput = document.getElementById('telefone-cliente');
 const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
+const meusAgendamentosContainer = document.getElementById('meus-agendamentos');
+const listaMeusAgendamentos = document.getElementById('lista-meus-agendamentos');
 
 // --- INICIALIZAÇÃO ---
 document.addEventListener('DOMContentLoaded', inicializarVitrine);
@@ -36,21 +38,22 @@ async function inicializarVitrine() {
   const slug = urlParams.get('slug');
 
   if (!slug) {
-    loader.innerHTML = `<p style="color:red; text-align:center;">Link inválido. O profissional não foi especificado.</p>`;
+    loader.innerHTML = `<p style="color:red; text-align:center;">Link inválido.</p>`;
     return;
   }
 
   try {
     profissionalUid = await encontrarProfissionalPeloSlug(slug);
     if (!profissionalUid) {
-        loader.innerHTML = `<p style="color:red; text-align:center;">Profissional não encontrado. Verifique o link.</p>`;
+        loader.innerHTML = `<p style="color:red; text-align:center;">Profissional não encontrado.</p>`;
         return;
     }
 
     await Promise.all([
         carregarPerfilPublico(),
         carregarConfiguracoesHorario(),
-        carregarServicos()
+        carregarServicos(),
+        carregarMeusAgendamentos() // Carrega os agendamentos do cliente
     ]);
 
     loader.style.display = 'none';
@@ -59,7 +62,7 @@ async function inicializarVitrine() {
 
   } catch (error) {
     console.error("Erro ao inicializar a vitrine:", error);
-    loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página deste profissional.</p>`;
+    loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página.</p>`;
   }
 }
 
@@ -96,18 +99,13 @@ async function carregarPerfilPublico() {
 async function carregarConfiguracoesHorario() {
     const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
     const docSnap = await getDoc(horariosRef);
-    if (docSnap.exists()) {
-        horariosConfig = docSnap.data();
-    } else {
-        horariosConfig = { intervalo: 30 };
-    }
+    horariosConfig = docSnap.exists() ? docSnap.data() : { intervalo: 30 };
 }
 
 async function carregarServicos() {
   servicosContainer.innerHTML = '';
   const servicosRef = collection(db, "users", profissionalUid, "servicos");
   const snapshot = await getDocs(servicosRef);
-
   const servicosVisiveis = [];
   snapshot.forEach(doc => {
     const servico = doc.data();
@@ -117,51 +115,29 @@ async function carregarServicos() {
   });
 
   if (servicosVisiveis.length === 0) {
-    servicosContainer.innerHTML = '<p>Nenhum serviço disponível para agendamento online no momento.</p>';
+    servicosContainer.innerHTML = '<p>Nenhum serviço disponível.</p>';
     return;
   }
 
   servicosVisiveis.forEach(servico => {
-    const servicoId = servico.id;
-    const card = document.createElement('div');
-    card.className = 'servico-card';
-
-    card.innerHTML = `
-      <button class="btn-servico" data-id="${servicoId}">
-        <span class="nome">${servico.nome}</span>
-        <span class="preco">R$ ${parseFloat(servico.preco).toFixed(2)}</span>
-      </button>
-      <button class="btn-detalhes">ℹ️</button>
-      <div class="detalhes-servico" id="detalhes-${servicoId}" style="display: none;">
-        <p><strong>Descrição:</strong> ${servico.descricao || 'Não informada.'}</p>
-        <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
-      </div>
-    `;
-
-    // Adiciona os eventos aos novos botões
-    const btnServico = card.querySelector('.btn-servico');
-    const btnDetalhes = card.querySelector('.btn-detalhes');
-    const detalhesDiv = card.querySelector('.detalhes-servico');
-
-    btnServico.onclick = () => {
-        servicoSelecionado = { id: servicoId, nome: servico.nome };
+    const btn = document.createElement('button');
+    btn.className = 'btn-servico';
+    btn.textContent = `${servico.nome} (R$ ${parseFloat(servico.preco).toFixed(2)})`;
+    btn.dataset.id = servico.id;
+    btn.onclick = () => {
+        servicoSelecionado = { id: servico.id, nome: servico.nome };
         document.querySelectorAll('.btn-servico').forEach(b => b.classList.remove('selecionado'));
-        btnServico.classList.add('selecionado');
+        btn.classList.add('selecionado');
         verificarEstadoBotaoConfirmar();
     };
-
-    btnDetalhes.onclick = () => {
-        const isVisible = detalhesDiv.style.display === 'block';
-        detalhesDiv.style.display = isVisible ? 'none' : 'block';
-    };
-
-    servicosContainer.appendChild(card);
+    servicosContainer.appendChild(btn);
   });
 }
 
 // --- LÓGICA DE HORÁRIOS ---
 
 async function gerarHorariosDisponiveis() {
+    // (A lógica desta função permanece a mesma da versão anterior)
     horariosContainer.innerHTML = '<p class="aviso-horarios">A verificar...</p>';
     horarioSelecionado = null;
     verificarEstadoBotaoConfirmar();
@@ -215,6 +191,65 @@ async function gerarHorariosDisponiveis() {
     }
 }
 
+// --- LÓGICA DE GESTÃO DE AGENDAMENTOS DO CLIENTE ---
+
+async function carregarMeusAgendamentos() {
+    const meusAgendamentosIds = JSON.parse(localStorage.getItem(`pronti-agendamentos-${profissionalUid}`) || '[]');
+    if (meusAgendamentosIds.length === 0) return;
+
+    meusAgendamentosContainer.style.display = 'block';
+    listaMeusAgendamentos.innerHTML = '<p>A carregar os seus agendamentos...</p>';
+
+    const agendamentosPromises = meusAgendamentosIds.map(id => getDoc(doc(db, "users", profissionalUid, "agendamentos", id)));
+    const agendamentosDocs = await Promise.all(agendamentosPromises);
+
+    listaMeusAgendamentos.innerHTML = '';
+    for (const docSnap of agendamentosDocs) {
+        if (docSnap.exists()) {
+            const agendamento = docSnap.data();
+            const servicoRef = doc(db, "users", profissionalUid, "servicos", agendamento.servicoId);
+            const servicoSnap = await getDoc(servicoRef);
+            const servicoNome = servicoSnap.exists() ? servicoSnap.data().nome : "Serviço";
+
+            const item = document.createElement('div');
+            item.className = 'agendamento-item';
+            item.innerHTML = `
+                <div>
+                    <h3>${servicoNome}</h3>
+                    <p><strong>Horário:</strong> ${new Date(agendamento.horario).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'})}</p>
+                </div>
+                <div class="item-acoes">
+                    <button class="btn-excluir" data-id="${docSnap.id}">Cancelar</button>
+                </div>
+            `;
+            listaMeusAgendamentos.appendChild(item);
+        }
+    }
+    
+    // Adiciona listener para os botões de cancelar
+    listaMeusAgendamentos.querySelectorAll('.btn-excluir').forEach(btn => {
+        btn.addEventListener('click', (e) => cancelarAgendamento(e.target.dataset.id));
+    });
+}
+
+async function cancelarAgendamento(id) {
+    if (!confirm("Tem a certeza de que deseja cancelar este agendamento?")) return;
+    
+    try {
+        await deleteDoc(doc(db, "users", profissionalUid, "agendamentos", id));
+        
+        let meusAgendamentosIds = JSON.parse(localStorage.getItem(`pronti-agendamentos-${profissionalUid}`) || '[]');
+        meusAgendamentosIds = meusAgendamentosIds.filter(agId => agId !== id);
+        localStorage.setItem(`pronti-agendamentos-${profissionalUid}`, JSON.stringify(meusAgendamentosIds));
+        
+        alert("Agendamento cancelado com sucesso!");
+        window.location.reload(); // Recarrega a página para atualizar tudo
+    } catch (error) {
+        console.error("Erro ao cancelar agendamento:", error);
+        alert("Não foi possível cancelar o agendamento.");
+    }
+}
+
 // --- LÓGICA DE CONFIRMAÇÃO ---
 
 function verificarEstadoBotaoConfirmar() {
@@ -243,12 +278,19 @@ async function salvarAgendamento(event) {
 
     try {
         const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
-        await addDoc(agendamentosRef, novoAgendamento);
+        const docRef = await addDoc(agendamentosRef, novoAgendamento);
+
+        // Salva o ID do novo agendamento no localStorage
+        const meusAgendamentosIds = JSON.parse(localStorage.getItem(`pronti-agendamentos-${profissionalUid}`) || '[]');
+        meusAgendamentosIds.push(docRef.id);
+        localStorage.setItem(`pronti-agendamentos-${profissionalUid}`, JSON.stringify(meusAgendamentosIds));
+
         content.innerHTML = `
             <div class="info-card" style="text-align:center;">
                 <h3>✅ Agendamento Confirmado!</h3>
                 <p>O seu horário para <strong>${horarioSelecionado}</strong> do dia <strong>${new Date(dataInput.value+'T12:00:00').toLocaleDateString()}</strong> foi confirmado com sucesso.</p>
                 <p>Obrigado por agendar connosco!</p>
+                <button class="btn-new" style="margin-top: 20px;" onclick="window.location.reload()">Agendar Novo Horário</button>
             </div>
         `;
     } catch (error) {
