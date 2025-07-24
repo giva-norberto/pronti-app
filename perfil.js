@@ -242,3 +242,4 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
         }
     });
 }
+
