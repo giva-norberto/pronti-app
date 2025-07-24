@@ -505,51 +505,68 @@ h1, h2, h3 {
 }
 
 /* =================================================================== */
-/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (ACRESCENTADO) --- */
+/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (REVISADO) --- */
 /* =================================================================== */
 
 .servico-card {
+  /* Este é apenas um wrapper, não precisa de estilos visuais */
   position: relative;
-  display: flex;
-  flex-direction: column;
-  background: var(--cor-branco);
-  border: 1px solid #ddd;
-  border-radius: 12px; /* Alinhado com o seu design */
-  width: 100%;
-  margin-bottom: 20px; /* Alinhado com o seu design */
-  box-shadow: var(--sombra);
-  overflow: hidden;
+  margin-bottom: 15px;
 }
 
 .btn-servico {
+  /* Este é o botão principal que se parece com um card */
   background-color: var(--cor-branco);
   color: var(--cor-texto);
-  border: 2px solid transparent;
-  padding: 15px;
-  border-radius: 8px;
-  font-weight: 600; /* Alinhado com o seu design */
+  border: 1px solid #e5e7eb; /* Borda subtil como outros cards */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05); /* Sombra mais leve */
+  border-radius: 12px; /* Consistente com outros cards */
+  padding: 20px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
+  box-sizing: border-box; /* Garante que o padding não quebre o layout */
   font-size: 1.1em;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-in-out;
+  text-align: left;
+}
+
+.btn-servico .nome {
+    color: var(--cor-primaria);
+    font-weight: 700;
+}
+
+.btn-servico .preco {
+    color: var(--cor-texto-leve);
+    font-weight: 500;
 }
 
 .btn-servico:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sombra); /* Usa a sombra padrão no hover */
     border-color: var(--cor-primaria-leve);
 }
 
 .btn-servico.selecionado {
   background-color: var(--cor-primaria);
-  color: var(--cor-branco);
   border-color: var(--cor-primaria);
+  transform: translateY(-3px);
+  box-shadow: var(--sombra);
+}
+
+/* Quando selecionado, o texto dentro deve ser branco */
+.btn-servico.selecionado .nome,
+.btn-servico.selecionado .preco {
+  color: var(--cor-branco);
 }
 
 .btn-detalhes {
   position: absolute;
   top: 50%;
-  right: 15px;
+  right: 20px;
   transform: translateY(-50%);
   background: none;
   border: none;
@@ -557,14 +574,23 @@ h1, h2, h3 {
   cursor: pointer;
   color: var(--cor-texto-leve);
   padding: 5px;
+  z-index: 2; /* Para ficar por cima do botão */
+}
+
+/* Quando o botão principal é selecionado, o botão de detalhes também fica branco */
+.btn-servico.selecionado + .btn-detalhes {
+    color: var(--cor-branco);
 }
 
 .detalhes-servico {
   background-color: var(--cor-fundo);
-  padding: 15px 25px; /* Alinhado com o padding dos seus cards */
-  margin-top: -8px;
-  border-top: 1px solid #e5e7eb;
+  padding: 15px 25px;
+  border-radius: 0 0 12px 12px;
+  margin-top: -10px; /* Puxa para cima para conectar com o botão */
+  border: 1px solid #e5e7eb;
+  border-top: none;
   font-size: 0.9em;
   color: var(--cor-texto);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
