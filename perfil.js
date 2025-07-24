@@ -1,7 +1,7 @@
 /**
- * perfil.js (Versão Simplificada e Intuitiva)
- * * Gere a página de perfil completa com uma secção de horários simplificada,
- * * onde cada dia tem apenas um bloco de horário e um botão para ativar/desativar.
+ * perfil.js (Versão com Múltiplos Horários)
+ * * Gere a página de perfil completa, restaurando a funcionalidade de
+ * * adicionar múltiplos blocos de horário por dia para criar pausas.
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -91,15 +91,15 @@ async function carregarHorarios(userId) {
         const diaData = data[dia.id];
         if (diaData) {
             const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
-            const inicioInput = document.getElementById(`${dia.id}-inicio`);
-            const fimInput = document.getElementById(`${dia.id}-fim`);
-            
             toggleAtivo.checked = diaData.ativo;
-            inicioInput.value = diaData.inicio || '09:00';
-            fimInput.value = diaData.fim || '18:00';
+            toggleAtivo.dispatchEvent(new Event('change')); // Aciona o evento para mostrar/esconder
 
-            // Aciona o evento para mostrar/esconder os horários
-            toggleAtivo.dispatchEvent(new Event('change'));
+            if (diaData.ativo && diaData.blocos && diaData.blocos.length > 0) {
+                document.getElementById(`blocos-${dia.id}`).innerHTML = ''; // Limpa blocos padrão
+                diaData.blocos.forEach(bloco => {
+                    adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim);
+                });
+            }
         }
       });
     }
@@ -160,10 +160,14 @@ async function salvarHorarios() {
   const horariosData = { intervalo: parseInt(intervaloSelect.value) };
   diasDaSemana.forEach(dia => {
     const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
-    const inicio = document.getElementById(`${dia.id}-inicio`).value;
-    const fim = document.getElementById(`${dia.id}-fim`).value;
-    
-    horariosData[dia.id] = { ativo: estaAtivo, inicio, fim };
+    const blocos = [];
+    if (estaAtivo) {
+        document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
+            const inputs = blocoEl.querySelectorAll('input[type="time"]');
+            blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+        });
+    }
+    horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
   });
 
   const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
@@ -189,28 +193,52 @@ function gerarEstruturaDosDias() {
         const divDia = document.createElement('div');
         divDia.className = 'dia-semana';
         divDia.innerHTML = `
-            <span class="dia-semana-nome">${dia.nome}</span>
-            <div class="horarios-controles" id="controles-${dia.id}">
-                <input type="time" id="${dia.id}-inicio" value="09:00">
-                <span>até</span>
-                <input type="time" id="${dia.id}-fim" value="18:00">
+            <div class="dia-semana-header">
+                <span class="dia-semana-nome">${dia.nome}</span>
+                <div class="toggle-atendimento">
+                    <label class="switch">
+                        <input type="checkbox" id="${dia.id}-ativo" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
-            <div class="toggle-atendimento">
-                <label class="switch">
-                    <input type="checkbox" id="${dia.id}-ativo" checked>
-                    <span class="slider"></span>
-                </label>
+            <div class="horarios-container" id="container-${dia.id}">
+                <div class="horarios-blocos" id="blocos-${dia.id}"></div>
+                <button type="button" class="btn-adicionar-bloco" data-dia="${dia.id}">+ Adicionar Horário</button>
             </div>
         `;
         diasContainer.appendChild(divDia);
+        adicionarBlocoDeHorario(dia.id); // Adiciona um bloco padrão inicial
 
         // Listener para o toggle principal do dia
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
         toggleAtivo.addEventListener('change', (e) => {
-            const controles = document.getElementById(`controles-${dia.id}`);
-            controles.style.display = e.target.checked ? 'flex' : 'none';
+            document.getElementById(`container-${dia.id}`).style.display = e.target.checked ? 'block' : 'none';
         });
-        // Dispara o evento uma vez para definir o estado inicial
-        toggleAtivo.dispatchEvent(new Event('change'));
+        toggleAtivo.dispatchEvent(new Event('change')); // Define o estado inicial
+    });
+    document.querySelectorAll('.btn-adicionar-bloco').forEach(btn => {
+        btn.addEventListener('click', (e) => adicionarBlocoDeHorario(e.target.dataset.dia));
+    });
+}
+
+function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
+    const container = document.getElementById(`blocos-${diaId}`);
+    const divBloco = document.createElement('div');
+    divBloco.className = 'bloco-horario';
+    divBloco.innerHTML = `
+        <input type="time" value="${inicio}">
+        <span>até</span>
+        <input type="time" value="${fim}">
+        <button type="button" class="btn-remover-bloco">-</button>
+    `;
+    container.appendChild(divBloco);
+    divBloco.querySelector('.btn-remover-bloco').addEventListener('click', (e) => {
+        // Impede que o último bloco seja removido
+        if (container.childElementCount > 1) {
+            e.target.parentElement.remove();
+        } else {
+            alert("Para não atender neste dia, desative o botão na parte superior.");
+        }
     });
 }
