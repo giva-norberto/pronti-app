@@ -4,7 +4,7 @@
  * e horário até à confirmação final.
  */
 
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
@@ -33,15 +33,23 @@ document.addEventListener('DOMContentLoaded', inicializarVitrine);
 
 async function inicializarVitrine() {
   const urlParams = new URLSearchParams(window.location.search);
-  // MUDANÇA: Usa 'user' em vez de 'slug' para obter o UID
-  profissionalUid = urlParams.get('user');
+  // CORREÇÃO: Procura por 'slug' na URL, que é o formato correto gerado pelo perfil.
+  const slug = urlParams.get('slug');
 
-  if (!profissionalUid) {
+  if (!slug) {
     loader.innerHTML = `<p style="color:red; text-align:center;">Link inválido. O profissional não foi especificado.</p>`;
     return;
   }
 
   try {
+    // Encontra o UID do profissional a partir do slug.
+    profissionalUid = await encontrarProfissionalPeloSlug(slug);
+
+    if (!profissionalUid) {
+        loader.innerHTML = `<p style="color:red; text-align:center;">Profissional não encontrado. Verifique o link.</p>`;
+        return;
+    }
+
     // Carrega tudo em paralelo
     await Promise.all([
         carregarPerfilPublico(),
@@ -80,6 +88,13 @@ function configurarEventos() {
 }
 
 // --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
+
+async function encontrarProfissionalPeloSlug(slug) {
+    const publicProfilesRef = collection(db, "publicProfiles");
+    const q = query(publicProfilesRef, where("slug", "==", slug), limit(1));
+    const snapshot = await getDocs(q);
+    return snapshot.empty ? null : snapshot.docs[0].data().ownerId;
+}
 
 async function carregarPerfilPublico() {
   const perfilRef = doc(db, "users", profissionalUid, "publicProfile", "profile");
@@ -142,7 +157,7 @@ async function gerarHorariosDisponiveis() {
     const diaDaSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSelecionado.getDay()];
     
     const configDia = horariosConfig[diaDaSemana];
-    if (!configDia || !configDia.ativo || configDia.blocos.length === 0) {
+    if (!configDia || !configDia.ativo || !configDia.blocos || configDia.blocos.length === 0) {
         horariosContainer.innerHTML = '<p class="aviso-horarios">Não há atendimento neste dia.</p>';
         return;
     }
