@@ -1,10 +1,11 @@
 /**
- * perfil.js (Versão com Múltiplos Horários)
- * * Gere a página de perfil completa, restaurando a funcionalidade de
- * * adicionar múltiplos blocos de horário por dia para criar pausas.
+ * perfil.js (Versão Final Otimizada)
+ * - Validação de slug único
+ * - Estrutura de múltiplos horários por dia
+ * - Otimização da estrutura de dados no Firestore
  */
 
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
@@ -13,10 +14,11 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Elementos do formulário
+// --- Elementos do DOM ---
 const form = document.getElementById('form-perfil');
 const nomeNegocioInput = document.getElementById('nomeNegocio');
 const slugInput = document.getElementById('slug');
+const slugFeedbackEl = document.createElement('div'); // Feedback para o slug
 const descricaoInput = document.getElementById('descricao');
 const logoInput = document.getElementById('logoNegocio');
 const logoPreview = document.getElementById('logo-preview');
@@ -34,28 +36,34 @@ const diasDaSemana = [
 ];
 
 let uid;
+let slugOriginal = ''; // Para saber se o slug foi alterado
 
 // --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    uid = user.uid;
-    gerarEstruturaDosDias();
-    carregarTodosOsDados(uid);
-    adicionarListenersDeEvento();
-    if (urlBaseEl) {
-        urlBaseEl.textContent = `${window.location.origin}/vitrine.html?slug=`;
+    if (user) {
+        uid = user.uid;
+        gerarEstruturaDosDias();
+        carregarTodosOsDados(uid);
+        adicionarListenersDeEvento();
+        if (urlBaseEl) {
+            urlBaseEl.textContent = `${window.location.origin}/vitrine.html?slug=`;
+        }
+    } else {
+        window.location.href = 'login.html';
     }
-  } else {
-    window.location.href = 'login.html';
-  }
 });
 
 function adicionarListenersDeEvento() {
+    slugInput.insertAdjacentElement('afterend', slugFeedbackEl);
     nomeNegocioInput.addEventListener('keyup', () => {
         slugInput.value = gerarSlug(nomeNegocioInput.value);
     });
     form.addEventListener('submit', handleFormSubmit);
     btnCopiarLink.addEventListener('click', copiarLink);
+    logoInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(file) logoPreview.src = URL.createObjectURL(file);
+    });
 }
 
 // --- LÓGICA DE CARREGAMENTO DE DADOS ---
@@ -67,128 +75,187 @@ async function carregarTodosOsDados(userId) {
 }
 
 async function carregarDadosDoPerfil(userId) {
-  try {
-    const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
-    const docSnap = await getDoc(perfilRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      nomeNegocioInput.value = data.nomeNegocio || '';
-      slugInput.value = data.slug || '';
-      descricaoInput.value = data.descricao || '';
-      if (data.logoUrl) logoPreview.src = data.logoUrl;
-    }
-  } catch (error) { console.error("Erro ao carregar perfil:", error); }
+    try {
+        const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
+        const docSnap = await getDoc(perfilRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            nomeNegocioInput.value = data.nomeNegocio || '';
+            slugInput.value = data.slug || '';
+            slugOriginal = data.slug || ''; // Guarda o slug original
+            descricaoInput.value = data.descricao || '';
+            if (data.logoUrl) logoPreview.src = data.logoUrl;
+        }
+    } catch (error) { console.error("Erro ao carregar perfil:", error); }
 }
 
 async function carregarHorarios(userId) {
-  try {
-    const horariosRef = doc(db, "users", userId, "configuracoes", "horarios");
-    const docSnap = await getDoc(horariosRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      intervaloSelect.value = data.intervalo || '30';
-      diasDaSemana.forEach(dia => {
-        const diaData = data[dia.id];
-        if (diaData) {
-            const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
-            toggleAtivo.checked = diaData.ativo;
-            toggleAtivo.dispatchEvent(new Event('change')); // Aciona o evento para mostrar/esconder
-
-            if (diaData.ativo && diaData.blocos && diaData.blocos.length > 0) {
-                document.getElementById(`blocos-${dia.id}`).innerHTML = ''; // Limpa blocos padrão
-                diaData.blocos.forEach(bloco => {
-                    adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim);
-                });
-            }
+    try {
+        const horariosRef = doc(db, "users", userId, "configuracoes", "horarios");
+        const docSnap = await getDoc(horariosRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            intervaloSelect.value = data.intervalo || '30';
+            diasDaSemana.forEach(dia => {
+                const diaData = data[dia.id];
+                const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
+                const containerBlocos = document.getElementById(`blocos-${dia.id}`);
+                
+                if (diaData) {
+                    toggleAtivo.checked = diaData.ativo;
+                    // Limpa o bloco padrão antes de adicionar os salvos
+                    containerBlocos.innerHTML = ''; 
+                    
+                    if (diaData.ativo && diaData.blocos && diaData.blocos.length > 0) {
+                        diaData.blocos.forEach(bloco => {
+                            adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim);
+                        });
+                    } else if (diaData.ativo) {
+                        // Se estiver ativo mas sem blocos, adiciona um padrão
+                        adicionarBlocoDeHorario(dia.id);
+                    }
+                }
+                // Dispara o evento para mostrar/esconder o container corretamente
+                toggleAtivo.dispatchEvent(new Event('change'));
+            });
         }
-      });
-    }
-  } catch (error) { console.error("Erro ao carregar horários:", error); }
+    } catch (error) { console.error("Erro ao carregar horários:", error); }
 }
 
 // --- LÓGICA DE SALVAMENTO DE DADOS ---
 async function handleFormSubmit(event) {
-  event.preventDefault();
-  btnSalvar.disabled = true;
-  btnSalvar.textContent = 'A salvar...';
+    event.preventDefault();
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'A verificar URL...';
+    slugFeedbackEl.textContent = '';
 
-  try {
-    await Promise.all([
-        salvarDadosDoPerfil(),
-        salvarHorarios()
-    ]);
-    alert("Todas as configurações foram salvas com sucesso!");
-  } catch (error) {
-    console.error("ERRO GERAL AO SALVAR:", error);
-    alert("Ocorreu um erro ao salvar as configurações.");
-  } finally {
-    btnSalvar.disabled = false;
-    btnSalvar.textContent = 'Salvar Todas as Configurações';
-  }
+    const slugAtual = slugInput.value.trim();
+    if (!slugAtual) {
+        alert("A URL da vitrine (slug) é obrigatória.");
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar Todas as Configurações';
+        return;
+    }
+    
+    try {
+        // --- MUDANÇA CRÍTICA: Verifica se o slug está disponível ---
+        const slugDisponivel = await verificarDisponibilidadeSlug(slugAtual);
+        if (!slugDisponivel) {
+            throw new Error(`A URL "${slugAtual}" já está em uso. Por favor, escolha outra.`);
+        }
+
+        btnSalvar.textContent = 'A salvar...';
+        await salvarDadosDoPerfil(slugAtual);
+        await salvarHorarios();
+        
+        // Se o slug foi alterado, o slug original precisa ser removido
+        if (slugOriginal && slugOriginal !== slugAtual) {
+            const batch = writeBatch(db);
+            const slugAntigoRef = doc(db, "slugs", slugOriginal);
+            batch.delete(slugAntigoRef);
+            await batch.commit();
+        }
+        slugOriginal = slugAtual; // Atualiza o slug original
+
+        alert("Todas as configurações foram salvas com sucesso!");
+
+    } catch (error) {
+        console.error("ERRO GERAL AO SALVAR:", error);
+        slugFeedbackEl.textContent = error.message;
+        slugFeedbackEl.style.color = 'red';
+        alert("Ocorreu um erro ao salvar: " + error.message);
+    } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar Todas as Configurações';
+    }
 }
 
-async function salvarDadosDoPerfil() {
-  const slug = slugInput.value.trim();
-  const nomeNegocio = nomeNegocioInput.value.trim();
-  const logoFile = logoInput.files[0];
+async function verificarDisponibilidadeSlug(slug) {
+    // Se o slug não mudou, ele já pertence ao usuário. Está disponível.
+    if (slug === slugOriginal) {
+        return true;
+    }
+    const slugRef = doc(db, "slugs", slug);
+    const docSnap = await getDoc(slugRef);
+    return !docSnap.exists(); // Retorna true se NÃO existir (está disponível)
+}
 
-  if (!nomeNegocio || !slug) throw new Error("Nome do negócio e slug são obrigatórios.");
+async function salvarDadosDoPerfil(slug) {
+    const nomeNegocio = nomeNegocioInput.value.trim();
+    const logoFile = logoInput.files[0];
 
-  let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
-  if (logoFile) {
-    const storageRef = ref(storage, `logos/${uid}/${logoFile.name}`);
-    const uploadResult = await uploadBytes(storageRef, logoFile);
-    logoUrl = await getDownloadURL(uploadResult.ref);
-  }
+    if (!nomeNegocio) throw new Error("Nome do negócio é obrigatório.");
+
+    let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
+    if (logoFile) {
+        const storageRef = ref(storage, `logos/${uid}/${slug}-${logoFile.name}`);
+        const uploadResult = await uploadBytes(storageRef, logoFile);
+        logoUrl = await getDownloadURL(uploadResult.ref);
+    }
   
-  const perfilData = {
-    nomeNegocio,
-    slug,
-    descricao: descricaoInput.value.trim(),
-    logoUrl,
-    ownerId: uid
-  };
+    const perfilData = {
+        nomeNegocio,
+        slug,
+        descricao: descricaoInput.value.trim(),
+        logoUrl,
+        ownerId: uid // Importante para referência interna
+    };
 
-  const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
-  await setDoc(perfilPrivadoRef, perfilData);
+    // --- OTIMIZAÇÃO: Usando WriteBatch para operações atômicas ---
+    const batch = writeBatch(db);
+    
+    // Salva o perfil privado do usuário
+    const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
+    batch.set(perfilPrivadoRef, perfilData);
 
-  const perfilPublicoRef = doc(db, "publicProfiles", uid);
-  await setDoc(perfilPublicoRef, { slug, ownerId: uid, logoUrl, nomeNegocio });
+    // Salva o documento público na coleção de slugs para busca rápida
+    const slugPublicoRef = doc(db, "slugs", slug);
+    batch.set(slugPublicoRef, { uid: uid });
+
+    await batch.commit();
 }
+
 
 async function salvarHorarios() {
-  const horariosData = { intervalo: parseInt(intervaloSelect.value) };
-  diasDaSemana.forEach(dia => {
-    const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
-    const blocos = [];
-    if (estaAtivo) {
-        document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
-            const inputs = blocoEl.querySelectorAll('input[type="time"]');
-            blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
-        });
-    }
-    horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
-  });
+    const horariosData = { intervalo: parseInt(intervaloSelect.value, 10) };
+    diasDaSemana.forEach(dia => {
+        const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
+        const blocos = [];
+        if (estaAtivo) {
+            document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
+                const inputs = blocoEl.querySelectorAll('input[type="time"]');
+                if (inputs[0].value && inputs[1].value) {
+                    blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+                }
+            });
+        }
+        horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
+    });
 
-  const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
-  await setDoc(horariosRef, horariosData);
+    const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
+    await setDoc(horariosRef, horariosData);
 }
 
-// --- FUNÇÕES AUXILIARES ---
+// --- FUNÇÕES AUXILIARES E DE GERAÇÃO DE UI ---
 function gerarSlug(texto) {
-  if (!texto) return "";
-  return texto.toString().toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
+    if (!texto) return "";
+    return texto.toString().toLowerCase().trim()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '-').replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-');
 }
 
 function copiarLink() {
     const slug = slugInput.value.trim();
     if (!slug) { alert("Preencha o campo 'URL da sua Vitrine' para poder copiar o link."); return; }
     const urlCompleta = `${window.location.origin}/vitrine.html?slug=${slug}`;
-    navigator.clipboard.writeText(urlCompleta).then(() => alert("Link copiado para a área de transferência!"));
+    navigator.clipboard.writeText(urlCompleta).then(() => {
+        alert("Link da vitrine copiado para a área de transferência!");
+    });
 }
 
 function gerarEstruturaDosDias() {
-    diasContainer.innerHTML = ''; // Limpa o container antes de gerar
+    diasContainer.innerHTML = '';
     diasDaSemana.forEach(dia => {
         const divDia = document.createElement('div');
         divDia.className = 'dia-semana';
@@ -208,17 +275,20 @@ function gerarEstruturaDosDias() {
             </div>
         `;
         diasContainer.appendChild(divDia);
-        adicionarBlocoDeHorario(dia.id); // Adiciona um bloco padrão inicial
+        // Adiciona um bloco padrão inicial, que será limpo se houver dados salvos
+        adicionarBlocoDeHorario(dia.id); 
 
-        // Listener para o toggle principal do dia
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
         toggleAtivo.addEventListener('change', (e) => {
             document.getElementById(`container-${dia.id}`).style.display = e.target.checked ? 'block' : 'none';
         });
-        toggleAtivo.dispatchEvent(new Event('change')); // Define o estado inicial
     });
-    document.querySelectorAll('.btn-adicionar-bloco').forEach(btn => {
-        btn.addEventListener('click', (e) => adicionarBlocoDeHorario(e.target.dataset.dia));
+    
+    // Adiciona o listener de evento aos botões DEPOIS que todos foram criados
+    diasContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-adicionar-bloco')) {
+            adicionarBlocoDeHorario(e.target.dataset.dia);
+        }
     });
 }
 
@@ -233,13 +303,12 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
         <button type="button" class="btn-remover-bloco">-</button>
     `;
     container.appendChild(divBloco);
+    
     divBloco.querySelector('.btn-remover-bloco').addEventListener('click', (e) => {
-        // Impede que o último bloco seja removido
         if (container.childElementCount > 1) {
-            e.target.parentElement.remove();
+            e.target.closest('.bloco-horario').remove();
         } else {
             alert("Para não atender neste dia, desative o botão na parte superior.");
         }
     });
 }
-
