@@ -1,5 +1,6 @@
 /**
  * servicos.js (Painel do Dono - com controle de visibilidade para a vitrine)
+ * * Versão com layout original restaurado.
  */
 
 import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -29,27 +30,28 @@ onAuthStateChanged(auth, (user) => {
         snapshot.forEach(docSnap => {
           const servico = docSnap.data();
           const servicoId = docSnap.id;
-          // CORREÇÃO: Usar 'visivelNaVitrine' para consistência
-          const visivel = servico.visivelNaVitrine !== false; 
+          const isVisible = servico.visivelNaVitrine !== false;
 
           const el = document.createElement('div');
           el.classList.add('servico-item');
 
+          // LAYOUT ORIGINAL RESTAURADO - Botão "Ativo" adicionado sem quebrar a estrutura.
           el.innerHTML = `
             <div class="item-info">
               <h3>${servico.nome}</h3>
               <p><strong>Preço:</strong> R$ ${parseFloat(servico.preco || 0).toFixed(2).replace('.', ',')}</p>
               <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
-              <p><strong>Status:</strong> 
-                ${visivel ? '<span style="color:green;">✅ Visível na Vitrine</span>' : '<span style="color:red;">🚫 Oculto da Vitrine</span>'}
-              </p>
             </div>
             <div class="item-acoes">
+              <div class="acao-visibilidade">
+                <label class="switch-label">Ativo na Vitrine</label>
+                <label class="switch">
+                    <input type="checkbox" class="toggle-visibilidade" data-id="${servicoId}" ${isVisible ? 'checked' : ''}>
+                    <span class="slider"></span>
+                </label>
+              </div>
               <button class="btn-editar" data-id="${servicoId}">Editar</button>
               <button class="btn-excluir" data-id="${servicoId}">Excluir</button>
-              <button class="btn-vitrine" data-id="${servicoId}" data-visivel="${visivel}">
-                ${visivel ? 'Ocultar da Vitrine' : 'Mostrar na Vitrine'}
-              </button>
             </div>
           `;
           listaServicosDiv.appendChild(el);
@@ -74,17 +76,16 @@ onAuthStateChanged(auth, (user) => {
       }
     }
 
-    async function alternarVisibilidadeServico(id, atual) {
+    async function atualizarVisibilidade(id, visivel) {
       try {
-        const novoStatus = !atual;
-        await updateDoc(doc(db, "users", uid, "servicos", id), {
-          // CORREÇÃO: Usar 'visivelNaVitrine' para consistência
-          visivelNaVitrine: novoStatus
+        const servicoRef = doc(db, "users", uid, "servicos", id);
+        await updateDoc(servicoRef, {
+          visivelNaVitrine: visivel
         });
-        carregarServicosDoFirebase();
       } catch (error) {
         console.error("Erro ao atualizar visibilidade:", error);
         alert("Erro ao alterar visibilidade.");
+        carregarServicosDoFirebase(); // Recarrega para reverter a mudança visual
       }
     }
 
@@ -98,13 +99,16 @@ onAuthStateChanged(auth, (user) => {
       if (target.classList.contains('btn-excluir')) {
         excluirServico(target.dataset.id);
       }
-
-      if (target.classList.contains('btn-vitrine')) {
-        const id = target.dataset.id;
-        const atual = target.dataset.visivel === "true";
-        alternarVisibilidadeServico(id, atual);
-      }
     });
+
+    listaServicosDiv.addEventListener('change', (event) => {
+        const target = event.target;
+        if (target.classList.contains('toggle-visibilidade')) {
+            const servicoId = target.dataset.id;
+            const isVisible = target.checked;
+            atualizarVisibilidade(servicoId, isVisible);
+        }
+    });
 
     carregarServicosDoFirebase();
 
@@ -112,4 +116,3 @@ onAuthStateChanged(auth, (user) => {
     window.location.href = 'login.html';
   }
 });
-
