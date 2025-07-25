@@ -281,10 +281,6 @@
       messagingSenderId: "736700619274",
       appId: "1:736700619274:web:557aa247905e56fa7e5df3"
     };
-
-    // --- INICIALIZAÇÃO DO SCRIPT ---
-    // CORREÇÃO: O código agora é executado diretamente, sem o 'DOMContentLoaded'
-    // pois o script já está no final do body, garantindo que o HTML foi carregado.
     
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -294,7 +290,6 @@
     let horarioSelecionado = null;
     let horariosConfig = {};
 
-    // Elementos do DOM
     const loader = document.getElementById('vitrine-loader');
     const content = document.getElementById('vitrine-content');
     const nomeNegocioEl = document.getElementById('nome-negocio-publico');
@@ -316,7 +311,6 @@
     const agendamentosClienteContainer = document.getElementById('agendamentos-cliente');
     const listaMeusAgendamentosEl = document.getElementById('lista-meus-agendamentos');
 
-    // Função principal de inicialização da vitrine
     async function inicializarVitrine() {
         const urlParams = new URLSearchParams(window.location.search);
         const slug = urlParams.get('slug');
@@ -504,8 +498,12 @@
         const snapshot = await getDocs(q);
         const horariosOcupados = [];
         snapshot.forEach(doc => {
-            const dataAg = doc.data().horario.toDate();
-            horariosOcupados.push(dataAg.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }));
+            // CORREÇÃO APLICADA AQUI
+            const horarioData = doc.data().horario;
+            if (horarioData && typeof horarioData.toDate === 'function') {
+                const dataAg = horarioData.toDate();
+                horariosOcupados.push(dataAg.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }));
+            }
         });
 
         horariosContainer.innerHTML = '';
@@ -617,7 +615,15 @@
             snapshot.forEach(doc => {
                 const ag = doc.data();
                 const id = doc.id;
-                const horarioFormatado = ag.horario.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                
+                // CORREÇÃO APLICADA AQUI
+                let horarioFormatado = 'Data inválida';
+                const horarioData = ag.horario;
+                if (horarioData && typeof horarioData.toDate === 'function') {
+                    horarioFormatado = horarioData.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                } else if (typeof horarioData === 'string') {
+                    horarioFormatado = new Date(horarioData).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                }
                 
                 const card = document.createElement('div');
                 card.className = 'agendamento-item'; 
