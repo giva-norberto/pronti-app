@@ -566,3 +566,18 @@ h1, h2, h3 {
   border-top: 1px solid #e5e7eb;
   display: none; /* Começa escondido */
 }
+.btn-vitrine {
+  background-color: #f44336; /* mesma cor do botão excluir */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-left: 8px;
+}
+
+.btn-vitrine:hover {
+  background-color: #d32f2f;
+}
