@@ -1,11 +1,11 @@
-**
- * servicos.js (Painel do Dono - com botão de visibilidade)
- * * Este script foi modificado para adicionar o botão "Ativo"
- * * sem alterar as fórmulas e funções originais do usuário.
+/**
+ * servicos.js (Painel do Dono - Base do Usuário com Multi-Usuário)
+ * * Este script foi construído sobre o código-base fornecido pelo usuário,
+ * * adicionando a camada de segurança para múltiplos usuários sem alterar
+ * * as funções e fórmulas originais.
  */
 
-// MUDANÇA 1: Importamos a função 'updateDoc' para atualizar o serviço
-import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -14,13 +14,19 @@ const auth = getAuth(app);
 
 const listaServicosDiv = document.getElementById('lista-servicos');
 
+// A verificação de login é o "porteiro" da página.
+// Todo o código original agora roda dentro deste bloco.
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    const uid = user.uid;
+    // O usuário está logado, podemos executar a lógica da página.
+    const uid = user.uid; // ID do usuário logado.
+
+    // --- SUAS FUNÇÕES ORIGINAIS (ADAPTADAS PARA O UID) ---
 
     async function carregarServicosDoFirebase() {
       listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
       try {
+        // MUDANÇA: Aponta para a coleção segura do usuário.
         const servicosUserCollection = collection(db, "users", uid, "servicos");
         const snapshot = await getDocs(servicosUserCollection);
 
@@ -32,14 +38,9 @@ onAuthStateChanged(auth, (user) => {
         snapshot.forEach(doc => {
           const servico = doc.data();
           const servicoId = doc.id;
-          
-          // MUDANÇA 2: Verificamos se o serviço está visível, com um valor padrão 'true'
-          const isVisible = servico.visivelNaVitrine !== false; // Padrão é visível
-
           const el = document.createElement('div');
           el.classList.add('servico-item');
-          
-          // MUDANÇA 3: Adicionamos o botão "Ativo" (toggle switch) ao lado dos outros botões
+          // A estrutura do seu card foi mantida.
           el.innerHTML = `
             <div class="item-info">
               <h3>${servico.nome}</h3>
@@ -47,13 +48,6 @@ onAuthStateChanged(auth, (user) => {
               <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
             </div>
             <div class="item-acoes">
-              <div class="acao-visibilidade">
-                <label class="switch-label">Ativo na Vitrine</label>
-                <label class="switch">
-                    <input type="checkbox" class="toggle-visibilidade" data-id="${servicoId}" ${isVisible ? 'checked' : ''}>
-                    <span class="slider"></span>
-                </label>
-              </div>
               <button class="btn-editar" data-id="${servicoId}">Editar</button>
               <button class="btn-excluir" data-id="${servicoId}">Excluir</button>
             </div>
@@ -69,7 +63,9 @@ onAuthStateChanged(auth, (user) => {
     async function excluirServico(id) {
       if (confirm("Você tem certeza? Esta ação é permanente e não pode ser desfeita.")) {
         try {
+          // MUDANÇA: Aponta para o documento dentro da coleção segura do usuário.
           await deleteDoc(doc(db, "users", uid, "servicos", id));
+          // AVISO: A biblioteca Toastify não é padrão, substituído por alert.
           alert("Serviço excluído com sucesso.");
           carregarServicosDoFirebase();
         } catch (error) {
@@ -79,22 +75,7 @@ onAuthStateChanged(auth, (user) => {
       }
     }
 
-    // MUDANÇA 4: Nova função para atualizar a visibilidade no Firebase
-    async function atualizarVisibilidade(id, visivel) {
-        try {
-            const servicoRef = doc(db, "users", uid, "servicos", id);
-            await updateDoc(servicoRef, {
-                visivelNaVitrine: visivel
-            });
-        } catch (error) {
-            console.error("Erro ao atualizar visibilidade:", error);
-            alert("Não foi possível atualizar o status do serviço.");
-            // Recarrega para reverter a mudança visual em caso de erro
-            carregarServicosDoFirebase();
-        }
-    }
-
-    // MUDANÇA 5: O event listener agora ouve 'click' e 'change'
+    // --- SEU EVENT LISTENER ORIGINAL ---
     listaServicosDiv.addEventListener('click', (event) => {
       const target = event.target;
       if (target.classList.contains('btn-excluir')) {
@@ -105,19 +86,13 @@ onAuthStateChanged(auth, (user) => {
       }
     });
 
-    listaServicosDiv.addEventListener('change', (event) => {
-        const target = event.target;
-        if (target.classList.contains('toggle-visibilidade')) {
-            const servicoId = target.dataset.id;
-            const isVisible = target.checked;
-            atualizarVisibilidade(servicoId, isVisible);
-        }
-    });
-
+    // --- SUA CHAMADA INICIAL ORIGINAL ---
     carregarServicosDoFirebase();
 
   } else {
+    // Se não há usuário logado, redireciona para a tela de login.
     console.log("Nenhum usuário logado. Redirecionando para login.html...");
     window.location.href = 'login.html';
   }
 });
+
