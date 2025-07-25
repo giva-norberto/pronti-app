@@ -25,7 +25,7 @@ onAuthStateChanged(auth, (user) => {
         snapshot.forEach(docSnap => {
           const servico = docSnap.data();
           const servicoId = docSnap.id;
-          const visivel = servico.visivel !== false; // padrão: true
+          const visivelNaVitrine = servico.visivelNaVitrine !== false; // padrão true
 
           const el = document.createElement('div');
           el.classList.add('servico-item');
@@ -36,14 +36,14 @@ onAuthStateChanged(auth, (user) => {
               <p><strong>Preço:</strong> R$ ${parseFloat(servico.preco || 0).toFixed(2).replace('.', ',')}</p>
               <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
               <p><strong>Status:</strong> 
-                ${visivel ? '<span style="color:green;">✅ Visível na Vitrine</span>' : '<span style="color:red;">🚫 Oculto da Vitrine</span>'}
+                ${visivelNaVitrine ? '<span style="color:green;">✅ Visível na Vitrine</span>' : '<span style="color:red;">🚫 Oculto da Vitrine</span>'}
               </p>
             </div>
             <div class="item-acoes">
               <button class="btn-editar" data-id="${servicoId}">Editar</button>
               <button class="btn-excluir" data-id="${servicoId}">Excluir</button>
-              <button class="btn-vitrine" data-id="${servicoId}" data-visivel="${visivel}">
-                ${visivel ? 'Ocultar da Vitrine' : 'Mostrar na Vitrine'}
+              <button class="btn-vitrine" data-id="${servicoId}" data-visivel="${visivelNaVitrine}">
+                ${visivelNaVitrine ? 'Ocultar da Vitrine' : 'Mostrar na Vitrine'}
               </button>
             </div>
           `;
@@ -73,7 +73,7 @@ onAuthStateChanged(auth, (user) => {
       try {
         const novoStatus = !atual;
         await updateDoc(doc(db, "users", uid, "servicos", id), {
-          visivel: novoStatus
+          visivelNaVitrine: novoStatus
         });
         carregarServicosDoFirebase();
       } catch (error) {
