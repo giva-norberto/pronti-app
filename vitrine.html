@@ -639,29 +639,37 @@
                     <button class="btn-cancelar" data-id="${id}">Cancelar</button>
                 `;
 
-                card.querySelector('.btn-cancelar').onclick = async () => {
-                    if (!confirm('Deseja realmente cancelar este agendamento?')) return;
+               const btnCancelar = card.querySelector('.btn-cancelar');
+btnCancelar.onclick = async () => {
+  if (!confirm('Deseja realmente cancelar este agendamento?')) return;
 
-                    try {
-                        await deleteDoc(doc(db, "users", profissionalUid, "agendamentos", id));
-                        alert('Agendamento cancelado com sucesso.');
-                        carregarAgendamentosCliente(telefoneLimpo);
-                        gerarHorariosDisponiveis();
-                    } catch (err) {
-                        console.error('Erro ao cancelar:', err);
-                        alert('Não foi possível cancelar o agendamento.');
-                    }
-                };
-                listaMeusAgendamentosEl.appendChild(card);
-            });
-        } catch(error) {
-            console.error("Erro ao carregar agendamentos do cliente:", error);
-            listaMeusAgendamentosEl.innerHTML = '<p style="color:red;">Ocorreu um erro ao buscar seus agendamentos.</p>';
-        }
+  // Fornece um feedback visual e evita cliques duplos
+  btnCancelar.disabled = true;
+  btnCancelar.textContent = 'A cancelar...';
+
+  try {
+    // A lógica de exclusão está correta e é mantida
+    await deleteDoc(doc(db, "users", profissionalUid, "agendamentos", id));
+
+    alert('Agendamento cancelado com sucesso.');
+
+    // Remove o card da tela (mais eficiente que recarregar tudo)
+    card.remove();
+
+    // Libera o horário para novos agendamentos
+    gerarHorariosDisponiveis();
+
+    // Se a lista ficar vazia, exibe a mensagem
+    if (listaMeusAgendamentosEl.children.length === 0) {
+        listaMeusAgendamentosEl.innerHTML = '<p>Nenhum agendamento encontrado para este telefone.</p>';
     }
 
-    // Inicia todo o processo
-    inicializarVitrine();
-  </script>
-</body>
-</html>
+  } catch (err) {
+    console.error('Erro ao cancelar:', err);
+    alert('Não foi possível cancelar o agendamento.');
+
+    // Reverte o botão em caso de erro
+    btnCancelar.disabled = false;
+    btnCancelar.textContent = 'Cancelar';
+  }
+};
