@@ -668,8 +668,10 @@ btnCancelar.onclick = async () => {
     console.error('Erro ao cancelar:', err);
     alert('Não foi possível cancelar o agendamento.');
 
-    // Reverte o botão em caso de erro
-    btnCancelar.disabled = false;
-    btnCancelar.textContent = 'Cancelar';
-  }
-};
+   // Reverte o botão em caso de erro
+      btnCancelar.disabled = false;
+      btnCancelar.textContent = 'Cancelar';
+    }
+  };
+
+  listaMeusAgendamentosEl.appendChild(card);
