@@ -485,6 +485,7 @@
         const diaDaSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSelecionado.getUTCDay()];
 
         const configDia = horariosConfig[diaDaSemana];
+      _diaDaSemana];
         if (!configDia || !configDia.ativo || !configDia.blocos || configDia.blocos.length === 0) {
             horariosContainer.innerHTML = '<p class="aviso-horarios">Não há atendimento neste dia.</p>';
             return;
@@ -524,7 +525,6 @@
                         btn.onclick = () => {
                             horarioSelecionado = horario;
                             document.querySelectorAll('.btn-horario').forEach(b => b.classList.remove('selecionado'));
-              _horario').forEach(b => b.classList.remove('selecionado'));
                             btn.classList.add('selecionado');
                             verificarEstadoBotaoConfirmar();
                         };
@@ -562,6 +562,7 @@
                 clienteTelefone: telefoneCliente,
                 servicoId: servicoSelecionado.id,
                 servicoNome: servicoSelecionado.nome,
+          _servicoSelecionado.nome,
                 horario: Timestamp.fromDate(dataHora),
                 criadoEm: Timestamp.now(),
                 profissionalUid: profissionalUid,
@@ -612,7 +613,7 @@
             }
 
             listaMeusAgendamentosEl.innerHTML = '';
-            snapshot.forEach(docSnapshot => { // Renomeei 'doc' para 'docSnapshot' para evitar confusão com a função 'doc'
+            snapshot.forEach(docSnapshot => { 
                 const ag = docSnapshot.data();
                 const agendamentoId = docSnapshot.id;
 
