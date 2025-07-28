@@ -1,58 +1,71 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pronti - Agenda</title>
-  
-  <link rel="stylesheet" href="style.css" />
-  
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
 
- <aside class="sidebar">
-  <a href="index.html" class="sidebar-brand">Pronti</a>
-  <hr />
-  <div class="sidebar-links">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="index.html">Home</a>
-    <a href="servicos.html">Serviços</a>
-    <a href="agenda.html">Agenda</a>
-    <a href="clientes.html">Clientes</a>
-    <a href="perfil.html">Meu Perfil</a>
-    <a href="horarios.html">Meus Horários</a>
-    <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
-  </div>
-</aside>
-
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <div class="sidebar-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="index.html">Home</a>
+      <a href="servicos.html">Serviços</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="perfil.html">Meu Perfil</a>
+      <a href="horarios.html">Meus Horários</a>
+      <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
+    </div>
+  </aside>
 
   <main class="main-content">
-    <h1>Agenda de Compromissos</h1>
-    <a href="novo-agendamento.html" class="btn-new">Novo Agendamento</a>
+    <div class="agenda-header">
+        <h1>Agenda de Compromissos</h1>
+        <a href="novo-agendamento.html" class="btn-novo-agendamento">Novo Agendamento</a>
+    </div>
 
     <div class="filtro-data">
-      <label for="data-agenda">Filtrar por data:</label>
-      <input type="date" id="data-agenda" />
+        <label for="data-agenda">Filtrar por data:</label>
+        <input type="date" id="data-agenda">
     </div>
 
     <div id="lista-agendamentos">
-      </div>
+        <p>Selecione uma data para ver os agendamentos.</p>
+    </div>
+
+    <div class="cancelamentos-pendentes">
+        <h2>Cancelamentos Pendentes de Confirmação</h2>
+        <div id="lista-cancelamentos-pendentes">
+            <p>Nenhuma solicitação de cancelamento encontrada.</p>
+        </div>
+    </div>
   </main>
 
-  <div id="modal-confirmacao" class="modal-overlay" style="display: none;">
-    <div class="modal-card">
-      <h3 id="modal-titulo">Confirmar Ação</h3>
-      <p id="modal-mensagem">Você tem certeza que deseja cancelar este agendamento?</p>
-      <div class="modal-botoes">
-        <button id="btn-modal-cancelar" class="btn-modal btn-cancelar">Cancelar</button>
-        <button id="btn-modal-confirmar" class="btn-modal btn-confirmar">Confirmar</button>
-      </div>
+  <div id="modal-confirmacao" class="modal">
+    <div class="modal-content">
+        <h3>Confirmar Cancelamento Interno</h3>
+        <p>Este agendamento já foi cancelado pelo cliente. Deseja marcar como "Resolvido" e remover desta lista?</p>
+        <div class="modal-botoes">
+            <button id="btn-modal-confirmar" class="btn-confirmar">Sim, Resolver</button>
+            <button id="btn-modal-cancelar" class="btn-secundario">Não</button>
+        </div>
     </div>
   </div>
 
+
   <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+
+  <script src="firebase-config.js" type="module"></script>
   <script src="agenda.js" type="module"></script>
 
 </body>
