@@ -142,7 +142,6 @@ function configurarPrimeiroAcesso() {
 // --- Funções de Carregamento de Dados ---
 
 async function encontrarUidPeloSlug(slug) {
-    // CORRIGIDO para buscar na coleção 'slugs' conforme suas regras
     const slugRef = doc(db, "slugs", slug);
     const docSnap = await getDoc(slugRef);
     return docSnap.exists() ? docSnap.data().uid : null;
@@ -218,6 +217,7 @@ async function carregarServicos() {
         };
     });
 }
+
 
 // --- Lógica de Horários ---
 async function gerarHorariosDisponiveis() {
@@ -361,8 +361,14 @@ async function carregarAgendamentosCliente(telefone) {
         snapshot.forEach(docSnapshot => {
             const ag = docSnapshot.data();
             const id = docSnapshot.id;
-            const horarioFormatado = ag.horario.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
             
+            // CORREÇÃO: Lida com agendamentos antigos (em formato de texto) e novos (Timestamp)
+            let horarioFormatado = 'Data/hora inválida';
+            if (ag.horario && typeof ag.horario.toDate === 'function') {
+                horarioFormatado = ag.horario.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+            }
+            // Fim da correção
+
             const card = document.createElement('div');
             card.className = 'agendamento-item'; 
             card.innerHTML = `
