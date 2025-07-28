@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agendamento Online</title>
-  
   <link rel="stylesheet" href="vitrine.css">
 </head>
 <body>
@@ -19,6 +18,17 @@
       <input type="text" id="input-nome-modal" placeholder="Seu nome completo" required>
       <input type="tel" id="input-telefone-modal" placeholder="Seu WhatsApp (com DDD)" required style="margin-top: 10px;">
       <button id="btn-salvar-dados-cliente">Salvar e continuar</button>
+    </div>
+  </div>
+
+  <div id="modal-verificar-agendamentos" class="modal">
+    <div class="modal-content">
+      <span class="fechar-modal">&times;</span>
+      <h3>Verificar Meus Agendamentos</h3>
+      <p>Digite seu telefone e PIN para ver seus agendamentos:</p>
+      <input type="tel" id="input-telefone-verificar" placeholder="Seu telefone (com DDD)" required>
+      <input type="password" id="input-pin-verificar" placeholder="Seu PIN (4-6 dígitos)" required style="margin-top: 10px;">
+      <button id="btn-verificar-agendamentos-modal">Verificar Agendamentos</button>
     </div>
   </div>
 
@@ -49,18 +59,30 @@
           <label for="data-agendamento">2. Escolha uma data e horário</label>
           <input type="date" id="data-agendamento" required>
           <div id="grade-horarios">
-            <p class="aviso-horarios">Selecione uma data para ver os horários.</p>
+            <p class="aviso-horarios">Selecione um serviço para ver os horários.</p>
           </div>
         </div>
         <div class="form-group">
           <label>3. Os seus dados</label>
           <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
           <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required style="margin-top: 10px;">
+          
+          <div class="pin-input-group">
+            <label for="pin-cliente">Crie um PIN para seu agendamento:</label>
+            <input type="password" id="pin-cliente" placeholder="Digite um PIN de 4-6 dígitos" required maxlength="6">
+            <small>Este PIN será necessário para cancelar ou verificar este agendamento.</small>
+          </div>
         </div>
         <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
+        
+        <button type="button" id="btn-verificar-agendamentos" class="btn-verificar-agendamentos">
+          Ver Meus Agendamentos
+        </button>
       </div>
     </div>
   </main>
+
+  <div id="notification-message" class="notification-message"></div>
 
   <script type="module" src="vitrine.js"></script>
 </body>
