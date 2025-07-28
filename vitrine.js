@@ -194,13 +194,13 @@ async function carregarConfiguracoesHorario() {
     } else {
         horariosConfig = {
             intervalo: 30,
-            segunda: { ativo: true, inicio: "09:00", fim: "18:00" },
-            terca: { ativo: true, inicio: "09:00", fim: "18:00" },
-            quarta: { ativo: true, inicio: "09:00", fim: "18:00" },
-            quinta: { ativo: true, inicio: "09:00", fim: "18:00" },
-            sexta: { ativo: true, inicio: "09:00", fim: "18:00" },
-            sabado: { ativo: false, inicio: "09:00", fim: "12:00" },
-            domingo: { ativo: false, inicio: "09:00", fim: "12:00" }
+            seg: { ativo: true, inicio: "09:00", fim: "18:00" },
+            ter: { ativo: true, inicio: "09:00", fim: "18:00" },
+            qua: { ativo: true, inicio: "09:00", fim: "18:00" },
+            qui: { ativo: true, inicio: "09:00", fim: "18:00" },
+            sex: { ativo: true, inicio: "09:00", fim: "18:00" },
+            sab: { ativo: false, inicio: "09:00", fim: "12:00" },
+            dom: { ativo: false, inicio: "09:00", fim: "12:00" }
         };
     }
 }
@@ -288,9 +288,13 @@ async function buscarAgendamentosData(data) {
 function gerarListaHorarios(data, agendamentosOcupados) {
     const dataObj = new Date(data + 'T00:00:00Z');
     const diaSemana = dataObj.getUTCDay();
-    const nomesDias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    // --- INÍCIO DA CORREÇÃO ---
+    // Usa os nomes Abreviados para bater com o Firebase
+    const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+    // --- FIM DA CORREÇÃO ---
     const nomeDia = nomesDias[diaSemana];
     const configDia = horariosConfig[nomeDia];
+
     if (!configDia || !configDia.ativo) {
         return [];
     }
