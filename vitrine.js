@@ -1,10 +1,11 @@
 /**
  * vitrine.js (Vitrine Interativa do Cliente)
  */
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { app } from "./firebase-config.js";
 
-const db = getFirestore(app);
+// Importa as funções do Firestore
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+// Importa o 'db' já inicializado do seu arquivo de configuração
+import { db } from "./firebase-config.js";
 
 // --- ESTADO GLOBAL ---
 let profissionalUid = null;
@@ -12,7 +13,7 @@ let servicoSelecionado = null;
 let horarioSelecionado = null;
 let horariosConfig = {};
 
-// --- VARIÁVEIS DOS ELEMENTOS DO DOM ---
+// --- VARIÁVEIS DOS ELEMENTOS DO DOM (declaradas, mas não atribuídas) ---
 let loader, content, nomeNegocioEl, dataAtualEl, logoEl, servicosContainer,
     dataInput, horariosContainer, nomeClienteInput, telefoneClienteInput, btnConfirmar,
     btnPrimeiroAcesso, saudacaoClienteEl, modalAcesso, btnSalvarDadosModal, btnFecharModal,
@@ -218,7 +219,6 @@ async function carregarServicos() {
     });
 }
 
-
 // --- Lógica de Horários ---
 async function gerarHorariosDisponiveis() {
     horariosContainer.innerHTML = '<p class="aviso-horarios">A verificar...</p>';
@@ -362,12 +362,10 @@ async function carregarAgendamentosCliente(telefone) {
             const ag = docSnapshot.data();
             const id = docSnapshot.id;
             
-            // CORREÇÃO: Lida com agendamentos antigos (em formato de texto) e novos (Timestamp)
             let horarioFormatado = 'Data/hora inválida';
             if (ag.horario && typeof ag.horario.toDate === 'function') {
                 horarioFormatado = ag.horario.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
             }
-            // Fim da correção
 
             const card = document.createElement('div');
             card.className = 'agendamento-item'; 
