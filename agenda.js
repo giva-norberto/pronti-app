@@ -1,7 +1,7 @@
 /**
  * agenda.js - Versão Final e Corrigida
  * Lógica ajustada para ser compatível com o novo formato de dados (Timestamp)
- * e para usar queries mais eficientes do Firestore.
+ * e para usar queries mais eficientes e válidas do Firestore.
  */
 
 // Importações do Firebase
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- FUNÇÕES CORRIGIDAS E OTIMIZADAS ---
 
-  // CORRIGIDO: Agora formata o objeto Timestamp do Firebase corretamente.
+  // Formata o objeto Timestamp do Firebase corretamente.
   function formatarHorario(timestamp) {
     if (!timestamp || typeof timestamp.toDate !== 'function') {
       return "Data/hora inválida";
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
-  // CORRIGIDO E OTIMIZADO: Agora filtra os agendamentos por data diretamente no Firebase.
+  // Filtra os agendamentos por data diretamente no Firebase e status no navegador.
   async function carregarAgendamentos(uid) {
     currentUid = uid;
     if (!listaAgendamentos) return;
@@ -54,11 +54,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const colecao = collection(db, `users/${uid}/agendamentos`);
       
-      // Cria a query para filtrar no Firebase (muito mais eficiente)
+      // CORREÇÃO: A query válida busca apenas pelo intervalo de data.
       const q = query(colecao, 
         where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
-        where("horario", "<=", Timestamp.fromDate(fimDoDia)),
-        where("status", "!=", "cancelado")
+        where("horario", "<=", Timestamp.fromDate(fimDoDia))
       );
 
       const snapshot = await getDocs(q);
@@ -66,16 +65,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       for (const docAg of snapshot.docs) {
         const ag = docAg.data();
-        ag.id = docAg.id;
         
-        // A busca pelo nome do serviço continua a mesma
-        if (ag.servicoId) {
-            const servicoSnap = await getDoc(doc(db, `users/${uid}/servicos/${ag.servicoId}`));
-            ag.servicoNome = servicoSnap.exists() ? servicoSnap.data().nome : "Serviço não encontrado";
-        } else {
-            ag.servicoNome = ag.servicoNome || "Serviço Avulso"; // Usa o nome salvo se não houver ID
+        // CORREÇÃO: O filtro de status é aplicado aqui, no navegador.
+        if (ag.status !== 'cancelado') {
+            ag.id = docAg.id;
+            
+            if (ag.servicoId) {
+                const servicoSnap = await getDoc(doc(db, `users/${uid}/servicos/${ag.servicoId}`));
+                ag.servicoNome = servicoSnap.exists() ? servicoSnap.data().nome : "Serviço não encontrado";
+            } else {
+                ag.servicoNome = ag.servicoNome || "Serviço Avulso";
+            }
+            agendamentos.push(ag);
         }
-        agendamentos.push(ag);
       }
       
       renderizarAgendamentos(agendamentos);
@@ -85,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // CORRIGIDO: Ajustado para o novo formato de dados.
+  // Ajustado para o novo formato de dados.
   function renderizarAgendamentos(agendamentos) {
     listaAgendamentos.innerHTML = "";
     if (agendamentos.length === 0) {
@@ -99,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
     agendamentos.forEach(ag => {
       const div = document.createElement("div");
       div.className = "agendamento-item";
-      // Passa o Timestamp 'ag.horario' diretamente para a função de formatar
       div.innerHTML = `
         <h3>${ag.servicoNome}</h3>
         <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p>
@@ -117,13 +118,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- SUAS FUNÇÕES ORIGINAIS (SEM ALTERAÇÕES NECESSÁRIAS) ---
+  // --- FUNÇÕES ORIGINAIS (SEM ALTERAÇÕES NECESSÁRIAS) ---
 
   async function cancelarAgendamentoFirebase(agendamentoId, uid) {
     try {
       const agendamentoRef = doc(db, `users/${uid}/agendamentos`, agendamentoId);
       await updateDoc(agendamentoRef, { status: 'cancelado' });
-      // Usando alert padrão para simplicidade, já que Toastify não foi importado
+      // Usando alert padrão para simplicidade
       alert("Agendamento cancelado!");
       carregarAgendamentos(uid);
     } catch (error) {
