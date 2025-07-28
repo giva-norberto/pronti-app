@@ -1,10 +1,7 @@
 /**
- * agenda.js - Versão Final e Corrigida
- * Lógica ajustada para ser compatível com o novo formato de dados (Timestamp)
- * e para usar queries mais eficientes e válidas do Firestore.
+ * agenda.js - Versão Final Corrigida (com UTC)
  */
 
-// Importações do Firebase
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
@@ -23,19 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let agendamentoParaCancelarId = null;
   let currentUid = null;
 
-  // --- FUNÇÕES CORRIGIDAS E OTIMIZADAS ---
-
-  // Formata o objeto Timestamp do Firebase corretamente.
   function formatarHorario(timestamp) {
     if (!timestamp || typeof timestamp.toDate !== 'function') {
       return "Data/hora inválida";
     }
-    const data = timestamp.toDate(); // Converte o Timestamp para um objeto Date
-    // Exibe apenas a hora, pois a data já foi selecionada no filtro
-    return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const data = timestamp.toDate();
+    return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   }
 
-  // Filtra os agendamentos por data diretamente no Firebase e status no navegador.
   async function carregarAgendamentos(uid) {
     currentUid = uid;
     if (!listaAgendamentos) return;
@@ -48,13 +40,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Cria um intervalo de tempo para a consulta (do início ao fim do dia selecionado)
-      const inicioDoDia = new Date(dataSelecionada + "T00:00:00");
-      const fimDoDia = new Date(dataSelecionada + "T23:59:59");
+      // --- INÍCIO DA CORREÇÃO DE FUSO HORÁRIO ---
+      // Força a criação das datas em UTC (Horário Universal)
+      const inicioDoDia = new Date(dataSelecionada + "T00:00:00.000Z");
+      const fimDoDia = new Date(dataSelecionada + "T23:59:59.999Z");
+      // --- FIM DA CORREÇÃO ---
 
       const colecao = collection(db, `users/${uid}/agendamentos`);
       
-      // CORREÇÃO: A query válida busca apenas pelo intervalo de data.
       const q = query(colecao, 
         where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
         where("horario", "<=", Timestamp.fromDate(fimDoDia))
@@ -66,7 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
       for (const docAg of snapshot.docs) {
         const ag = docAg.data();
         
-        // CORREÇÃO: O filtro de status é aplicado aqui, no navegador.
         if (ag.status !== 'cancelado') {
             ag.id = docAg.id;
             
@@ -87,7 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Ajustado para o novo formato de dados.
   function renderizarAgendamentos(agendamentos) {
     listaAgendamentos.innerHTML = "";
     if (agendamentos.length === 0) {
@@ -95,7 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     
-    // Ordena pelo Timestamp
     agendamentos.sort((a, b) => a.horario.toDate() - b.horario.toDate());
 
     agendamentos.forEach(ag => {
@@ -118,13 +108,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- FUNÇÕES ORIGINAIS (SEM ALTERAÇÕES NECESSÁRIAS) ---
-
   async function cancelarAgendamentoFirebase(agendamentoId, uid) {
     try {
       const agendamentoRef = doc(db, `users/${uid}/agendamentos`, agendamentoId);
       await updateDoc(agendamentoRef, { status: 'cancelado' });
-      // Usando alert padrão para simplicidade
       alert("Agendamento cancelado!");
       carregarAgendamentos(uid);
     } catch (error) {
@@ -139,8 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modalConfirmacao) modalConfirmacao.classList.remove('visivel');
     agendamentoParaCancelarId = null;
   }
-
-  // --- INICIALIZAÇÃO E EVENTOS ---
 
   if (btnModalCancelar && btnModalConfirmar) {
     btnModalCancelar.addEventListener('click', fecharModalConfirmacao);
