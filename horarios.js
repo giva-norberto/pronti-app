@@ -1,7 +1,7 @@
 /**
  * horarios.js
- * * Gere a página "Meus Horários", permitindo ao empresário
- * * carregar e salvar os seus horários de atendimento no Firestore.
+ * Gere a página "Meus Horários", permitindo ao empresário
+ * carregar e salvar os seus horários de atendimento no Firestore.
  */
 
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -19,8 +19,11 @@ let uid;
 onAuthStateChanged(auth, (user) => {
   if (user) {
     uid = user.uid;
-    carregarHorarios(uid);
-    form.addEventListener('submit', handleFormSubmit);
+    // Só adiciona o listener se o formulário existir na página
+    if (form) {
+        carregarHorarios(uid);
+        form.addEventListener('submit', handleFormSubmit);
+    }
   } else {
     window.location.href = 'login.html';
   }
@@ -39,9 +42,18 @@ async function carregarHorarios(userId) {
       const horarios = docSnap.data();
       diasDaSemana.forEach(dia => {
         if (horarios[dia]) {
-          document.getElementById(`${dia}-inicio`).value = horarios[dia].inicio;
-          document.getElementById(`${dia}-fim`).value = horarios[dia].fim;
-          document.getElementById(`${dia}-ativo`).checked = horarios[dia].ativo;
+          // --- INÍCIO DA CORREÇÃO ---
+          const inputInicio = document.getElementById(`${dia}-inicio`);
+          const inputFim = document.getElementById(`${dia}-fim`);
+          const checkAtivo = document.getElementById(`${dia}-ativo`);
+
+          // Verifica se os 3 elementos existem na página antes de tentar usá-los
+          if (inputInicio && inputFim && checkAtivo) {
+            inputInicio.value = horarios[dia].inicio;
+            inputFim.value = horarios[dia].fim;
+            checkAtivo.checked = horarios[dia].ativo;
+          }
+          // --- FIM DA CORREÇÃO ---
         }
       });
     } else {
