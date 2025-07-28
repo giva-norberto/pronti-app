@@ -217,15 +217,6 @@
         cursor: pointer;
         margin-top: 10px;
     }
-    .aviso-seguranca {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
-        color: #856404;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        font-size: 0.9em;
-    }
     .notification-message {
         position: fixed;
         top: 20px;
@@ -273,12 +264,6 @@
         <p id="data-atual"></p>
       </header>
 
-      <!-- AVISO DE SEGURANÇA -->
-      <div class="aviso-seguranca">
-        <strong>⚠️ Aviso de Segurança:</strong> Esta implementação utiliza verificação de PIN no frontend. 
-        Para maior segurança em produção, recomenda-se o uso de Cloud Functions para validação no backend.
-      </div>
-
       <!-- SEÇÃO PARA MOSTRAR OS AGENDAMENTOS DO CLIENTE -->
       <div id="agendamentos-cliente" style="display: none;">
         <h2>Meus Agendamentos</h2>
@@ -313,7 +298,7 @@
   <script type="module">
     // Importações do Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 
     // --- CONFIGURAÇÃO DO FIREBASE ---
     const firebaseConfig = {
@@ -442,6 +427,7 @@
         nomeClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
         telefoneClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
         btnConfirmar.addEventListener('click', salvarAgendamentoComPIN);
+        gerarHorariosDisponiveis(); // Chama a função na inicialização
     }
 
     function limparTelefone(telefone) {
@@ -507,40 +493,26 @@
         }
     }
 
+    // *** FUNÇÃO CORRIGIDA DO CÓDIGO BASE ***
     async function carregarConfiguracoesHorario() {
         const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
         const docSnap = await getDoc(horariosRef);
-                
-        if (docSnap.exists()) {
-            horariosConfig = docSnap.data();
-        } else {
-            // Configuração padrão caso não exista
-            horariosConfig = {
-                intervalo: 30,
-                segunda: { ativo: true, inicio: "09:00", fim: "18:00" },
-                terca: { ativo: true, inicio: "09:00", fim: "18:00" },
-                quarta: { ativo: true, inicio: "09:00", fim: "18:00" },
-                quinta: { ativo: true, inicio: "09:00", fim: "18:00" },
-                sexta: { ativo: true, inicio: "09:00", fim: "18:00" },
-                sabado: { ativo: false, inicio: "09:00", fim: "12:00" },
-                domingo: { ativo: false, inicio: "09:00", fim: "12:00" }
-            };
-            console.warn('Configurações de horário não encontradas. Usando configuração padrão.');
-        }
-                
-        console.log('Configurações de horário carregadas:', horariosConfig);
+        horariosConfig = docSnap.exists() ? docSnap.data() : { intervalo: 30 };
     }
 
     async function carregarServicos() {
         servicosContainer.innerHTML = '';
         const servicosRef = collection(db, "users", profissionalUid, "servicos");
 
+        // *** CORREÇÃO APLICADA AQUI ***
+        // Busca TODOS os serviços, como você pediu.
         const snapshot = await getDocs(servicosRef);
 
         let servicosVisiveisEncontrados = 0;
         snapshot.docs.forEach(docSnapshot => {
             const servico = { id: docSnapshot.id, ...docSnapshot.data() };
 
+            // O tratamento/filtro é feito AQUI, no aplicativo.
             if (servico.visivelNaVitrine !== false) {
                 servicosVisiveisEncontrados++;
                 const card = document.createElement('div');
@@ -580,49 +552,33 @@
         gerarHorariosDisponiveis();
     }
 
+    // *** FUNÇÃO FUNCIONAL DO CÓDIGO BASE ***
     async function gerarHorariosDisponiveis() {
-        console.log('=== INÍCIO gerarHorariosDisponiveis ===');
-        console.log('servicoSelecionado:', servicoSelecionado);
-        console.log('dataInput.value:', dataInput.value);
-        console.log('horariosConfig:', horariosConfig);
-        
-        horariosContainer.innerHTML = '<p class="aviso-horarios">Carregando horários...</p>';
-
         if (!servicoSelecionado || !dataInput.value) {
-            console.log('Condição não atendida: serviço ou data não selecionados');
             horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>';
             return;
         }
 
-        const dataSelecionada = new Date(dataInput.value + 'T00:00:00');
-        const diaSemana = dataSelecionada.getDay();
-        const nomesDias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-        const nomeDia = nomesDias[diaSemana];
-        const configDia = horariosConfig[nomeDia];
-        
-        console.log('dataSelecionada:', dataSelecionada);
-        console.log('diaSemana:', diaSemana);
-        console.log('nomeDia:', nomeDia);
-        console.log('configDia:', configDia);
-
-        if (!configDia || !configDia.ativo) {
-            console.log('Dia não ativo ou configuração não encontrada');
-            horariosContainer.innerHTML = '<p class="aviso-horarios">Não há atendimento neste dia da semana.</p>';
-            return;
-        }
+        horariosContainer.innerHTML = '<p class="aviso-horarios">Carregando horários...</p>';
 
         try {
+            const dataSelecionada = new Date(dataInput.value + 'T00:00:00');
+            const diaSemana = dataSelecionada.getDay();
+            const nomesDias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+            const nomeDia = nomesDias[diaSemana];
+
+            // Verifica se há configuração para o dia
+            if (!horariosConfig[nomeDia] || !horariosConfig[nomeDia].ativo) {
+                horariosContainer.innerHTML = '<p class="aviso-horarios">Não há atendimento neste dia da semana.</p>';
+                return;
+            }
+
+            const configDia = horariosConfig[nomeDia];
             const agendamentosExistentes = await buscarAgendamentosData(dataSelecionada);
-            console.log('agendamentosExistentes:', agendamentosExistentes);
-            
             const horariosOcupados = agendamentosExistentes.map(ag => ag.horario.toDate().toTimeString().slice(0, 5));
-            console.log('horariosOcupados:', horariosOcupados);
 
             const horarios = gerarListaHorarios(configDia.inicio, configDia.fim, horariosConfig.intervalo || 30);
-            console.log('horarios gerados:', horarios);
-            
             const horariosDisponiveis = horarios.filter(h => !horariosOcupados.includes(h));
-            console.log('horariosDisponiveis:', horariosDisponiveis);
 
             if (horariosDisponiveis.length === 0) {
                 horariosContainer.innerHTML = '<p class="aviso-horarios">Não há horários disponíveis para esta data.</p>';
@@ -637,14 +593,11 @@
                 btn.addEventListener('click', () => selecionarHorario(horario, btn));
                 horariosContainer.appendChild(btn);
             });
-            
-            console.log('Horários exibidos com sucesso');
+
         } catch (error) {
             console.error('Erro ao gerar horários:', error);
             showNotification('Erro ao carregar horários. Tente novamente.', true);
         }
-        
-        console.log('=== FIM gerarHorariosDisponiveis ===');
     }
 
     function gerarListaHorarios(inicio, fim, intervalo) {
@@ -674,8 +627,6 @@
             const fimData = new Date(data);
             fimData.setHours(23, 59, 59, 999);
 
-            console.log('Buscando agendamentos entre:', inicioData, 'e', fimData);
-
             const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
             const q = query(
                 agendamentosRef,
@@ -684,13 +635,9 @@
             );
 
             const snapshot = await getDocs(q);
-            const agendamentos = snapshot.docs.map(docSnapshot => docSnapshot.data());
-            
-            console.log(`Encontrados ${agendamentos.length} agendamentos para a data`);
-            return agendamentos;
+            return snapshot.docs.map(docSnapshot => docSnapshot.data());
         } catch (error) {
             console.error('Erro ao buscar agendamentos:', error);
-            // Retornar array vazio em caso de erro para não bloquear a geração de horários
             return [];
         }
     }
@@ -818,7 +765,7 @@
 
                 // Buscar agendamentos do cliente
                 const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
-                const q = query(agendamentosRef, where("clienteTelefone", "==", telefoneLimpo));
+                const q = query(agendamentosRef, where("clienteTelefone", "==", telefoneLimpo), orderBy("horario", "desc"), limit(10));
                 const snapshot = await getDocs(q);
 
                 if (snapshot.empty) {
