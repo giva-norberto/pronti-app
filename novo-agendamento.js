@@ -1,7 +1,6 @@
 /**
- * novo-agendamento.js (Painel do Dono - Versão Final e Corrigida)
- * Script ajustado para salvar e ler agendamentos no formato Timestamp,
- * garantindo compatibilidade com a Vitrine e a Agenda.
+ * novo-agendamento.js (Painel do Dono - Versão Corrigida)
+ * Script ajustado para salvar agendamentos no formato Timestamp.
  */
 
 import { getFirestore, collection, getDocs, addDoc, query, where, doc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -20,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const horarioFinalInput = document.getElementById('horario-final');
 
     if (!form || !servicoSelect || !diaInput || !gradeHorariosDiv) {
-        console.error("Erro Crítico: Um ou mais elementos do formulário não foram encontrados no HTML.");
+        console.error("Erro Crítico: Elementos do formulário não encontrados.");
         return;
     }
 
@@ -49,12 +48,13 @@ async function inicializarPaginaDeAgendamento(uid, elements) {
     servicoSelect.value = servicoIdFromUrl;
   }
   
-  // Dispara a busca de horários ao carregar a página se os campos estiverem preenchidos
+  // Define a data de hoje como padrão e busca os horários
+  diaInput.value = new Date().toISOString().split("T")[0];
   gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput });
 
   servicoSelect.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
   diaInput.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
-  form.addEventListener('submit', (event) => handleFormSubmit(event, uid, { clienteInput, servicoSelect, horarioFinalInput }));
+  form.addEventListener('submit', (event) => handleFormSubmit(event, uid, { clienteInput, servicoSelect, horarioFinalInput, diaInput }));
 }
 
 async function carregarServicosDoFirebase(uid, servicoSelect) {
@@ -63,12 +63,12 @@ async function carregarServicosDoFirebase(uid, servicoSelect) {
     const servicosUserCollection = collection(db, "users", uid, "servicos");
     const querySnapshot = await getDocs(servicosUserCollection);
     
-    querySnapshot.forEach(doc => {
-      const servico = doc.data();
+    querySnapshot.forEach(docSnapshot => {
+      const servico = docSnapshot.data();
       const option = document.createElement('option');
-      option.value = doc.id;
+      option.value = docSnapshot.id;
       option.textContent = `${servico.nome} (duração: ${servico.duracao} min)`;
-      option.dataset.servicoNome = servico.nome; // Guarda o nome do serviço
+      option.dataset.servicoNome = servico.nome;
       servicoSelect.appendChild(option);
     });
   } catch (error) { 
@@ -90,7 +90,6 @@ async function gerarEExibirHorarios(uid, elements) {
   }
   gradeHorariosDiv.innerHTML = '<p class="aviso-horarios">A verificar horários...</p>';
   try {
-    // --- INÍCIO DA CORREÇÃO 1: BUSCAR USANDO TIMESTAMP ---
     const inicioDoDia = new Date(`${diaSelecionado}T00:00:00`);
     const fimDoDia = new Date(`${diaSelecionado}T23:59:59`);
     
@@ -99,12 +98,10 @@ async function gerarEExibirHorarios(uid, elements) {
         where("horario", ">=", Timestamp.fromDate(inicioDoDia)), 
         where("horario", "<=", Timestamp.fromDate(fimDoDia))
     );
-    // --- FIM DA CORREÇÃO 1 ---
     
     const querySnapshot = await getDocs(agendamentosQuery);
-    const agendamentosDoDia = querySnapshot.docs.map(doc => doc.data());
-    const horariosOcupados = agendamentosDoDia.map(ag => {
-        const dataLocal = ag.horario.toDate(); // Agora lê de um Timestamp
+    const horariosOcupados = querySnapshot.docs.map(doc => {
+        const dataLocal = doc.data().horario.toDate();
         return `${String(dataLocal.getHours()).padStart(2, '0')}:${String(dataLocal.getMinutes()).padStart(2, '0')}`;
     });
 
@@ -125,7 +122,6 @@ async function gerarEExibirHorarios(uid, elements) {
           slotButton.addEventListener('click', () => {
             document.querySelectorAll('.slot-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
             slotButton.classList.add('selecionado');
-            // Apenas guarda o horário selecionado, a conversão fica para a hora de salvar
             horarioFinalInput.value = horarioParaVerificar;
           });
         }
@@ -136,7 +132,7 @@ async function gerarEExibirHorarios(uid, elements) {
 }
 
 async function handleFormSubmit(event, uid, elements) {
-  const { clienteInput, servicoSelect, horarioFinalInput, diaInput } = elements;
+  const { clienteInput, servicoSelect, horarioFinalInput } = elements;
   event.preventDefault();
 
   const horarioSelecionado = horarioFinalInput.value;
@@ -145,24 +141,24 @@ async function handleFormSubmit(event, uid, elements) {
     return;
   }
 
-  // --- INÍCIO DA CORREÇÃO 2: SALVAR COMO TIMESTAMP ---
+  // --- INÍCIO DA CORREÇÃO ---
   const dataSelecionada = document.getElementById('dia').value;
   const [hora, minuto] = horarioSelecionado.split(':');
-  const dataHoraCompleta = new Date(dataSelecionada);
+  const dataHoraCompleta = new Date(dataSelecionada + 'T00:00:00'); // Garante que a data seja interpretada corretamente
   dataHoraCompleta.setHours(hora, minuto, 0, 0);
 
   const opcaoServicoSelecionado = servicoSelect.options[servicoSelect.selectedIndex];
   const nomeServico = opcaoServicoSelecionado.dataset.servicoNome;
 
   const novoAgendamento = {
-    clienteNome: clienteInput.value, // Corrigido para "clienteNome" para manter padrão
+    clienteNome: clienteInput.value, // Mudado para 'clienteNome' para padronizar
     servicoId: servicoSelect.value,
-    servicoNome: nomeServico, // Adiciona o nome do serviço
-    horario: Timestamp.fromDate(dataHoraCompleta), // Salva no formato correto
-    status: 'agendado', // Adiciona um status padrão
+    servicoNome: nomeServico,
+    horario: Timestamp.fromDate(dataHoraCompleta), // Salva no formato Timestamp
+    status: 'agendado',
     criadoEm: Timestamp.now()
   };
-  // --- FIM DA CORREÇÃO 2 ---
+  // --- FIM DA CORREÇÃO ---
 
   try {
     const agendamentosUserCollection = collection(db, "users", uid, "agendamentos");
