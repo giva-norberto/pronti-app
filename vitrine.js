@@ -186,24 +186,38 @@ async function carregarPerfilPublico() {
     }
 }
 
+// --- FUNÇÃO CORRIGIDA PARA SER MAIS ROBUSTA ---
 async function carregarConfiguracoesHorario() {
     const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
     const docSnap = await getDoc(horariosRef);
+
+    const configPadrao = {
+        intervalo: 30,
+        dom: { ativo: false, inicio: "09:00", fim: "12:00" },
+        seg: { ativo: true, inicio: "09:00", fim: "18:00" },
+        ter: { ativo: true, inicio: "09:00", fim: "18:00" },
+        qua: { ativo: true, inicio: "09:00", fim: "18:00" },
+        qui: { ativo: true, inicio: "09:00", fim: "18:00" },
+        sex: { ativo: true, inicio: "09:00", fim: "18:00" },
+        sab: { ativo: false, inicio: "09:00", fim: "12:00" }
+    };
+
     if (docSnap.exists()) {
-        horariosConfig = docSnap.data();
+        const dadosDoFirebase = docSnap.data();
+        // Mescla os dados do Firebase com o padrão.
+        // Isso garante que, se um campo estiver faltando no Firebase, o valor padrão será usado.
+        horariosConfig = { ...configPadrao, ...dadosDoFirebase };
+        for (const dia of Object.keys(configPadrao)) {
+            if (dia !== 'intervalo') {
+                horariosConfig[dia] = { ...configPadrao[dia], ...dadosDoFirebase[dia] };
+            }
+        }
     } else {
-        horariosConfig = {
-            intervalo: 30,
-            seg: { ativo: true, inicio: "09:00", fim: "18:00" },
-            ter: { ativo: true, inicio: "09:00", fim: "18:00" },
-            qua: { ativo: true, inicio: "09:00", fim: "18:00" },
-            qui: { ativo: true, inicio: "09:00", fim: "18:00" },
-            sex: { ativo: true, inicio: "09:00", fim: "18:00" },
-            sab: { ativo: false, inicio: "09:00", fim: "12:00" },
-            dom: { ativo: false, inicio: "09:00", fim: "12:00" }
-        };
+        console.warn("Documento de horários não encontrado, usando configuração padrão.");
+        horariosConfig = configPadrao;
     }
 }
+
 
 async function carregarServicos() {
     servicosContainer.innerHTML = '';
@@ -292,17 +306,10 @@ function gerarListaHorarios(data, agendamentosOcupados) {
     const nomeDia = nomesDias[diaSemana];
     const configDia = horariosConfig[nomeDia];
 
-    if (!configDia || !configDia.ativo) {
+    if (!configDia || !configDia.ativo || !configDia.inicio || !configDia.fim) {
+        console.warn(`Configuração de horário para '${nomeDia}' está incompleta ou inativa.`);
         return [];
     }
-    
-    // --- INÍCIO DA CORREÇÃO ---
-    // Adiciona uma verificação para garantir que 'inicio' e 'fim' existam
-    if (!configDia.inicio || !configDia.fim) {
-        console.warn(`Configuração de horário para '${nomeDia}' está incompleta.`);
-        return [];
-    }
-    // --- FIM DA CORREÇÃO ---
 
     const horarios = [];
     const intervalo = horariosConfig.intervalo || 30;
@@ -310,7 +317,6 @@ function gerarListaHorarios(data, agendamentosOcupados) {
     const [horaFim, minutoFim] = configDia.fim.split(':').map(Number);
     let horaAtual = horaInicio;
     let minutoAtual = minutoInicio;
-
     while (horaAtual < horaFim || (horaAtual === horaFim && minutoAtual < minutoFim)) {
         const horarioFormatado = `${horaAtual.toString().padStart(2, '0')}:${minutoAtual.toString().padStart(2, '0')}`;
         if (!agendamentosOcupados.includes(horarioFormatado)) {
@@ -505,5 +511,4 @@ function resetarFormulario() {
     verificarEstadoBotaoConfirmar();
 }
 
-// Inicializar a vitrine quando a página carregar
 document.addEventListener('DOMContentLoaded', inicializarVitrine);
