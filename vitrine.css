@@ -113,7 +113,6 @@ button#btn-confirmar-agendamento:disabled {
   background: #a7f3d0;
   cursor: not-allowed;
 }
-/* --- ESTILOS DO NOVO FLUXO --- */
 .btn-flutuante {
     position: fixed;
     bottom: 20px;
@@ -148,7 +147,7 @@ button#btn-confirmar-agendamento:disabled {
     height: 100%;
     overflow: auto;
     background-color: rgba(0,0,0,0.5);
-    display: none; /* Começa escondido */
+    display: none;
     align-items: center;
     justify-content: center;
 }
