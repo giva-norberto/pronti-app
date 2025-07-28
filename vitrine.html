@@ -433,8 +433,8 @@
         const snapshot = await getDocs(servicosRef);
 
         let servicosVisiveisEncontrados = 0;
-        snapshot.docs.forEach(doc => {
-            const servico = { id: doc.id, ...doc.data() };
+        snapshot.docs.forEach(docSnapshot => {
+            const servico = { id: docSnapshot.id, ...docSnapshot.data() };
 
             // O tratamento/filtro é feito AQUI, no aplicativo.
             if (servico.visivelNaVitrine !== false) {
@@ -453,144 +453,177 @@
                     </div>
                 `;
                 servicosContainer.appendChild(card);
+
+                const btnServico = card.querySelector('.btn-servico');
+                btnServico.addEventListener('click', () => selecionarServico(servico, btnServico));
             }
         });
 
         if (servicosVisiveisEncontrados === 0) {
-            servicosContainer.innerHTML = '<p>Nenhum serviço disponível para agendamento online no momento.</p>';
+            servicosContainer.innerHTML = '<p style="color: #666;">Nenhum serviço disponível no momento.</p>';
         }
+    }
 
-        document.querySelectorAll('.btn-servico').forEach(btnServico => {
-            btnServico.onclick = () => {
-                const detalhesDiv = btnServico.nextElementSibling;
-                const isSelected = btnServico.classList.contains('selecionado');
+    function selecionarServico(servico, btnElement) {
+        document.querySelectorAll('.btn-servico').forEach(btn => btn.classList.remove('selecionado'));
+        document.querySelectorAll('.detalhes-servico').forEach(det => det.style.display = 'none');
 
-                document.querySelectorAll('.detalhes-servico').forEach(d => d.style.display = 'none');
-                document.querySelectorAll('.btn-servico').forEach(b => b.classList.remove('selecionado'));
+        btnElement.classList.add('selecionado');
+        document.getElementById(`detalhes-${servico.id}`).style.display = 'block';
 
-                if (!isSelected) {
-                    const servicoId = btnServico.dataset.id;
-                    const servicoNome = btnServico.querySelector('.nome').textContent;
-                    servicoSelecionado = { id: servicoId, nome: servicoNome };
-                    btnServico.classList.add('selecionado');
-                    detalhesDiv.style.display = 'block';
-                } else {
-                    servicoSelecionado = null;
-                }
-                verificarEstadoBotaoConfirmar();
-            };
-        });
+        servicoSelecionado = servico;
+        verificarEstadoBotaoConfirmar();
+        gerarHorariosDisponiveis();
     }
 
     async function gerarHorariosDisponiveis() {
-        horariosContainer.innerHTML = '<p class="aviso-horarios">A verificar...</p>';
-        horarioSelecionado = null;
-        verificarEstadoBotaoConfirmar();
+        horariosContainer.innerHTML = '<p class="aviso-horarios">Carregando horários...</p>';
 
-        const diaSelecionado = new Date(dataInput.value + "T12:00:00Z");
-        const diaDaSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSelecionado.getUTCDay()];
-
-        const configDia = horariosConfig[diaDaSemana];
-        if (!configDia || !configDia.ativo || !configDia.blocos || configDia.blocos.length === 0) {
-            horariosContainer.innerHTML = '<p class="aviso-horarios">Não há atendimento neste dia.</p>';
+        if (!servicoSelecionado || !dataInput.value) {
+            horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>';
             return;
         }
 
-        const inicioDoDia = new Date(dataInput.value + "T00:00:00Z");
-        const fimDoDia = new Date(dataInput.value + "T23:59:59Z");
+        const dataSelecionada = new Date(dataInput.value + 'T00:00:00');
+        const diaSemana = dataSelecionada.getDay();
+        const nomesDias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const configDia = horariosConfig[nomesDias[diaSemana]];
 
-        const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
-        const q = query(agendamentosRef, where("horario", ">=", inicioDoDia), where("horario", "<=", fimDoDia));
-        const snapshot = await getDocs(q);
-        const horariosOcupados = [];
-        snapshot.forEach(doc => {
-            const horarioData = doc.data().horario;
-            if (horarioData && typeof horarioData.toDate === 'function') {
-                const dataAg = horarioData.toDate();
-                horariosOcupados.push(dataAg.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }));
-            }
-        });
+        if (!configDia || !configDia.ativo) {
+            horariosContainer.innerHTML = '<p class="aviso-horarios">Não há atendimento neste dia da semana.</p>';
+            return;
+        }
+
+        const agendamentosExistentes = await buscarAgendamentosData(dataSelecionada);
+        const horariosOcupados = agendamentosExistentes.map(ag => ag.horario.toDate().toTimeString().slice(0, 5));
+
+        const horarios = gerarListaHorarios(configDia.inicio, configDia.fim, horariosConfig.intervalo || 30);
+        const horariosDisponiveis = horarios.filter(h => !horariosOcupados.includes(h));
+
+        if (horariosDisponiveis.length === 0) {
+            horariosContainer.innerHTML = '<p class="aviso-horarios">Não há horários disponíveis para esta data.</p>';
+            return;
+        }
 
         horariosContainer.innerHTML = '';
-        let encontrouHorario = false;
-        const intervalo = parseInt(horariosConfig.intervalo, 10) || 30;
-
-        configDia.blocos.forEach(bloco => {
-            const [horaInicio, minInicio] = bloco.inicio.split(':').map(Number);
-            const [horaFim, minFim] = bloco.fim.split(':').map(Number);
-
-            for (let h = horaInicio; h <= horaFim; h++) {
-                for (let m = (h === horaInicio ? minInicio : 0); m < (h === horaFim ? minFim : 60); m += intervalo) {
-                    const horario = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                    if (!horariosOcupados.includes(horario)) {
-                        encontrouHorario = true;
-                        const btn = document.createElement('button');
-                        btn.className = 'btn-horario';
-                        btn.textContent = horario;
-                        btn.onclick = () => {
-                            horarioSelecionado = horario;
-                            document.querySelectorAll('.btn-horario').forEach(b => b.classList.remove('selecionado'));
-                            btn.classList.add('selecionado');
-                            verificarEstadoBotaoConfirmar();
-                        };
-                        horariosContainer.appendChild(btn);
-                    }
-                }
-            }
+        horariosDisponiveis.forEach(horario => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-horario';
+            btn.textContent = horario;
+            btn.addEventListener('click', () => selecionarHorario(horario, btn));
+            horariosContainer.appendChild(btn);
         });
+    }
 
-        if (!encontrouHorario) {
-            horariosContainer.innerHTML = '<p class="aviso-horarios">Todos os horários para esta data foram preenchidos.</p>';
+    function gerarListaHorarios(inicio, fim, intervalo) {
+        const horarios = [];
+        const [horaInicio, minInicio] = inicio.split(':').map(Number);
+        const [horaFim, minFim] = fim.split(':').map(Number);
+
+        let horaAtual = horaInicio;
+        let minAtual = minInicio;
+
+        while (horaAtual < horaFim || (horaAtual === horaFim && minAtual < minFim)) {
+            horarios.push(`${horaAtual.toString().padStart(2, '0')}:${minAtual.toString().padStart(2, '0')}`);
+            minAtual += intervalo;
+            if (minAtual >= 60) {
+                horaAtual += Math.floor(minAtual / 60);
+                minAtual = minAtual % 60;
+            }
         }
+
+        return horarios;
+    }
+
+    async function buscarAgendamentosData(data) {
+        const inicioData = new Date(data);
+        inicioData.setHours(0, 0, 0, 0);
+        const fimData = new Date(data);
+        fimData.setHours(23, 59, 59, 999);
+
+        const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
+        const q = query(
+            agendamentosRef,
+            where("horario", ">=", Timestamp.fromDate(inicioData)),
+            where("horario", "<=", Timestamp.fromDate(fimData))
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(docSnapshot => docSnapshot.data());
+    }
+
+    function selecionarHorario(horario, btnElement) {
+        document.querySelectorAll('.btn-horario').forEach(btn => btn.classList.remove('selecionado'));
+        btnElement.classList.add('selecionado');
+        horarioSelecionado = horario;
+        verificarEstadoBotaoConfirmar();
     }
 
     function verificarEstadoBotaoConfirmar() {
-        const nomeOk = nomeClienteInput.value.trim() !== '';
-        const telOk = limparTelefone(telefoneClienteInput.value).length >= 10;
-        btnConfirmar.disabled = !(servicoSelecionado && horarioSelecionado && nomeOk && telOk);
+        const nomePreenchido = nomeClienteInput.value.trim().length > 0;
+        const telefonePreenchido = telefoneClienteInput.value.trim().length > 0;
+        const servicoEscolhido = servicoSelecionado !== null;
+        const horarioEscolhido = horarioSelecionado !== null;
+
+        btnConfirmar.disabled = !(nomePreenchido && telefonePreenchido && servicoEscolhido && horarioEscolhido);
     }
 
     async function salvarAgendamento() {
-        btnConfirmar.disabled = true;
-        btnConfirmar.textContent = 'Agendando...';
+        if (!servicoSelecionado || !horarioSelecionado || !nomeClienteInput.value.trim() || !telefoneClienteInput.value.trim()) {
+            alert('Por favor, preencha todos os campos obrigatórios.');
+            return;
+        }
+
+        const telefoneLimpo = limparTelefone(telefoneClienteInput.value);
+        if (telefoneLimpo.length < 10) {
+            alert('Por favor, insira um telefone válido.');
+            return;
+        }
+
+        const [hora, minuto] = horarioSelecionado.split(':').map(Number);
+        const dataHorario = new Date(dataInput.value + 'T00:00:00');
+        dataHorario.setHours(hora, minuto, 0, 0);
+
+        const agendamento = {
+            servicoId: servicoSelecionado.id,
+            servicoNome: servicoSelecionado.nome,
+            servicoPreco: servicoSelecionado.preco,
+            servicoDuracao: servicoSelecionado.duracao,
+            horario: Timestamp.fromDate(dataHorario),
+            clienteNome: nomeClienteInput.value.trim(),
+            clienteTelefone: telefoneLimpo,
+            status: 'agendado',
+            criadoEm: Timestamp.now()
+        };
 
         try {
-            const [h, m] = horarioSelecionado.split(':');
-            const dataHora = new Date(dataInput.value + "T00:00:00Z");
-            dataHora.setUTCHours(h, m, 0, 0);
+            btnConfirmar.disabled = true;
+            btnConfirmar.textContent = 'Salvando...';
 
-            const nomeCliente = nomeClienteInput.value.trim();
-            const telefoneCliente = limparTelefone(telefoneClienteInput.value);
+            const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
+            await addDoc(agendamentosRef, agendamento);
 
-            const agendamento = {
-                clienteNome: nomeCliente,
-                clienteTelefone: telefoneCliente,
-                servicoId: servicoSelecionado.id,
-                servicoNome: servicoSelecionado.nome,
-                horario: Timestamp.fromDate(dataHora),
-                criadoEm: Timestamp.now(),
-                profissionalUid: profissionalUid,
-                status: 'agendado'
-            };
+            alert('Agendamento realizado com sucesso!');
 
-            await addDoc(collection(db, "users", profissionalUid, "agendamentos"), agendamento);
+            // Salvar dados do cliente no localStorage
+            const dadosCliente = { nome: nomeClienteInput.value.trim(), telefone: telefoneLimpo };
+            localStorage.setItem('dadosClientePronti', JSON.stringify(dadosCliente));
 
-            localStorage.setItem('dadosClientePronti', JSON.stringify({ nome: nomeCliente, telefone: telefoneCliente }));
-
-            alert("Agendamento realizado com sucesso!");
-
+            // Resetar formulário
             servicoSelecionado = null;
             horarioSelecionado = null;
-            document.querySelectorAll('.btn-servico.selecionado').forEach(b => b.classList.remove('selecionado'));
-            document.querySelectorAll('.detalhes-servico').forEach(d => d.style.display = 'none');
+            document.querySelectorAll('.btn-servico').forEach(btn => btn.classList.remove('selecionado'));
+            document.querySelectorAll('.detalhes-servico').forEach(det => det.style.display = 'none');
+            document.querySelectorAll('.btn-horario').forEach(btn => btn.classList.remove('selecionado'));
 
             gerarHorariosDisponiveis();
-            carregarAgendamentosCliente(telefoneCliente);
+            carregarAgendamentosCliente(telefoneLimpo);
 
         } catch (error) {
             console.error("Erro ao salvar agendamento:", error);
-            alert("Não foi possível realizar o agendamento. Tente novamente.");
+            alert('Ocorreu um erro ao salvar o agendamento. Tente novamente.');
         } finally {
+            btnConfirmar.disabled = false;
             btnConfirmar.textContent = 'Confirmar Agendamento';
             verificarEstadoBotaoConfirmar();
         }
@@ -617,9 +650,11 @@
             }
 
             listaMeusAgendamentosEl.innerHTML = '';
-            snapshot.forEach(doc => {
-                const ag = doc.data();
-                const id = doc.id;
+            // *** CORREÇÃO APLICADA AQUI ***
+            // Mudança do parâmetro 'doc' para 'docSnapshot' para evitar conflito com a função 'doc' do Firebase
+            snapshot.forEach(docSnapshot => {
+                const ag = docSnapshot.data();
+                const id = docSnapshot.id;
 
                 let horarioFormatado = 'Data inválida';
                 const horarioData = ag.horario;
@@ -643,6 +678,8 @@
                     if (!confirm('Deseja realmente cancelar este agendamento?')) return;
 
                     try {
+                        // *** CORREÇÃO APLICADA AQUI ***
+                        // Agora a função 'doc' do Firebase funciona corretamente pois não há conflito de nomes
                         await deleteDoc(doc(db, "users", profissionalUid, "agendamentos", id));
                         alert('Agendamento cancelado com sucesso.');
                         carregarAgendamentosCliente(telefoneLimpo);
@@ -660,8 +697,8 @@
         }
     }
 
-    // Inicia todo o processo
-    inicializarVitrine();
+    // Inicializar a vitrine quando a página carregar
+    document.addEventListener('DOMContentLoaded', inicializarVitrine);
   </script>
 </body>
 </html>
