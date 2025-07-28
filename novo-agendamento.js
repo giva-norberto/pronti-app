@@ -47,7 +47,9 @@ async function inicializarPaginaDeAgendamento(uid, elements) {
     servicoSelect.value = servicoIdFromUrl;
   }
   
-  diaInput.value = new Date().toISOString().split("T")[0];
+  if (!diaInput.value) {
+    diaInput.value = new Date().toISOString().split("T")[0];
+  }
   gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput });
 
   servicoSelect.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
@@ -139,11 +141,10 @@ async function handleFormSubmit(event, uid, elements) {
     return;
   }
 
-  // --- INÍCIO DA CORREÇÃO DE FUSO HORÁRIO ---
+  // CORREÇÃO UTC: Garante que a data salva seja universal
   const dataSelecionada = document.getElementById('dia').value;
   const [hora, minuto] = horarioSelecionado.split(':');
   
-  // Cria a data em UTC para garantir consistência
   const dataHoraCompleta = new Date(dataSelecionada + 'T00:00:00.000Z');
   dataHoraCompleta.setUTCHours(hora, minuto, 0, 0);
 
@@ -154,11 +155,10 @@ async function handleFormSubmit(event, uid, elements) {
     clienteNome: clienteInput.value,
     servicoId: servicoSelect.value,
     servicoNome: nomeServico,
-    horario: Timestamp.fromDate(dataHoraCompleta), // Salva no formato Timestamp (UTC)
+    horario: Timestamp.fromDate(dataHoraCompleta),
     status: 'agendado',
     criadoEm: Timestamp.now()
   };
-  // --- FIM DA CORREÇÃO ---
 
   try {
     const agendamentosUserCollection = collection(db, "users", uid, "agendamentos");
