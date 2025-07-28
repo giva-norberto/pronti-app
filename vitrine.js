@@ -142,11 +142,10 @@ function configurarPrimeiroAcesso() {
 // --- Funções de Carregamento de Dados ---
 
 async function encontrarUidPeloSlug(slug) {
-    const q = query(collection(db, "publicProfiles"), where("slug", "==", slug), limit(1));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    const profileData = snapshot.docs[0].data();
-    return profileData.ownerId;
+    // CORRIGIDO para buscar na coleção 'slugs' conforme suas regras
+    const slugRef = doc(db, "slugs", slug);
+    const docSnap = await getDoc(slugRef);
+    return docSnap.exists() ? docSnap.data().uid : null;
 }
 
 async function carregarPerfilPublico() {
@@ -220,12 +219,16 @@ async function carregarServicos() {
     });
 }
 
-
 // --- Lógica de Horários ---
 async function gerarHorariosDisponiveis() {
     horariosContainer.innerHTML = '<p class="aviso-horarios">A verificar...</p>';
     horarioSelecionado = null;
     verificarEstadoBotaoConfirmar();
+
+    if (!servicoSelecionado) {
+        horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione um serviço para ver os horários.</p>';
+        return;
+    }
 
     const diaSelecionado = new Date(dataInput.value + "T12:00:00Z");
     const diaDaSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSelecionado.getUTCDay()];
