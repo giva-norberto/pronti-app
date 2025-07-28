@@ -1,6 +1,5 @@
 /**
- * novo-agendamento.js (Painel do Dono - Versão Corrigida)
- * Script ajustado para salvar agendamentos no formato Timestamp.
+ * novo-agendamento.js (Painel do Dono - Versão com UTC)
  */
 
 import { getFirestore, collection, getDocs, addDoc, query, where, doc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -48,13 +47,12 @@ async function inicializarPaginaDeAgendamento(uid, elements) {
     servicoSelect.value = servicoIdFromUrl;
   }
   
-  // Define a data de hoje como padrão e busca os horários
   diaInput.value = new Date().toISOString().split("T")[0];
   gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput });
 
   servicoSelect.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
   diaInput.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
-  form.addEventListener('submit', (event) => handleFormSubmit(event, uid, { clienteInput, servicoSelect, horarioFinalInput, diaInput }));
+  form.addEventListener('submit', (event) => handleFormSubmit(event, uid, { clienteInput, servicoSelect, horarioFinalInput }));
 }
 
 async function carregarServicosDoFirebase(uid, servicoSelect) {
@@ -90,8 +88,8 @@ async function gerarEExibirHorarios(uid, elements) {
   }
   gradeHorariosDiv.innerHTML = '<p class="aviso-horarios">A verificar horários...</p>';
   try {
-    const inicioDoDia = new Date(`${diaSelecionado}T00:00:00`);
-    const fimDoDia = new Date(`${diaSelecionado}T23:59:59`);
+    const inicioDoDia = new Date(`${diaSelecionado}T00:00:00.000Z`);
+    const fimDoDia = new Date(`${diaSelecionado}T23:59:59.999Z`);
     
     const agendamentosUserCollection = collection(db, "users", uid, "agendamentos");
     const agendamentosQuery = query(agendamentosUserCollection, 
@@ -101,8 +99,8 @@ async function gerarEExibirHorarios(uid, elements) {
     
     const querySnapshot = await getDocs(agendamentosQuery);
     const horariosOcupados = querySnapshot.docs.map(doc => {
-        const dataLocal = doc.data().horario.toDate();
-        return `${String(dataLocal.getHours()).padStart(2, '0')}:${String(dataLocal.getMinutes()).padStart(2, '0')}`;
+        const dataUtc = doc.data().horario.toDate();
+        return `${String(dataUtc.getUTCHours()).padStart(2, '0')}:${String(dataUtc.getUTCMinutes()).padStart(2, '0')}`;
     });
 
     gradeHorariosDiv.innerHTML = '';
@@ -141,20 +139,22 @@ async function handleFormSubmit(event, uid, elements) {
     return;
   }
 
-  // --- INÍCIO DA CORREÇÃO ---
+  // --- INÍCIO DA CORREÇÃO DE FUSO HORÁRIO ---
   const dataSelecionada = document.getElementById('dia').value;
   const [hora, minuto] = horarioSelecionado.split(':');
-  const dataHoraCompleta = new Date(dataSelecionada + 'T00:00:00'); // Garante que a data seja interpretada corretamente
-  dataHoraCompleta.setHours(hora, minuto, 0, 0);
+  
+  // Cria a data em UTC para garantir consistência
+  const dataHoraCompleta = new Date(dataSelecionada + 'T00:00:00.000Z');
+  dataHoraCompleta.setUTCHours(hora, minuto, 0, 0);
 
   const opcaoServicoSelecionado = servicoSelect.options[servicoSelect.selectedIndex];
   const nomeServico = opcaoServicoSelecionado.dataset.servicoNome;
 
   const novoAgendamento = {
-    clienteNome: clienteInput.value, // Mudado para 'clienteNome' para padronizar
+    clienteNome: clienteInput.value,
     servicoId: servicoSelect.value,
     servicoNome: nomeServico,
-    horario: Timestamp.fromDate(dataHoraCompleta), // Salva no formato Timestamp
+    horario: Timestamp.fromDate(dataHoraCompleta), // Salva no formato Timestamp (UTC)
     status: 'agendado',
     criadoEm: Timestamp.now()
   };
