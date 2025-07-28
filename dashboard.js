@@ -15,29 +15,23 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 // --- Gatilho Principal ---
-// Garante que o código só é executado após a autenticação do utilizador.
 document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Utilizador está autenticado, podemos carregar o dashboard
             carregarDashboard(user.uid);
         } else {
-            // Utilizador não está autenticado, redireciona para o login
             console.log("Nenhum utilizador autenticado. A redirecionar para o login...");
             window.location.href = 'login.html';
         }
     });
 });
 
-
-// --- FUNÇÃO PRINCIPAL QUE ORQUESTRA TUDO (SUA FUNÇÃO ORIGINAL ADAPTADA) ---
+// --- FUNÇÃO PRINCIPAL QUE ORQUESTRA TUDO ---
 async function carregarDashboard(uid) {
   try {
-    // CORREÇÃO CRÍTICA: As coleções agora apontam para a pasta segura do utilizador.
     const servicosCollection = collection(db, "users", uid, "servicos");
     const agendamentosCollection = collection(db, "users", uid, "agendamentos");
 
-    // O resto da sua lógica de busca e processamento permanece intacta.
     const [servicosSnapshot, agendamentosSnapshot] = await Promise.all([
       getDocs(servicosCollection),
       getDocs(agendamentosCollection)
@@ -49,10 +43,8 @@ async function carregarDashboard(uid) {
       servicosMap.set(doc.id, doc.data());
     });
 
-    // Passo 2: Chama a IA com os dados já carregados.
     processarResumoIA(agendamentos, servicosMap);
 
-    // Passo 3: Chama as suas três funções de gráfico.
     if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
     if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
     if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
@@ -65,7 +57,7 @@ async function carregarDashboard(uid) {
 }
 
 // =======================================================
-// SEÇÃO DO RESUMO DIÁRIO INTELIGENTE (FUNÇÃO CORRIGIDA)
+// SEÇÃO DO RESUMO DIÁRIO INTELIGENTE
 // =======================================================
 function processarResumoIA(todosAgendamentos, servicosMap) {
     const container = document.getElementById('resumo-diario-container');
@@ -77,18 +69,13 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
     const inicioDoDia = new Date(hoje.setHours(0, 0, 0, 0));
     const fimDoDia = new Date(hoje.setHours(23, 59, 59, 999));
   
-    // --- INÍCIO DA CORREÇÃO ---
     const agendamentosDeHoje = todosAgendamentos.filter(ag => {
-        // Verifica se o campo 'horario' existe e se é um objeto Timestamp
         if (!ag.horario || typeof ag.horario.toDate !== 'function') {
           return false;
         }
-        // Converte o Timestamp para um objeto Date do JavaScript
         const dataAgendamento = ag.horario.toDate();
-        // Compara se a data está dentro do intervalo do dia de hoje
         return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
     });
-    // --- FIM DA CORREÇÃO ---
   
     const agendamentosEnriquecidos = agendamentosDeHoje.map(ag => {
         const servico = servicosMap.get(ag.servicoId);
@@ -99,7 +86,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
   
         return {
             id: ag.id,
-            cliente: { nome: ag.clienteNome || 'Cliente' }, // Corrigido para clienteNome
+            cliente: { nome: ag.clienteNome || 'Cliente' },
             servico: { nome: servico.nome || 'Serviço', preco: servico.preco || 0 },
             inicio,
             fim
@@ -138,7 +125,7 @@ function criarHTMLDoResumo(resumo) {
 }
 
 // =======================================================
-// SEÇÃO DOS GRÁFICOS (SEU CÓDIGO ORIGINAL INTACTO)
+// SEÇÃO DOS GRÁFICOS
 // =======================================================
 function gerarGraficoServicos(servicosMap, agendamentos) {
   const contagemServicos = {};
@@ -203,33 +190,30 @@ function gerarGraficoFaturamento(servicosMap, agendamentos) {
 function gerarGraficoMensal(agendamentos) {
     const contagemMensal = {};
     agendamentos.forEach(ag => {
-        // Verifica se o campo 'horario' é um Timestamp válido
         if (ag.horario && typeof ag.horario.toDate === 'function') {
             const data = ag.horario.toDate();
-            // Gera uma chave no formato "Mês de Ano" (ex: "jul. de 2025")
             const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
             contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
         }
     });
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // Lógica para ordenar os meses corretamente
     const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
         const meses = {
             'jan.': 0, 'fev.': 1, 'mar.': 2, 'abr.': 3, 'mai.': 4, 'jun.': 5, 
             'jul.': 6, 'ago.': 7, 'set.': 8, 'out.': 9, 'nov.': 10, 'dez.': 11
         };
         
-        // Separa "mês." e "ano" da string "mês. de ano"
-        const [mesA, , anoA] = a.split(' ');
-        const [mesB, , anoB] = b.split(' ');
+        const [mesAStr, , anoA] = a.split(' ');
+        const [mesBStr, , anoB] = b.split(' ');
+
+        const mesA = mesAStr.toLowerCase();
+        const mesB = mesBStr.toLowerCase();
 
         const dataA = new Date(anoA, meses[mesA]);
         const dataB = new Date(anoB, meses[mesB]);
         
         return dataA - dataB;
     });
-    // --- FIM DA CORREÇÃO ---
 
     const dados = labelsOrdenados.map(label => contagemMensal[label]);
     const ctx = document.getElementById('graficoMensal').getContext('2d');
