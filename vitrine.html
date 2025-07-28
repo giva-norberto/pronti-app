@@ -208,6 +208,15 @@
         border-radius: 5px;
         cursor: pointer;
     }
+    .btn-verificar-agendamentos {
+        background: var(--cor-primaria);
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -271,6 +280,7 @@
     // Importações do Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
     import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-functions.js";
 
     // --- CONFIGURAÇÃO DO FIREBASE ---
     const firebaseConfig = {
@@ -284,6 +294,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const functions = getFunctions(app);
 
     let profissionalUid = null;
     let servicoSelecionado = null;
@@ -310,6 +321,34 @@
     const inputTelefoneModal = document.getElementById('input-telefone-modal');
     const agendamentosClienteContainer = document.getElementById('agendamentos-cliente');
     const listaMeusAgendamentosEl = document.getElementById('lista-meus-agendamentos');
+
+    // *** FUNÇÕES DE SEGURANÇA COM PIN/SENHA ***
+
+    // Função para gerar hash SHA-256 no frontend
+    async function gerarHashSHA256(texto) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(texto);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+
+    // Função para validar PIN
+    function validarPIN(pin) {
+      // PIN deve ter entre 4 e 6 dígitos
+      if (!/^\d{4,6}$/.test(pin)) {
+        return { valido: false, erro: 'PIN deve conter entre 4 e 6 dígitos.' };
+      }
+      
+      // PIN não deve ser sequencial ou muito simples
+      const pinsProibidos = ['1234', '4321', '0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999'];
+      if (pinsProibidos.includes(pin)) {
+        return { valido: false, erro: 'PIN muito simples. Escolha uma combinação mais segura.' };
+      }
+      
+      return { valido: true };
+    }
 
     async function inicializarVitrine() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -351,7 +390,7 @@
         dataInput.addEventListener('change', gerarHorariosDisponiveis);
         nomeClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
         telefoneClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
-        btnConfirmar.addEventListener('click', salvarAgendamento);
+        btnConfirmar.addEventListener('click', salvarAgendamentoComPIN);
         gerarHorariosDisponiveis();
     }
 
@@ -377,7 +416,7 @@
         telefoneClienteInput.value = dadosCliente.telefone;
 
         verificarEstadoBotaoConfirmar();
-        carregarAgendamentosCliente(dadosCliente.telefone);
+        carregarAgendamentosClienteComPIN(dadosCliente.telefone);
     }
 
     function configurarPrimeiroAcesso() {
@@ -568,9 +607,24 @@
         btnConfirmar.disabled = !(nomePreenchido && telefonePreenchido && servicoEscolhido && horarioEscolhido);
     }
 
-    async function salvarAgendamento() {
+    // *** FUNÇÃO MODIFICADA PARA INCLUIR PIN ***
+    async function salvarAgendamentoComPIN() {
         if (!servicoSelecionado || !horarioSelecionado || !nomeClienteInput.value.trim() || !telefoneClienteInput.value.trim()) {
             alert('Por favor, preencha todos os campos obrigatórios.');
+            return;
+        }
+
+        // Solicitar PIN do cliente
+        const pin = prompt('Crie um PIN de 4 a 6 dígitos para cancelar este agendamento:');
+        if (!pin) {
+            alert('PIN é obrigatório para criar o agendamento.');
+            return;
+        }
+
+        // Validar PIN
+        const validacao = validarPIN(pin);
+        if (!validacao.valido) {
+            alert(validacao.erro);
             return;
         }
 
@@ -580,32 +634,37 @@
             return;
         }
 
-        const [hora, minuto] = horarioSelecionado.split(':').map(Number);
-        const dataHorario = new Date(dataInput.value + 'T00:00:00');
-        dataHorario.setHours(hora, minuto, 0, 0);
-
-        const agendamento = {
-            servicoId: servicoSelecionado.id,
-            servicoNome: servicoSelecionado.nome,
-            servicoPreco: servicoSelecionado.preco,
-            servicoDuracao: servicoSelecionado.duracao,
-            horario: Timestamp.fromDate(dataHorario),
-            clienteNome: nomeClienteInput.value.trim(),
-            clienteTelefone: telefoneLimpo,
-            status: 'agendado',
-            criadoEm: Timestamp.now()
-        };
-
         try {
             btnConfirmar.disabled = true;
             btnConfirmar.textContent = 'Salvando...';
 
+            // Gerar hash do PIN
+            const pinHash = await gerarHashSHA256(pin);
+
+            const [hora, minuto] = horarioSelecionado.split(':').map(Number);
+            const dataHorario = new Date(dataInput.value + 'T00:00:00');
+            dataHorario.setHours(hora, minuto, 0, 0);
+
+            const agendamento = {
+                servicoId: servicoSelecionado.id,
+                servicoNome: servicoSelecionado.nome,
+                servicoPreco: servicoSelecionado.preco,
+                servicoDuracao: servicoSelecionado.duracao,
+                horario: Timestamp.fromDate(dataHorario),
+                clienteNome: nomeClienteInput.value.trim(),
+                clienteTelefone: telefoneLimpo,
+                pinHash: pinHash, // Adicionar hash do PIN
+                status: 'agendado',
+                criadoEm: Timestamp.now()
+            };
+
             const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
             await addDoc(agendamentosRef, agendamento);
 
-            alert('Agendamento realizado com sucesso!');
+            // Mostrar PIN para o cliente
+            alert(`Agendamento realizado com sucesso!\n\nSeu PIN para cancelamento: ${pin}\n\nGuarde este PIN com segurança. Você precisará dele para cancelar o agendamento.`);
 
-            // Salvar dados do cliente no localStorage
+            // Salvar dados do cliente no localStorage (sem o PIN)
             const dadosCliente = { nome: nomeClienteInput.value.trim(), telefone: telefoneLimpo };
             localStorage.setItem('dadosClientePronti', JSON.stringify(dadosCliente));
 
@@ -617,7 +676,7 @@
             document.querySelectorAll('.btn-horario').forEach(btn => btn.classList.remove('selecionado'));
 
             gerarHorariosDisponiveis();
-            carregarAgendamentosCliente(telefoneLimpo);
+            carregarAgendamentosClienteComPIN(telefoneLimpo);
 
         } catch (error) {
             console.error("Erro ao salvar agendamento:", error);
@@ -629,7 +688,8 @@
         }
     }
 
-    async function carregarAgendamentosCliente(telefone) {
+    // *** FUNÇÃO PARA CARREGAR AGENDAMENTOS COM PIN ***
+    async function carregarAgendamentosClienteComPIN(telefone) {
         const telefoneLimpo = limparTelefone(telefone);
         if (!telefoneLimpo) {
             agendamentosClienteContainer.style.display = 'none';
@@ -637,64 +697,113 @@
         }
 
         agendamentosClienteContainer.style.display = 'block';
-        listaMeusAgendamentosEl.innerHTML = '<p>Carregando seus agendamentos...</p>';
+        listaMeusAgendamentosEl.innerHTML = '<p>Para ver seus agendamentos, digite seu PIN...</p>';
 
-        try {
-            const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
-            const q = query(agendamentosRef, where("clienteTelefone", "==", telefoneLimpo), orderBy("horario", "desc"), limit(10));
-            const snapshot = await getDocs(q);
+        // Criar botão para verificar agendamentos
+        const btnVerificarAgendamentos = document.createElement('button');
+        btnVerificarAgendamentos.textContent = 'Ver Meus Agendamentos';
+        btnVerificarAgendamentos.className = 'btn-verificar-agendamentos';
 
-            if (snapshot.empty) {
-                listaMeusAgendamentosEl.innerHTML = '<p>Nenhum agendamento encontrado para este telefone.</p>';
-                return;
-            }
+        btnVerificarAgendamentos.onclick = async () => {
+            const pin = prompt('Digite seu PIN para ver os agendamentos:');
+            if (!pin) return;
 
-            listaMeusAgendamentosEl.innerHTML = '';
-            // *** CORREÇÃO APLICADA AQUI ***
-            // Mudança do parâmetro 'doc' para 'docSnapshot' para evitar conflito com a função 'doc' do Firebase
-            snapshot.forEach(docSnapshot => {
-                const ag = docSnapshot.data();
-                const id = docSnapshot.id;
+            try {
+                btnVerificarAgendamentos.disabled = true;
+                btnVerificarAgendamentos.textContent = 'Verificando...';
 
-                let horarioFormatado = 'Data inválida';
-                const horarioData = ag.horario;
-                if (horarioData && typeof horarioData.toDate === 'function') {
-                    horarioFormatado = horarioData.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-                } else if (typeof horarioData === 'string') {
-                    horarioFormatado = new Date(horarioData).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                const verificarAgendamentos = httpsCallable(functions, 'verificarAgendamentos');
+
+                const result = await verificarAgendamentos({
+                    profissionalUid: profissionalUid,
+                    clienteTelefone: telefoneLimpo,
+                    pin: pin
+                });
+
+                if (result.data.success) {
+                    exibirAgendamentos(result.data.agendamentos);
                 }
 
-                const card = document.createElement('div');
-                card.className = 'agendamento-item'; 
-                card.innerHTML = `
-                    <div>
-                      <strong>${ag.servicoNome}</strong><br>
-                      <span>${horarioFormatado}</span>
-                    </div>
-                    <button class="btn-cancelar" data-id="${id}">Cancelar</button>
-                `;
+            } catch (error) {
+                console.error('Erro ao verificar agendamentos:', error);
+                alert('Erro ao verificar agendamentos: ' + (error.message || 'PIN incorreto ou erro interno.'));
+                listaMeusAgendamentosEl.innerHTML = '<p>Erro ao carregar agendamentos. Tente novamente.</p>';
+            } finally {
+                btnVerificarAgendamentos.disabled = false;
+                btnVerificarAgendamentos.textContent = 'Ver Meus Agendamentos';
+            }
+        };
 
-                card.querySelector('.btn-cancelar').onclick = async () => {
-                    if (!confirm('Deseja realmente cancelar este agendamento?')) return;
+        listaMeusAgendamentosEl.innerHTML = '';
+        listaMeusAgendamentosEl.appendChild(btnVerificarAgendamentos);
+    }
 
-                    try {
-                        // *** CORREÇÃO APLICADA AQUI ***
-                        // Agora a função 'doc' do Firebase funciona corretamente pois não há conflito de nomes
-                        await deleteDoc(doc(db, "users", profissionalUid, "agendamentos", id));
-                        alert('Agendamento cancelado com sucesso.');
-                        carregarAgendamentosCliente(telefoneLimpo);
-                        gerarHorariosDisponiveis();
-                    } catch (err) {
-                        console.error('Erro ao cancelar:', err);
-                        alert('Não foi possível cancelar o agendamento.');
-                    }
-                };
-                listaMeusAgendamentosEl.appendChild(card);
-            });
-        } catch(error) {
-            console.error("Erro ao carregar agendamentos do cliente:", error);
-            listaMeusAgendamentosEl.innerHTML = '<p style="color:red;">Ocorreu um erro ao buscar seus agendamentos.</p>';
+    // *** FUNÇÃO PARA EXIBIR AGENDAMENTOS ***
+    function exibirAgendamentos(agendamentos) {
+        if (agendamentos.length === 0) {
+            listaMeusAgendamentosEl.innerHTML = '<p>Nenhum agendamento encontrado.</p>';
+            return;
         }
+
+        listaMeusAgendamentosEl.innerHTML = '';
+        
+        agendamentos.forEach(ag => {
+            let horarioFormatado = 'Data inválida';
+            const horarioData = ag.horario;
+            
+            if (horarioData && typeof horarioData.toDate === 'function') {
+                horarioFormatado = horarioData.toDate().toLocaleString('pt-BR', { 
+                    dateStyle: 'short', 
+                    timeStyle: 'short' 
+                });
+            } else if (typeof horarioData === 'string') {
+                horarioFormatado = new Date(horarioData).toLocaleString('pt-BR', { 
+                    dateStyle: 'short', 
+                    timeStyle: 'short' 
+                });
+            }
+
+            const card = document.createElement('div');
+            card.className = 'agendamento-item';
+            card.innerHTML = `
+                <div>
+                    <strong>${ag.servicoNome}</strong><br>
+                    <span>${horarioFormatado}</span><br>
+                    <small>Status: ${ag.status || 'agendado'}</small>
+                </div>
+                <button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>
+            `;
+
+            card.querySelector('.btn-cancelar').onclick = async () => {
+                const pin = prompt('Digite seu PIN para cancelar este agendamento:');
+                if (!pin) return;
+
+                if (!confirm('Deseja realmente cancelar este agendamento?')) return;
+
+                try {
+                    const cancelarAgendamento = httpsCallable(functions, 'cancelarAgendamento');
+
+                    const result = await cancelarAgendamento({
+                        profissionalUid: profissionalUid,
+                        agendamentoId: ag.id,
+                        clienteTelefone: ag.clienteTelefone,
+                        pin: pin
+                    });
+
+                    if (result.data.success) {
+                        alert(result.data.message);
+                        carregarAgendamentosClienteComPIN(ag.clienteTelefone);
+                        gerarHorariosDisponiveis();
+                    }
+
+                } catch (error) {
+                    console.error('Erro ao cancelar agendamento:', error);
+                    alert('Erro ao cancelar agendamento: ' + (error.message || 'PIN incorreto ou erro interno.'));
+                }
+            };
+
+            listaMeusAgendamentosEl.appendChild(card);
+        });
     }
 
     // Inicializar a vitrine quando a página carregar
@@ -702,3 +811,4 @@
   </script>
 </body>
 </html>
+
