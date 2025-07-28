@@ -203,23 +203,37 @@ function gerarGraficoFaturamento(servicosMap, agendamentos) {
 function gerarGraficoMensal(agendamentos) {
     const contagemMensal = {};
     agendamentos.forEach(ag => {
-        // Corrigido para usar o Timestamp
+        // Verifica se o campo 'horario' é um Timestamp válido
         if (ag.horario && typeof ag.horario.toDate === 'function') {
             const data = ag.horario.toDate();
+            // Gera uma chave no formato "Mês de Ano" (ex: "jul. de 2025")
             const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
             contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
         }
     });
+
+    // --- INÍCIO DA CORREÇÃO ---
+    // Lógica para ordenar os meses corretamente
     const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
-        const meses = { 'jan.': 0, 'fev.': 1, 'mar.': 2, 'abr.': 3, 'mai.': 4, 'jun.': 5, 'jul.': 6, 'ago.': 7, 'set.': 8, 'out.': 9, 'nov.': 10, 'dez.': 11 };
-        const [mesA, anoA] = a.split(' de ');
-        const [mesB, anoB] = b.split(' de ');
-        const dataA = new Date(anoA, meses[mesA.toLowerCase()]);
-        const dataB = new Date(anoB, meses[mesB.toLowerCase()]);
+        const meses = {
+            'jan.': 0, 'fev.': 1, 'mar.': 2, 'abr.': 3, 'mai.': 4, 'jun.': 5, 
+            'jul.': 6, 'ago.': 7, 'set.': 8, 'out.': 9, 'nov.': 10, 'dez.': 11
+        };
+        
+        // Separa "mês." e "ano" da string "mês. de ano"
+        const [mesA, , anoA] = a.split(' ');
+        const [mesB, , anoB] = b.split(' ');
+
+        const dataA = new Date(anoA, meses[mesA]);
+        const dataB = new Date(anoB, meses[mesB]);
+        
         return dataA - dataB;
     });
+    // --- FIM DA CORREÇÃO ---
+
     const dados = labelsOrdenados.map(label => contagemMensal[label]);
     const ctx = document.getElementById('graficoMensal').getContext('2d');
+    
     new Chart(ctx, {
         type: 'line',
         data: {
