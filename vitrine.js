@@ -1,8 +1,6 @@
 /**
  * vitrine.js (Vitrine Interativa do Cliente)
- * VERSÃO CORRIGIDA - Carregamento seguro dos elementos do DOM
  */
-
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, limit, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
@@ -14,7 +12,7 @@ let servicoSelecionado = null;
 let horarioSelecionado = null;
 let horariosConfig = {};
 
-// --- VARIÁVEIS DOS ELEMENTOS DO DOM (declaradas, mas não atribuídas) ---
+// --- VARIÁVEIS DOS ELEMENTOS DO DOM ---
 let loader, content, nomeNegocioEl, dataAtualEl, logoEl, servicosContainer,
     dataInput, horariosContainer, nomeClienteInput, telefoneClienteInput, btnConfirmar,
     btnPrimeiroAcesso, saudacaoClienteEl, modalAcesso, btnSalvarDadosModal, btnFecharModal,
@@ -144,13 +142,11 @@ function configurarPrimeiroAcesso() {
 // --- Funções de Carregamento de Dados ---
 
 async function encontrarUidPeloSlug(slug) {
-    // Sua lógica para encontrar o profissional. Verifique o nome da sua coleção.
-    // Assumindo que a coleção é `publicProfiles` e o campo é `slug`.
     const q = query(collection(db, "publicProfiles"), where("slug", "==", slug), limit(1));
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
     const profileData = snapshot.docs[0].data();
-    return profileData.ownerId; // O campo que liga ao UID do usuário
+    return profileData.ownerId;
 }
 
 async function carregarPerfilPublico() {
@@ -171,7 +167,6 @@ async function carregarConfiguracoesHorario() {
 }
 
 async function carregarServicos() {
-    // Sua lógica original, sem alterações
     servicosContainer.innerHTML = '';
     const servicosRef = collection(db, "users", profissionalUid, "servicos");
     const q = query(servicosRef, where("visivelNaVitrine", "!=", false));
@@ -182,11 +177,9 @@ async function carregarServicos() {
         return;
     }
     
-    // O restante da sua função carregarServicos continua aqui, intacta...
-    snapshot.docs.forEach(doc => {
-        const servico = { id: doc.id, ...doc.data() };
+    snapshot.docs.forEach(docSnapshot => {
+        const servico = { id: docSnapshot.id, ...docSnapshot.data() };
         const card = document.createElement('div');
-        // Você chamou de servico-card no seu JS original
         card.className = 'servico-card';
 
         card.innerHTML = `
@@ -206,20 +199,23 @@ async function carregarServicos() {
         btnServico.onclick = () => {
             const detalhesDiv = btnServico.nextElementSibling;
             const isSelected = btnServico.classList.contains('selecionado');
+            const servicoId = btnServico.dataset.id;
+            
+            const servicoDoc = snapshot.docs.find(doc => doc.id === servicoId);
+            const servicoData = servicoDoc ? { id: servicoDoc.id, ...servicoDoc.data() } : null;
 
             document.querySelectorAll('.detalhes-servico').forEach(d => d.style.display = 'none');
             document.querySelectorAll('.btn-servico').forEach(b => b.classList.remove('selecionado'));
 
-            if (!isSelected) {
-                const servicoId = btnServico.dataset.id;
-                const servicoNome = btnServico.querySelector('.nome').textContent;
-                servicoSelecionado = { id: servicoId, nome: servicoNome };
+            if (!isSelected && servicoData) {
+                servicoSelecionado = servicoData;
                 btnServico.classList.add('selecionado');
                 detalhesDiv.style.display = 'block';
             } else {
                 servicoSelecionado = null;
             }
             verificarEstadoBotaoConfirmar();
+            gerarHorariosDisponiveis();
         };
     });
 }
@@ -227,12 +223,11 @@ async function carregarServicos() {
 
 // --- Lógica de Horários ---
 async function gerarHorariosDisponiveis() {
-    // Sua lógica original, com uma pequena correção para Timestamps
     horariosContainer.innerHTML = '<p class="aviso-horarios">A verificar...</p>';
     horarioSelecionado = null;
     verificarEstadoBotaoConfirmar();
 
-    const diaSelecionado = new Date(dataInput.value + "T12:00:00Z"); // Use Z para UTC
+    const diaSelecionado = new Date(dataInput.value + "T12:00:00Z");
     const diaDaSemana = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSelecionado.getUTCDay()];
     
     const configDia = horariosConfig[diaDaSemana];
@@ -293,13 +288,12 @@ function verificarEstadoBotaoConfirmar() {
 }
 
 async function salvarAgendamento() {
-    // Sua lógica original, com a garantia de salvar no localStorage
     btnConfirmar.disabled = true;
     btnConfirmar.textContent = 'Agendando...';
 
     try {
         const [h, m] = horarioSelecionado.split(':');
-        const dataHora = new Date(dataInput.value + "T00:00:00Z"); // Inicia em UTC
+        const dataHora = new Date(dataInput.value + "T00:00:00Z");
         dataHora.setUTCHours(h, m, 0, 0);
 
         const nomeCliente = nomeClienteInput.value.trim();
@@ -341,7 +335,6 @@ async function salvarAgendamento() {
 
 // --- Listagem de Agendamentos do Cliente ---
 async function carregarAgendamentosCliente(telefone) {
-    // Sua lógica original, sem alterações
     const telefoneLimpo = limparTelefone(telefone);
     if (!telefoneLimpo) {
         agendamentosClienteContainer.style.display = 'none';
@@ -362,9 +355,9 @@ async function carregarAgendamentosCliente(telefone) {
         }
 
         listaMeusAgendamentosEl.innerHTML = '';
-        snapshot.forEach(doc => {
-            const ag = doc.data();
-            const id = doc.id;
+        snapshot.forEach(docSnapshot => {
+            const ag = docSnapshot.data();
+            const id = docSnapshot.id;
             const horarioFormatado = ag.horario.toDate().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
             
             const card = document.createElement('div');
