@@ -226,6 +226,23 @@
         margin-bottom: 15px;
         font-size: 0.9em;
     }
+    .notification-message {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1002;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+    }
+    .notification-message.error {
+        background-color: #f44336;
+    }
   </style>
 </head>
 <body>
@@ -291,6 +308,8 @@
     </div>
   </main>
 
+  <div id="notification-message" class="notification-message"></div>
+
   <script type="module">
     // Importações do Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
@@ -314,26 +333,45 @@
     let horarioSelecionado = null;
     let horariosConfig = {};
 
-    const loader = document.getElementById('vitrine-loader');
-    const content = document.getElementById('vitrine-content');
-    const nomeNegocioEl = document.getElementById('nome-negocio-publico');
-    const dataAtualEl = document.getElementById('data-atual');
-    const logoEl = document.getElementById('logo-publico');
-    const servicosContainer = document.getElementById('lista-servicos');
-    const dataInput = document.getElementById('data-agendamento');
-    const horariosContainer = document.getElementById('grade-horarios');
-    const nomeClienteInput = document.getElementById('nome-cliente');
-    const telefoneClienteInput = document.getElementById('telefone-cliente');
-    const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
-    const btnPrimeiroAcesso = document.getElementById('btn-primeiro-acesso');
-    const saudacaoClienteEl = document.getElementById('saudacao-cliente');
-    const modalAcesso = document.getElementById('modal-primeiro-acesso');
-    const btnSalvarDadosModal = document.getElementById('btn-salvar-dados-cliente');
-    const btnFecharModal = modalAcesso.querySelector('.fechar-modal');
-    const inputNomeModal = document.getElementById('input-nome-modal');
-    const inputTelefoneModal = document.getElementById('input-telefone-modal');
-    const agendamentosClienteContainer = document.getElementById('agendamentos-cliente');
-    const listaMeusAgendamentosEl = document.getElementById('lista-meus-agendamentos');
+    const loader = document.getElementById("vitrine-loader");
+    const content = document.getElementById("vitrine-content");
+    const nomeNegocioEl = document.getElementById("nome-negocio-publico");
+    const dataAtualEl = document.getElementById("data-atual");
+    const logoEl = document.getElementById("logo-publico");
+    const servicosContainer = document.getElementById("lista-servicos");
+    const dataInput = document.getElementById("data-agendamento");
+    const horariosContainer = document.getElementById("grade-horarios");
+    const nomeClienteInput = document.getElementById("nome-cliente");
+    const telefoneClienteInput = document.getElementById("telefone-cliente");
+    const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
+    const btnPrimeiroAcesso = document.getElementById("btn-primeiro-acesso");
+    const saudacaoClienteEl = document.getElementById("saudacao-cliente");
+    const modalAcesso = document.getElementById("modal-primeiro-acesso");
+    const btnSalvarDadosModal = document.getElementById("btn-salvar-dados-cliente");
+    const btnFecharModal = modalAcesso.querySelector(".fechar-modal");
+    const inputNomeModal = document.getElementById("input-nome-modal");
+    const inputTelefoneModal = document.getElementById("input-telefone-modal");
+    const agendamentosClienteContainer = document.getElementById("agendamentos-cliente");
+    const listaMeusAgendamentosEl = document.getElementById("lista-meus-agendamentos");
+    const notificationMessageEl = document.getElementById("notification-message");
+
+    // Função para exibir mensagens de notificação
+    function showNotification(message, isError = false) {
+        notificationMessageEl.textContent = message;
+        notificationMessageEl.className = "notification-message";
+        if (isError) {
+            notificationMessageEl.classList.add("error");
+        }
+        notificationMessageEl.style.display = "block";
+        notificationMessageEl.style.opacity = "1";
+
+        setTimeout(() => {
+            notificationMessageEl.style.opacity = "0";
+            setTimeout(() => {
+                notificationMessageEl.style.display = "none";
+            }, 500); // Tempo da transição
+        }, 3000); // Tempo que a mensagem fica visível
+    }
 
     // *** FUNÇÕES DE SEGURANÇA COM PIN/SENHA (FRONTEND ONLY) ***
 
@@ -447,7 +485,7 @@
                 modalAcesso.style.display = 'none';
                 iniciarSessaoIdentificada(dadosCliente);
             } else {
-                alert("Por favor, preencha seu nome e um telefone válido.");
+                showNotification("Por favor, preencha seu nome e um telefone válido.", true);
             }
         });
     }
@@ -472,7 +510,7 @@
     async function carregarConfiguracoesHorario() {
         const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
         const docSnap = await getDoc(horariosRef);
-        
+                
         if (docSnap.exists()) {
             horariosConfig = docSnap.data();
         } else {
@@ -484,12 +522,12 @@
                 quarta: { ativo: true, inicio: "09:00", fim: "18:00" },
                 quinta: { ativo: true, inicio: "09:00", fim: "18:00" },
                 sexta: { ativo: true, inicio: "09:00", fim: "18:00" },
-                sabado: { ativo: false },
-                domingo: { ativo: false }
+                sabado: { ativo: false, inicio: "09:00", fim: "12:00" },
+                domingo: { ativo: false, inicio: "09:00", fim: "12:00" }
             };
             console.warn('Configurações de horário não encontradas. Usando configuração padrão.');
         }
-        
+                
         console.log('Configurações de horário carregadas:', horariosConfig);
     }
 
@@ -603,7 +641,7 @@
             console.log('Horários exibidos com sucesso');
         } catch (error) {
             console.error('Erro ao gerar horários:', error);
-            horariosContainer.innerHTML = '<p class="aviso-horarios">Erro ao carregar horários. Tente novamente.</p>';
+            showNotification('Erro ao carregar horários. Tente novamente.', true);
         }
         
         console.log('=== FIM gerarHorariosDisponiveis ===');
@@ -676,27 +714,27 @@
     // *** FUNÇÃO MODIFICADA PARA INCLUIR PIN (FRONTEND ONLY) ***
     async function salvarAgendamentoComPIN() {
         if (!servicoSelecionado || !horarioSelecionado || !nomeClienteInput.value.trim() || !telefoneClienteInput.value.trim()) {
-            alert('Por favor, preencha todos os campos obrigatórios.');
+            showNotification('Por favor, preencha todos os campos obrigatórios.', true);
             return;
         }
 
         // Solicitar PIN do cliente
         const pin = prompt('Crie um PIN de 4 a 6 dígitos para cancelar este agendamento:');
         if (!pin) {
-            alert('PIN é obrigatório para criar o agendamento.');
+            showNotification('PIN é obrigatório para criar o agendamento.', true);
             return;
         }
 
         // Validar PIN
         const validacao = validarPIN(pin);
         if (!validacao.valido) {
-            alert(validacao.erro);
+            showNotification(validacao.erro, true);
             return;
         }
 
         const telefoneLimpo = limparTelefone(telefoneClienteInput.value);
         if (telefoneLimpo.length < 10) {
-            alert('Por favor, insira um telefone válido.');
+            showNotification('Por favor, insira um telefone válido.', true);
             return;
         }
 
@@ -728,7 +766,7 @@
             await addDoc(agendamentosRef, agendamento);
 
             // Mostrar PIN para o cliente
-            alert(`Agendamento realizado com sucesso!\n\nSeu PIN para cancelamento: ${pin}\n\nGuarde este PIN com segurança. Você precisará dele para cancelar o agendamento.`);
+            showNotification(`Agendamento realizado com sucesso!\n\nSeu PIN para cancelamento: ${pin}\n\nGuarde este PIN com segurança. Você precisará dele para cancelar o agendamento.`);
 
             // Salvar dados do cliente no localStorage (sem o PIN)
             const dadosCliente = { nome: nomeClienteInput.value.trim(), telefone: telefoneLimpo };
@@ -746,7 +784,7 @@
 
         } catch (error) {
             console.error("Erro ao salvar agendamento:", error);
-            alert('Ocorreu um erro ao salvar o agendamento. Tente novamente.');
+            showNotification('Ocorreu um erro ao salvar o agendamento. Tente novamente.', true);
         } finally {
             btnConfirmar.disabled = false;
             btnConfirmar.textContent = 'Confirmar Agendamento';
@@ -784,7 +822,7 @@
                 const snapshot = await getDocs(q);
 
                 if (snapshot.empty) {
-                    alert('Nenhum agendamento encontrado para este telefone.');
+                    showNotification('Nenhum agendamento encontrado para este telefone.', true);
                     return;
                 }
 
@@ -807,7 +845,7 @@
                 });
 
                 if (!pinCorretoEncontrado) {
-                    alert('PIN incorreto.');
+                    showNotification('PIN incorreto.', true);
                     return;
                 }
 
@@ -815,7 +853,7 @@
 
             } catch (error) {
                 console.error('Erro ao verificar agendamentos:', error);
-                alert('Erro ao verificar agendamentos: ' + error.message);
+                showNotification('Erro ao verificar agendamentos: ' + error.message, true);
                 listaMeusAgendamentosEl.innerHTML = '<p>Erro ao carregar agendamentos. Tente novamente.</p>';
             } finally {
                 btnVerificarAgendamentos.disabled = false;
@@ -873,7 +911,7 @@
                     // Verificar PIN antes de cancelar
                     const pinHash = await gerarHashSHA256(pin);
                     if (ag.pinHash !== pinHash) {
-                        alert('PIN incorreto.');
+                        showNotification('PIN incorreto.', true);
                         return;
                     }
 
@@ -884,7 +922,7 @@
 
                     // Exemplo: não permitir cancelamento com menos de 2 horas de antecedência
                     if (diferencaHoras < 2) {
-                        alert('Não é possível cancelar agendamentos com menos de 2 horas de antecedência.');
+                        showNotification('Não é possível cancelar agendamentos com menos de 2 horas de antecedência.', true);
                         return;
                     }
 
@@ -892,13 +930,13 @@
                     const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", ag.id);
                     await deleteDoc(agendamentoRef);
 
-                    alert('Agendamento cancelado com sucesso.');
+                    showNotification('Agendamento cancelado com sucesso.');
                     carregarAgendamentosClienteComPINFrontend(ag.clienteTelefone);
                     gerarHorariosDisponiveis();
 
                 } catch (error) {
                     console.error('Erro ao cancelar agendamento:', error);
-                    alert('Erro ao cancelar agendamento: ' + error.message);
+                    showNotification('Erro ao cancelar agendamento: ' + error.message, true);
                 }
             };
 
