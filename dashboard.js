@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             carregarDashboard(user.uid);
         } else {
+            console.log("Nenhum utilizador autenticado. A redirecionar para o login...");
             window.location.href = 'login.html';
         }
     });
@@ -53,7 +54,7 @@ async function carregarDashboard(uid) {
 }
 
 // =======================================================
-// SEÇÃO DO RESUMO DIÁRIO INTELIGENTE (Sem alterações)
+// SEÇÃO DO RESUMO DIÁRIO INTELIGENTE
 // =======================================================
 function processarResumoIA(todosAgendamentos, servicosMap) {
     const container = document.getElementById('resumo-diario-container');
@@ -121,106 +122,8 @@ function criarHTMLDoResumo(resumo) {
 }
 
 // =======================================================
-// SEÇÃO DOS GRÁFICOS (Gráfico Mensal Atualizado)
+// SEÇÃO DOS GRÁFICOS
 // =======================================================
-let graficoMensalInstance = null; // Variável para guardar a instância do gráfico
-
-function gerarGraficoMensal(agendamentos) {
-    const filtroMes = document.getElementById('filtro-mes');
-    const filtroAno = document.getElementById('filtro-ano');
-
-    // Popula o filtro de ano dinamicamente
-    const anos = [...new Set(agendamentos.map(ag => ag.horario.toDate().getFullYear()))];
-    anos.sort((a, b) => b - a); // Ordena do mais recente para o mais antigo
-    anos.forEach(ano => {
-        const option = document.createElement('option');
-        option.value = ano;
-        option.textContent = ano;
-        filtroAno.appendChild(option);
-    });
-
-    // Função para renderizar/atualizar o gráfico
-    const atualizarGrafico = () => {
-        const mesSelecionado = filtroMes.value;
-        const anoSelecionado = filtroAno.value;
-
-        // Filtra os agendamentos com base nos dropdowns
-        const agendamentosFiltrados = agendamentos.filter(ag => {
-            if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
-            const data = ag.horario.toDate();
-            const mesMatch = (mesSelecionado === 'todos' || data.getMonth() == mesSelecionado);
-            const anoMatch = (anoSelecionado === 'todos' || data.getFullYear() == anoSelecionado);
-            return mesMatch && anoMatch;
-        });
-
-        const contagemMensal = {};
-        agendamentosFiltrados.forEach(ag => {
-            const data = ag.horario.toDate();
-            const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-            contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
-        });
-
-        const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
-            const meses = { 'jan.':0, 'fev.':1, 'mar.':2, 'abr.':3, 'mai.':4, 'jun.':5, 'jul.':6, 'ago.':7, 'set.':8, 'out.':9, 'nov.':10, 'dez.':11 };
-            const [mesAStr, , anoA] = a.split(' ');
-            const [mesBStr, , anoB] = b.split(' ');
-            const dataA = new Date(anoA, meses[mesAStr.toLowerCase()]);
-            const dataB = new Date(anoB, meses[mesBStr.toLowerCase()]);
-            return dataA - dataB;
-        });
-
-        const dados = labelsOrdenados.map(label => contagemMensal[label]);
-
-        // Destrói o gráfico anterior, se existir
-        if (graficoMensalInstance) {
-            graficoMensalInstance.destroy();
-        }
-
-        const ctx = document.getElementById('graficoMensal').getContext('2d');
-        graficoMensalInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labelsOrdenados,
-                datasets: [{
-                    label: 'Total de Agendamentos',
-                    data: dados,
-                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                    borderColor: 'rgb(75, 192, 192)',
-                    borderWidth: 1
-                }]
-            },
-            plugins: [ChartDataLabels], // Ativa o plugin de rótulos
-            options: {
-                scales: { 
-                    y: { 
-                        beginAtZero: true, 
-                        ticks: { stepSize: 1 } 
-                    } 
-                },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: { // Configuração para mostrar os números
-                        anchor: 'end',
-                        align: 'top',
-                        formatter: Math.round,
-                        font: {
-                            weight: 'bold'
-                        }
-                    }
-                }
-            }
-        });
-    };
-
-    // Adiciona os listeners para os filtros
-    filtroMes.addEventListener('change', atualizarGrafico);
-    filtroAno.addEventListener('change', atualizarGrafico);
-
-    // Renderiza o gráfico pela primeira vez
-    atualizarGrafico();
-}
-
-// As outras funções de gráfico permanecem as mesmas
 function gerarGraficoServicos(servicosMap, agendamentos) {
   const contagemServicos = {};
   agendamentos.forEach(ag => {
@@ -279,4 +182,102 @@ function gerarGraficoFaturamento(servicosMap, agendamentos) {
         plugins: { legend: { display: false } }
     }
   });
+}
+
+let graficoMensalInstance = null; 
+
+function gerarGraficoMensal(agendamentos) {
+    const filtroMes = document.getElementById('filtro-mes');
+    const filtroAno = document.getElementById('filtro-ano');
+
+    const anos = [...new Set(
+        agendamentos
+            .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
+            .map(ag => ag.horario.toDate().getFullYear())
+    )];
+    anos.sort((a, b) => b - a);
+    
+    filtroAno.innerHTML = '<option value="todos">Todos os Anos</option>'; 
+    anos.forEach(ano => {
+        const option = document.createElement('option');
+        option.value = ano;
+        option.textContent = ano;
+        filtroAno.appendChild(option);
+    });
+
+    const atualizarGrafico = () => {
+        const mesSelecionado = filtroMes.value;
+        const anoSelecionado = filtroAno.value;
+
+        const agendamentosFiltrados = agendamentos.filter(ag => {
+            if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
+            
+            const data = ag.horario.toDate();
+            const mesMatch = (mesSelecionado === 'todos' || data.getMonth() == mesSelecionado);
+            const anoMatch = (anoSelecionado === 'todos' || data.getFullYear() == anoSelecionado);
+            return mesMatch && anoMatch;
+        });
+
+        const contagemMensal = {};
+        agendamentosFiltrados.forEach(ag => {
+            const data = ag.horario.toDate();
+            const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+            contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
+        });
+
+        const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
+            const meses = { 'jan.':0, 'fev.':1, 'mar.':2, 'abr.':3, 'mai.':4, 'jun.':5, 'jul.':6, 'ago.':7, 'set.':8, 'out.':9, 'nov.':10, 'dez.':11 };
+            const [mesAStr, , anoA] = a.split(' ');
+            const [mesBStr, , anoB] = b.split(' ');
+            const dataA = new Date(anoA, meses[mesAStr.toLowerCase()]);
+            const dataB = new Date(anoB, meses[mesBStr.toLowerCase()]);
+            return dataA - dataB;
+        });
+
+        const dados = labelsOrdenados.map(label => contagemMensal[label]);
+
+        if (graficoMensalInstance) {
+            graficoMensalInstance.destroy();
+        }
+
+        const ctx = document.getElementById('graficoMensal').getContext('2d');
+        graficoMensalInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labelsOrdenados,
+                datasets: [{
+                    label: 'Total de Agendamentos',
+                    data: dados,
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                }]
+            },
+            plugins: [ChartDataLabels],
+            options: {
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 1 } 
+                    } 
+                },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: Math.round,
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+    };
+
+    filtroMes.addEventListener('change', atualizarGrafico);
+    filtroAno.addEventListener('change', atualizarGrafico);
+
+    atualizarGrafico();
 }
