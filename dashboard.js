@@ -18,13 +18,16 @@ const auth = getAuth(app);
 document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, (user) => {
         if (user) {
+            // Utilizador está autenticado, podemos carregar o dashboard
             carregarDashboard(user.uid);
         } else {
+            // Utilizador não está autenticado, redireciona para o login
             console.log("Nenhum utilizador autenticado. A redirecionar para o login...");
             window.location.href = 'login.html';
         }
     });
 });
+
 
 // --- FUNÇÃO PRINCIPAL QUE ORQUESTRA TUDO ---
 async function carregarDashboard(uid) {
@@ -219,17 +222,20 @@ function gerarGraficoMensal(agendamentos) {
     const ctx = document.getElementById('graficoMensal').getContext('2d');
     
     new Chart(ctx, {
-        type: 'line',
+        type: 'bar', // Corrigido de 'line' para 'bar'
         data: {
             labels: labelsOrdenados,
             datasets: [{
                 label: 'Total de Agendamentos',
                 data: dados,
-                fill: false,
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
                 borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
+                borderWidth: 1
             }]
         },
-        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        options: { 
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+            plugins: { legend: { display: false } }
+        }
     });
 }
