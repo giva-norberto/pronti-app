@@ -1,8 +1,4 @@
-/**
- * agenda.js - Versão com confirmação de cancelamento pelo empresário
- */
-
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -12,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const auth = getAuth(app);
 
   const listaAgendamentos = document.getElementById("lista-agendamentos");
-  const listaCancelamentosPendentes = document.getElementById("lista-cancelamentos-pendentes"); // Novo elemento
+  const listaCancelamentosPendentes = document.getElementById("lista-cancelamentos-pendentes");
   const inputData = document.getElementById("data-agenda");
   
   let currentUid = null;
@@ -20,10 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function formatarHorario(timestamp) {
     if (!timestamp || typeof timestamp.toDate !== 'function') return "Data/hora inválida";
     const data = timestamp.toDate();
-    return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+    return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); // horario local
   }
 
-  // Carrega apenas agendamentos ATIVOS
   async function carregarAgendamentos(uid) {
     currentUid = uid;
     if (!listaAgendamentos) return;
@@ -40,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const colecao = collection(db, `users/${uid}/agendamentos`);
       
       const q = query(colecao, 
-        where("status", "==", "agendado"), // <-- Busca apenas status 'agendado'
+        where("status", "==", "agendado"),
         where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
         where("horario", "<=", Timestamp.fromDate(fimDoDia))
       );
@@ -54,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // NOVA FUNÇÃO: Carrega os cancelamentos PENDENTES
   async function carregarCancelamentosPendentes(uid) {
     if (!listaCancelamentosPendentes) return;
     listaCancelamentosPendentes.innerHTML = "<p>Verificando solicitações...</p>";
@@ -84,57 +78,54 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     agendamentos.sort((a, b) => a.horario.toDate() - b.horario.toDate());
-    agendamentos.forEach(ag => {
+    agendamentos.forEach(({ servicoNome, clienteNome, horario }) => {
       const div = document.createElement("div");
       div.className = "agendamento-item";
       div.innerHTML = `
-        <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
-        <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p>
-        <p><strong>Horário:</strong> ${formatarHorario(ag.horario)}</p>
+        <h3>${servicoNome || 'Serviço não informado'}</h3>
+        <p><strong>Cliente:</strong> ${clienteNome || 'Não informado'}</p>
+        <p><strong>Horário:</strong> ${formatarHorario(horario)}</p>
       `;
       listaAgendamentos.appendChild(div);
     });
   }
 
-  // NOVA FUNÇÃO: Renderiza a lista de cancelamentos pendentes
   function renderizarCancelamentosPendentes(cancelamentos) {
     listaCancelamentosPendentes.innerHTML = "";
     cancelamentos.sort((a, b) => a.canceladoEm.toDate() - b.canceladoEm.toDate());
 
-    cancelamentos.forEach(ag => {
+    cancelamentos.forEach(({ id, servicoNome, clienteNome, canceladoEm }) => {
         const div = document.createElement("div");
-        div.className = "agendamento-item cancelado"; // Adiciona uma classe para estilização
-        const dataCancelamento = ag.canceladoEm.toDate().toLocaleString('pt-BR');
+        div.className = "agendamento-item cancelado";
+        const dataCancelamento = canceladoEm.toDate().toLocaleString('pt-BR');
 
         div.innerHTML = `
             <div>
-                <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
-                <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p>
+                <h3>${servicoNome || 'Serviço não informado'}</h3>
+                <p><strong>Cliente:</strong> ${clienteNome || 'Não informado'}</p>
                 <p><strong>Cancelado em:</strong> ${dataCancelamento}</p>
             </div>
-            <button class="btn-confirmar-exclusao" data-id="${ag.id}">OK, Excluir Definitivamente</button>
+            <button class="btn-confirmar-exclusao" data-id="${id}">OK, Excluir Definitivamente</button>
         `;
         listaCancelamentosPendentes.appendChild(div);
     });
-
-    // Adiciona listener para os novos botões
-    document.querySelectorAll('.btn-confirmar-exclusao').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const agendamentoId = event.target.dataset.id;
-            if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
-                excluirAgendamentoDefinitivamente(agendamentoId, currentUid);
-            }
-        });
-    });
   }
-  
-  // NOVA FUNÇÃO: Deleta o documento do Firebase
+
+  // Event delegation para os botões de exclusão definitiva
+  listaCancelamentosPendentes.addEventListener('click', (event) => {
+    if (event.target.classList.contains('btn-confirmar-exclusao')) {
+      const agendamentoId = event.target.dataset.id;
+      if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
+          excluirAgendamentoDefinitivamente(agendamentoId, currentUid);
+      }
+    }
+  });
+
   async function excluirAgendamentoDefinitivamente(agendamentoId, uid) {
       try {
           const agendamentoRef = doc(db, `users/${uid}/agendamentos`, agendamentoId);
           await deleteDoc(agendamentoRef);
           alert("Registro de cancelamento removido com sucesso.");
-          // Recarrega ambas as listas para atualizar a tela
           carregarAgendamentos(uid);
           carregarCancelamentosPendentes(uid);
       } catch (error) {
@@ -151,12 +142,10 @@ document.addEventListener("DOMContentLoaded", () => {
         inputData.value = hoje.toISOString().split("T")[0];
       }
       
-      // Carrega ambas as listas quando a página abre
       carregarAgendamentos(user.uid);
       carregarCancelamentosPendentes(user.uid);
 
       if (inputData) {
-        // Recarrega apenas a lista principal quando a data muda
         inputData.addEventListener("change", () => carregarAgendamentos(user.uid));
       }
     } else {
