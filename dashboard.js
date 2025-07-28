@@ -1,11 +1,8 @@
 /**
- * dashboard.js (Versão com Comunicação Corrigida)
- * * Este script foi ajustado para buscar os dados do local correto (a pasta
- * * segura do utilizador autenticado), resolvendo o problema de comunicação
- * * e mantendo todas as fórmulas e funções originais intactas.
+ * dashboard.js - Versão Final com Filtros e Melhorias Visuais
  */
 
-// Importações combinadas, incluindo a de autenticação
+// Importações
 import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
@@ -18,18 +15,14 @@ const auth = getAuth(app);
 document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Utilizador está autenticado, podemos carregar o dashboard
             carregarDashboard(user.uid);
         } else {
-            // Utilizador não está autenticado, redireciona para o login
-            console.log("Nenhum utilizador autenticado. A redirecionar para o login...");
             window.location.href = 'login.html';
         }
     });
 });
 
-
-// --- FUNÇÃO PRINCIPAL QUE ORQUESTRA TUDO ---
+// --- FUNÇÃO PRINCIPAL ---
 async function carregarDashboard(uid) {
   try {
     const servicosCollection = collection(db, "users", uid, "servicos");
@@ -60,7 +53,7 @@ async function carregarDashboard(uid) {
 }
 
 // =======================================================
-// SEÇÃO DO RESUMO DIÁRIO INTELIGENTE
+// SEÇÃO DO RESUMO DIÁRIO INTELIGENTE (Sem alterações)
 // =======================================================
 function processarResumoIA(todosAgendamentos, servicosMap) {
     const container = document.getElementById('resumo-diario-container');
@@ -128,8 +121,106 @@ function criarHTMLDoResumo(resumo) {
 }
 
 // =======================================================
-// SEÇÃO DOS GRÁFICOS
+// SEÇÃO DOS GRÁFICOS (Gráfico Mensal Atualizado)
 // =======================================================
+let graficoMensalInstance = null; // Variável para guardar a instância do gráfico
+
+function gerarGraficoMensal(agendamentos) {
+    const filtroMes = document.getElementById('filtro-mes');
+    const filtroAno = document.getElementById('filtro-ano');
+
+    // Popula o filtro de ano dinamicamente
+    const anos = [...new Set(agendamentos.map(ag => ag.horario.toDate().getFullYear()))];
+    anos.sort((a, b) => b - a); // Ordena do mais recente para o mais antigo
+    anos.forEach(ano => {
+        const option = document.createElement('option');
+        option.value = ano;
+        option.textContent = ano;
+        filtroAno.appendChild(option);
+    });
+
+    // Função para renderizar/atualizar o gráfico
+    const atualizarGrafico = () => {
+        const mesSelecionado = filtroMes.value;
+        const anoSelecionado = filtroAno.value;
+
+        // Filtra os agendamentos com base nos dropdowns
+        const agendamentosFiltrados = agendamentos.filter(ag => {
+            if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
+            const data = ag.horario.toDate();
+            const mesMatch = (mesSelecionado === 'todos' || data.getMonth() == mesSelecionado);
+            const anoMatch = (anoSelecionado === 'todos' || data.getFullYear() == anoSelecionado);
+            return mesMatch && anoMatch;
+        });
+
+        const contagemMensal = {};
+        agendamentosFiltrados.forEach(ag => {
+            const data = ag.horario.toDate();
+            const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+            contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
+        });
+
+        const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
+            const meses = { 'jan.':0, 'fev.':1, 'mar.':2, 'abr.':3, 'mai.':4, 'jun.':5, 'jul.':6, 'ago.':7, 'set.':8, 'out.':9, 'nov.':10, 'dez.':11 };
+            const [mesAStr, , anoA] = a.split(' ');
+            const [mesBStr, , anoB] = b.split(' ');
+            const dataA = new Date(anoA, meses[mesAStr.toLowerCase()]);
+            const dataB = new Date(anoB, meses[mesBStr.toLowerCase()]);
+            return dataA - dataB;
+        });
+
+        const dados = labelsOrdenados.map(label => contagemMensal[label]);
+
+        // Destrói o gráfico anterior, se existir
+        if (graficoMensalInstance) {
+            graficoMensalInstance.destroy();
+        }
+
+        const ctx = document.getElementById('graficoMensal').getContext('2d');
+        graficoMensalInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labelsOrdenados,
+                datasets: [{
+                    label: 'Total de Agendamentos',
+                    data: dados,
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1
+                }]
+            },
+            plugins: [ChartDataLabels], // Ativa o plugin de rótulos
+            options: {
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { stepSize: 1 } 
+                    } 
+                },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { // Configuração para mostrar os números
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: Math.round,
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+    };
+
+    // Adiciona os listeners para os filtros
+    filtroMes.addEventListener('change', atualizarGrafico);
+    filtroAno.addEventListener('change', atualizarGrafico);
+
+    // Renderiza o gráfico pela primeira vez
+    atualizarGrafico();
+}
+
+// As outras funções de gráfico permanecem as mesmas
 function gerarGraficoServicos(servicosMap, agendamentos) {
   const contagemServicos = {};
   agendamentos.forEach(ag => {
@@ -188,54 +279,4 @@ function gerarGraficoFaturamento(servicosMap, agendamentos) {
         plugins: { legend: { display: false } }
     }
   });
-}
-
-function gerarGraficoMensal(agendamentos) {
-    const contagemMensal = {};
-    agendamentos.forEach(ag => {
-        if (ag.horario && typeof ag.horario.toDate === 'function') {
-            const data = ag.horario.toDate();
-            const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-            contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
-        }
-    });
-
-    const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
-        const meses = {
-            'jan.': 0, 'fev.': 1, 'mar.': 2, 'abr.': 3, 'mai.': 4, 'jun.': 5, 
-            'jul.': 6, 'ago.': 7, 'set.': 8, 'out.': 9, 'nov.': 10, 'dez.': 11
-        };
-        
-        const [mesAStr, , anoA] = a.split(' ');
-        const [mesBStr, , anoB] = b.split(' ');
-
-        const mesA = mesAStr.toLowerCase();
-        const mesB = mesBStr.toLowerCase();
-
-        const dataA = new Date(anoA, meses[mesA]);
-        const dataB = new Date(anoB, meses[mesB]);
-        
-        return dataA - dataB;
-    });
-
-    const dados = labelsOrdenados.map(label => contagemMensal[label]);
-    const ctx = document.getElementById('graficoMensal').getContext('2d');
-    
-    new Chart(ctx, {
-        type: 'bar', // Corrigido de 'line' para 'bar'
-        data: {
-            labels: labelsOrdenados,
-            datasets: [{
-                label: 'Total de Agendamentos',
-                data: dados,
-                backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                borderColor: 'rgb(75, 192, 192)',
-                borderWidth: 1
-            }]
-        },
-        options: { 
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-            plugins: { legend: { display: false } }
-        }
-    });
 }
