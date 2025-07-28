@@ -288,22 +288,29 @@ async function buscarAgendamentosData(data) {
 function gerarListaHorarios(data, agendamentosOcupados) {
     const dataObj = new Date(data + 'T00:00:00Z');
     const diaSemana = dataObj.getUTCDay();
-    // --- INÍCIO DA CORREÇÃO ---
-    // Usa os nomes Abreviados para bater com o Firebase
     const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
-    // --- FIM DA CORREÇÃO ---
     const nomeDia = nomesDias[diaSemana];
     const configDia = horariosConfig[nomeDia];
 
     if (!configDia || !configDia.ativo) {
         return [];
     }
+    
+    // --- INÍCIO DA CORREÇÃO ---
+    // Adiciona uma verificação para garantir que 'inicio' e 'fim' existam
+    if (!configDia.inicio || !configDia.fim) {
+        console.warn(`Configuração de horário para '${nomeDia}' está incompleta.`);
+        return [];
+    }
+    // --- FIM DA CORREÇÃO ---
+
     const horarios = [];
     const intervalo = horariosConfig.intervalo || 30;
     const [horaInicio, minutoInicio] = configDia.inicio.split(':').map(Number);
     const [horaFim, minutoFim] = configDia.fim.split(':').map(Number);
     let horaAtual = horaInicio;
     let minutoAtual = minutoInicio;
+
     while (horaAtual < horaFim || (horaAtual === horaFim && minutoAtual < minutoFim)) {
         const horarioFormatado = `${horaAtual.toString().padStart(2, '0')}:${minutoAtual.toString().padStart(2, '0')}`;
         if (!agendamentosOcupados.includes(horarioFormatado)) {
