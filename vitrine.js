@@ -1,6 +1,6 @@
 // Importações do Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
@@ -66,8 +66,7 @@ async function gerarHashSHA256(texto) {
   const data = encoder.encode(texto);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function validarPIN(pin) {
@@ -186,11 +185,9 @@ async function carregarPerfilPublico() {
     }
 }
 
-// --- FUNÇÃO CORRIGIDA PARA SER MAIS ROBUSTA ---
 async function carregarConfiguracoesHorario() {
     const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
     const docSnap = await getDoc(horariosRef);
-
     const configPadrao = {
         intervalo: 30,
         dom: { ativo: false, inicio: "09:00", fim: "12:00" },
@@ -201,11 +198,8 @@ async function carregarConfiguracoesHorario() {
         sex: { ativo: true, inicio: "09:00", fim: "18:00" },
         sab: { ativo: false, inicio: "09:00", fim: "12:00" }
     };
-
     if (docSnap.exists()) {
         const dadosDoFirebase = docSnap.data();
-        // Mescla os dados do Firebase com o padrão.
-        // Isso garante que, se um campo estiver faltando no Firebase, o valor padrão será usado.
         horariosConfig = { ...configPadrao, ...dadosDoFirebase };
         for (const dia of Object.keys(configPadrao)) {
             if (dia !== 'intervalo') {
@@ -213,11 +207,9 @@ async function carregarConfiguracoesHorario() {
             }
         }
     } else {
-        console.warn("Documento de horários não encontrado, usando configuração padrão.");
         horariosConfig = configPadrao;
     }
 }
-
 
 async function carregarServicos() {
     servicosContainer.innerHTML = '';
@@ -305,12 +297,10 @@ function gerarListaHorarios(data, agendamentosOcupados) {
     const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
     const nomeDia = nomesDias[diaSemana];
     const configDia = horariosConfig[nomeDia];
-
     if (!configDia || !configDia.ativo || !configDia.inicio || !configDia.fim) {
         console.warn(`Configuração de horário para '${nomeDia}' está incompleta ou inativa.`);
         return [];
     }
-
     const horarios = [];
     const intervalo = horariosConfig.intervalo || 30;
     const [horaInicio, minutoInicio] = configDia.inicio.split(':').map(Number);
@@ -484,9 +474,17 @@ async function cancelarAgendamentoFrontend(agendamentoId, pinHashOriginal) {
             showNotification("PIN incorreto.", true);
             return;
         }
+        
+        // ATUALIZA O STATUS EM VEZ DE DELETAR
         const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", agendamentoId);
-        await deleteDoc(agendamentoRef);
-        showNotification("Agendamento cancelado com sucesso!");
+        await updateDoc(agendamentoRef, {
+            status: 'cancelamento_solicitado',
+            canceladoEm: Timestamp.now(),
+            canceladoPor: 'Cliente'
+        });
+
+        showNotification("Solicitação de cancelamento enviada!");
+        
         const itemParaRemover = listaMeusAgendamentosEl.querySelector(`[data-agendamento-id="${agendamentoId}"]`).closest('.agendamento-item');
         if (itemParaRemover) {
             itemParaRemover.remove();
