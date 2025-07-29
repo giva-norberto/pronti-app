@@ -141,7 +141,6 @@ async function handleFormSubmit(event, uid, elements) {
     return;
   }
 
-  // CORREÇÃO UTC: Garante que a data salva seja universal
   const dataSelecionada = document.getElementById('dia').value;
   const [hora, minuto] = horarioSelecionado.split(':');
   
@@ -152,6 +151,7 @@ async function handleFormSubmit(event, uid, elements) {
   const nomeServico = opcaoServicoSelecionado.dataset.servicoNome;
 
   const novoAgendamento = {
+    // AQUI ESTÁ A ÚNICA ALTERAÇÃO: padronizando o nome do campo
     clienteNome: clienteInput.value,
     servicoId: servicoSelect.value,
     servicoNome: nomeServico,
