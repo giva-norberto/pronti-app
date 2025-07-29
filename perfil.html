@@ -24,21 +24,7 @@
 </head>
 <body>
 
- <aside class="sidebar">
-  <a href="index.html" class="sidebar-brand">Pronti</a>
-  <hr />
-  <div class="sidebar-links">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="index.html">Home</a>
-    <a href="servicos.html">Serviços</a>
-    <a href="agenda.html">Agenda</a>
-    <a href="clientes.html">Clientes</a>
-    <a href="perfil.html">Meu Perfil</a>
-    <a href="horarios.html">Meus Horários</a>
-    <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
-  </div>
-</aside>
-
+  <div id="menu-placeholder"></div>
 
   <main class="main-content">
     <h1>Meu Perfil e Configurações</h1>
@@ -46,7 +32,6 @@
 
     <div class="form-card">
       <form id="form-perfil">
-        <!-- Secção de Perfil Público -->
         <h3>Informações do Negócio</h3>
         <div class="form-group">
           <label for="nomeNegocio">Nome do Negócio</label>
@@ -74,7 +59,6 @@
           <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
         </div>
 
-        <!-- Secção de Horários Simplificada -->
         <h3 style="margin-top: 30px;">Horários de Atendimento</h3>
         <div class="form-group">
             <label for="intervalo-atendimento">Duração Padrão dos Atendimentos (Intervalo na Agenda)</label>
@@ -86,8 +70,7 @@
             </select>
         </div>
         <div id="dias-container">
-            <!-- O JavaScript irá gerar os dias aqui -->
-        </div>
+            </div>
         
         <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-top: 30px; margin-bottom: 15px; background: var(--cor-aviso);">Copiar Link da Vitrine</button>
         <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
@@ -113,6 +96,8 @@
       });
     }
   </script>
+
+  <script src="app.js" type="module"></script>
 
 </body>
 </html>
