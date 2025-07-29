@@ -1,3 +1,7 @@
+// ==========================================================================
+//  SETUP INICIAL E IMPORTAÇÕES DO FIREBASE
+// ==========================================================================
+
 // Importações do Firebase SDK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -12,16 +16,20 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e5df3"
 };
 
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig );
 const db = getFirestore(app);
+
+// ==========================================================================
+//  VARIÁVEIS GLOBAIS E SELEÇÃO DE ELEMENTOS DO DOM
+// ==========================================================================
 
 let profissionalUid = null;
 let servicoSelecionado = null;
 let horarioSelecionado = null;
 let horariosConfig = {};
-let menuAtivo = 'informacoes'; // Menu inicial
+let menuAtivo = 'informacoes'; // Menu inicial (para o conteúdo principal)
 
-// Elementos do DOM
+// --- Elementos Globais ---
 const loader = document.getElementById("vitrine-loader");
 const content = document.getElementById("vitrine-content");
 const nomeNegocioEl = document.getElementById("nome-negocio-publico");
@@ -29,11 +37,11 @@ const dataAtualEl = document.getElementById("data-atual");
 const logoEl = document.getElementById("logo-publico");
 const notificationMessageEl = document.getElementById("notification-message");
 
-// Elementos dos menus
+// --- Elementos do Menu de Conteúdo (Abas) ---
 const menuButtons = document.querySelectorAll('.menu-btn');
 const menuContents = document.querySelectorAll('.menu-content');
 
-// Elementos do menu de agendamento
+// --- Elementos do Formulário de Agendamento ---
 const servicosContainer = document.getElementById("lista-servicos");
 const dataInput = document.getElementById("data-agendamento");
 const horariosContainer = document.getElementById("grade-horarios");
@@ -42,21 +50,26 @@ const telefoneClienteInput = document.getElementById("telefone-cliente");
 const pinClienteInput = document.getElementById("pin-cliente");
 const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
 
-// Elementos do menu de visualização
+// --- Elementos da Aba de Visualização ---
 const inputTelefoneVisualizacao = document.getElementById("input-telefone-visualizacao");
 const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
 
-// Elementos do menu de cancelamento
+// --- Elementos da Aba de Cancelamento ---
 const inputTelefoneCancelamento = document.getElementById("input-telefone-cancelamento");
 const inputPinCancelamento = document.getElementById("input-pin-cancelamento");
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
 const listaAgendamentosCancelamento = document.getElementById("lista-agendamentos-cancelamento");
 
-// Elementos do menu de informações
+// --- Elementos da Aba de Informações ---
 const infoNegocio = document.getElementById("info-negocio");
 const infoServicos = document.getElementById("info-servicos");
 const infoContato = document.getElementById("info-contato");
+
+
+// ==========================================================================
+//  FUNÇÕES UTILITÁRIAS (Notificação, Hash, Validação, etc.)
+// ==========================================================================
 
 function showNotification(message, isError = false) {
     notificationMessageEl.textContent = message;
@@ -97,21 +110,20 @@ function limparTelefone(telefone) {
     return telefone ? telefone.replace(/\D/g, '') : "";
 }
 
-// Função para alternar entre menus
+// ==========================================================================
+//  LÓGICA PRINCIPAL DA APLICAÇÃO
+// ==========================================================================
+
+// --- Função para alternar entre as ABAS de conteúdo ---
 function alternarMenu(novoMenu) {
-    // Remove classe ativa de todos os botões
     menuButtons.forEach(btn => btn.classList.remove('ativo'));
-    
-    // Remove classe ativa de todos os conteúdos
     menuContents.forEach(content => content.classList.remove('ativo'));
     
-    // Adiciona classe ativa ao botão e conteúdo selecionados
     document.querySelector(`[data-menu="${novoMenu}"]`).classList.add('ativo');
     document.getElementById(`menu-${novoMenu}`).classList.add('ativo');
     
     menuAtivo = novoMenu;
     
-    // Executa ações específicas do menu
     switch(novoMenu) {
         case 'agendamento':
             carregarServicos();
@@ -149,7 +161,7 @@ async function inicializarVitrine() {
         loader.style.display = 'none';
         content.style.display = 'block';
         configurarEventosGerais();
-        alternarMenu('informacoes'); // Menu inicial
+        alternarMenu('informacoes'); // Define a aba inicial
     } catch (error) {
         console.error("Erro ao inicializar a vitrine:", error);
         loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página deste profissional.</p>`;
@@ -157,18 +169,14 @@ async function inicializarVitrine() {
 }
 
 function configurarEventosGerais() {
-    // Configurar eventos dos botões de menu
     menuButtons.forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const menu = e.target.dataset.menu;
+            const menu = e.currentTarget.dataset.menu;
             alternarMenu(menu);
         });
     });
     
-    // Configurar eventos do menu de visualização
     btnVisualizarAgendamentos.addEventListener('click', visualizarAgendamentosSemPIN);
-    
-    // Configurar eventos do menu de cancelamento
     btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelamento);
 }
 
@@ -182,6 +190,8 @@ function configurarFormularioAgendamento() {
     btnConfirmar.addEventListener('click', salvarAgendamentoComPIN);
 }
 
+// --- Funções de Carregamento de Dados (Firebase) ---
+
 async function encontrarUidPeloSlug(slug) {
     const slugRef = doc(db, "slugs", slug);
     const docSnap = await getDoc(slugRef);
@@ -193,9 +203,16 @@ async function carregarPerfilPublico() {
     const docSnap = await getDoc(perfilRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
-        nomeNegocioEl.textContent = data.nomeNegocio || "Nome não definido";
+        const nomeNegocio = data.nomeNegocio || "Nome não definido";
+        nomeNegocioEl.textContent = nomeNegocio;
         if (data.logoUrl) logoEl.src = data.logoUrl;
         dataAtualEl.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+        
+        // Atualiza o nome do negócio no menu de navegação superior
+        const navbarBusinessName = document.getElementById('navbar-business-name');
+        if (navbarBusinessName) {
+            navbarBusinessName.textContent = nomeNegocio;
+        }
     }
 }
 
@@ -257,7 +274,6 @@ async function carregarServicos() {
 }
 
 async function carregarInformacoesCompletas() {
-    // Carregar informações do negócio
     const perfilRef = doc(db, "users", profissionalUid, "publicProfile", "profile");
     const perfilSnap = await getDoc(perfilRef);
     
@@ -279,7 +295,6 @@ async function carregarInformacoesCompletas() {
         }
     }
     
-    // Carregar lista de serviços para informações
     const servicosRef = collection(db, "users", profissionalUid, "servicos");
     const servicosSnap = await getDocs(servicosRef);
     
@@ -298,6 +313,8 @@ async function carregarInformacoesCompletas() {
     });
     infoServicos.innerHTML = servicosInfo;
 }
+
+// --- Funções de Interação do Formulário de Agendamento ---
 
 function selecionarServico(servico, btnElement) {
     document.querySelectorAll('.btn-servico').forEach(btn => btn.classList.remove('selecionado'));
@@ -437,7 +454,6 @@ async function salvarAgendamentoComPIN() {
         const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
         await addDoc(agendamentosRef, agendamento);
         
-        // Exibir PIN na tela para o cliente
         showNotification(`Agendamento confirmado! Seu PIN para cancelamento é: ${pin}. Anote este número!`);
         
         resetarFormulario();
@@ -451,7 +467,8 @@ async function salvarAgendamentoComPIN() {
     }
 }
 
-// NOVA FUNÇÃO: Visualizar agendamentos SEM PIN
+// --- Funções da Aba de Visualização ---
+
 async function visualizarAgendamentosSemPIN() {
     const telefone = limparTelefone(inputTelefoneVisualizacao.value);
     if (!telefone || telefone.length < 10) {
@@ -512,7 +529,8 @@ function exibirAgendamentosVisualizacao(agendamentos) {
     });
 }
 
-// NOVA FUNÇÃO: Buscar agendamentos para cancelamento (COM PIN)
+// --- Funções da Aba de Cancelamento ---
+
 async function buscarAgendamentosParaCancelamento() {
     const telefone = limparTelefone(inputTelefoneCancelamento.value);
     const pin = inputPinCancelamento.value.trim();
@@ -580,7 +598,6 @@ function exibirAgendamentosCancelamento(agendamentos) {
         listaAgendamentosCancelamento.appendChild(agendamentoDiv);
     });
     
-    // Adicionar eventos aos botões de cancelamento
     listaAgendamentosCancelamento.addEventListener('click', function(event) {
         if (event.target && event.target.classList.contains('btn-cancelar-agendamento')) {
             const agendamentoId = event.target.dataset.agendamentoId;
@@ -604,7 +621,6 @@ async function cancelarAgendamento(agendamentoId) {
 
         showNotification("Solicitação de cancelamento enviada com sucesso!");
         
-        // Remover o item da lista
         const itemParaRemover = listaAgendamentosCancelamento.querySelector(`[data-agendamento-id="${agendamentoId}"]`).closest('.agendamento-item-cancelamento');
         if (itemParaRemover) {
             itemParaRemover.remove();
@@ -619,6 +635,8 @@ async function cancelarAgendamento(agendamentoId) {
         showNotification("Erro ao cancelar agendamento. Tente novamente.", true);
     }
 }
+
+// --- Funções de Limpeza e Reset ---
 
 function limparVisualizacao() {
     inputTelefoneVisualizacao.value = '';
@@ -643,4 +661,31 @@ function resetarFormulario() {
     verificarEstadoBotaoConfirmar();
 }
 
-document.addEventListener('DOMContentLoaded', inicializarVitrine);
+// ==========================================================================
+//  PONTO DE ENTRADA DA APLICAÇÃO E LÓGICA DO MENU DE NAVEGAÇÃO
+// ==========================================================================
+
+// O evento 'DOMContentLoaded' garante que todo o HTML foi carregado antes de executar o JS.
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- LÓGICA DO MENU DE NAVEGAÇÃO SUPERIOR (NAVBAR) ---
+    const menuIcon = document.getElementById('mobile-menu-trigger');
+    const navMenu = document.getElementById('nav-menu-list');
+    const navLinks = document.querySelectorAll('.nav-links');
+
+    if (menuIcon && navMenu) {
+        // Função para abrir/fechar o menu mobile
+        const toggleMobileMenu = () => {
+            menuIcon.classList.toggle('is-active');
+            navMenu.classList.toggle('active');
+        };
+        menuIcon.addEventListener('click', toggleMobileMenu);
+
+        // Função para fechar o menu ao clicar em um link (em telas pequenas)
+        const closeMobileMenu = () => {
+            if (window.innerWidth <= 960 && menuIcon.classList.contains('is-active')) {
+                toggleMobileMenu();
+            }
+        };
+        navLinks.forEach(link => {
+            link.
