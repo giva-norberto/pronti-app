@@ -1,11 +1,8 @@
 /**
- * perfil.js (Versão Final Otimizada)
- * - Validação de slug único
- * - Estrutura de múltiplos horários por dia
- * - Otimização da estrutura de dados no Firestore
+ * perfil.js (Versão Final com Botão de Vitrine Integrado)
  */
 
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
@@ -18,7 +15,7 @@ const storage = getStorage(app);
 const form = document.getElementById('form-perfil');
 const nomeNegocioInput = document.getElementById('nomeNegocio');
 const slugInput = document.getElementById('slug');
-const slugFeedbackEl = document.createElement('div'); // Feedback para o slug
+const slugFeedbackEl = document.createElement('div');
 const descricaoInput = document.getElementById('descricao');
 const logoInput = document.getElementById('logoNegocio');
 const logoPreview = document.getElementById('logo-preview');
@@ -27,6 +24,7 @@ const btnCopiarLink = document.getElementById('btn-copiar-link');
 const urlBaseEl = document.getElementById('url-base');
 const intervaloSelect = document.getElementById('intervalo-atendimento');
 const diasContainer = document.getElementById('dias-container');
+const btnAbrirVitrine = document.getElementById('btn-abrir-vitrine'); // Botão adicionado
 
 const diasDaSemana = [
     { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
@@ -36,7 +34,7 @@ const diasDaSemana = [
 ];
 
 let uid;
-let slugOriginal = ''; // Para saber se o slug foi alterado
+let slugOriginal = '';
 
 // --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, (user) => {
@@ -60,13 +58,14 @@ function adicionarListenersDeEvento() {
     });
     form.addEventListener('submit', handleFormSubmit);
     btnCopiarLink.addEventListener('click', copiarLink);
-    logoInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if(file) logoPreview.src = URL.createObjectURL(file);
-    });
+    
+    // Listener para o botão de upload de logo
+    const btnUploadLogo = document.getElementById('btn-upload-logo');
+    if(btnUploadLogo && logoInput) {
+        btnUploadLogo.addEventListener('click', () => logoInput.click());
+    }
 }
 
-// --- LÓGICA DE CARREGAMENTO DE DADOS ---
 async function carregarTodosOsDados(userId) {
     await Promise.all([
         carregarDadosDoPerfil(userId),
@@ -74,6 +73,7 @@ async function carregarTodosOsDados(userId) {
     ]);
 }
 
+// --- FUNÇÃO CORRIGIDA ---
 async function carregarDadosDoPerfil(userId) {
     try {
         const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
@@ -82,9 +82,15 @@ async function carregarDadosDoPerfil(userId) {
             const data = docSnap.data();
             nomeNegocioInput.value = data.nomeNegocio || '';
             slugInput.value = data.slug || '';
-            slugOriginal = data.slug || ''; // Guarda o slug original
+            slugOriginal = data.slug || '';
             descricaoInput.value = data.descricao || '';
             if (data.logoUrl) logoPreview.src = data.logoUrl;
+
+            // Lógica para ativar o botão "Abrir Vitrine"
+            if (data.slug) {
+                btnAbrirVitrine.href = `vitrine.html?slug=${data.slug}`;
+                btnAbrirVitrine.style.display = 'inline-block'; // Mostra o botão
+            }
         }
     } catch (error) { console.error("Erro ao carregar perfil:", error); }
 }
@@ -101,28 +107,23 @@ async function carregarHorarios(userId) {
                 const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
                 const containerBlocos = document.getElementById(`blocos-${dia.id}`);
                 
-                if (diaData) {
+                if (diaData && toggleAtivo && containerBlocos) {
                     toggleAtivo.checked = diaData.ativo;
-                    // Limpa o bloco padrão antes de adicionar os salvos
                     containerBlocos.innerHTML = ''; 
                     
                     if (diaData.ativo && diaData.blocos && diaData.blocos.length > 0) {
-                        diaData.blocos.forEach(bloco => {
-                            adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim);
-                        });
+                        diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
                     } else if (diaData.ativo) {
-                        // Se estiver ativo mas sem blocos, adiciona um padrão
                         adicionarBlocoDeHorario(dia.id);
                     }
+                    toggleAtivo.dispatchEvent(new Event('change'));
                 }
-                // Dispara o evento para mostrar/esconder o container corretamente
-                toggleAtivo.dispatchEvent(new Event('change'));
             });
         }
     } catch (error) { console.error("Erro ao carregar horários:", error); }
 }
 
-// --- LÓGICA DE SALVAMENTO DE DADOS ---
+// --- FUNÇÃO CORRIGIDA ---
 async function handleFormSubmit(event) {
     event.preventDefault();
     btnSalvar.disabled = true;
@@ -155,9 +156,9 @@ async function handleFormSubmit(event) {
         }
         slugOriginal = slugAtual;
         
-        // ***** ÚNICA ALTERAÇÃO ESTÁ AQUI *****
-        // Salva o slug na memória do navegador para que o menu o carregue instantaneamente.
-        localStorage.setItem('prontiUserSlug', slugAtual);
+        // Atualiza o link do botão imediatamente após salvar
+        btnAbrirVitrine.href = `vitrine.html?slug=${slugAtual}`;
+        btnAbrirVitrine.style.display = 'inline-block';
         
         alert("Todas as configurações foram salvas com sucesso!");
 
@@ -173,22 +174,18 @@ async function handleFormSubmit(event) {
 }
 
 async function verificarDisponibilidadeSlug(slug) {
-    // Se o slug não mudou, ele já pertence ao usuário. Está disponível.
-    if (slug === slugOriginal) {
-        return true;
-    }
+    if (slug === slugOriginal) return true;
     const slugRef = doc(db, "slugs", slug);
     const docSnap = await getDoc(slugRef);
-    return !docSnap.exists(); // Retorna true se NÃO existir (está disponível)
+    return !docSnap.exists();
 }
 
 async function salvarDadosDoPerfil(slug) {
     const nomeNegocio = nomeNegocioInput.value.trim();
     const logoFile = logoInput.files[0];
-
     if (!nomeNegocio) throw new Error("Nome do negócio é obrigatório.");
 
-    let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
+    let logoUrl = logoPreview.src;
     if (logoFile) {
         const storageRef = ref(storage, `logos/${uid}/${slug}-${logoFile.name}`);
         const uploadResult = await uploadBytes(storageRef, logoFile);
@@ -196,27 +193,18 @@ async function salvarDadosDoPerfil(slug) {
     }
   
     const perfilData = {
-        nomeNegocio,
-        slug,
+        nomeNegocio, slug,
         descricao: descricaoInput.value.trim(),
-        logoUrl,
-        ownerId: uid // Importante para referência interna
+        logoUrl, ownerId: uid
     };
 
-    // --- OTIMIZAÇÃO: Usando WriteBatch para operações atômicas ---
     const batch = writeBatch(db);
-    
-    // Salva o perfil privado do usuário
     const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
     batch.set(perfilPrivadoRef, perfilData, { merge: true });
-
-    // Salva o documento público na coleção de slugs para busca rápida
     const slugPublicoRef = doc(db, "slugs", slug);
     batch.set(slugPublicoRef, { uid: uid });
-
     await batch.commit();
 }
-
 
 async function salvarHorarios() {
     const horariosData = { intervalo: parseInt(intervaloSelect.value, 10) };
@@ -233,12 +221,10 @@ async function salvarHorarios() {
         }
         horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
     });
-
     const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
     await setDoc(horariosRef, horariosData);
 }
 
-// --- FUNÇÕES AUXILIARES E DE GERAÇÃO DE UI ---
 function gerarSlug(texto) {
     if (!texto) return "";
     return texto.toString().toLowerCase().trim()
@@ -277,16 +263,12 @@ function gerarEstruturaDosDias() {
             </div>
         `;
         diasContainer.appendChild(divDia);
-        // Adiciona um bloco padrão inicial, que será limpo se houver dados salvos
         adicionarBlocoDeHorario(dia.id); 
-
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
         toggleAtivo.addEventListener('change', (e) => {
             document.getElementById(`container-${dia.id}`).style.display = e.target.checked ? 'block' : 'none';
         });
     });
-    
-    // Adiciona o listener de evento aos botões DEPOIS que todos foram criados
     diasContainer.addEventListener('click', function(e) {
         if (e.target.classList.contains('btn-adicionar-bloco')) {
             adicionarBlocoDeHorario(e.target.dataset.dia);
