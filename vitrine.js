@@ -20,7 +20,6 @@ let servicoSelecionado = null;
 let horarioSelecionado = null;
 let horariosConfig = {};
 
-// --- ELEMENTOS DO DOM (sem os elementos removidos) ---
 const loader = document.getElementById("vitrine-loader");
 const content = document.getElementById("vitrine-content");
 const nomeNegocioEl = document.getElementById("nome-negocio-publico");
@@ -33,7 +32,11 @@ const nomeClienteInput = document.getElementById("nome-cliente");
 const telefoneClienteInput = document.getElementById("telefone-cliente");
 const pinClienteInput = document.getElementById("pin-cliente");
 const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
-const agendamentosClienteContainer = document.getElementById("agendamentos-cliente");
+const btnPrimeiroAcesso = document.getElementById("btn-primeiro-acesso");
+const saudacaoClienteEl = document.getElementById("saudacao-cliente");
+const modalAcesso = document.getElementById("modal-primeiro-acesso");
+const btnSalvarDadosModal = document.getElementById("btn-salvar-dados-cliente");
+const agendamentosClienteContainer = document.getElementById("agendamentos-cliente-container"); // Corrigido para o ID do container
 const listaMeusAgendamentosEl = document.getElementById("lista-meus-agendamentos");
 const notificationMessageEl = document.getElementById("notification-message");
 const btnVerificarAgendamentos = document.getElementById("btn-verificar-agendamentos");
@@ -99,7 +102,7 @@ async function inicializarVitrine() {
         loader.style.display = 'none';
         content.style.display = 'block';
         configurarEventosGerais();
-        preencherDadosClienteSeExistir(); // Nova função simplificada
+        gerenciarSessaoDoCliente();
     } catch (error) {
         console.error("Erro ao inicializar a vitrine:", error);
         loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página deste profissional.</p>`;
@@ -129,14 +132,41 @@ function limparTelefone(telefone) {
     return telefone ? telefone.replace(/\D/g, '') : "";
 }
 
-// FUNÇÃO SIMPLIFICADA: Apenas preenche os dados se existirem na memória
-function preencherDadosClienteSeExistir() {
+function gerenciarSessaoDoCliente() {
     const dadosCliente = JSON.parse(localStorage.getItem('dadosClientePronti'));
-    if (dadosCliente && dadosCliente.nome && dadosCliente.telefone) {
-        nomeClienteInput.value = dadosCliente.nome;
-        telefoneClienteInput.value = dadosCliente.telefone;
-        verificarEstadoBotaoConfirmar();
+    if (dadosCliente && dadosCliente.telefone) {
+        iniciarSessaoIdentificada(dadosCliente);
+    } else {
+        configurarPrimeiroAcesso();
     }
+}
+
+function iniciarSessaoIdentificada(dadosCliente) {
+    btnPrimeiroAcesso.style.display = 'none';
+    saudacaoClienteEl.innerHTML = `Olá, <strong>${dadosCliente.nome}</strong>! Bem-vindo(a) de volta.`;
+    saudacaoClienteEl.style.display = 'block';
+    nomeClienteInput.value = dadosCliente.nome;
+    telefoneClienteInput.value = dadosCliente.telefone;
+    verificarEstadoBotaoConfirmar();
+}
+
+function configurarPrimeiroAcesso() {
+    btnPrimeiroAcesso.style.display = 'block';
+    btnPrimeiroAcesso.addEventListener('click', () => modalAcesso.style.display = 'flex');
+    modalAcesso.querySelector('.fechar-modal').addEventListener('click', () => modalAcesso.style.display = 'none');
+    btnSalvarDadosModal.addEventListener('click', () => {
+        const nome = inputNomeModal.value.trim();
+        const telefone = inputTelefoneModal.value;
+        const telefoneLimpo = limparTelefone(telefone);
+        if (nome && telefoneLimpo.length >= 10) {
+            const dadosCliente = { nome, telefone: telefoneLimpo };
+            localStorage.setItem('dadosClientePronti', JSON.stringify(dadosCliente));
+            modalAcesso.style.display = 'none';
+            iniciarSessaoIdentificada(dadosCliente);
+        } else {
+            showNotification("Por favor, preencha seu nome e um telefone válido.", true);
+        }
+    });
 }
 
 async function encontrarUidPeloSlug(slug) {
@@ -159,26 +189,10 @@ async function carregarPerfilPublico() {
 async function carregarConfiguracoesHorario() {
     const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
     const docSnap = await getDoc(horariosRef);
-    const configPadrao = {
-        intervalo: 30,
-        dom: { ativo: false, inicio: "09:00", fim: "12:00" },
-        seg: { ativo: true, inicio: "09:00", fim: "18:00" },
-        ter: { ativo: true, inicio: "09:00", fim: "18:00" },
-        qua: { ativo: true, inicio: "09:00", fim: "18:00" },
-        qui: { ativo: true, inicio: "09:00", fim: "18:00" },
-        sex: { ativo: true, inicio: "09:00", fim: "18:00" },
-        sab: { ativo: false, inicio: "09:00", fim: "12:00" }
-    };
     if (docSnap.exists()) {
-        const dadosDoFirebase = docSnap.data();
-        horariosConfig = { ...configPadrao, ...dadosDoFirebase };
-        for (const dia of Object.keys(configPadrao)) {
-            if (dia !== 'intervalo') {
-                horariosConfig[dia] = { ...configPadrao[dia], ...dadosDoFirebase[dia] };
-            }
-        }
+        horariosConfig = docSnap.data();
     } else {
-        horariosConfig = configPadrao;
+        console.warn("Nenhuma configuração de horário encontrada para este profissional.");
     }
 }
 
@@ -186,11 +200,9 @@ async function carregarServicos() {
     servicosContainer.innerHTML = '';
     const servicosRef = collection(db, "users", profissionalUid, "servicos");
     const snapshot = await getDocs(servicosRef);
-    let servicosVisiveisEncontrados = 0;
     snapshot.docs.forEach(docSnapshot => {
         const servico = { id: docSnapshot.id, ...docSnapshot.data() };
         if (servico.visivelNaVitrine !== false) {
-            servicosVisiveisEncontrados++;
             const card = document.createElement('div');
             card.className = 'servico-card';
             card.innerHTML = `
@@ -204,13 +216,9 @@ async function carregarServicos() {
                 </div>
             `;
             servicosContainer.appendChild(card);
-            const btnServico = card.querySelector('.btn-servico');
-            btnServico.addEventListener('click', () => selecionarServico(servico, btnServico));
+            card.querySelector('.btn-servico').addEventListener('click', (e) => selecionarServico(servico, e.currentTarget));
         }
     });
-    if (servicosVisiveisEncontrados === 0) {
-        servicosContainer.innerHTML = '<p>Nenhum serviço disponível no momento.</p>';
-    }
 }
 
 function selecionarServico(servico, btnElement) {
@@ -218,7 +226,7 @@ function selecionarServico(servico, btnElement) {
     btnElement.classList.add('selecionado');
     servicoSelecionado = servico;
     document.querySelectorAll('.detalhes-servico').forEach(div => div.style.display = 'none');
-    document.getElementById(`detalhes-${servico.id}`).style.display = 'block';
+    btnElement.nextElementSibling.style.display = 'block';
     verificarEstadoBotaoConfirmar();
     gerarHorariosDisponiveis();
 }
@@ -265,6 +273,7 @@ async function buscarAgendamentosData(data) {
 function gerarListaHorarios(data, agendamentosOcupados) {
     const dataObj = new Date(data + 'T00:00:00Z');
     const diaSemana = dataObj.getUTCDay();
+    // --- ÚNICA ALTERAÇÃO ESTÁ AQUI ---
     const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
     const nomeDia = nomesDias[diaSemana];
     const configDia = horariosConfig[nomeDia];
