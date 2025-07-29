@@ -1,5 +1,8 @@
 /**
- * perfil.js (Versão Final com Cache e Atualização Imediata do Menu)
+ * perfil.js (Versão Final Otimizada)
+ * - Validação de slug único
+ * - Estrutura de múltiplos horários por dia
+ * - Otimização da estrutura de dados no Firestore
  */
 
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -15,7 +18,7 @@ const storage = getStorage(app);
 const form = document.getElementById('form-perfil');
 const nomeNegocioInput = document.getElementById('nomeNegocio');
 const slugInput = document.getElementById('slug');
-const slugFeedbackEl = document.createElement('div');
+const slugFeedbackEl = document.createElement('div'); // Feedback para o slug
 const descricaoInput = document.getElementById('descricao');
 const logoInput = document.getElementById('logoNegocio');
 const logoPreview = document.getElementById('logo-preview');
@@ -33,7 +36,7 @@ const diasDaSemana = [
 ];
 
 let uid;
-let slugOriginal = '';
+let slugOriginal = ''; // Para saber se o slug foi alterado
 
 // --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, (user) => {
@@ -63,6 +66,7 @@ function adicionarListenersDeEvento() {
     });
 }
 
+// --- LÓGICA DE CARREGAMENTO DE DADOS ---
 async function carregarTodosOsDados(userId) {
     await Promise.all([
         carregarDadosDoPerfil(userId),
@@ -78,7 +82,7 @@ async function carregarDadosDoPerfil(userId) {
             const data = docSnap.data();
             nomeNegocioInput.value = data.nomeNegocio || '';
             slugInput.value = data.slug || '';
-            slugOriginal = data.slug || '';
+            slugOriginal = data.slug || ''; // Guarda o slug original
             descricaoInput.value = data.descricao || '';
             if (data.logoUrl) logoPreview.src = data.logoUrl;
         }
@@ -99,6 +103,7 @@ async function carregarHorarios(userId) {
                 
                 if (diaData) {
                     toggleAtivo.checked = diaData.ativo;
+                    // Limpa o bloco padrão antes de adicionar os salvos
                     containerBlocos.innerHTML = ''; 
                     
                     if (diaData.ativo && diaData.blocos && diaData.blocos.length > 0) {
@@ -106,15 +111,18 @@ async function carregarHorarios(userId) {
                             adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim);
                         });
                     } else if (diaData.ativo) {
+                        // Se estiver ativo mas sem blocos, adiciona um padrão
                         adicionarBlocoDeHorario(dia.id);
                     }
                 }
+                // Dispara o evento para mostrar/esconder o container corretamente
                 toggleAtivo.dispatchEvent(new Event('change'));
             });
         }
     } catch (error) { console.error("Erro ao carregar horários:", error); }
 }
 
+// --- LÓGICA DE SALVAMENTO DE DADOS ---
 async function handleFormSubmit(event) {
     event.preventDefault();
     btnSalvar.disabled = true;
@@ -147,14 +155,9 @@ async function handleFormSubmit(event) {
         }
         slugOriginal = slugAtual;
         
+        // ***** ÚNICA ALTERAÇÃO ESTÁ AQUI *****
+        // Salva o slug na memória do navegador para que o menu o carregue instantaneamente.
         localStorage.setItem('prontiUserSlug', slugAtual);
-        
-        // --- ADIÇÃO FINAL AQUI ---
-        // Avisa o menu que já está na tela para se atualizar imediatamente
-        const linkVitrine = document.getElementById('link-minha-vitrine');
-        if (linkVitrine) {
-            linkVitrine.href = `vitrine.html?slug=${slugAtual}`;
-        }
         
         alert("Todas as configurações foram salvas com sucesso!");
 
@@ -170,17 +173,19 @@ async function handleFormSubmit(event) {
 }
 
 async function verificarDisponibilidadeSlug(slug) {
+    // Se o slug não mudou, ele já pertence ao usuário. Está disponível.
     if (slug === slugOriginal) {
         return true;
     }
     const slugRef = doc(db, "slugs", slug);
     const docSnap = await getDoc(slugRef);
-    return !docSnap.exists();
+    return !docSnap.exists(); // Retorna true se NÃO existir (está disponível)
 }
 
 async function salvarDadosDoPerfil(slug) {
     const nomeNegocio = nomeNegocioInput.value.trim();
     const logoFile = logoInput.files[0];
+
     if (!nomeNegocio) throw new Error("Nome do negócio é obrigatório.");
 
     let logoUrl = logoPreview.src.startsWith('https://') ? logoPreview.src : null;
@@ -195,16 +200,23 @@ async function salvarDadosDoPerfil(slug) {
         slug,
         descricao: descricaoInput.value.trim(),
         logoUrl,
-        ownerId: uid
+        ownerId: uid // Importante para referência interna
     };
 
+    // --- OTIMIZAÇÃO: Usando WriteBatch para operações atômicas ---
     const batch = writeBatch(db);
+    
+    // Salva o perfil privado do usuário
     const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
     batch.set(perfilPrivadoRef, perfilData, { merge: true });
+
+    // Salva o documento público na coleção de slugs para busca rápida
     const slugPublicoRef = doc(db, "slugs", slug);
     batch.set(slugPublicoRef, { uid: uid });
+
     await batch.commit();
 }
+
 
 async function salvarHorarios() {
     const horariosData = { intervalo: parseInt(intervaloSelect.value, 10) };
@@ -221,10 +233,12 @@ async function salvarHorarios() {
         }
         horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
     });
+
     const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
     await setDoc(horariosRef, horariosData);
 }
 
+// --- FUNÇÕES AUXILIARES E DE GERAÇÃO DE UI ---
 function gerarSlug(texto) {
     if (!texto) return "";
     return texto.toString().toLowerCase().trim()
@@ -263,12 +277,16 @@ function gerarEstruturaDosDias() {
             </div>
         `;
         diasContainer.appendChild(divDia);
+        // Adiciona um bloco padrão inicial, que será limpo se houver dados salvos
         adicionarBlocoDeHorario(dia.id); 
+
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
         toggleAtivo.addEventListener('change', (e) => {
             document.getElementById(`container-${dia.id}`).style.display = e.target.checked ? 'block' : 'none';
         });
     });
+    
+    // Adiciona o listener de evento aos botões DEPOIS que todos foram criados
     diasContainer.addEventListener('click', function(e) {
         if (e.target.classList.contains('btn-adicionar-bloco')) {
             adicionarBlocoDeHorario(e.target.dataset.dia);
