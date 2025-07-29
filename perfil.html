@@ -6,14 +6,13 @@
   <title>Meu Perfil e Horários - Pronti IA</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    /* Estilos para a seção de horários */
+    /* Estilos da sua página de perfil original */
     .dia-semana { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--cor-fundo); flex-wrap: wrap; gap: 15px; }
     .dia-semana:last-child { border-bottom: none; }
     .dia-semana-nome { font-weight: 600; min-width: 120px; }
     .horarios-controles { display: flex; align-items: center; gap: 10px; }
     .horarios-controles input[type="time"] { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
     .toggle-atendimento { display: flex; align-items: center; gap: 10px; }
-    /* Estilos para o switch */
     .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
@@ -42,14 +41,15 @@
   <main class="main-content">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
       <h1>Meu Perfil e Configurações</h1>
+      
       <a id="btn-abrir-vitrine"
          href="#"
          target="_blank"
-         class="btn-submit"
-         style="display: none; background: var(--cor-primaria); white-space: nowrap;">
+         class="btn-new" 
+         style="display: none; white-space: nowrap;">
          Abrir Vitrine
       </a>
-    </div>
+      </div>
     <p>Defina aqui todas as informações do seu negócio que aparecerão para os clientes.</p>
 
     <div class="form-card">
