@@ -1,5 +1,5 @@
 /**
- * agenda.js - Versão com opção de Reativar Cancelamentos
+ * agenda.js - Versão com correção final para exibição da agenda
  */
 
 import { getFirestore, collection, query, where, getDocs, doc, deleteDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -41,11 +41,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const dataSelecionada = inputData.value;
     if (!dataSelecionada) {
       listaAgendamentos.innerHTML = "<p>Selecione uma data para começar.</p>";
-      dataExibida.textContent = '...';
+      if(dataExibida) dataExibida.textContent = '...';
       return;
     }
-    const dataObj = new Date(dataSelecionada + "T00:00:00Z");
-    dataExibida.textContent = dataObj.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    if(dataExibida) {
+        const dataObj = new Date(dataSelecionada + "T00:00:00Z");
+        dataExibida.textContent = dataObj.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    }
 
     try {
       const inicioDoDia = new Date(dataSelecionada + "T00:00:00.000Z");
@@ -62,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderizarAgendamentos(agendamentos);
     } catch (error) {
       console.error("Erro ao carregar agendamentos:", error);
-      listaAgendamentos.innerHTML = '<p>Ocorreu um erro ao carregar os agendamentos.</p>';
+      listaAgendamentos.innerHTML = '<p>Ocorreu um erro ao carregar os agendamentos. Verifique se o índice do Firebase foi criado.</p>';
     }
   }
 
@@ -82,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // --- FUNÇÃO CORRIGIDA ---
   function renderizarAgendamentos(agendamentos) {
     listaAgendamentos.innerHTML = "";
     if (agendamentos.length === 0) {
@@ -92,21 +95,22 @@ document.addEventListener("DOMContentLoaded", () => {
     agendamentos.forEach(ag => {
       const div = document.createElement("div");
       div.className = "agendamento-item";
+      // CORREÇÃO: Voltando a usar 'ag.cliente' que é o nome do campo que o seu 'novo-agendamento.js' salva.
       div.innerHTML = `
         <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
-        <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p>
+        <p><strong>Cliente:</strong> ${ag.cliente || 'Não informado'}</p>
         <p><strong>Horário:</strong> ${formatarHorario(ag.horario)}</p>
       `;
       listaAgendamentos.appendChild(div);
     });
   }
 
+
   function renderizarCancelamentosPendentes(cancelamentos) {
     if (cancelamentos.length === 0) {
       listaCancelamentosPendentes.innerHTML = `<p>Nenhuma solicitação de cancelamento encontrada.</p>`;
       return;
     }
-
     listaCancelamentosPendentes.innerHTML = "";
     cancelamentos.sort((a, b) => (a.canceladoEm && b.canceladoEm) ? a.canceladoEm.toDate() - b.canceladoEm.toDate() : 0);
 
@@ -135,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
           const agendamentoRef = doc(db, `users/${uid}/agendamentos`, agendamentoId);
           await deleteDoc(agendamentoRef);
-          Toastify({ text: "Registro removido com sucesso!", duration: 3000, backgroundColor: "#22c55e" }).showToast();
+          Toastify({ text: "Cancelamento confirmado e registro removido!", duration: 3000, backgroundColor: "#22c55e" }).showToast();
           carregarCancelamentosPendentes(uid);
       } catch (error) {
           console.error("Erro ao excluir agendamento:", error);
@@ -178,7 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnFecharModal.addEventListener('click', fecharModalConfirmacao);
   }
 
-  // Event delegation para os botões de ação na lista de pendentes
   listaCancelamentosPendentes.addEventListener('click', (event) => {
       const target = event.target;
       const agendamentoId = target.dataset.id;
