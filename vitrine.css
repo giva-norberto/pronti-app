@@ -1,10 +1,16 @@
+/* vitrine.css - Versão com Layout Melhorado, baseado no seu estilo original */
+
 :root {
   --cor-fundo: #f5f7fa;
   --cor-primaria: #6366f1;
   --cor-primaria-leve: #a5b4fc;
   --cor-texto-leve: #4b5563;
   --cor-sucesso: #22c55e;
+  --cor-branco: #ffffff;
+  --cor-texto: #1f2937;
+  --sombra: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -14,26 +20,36 @@ body {
   justify-content: center;
   padding: 20px;
 }
+
 main.main-content {
-  max-width: 700px;
+  max-width: 650px; /* Um pouco mais estreito para melhor leitura */
   width: 100%;
-  background: white;
+  /* Removemos o fundo e a sombra do container principal para aplicar nos cards internos */
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* Estilos dos Cards */
+.card {
+  background: var(--cor-branco);
   border-radius: 12px;
   padding: 25px 30px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--sombra);
+  margin-bottom: 25px; /* Espaçamento entre os cards */
 }
+
 .header-vitrine {
   text-align: center;
-  margin-bottom: 30px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 20px;
+  padding-bottom: 0; /* Removido para simplificar */
+  border-bottom: none;
 }
 .header-vitrine img {
   width: 100px;
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--cor-primaria-leve);
+  border: 4px solid var(--cor-primaria-leve);
   margin-bottom: 10px;
 }
 .header-vitrine h1 {
@@ -45,146 +61,140 @@ main.main-content {
   margin: 5px 0 0;
   color: var(--cor-texto-leve);
 }
+
 h2 {
-  font-size: 1.3em;
-  margin-bottom: 15px;
-  border-bottom: 2px solid var(--cor-primaria-leve);
+  font-size: 1.4em;
   padding-bottom: 10px;
+  border-bottom: 2px solid var(--cor-primaria-leve);
   color: var(--cor-primaria);
+  margin-top: 0;
 }
+
 .form-group {
   margin-bottom: 25px;
 }
 label {
   display: block;
-  font-weight: bold;
+  font-weight: 600; /* Um pouco mais forte */
   margin-bottom: 8px;
-  color: var(--cor-primaria);
+  color: var(--cor-texto); /* Cor de texto padrão para melhor contraste */
 }
-#lista-servicos, #grade-horarios {
+
+/* Botões de Serviço (melhorados) */
+#lista-servicos {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
 }
-.btn-servico, .btn-horario {
-  background: #e0e7ff;
-  border: 1px solid var(--cor-primaria-leve);
+.btn-servico {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
   border-radius: 8px;
-  padding: 10px 15px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.btn-servico:hover {
+  border-color: var(--cor-primaria);
+  background-color: #f9f9ff;
+}
+.btn-servico.selecionado {
+  border-color: var(--cor-primaria);
+  background-color: var(--cor-primaria);
+  color: var(--cor-branco);
+}
+.btn-servico .preco {
+  color: var(--cor-texto-leve);
+}
+.btn-servico.selecionado .preco {
+  color: var(--cor-branco);
+}
+
+/* Grade de Horários (melhorada) */
+#grade-horarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+.btn-horario {
+  background: var(--cor-primaria-leve);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
   cursor: pointer;
   color: var(--cor-primaria);
   font-weight: 600;
   transition: all 0.2s ease;
 }
-.btn-servico.selecionado, .btn-horario.selecionado,
-.btn-servico:hover, .btn-horario:hover {
+.btn-horario:hover {
+  background-color: #c7d2fe;
+}
+.btn-horario.selecionado {
   background: var(--cor-primaria);
-  color: white;
-  border-color: var(--cor-primaria);
+  color: var(--cor-branco);
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
-.detalhes-servico {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  margin-top: 5px;
-  border-left: 3px solid var(--cor-primaria);
-}
+
+/* Inputs e Botões */
 input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   font-size: 1em;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
   box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+input:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
+}
+button {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.1em;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+button:hover {
+    transform: translateY(-2px);
 }
 button#btn-confirmar-agendamento {
   background: var(--cor-sucesso);
-  border: none;
-  padding: 12px 18px;
-  color: white;
-  font-size: 1.1em;
-  font-weight: 700;
-  border-radius: 8px;
-  width: 100%;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  color: var(--cor-branco);
+  margin-top: 15px;
 }
-button#btn-confirmar-agendamento:disabled {
+button:disabled {
   background: #a7f3d0;
   cursor: not-allowed;
+  transform: none;
 }
-.btn-flutuante {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: var(--cor-primaria);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    padding: 15px 20px;
-    font-size: 16px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    cursor: pointer;
-    z-index: 1000;
+.btn-verificar-agendamentos {
+  background-color: var(--cor-texto-leve);
+  color: var(--cor-branco);
+  margin-top: 10px;
 }
-.saudacao {
-    max-width: 700px;
-    margin: 0 auto 15px auto;
-    text-align: center;
-    padding: 10px;
-    background-color: #e7f3ff;
-    border: 1px solid #cce5ff;
-    color: #004085;
-    border-radius: 8px;
-    font-weight: 500;
-}
-.modal {
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-.modal-content {
-    background-color: #fefefe;
-    padding: 25px 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 400px;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-.modal-content h3 { color: var(--cor-primaria); }
-.modal-content button {
-    width: 100%;
-    margin-top: 15px;
-    background: var(--cor-primaria);
-    border: none;
-    padding: 12px;
-    color: white;
-    font-size: 1.1em;
-    border-radius: 8px;
-    cursor: pointer;
-}
-.fechar-modal {
-    color: #aaa;
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
+
+/* Seção Meus Agendamentos */
+#agendamentos-cliente-container {
+    display: none; /* Começa escondido */
 }
 #agendamentos-cliente .agendamento-item {
   padding: 15px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
+  margin-bottom: 10px;
+  border: 1px solid #eee;
   border-radius: 8px;
   background: #f9f9f9;
   display: flex;
@@ -195,51 +205,7 @@ button#btn-confirmar-agendamento:disabled {
     background-color: #ef4444;
     color: white;
     border: none;
-    padding: 5px 10px;
+    padding: 8px 12px;
     border-radius: 5px;
     cursor: pointer;
-}
-.btn-verificar-agendamentos {
-    background: var(--cor-primaria);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
-}
-.notification-message {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    z-index: 1002;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
-}
-.notification-message.error {
-    background-color: #f44336;
-}
-.pin-input-group {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-}
-.pin-input-group label {
-    font-size: 0.9em;
-    color: #495057;
-    margin-bottom: 5px;
-}
-.pin-input-group small {
-    color: #6c757d;
-    font-size: 0.8em;
-    display: block;
-    margin-top: 5px;
 }
