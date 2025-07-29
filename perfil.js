@@ -138,7 +138,6 @@ async function handleFormSubmit(event) {
     }
     
     try {
-        // --- MUDANÇA CRÍTICA: Verifica se o slug está disponível ---
         const slugDisponivel = await verificarDisponibilidadeSlug(slugAtual);
         if (!slugDisponivel) {
             throw new Error(`A URL "${slugAtual}" já está em uso. Por favor, escolha outra.`);
@@ -148,15 +147,17 @@ async function handleFormSubmit(event) {
         await salvarDadosDoPerfil(slugAtual);
         await salvarHorarios();
         
-        // Se o slug foi alterado, o slug original precisa ser removido
         if (slugOriginal && slugOriginal !== slugAtual) {
             const batch = writeBatch(db);
             const slugAntigoRef = doc(db, "slugs", slugOriginal);
             batch.delete(slugAntigoRef);
             await batch.commit();
         }
-        slugOriginal = slugAtual; // Atualiza o slug original
+        slugOriginal = slugAtual;
 
+        // ***** ÚNICA ALTERAÇÃO ESTÁ NESTA LINHA *****
+        localStorage.setItem('prontiUserSlug', slugAtual);
+        
         alert("Todas as configurações foram salvas com sucesso!");
 
     } catch (error) {
@@ -171,13 +172,12 @@ async function handleFormSubmit(event) {
 }
 
 async function verificarDisponibilidadeSlug(slug) {
-    // Se o slug não mudou, ele já pertence ao usuário. Está disponível.
     if (slug === slugOriginal) {
         return true;
     }
     const slugRef = doc(db, "slugs", slug);
     const docSnap = await getDoc(slugRef);
-    return !docSnap.exists(); // Retorna true se NÃO existir (está disponível)
+    return !docSnap.exists();
 }
 
 async function salvarDadosDoPerfil(slug) {
@@ -198,23 +198,16 @@ async function salvarDadosDoPerfil(slug) {
         slug,
         descricao: descricaoInput.value.trim(),
         logoUrl,
-        ownerId: uid // Importante para referência interna
+        ownerId: uid
     };
 
-    // --- OTIMIZAÇÃO: Usando WriteBatch para operações atômicas ---
     const batch = writeBatch(db);
-    
-    // Salva o perfil privado do usuário
     const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
-    batch.set(perfilPrivadoRef, perfilData);
-
-    // Salva o documento público na coleção de slugs para busca rápida
+    batch.set(perfilPrivadoRef, perfilData, { merge: true });
     const slugPublicoRef = doc(db, "slugs", slug);
     batch.set(slugPublicoRef, { uid: uid });
-
     await batch.commit();
 }
-
 
 async function salvarHorarios() {
     const horariosData = { intervalo: parseInt(intervaloSelect.value, 10) };
@@ -231,12 +224,10 @@ async function salvarHorarios() {
         }
         horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
     });
-
     const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
     await setDoc(horariosRef, horariosData);
 }
 
-// --- FUNÇÕES AUXILIARES E DE GERAÇÃO DE UI ---
 function gerarSlug(texto) {
     if (!texto) return "";
     return texto.toString().toLowerCase().trim()
@@ -275,16 +266,12 @@ function gerarEstruturaDosDias() {
             </div>
         `;
         diasContainer.appendChild(divDia);
-        // Adiciona um bloco padrão inicial, que será limpo se houver dados salvos
         adicionarBlocoDeHorario(dia.id); 
-
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
         toggleAtivo.addEventListener('change', (e) => {
             document.getElementById(`container-${dia.id}`).style.display = e.target.checked ? 'block' : 'none';
         });
     });
-    
-    // Adiciona o listener de evento aos botões DEPOIS que todos foram criados
     diasContainer.addEventListener('click', function(e) {
         if (e.target.classList.contains('btn-adicionar-bloco')) {
             adicionarBlocoDeHorario(e.target.dataset.dia);
