@@ -581,3 +581,44 @@ h1, h2, h3 {
 .btn-vitrine:hover {
   background-color: #d32f2f;
 }
+/* --- Estilos para Cancelamentos Pendentes --- */
+
+.agendamento-item.cancelamento-pendente {
+  background-color: #fff3e0; /* Tom de laranja claro */
+  border-left: 5px solid #ff9800; /* Borda laranja */
+}
+
+.data-cancelamento {
+  font-size: 0.9em;
+  color: #616161;
+  margin-top: 5px;
+}
+
+.botoes-pendentes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.botoes-pendentes button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.botoes-pendentes button:hover {
+  opacity: 0.8;
+}
+
+.btn-reativar {
+  background-color: #4CAF50; /* Verde */
+  color: white;
+}
+
+.btn-confirmar-exclusao {
+  background-color: #f44336; /* Vermelho */
+  color: white;
+}
