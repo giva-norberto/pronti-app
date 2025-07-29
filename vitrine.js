@@ -19,12 +19,21 @@ let profissionalUid = null;
 let servicoSelecionado = null;
 let horarioSelecionado = null;
 let horariosConfig = {};
+let menuAtivo = 'informacoes'; // Menu inicial
 
+// Elementos do DOM
 const loader = document.getElementById("vitrine-loader");
 const content = document.getElementById("vitrine-content");
 const nomeNegocioEl = document.getElementById("nome-negocio-publico");
 const dataAtualEl = document.getElementById("data-atual");
 const logoEl = document.getElementById("logo-publico");
+const notificationMessageEl = document.getElementById("notification-message");
+
+// Elementos dos menus
+const menuButtons = document.querySelectorAll('.menu-btn');
+const menuContents = document.querySelectorAll('.menu-content');
+
+// Elementos do menu de agendamento
 const servicosContainer = document.getElementById("lista-servicos");
 const dataInput = document.getElementById("data-agendamento");
 const horariosContainer = document.getElementById("grade-horarios");
@@ -32,18 +41,22 @@ const nomeClienteInput = document.getElementById("nome-cliente");
 const telefoneClienteInput = document.getElementById("telefone-cliente");
 const pinClienteInput = document.getElementById("pin-cliente");
 const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
-const btnPrimeiroAcesso = document.getElementById("btn-primeiro-acesso");
-const saudacaoClienteEl = document.getElementById("saudacao-cliente");
-const modalAcesso = document.getElementById("modal-primeiro-acesso");
-const btnSalvarDadosModal = document.getElementById("btn-salvar-dados-cliente");
-const agendamentosClienteContainer = document.getElementById("agendamentos-cliente-container"); // Corrigido para o ID do container
-const listaMeusAgendamentosEl = document.getElementById("lista-meus-agendamentos");
-const notificationMessageEl = document.getElementById("notification-message");
-const btnVerificarAgendamentos = document.getElementById("btn-verificar-agendamentos");
-const modalVerificarAgendamentos = document.getElementById("modal-verificar-agendamentos");
-const btnVerificarAgendamentosModal = document.getElementById("btn-verificar-agendamentos-modal");
-const inputTelefoneVerificar = document.getElementById("input-telefone-verificar");
-const inputPinVerificar = document.getElementById("input-pin-verificar");
+
+// Elementos do menu de visualização
+const inputTelefoneVisualizacao = document.getElementById("input-telefone-visualizacao");
+const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
+const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
+
+// Elementos do menu de cancelamento
+const inputTelefoneCancelamento = document.getElementById("input-telefone-cancelamento");
+const inputPinCancelamento = document.getElementById("input-pin-cancelamento");
+const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
+const listaAgendamentosCancelamento = document.getElementById("lista-agendamentos-cancelamento");
+
+// Elementos do menu de informações
+const infoNegocio = document.getElementById("info-negocio");
+const infoServicos = document.getElementById("info-servicos");
+const infoContato = document.getElementById("info-contato");
 
 function showNotification(message, isError = false) {
     notificationMessageEl.textContent = message;
@@ -66,8 +79,7 @@ async function gerarHashSHA256(texto) {
   const data = encoder.encode(texto);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function validarPIN(pin) {
@@ -79,6 +91,42 @@ function validarPIN(pin) {
     return { valido: false, erro: 'PIN muito simples. Escolha uma combinação mais segura.' };
   }
   return { valido: true };
+}
+
+function limparTelefone(telefone) {
+    return telefone ? telefone.replace(/\D/g, '') : "";
+}
+
+// Função para alternar entre menus
+function alternarMenu(novoMenu) {
+    // Remove classe ativa de todos os botões
+    menuButtons.forEach(btn => btn.classList.remove('ativo'));
+    
+    // Remove classe ativa de todos os conteúdos
+    menuContents.forEach(content => content.classList.remove('ativo'));
+    
+    // Adiciona classe ativa ao botão e conteúdo selecionados
+    document.querySelector(`[data-menu="${novoMenu}"]`).classList.add('ativo');
+    document.getElementById(`menu-${novoMenu}`).classList.add('ativo');
+    
+    menuAtivo = novoMenu;
+    
+    // Executa ações específicas do menu
+    switch(novoMenu) {
+        case 'agendamento':
+            carregarServicos();
+            configurarFormularioAgendamento();
+            break;
+        case 'visualizacao':
+            limparVisualizacao();
+            break;
+        case 'cancelamento':
+            limparCancelamento();
+            break;
+        case 'informacoes':
+            carregarInformacoesCompletas();
+            break;
+    }
 }
 
 async function inicializarVitrine() {
@@ -96,13 +144,12 @@ async function inicializarVitrine() {
         }
         await Promise.all([
             carregarPerfilPublico(),
-            carregarConfiguracoesHorario(),
-            carregarServicos()
+            carregarConfiguracoesHorario()
         ]);
         loader.style.display = 'none';
         content.style.display = 'block';
         configurarEventosGerais();
-        gerenciarSessaoDoCliente();
+        alternarMenu('informacoes'); // Menu inicial
     } catch (error) {
         console.error("Erro ao inicializar a vitrine:", error);
         loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página deste profissional.</p>`;
@@ -110,6 +157,22 @@ async function inicializarVitrine() {
 }
 
 function configurarEventosGerais() {
+    // Configurar eventos dos botões de menu
+    menuButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const menu = e.target.dataset.menu;
+            alternarMenu(menu);
+        });
+    });
+    
+    // Configurar eventos do menu de visualização
+    btnVisualizarAgendamentos.addEventListener('click', visualizarAgendamentosSemPIN);
+    
+    // Configurar eventos do menu de cancelamento
+    btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelamento);
+}
+
+function configurarFormularioAgendamento() {
     dataInput.value = new Date().toISOString().split('T')[0];
     dataInput.min = new Date().toISOString().split('T')[0];
     dataInput.addEventListener('change', gerarHorariosDisponiveis);
@@ -117,56 +180,6 @@ function configurarEventosGerais() {
     telefoneClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
     pinClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
     btnConfirmar.addEventListener('click', salvarAgendamentoComPIN);
-    btnVerificarAgendamentos.addEventListener('click', () => {
-        modalVerificarAgendamentos.style.display = 'flex';
-    });
-    btnVerificarAgendamentosModal.addEventListener('click', verificarAgendamentosComPIN);
-    document.querySelectorAll('.fechar-modal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.target.closest('.modal').style.display = 'none';
-        });
-    });
-}
-
-function limparTelefone(telefone) {
-    return telefone ? telefone.replace(/\D/g, '') : "";
-}
-
-function gerenciarSessaoDoCliente() {
-    const dadosCliente = JSON.parse(localStorage.getItem('dadosClientePronti'));
-    if (dadosCliente && dadosCliente.telefone) {
-        iniciarSessaoIdentificada(dadosCliente);
-    } else {
-        configurarPrimeiroAcesso();
-    }
-}
-
-function iniciarSessaoIdentificada(dadosCliente) {
-    btnPrimeiroAcesso.style.display = 'none';
-    saudacaoClienteEl.innerHTML = `Olá, <strong>${dadosCliente.nome}</strong>! Bem-vindo(a) de volta.`;
-    saudacaoClienteEl.style.display = 'block';
-    nomeClienteInput.value = dadosCliente.nome;
-    telefoneClienteInput.value = dadosCliente.telefone;
-    verificarEstadoBotaoConfirmar();
-}
-
-function configurarPrimeiroAcesso() {
-    btnPrimeiroAcesso.style.display = 'block';
-    btnPrimeiroAcesso.addEventListener('click', () => modalAcesso.style.display = 'flex');
-    modalAcesso.querySelector('.fechar-modal').addEventListener('click', () => modalAcesso.style.display = 'none');
-    btnSalvarDadosModal.addEventListener('click', () => {
-        const nome = inputNomeModal.value.trim();
-        const telefone = inputTelefoneModal.value;
-        const telefoneLimpo = limparTelefone(telefone);
-        if (nome && telefoneLimpo.length >= 10) {
-            const dadosCliente = { nome, telefone: telefoneLimpo };
-            localStorage.setItem('dadosClientePronti', JSON.stringify(dadosCliente));
-            modalAcesso.style.display = 'none';
-            iniciarSessaoIdentificada(dadosCliente);
-        } else {
-            showNotification("Por favor, preencha seu nome e um telefone válido.", true);
-        }
-    });
 }
 
 async function encontrarUidPeloSlug(slug) {
@@ -189,10 +202,26 @@ async function carregarPerfilPublico() {
 async function carregarConfiguracoesHorario() {
     const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
     const docSnap = await getDoc(horariosRef);
+    const configPadrao = {
+        intervalo: 30,
+        dom: { ativo: false, inicio: "09:00", fim: "12:00" },
+        seg: { ativo: true, inicio: "09:00", fim: "18:00" },
+        ter: { ativo: true, inicio: "09:00", fim: "18:00" },
+        qua: { ativo: true, inicio: "09:00", fim: "18:00" },
+        qui: { ativo: true, inicio: "09:00", fim: "18:00" },
+        sex: { ativo: true, inicio: "09:00", fim: "18:00" },
+        sab: { ativo: false, inicio: "09:00", fim: "12:00" }
+    };
     if (docSnap.exists()) {
-        horariosConfig = docSnap.data();
+        const dadosDoFirebase = docSnap.data();
+        horariosConfig = { ...configPadrao, ...dadosDoFirebase };
+        for (const dia of Object.keys(configPadrao)) {
+            if (dia !== 'intervalo') {
+                horariosConfig[dia] = { ...configPadrao[dia], ...dadosDoFirebase[dia] };
+            }
+        }
     } else {
-        console.warn("Nenhuma configuração de horário encontrada para este profissional.");
+        horariosConfig = configPadrao;
     }
 }
 
@@ -200,9 +229,11 @@ async function carregarServicos() {
     servicosContainer.innerHTML = '';
     const servicosRef = collection(db, "users", profissionalUid, "servicos");
     const snapshot = await getDocs(servicosRef);
+    let servicosVisiveisEncontrados = 0;
     snapshot.docs.forEach(docSnapshot => {
         const servico = { id: docSnapshot.id, ...docSnapshot.data() };
         if (servico.visivelNaVitrine !== false) {
+            servicosVisiveisEncontrados++;
             const card = document.createElement('div');
             card.className = 'servico-card';
             card.innerHTML = `
@@ -216,9 +247,56 @@ async function carregarServicos() {
                 </div>
             `;
             servicosContainer.appendChild(card);
-            card.querySelector('.btn-servico').addEventListener('click', (e) => selecionarServico(servico, e.currentTarget));
+            const btnServico = card.querySelector('.btn-servico');
+            btnServico.addEventListener('click', () => selecionarServico(servico, btnServico));
         }
     });
+    if (servicosVisiveisEncontrados === 0) {
+        servicosContainer.innerHTML = '<p>Nenhum serviço disponível no momento.</p>';
+    }
+}
+
+async function carregarInformacoesCompletas() {
+    // Carregar informações do negócio
+    const perfilRef = doc(db, "users", profissionalUid, "publicProfile", "profile");
+    const perfilSnap = await getDoc(perfilRef);
+    
+    if (perfilSnap.exists()) {
+        const perfil = perfilSnap.data();
+        infoNegocio.innerHTML = `
+            <h3>${perfil.nomeNegocio || 'Nome não definido'}</h3>
+            <p><strong>Descrição:</strong> ${perfil.descricao || 'Não informada'}</p>
+            <p><strong>Endereço:</strong> ${perfil.endereco || 'Não informado'}</p>
+        `;
+        
+        if (perfil.telefone || perfil.email || perfil.instagram) {
+            infoContato.innerHTML = `
+                <h4>Contato</h4>
+                ${perfil.telefone ? `<p><strong>Telefone:</strong> ${perfil.telefone}</p>` : ''}
+                ${perfil.email ? `<p><strong>Email:</strong> ${perfil.email}</p>` : ''}
+                ${perfil.instagram ? `<p><strong>Instagram:</strong> @${perfil.instagram}</p>` : ''}
+            `;
+        }
+    }
+    
+    // Carregar lista de serviços para informações
+    const servicosRef = collection(db, "users", profissionalUid, "servicos");
+    const servicosSnap = await getDocs(servicosRef);
+    
+    let servicosInfo = '<h4>Serviços Oferecidos</h4>';
+    servicosSnap.docs.forEach(docSnapshot => {
+        const servico = docSnapshot.data();
+        if (servico.visivelNaVitrine !== false) {
+            servicosInfo += `
+                <div class="servico-info">
+                    <p><strong>${servico.nome}</strong> - R$ ${parseFloat(servico.preco).toFixed(2)}</p>
+                    <p>${servico.descricao || 'Sem descrição'}</p>
+                    <p><em>Duração: ${servico.duracao || 'Não informada'} minutos</em></p>
+                </div>
+            `;
+        }
+    });
+    infoServicos.innerHTML = servicosInfo;
 }
 
 function selecionarServico(servico, btnElement) {
@@ -226,7 +304,7 @@ function selecionarServico(servico, btnElement) {
     btnElement.classList.add('selecionado');
     servicoSelecionado = servico;
     document.querySelectorAll('.detalhes-servico').forEach(div => div.style.display = 'none');
-    btnElement.nextElementSibling.style.display = 'block';
+    document.getElementById(`detalhes-${servico.id}`).style.display = 'block';
     verificarEstadoBotaoConfirmar();
     gerarHorariosDisponiveis();
 }
@@ -273,7 +351,6 @@ async function buscarAgendamentosData(data) {
 function gerarListaHorarios(data, agendamentosOcupados) {
     const dataObj = new Date(data + 'T00:00:00Z');
     const diaSemana = dataObj.getUTCDay();
-    // --- ÚNICA ALTERAÇÃO ESTÁ AQUI ---
     const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
     const nomeDia = nomesDias[diaSemana];
     const configDia = horariosConfig[nomeDia];
@@ -359,12 +436,10 @@ async function salvarAgendamentoComPIN() {
         };
         const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
         await addDoc(agendamentosRef, agendamento);
-        showNotification(`Agendamento confirmado!`);
-        const dadosCliente = { 
-            nome: nomeClienteInput.value.trim(), 
-            telefone: telefoneLimpo 
-        };
-        localStorage.setItem('dadosClientePronti', JSON.stringify(dadosCliente));
+        
+        // Exibir PIN na tela para o cliente
+        showNotification(`Agendamento confirmado! Seu PIN para cancelamento é: ${pin}. Anote este número!`);
+        
         resetarFormulario();
         gerarHorariosDisponiveis();
     } catch (error) {
@@ -376,9 +451,72 @@ async function salvarAgendamentoComPIN() {
     }
 }
 
-async function verificarAgendamentosComPIN() {
-    const telefone = limparTelefone(inputTelefoneVerificar.value);
-    const pin = inputPinVerificar.value.trim();
+// NOVA FUNÇÃO: Visualizar agendamentos SEM PIN
+async function visualizarAgendamentosSemPIN() {
+    const telefone = limparTelefone(inputTelefoneVisualizacao.value);
+    if (!telefone || telefone.length < 10) {
+        showNotification("Digite um telefone válido.", true);
+        return;
+    }
+    
+    try {
+        const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
+        const q = query(agendamentosRef, where("clienteTelefone", "==", telefone));
+        const snapshot = await getDocs(q);
+        
+        if (snapshot.empty) {
+            listaAgendamentosVisualizacao.innerHTML = '<p>Nenhum agendamento encontrado para este telefone.</p>';
+            return;
+        }
+        
+        const agendamentos = [];
+        snapshot.forEach(docSnapshot => {
+            const agendamento = { id: docSnapshot.id, ...docSnapshot.data() };
+            agendamentos.push(agendamento);
+        });
+        
+        exibirAgendamentosVisualizacao(agendamentos);
+        
+    } catch (error) {
+        console.error("Erro ao buscar agendamentos:", error);
+        showNotification("Erro ao buscar agendamentos. Tente novamente.", true);
+    }
+}
+
+function exibirAgendamentosVisualizacao(agendamentos) {
+    listaAgendamentosVisualizacao.innerHTML = '';
+    
+    agendamentos.forEach(agendamento => {
+        let dataFormatada = "Data inválida";
+        if(agendamento.horario && typeof agendamento.horario.toDate === 'function') {
+            const data = agendamento.horario.toDate();
+            dataFormatada = data.toLocaleDateString('pt-BR', {timeZone: 'UTC'}) + ', ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+        }
+        
+        const statusTexto = agendamento.status === 'agendado' ? 'Confirmado' : 
+                           agendamento.status === 'cancelamento_solicitado' ? 'Cancelamento Solicitado' : 
+                           agendamento.status;
+        
+        const agendamentoDiv = document.createElement('div');
+        agendamentoDiv.className = 'agendamento-item-visualizacao';
+        agendamentoDiv.innerHTML = `
+            <div class="agendamento-info">
+                <h4>${agendamento.servicoNome}</h4>
+                <p><strong>Data e Hora:</strong> ${dataFormatada}</p>
+                <p><strong>Cliente:</strong> ${agendamento.clienteNome}</p>
+                <p><strong>Preço:</strong> R$ ${parseFloat(agendamento.servicoPreco).toFixed(2)}</p>
+                <p><strong>Status:</strong> ${statusTexto}</p>
+            </div>
+        `;
+        listaAgendamentosVisualizacao.appendChild(agendamentoDiv);
+    });
+}
+
+// NOVA FUNÇÃO: Buscar agendamentos para cancelamento (COM PIN)
+async function buscarAgendamentosParaCancelamento() {
+    const telefone = limparTelefone(inputTelefoneCancelamento.value);
+    const pin = inputPinCancelamento.value.trim();
+    
     if (!telefone || telefone.length < 10) {
         showNotification("Digite um telefone válido.", true);
         return;
@@ -387,34 +525,38 @@ async function verificarAgendamentosComPIN() {
         showNotification("Digite um PIN válido.", true);
         return;
     }
+    
     try {
         const pinHash = await gerarHashSHA256(pin);
         const agendamentosRef = collection(db, "users", profissionalUid, "agendamentos");
         const q = query(agendamentosRef, where("clienteTelefone", "==", telefone));
         const snapshot = await getDocs(q);
+        
         const agendamentosEncontrados = [];
         snapshot.forEach(docSnapshot => {
             const agendamento = { id: docSnapshot.id, ...docSnapshot.data() };
-            if (agendamento.pinHash === pinHash) {
+            if (agendamento.pinHash === pinHash && agendamento.status === 'agendado') {
                 agendamentosEncontrados.push(agendamento);
             }
         });
+        
         if (agendamentosEncontrados.length === 0) {
-            showNotification("Nenhum agendamento encontrado com esses dados.", true);
+            showNotification("Nenhum agendamento encontrado com esses dados ou PIN incorreto.", true);
+            listaAgendamentosCancelamento.innerHTML = '';
             return;
         }
-        exibirAgendamentosFrontend(agendamentosEncontrados);
-        modalVerificarAgendamentos.style.display = 'none';
-        inputTelefoneVerificar.value = '';
-        inputPinVerificar.value = '';
+        
+        exibirAgendamentosCancelamento(agendamentosEncontrados);
+        
     } catch (error) {
-        console.error("Erro ao verificar agendamentos:", error);
-        showNotification("Erro ao verificar agendamentos. Tente novamente.", true);
+        console.error("Erro ao buscar agendamentos:", error);
+        showNotification("Erro ao buscar agendamentos. Tente novamente.", true);
     }
 }
 
-function exibirAgendamentosFrontend(agendamentos) {
-    listaMeusAgendamentosEl.innerHTML = '';
+function exibirAgendamentosCancelamento(agendamentos) {
+    listaAgendamentosCancelamento.innerHTML = '';
+    
     agendamentos.forEach(agendamento => {
         let dataFormatada = "Data inválida";
         if(agendamento.horario && typeof agendamento.horario.toDate === 'function') {
@@ -423,38 +565,36 @@ function exibirAgendamentosFrontend(agendamentos) {
         }
         
         const agendamentoDiv = document.createElement('div');
-        agendamentoDiv.className = 'agendamento-item';
+        agendamentoDiv.className = 'agendamento-item-cancelamento';
         agendamentoDiv.innerHTML = `
-            <div>
-                <strong>${agendamento.servicoNome}</strong><br>
-                <span>${dataFormatada}</span>
+            <div class="agendamento-info">
+                <h4>${agendamento.servicoNome}</h4>
+                <p><strong>Data e Hora:</strong> ${dataFormatada}</p>
+                <p><strong>Cliente:</strong> ${agendamento.clienteNome}</p>
+                <p><strong>Preço:</strong> R$ ${parseFloat(agendamento.servicoPreco).toFixed(2)}</p>
             </div>
-            <button class="btn-cancelar" data-agendamento-id="${agendamento.id}" data-pin-hash="${agendamento.pinHash}">
-                Cancelar
+            <button class="btn-cancelar-agendamento" data-agendamento-id="${agendamento.id}">
+                Cancelar Agendamento
             </button>
         `;
-        listaMeusAgendamentosEl.appendChild(agendamentoDiv);
+        listaAgendamentosCancelamento.appendChild(agendamentoDiv);
     });
-    listaMeusAgendamentosEl.addEventListener('click', function(event) {
-        if (event.target && event.target.classList.contains('btn-cancelar')) {
+    
+    // Adicionar eventos aos botões de cancelamento
+    listaAgendamentosCancelamento.addEventListener('click', function(event) {
+        if (event.target && event.target.classList.contains('btn-cancelar-agendamento')) {
             const agendamentoId = event.target.dataset.agendamentoId;
-            const pinHashOriginal = event.target.dataset.pinHash;
-            cancelarAgendamentoFrontend(agendamentoId, pinHashOriginal);
+            cancelarAgendamento(agendamentoId);
         }
     });
-    agendamentosClienteContainer.style.display = 'block';
 }
 
-async function cancelarAgendamentoFrontend(agendamentoId, pinHashOriginal) {
-    const pin = prompt("Digite seu PIN para confirmar o cancelamento:");
-    if (!pin) return;
+async function cancelarAgendamento(agendamentoId) {
+    if (!confirm("Tem certeza que deseja cancelar este agendamento?")) {
+        return;
+    }
+    
     try {
-        const pinHash = await gerarHashSHA256(pin);
-        if (pinHash !== pinHashOriginal) {
-            showNotification("PIN incorreto.", true);
-            return;
-        }
-        
         const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", agendamentoId);
         await updateDoc(agendamentoRef, {
             status: 'cancelamento_solicitado',
@@ -462,25 +602,40 @@ async function cancelarAgendamentoFrontend(agendamentoId, pinHashOriginal) {
             canceladoPor: 'Cliente'
         });
 
-        showNotification("Solicitação de cancelamento enviada!");
+        showNotification("Solicitação de cancelamento enviada com sucesso!");
         
-        const itemParaRemover = listaMeusAgendamentosEl.querySelector(`[data-agendamento-id="${agendamentoId}"]`).closest('.agendamento-item');
+        // Remover o item da lista
+        const itemParaRemover = listaAgendamentosCancelamento.querySelector(`[data-agendamento-id="${agendamentoId}"]`).closest('.agendamento-item-cancelamento');
         if (itemParaRemover) {
             itemParaRemover.remove();
         }
-        if (listaMeusAgendamentosEl.children.length === 0) {
-             listaMeusAgendamentosEl.innerHTML = '<p>Nenhum agendamento restante.</p>';
+        
+        if (listaAgendamentosCancelamento.children.length === 0) {
+            listaAgendamentosCancelamento.innerHTML = '<p>Nenhum agendamento disponível para cancelamento.</p>';
         }
-        gerarHorariosDisponiveis();
+        
     } catch (error) {
         console.error("Erro ao cancelar agendamento:", error);
         showNotification("Erro ao cancelar agendamento. Tente novamente.", true);
     }
 }
 
+function limparVisualizacao() {
+    inputTelefoneVisualizacao.value = '';
+    listaAgendamentosVisualizacao.innerHTML = '';
+}
+
+function limparCancelamento() {
+    inputTelefoneCancelamento.value = '';
+    inputPinCancelamento.value = '';
+    listaAgendamentosCancelamento.innerHTML = '';
+}
+
 function resetarFormulario() {
     servicoSelecionado = null;
     horarioSelecionado = null;
+    nomeClienteInput.value = '';
+    telefoneClienteInput.value = '';
     pinClienteInput.value = '';
     document.querySelectorAll('.btn-servico').forEach(btn => btn.classList.remove('selecionado'));
     document.querySelectorAll('.btn-horario').forEach(btn => btn.classList.remove('selecionado'));
