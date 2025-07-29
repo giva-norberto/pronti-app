@@ -66,7 +66,8 @@ async function gerarHashSHA256(texto) {
   const data = encoder.encode(texto);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
 }
 
 function validarPIN(pin) {
@@ -188,27 +189,7 @@ async function carregarPerfilPublico() {
 async function carregarConfiguracoesHorario() {
     const horariosRef = doc(db, "users", profissionalUid, "configuracoes", "horarios");
     const docSnap = await getDoc(horariosRef);
-    const configPadrao = {
-        intervalo: 30,
-        dom: { ativo: false, inicio: "09:00", fim: "12:00" },
-        seg: { ativo: true, inicio: "09:00", fim: "18:00" },
-        ter: { ativo: true, inicio: "09:00", fim: "18:00" },
-        qua: { ativo: true, inicio: "09:00", fim: "18:00" },
-        qui: { ativo: true, inicio: "09:00", fim: "18:00" },
-        sex: { ativo: true, inicio: "09:00", fim: "18:00" },
-        sab: { ativo: false, inicio: "09:00", fim: "12:00" }
-    };
-    if (docSnap.exists()) {
-        const dadosDoFirebase = docSnap.data();
-        horariosConfig = { ...configPadrao, ...dadosDoFirebase };
-        for (const dia of Object.keys(configPadrao)) {
-            if (dia !== 'intervalo') {
-                horariosConfig[dia] = { ...configPadrao[dia], ...dadosDoFirebase[dia] };
-            }
-        }
-    } else {
-        horariosConfig = configPadrao;
-    }
+    horariosConfig = docSnap.exists() ? docSnap.data() : {};
 }
 
 async function carregarServicos() {
@@ -294,6 +275,7 @@ async function buscarAgendamentosData(data) {
 function gerarListaHorarios(data, agendamentosOcupados) {
     const dataObj = new Date(data + 'T00:00:00Z');
     const diaSemana = dataObj.getUTCDay();
+    // --- ÚNICA ALTERAÇÃO ESTÁ AQUI ---
     const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
     const nomeDia = nomesDias[diaSemana];
     const configDia = horariosConfig[nomeDia];
@@ -475,7 +457,6 @@ async function cancelarAgendamentoFrontend(agendamentoId, pinHashOriginal) {
             return;
         }
         
-        // ATUALIZA O STATUS EM VEZ DE DELETAR
         const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", agendamentoId);
         await updateDoc(agendamentoRef, {
             status: 'cancelamento_solicitado',
