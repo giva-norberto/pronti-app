@@ -332,7 +332,6 @@ function selecionarServico(servico, btnElement) {
     verificarEstadoBotaoConfirmar();
     gerarHorariosDisponiveis();
 }
-
 async function gerarHorariosDisponiveis() {
     if (!dataInput || !dataInput.value || !servicoSelecionado) {
         if(horariosContainer) horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>';
@@ -477,10 +476,10 @@ async function salvarAgendamentoComPIN() {
         }
     }
 }
-
 // --- Funções da Aba de Visualização ---
 
 async function visualizarAgendamentosSemPIN() {
+    if (!inputTelefoneVisualizacao) return;
     const telefone = limparTelefone(inputTelefoneVisualizacao.value);
     if (!telefone || telefone.length < 10) {
         showNotification("Digite um telefone válido.", true);
@@ -544,6 +543,7 @@ function exibirAgendamentosVisualizacao(agendamentos) {
 // --- Funções da Aba de Cancelamento ---
 
 async function buscarAgendamentosParaCancelamento() {
+    if (!inputTelefoneCancelamento || !inputPinCancelamento) return;
     const telefone = limparTelefone(inputTelefoneCancelamento.value);
     const pin = inputPinCancelamento.value.trim();
     
@@ -658,4 +658,51 @@ function limparVisualizacao() {
 }
 
 function limparCancelamento() {
-    if(inputTelefoneCancelamento)
+    if(inputTelefoneCancelamento) inputTelefoneCancelamento.value = '';
+    if(inputPinCancelamento) inputPinCancelamento.value = '';
+    if(listaAgendamentosCancelamento) listaAgendamentosCancelamento.innerHTML = '';
+}
+
+function resetarFormulario() {
+    servicoSelecionado = null;
+    horarioSelecionado = null;
+    if(nomeClienteInput) nomeClienteInput.value = '';
+    if(telefoneClienteInput) telefoneClienteInput.value = '';
+    if(pinClienteInput) pinClienteInput.value = '';
+    document.querySelectorAll('.btn-servico').forEach(btn => btn.classList.remove('selecionado'));
+    document.querySelectorAll('.btn-horario').forEach(btn => btn.classList.remove('selecionado'));
+    document.querySelectorAll('.detalhes-servico').forEach(div => div.style.display = 'none');
+    verificarEstadoBotaoConfirmar();
+}
+
+// ==========================================================================
+//  PONTO DE ENTRADA DA APLICAÇÃO E LÓGICA DO MENU DE NAVEGAÇÃO
+// ==========================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- LÓGICA DO MENU DE NAVEGAÇÃO SUPERIOR (NAVBAR) ---
+    const menuIcon = document.getElementById('mobile-menu-trigger');
+    const navMenu = document.getElementById('nav-menu-list');
+    const navLinks = document.querySelectorAll('.nav-links');
+
+    if (menuIcon && navMenu) {
+        const toggleMobileMenu = () => {
+            menuIcon.classList.toggle('is-active');
+            navMenu.classList.toggle('active');
+        };
+        menuIcon.addEventListener('click', toggleMobileMenu);
+
+        const closeMobileMenu = () => {
+            if (window.innerWidth <= 960 && menuIcon.classList.contains('is-active')) {
+                toggleMobileMenu();
+            }
+        };
+        navLinks.forEach(link => {
+            link.addEventListener('click', closeMobileMenu);
+        });
+    }
+    
+    // --- INICIALIZAÇÃO DA VITRINE ---
+    inicializarVitrine();
+});
