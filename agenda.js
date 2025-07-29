@@ -1,4 +1,8 @@
-import { getFirestore, collection, query, where, getDocs, doc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+/**
+ * agenda.js - Versão com confirmação de cancelamento pelo empresário
+ */
+
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, Timestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -10,13 +14,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const listaAgendamentos = document.getElementById("lista-agendamentos");
   const listaCancelamentosPendentes = document.getElementById("lista-cancelamentos-pendentes");
   const inputData = document.getElementById("data-agenda");
+  const modalConfirmacao = document.getElementById('modal-confirmacao');
+  const btnModalConfirmar = document.getElementById('btn-modal-confirmar');
+  const btnFecharModal = modalConfirmacao.querySelector('.fechar-modal'); // Adicionado para fechar no 'x'
   
+  let agendamentoParaExcluirId = null;
   let currentUid = null;
 
   function formatarHorario(timestamp) {
     if (!timestamp || typeof timestamp.toDate !== 'function') return "Data/hora inválida";
     const data = timestamp.toDate();
-    return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); // horario local
+    return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   }
 
   async function carregarAgendamentos(uid) {
@@ -78,13 +86,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     agendamentos.sort((a, b) => a.horario.toDate() - b.horario.toDate());
-    agendamentos.forEach(({ servicoNome, clienteNome, horario }) => {
+    agendamentos.forEach(ag => {
       const div = document.createElement("div");
       div.className = "agendamento-item";
       div.innerHTML = `
-        <h3>${servicoNome || 'Serviço não informado'}</h3>
-        <p><strong>Cliente:</strong> ${clienteNome || 'Não informado'}</p>
-        <p><strong>Horário:</strong> ${formatarHorario(horario)}</p>
+        <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
+        <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p>
+        <p><strong>Horário:</strong> ${formatarHorario(ag.horario)}</p>
       `;
       listaAgendamentos.appendChild(div);
     });
@@ -92,48 +100,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderizarCancelamentosPendentes(cancelamentos) {
     listaCancelamentosPendentes.innerHTML = "";
-    cancelamentos.sort((a, b) => a.canceladoEm.toDate() - b.canceladoEm.toDate());
+    cancelamentos.sort((a, b) => (a.canceladoEm && b.canceladoEm) ? a.canceladoEm.toDate() - b.canceladoEm.toDate() : 0);
 
-    cancelamentos.forEach(({ id, servicoNome, clienteNome, canceladoEm }) => {
+    cancelamentos.forEach(ag => {
         const div = document.createElement("div");
         div.className = "agendamento-item cancelado";
-        const dataCancelamento = canceladoEm.toDate().toLocaleString('pt-BR');
+        const dataCancelamento = ag.canceladoEm ? ag.canceladoEm.toDate().toLocaleString('pt-BR') : 'Data desconhecida';
 
         div.innerHTML = `
             <div>
-                <h3>${servicoNome || 'Serviço não informado'}</h3>
-                <p><strong>Cliente:</strong> ${clienteNome || 'Não informado'}</p>
+                <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
+                <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p>
                 <p><strong>Cancelado em:</strong> ${dataCancelamento}</p>
             </div>
-            <button class="btn-confirmar-exclusao" data-id="${id}">OK, Excluir Definitivamente</button>
+            <button class="btn-confirmar-exclusao" data-id="${ag.id}">OK, Excluir Definitivamente</button>
         `;
         listaCancelamentosPendentes.appendChild(div);
     });
+
+    document.querySelectorAll('.btn-confirmar-exclusao').forEach(button => {
+        button.addEventListener('click', (event) => {
+            agendamentoParaExcluirId = event.target.dataset.id;
+            if (modalConfirmacao) modalConfirmacao.style.display = 'flex';
+        });
+    });
   }
-
-  // Event delegation para os botões de exclusão definitiva
-  listaCancelamentosPendentes.addEventListener('click', (event) => {
-    if (event.target.classList.contains('btn-confirmar-exclusao')) {
-      const agendamentoId = event.target.dataset.id;
-      if (confirm('Tem certeza que deseja excluir este registro permanentemente?')) {
-          excluirAgendamentoDefinitivamente(agendamentoId, currentUid);
-      }
-    }
-  });
-
+  
   async function excluirAgendamentoDefinitivamente(agendamentoId, uid) {
       try {
           const agendamentoRef = doc(db, `users/${uid}/agendamentos`, agendamentoId);
           await deleteDoc(agendamentoRef);
-          alert("Registro de cancelamento removido com sucesso.");
-          carregarAgendamentos(uid);
-          carregarCancelamentosPendentes(uid);
+          Toastify({ text: "Registro removido com sucesso!", duration: 3000, backgroundColor: "#22c55e" }).showToast();
+          carregarCancelamentosPendentes(uid); // Apenas recarrega a lista de pendentes
       } catch (error) {
           console.error("Erro ao excluir agendamento:", error);
-          alert("Não foi possível excluir o agendamento.");
+          Toastify({ text: "Erro ao remover registro.", duration: 3000, backgroundColor: "#ef4444" }).showToast();
+      } finally {
+          fecharModalConfirmacao();
       }
   }
 
+  function fecharModalConfirmacao() {
+    if (modalConfirmacao) modalConfirmacao.style.display = 'none';
+    agendamentoParaExcluirId = null;
+  }
+  
+  // Eventos do Modal
+  if (btnModalConfirmar) {
+    btnModalConfirmar.addEventListener('click', () => {
+      if (agendamentoParaExcluirId && currentUid) {
+        excluirAgendamentoDefinitivamente(agendamentoParaExcluirId, currentUid);
+      }
+    });
+  }
+  if(btnFecharModal) {
+    btnFecharModal.addEventListener('click', fecharModalConfirmacao);
+  }
+
+  // Ponto de entrada
   onAuthStateChanged(auth, (user) => {
     if (user) {
       if (inputData && !inputData.value) {
