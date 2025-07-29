@@ -1,61 +1,60 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pronti - Agenda</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" />
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
 
   <aside class="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
-    <nav class="sidebar-links">
+    <div class="sidebar-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="index.html">Home</a>
       <a href="servicos.html">Serviços</a>
-      <a href="agenda.html" class="active">Agenda</a>
+      <a href="agenda.html">Agenda</a>
       <a href="clientes.html">Clientes</a>
       <a href="perfil.html">Meu Perfil</a>
       <a href="horarios.html">Meus Horários</a>
       <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
-    </nav>
+    </div>
   </aside>
 
   <main class="main-content">
-    <header class="agenda-header">
-      <h1>Agenda de Compromissos</h1>
-      <!-- Botão atualizado para padrão -->
-      <a href="novo-agendamento.html" class="btn btn-primary btn-novo-agendamento">Novo Agendamento</a>
-    </header>
+    <div class="agenda-header">
+        <h1>Agenda de Compromissos</h1>
+        <a href="novo-agendamento.html" class="btn-novo-agendamento">Novo Agendamento</a>
+    </div>
 
-    <section class="filtro-data">
-      <label for="data-agenda">Filtrar por data:</label>
-      <input type="date" id="data-agenda" />
-    </section>
+    <div class="filtro-data">
+        <label for="data-agenda">Filtrar por data:</label>
+        <input type="date" id="data-agenda">
+    </div>
 
-    <section id="lista-agendamentos" class="lista-agendamentos">
-      <p>Selecione uma data para ver os agendamentos.</p>
-    </section>
+    <div id="lista-agendamentos">
+        <p>Selecione uma data para ver os agendamentos.</p>
+    </div>
 
-    <section class="cancelamentos-pendentes">
-      <h2>Cancelamentos Pendentes de Confirmação</h2>
-      <div id="lista-cancelamentos-pendentes" class="lista-cancelamentos-pendentes">
-        <p>Nenhuma solicitação de cancelamento encontrada.</p>
-      </div>
-    </section>
+    <div class="cancelamentos-pendentes">
+        <h2>Cancelamentos Pendentes de Confirmação</h2>
+        <div id="lista-cancelamentos-pendentes">
+            <p>Nenhuma solicitação de cancelamento encontrada.</p>
+        </div>
+    </div>
   </main>
 
-  <div id="modal-confirmacao" class="modal hidden">
+  <div id="modal-confirmacao" class="modal">
     <div class="modal-content">
-      <h3>Confirmar Cancelamento</h3>
-      <p>Este agendamento foi cancelado pelo cliente. Deseja remover este registro da lista de pendências?</p>
-      <div class="modal-botoes">
-        <button id="btn-modal-confirmar" class="btn btn-confirmar">Sim, Remover</button>
-        <button id="btn-modal-cancelar" class="btn btn-secundario">Não</button>
-      </div>
+        <span class="fechar-modal">&times;</span>
+        <h3>Confirmar Exclusão</h3>
+        <p>Este agendamento foi cancelado pelo cliente. Deseja remover este registro permanentemente?</p>
+        <div class="modal-botoes">
+            <button id="btn-modal-confirmar" class="btn-confirmar">Sim, Remover</button>
+        </div>
     </div>
   </div>
 
@@ -70,4 +69,3 @@
 
 </body>
 </html>
-
