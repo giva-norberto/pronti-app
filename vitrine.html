@@ -11,6 +11,17 @@
 </head>
 <body>
 
+  <div id="modal-verificar-agendamentos" class="modal">
+    <div class="modal-content">
+      <span class="fechar-modal">&times;</span>
+      <h3>Verificar Meus Agendamentos</h3>
+      <p>Digite seu telefone e PIN para ver seus agendamentos:</p>
+      <input type="tel" id="input-telefone-verificar" placeholder="Seu telefone (com DDD)" required>
+      <input type="password" id="input-pin-verificar" placeholder="Seu PIN (4-6 dígitos)" required style="margin-top: 10px;">
+      <button id="btn-verificar-agendamentos-modal">Verificar Agendamentos</button>
+    </div>
+  </div>
+
   <main class="main-content">
     <div id="vitrine-loader">
       <p style="text-align: center;">A carregar informações do profissional...</p>
@@ -63,26 +74,6 @@
     </div>
   </main>
 
-  <div id="modal-primeiro-acesso" class="modal">
-    <div class="modal-content">
-      <span class="fechar-modal">&times;</span>
-      <h3>Identifique-se uma vez</h3>
-      <p>Seus dados ficam salvos para facilitar seus próximos agendamentos.</p>
-      <input type="text" id="input-nome-modal" placeholder="Seu nome completo" required>
-      <input type="tel" id="input-telefone-modal" placeholder="Seu WhatsApp (com DDD)" required style="margin-top: 10px;">
-      <button id="btn-salvar-dados-cliente">Salvar e continuar</button>
-    </div>
-  </div>
-  <div id="modal-verificar-agendamentos" class="modal">
-    <div class="modal-content">
-      <span class="fechar-modal">&times;</span>
-      <h3>Verificar Meus Agendamentos</h3>
-      <p>Digite seu telefone e PIN para ver seus agendamentos:</p>
-      <input type="tel" id="input-telefone-verificar" placeholder="Seu telefone (com DDD)" required>
-      <input type="password" id="input-pin-verificar" placeholder="Seu PIN (4-6 dígitos)" required style="margin-top: 10px;">
-      <button id="btn-verificar-agendamentos-modal">Verificar Agendamentos</button>
-    </div>
-  </div>
   <div id="notification-message" class="notification-message"></div>
 
   <script type="module" src="vitrine.js"></script>
