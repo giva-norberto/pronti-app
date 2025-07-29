@@ -40,7 +40,16 @@
   </aside>
 
   <main class="main-content">
-    <h1>Meu Perfil e Configurações</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <h1>Meu Perfil e Configurações</h1>
+      <a id="btn-abrir-vitrine"
+         href="#"
+         target="_blank"
+         class="btn-submit"
+         style="display: none; background: var(--cor-primaria); white-space: nowrap;">
+         Abrir Vitrine
+      </a>
+    </div>
     <p>Defina aqui todas as informações do seu negócio que aparecerão para os clientes.</p>
 
     <div class="form-card">
@@ -82,8 +91,7 @@
                 <option value="60">60 minutos</option>
             </select>
         </div>
-        <div id="dias-container">
-            </div>
+        <div id="dias-container"></div>
         
         <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-top: 30px; margin-bottom: 15px; background: var(--cor-aviso);">Copiar Link da Vitrine</button>
         <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
