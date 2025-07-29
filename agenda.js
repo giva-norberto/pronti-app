@@ -1,5 +1,5 @@
 /**
- * agenda.js - Versão com correção final para exibição da agenda
+ * agenda.js - Versão com nomes de campos padronizados
  */
 
 import { getFirestore, collection, query, where, getDocs, doc, deleteDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -84,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- FUNÇÃO CORRIGIDA ---
   function renderizarAgendamentos(agendamentos) {
     listaAgendamentos.innerHTML = "";
     if (agendamentos.length === 0) {
@@ -95,16 +94,15 @@ document.addEventListener("DOMContentLoaded", () => {
     agendamentos.forEach(ag => {
       const div = document.createElement("div");
       div.className = "agendamento-item";
-      // CORREÇÃO: Voltando a usar 'ag.cliente' que é o nome do campo que o seu 'novo-agendamento.js' salva.
+      // CORREÇÃO APLICADA AQUI
       div.innerHTML = `
         <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
-        <p><strong>Cliente:</strong> ${ag.cliente || 'Não informado'}</p>
+        <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p> 
         <p><strong>Horário:</strong> ${formatarHorario(ag.horario)}</p>
       `;
       listaAgendamentos.appendChild(div);
     });
   }
-
 
   function renderizarCancelamentosPendentes(cancelamentos) {
     if (cancelamentos.length === 0) {
@@ -119,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
         div.className = "agendamento-item cancelamento-pendente";
         const dataCancelamento = ag.canceladoEm ? formatarDataCompleta(ag.canceladoEm) : 'Data desconhecida';
 
+        // CORREÇÃO APLICADA AQUI
         div.innerHTML = `
             <div>
                 <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
@@ -139,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
           const agendamentoRef = doc(db, `users/${uid}/agendamentos`, agendamentoId);
           await deleteDoc(agendamentoRef);
-          Toastify({ text: "Cancelamento confirmado e registro removido!", duration: 3000, backgroundColor: "#22c55e" }).showToast();
+          Toastify({ text: "Registro removido com sucesso!", duration: 3000, backgroundColor: "#22c55e" }).showToast();
           carregarCancelamentosPendentes(uid);
       } catch (error) {
           console.error("Erro ao excluir agendamento:", error);
