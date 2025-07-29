@@ -13,35 +13,34 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background: var(--cor-fundo);
-  color: #333;
+  color: var(--cor-texto);
   display: flex;
   justify-content: center;
   padding: 20px;
 }
 
 main.main-content {
-  max-width: 650px; /* Um pouco mais estreito para melhor leitura */
+  max-width: 650px;
   width: 100%;
-  /* Removemos o fundo e a sombra do container principal para aplicar nos cards internos */
   background: transparent;
   box-shadow: none;
   padding: 0;
 }
 
-/* Estilos dos Cards */
+/* Estrutura de Cards para cada seção */
 .card {
   background: var(--cor-branco);
   border-radius: 12px;
   padding: 25px 30px;
   box-shadow: var(--sombra);
-  margin-bottom: 25px; /* Espaçamento entre os cards */
+  margin-bottom: 25px;
 }
 
+/* Cabeçalho */
 .header-vitrine {
   text-align: center;
-  padding-bottom: 0; /* Removido para simplificar */
   border-bottom: none;
 }
 .header-vitrine img {
@@ -75,19 +74,19 @@ h2 {
 }
 label {
   display: block;
-  font-weight: 600; /* Um pouco mais forte */
+  font-weight: 600;
   margin-bottom: 8px;
-  color: var(--cor-texto); /* Cor de texto padrão para melhor contraste */
+  color: var(--cor-texto);
 }
 
-/* Botões de Serviço (melhorados) */
+/* Botões de Serviço Melhorados */
 #lista-servicos {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 .btn-servico {
-  all: unset;
+  all: unset; /* Reseta o estilo padrão do botão */
   box-sizing: border-box;
   cursor: pointer;
   display: flex;
@@ -115,8 +114,17 @@ label {
 .btn-servico.selecionado .preco {
   color: var(--cor-branco);
 }
+.detalhes-servico {
+  background-color: var(--cor-fundo);
+  padding: 15px;
+  margin-top: -1px; /* Remove o espaço extra */
+  border-radius: 0 0 8px 8px; /* Arredonda cantos de baixo */
+  font-size: 0.9em;
+  border: 2px solid var(--cor-primaria);
+  border-top: none;
+}
 
-/* Grade de Horários (melhorada) */
+/* Grade de Horários Melhorada */
 #grade-horarios {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
@@ -143,7 +151,7 @@ label {
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
-/* Inputs e Botões */
+/* Inputs e Botões Finais */
 input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
   width: 100%;
   padding: 12px;
@@ -187,25 +195,16 @@ button:disabled {
   margin-top: 10px;
 }
 
-/* Seção Meus Agendamentos */
-#agendamentos-cliente-container {
-    display: none; /* Começa escondido */
-}
-#agendamentos-cliente .agendamento-item {
-  padding: 15px;
-  margin-bottom: 10px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  background: #f9f9f9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.btn-cancelar {
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-}
+/* Mantém os estilos do modal e outros componentes como estão no seu original */
+.modal { position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+.modal-content { background-color: #fefefe; padding: 25px 30px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.modal-content h3 { color: var(--cor-primaria); }
+.modal-content button { width: 100%; margin-top: 15px; background: var(--cor-primaria); color: white; }
+.fechar-modal { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+.pin-input-group { margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6; }
+.pin-input-group label { font-size: 0.9em; color: #495057; }
+.pin-input-group small { color: #6c757d; font-size: 0.8em; display: block; margin-top: 5px; }
+.notification-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #4CAF50; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1002; display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+.notification-message.error { background-color: #f44336; }
+.agendamento-item { padding: 15px; margin-bottom: 10px; border: 1px solid #eee; border-radius: 8px; background: #f9f9f9; display: flex; justify-content: space-between; align-items: center; }
+.btn-cancelar { background-color: #ef4444; color: white; padding: 8px 12px; }
