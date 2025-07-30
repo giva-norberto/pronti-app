@@ -720,6 +720,35 @@
                 link.addEventListener('click', closeMobileMenu);
             });
         }
+// --- LÓGICA DE EXIBIÇÃO AUTOMÁTICA DO "Primeiro Acesso"
+const btnPrimeiroAcesso = document.getElementById("btn-primeiro-acesso");
+const menuPrimeiroAcesso = document.getElementById("primeiro-acesso-menu");
+
+if (btnPrimeiroAcesso && menuPrimeiroAcesso) {
+    const jaViuPrimeiroAcesso = localStorage.getItem("primeiroAcessoVitrine");
+
+    if (!jaViuPrimeiroAcesso) {
+        // Mostra o menu automaticamente
+        menuPrimeiroAcesso.style.display = "block";
+        btnPrimeiroAcesso.classList.add("aberto");
+
+        // Esconde depois de 10 segundos (ou quando o usuário clicar)
+        setTimeout(() => {
+            menuPrimeiroAcesso.style.display = "none";
+            btnPrimeiroAcesso.classList.remove("aberto");
+        }, 10000);
+
+        // Marca como visualizado para não repetir
+        localStorage.setItem("primeiroAcessoVitrine", "true");
+    }
+
+    // Ao clicar manualmente, alterna a exibição
+    btnPrimeiroAcesso.addEventListener("click", () => {
+        const visivel = menuPrimeiroAcesso.style.display === "block";
+        menuPrimeiroAcesso.style.display = visivel ? "none" : "block";
+        btnPrimeiroAcesso.classList.toggle("aberto");
+    });
+}
 
         // --- INICIALIZAÇÃO DA VITRINE ---
         inicializarVitrine();
