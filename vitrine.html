@@ -15,17 +15,21 @@
     .main-content-vitrine { flex-grow: 1; padding: 20px; }
     .menu-content { display: none; }
     .menu-content.ativo { display: block; }
+    .sidebar-menu .menu-btn { display: block; width: 100%; text-align: left; padding: 12px; margin-bottom: 5px; cursor: pointer; border: 1px solid #ddd; border-radius: 6px; background-color: #f9f9f9; font-size: 1em; }
     .sidebar-menu .menu-btn.ativo { background-color: #6366f1; color: white; border-color: #6366f1; }
-    .dropdown-menu { display: none; padding: 10px; background-color: #f0f0f0; border-radius: 4px; }
+    .dropdown-info .dropdown-toggle { width: 100%; text-align: left; padding: 12px; margin-top: 10px; cursor: pointer; border: 1px solid #ddd; border-radius: 6px; background-color: #f0f0f0; }
+    .dropdown-menu { display: none; padding: 15px; margin-top: 5px; background-color: #e9ecef; border-radius: 4px; border: 1px solid #ddd; }
     .dropdown-menu.ativo { display: block; }
     .card { background-color: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .service-item, .time-slot { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin: 5px; cursor: pointer; }
-    .service-item.selected, .time-slot.selected { background-color: #e0e7ff; border-color: #6366f1; }
+    .service-item, .time-slot { display: inline-block; text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin: 5px; cursor: pointer; }
+    .service-item.selected, .time-slot.selected { background-color: #e0e7ff; border-color: #6366f1; font-weight: bold; }
     #grade-horarios { display: flex; flex-wrap: wrap; gap: 10px; }
     button { cursor: pointer; }
     button:disabled { cursor: not-allowed; background-color: #ccc; }
-    input { width: calc(100% - 20px); padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; }
+    input { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
     .lista-agendamentos-resultado div { border: 1px solid #eee; padding: 15px; margin-top: 10px; border-radius: 5px; }
+    #notification-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #4CAF50; color: white; padding: 15px; border-radius: 5px; z-index: 1000; display: none; }
+    #notification-message.error { background-color: #f44336; }
   </style>
 </head>
 <body>
@@ -97,7 +101,7 @@
           <div class="form-group">
             <label>4. Seus dados</label>
             <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
-            <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required style="margin-top: 10px;">
+            <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required>
             <div class="pin-input-group">
               <label for="pin-cliente">Crie um PIN para seu agendamento:</label>
               <input type="password" id="pin-cliente" placeholder="Digite um PIN de 4-6 dígitos" required maxlength="6">
@@ -141,7 +145,7 @@
       <div id="menu-perfil" class="menu-content">
         <div class="card">
           <h2>Meu Perfil</h2>
-          <p>Atualize suas informações pessoais abaixo.</p>
+          <p>Salve seus dados para preencher o agendamento mais rápido.</p>
           <div class="form-group">
             <label for="perfil-nome">Nome Completo</label>
             <input type="text" id="perfil-nome" placeholder="Digite seu nome completo">
@@ -156,12 +160,11 @@
     </div>
   </div>
 
-  <div id="notification-message" class="notification-message"></div>
+  <div id="notification-message"></div>
 
   <script>
     // ===================================================================================
     // DADOS DO PROFISSIONAL (SIMULAÇÃO DE BACKEND)
-    // EDITE ESTA ÁREA PARA COLOCAR AS INFORMAÇÕES DO SEU NEGÓCIO
     // ===================================================================================
     const dadosDoProfissional = {
         info: {
@@ -180,13 +183,13 @@
             { id: 4, nome: "Pezinho", duracao: 15, preco: "R$ 10,00" }
         ],
         horarioTrabalho: [
-            // Domingo (0) e Sábado (6)
-            { diaSemana: 1, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Segunda
-            { diaSemana: 2, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Terça
-            { diaSemana: 3, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quarta
-            { diaSemana: 4, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quinta
-            { diaSemana: 5, inicio: "09:00", fim: "19:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Sexta
-            { diaSemana: 6, inicio: "08:00", fim: "16:00", almocoInicio: "12:00", almocoFim: "12:30" }  // Sábado
+            { diaSemana: 0, ativo: false }, // Domingo
+            { diaSemana: 1, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Segunda
+            { diaSemana: 2, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Terça
+            { diaSemana: 3, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quarta
+            { diaSemana: 4, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quinta
+            { diaSemana: 5, ativo: true, inicio: "09:00", fim: "19:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Sexta
+            { diaSemana: 6, ativo: true, inicio: "08:00", fim: "16:00", almocoInicio: "12:00", almocoFim: "12:30" }  // Sábado
         ]
     };
 
@@ -195,58 +198,54 @@
     // ===================================================================================
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- INICIALIZAÇÃO E RENDERIZAÇÃO DOS DADOS ---
+        let agendamentoState = {
+            servicoId: null,
+            servicoDuracao: null,
+            data: null,
+            horario: null
+        };
+
         function inicializarApp() {
             carregarDadosIniciais();
             configurarMenuNavegacao();
             configurarEventListenersGerais();
-            preencherCamposComPerfil();
+            preencherCamposComPerfil(); // Carrega dados do perfil do cliente ao iniciar
         }
 
         function carregarDadosIniciais() {
             const { info, servicos } = dadosDoProfissional;
+            const loader = document.getElementById('vitrine-loader');
+            const content = document.getElementById('vitrine-content');
 
-            // Aba "Informações"
+            // Preenche informações
             document.getElementById('logo-publico').src = info.logoUrl;
             document.getElementById('nome-negocio-publico').textContent = info.nome;
             document.getElementById('info-negocio').innerHTML = `<p>${info.sobre}</p>`;
             document.getElementById('info-contato').innerHTML = `<p><strong>Telefone:</strong> ${info.contato.telefone}</p><p><strong>Endereço:</strong> ${info.contato.endereco}</p>`;
+            document.getElementById('info-servicos').innerHTML = servicos.map(s => `<div><strong>${s.nome}</strong> - ${s.preco} (${s.duracao} min)</div>`).join('');
+            document.getElementById('lista-servicos-agendamento').innerHTML = servicos.map(s => `<div class="service-item" data-id="${s.id}" data-duracao="${s.duracao}">${s.nome} - ${s.preco}</div>`).join('');
             
-            const servicosHtmlInfo = servicos.map(s => `<div><strong>${s.nome}</strong> - ${s.preco} (${s.duracao} min)</div>`).join('');
-            document.getElementById('info-servicos').innerHTML = servicosHtmlInfo;
-
-            // Aba "Agendamento" - Lista de serviços
-            const servicosHtmlAgendamento = servicos.map(s => `
-                <div class="service-item" data-id="${s.id}" data-duracao="${s.duracao}">
-                    ${s.nome} - ${s.preco}
-                </div>
-            `).join('');
-            document.getElementById('lista-servicos-agendamento').innerHTML = servicosHtmlAgendamento;
-        }
-
-        // --- NAVEGAÇÃO DO MENU (CÓDIGO ANTERIOR) ---
-        function configurarMenuNavegacao() {
-            const menuButtons = document.querySelectorAll('.sidebar-menu .menu-btn');
-            const contentPanels = document.querySelectorAll('.main-content-vitrine .menu-content');
-            const loader = document.getElementById('vitrine-loader');
-            const content = document.getElementById('vitrine-content');
-
+            // Exibe conteúdo
             setTimeout(() => {
                 loader.style.display = 'none';
                 content.style.display = 'flex';
             }, 500);
+        }
 
+        function configurarMenuNavegacao() {
+            const menuButtons = document.querySelectorAll('.sidebar-menu .menu-btn');
+            const contentPanels = document.querySelectorAll('.main-content-vitrine .menu-content');
+            
             menuButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     menuButtons.forEach(btn => btn.classList.remove('ativo'));
                     contentPanels.forEach(panel => panel.classList.remove('ativo'));
                     button.classList.add('ativo');
-                    const targetMenuId = `menu-${button.dataset.menu}`;
-                    const targetPanel = document.getElementById(targetMenuId);
-                    if (targetPanel) targetPanel.classList.add('ativo');
+                    document.getElementById(`menu-${button.dataset.menu}`).classList.add('ativo');
                 });
             });
 
+            // Lógica para o dropdown "Primeiro Acesso"
             const dropdownToggle = document.getElementById('btn-primeiro-acesso');
             const dropdownMenu = document.getElementById('primeiro-acesso-menu');
             if (dropdownToggle && dropdownMenu) {
@@ -262,83 +261,55 @@
             });
         }
 
-        // --- LÓGICA PRINCIPAL DE AGENDAMENTO ---
-        let agendamentoState = {
-            servicoId: null,
-            servicoDuracao: null,
-            data: null,
-            horario: null
-        };
-
         function configurarEventListenersGerais() {
-            // Perfil
             document.getElementById('btn-salvar-perfil').addEventListener('click', salvarPerfil);
-
-            // Agendamento
             document.getElementById('lista-servicos-agendamento').addEventListener('click', selecionarServico);
             document.getElementById('data-agendamento').addEventListener('change', selecionarData);
             document.getElementById('grade-horarios').addEventListener('click', selecionarHorario);
             document.getElementById('btn-confirmar-agendamento').addEventListener('click', confirmarAgendamento);
-
-            // Visualização
             document.getElementById('btn-visualizar-agendamentos').addEventListener('click', visualizarAgendamentos);
-
-            // Cancelamento
             document.getElementById('btn-buscar-cancelamento').addEventListener('click', buscarAgendamentosParaCancelar);
         }
 
-        function checarEstadoAgendamento() {
-            const { servicoId, data, horario, nome, telefone, pin } = agendamentoState;
-            const nomeCliente = document.getElementById('nome-cliente').value;
-            const telefoneCliente = document.getElementById('telefone-cliente').value;
-            const pinCliente = document.getElementById('pin-cliente').value;
-            const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
-
-            if (servicoId && data && horario && nomeCliente && telefoneCliente && pinCliente) {
-                btnConfirmar.disabled = false;
-            } else {
-                btnConfirmar.disabled = true;
-            }
-        }
-
         function selecionarServico(e) {
-            if (e.target.classList.contains('service-item')) {
+            if (e.target.closest('.service-item')) {
+                const target = e.target.closest('.service-item');
                 document.querySelectorAll('.service-item').forEach(item => item.classList.remove('selected'));
-                e.target.classList.add('selected');
-                agendamentoState.servicoId = parseInt(e.target.dataset.id);
-                agendamentoState.servicoDuracao = parseInt(e.target.dataset.duracao);
+                target.classList.add('selected');
+                agendamentoState.servicoId = parseInt(target.dataset.id);
+                agendamentoState.servicoDuracao = parseInt(target.dataset.duracao);
                 if (agendamentoState.data) gerarHorarios();
-                checarEstadoAgendamento();
+                checarEstadoBotaoConfirmar();
             }
         }
 
         function selecionarData(e) {
             agendamentoState.data = e.target.value;
             if (agendamentoState.servicoId) gerarHorarios();
-            checarEstadoAgendamento();
+            checarEstadoBotaoConfirmar();
         }
 
         function selecionarHorario(e) {
-             if (e.target.classList.contains('time-slot')) {
+            if (e.target.classList.contains('time-slot')) {
                 document.querySelectorAll('.time-slot').forEach(item => item.classList.remove('selected'));
                 e.target.classList.add('selected');
                 agendamentoState.horario = e.target.textContent;
-                checarEstadoAgendamento();
+                checarEstadoBotaoConfirmar();
             }
         }
-
+        
         function gerarHorarios() {
             const { servicoDuracao, data } = agendamentoState;
             const grade = document.getElementById('grade-horarios');
-            grade.innerHTML = "A gerar horários...";
+            if (!servicoDuracao || !data) { return; }
+            grade.innerHTML = "Verificando horários...";
 
-            const dataSelecionada = new Date(`${data}T00:00:00`);
+            const dataSelecionada = new Date(data + "T00:00:00");
             const diaDaSemana = dataSelecionada.getDay();
-
             const horarioDeTrabalho = dadosDoProfissional.horarioTrabalho.find(h => h.diaSemana === diaDaSemana);
             
-            if (!horarioDeTrabalho) {
-                grade.innerHTML = "<p>O profissional não trabalha neste dia. Por favor, escolha outra data.</p>";
+            if (!horarioDeTrabalho || !horarioDeTrabalho.ativo) {
+                grade.innerHTML = "<p>O profissional não trabalha neste dia.</p>";
                 return;
             }
 
@@ -349,36 +320,33 @@
             const fimDoDia = new Date(`${data}T${horarioDeTrabalho.fim}`);
             const inicioAlmoco = new Date(`${data}T${horarioDeTrabalho.almocoInicio}`);
             const fimAlmoco = new Date(`${data}T${horarioDeTrabalho.almocoFim}`);
-
-            while(horarioAtual < fimDoDia) {
+            
+            while (horarioAtual < fimDoDia) {
                 const fimHorarioAtual = new Date(horarioAtual.getTime() + servicoDuracao * 60000);
-
                 if (fimHorarioAtual > fimDoDia) break;
 
-                const duranteAlmoco = (horarioAtual >= inicioAlmoco && horarioAtual < fimAlmoco) || (fimHorarioAtual > inicioAlmoco && fimHorarioAtual <= fimAlmoco);
-                
+                const duranteAlmoco = (horarioAtual < fimAlmoco && fimHorarioAtual > inicioAlmoco);
                 const horarioOcupado = agendamentosDoDia.some(ag => {
                     const agInicio = new Date(`${data}T${ag.horario}`);
-                    const agServico = dadosDoProfissional.servicos.find(s => s.id === ag.servicoId);
-                    const agFim = new Date(agInicio.getTime() + agServico.duracao * 60000);
+                    const servicoAgendado = dadosDoProfissional.servicos.find(s => s.id === ag.servicoId);
+                    const agFim = new Date(agInicio.getTime() + servicoAgendado.duracao * 60000);
                     return (horarioAtual < agFim && fimHorarioAtual > agInicio);
                 });
 
                 if (!duranteAlmoco && !horarioOcupado) {
                     horariosDisponiveis.push(horarioAtual.toTimeString().substring(0, 5));
                 }
-
-                horarioAtual = new Date(horarioAtual.getTime() + 15 * 60000); // Gera horários de 15 em 15 min
+                
+                horarioAtual = new Date(horarioAtual.getTime() + 15 * 60000);
             }
 
-            if(horariosDisponiveis.length === 0) {
+            if (horariosDisponiveis.length === 0) {
                  grade.innerHTML = "<p>Nenhum horário disponível para este serviço e data.</p>";
             } else {
                  grade.innerHTML = horariosDisponiveis.map(h => `<button class="time-slot">${h}</button>`).join('');
             }
         }
-        
-        // --- FUNÇÕES DE PERSISTÊNCIA (localStorage) ---
+
         function getAgendamentos() {
             return JSON.parse(localStorage.getItem('agendamentos_db')) || [];
         }
@@ -392,53 +360,33 @@
             const telefoneCliente = document.getElementById('telefone-cliente').value;
             const pinCliente = document.getElementById('pin-cliente').value;
 
-            if (!nomeCliente || !telefoneCliente || !pinCliente) {
-                alert("Por favor, preencha todos os seus dados.");
-                return;
-            }
-
             const novoAgendamento = {
-                id: Date.now(),
-                ...agendamentoState,
-                nomeCliente,
-                telefoneCliente,
-                pinCliente
+                id: Date.now(), ...agendamentoState, nomeCliente, telefoneCliente, pinCliente
             };
 
             const agendamentos = getAgendamentos();
             agendamentos.push(novoAgendamento);
             saveAgendamentos(agendamentos);
+            alert(`Agendamento confirmado!`);
 
-            alert(`Agendamento confirmado para ${nomeCliente}!\nServiço: ${dadosDoProfissional.servicos.find(s=>s.id === novoAgendamento.servicoId).nome}\nData: ${novoAgendamento.data}\nHorário: ${novoAgendamento.horario}`);
-            
-            // Limpar formulário
-            document.getElementById('agendamento-form').reset(); // Supondo que você coloque os campos em um <form>
+            // CORREÇÃO: Removida referência a 'agendamento-form' que não existe. Campos resetados individualmente.
+            document.getElementById('nome-cliente').value = '';
+            document.getElementById('telefone-cliente').value = '';
+            document.getElementById('pin-cliente').value = '';
             agendamentoState = { servicoId: null, servicoDuracao: null, data: null, horario: null };
             document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-            document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>';
-            checarEstadoAgendamento();
+            document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
+            checarEstadoBotaoConfirmar();
         }
-
+        
         function visualizarAgendamentos() {
             const telefone = document.getElementById('input-telefone-visualizacao').value;
             const output = document.getElementById('lista-agendamentos-visualizacao');
-            if(!telefone) {
-                alert("Por favor, digite seu telefone.");
-                return;
-            }
-
             const meusAgendamentos = getAgendamentos().filter(a => a.telefoneCliente === telefone);
-
             if (meusAgendamentos.length === 0) {
-                output.innerHTML = "<p>Nenhum agendamento encontrado para este telefone.</p>";
+                output.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
             } else {
-                output.innerHTML = meusAgendamentos.map(a => `
-                    <div>
-                        <p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p>
-                        <p><strong>Data:</strong> ${new Date(`${a.data}T00:00:00`).toLocaleDateString()}</p>
-                        <p><strong>Horário:</strong> ${a.horario}</p>
-                    </div>
-                `).join('');
+                output.innerHTML = meusAgendamentos.map(a => `<div><p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p><p><strong>Data:</strong> ${a.data} às ${a.horario}</p></div>`).join('');
             }
         }
 
@@ -446,29 +394,25 @@
             const telefone = document.getElementById('input-telefone-cancelamento').value;
             const pin = document.getElementById('input-pin-cancelamento').value;
             const output = document.getElementById('lista-agendamentos-cancelamento');
-
-            if(!telefone || !pin) {
-                alert("Por favor, digite seu telefone e PIN.");
-                return;
-            }
-            
             const agendamentosParaCancelar = getAgendamentos().filter(a => a.telefoneCliente === telefone && a.pinCliente === pin);
 
             if (agendamentosParaCancelar.length === 0) {
-                output.innerHTML = "<p>Nenhum agendamento encontrado com estas credenciais.</p>";
+                output.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
             } else {
-                output.innerHTML = agendamentosParaCancelar.map(a => `
-                    <div>
-                        <p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p>
-                        <p><strong>Data:</strong> ${new Date(`${a.data}T00:00:00`).toLocaleDateString()}</p>
-                        <p><strong>Horário:</strong> ${a.horario}</p>
-                        <button onclick="cancelarAgendamento(${a.id})">Confirmar Cancelamento</button>
-                    </div>
-                `).join('');
+                output.innerHTML = agendamentosParaCancelar.map(a => `<div><p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p><p><strong>Data:</strong> ${a.data} às ${a.horario}</p><button onclick="cancelarAgendamento(${a.id})">Confirmar Cancelamento</button></div>`).join('');
             }
         }
         
-        // --- FUNÇÕES DE PERFIL (localStorage) ---
+        function checarEstadoBotaoConfirmar() {
+            const { servicoId, data, horario } = agendamentoState;
+            const nomeCliente = document.getElementById('nome-cliente').value;
+            const telefoneCliente = document.getElementById('telefone-cliente').value;
+            const pinCliente = document.getElementById('pin-cliente').value;
+            const btn = document.getElementById('btn-confirmar-agendamento');
+            btn.disabled = !(servicoId && data && horario && nomeCliente && telefoneCliente && pinCliente);
+        }
+
+        // --- FUNÇÕES DE PERFIL DO CLIENTE ---
         function salvarPerfil() {
             const nome = document.getElementById('perfil-nome').value;
             const telefone = document.getElementById('perfil-telefone').value;
@@ -481,14 +425,17 @@
             const nome = localStorage.getItem('perfilNome') || '';
             const telefone = localStorage.getItem('perfilTelefone') || '';
             document.getElementById('perfil-nome').value = nome;
-            document.getElementById('perfil-telefone').value = nome;
-            document.getElementById('nome-cliente').value = nome;
-            document.getElementById('telefone-cliente').value = telefone;
-            document.getElementById('input-telefone-visualizacao').value = telefone;
-            document.getElementById('input-telefone-cancelamento').value = telefone;
+            // CORREÇÃO: Estava 'nome', alterado para 'telefone' para preencher o campo correto.
+            document.getElementById('perfil-telefone').value = telefone; 
+            
+            // Preenche automaticamente os campos de agendamento e busca, se vazios
+            if(!document.getElementById('nome-cliente').value) document.getElementById('nome-cliente').value = nome;
+            if(!document.getElementById('telefone-cliente').value) document.getElementById('telefone-cliente').value = telefone;
+            if(!document.getElementById('input-telefone-visualizacao').value) document.getElementById('input-telefone-visualizacao').value = telefone;
+            if(!document.getElementById('input-telefone-cancelamento').value) document.getElementById('input-telefone-cancelamento').value = telefone;
         }
 
-        // --- Iniciar a aplicação ---
+        // Iniciar a aplicação
         inicializarApp();
     });
 
@@ -497,10 +444,9 @@
         let agendamentos = JSON.parse(localStorage.getItem('agendamentos_db')) || [];
         agendamentos = agendamentos.filter(a => a.id !== id);
         localStorage.setItem('agendamentos_db', JSON.stringify(agendamentos));
-        alert("Agendamento cancelado com sucesso!");
-        document.getElementById('btn-buscar-cancelamento').click(); // Atualiza a lista
+        alert("Agendamento cancelado!");
+        document.getElementById('btn-buscar-cancelamento').click();
     }
-
   </script>
 </body>
 </html>
