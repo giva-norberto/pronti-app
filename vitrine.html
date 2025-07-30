@@ -10,12 +10,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* CSS MÍNIMO para a funcionalidade ser visível */
-    /* Se você já tem isso em 'vitrine.css', pode remover este <style> */
+    body { font-family: 'Poppins', sans-serif; background-color: #f4f7f6; color: #333; }
+    .vitrine-container { display: flex; }
+    .main-content-vitrine { flex-grow: 1; padding: 20px; }
     .menu-content { display: none; }
     .menu-content.ativo { display: block; }
-    .sidebar-menu .menu-btn.ativo { background-color: #6366f1; color: white; }
-    .dropdown-menu { display: none; }
+    .sidebar-menu .menu-btn.ativo { background-color: #6366f1; color: white; border-color: #6366f1; }
+    .dropdown-menu { display: none; padding: 10px; background-color: #f0f0f0; border-radius: 4px; }
     .dropdown-menu.ativo { display: block; }
+    .card { background-color: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .service-item, .time-slot { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin: 5px; cursor: pointer; }
+    .service-item.selected, .time-slot.selected { background-color: #e0e7ff; border-color: #6366f1; }
+    #grade-horarios { display: flex; flex-wrap: wrap; gap: 10px; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; background-color: #ccc; }
+    input { width: calc(100% - 20px); padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; }
+    .lista-agendamentos-resultado div { border: 1px solid #eee; padding: 15px; margin-top: 10px; border-radius: 5px; }
   </style>
 </head>
 <body>
@@ -72,7 +82,7 @@
           <h2>Faça o seu Agendamento</h2>
           <div class="form-group">
             <label>1. Escolha um serviço</label>
-            <div id="lista-servicos"></div>
+            <div id="lista-servicos-agendamento"></div>
           </div>
           <div class="form-group">
             <label for="data-agendamento">2. Escolha uma data</label>
@@ -143,93 +153,354 @@
           <button id="btn-salvar-perfil" class="btn-submit">Salvar Perfil</button>
         </div>
       </div>
-
     </div>
   </div>
 
   <div id="notification-message" class="notification-message"></div>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      // --- CÓDIGO ORIGINAL PARA CARREGAR O PERFIL ---
-      const nome = localStorage.getItem('perfilNome') || '';
-      const telefone = localStorage.getItem('perfilTelefone') || '';
-      document.getElementById('perfil-nome').value = nome;
-      document.getElementById('perfil-telefone').value = telefone;
-      
-      // --- CÓDIGO CORRIGIDO E ADICIONADO PARA FUNCIONALIDADE ---
+    // ===================================================================================
+    // DADOS DO PROFISSIONAL (SIMULAÇÃO DE BACKEND)
+    // EDITE ESTA ÁREA PARA COLOCAR AS INFORMAÇÕES DO SEU NEGÓCIO
+    // ===================================================================================
+    const dadosDoProfissional = {
+        info: {
+            nome: "Barbearia do Zé",
+            logoUrl: "https://placehold.co/100x100/1d4ed8/ffffff?text=Zé",
+            sobre: "A Barbearia do Zé oferece cortes de cabelo e barba com estilo e precisão. Ambiente amigável e serviço de primeira.",
+            contato: {
+                telefone: "(31) 99999-8888",
+                endereco: "Rua das Tesouras, 123, Bairro Navalha, Contagem - MG"
+            }
+        },
+        servicos: [
+            { id: 1, nome: "Corte de Cabelo", duracao: 30, preco: "R$ 35,00" },
+            { id: 2, nome: "Barba", duracao: 30, preco: "R$ 25,00" },
+            { id: 3, nome: "Cabelo + Barba", duracao: 60, preco: "R$ 55,00" },
+            { id: 4, nome: "Pezinho", duracao: 15, preco: "R$ 10,00" }
+        ],
+        horarioTrabalho: [
+            // Domingo (0) e Sábado (6)
+            { diaSemana: 1, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Segunda
+            { diaSemana: 2, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Terça
+            { diaSemana: 3, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quarta
+            { diaSemana: 4, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quinta
+            { diaSemana: 5, inicio: "09:00", fim: "19:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Sexta
+            { diaSemana: 6, inicio: "08:00", fim: "16:00", almocoInicio: "12:00", almocoFim: "12:30" }  // Sábado
+        ]
+    };
 
-      const menuButtons = document.querySelectorAll('.sidebar-menu .menu-btn');
-      const contentPanels = document.querySelectorAll('.main-content-vitrine .menu-content');
-      const loader = document.getElementById('vitrine-loader');
-      const content = document.getElementById('vitrine-content');
+    // ===================================================================================
+    // LÓGICA DA APLICAÇÃO
+    // ===================================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- INICIALIZAÇÃO E RENDERIZAÇÃO DOS DADOS ---
+        function inicializarApp() {
+            carregarDadosIniciais();
+            configurarMenuNavegacao();
+            configurarEventListenersGerais();
+            preencherCamposComPerfil();
+        }
 
-      // 1. Esconde o loader e mostra o conteúdo principal
-      // Usamos um pequeno timeout para garantir que a página esteja pronta
-      setTimeout(() => {
-          loader.style.display = 'none';
-          // 'flex' é usado para manter o layout de sidebar + conteúdo lado a lado
-          content.style.display = 'flex';
-      }, 100); 
+        function carregarDadosIniciais() {
+            const { info, servicos } = dadosDoProfissional;
 
-      // 2. Adiciona a lógica de clique para os botões do menu principal
-      menuButtons.forEach(button => {
-          button.addEventListener('click', () => {
-              // Remove a classe 'ativo' de todos os botões e painéis
-              menuButtons.forEach(btn => btn.classList.remove('ativo'));
-              contentPanels.forEach(panel => panel.classList.remove('ativo'));
+            // Aba "Informações"
+            document.getElementById('logo-publico').src = info.logoUrl;
+            document.getElementById('nome-negocio-publico').textContent = info.nome;
+            document.getElementById('info-negocio').innerHTML = `<p>${info.sobre}</p>`;
+            document.getElementById('info-contato').innerHTML = `<p><strong>Telefone:</strong> ${info.contato.telefone}</p><p><strong>Endereço:</strong> ${info.contato.endereco}</p>`;
+            
+            const servicosHtmlInfo = servicos.map(s => `<div><strong>${s.nome}</strong> - ${s.preco} (${s.duracao} min)</div>`).join('');
+            document.getElementById('info-servicos').innerHTML = servicosHtmlInfo;
 
-              // Adiciona a classe 'ativo' apenas ao botão clicado
-              button.classList.add('ativo');
+            // Aba "Agendamento" - Lista de serviços
+            const servicosHtmlAgendamento = servicos.map(s => `
+                <div class="service-item" data-id="${s.id}" data-duracao="${s.duracao}">
+                    ${s.nome} - ${s.preco}
+                </div>
+            `).join('');
+            document.getElementById('lista-servicos-agendamento').innerHTML = servicosHtmlAgendamento;
+        }
 
-              // Encontra e mostra o painel de conteúdo correspondente
-              const targetMenuId = `menu-${button.dataset.menu}`;
-              const targetPanel = document.getElementById(targetMenuId);
-              
-              if (targetPanel) {
-                  targetPanel.classList.add('ativo');
-              }
-          });
-      });
+        // --- NAVEGAÇÃO DO MENU (CÓDIGO ANTERIOR) ---
+        function configurarMenuNavegacao() {
+            const menuButtons = document.querySelectorAll('.sidebar-menu .menu-btn');
+            const contentPanels = document.querySelectorAll('.main-content-vitrine .menu-content');
+            const loader = document.getElementById('vitrine-loader');
+            const content = document.getElementById('vitrine-content');
 
-      // 3. Adiciona a lógica para o dropdown "Primeiro Acesso"
-      const dropdownToggle = document.getElementById('btn-primeiro-acesso');
-      const dropdownMenu = document.getElementById('primeiro-acesso-menu');
+            setTimeout(() => {
+                loader.style.display = 'none';
+                content.style.display = 'flex';
+            }, 500);
 
-      if (dropdownToggle && dropdownMenu) {
-        dropdownToggle.addEventListener('click', (event) => {
-            event.stopPropagation(); // Impede que o clique se propague e feche o menu
-            dropdownMenu.classList.toggle('ativo');
-        });
-      }
+            menuButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    menuButtons.forEach(btn => btn.classList.remove('ativo'));
+                    contentPanels.forEach(panel => panel.classList.remove('ativo'));
+                    button.classList.add('ativo');
+                    const targetMenuId = `menu-${button.dataset.menu}`;
+                    const targetPanel = document.getElementById(targetMenuId);
+                    if (targetPanel) targetPanel.classList.add('ativo');
+                });
+            });
 
-      // Fecha o dropdown se o usuário clicar em qualquer outro lugar da página
-      document.addEventListener('click', () => {
-          if (dropdownMenu && dropdownMenu.classList.contains('ativo')) {
-              dropdownMenu.classList.remove('ativo');
-          }
-      });
+            const dropdownToggle = document.getElementById('btn-primeiro-acesso');
+            const dropdownMenu = document.getElementById('primeiro-acesso-menu');
+            if (dropdownToggle && dropdownMenu) {
+                dropdownToggle.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    dropdownMenu.classList.toggle('ativo');
+                });
+            }
+            document.addEventListener('click', () => {
+                if (dropdownMenu && dropdownMenu.classList.contains('ativo')) {
+                    dropdownMenu.classList.remove('ativo');
+                }
+            });
+        }
+
+        // --- LÓGICA PRINCIPAL DE AGENDAMENTO ---
+        let agendamentoState = {
+            servicoId: null,
+            servicoDuracao: null,
+            data: null,
+            horario: null
+        };
+
+        function configurarEventListenersGerais() {
+            // Perfil
+            document.getElementById('btn-salvar-perfil').addEventListener('click', salvarPerfil);
+
+            // Agendamento
+            document.getElementById('lista-servicos-agendamento').addEventListener('click', selecionarServico);
+            document.getElementById('data-agendamento').addEventListener('change', selecionarData);
+            document.getElementById('grade-horarios').addEventListener('click', selecionarHorario);
+            document.getElementById('btn-confirmar-agendamento').addEventListener('click', confirmarAgendamento);
+
+            // Visualização
+            document.getElementById('btn-visualizar-agendamentos').addEventListener('click', visualizarAgendamentos);
+
+            // Cancelamento
+            document.getElementById('btn-buscar-cancelamento').addEventListener('click', buscarAgendamentosParaCancelar);
+        }
+
+        function checarEstadoAgendamento() {
+            const { servicoId, data, horario, nome, telefone, pin } = agendamentoState;
+            const nomeCliente = document.getElementById('nome-cliente').value;
+            const telefoneCliente = document.getElementById('telefone-cliente').value;
+            const pinCliente = document.getElementById('pin-cliente').value;
+            const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
+
+            if (servicoId && data && horario && nomeCliente && telefoneCliente && pinCliente) {
+                btnConfirmar.disabled = false;
+            } else {
+                btnConfirmar.disabled = true;
+            }
+        }
+
+        function selecionarServico(e) {
+            if (e.target.classList.contains('service-item')) {
+                document.querySelectorAll('.service-item').forEach(item => item.classList.remove('selected'));
+                e.target.classList.add('selected');
+                agendamentoState.servicoId = parseInt(e.target.dataset.id);
+                agendamentoState.servicoDuracao = parseInt(e.target.dataset.duracao);
+                if (agendamentoState.data) gerarHorarios();
+                checarEstadoAgendamento();
+            }
+        }
+
+        function selecionarData(e) {
+            agendamentoState.data = e.target.value;
+            if (agendamentoState.servicoId) gerarHorarios();
+            checarEstadoAgendamento();
+        }
+
+        function selecionarHorario(e) {
+             if (e.target.classList.contains('time-slot')) {
+                document.querySelectorAll('.time-slot').forEach(item => item.classList.remove('selected'));
+                e.target.classList.add('selected');
+                agendamentoState.horario = e.target.textContent;
+                checarEstadoAgendamento();
+            }
+        }
+
+        function gerarHorarios() {
+            const { servicoDuracao, data } = agendamentoState;
+            const grade = document.getElementById('grade-horarios');
+            grade.innerHTML = "A gerar horários...";
+
+            const dataSelecionada = new Date(`${data}T00:00:00`);
+            const diaDaSemana = dataSelecionada.getDay();
+
+            const horarioDeTrabalho = dadosDoProfissional.horarioTrabalho.find(h => h.diaSemana === diaDaSemana);
+            
+            if (!horarioDeTrabalho) {
+                grade.innerHTML = "<p>O profissional não trabalha neste dia. Por favor, escolha outra data.</p>";
+                return;
+            }
+
+            const agendamentosDoDia = getAgendamentos().filter(a => a.data === data);
+            const horariosDisponiveis = [];
+
+            let horarioAtual = new Date(`${data}T${horarioDeTrabalho.inicio}`);
+            const fimDoDia = new Date(`${data}T${horarioDeTrabalho.fim}`);
+            const inicioAlmoco = new Date(`${data}T${horarioDeTrabalho.almocoInicio}`);
+            const fimAlmoco = new Date(`${data}T${horarioDeTrabalho.almocoFim}`);
+
+            while(horarioAtual < fimDoDia) {
+                const fimHorarioAtual = new Date(horarioAtual.getTime() + servicoDuracao * 60000);
+
+                if (fimHorarioAtual > fimDoDia) break;
+
+                const duranteAlmoco = (horarioAtual >= inicioAlmoco && horarioAtual < fimAlmoco) || (fimHorarioAtual > inicioAlmoco && fimHorarioAtual <= fimAlmoco);
+                
+                const horarioOcupado = agendamentosDoDia.some(ag => {
+                    const agInicio = new Date(`${data}T${ag.horario}`);
+                    const agServico = dadosDoProfissional.servicos.find(s => s.id === ag.servicoId);
+                    const agFim = new Date(agInicio.getTime() + agServico.duracao * 60000);
+                    return (horarioAtual < agFim && fimHorarioAtual > agInicio);
+                });
+
+                if (!duranteAlmoco && !horarioOcupado) {
+                    horariosDisponiveis.push(horarioAtual.toTimeString().substring(0, 5));
+                }
+
+                horarioAtual = new Date(horarioAtual.getTime() + 15 * 60000); // Gera horários de 15 em 15 min
+            }
+
+            if(horariosDisponiveis.length === 0) {
+                 grade.innerHTML = "<p>Nenhum horário disponível para este serviço e data.</p>";
+            } else {
+                 grade.innerHTML = horariosDisponiveis.map(h => `<button class="time-slot">${h}</button>`).join('');
+            }
+        }
+        
+        // --- FUNÇÕES DE PERSISTÊNCIA (localStorage) ---
+        function getAgendamentos() {
+            return JSON.parse(localStorage.getItem('agendamentos_db')) || [];
+        }
+
+        function saveAgendamentos(agendamentos) {
+            localStorage.setItem('agendamentos_db', JSON.stringify(agendamentos));
+        }
+
+        function confirmarAgendamento() {
+            const nomeCliente = document.getElementById('nome-cliente').value;
+            const telefoneCliente = document.getElementById('telefone-cliente').value;
+            const pinCliente = document.getElementById('pin-cliente').value;
+
+            if (!nomeCliente || !telefoneCliente || !pinCliente) {
+                alert("Por favor, preencha todos os seus dados.");
+                return;
+            }
+
+            const novoAgendamento = {
+                id: Date.now(),
+                ...agendamentoState,
+                nomeCliente,
+                telefoneCliente,
+                pinCliente
+            };
+
+            const agendamentos = getAgendamentos();
+            agendamentos.push(novoAgendamento);
+            saveAgendamentos(agendamentos);
+
+            alert(`Agendamento confirmado para ${nomeCliente}!\nServiço: ${dadosDoProfissional.servicos.find(s=>s.id === novoAgendamento.servicoId).nome}\nData: ${novoAgendamento.data}\nHorário: ${novoAgendamento.horario}`);
+            
+            // Limpar formulário
+            document.getElementById('agendamento-form').reset(); // Supondo que você coloque os campos em um <form>
+            agendamentoState = { servicoId: null, servicoDuracao: null, data: null, horario: null };
+            document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>';
+            checarEstadoAgendamento();
+        }
+
+        function visualizarAgendamentos() {
+            const telefone = document.getElementById('input-telefone-visualizacao').value;
+            const output = document.getElementById('lista-agendamentos-visualizacao');
+            if(!telefone) {
+                alert("Por favor, digite seu telefone.");
+                return;
+            }
+
+            const meusAgendamentos = getAgendamentos().filter(a => a.telefoneCliente === telefone);
+
+            if (meusAgendamentos.length === 0) {
+                output.innerHTML = "<p>Nenhum agendamento encontrado para este telefone.</p>";
+            } else {
+                output.innerHTML = meusAgendamentos.map(a => `
+                    <div>
+                        <p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p>
+                        <p><strong>Data:</strong> ${new Date(`${a.data}T00:00:00`).toLocaleDateString()}</p>
+                        <p><strong>Horário:</strong> ${a.horario}</p>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function buscarAgendamentosParaCancelar() {
+            const telefone = document.getElementById('input-telefone-cancelamento').value;
+            const pin = document.getElementById('input-pin-cancelamento').value;
+            const output = document.getElementById('lista-agendamentos-cancelamento');
+
+            if(!telefone || !pin) {
+                alert("Por favor, digite seu telefone e PIN.");
+                return;
+            }
+            
+            const agendamentosParaCancelar = getAgendamentos().filter(a => a.telefoneCliente === telefone && a.pinCliente === pin);
+
+            if (agendamentosParaCancelar.length === 0) {
+                output.innerHTML = "<p>Nenhum agendamento encontrado com estas credenciais.</p>";
+            } else {
+                output.innerHTML = agendamentosParaCancelar.map(a => `
+                    <div>
+                        <p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p>
+                        <p><strong>Data:</strong> ${new Date(`${a.data}T00:00:00`).toLocaleDateString()}</p>
+                        <p><strong>Horário:</strong> ${a.horario}</p>
+                        <button onclick="cancelarAgendamento(${a.id})">Confirmar Cancelamento</button>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // --- FUNÇÕES DE PERFIL (localStorage) ---
+        function salvarPerfil() {
+            const nome = document.getElementById('perfil-nome').value;
+            const telefone = document.getElementById('perfil-telefone').value;
+            localStorage.setItem('perfilNome', nome);
+            localStorage.setItem('perfilTelefone', telefone);
+            alert("Perfil salvo com sucesso!");
+        }
+
+        function preencherCamposComPerfil() {
+            const nome = localStorage.getItem('perfilNome') || '';
+            const telefone = localStorage.getItem('perfilTelefone') || '';
+            document.getElementById('perfil-nome').value = nome;
+            document.getElementById('perfil-telefone').value = nome;
+            document.getElementById('nome-cliente').value = nome;
+            document.getElementById('telefone-cliente').value = telefone;
+            document.getElementById('input-telefone-visualizacao').value = telefone;
+            document.getElementById('input-telefone-cancelamento').value = telefone;
+        }
+
+        // --- Iniciar a aplicação ---
+        inicializarApp();
     });
 
-    // --- CÓDIGO ORIGINAL PARA SALVAR O PERFIL ---
-    document.getElementById('btn-salvar-perfil').addEventListener('click', () => {
-      const nome = document.getElementById('perfil-nome').value;
-      const telefone = document.getElementById('perfil-telefone').value;
-      localStorage.setItem('perfilNome', nome);
-      localStorage.setItem('perfilTelefone', telefone);
+    // Esta função precisa estar no escopo global para ser chamada pelo onclick
+    function cancelarAgendamento(id) {
+        let agendamentos = JSON.parse(localStorage.getItem('agendamentos_db')) || [];
+        agendamentos = agendamentos.filter(a => a.id !== id);
+        localStorage.setItem('agendamentos_db', JSON.stringify(agendamentos));
+        alert("Agendamento cancelado com sucesso!");
+        document.getElementById('btn-buscar-cancelamento').click(); // Atualiza a lista
+    }
 
-      const notification = document.getElementById('notification-message');
-      notification.textContent = 'Perfil salvo com sucesso!';
-      notification.style.display = 'block';
-      setTimeout(() => {
-        notification.style.display = 'none';
-      }, 3000);
-
-      const nomeAgendamento = document.getElementById('nome-cliente');
-      const telefoneAgendamento = document.getElementById('telefone-cliente');
-      if (!nomeAgendamento.value) nomeAgendamento.value = nome;
-      if (!telefoneAgendamento.value) telefoneAgendamento.value = telefone;
-    });
   </script>
 </body>
 </html>
