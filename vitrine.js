@@ -115,7 +115,6 @@ function limparTelefone(telefone) {
 //  LÓGICA PRINCIPAL DA APLICAÇÃO
 // ==========================================================================
 
-// --- Função para alternar entre as ABAS de conteúdo ---
 function alternarMenu(novoMenu) {
     menuButtons.forEach(btn => btn.classList.remove('ativo'));
     menuContents.forEach(content => content.classList.remove('ativo'));
@@ -165,7 +164,7 @@ async function inicializarVitrine() {
         if(loader) loader.style.display = 'none';
         if(content) content.style.display = 'block';
         configurarEventosGerais();
-        alternarMenu('informacoes'); // Define a aba inicial
+        alternarMenu('informacoes');
     } catch (error) {
         console.error("Erro ao inicializar a vitrine:", error);
         if(loader) loader.innerHTML = `<p style="color:red; text-align:center;">Não foi possível carregar a página deste profissional.</p>`;
@@ -195,8 +194,6 @@ function configurarFormularioAgendamento() {
     if(pinClienteInput) pinClienteInput.addEventListener('input', verificarEstadoBotaoConfirmar);
     if(btnConfirmar) btnConfirmar.addEventListener('click', salvarAgendamentoComPIN);
 }
-
-// --- Funções de Carregamento de Dados (Firebase) ---
 
 async function encontrarUidPeloSlug(slug) {
     const slugRef = doc(db, "slugs", slug);
@@ -319,8 +316,6 @@ async function carregarInformacoesCompletas() {
     });
     if(infoServicos) infoServicos.innerHTML = servicosInfo;
 }
-
-// --- Funções de Interação do Formulário de Agendamento ---
 
 function selecionarServico(servico, btnElement) {
     document.querySelectorAll('.btn-servico').forEach(btn => btn.classList.remove('selecionado'));
@@ -476,7 +471,6 @@ async function salvarAgendamentoComPIN() {
         }
     }
 }
-// --- Funções da Aba de Visualização ---
 
 async function visualizarAgendamentosSemPIN() {
     if (!inputTelefoneVisualizacao) return;
@@ -496,11 +490,7 @@ async function visualizarAgendamentosSemPIN() {
             return;
         }
         
-        const agendamentos = [];
-        snapshot.forEach(docSnapshot => {
-            const agendamento = { id: docSnapshot.id, ...docSnapshot.data() };
-            agendamentos.push(agendamento);
-        });
+        const agendamentos = snapshot.docs.map(docSnapshot => ({ id: docSnapshot.id, ...docSnapshot.data() }));
         
         exibirAgendamentosVisualizacao(agendamentos);
         
@@ -514,7 +504,13 @@ function exibirAgendamentosVisualizacao(agendamentos) {
     if (!listaAgendamentosVisualizacao) return;
     listaAgendamentosVisualizacao.innerHTML = '';
     
-    agendamentos.sort((a, b) => a.horario.toMillis() - b.horario.toMillis()).forEach(agendamento => {
+    // CORREÇÃO APLICADA AQUI
+    agendamentos.sort((a, b) => {
+        const dateA = a.horario && typeof a.horario.toDate === 'function' ? a.horario.toDate() : 0;
+        const dateB = b.horario && typeof b.horario.toDate === 'function' ? b.horario.toDate() : 0;
+        if (!dateA || !dateB) return 0; // Não ordena se um dos itens não tiver data válida
+        return dateA - dateB;
+    }).forEach(agendamento => {
         let dataFormatada = "Data inválida";
         if(agendamento.horario && typeof agendamento.horario.toDate === 'function') {
             const data = agendamento.horario.toDate();
@@ -522,8 +518,8 @@ function exibirAgendamentosVisualizacao(agendamentos) {
         }
         
         const statusTexto = agendamento.status === 'agendado' ? 'Confirmado' : 
-                           agendamento.status === 'cancelamento_solicitado' ? 'Cancelamento Solicitado' : 
-                           agendamento.status;
+                          agendamento.status === 'cancelamento_solicitado' ? 'Cancelamento Solicitado' : 
+                          agendamento.status;
         
         const agendamentoDiv = document.createElement('div');
         agendamentoDiv.className = 'agendamento-item-visualizacao';
@@ -539,8 +535,6 @@ function exibirAgendamentosVisualizacao(agendamentos) {
         listaAgendamentosVisualizacao.appendChild(agendamentoDiv);
     });
 }
-
-// --- Funções da Aba de Cancelamento ---
 
 async function buscarAgendamentosParaCancelamento() {
     if (!inputTelefoneCancelamento || !inputPinCancelamento) return;
@@ -588,7 +582,7 @@ function exibirAgendamentosCancelamento(agendamentos) {
     if (!listaAgendamentosCancelamento) return;
     listaAgendamentosCancelamento.innerHTML = '';
     
-    agendamentos.sort((a, b) => a.horario.toMillis() - b.horario.toMillis()).forEach(agendamento => {
+    agendamentos.sort((a, b) => a.horario.toDate() - b.horario.toDate()).forEach(agendamento => {
         let dataFormatada = "Data inválida";
         if(agendamento.horario && typeof agendamento.horario.toDate === 'function') {
             const data = agendamento.horario.toDate();
@@ -650,8 +644,6 @@ async function cancelarAgendamento(agendamentoId) {
     }
 }
 
-// --- Funções de Limpeza e Reset ---
-
 function limparVisualizacao() {
     if(inputTelefoneVisualizacao) inputTelefoneVisualizacao.value = '';
     if(listaAgendamentosVisualizacao) listaAgendamentosVisualizacao.innerHTML = '';
@@ -675,13 +667,8 @@ function resetarFormulario() {
     verificarEstadoBotaoConfirmar();
 }
 
-// ==========================================================================
-//  PONTO DE ENTRADA DA APLICAÇÃO E LÓGICA DO MENU DE NAVEGAÇÃO
-// ==========================================================================
-
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- LÓGICA DO MENU DE NAVEGAÇÃO SUPERIOR (NAVBAR) ---
     const menuIcon = document.getElementById('mobile-menu-trigger');
     const navMenu = document.getElementById('nav-menu-list');
     const navLinks = document.querySelectorAll('.nav-links');
@@ -703,6 +690,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- INICIALIZAÇÃO DA VITRINE ---
     inicializarVitrine();
 });
