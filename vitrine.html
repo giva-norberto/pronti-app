@@ -145,10 +145,16 @@
 
   <div id="notification-message" class="notification-message"></div>
   <script type="module">
+    window.addEventListener('DOMContentLoaded', () => {
+      const nome = localStorage.getItem('perfilNome') || '';
+      const telefone = localStorage.getItem('perfilTelefone') || '';
+      document.getElementById('perfil-nome').value = nome;
+      document.getElementById('perfil-telefone').value = telefone;
+    });
+
     document.getElementById('btn-salvar-perfil').addEventListener('click', () => {
       const nome = document.getElementById('perfil-nome').value;
       const telefone = document.getElementById('perfil-telefone').value;
-
       localStorage.setItem('perfilNome', nome);
       localStorage.setItem('perfilTelefone', telefone);
 
@@ -158,19 +164,10 @@
         document.getElementById('notification-message').style.display = 'none';
       }, 3000);
 
-      // Atualizar campos no agendamento se estiverem vazios
       const nomeAgendamento = document.getElementById('nome-cliente');
       const telefoneAgendamento = document.getElementById('telefone-cliente');
       if (!nomeAgendamento.value) nomeAgendamento.value = nome;
       if (!telefoneAgendamento.value) telefoneAgendamento.value = telefone;
-    });
-
-    // Carregar dados do perfil ao abrir
-    window.addEventListener('DOMContentLoaded', () => {
-      const nome = localStorage.getItem('perfilNome') || '';
-      const telefone = localStorage.getItem('perfilTelefone') || '';
-      document.getElementById('perfil-nome').value = nome;
-      document.getElementById('perfil-telefone').value = telefone;
     });
   </script>
 </body>
