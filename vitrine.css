@@ -256,7 +256,6 @@ button#btn-confirmar-agendamento:disabled {
   padding: 0 20px;
   box-sizing: border-box;
 }
-
 .sidebar-vitrine {
   width: 280px;
   flex-shrink: 0;
@@ -266,19 +265,16 @@ button#btn-confirmar-agendamento:disabled {
   padding: 20px;
   height: fit-content;
 }
-
 .main-content-vitrine {
   flex-grow: 1;
   width: 100%;
 }
-
 .sidebar-menu {
   margin-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-
 .menu-btn {
   all: unset;
   box-sizing: border-box;
@@ -290,37 +286,32 @@ button#btn-confirmar-agendamento:disabled {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .menu-btn:hover {
   background-color: var(--cor-primaria-leve);
   color: var(--cor-primaria);
 }
-
 .menu-btn.ativo {
-  background-color: var(--cor-primaria);
+  background: linear-gradient(90deg, var(--cor-primaria), #ec4899); /* Gradiente Pronti */
   color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
 .card {
-  background: var(--cor-branco);
+  background: white;
   border-radius: 12px;
   padding: 25px 30px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   margin-bottom: 25px;
 }
-
 .menu-content {
   display: none;
 }
-
 .menu-content.ativo {
   display: block;
 }
-
 .lista-agendamentos-resultado {
     margin-top: 20px;
 }
-
 .agendamento-item-visualizacao, .agendamento-item-cancelamento {
     padding: 15px;
     margin-bottom: 10px;
@@ -331,15 +322,13 @@ button#btn-confirmar-agendamento:disabled {
     justify-content: space-between;
     align-items: center;
 }
-
 .btn-cancelar-agendamento {
     background-color: #ef4444;
     color: white;
     padding: 8px 12px;
     width: auto;
 }
-
 .btn-submit { /* Classe para os botões de ação nas abas */
-    background: var(--cor-sucesso);
-    color: var(--cor-branco);
+    background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
+    color: white;
 }
