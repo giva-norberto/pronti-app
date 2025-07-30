@@ -8,29 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* CSS MÍNIMO para a funcionalidade ser visível */
-    body { font-family: 'Poppins', sans-serif; background-color: #f4f7f6; color: #333; }
-    .vitrine-container { display: flex; }
-    .main-content-vitrine { flex-grow: 1; padding: 20px; }
-    .menu-content { display: none; }
-    .menu-content.ativo { display: block; }
-    .sidebar-menu .menu-btn { display: block; width: 100%; text-align: left; padding: 12px; margin-bottom: 5px; cursor: pointer; border: 1px solid #ddd; border-radius: 6px; background-color: #f9f9f9; font-size: 1em; }
-    .sidebar-menu .menu-btn.ativo { background-color: #6366f1; color: white; border-color: #6366f1; }
-    .dropdown-info .dropdown-toggle { width: 100%; text-align: left; padding: 12px; margin-top: 10px; cursor: pointer; border: 1px solid #ddd; border-radius: 6px; background-color: #f0f0f0; }
-    .dropdown-menu { display: none; padding: 15px; margin-top: 5px; background-color: #e9ecef; border-radius: 4px; border: 1px solid #ddd; }
-    .dropdown-menu.ativo { display: block; }
-    .card { background-color: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .service-item, .time-slot { display: inline-block; text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin: 5px; cursor: pointer; }
-    .service-item.selected, .time-slot.selected { background-color: #e0e7ff; border-color: #6366f1; font-weight: bold; }
-    #grade-horarios { display: flex; flex-wrap: wrap; gap: 10px; }
-    button { cursor: pointer; }
-    button:disabled { cursor: not-allowed; background-color: #ccc; }
-    input { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
-    .lista-agendamentos-resultado div { border: 1px solid #eee; padding: 15px; margin-top: 10px; border-radius: 5px; }
-    #notification-message { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #4CAF50; color: white; padding: 15px; border-radius: 5px; z-index: 1000; display: none; }
-    #notification-message.error { background-color: #f44336; }
-  </style>
 </head>
 <body>
 
@@ -39,6 +16,7 @@
   </div>
 
   <div id="vitrine-content" class="vitrine-container" style="display: none;">
+    
     <aside class="sidebar-vitrine">
       <div class="header-vitrine">
         <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
@@ -50,6 +28,7 @@
         <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
         <button class="menu-btn" data-menu="cancelamento">Cancelar Agendamento</button>
         <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
+        
         <div class="dropdown-info">
           <button id="btn-primeiro-acesso" class="dropdown-toggle">Primeiro Acesso ⌄</button>
           <div id="primeiro-acesso-menu" class="dropdown-menu">
@@ -66,6 +45,7 @@
     </aside>
 
     <div class="main-content-vitrine">
+      
       <div id="menu-informacoes" class="menu-content ativo">
         <div class="card">
           <h2>Sobre o Negócio</h2>
@@ -86,7 +66,7 @@
           <h2>Faça o seu Agendamento</h2>
           <div class="form-group">
             <label>1. Escolha um serviço</label>
-            <div id="lista-servicos-agendamento"></div>
+            <div id="lista-servicos"></div>
           </div>
           <div class="form-group">
             <label for="data-agendamento">2. Escolha uma data</label>
@@ -141,7 +121,7 @@
           <div id="lista-agendamentos-cancelamento" class="lista-agendamentos-resultado"></div>
         </div>
       </div>
-
+      
       <div id="menu-perfil" class="menu-content">
         <div class="card">
           <h2>Meu Perfil</h2>
@@ -157,296 +137,13 @@
           <button id="btn-salvar-perfil" class="btn-submit">Salvar Perfil</button>
         </div>
       </div>
+
     </div>
   </div>
 
-  <div id="notification-message"></div>
+  <div id="notification-message" class="notification-message"></div>
 
-  <script>
-    // ===================================================================================
-    // DADOS DO PROFISSIONAL (SIMULAÇÃO DE BACKEND)
-    // ===================================================================================
-    const dadosDoProfissional = {
-        info: {
-            nome: "Barbearia do Zé",
-            logoUrl: "https://placehold.co/100x100/1d4ed8/ffffff?text=Zé",
-            sobre: "A Barbearia do Zé oferece cortes de cabelo e barba com estilo e precisão. Ambiente amigável e serviço de primeira.",
-            contato: {
-                telefone: "(31) 99999-8888",
-                endereco: "Rua das Tesouras, 123, Bairro Navalha, Contagem - MG"
-            }
-        },
-        servicos: [
-            { id: 1, nome: "Corte de Cabelo", duracao: 30, preco: "R$ 35,00" },
-            { id: 2, nome: "Barba", duracao: 30, preco: "R$ 25,00" },
-            { id: 3, nome: "Cabelo + Barba", duracao: 60, preco: "R$ 55,00" },
-            { id: 4, nome: "Pezinho", duracao: 15, preco: "R$ 10,00" }
-        ],
-        horarioTrabalho: [
-            { diaSemana: 0, ativo: false }, // Domingo
-            { diaSemana: 1, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Segunda
-            { diaSemana: 2, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Terça
-            { diaSemana: 3, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quarta
-            { diaSemana: 4, ativo: true, inicio: "09:00", fim: "18:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Quinta
-            { diaSemana: 5, ativo: true, inicio: "09:00", fim: "19:00", almocoInicio: "12:00", almocoFim: "13:00" }, // Sexta
-            { diaSemana: 6, ativo: true, inicio: "08:00", fim: "16:00", almocoInicio: "12:00", almocoFim: "12:30" }  // Sábado
-        ]
-    };
+  <script type="module" src="vitrine.js"></script>
 
-    // ===================================================================================
-    // LÓGICA DA APLICAÇÃO
-    // ===================================================================================
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        let agendamentoState = {
-            servicoId: null,
-            servicoDuracao: null,
-            data: null,
-            horario: null
-        };
-
-        function inicializarApp() {
-            carregarDadosIniciais();
-            configurarMenuNavegacao();
-            configurarEventListenersGerais();
-            preencherCamposComPerfil(); // Carrega dados do perfil do cliente ao iniciar
-        }
-
-        function carregarDadosIniciais() {
-            const { info, servicos } = dadosDoProfissional;
-            const loader = document.getElementById('vitrine-loader');
-            const content = document.getElementById('vitrine-content');
-
-            // Preenche informações
-            document.getElementById('logo-publico').src = info.logoUrl;
-            document.getElementById('nome-negocio-publico').textContent = info.nome;
-            document.getElementById('info-negocio').innerHTML = `<p>${info.sobre}</p>`;
-            document.getElementById('info-contato').innerHTML = `<p><strong>Telefone:</strong> ${info.contato.telefone}</p><p><strong>Endereço:</strong> ${info.contato.endereco}</p>`;
-            document.getElementById('info-servicos').innerHTML = servicos.map(s => `<div><strong>${s.nome}</strong> - ${s.preco} (${s.duracao} min)</div>`).join('');
-            document.getElementById('lista-servicos-agendamento').innerHTML = servicos.map(s => `<div class="service-item" data-id="${s.id}" data-duracao="${s.duracao}">${s.nome} - ${s.preco}</div>`).join('');
-            
-            // Exibe conteúdo
-            setTimeout(() => {
-                loader.style.display = 'none';
-                content.style.display = 'flex';
-            }, 500);
-        }
-
-        function configurarMenuNavegacao() {
-            const menuButtons = document.querySelectorAll('.sidebar-menu .menu-btn');
-            const contentPanels = document.querySelectorAll('.main-content-vitrine .menu-content');
-            
-            menuButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    menuButtons.forEach(btn => btn.classList.remove('ativo'));
-                    contentPanels.forEach(panel => panel.classList.remove('ativo'));
-                    button.classList.add('ativo');
-                    document.getElementById(`menu-${button.dataset.menu}`).classList.add('ativo');
-                });
-            });
-
-            // Lógica para o dropdown "Primeiro Acesso"
-            const dropdownToggle = document.getElementById('btn-primeiro-acesso');
-            const dropdownMenu = document.getElementById('primeiro-acesso-menu');
-            if (dropdownToggle && dropdownMenu) {
-                dropdownToggle.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    dropdownMenu.classList.toggle('ativo');
-                });
-            }
-            document.addEventListener('click', () => {
-                if (dropdownMenu && dropdownMenu.classList.contains('ativo')) {
-                    dropdownMenu.classList.remove('ativo');
-                }
-            });
-        }
-
-        function configurarEventListenersGerais() {
-            document.getElementById('btn-salvar-perfil').addEventListener('click', salvarPerfil);
-            document.getElementById('lista-servicos-agendamento').addEventListener('click', selecionarServico);
-            document.getElementById('data-agendamento').addEventListener('change', selecionarData);
-            document.getElementById('grade-horarios').addEventListener('click', selecionarHorario);
-            document.getElementById('btn-confirmar-agendamento').addEventListener('click', confirmarAgendamento);
-            document.getElementById('btn-visualizar-agendamentos').addEventListener('click', visualizarAgendamentos);
-            document.getElementById('btn-buscar-cancelamento').addEventListener('click', buscarAgendamentosParaCancelar);
-        }
-
-        function selecionarServico(e) {
-            if (e.target.closest('.service-item')) {
-                const target = e.target.closest('.service-item');
-                document.querySelectorAll('.service-item').forEach(item => item.classList.remove('selected'));
-                target.classList.add('selected');
-                agendamentoState.servicoId = parseInt(target.dataset.id);
-                agendamentoState.servicoDuracao = parseInt(target.dataset.duracao);
-                if (agendamentoState.data) gerarHorarios();
-                checarEstadoBotaoConfirmar();
-            }
-        }
-
-        function selecionarData(e) {
-            agendamentoState.data = e.target.value;
-            if (agendamentoState.servicoId) gerarHorarios();
-            checarEstadoBotaoConfirmar();
-        }
-
-        function selecionarHorario(e) {
-            if (e.target.classList.contains('time-slot')) {
-                document.querySelectorAll('.time-slot').forEach(item => item.classList.remove('selected'));
-                e.target.classList.add('selected');
-                agendamentoState.horario = e.target.textContent;
-                checarEstadoBotaoConfirmar();
-            }
-        }
-        
-        function gerarHorarios() {
-            const { servicoDuracao, data } = agendamentoState;
-            const grade = document.getElementById('grade-horarios');
-            if (!servicoDuracao || !data) { return; }
-            grade.innerHTML = "Verificando horários...";
-
-            const dataSelecionada = new Date(data + "T00:00:00");
-            const diaDaSemana = dataSelecionada.getDay();
-            const horarioDeTrabalho = dadosDoProfissional.horarioTrabalho.find(h => h.diaSemana === diaDaSemana);
-            
-            if (!horarioDeTrabalho || !horarioDeTrabalho.ativo) {
-                grade.innerHTML = "<p>O profissional não trabalha neste dia.</p>";
-                return;
-            }
-
-            const agendamentosDoDia = getAgendamentos().filter(a => a.data === data);
-            const horariosDisponiveis = [];
-
-            let horarioAtual = new Date(`${data}T${horarioDeTrabalho.inicio}`);
-            const fimDoDia = new Date(`${data}T${horarioDeTrabalho.fim}`);
-            const inicioAlmoco = new Date(`${data}T${horarioDeTrabalho.almocoInicio}`);
-            const fimAlmoco = new Date(`${data}T${horarioDeTrabalho.almocoFim}`);
-            
-            while (horarioAtual < fimDoDia) {
-                const fimHorarioAtual = new Date(horarioAtual.getTime() + servicoDuracao * 60000);
-                if (fimHorarioAtual > fimDoDia) break;
-
-                const duranteAlmoco = (horarioAtual < fimAlmoco && fimHorarioAtual > inicioAlmoco);
-                const horarioOcupado = agendamentosDoDia.some(ag => {
-                    const agInicio = new Date(`${data}T${ag.horario}`);
-                    const servicoAgendado = dadosDoProfissional.servicos.find(s => s.id === ag.servicoId);
-                    const agFim = new Date(agInicio.getTime() + servicoAgendado.duracao * 60000);
-                    return (horarioAtual < agFim && fimHorarioAtual > agInicio);
-                });
-
-                if (!duranteAlmoco && !horarioOcupado) {
-                    horariosDisponiveis.push(horarioAtual.toTimeString().substring(0, 5));
-                }
-                
-                horarioAtual = new Date(horarioAtual.getTime() + 15 * 60000);
-            }
-
-            if (horariosDisponiveis.length === 0) {
-                 grade.innerHTML = "<p>Nenhum horário disponível para este serviço e data.</p>";
-            } else {
-                 grade.innerHTML = horariosDisponiveis.map(h => `<button class="time-slot">${h}</button>`).join('');
-            }
-        }
-
-        function getAgendamentos() {
-            return JSON.parse(localStorage.getItem('agendamentos_db')) || [];
-        }
-
-        function saveAgendamentos(agendamentos) {
-            localStorage.setItem('agendamentos_db', JSON.stringify(agendamentos));
-        }
-
-        function confirmarAgendamento() {
-            const nomeCliente = document.getElementById('nome-cliente').value;
-            const telefoneCliente = document.getElementById('telefone-cliente').value;
-            const pinCliente = document.getElementById('pin-cliente').value;
-
-            const novoAgendamento = {
-                id: Date.now(), ...agendamentoState, nomeCliente, telefoneCliente, pinCliente
-            };
-
-            const agendamentos = getAgendamentos();
-            agendamentos.push(novoAgendamento);
-            saveAgendamentos(agendamentos);
-            alert(`Agendamento confirmado!`);
-
-            // CORREÇÃO: Removida referência a 'agendamento-form' que não existe. Campos resetados individualmente.
-            document.getElementById('nome-cliente').value = '';
-            document.getElementById('telefone-cliente').value = '';
-            document.getElementById('pin-cliente').value = '';
-            agendamentoState = { servicoId: null, servicoDuracao: null, data: null, horario: null };
-            document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-            document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
-            checarEstadoBotaoConfirmar();
-        }
-        
-        function visualizarAgendamentos() {
-            const telefone = document.getElementById('input-telefone-visualizacao').value;
-            const output = document.getElementById('lista-agendamentos-visualizacao');
-            const meusAgendamentos = getAgendamentos().filter(a => a.telefoneCliente === telefone);
-            if (meusAgendamentos.length === 0) {
-                output.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
-            } else {
-                output.innerHTML = meusAgendamentos.map(a => `<div><p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p><p><strong>Data:</strong> ${a.data} às ${a.horario}</p></div>`).join('');
-            }
-        }
-
-        function buscarAgendamentosParaCancelar() {
-            const telefone = document.getElementById('input-telefone-cancelamento').value;
-            const pin = document.getElementById('input-pin-cancelamento').value;
-            const output = document.getElementById('lista-agendamentos-cancelamento');
-            const agendamentosParaCancelar = getAgendamentos().filter(a => a.telefoneCliente === telefone && a.pinCliente === pin);
-
-            if (agendamentosParaCancelar.length === 0) {
-                output.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
-            } else {
-                output.innerHTML = agendamentosParaCancelar.map(a => `<div><p><strong>Serviço:</strong> ${dadosDoProfissional.servicos.find(s=>s.id === a.servicoId).nome}</p><p><strong>Data:</strong> ${a.data} às ${a.horario}</p><button onclick="cancelarAgendamento(${a.id})">Confirmar Cancelamento</button></div>`).join('');
-            }
-        }
-        
-        function checarEstadoBotaoConfirmar() {
-            const { servicoId, data, horario } = agendamentoState;
-            const nomeCliente = document.getElementById('nome-cliente').value;
-            const telefoneCliente = document.getElementById('telefone-cliente').value;
-            const pinCliente = document.getElementById('pin-cliente').value;
-            const btn = document.getElementById('btn-confirmar-agendamento');
-            btn.disabled = !(servicoId && data && horario && nomeCliente && telefoneCliente && pinCliente);
-        }
-
-        // --- FUNÇÕES DE PERFIL DO CLIENTE ---
-        function salvarPerfil() {
-            const nome = document.getElementById('perfil-nome').value;
-            const telefone = document.getElementById('perfil-telefone').value;
-            localStorage.setItem('perfilNome', nome);
-            localStorage.setItem('perfilTelefone', telefone);
-            alert("Perfil salvo com sucesso!");
-        }
-
-        function preencherCamposComPerfil() {
-            const nome = localStorage.getItem('perfilNome') || '';
-            const telefone = localStorage.getItem('perfilTelefone') || '';
-            document.getElementById('perfil-nome').value = nome;
-            // CORREÇÃO: Estava 'nome', alterado para 'telefone' para preencher o campo correto.
-            document.getElementById('perfil-telefone').value = telefone; 
-            
-            // Preenche automaticamente os campos de agendamento e busca, se vazios
-            if(!document.getElementById('nome-cliente').value) document.getElementById('nome-cliente').value = nome;
-            if(!document.getElementById('telefone-cliente').value) document.getElementById('telefone-cliente').value = telefone;
-            if(!document.getElementById('input-telefone-visualizacao').value) document.getElementById('input-telefone-visualizacao').value = telefone;
-            if(!document.getElementById('input-telefone-cancelamento').value) document.getElementById('input-telefone-cancelamento').value = telefone;
-        }
-
-        // Iniciar a aplicação
-        inicializarApp();
-    });
-
-    // Esta função precisa estar no escopo global para ser chamada pelo onclick
-    function cancelarAgendamento(id) {
-        let agendamentos = JSON.parse(localStorage.getItem('agendamentos_db')) || [];
-        agendamentos = agendamentos.filter(a => a.id !== id);
-        localStorage.setItem('agendamentos_db', JSON.stringify(agendamentos));
-        alert("Agendamento cancelado!");
-        document.getElementById('btn-buscar-cancelamento').click();
-    }
-  </script>
 </body>
 </html>
