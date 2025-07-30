@@ -327,5 +327,15 @@ button#btn-confirmar-agendamento:disabled {
 }
 .btn-submit { /* Classe para os botões de ação nas abas */
     background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
+  .vitrine-container {
+  border: 2px dashed red;
+}
+.sidebar-vitrine {
+  border: 2px dashed green;
+}
+.main-content-vitrine {
+  border: 2px dashed blue;
+}
+
     color: white;
 }
