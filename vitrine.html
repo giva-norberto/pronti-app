@@ -43,7 +43,6 @@
     </aside>
 
     <div class="main-content-vitrine">
-
       <!-- Informações -->
       <div id="menu-informacoes" class="menu-content ativo">
         <div class="card">
@@ -124,7 +123,7 @@
         </div>
       </div>
 
-      <!-- Perfil (sem campo PIN) -->
+      <!-- Perfil -->
       <div id="menu-perfil" class="menu-content">
         <div class="card">
           <h2>Meu Perfil</h2>
@@ -145,6 +144,34 @@
   </div>
 
   <div id="notification-message" class="notification-message"></div>
-  <script type="module" src="vitrine.js"></script>
+  <script type="module">
+    document.getElementById('btn-salvar-perfil').addEventListener('click', () => {
+      const nome = document.getElementById('perfil-nome').value;
+      const telefone = document.getElementById('perfil-telefone').value;
+
+      localStorage.setItem('perfilNome', nome);
+      localStorage.setItem('perfilTelefone', telefone);
+
+      document.getElementById('notification-message').textContent = 'Perfil salvo com sucesso!';
+      document.getElementById('notification-message').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('notification-message').style.display = 'none';
+      }, 3000);
+
+      // Atualizar campos no agendamento se estiverem vazios
+      const nomeAgendamento = document.getElementById('nome-cliente');
+      const telefoneAgendamento = document.getElementById('telefone-cliente');
+      if (!nomeAgendamento.value) nomeAgendamento.value = nome;
+      if (!telefoneAgendamento.value) telefoneAgendamento.value = telefone;
+    });
+
+    // Carregar dados do perfil ao abrir
+    window.addEventListener('DOMContentLoaded', () => {
+      const nome = localStorage.getItem('perfilNome') || '';
+      const telefone = localStorage.getItem('perfilTelefone') || '';
+      document.getElementById('perfil-nome').value = nome;
+      document.getElementById('perfil-telefone').value = telefone;
+    });
+  </script>
 </body>
 </html>
