@@ -1,246 +1,624 @@
-/* --- ESTE É O SEU CÓDIGO CSS ORIGINAL E COMPLETO --- */
+/* --- TEMA E FONTES --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
 :root {
-  --cor-fundo: #f5f7fa;
-  --cor-primaria: #6366f1;
-  --cor-primaria-leve: #a5b4fc;
-  --cor-texto-leve: #4b5563;
-  --cor-sucesso: #22c55e;
+  --cor-primaria: #6366f1;         /* Indigo-Violeta mais vibrante */
+  --cor-primaria-leve: #e0e7ff;    /* Adicionado para uso em gradientes e hovers */
+  --cor-secundaria: #ec4899;        /* Rosa vibrante */
+  --cor-sucesso: #22c55e;           /* Verde forte */
+  --cor-perigo: #ef4444;           /* Vermelho claro */
+  --cor-aviso: #f59e0b;             /* Laranja vivo */
+  --cor-fundo: #f3f4f6;             /* Cinza claro (para o gradiente do body) */
+  --cor-branco: #ffffff;
+  --cor-texto: #1f2937;             /* Cinza escuro */
+  --cor-texto-leve: #6b7280;       /* Cinza médio */
+
+  /* Sombras mais intensas para mais profundidade e impacto */
+  --sombra: 0 6px 12px rgba(0, 0, 0, 0.15);
+  --sombra-elevada: 0 15px 30px rgba(0, 0, 0, 0.25);
 }
+
+/* --- ESTRUTURA GERAL --- */
 body {
+  font-family: 'Poppins', sans-serif;
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: var(--cor-fundo);
-  color: #333;
+  color: var(--cor-texto);
   display: flex;
-  justify-content: center;
+  flex-direction: row; /* Padrão para desktop */
+  background: linear-gradient(135deg, var(--cor-fundo), #e0e7ff);
+  background-attachment: fixed;
+}
+
+/* --- BARRA LATERAL (MENU / CABEÇALHO) --- */
+.sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #f8faff, var(--cor-primaria-leve));
+  height: 100vh;
+  position: fixed;
   padding: 20px;
+  box-shadow: var(--sombra-elevada);
+  box-sizing: border-box;
+  border-right: 1px solid #e5e7eb;
+  z-index: 999;
 }
-main.main-content {
-  max-width: 700px;
-  width: 100%;
-  background: white;
-  border-radius: 12px;
-  padding: 25px 30px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.header-vitrine {
-  text-align: center;
-  margin-bottom: 30px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 20px;
-}
-.header-vitrine img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--cor-primaria-leve);
-  margin-bottom: 10px;
-}
-.header-vitrine h1 {
-  font-size: 2em;
+
+.sidebar-brand {
+  font-size: 1.8em;
+  font-weight: 700;
   color: var(--cor-primaria);
-  margin: 0;
-}
-.header-vitrine p {
-  margin: 5px 0 0;
-  color: var(--cor-texto-leve);
-}
-h2 {
-  font-size: 1.3em;
-  margin-bottom: 15px;
-  border-bottom: 2px solid var(--cor-primaria-leve);
-  padding-bottom: 10px;
-  color: var(--cor-primaria);
-}
-.form-group {
-  margin-bottom: 25px;
-}
-label {
+  text-decoration: none;
   display: block;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: var(--cor-primaria);
+  text-align: center;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
 }
-#lista-servicos, #grade-horarios {
+
+.sidebar-links a {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.btn-servico, .btn-horario {
-  background: #e0e7ff;
-  border: 1px solid var(--cor-primaria-leve);
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
   border-radius: 8px;
-  padding: 10px 15px;
-  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  transition: all 0.3s ease-in-out;
+  padding: 15px 20px;
+  margin-bottom: 12px;
+  background-color: var(--cor-branco);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  color: var(--cor-texto);
+}
+
+.sidebar-links a.active {
+  background: var(--cor-primaria);
+  color: var(--cor-branco);
+  font-weight: 700;
+  transform: translateX(8px) translateY(-2px);
+  box-shadow: var(--sombra-elevada);
+  border-right: 4px solid var(--cor-secundaria);
+}
+
+.sidebar-links a:hover {
+  background: linear-gradient(90deg, var(--cor-primaria-leve), #d3d6f7);
   color: var(--cor-primaria);
   font-weight: 600;
-  transition: all 0.2s ease;
+  transform: translateX(4px) translateY(-1px);
+  box-shadow: var(--sombra);
+  border-right: 4px solid var(--cor-primaria);
 }
-.btn-servico.selecionado, .btn-horario.selecionado,
-.btn-servico:hover, .btn-horario:hover {
-  background: var(--cor-primaria);
-  color: white;
-  border-color: var(--cor-primaria);
-}
-.detalhes-servico {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  margin-top: 5px;
-  border-left: 3px solid var(--cor-primaria);
-}
-input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
+
+/* --- CONTEÚDO PRINCIPAL --- */
+.main-content {
+  margin-left: 240px;
+  padding: 40px;
   width: 100%;
-  padding: 10px 12px;
-  font-size: 1em;
-  border-radius: 6px;
-  border: 1px solid #ccc;
   box-sizing: border-box;
 }
-button#btn-confirmar-agendamento {
-  background: var(--cor-sucesso);
-  border: none;
-  padding: 12px 18px;
-  color: white;
-  font-size: 1.1em;
-  font-weight: 700;
-  border-radius: 8px;
-  width: 100%;
+
+/* --- ESTILOS DOS COMPONENTES (CARDS) --- */
+h1, h2, h3 {
+  color: var(--cor-texto);
+  font-weight: 600;
+}
+
+.servico-item, .agendamento-item, .cliente-item, .form-card, .info-card, .chart-container {
+  background-color: var(--cor-branco);
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: var(--sombra);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.servico-item::before,
+.agendamento-item::before,
+.cliente-item::before,
+.form-card::before,
+.info-card::before,
+.chart-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--cor-primaria);
+  border-radius: 12px 0 0 12px;
+  z-index: 1;
+}
+
+.agendamento-item {
+    border-left: none;
+}
+.agendamento-item::before {
+    background: var(--cor-sucesso);
+}
+.agendamento-item h3 { margin-top: 0; color: var(--cor-sucesso); }
+
+.servico-item:hover, .agendamento-item:hover, .cliente-item:hover, .info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sombra-elevada);
+}
+
+.servico-item h3 { margin-top: 0; color: var(--cor-primaria); }
+.cliente-item h3 { margin: 0; }
+.info-card h3 { margin-top: 0; }
+
+/* --- BOTÕES --- */
+.btn-new, .btn-submit, .btn-cancelar, .btn-editar, .btn-excluir, .cliente-item a {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 1em;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
 }
-button#btn-confirmar-agendamento:disabled {
-  background: #a7f3d0;
-  cursor: not-allowed;
+.btn-new:hover, .btn-submit:hover, .btn-cancelar:hover, .btn-editar:hover, .btn-excluir:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra);
 }
-.btn-flutuante {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: var(--cor-primaria);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    padding: 15px 20px;
-    font-size: 16px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    cursor: pointer;
-    z-index: 1000;
+
+.btn-new {
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+  color: var(--cor-branco);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  border: none;
+  margin-bottom: 20px;
 }
-.saudacao {
-    max-width: 700px;
-    margin: 0 auto 15px auto;
-    text-align: center;
-    padding: 10px;
-    background-color: #e7f3ff;
-    border: 1px solid #cce5ff;
-    color: #004085;
+.btn-new:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
+.btn-submit { background-color: var(--cor-sucesso); color: var(--cor-branco); width: 100%; padding: 12px; font-size: 1.1em; }
+.btn-cancelar, .btn-excluir { background-color: var(--cor-perigo); color: var(--cor-branco); padding: 8px 12px; }
+.btn-editar { background-color: var(--cor-aviso); color: #333; padding: 8px 12px; }
+.cliente-item a { color: var(--cor-primaria); padding: 8px 12px; }
+.cliente-item a:hover { background-color: var(--cor-primaria-leve); }
+.item-acoes button { margin-left: 10px; }
+
+
+/* --- FORMULÁRIOS E FILTROS --- */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--cor-texto-leve); }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1em; box-sizing: border-box; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--cor-primaria); box-shadow: 0 0 0 3px var(--cor-primaria-leve); }
+.filtro-data { background-color: #e9ecef; padding: 15px; border-radius: 8px; margin: 20px 0; }
+
+/* --- GRADE DE HORÁRIOS --- */
+#grade-horarios { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+.aviso-horarios { color: var(--cor-texto-leve); font-style: italic; width: 100%; }
+.slot-horario { padding: 10px 15px; border: 1px solid var(--cor-primaria); color: var(--cor-primaria); background-color: var(--cor-branco); border-radius: 8px; cursor: pointer; font-weight: 600; }
+.slot-horario:hover, .slot-horario.selecionado { background-color: var(--cor-primaria); color: var(--cor-branco); }
+.slot-horario.desabilitado { border-color: #ccc; color: #ccc; cursor: not-allowed; background-color: var(--cor-fundo); text-decoration: line-through; }
+
+/* --- DASHBOARD --- */
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
+.chart-container.full-width { grid-column: 1 / -1; }
+
+/* --- ESTILOS PARA O MODAL DE CONFIRMAÇÃO --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-card {
+  background: var(--cor-branco);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  width: 90%;
+  max-width: 400px;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.visivel {
+  opacity: 1;
+  visibility: visible;
+}
+.modal-overlay.visivel .modal-card {
+  transform: scale(1);
+}
+
+.modal-card h3 {
+  margin-top: 0;
+  color: var(--cor-texto);
+}
+
+.modal-card p {
+  color: var(--cor-texto-leve);
+}
+
+.modal-botoes {
+  margin-top: 25px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.btn-modal {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.btn-modal.btn-confirmar {
+  background-color: var(--cor-perigo);
+  color: var(--cor-branco);
+}
+
+.btn-modal.btn-cancelar {
+  background-color: #e5e7eb;
+  color: var(--cor-texto);
+}
+
+/* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
+
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        box-shadow: var(--sombra-elevada);
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        background: linear-gradient(90deg, #f8faff, var(--cor-primaria-leve));
+        padding: 15px 10px;
+    }
+
+    .sidebar-brand {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+    }
+
+    .sidebar-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .sidebar-links a {
+        padding: 10px 15px;
+        margin-bottom: 0;
+        background-color: var(--cor-branco);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+        color: var(--cor-texto);
+        font-weight: 600;
+        text-align: center;
+        flex-grow: 1;
+        max-width: calc(33% - 16px);
+    }
+
+    .sidebar-links a.active,
+    .sidebar-links a:hover {
+        background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+        color: var(--cor-branco);
+        font-weight: 700;
+        transform: translateY(-2px);
+        box-shadow: var(--sombra);
+        border-right: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .servico-item, .agendamento-item, .cliente-item, .form-card, .info-card, .chart-container {
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .servico-item::before,
+    .agendamento-item::before,
+    .cliente-item::before,
+    .form-card::before,
+    .info-card::before,
+    .chart-container::before {
+        width: 4px;
+    }
+
+
+    .agendamento-item, .cliente-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .item-acoes {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+
+    .item-acoes button {
+        margin-left: 0;
+        margin-right: 10px;
+        flex-grow: 1;
+        max-width: 48%;
+    }
+    .item-acoes button:last-child {
+        margin-right: 0;
+    }
+
+    .btn-new, .btn-submit, .btn-cancelar, .btn-editar, .btn-excluir, .cliente-item a {
+        padding: 12px 15px;
+        font-size: 0.95em;
+    }
+    .btn-submit {
+        padding: 15px;
+        font-size: 1.2em;
+    }
+
+    .modal-card {
+        padding: 20px;
+        width: 95%;
+    }
+    .modal-botoes {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .btn-modal {
+        width: 100%;
+        padding: 12px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 200px;
+    }
+    .main-content {
+        margin-left: 200px;
+        padding: 30px;
+    }
+    .dashboard-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+}
+
+
+/* =================================================================== */
+/* --- ESTILOS PARA O RESUMO DIÁRIO INTELIGENTE (ACRESCENTADO) --- */
+/* =================================================================== */
+
+#resumo-diario-container {
+    margin-bottom: 2rem;
+}
+
+.resumo-card {
+    background-color: var(--cor-branco);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--sombra);
+    border-left: 5px solid var(--cor-primaria); /* Usa a cor primária da sua marca */
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.resumo-card h3 {
+    margin-top: 0;
+    font-size: 1.25rem;
+    color: var(--cor-texto);
+    display: flex;
+    align-items: center;
+}
+
+.resumo-card p {
+    color: var(--cor-texto-leve);
+    line-height: 1.6;
+}
+
+.resumo-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.resumo-card ul li {
+    background-color: #f3f4f6;
+    padding: 0.75rem 1rem;
     border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--cor-texto);
+    border: 1px solid #e5e7eb;
+}
+
+.resumo-metricas {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.metrica {
+    flex: 1;
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 180px;
+    border: 1px solid #e5e7eb;
+}
+
+.metrica span {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--cor-texto-leve);
+    margin-bottom: 0.5rem;
     font-weight: 500;
 }
-.modal {
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
+
+.metrica strong {
+    font-size: 1.75rem;
+    color: var(--cor-primaria); /* Usa a cor primária da sua marca */
 }
-.modal-content {
-    background-color: #fefefe;
-    padding: 25px 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 400px;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+
+.resumo-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-weight: 500;
+    color: var(--cor-texto-leve);
 }
-.modal-content h3 { color: var(--cor-primaria); }
-.modal-content button {
-    width: 100%;
-    margin-top: 15px;
-    background: var(--cor-primaria);
-    border: none;
-    padding: 12px;
-    color: white;
-    font-size: 1.1em;
-    border-radius: 8px;
-    cursor: pointer;
+
+.erro {
+    color: var(--cor-perigo); /* Usa a cor de perigo da sua marca */
+    font-weight: 500;
 }
-.fechar-modal {
-    color: #aaa;
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
+
+/* =================================================================== */
+/* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (REVISADO) --- */
+/* =================================================================== */
+
+#lista-servicos {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
-#agendamentos-cliente .agendamento-item {
-  padding: 15px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f9f9f9;
+
+.servico-card {
+  background: var(--cor-branco);
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease-in-out;
+  border: 1px solid #e5e7eb;
+}
+
+.servico-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra);
+}
+
+.btn-servico {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 600;
+  font-size: 1.1em;
+  padding: 20px;
+  width: 100%;
 }
-.btn-cancelar {
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
+
+.btn-servico .nome {
+  color: var(--cor-primaria);
+  font-weight: 700;
 }
-.btn-verificar-agendamentos {
-    background: var(--cor-primaria);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
+.btn-servico .preco {
+  color: var(--cor-texto);
+  font-weight: 500;
 }
-.notification-message {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    z-index: 1002;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
+
+.btn-servico.selecionado {
+  background-color: var(--cor-primaria);
+  border-radius: 12px 12px 0 0; /* Arredonda apenas os cantos de cima */
 }
-.notification-message.error {
-    background-color: #f44336;
+.btn-servico.selecionado .nome,
+.btn-servico.selecionado .preco {
+    color: var(--cor-branco);
 }
-.pin-input-group {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
+
+.detalhes-servico {
+  background-color: var(--cor-fundo);
+  padding: 15px 25px;
+  font-size: 0.9em;
+  color: var(--cor-texto-leve);
+  border-top: 1px solid #e5e7eb;
+  display: none; /* Começa escondido */
 }
-.pin-input-group label {
-    font-size: 0.9em;
-    color: #495057;
-    margin-bottom: 5px;
+.btn-vitrine {
+  background-color: #f44336; /* mesma cor do botão excluir */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-left: 8px;
 }
-.pin-input-group small {
-    color: #6c757d;
-    font-size: 0.8em;
-    display: block;
-    margin-top: 5px;
+
+.btn-vitrine:hover {
+  background-color: #d32f2f;
+}
+/* --- Estilos para Cancelamentos Pendentes --- */
+
+.agendamento-item.cancelamento-pendente {
+  background-color: #fff3e0; /* Tom de laranja claro */
+  border-left: 5px solid #ff9800; /* Borda laranja */
+}
+
+.data-cancelamento {
+  font-size: 0.9em;
+  color: #616161;
+  margin-top: 5px;
+}
+
+.botoes-pendentes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.botoes-pendentes button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.botoes-pendentes button:hover {
+  opacity: 0.8;
+}
+
+.btn-reativar {
+  background-color: #4CAF50; /* Verde */
+  color: white;
+}
+
+.btn-confirmar-exclusao {
+  background-color: #f44336; /* Vermelho */
+  color: white;
 }
