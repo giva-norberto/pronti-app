@@ -15,7 +15,7 @@ body {
   background: var(--cor-fundo);
   color: #333;
   padding: 20px;
-  /* display: flex; e justify-content: center; removidos daqui para permitir o novo layout */
+  /* display: flex e justify-content: center removidos para permitir o novo layout */
 }
 main.main-content {
   max-width: 700px;
@@ -40,7 +40,7 @@ main.main-content {
   margin-bottom: 10px;
 }
 .header-vitrine h1 {
-  font-size: 2em;
+  font-size: 1.5em; /* Ajustado para caber melhor na sidebar */
   color: var(--cor-primaria);
   margin: 0;
 }
@@ -248,6 +248,7 @@ button#btn-confirmar-agendamento:disabled {
 }
 
 /* --- NOVOS ESTILOS ADICIONADOS PARA O LAYOUT DE MENU --- */
+
 .vitrine-container {
   display: flex;
   max-width: 1100px;
@@ -327,48 +328,5 @@ button#btn-confirmar-agendamento:disabled {
 }
 .btn-submit { /* Classe para os botões de ação nas abas */
     background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-  .vitrine-container {
-  border: 2px dashed red;
-}
-.sidebar-vitrine {
-  border: 2px dashed green;
-}
-.main-content-vitrine {
-  border: 2px dashed blue;
-}
-
     color: white;
-}
-/* Forçar reset e layout */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
-  font-family: 'Poppins', sans-serif;
-}
-
-.vitrine-container {
-  display: flex !important;
-  flex-direction: row;
-  max-width: 1100px;
-  margin: 0 auto;
-  min-height: 100vh;
-  background-color: #f1f1f1;
-}
-
-.sidebar-vitrine {
-  width: 280px;
-  background-color: #ffffff;
-  padding: 20px;
-  border-right: 1px solid #ddd;
-}
-
-.main-content-vitrine {
-  flex-grow: 1;
-  padding: 20px;
-  background-color: #fafafa;
 }
