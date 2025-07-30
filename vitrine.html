@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agendamento Online</title>
-  <link rel="stylesheet" href="vitrine.css">
+  <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -15,13 +15,13 @@
     <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do profissional...</p>
   </div>
 
- <div id="vitrine-content" class="vitrine-container" style="display: flex;">
-    <aside class="sidebar-vitrine">
+  <div id="vitrine-content" class="vitrine-container" style="display: none;">
+    <aside class="sidebar">
       <div class="header-vitrine">
         <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
         <h1 id="nome-negocio-publico">Nome do Negócio</h1>
       </div>
-      <nav class="sidebar-menu">
+      <nav class="sidebar-links">
         <button class="menu-btn ativo" data-menu="informacoes">Informações</button>
         <button class="menu-btn" data-menu="agendamento">Fazer Agendamento</button>
         <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
@@ -29,7 +29,7 @@
       </nav>
     </aside>
 
-    <div class="main-content-vitrine">
+    <main class="main-content">
       
       <div id="menu-informacoes" class="menu-content ativo">
         <div class="card">
@@ -107,7 +107,8 @@
         </div>
       </div>
 
-    </div> </div>
+    </main>
+  </div>
 
   <div id="notification-message" class="notification-message"></div>
   <script type="module" src="vitrine.js"></script>
