@@ -339,3 +339,36 @@ button#btn-confirmar-agendamento:disabled {
 
     color: white;
 }
+/* Forçar reset e layout */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+}
+
+.vitrine-container {
+  display: flex !important;
+  flex-direction: row;
+  max-width: 1100px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f1f1f1;
+}
+
+.sidebar-vitrine {
+  width: 280px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+}
+
+.main-content-vitrine {
+  flex-grow: 1;
+  padding: 20px;
+  background-color: #fafafa;
+}
