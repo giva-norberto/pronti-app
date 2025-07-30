@@ -5,69 +5,68 @@
   --cor-primaria-leve: #a5b4fc;
   --cor-texto-leve: #4b5563;
   --cor-sucesso: #22c55e;
-  --cor-branco: #ffffff; /* Adicionado para consistência */
-  --cor-texto: #1f2937; /* Adicionado para consistência */
-  --sombra: 0 4px 12px rgba(0,0,0,0.1); /* Adicionado para consistência */
+  --cor-branco: #ffffff;
+  --cor-texto: #1f2937;
+  --sombra: 0 4px 12px rgba(0,0,0,0.1);
 }
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background: var(--cor-fundo);
-  color: #333;
-}
-main.main-content {
-  max-width: 700px;
-  width: 100%;
-  background: white;
-  border-radius: 12px;
-  padding: 25px 30px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.header-vitrine {
-  text-align: center;
-  margin-bottom: 30px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 20px;
-}
-.header-vitrine img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--cor-primaria-leve);
-  margin-bottom: 10px;
-}
-.header-vitrine h1 {
-  font-size: 2em;
-  color: var(--cor-primaria);
-  margin: 0;
-}
-.header-vitrine p {
-  margin: 5px 0 0;
-  color: var(--cor-texto-leve);
+  color: var(--cor-texto);
 }
 h2 {
-  font-size: 1.3em;
+  font-size: 1.5em;
   margin-bottom: 15px;
   border-bottom: 2px solid var(--cor-primaria-leve);
   padding-bottom: 10px;
   color: var(--cor-primaria);
+  margin-top: 0;
 }
 .form-group {
   margin-bottom: 25px;
 }
 label {
   display: block;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 8px;
-  color: var(--cor-primaria);
+  color: var(--cor-texto);
 }
 #lista-servicos, #grade-horarios {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
-.btn-servico, .btn-horario {
+.btn-servico {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.btn-servico:hover {
+  border-color: var(--cor-primaria);
+  background-color: #f9f9ff;
+}
+.btn-servico.selecionado {
+  border-color: var(--cor-primaria);
+  background-color: var(--cor-primaria);
+  color: var(--cor-branco);
+}
+.btn-servico .preco {
+  color: var(--cor-texto-leve);
+}
+.btn-servico.selecionado .preco {
+  color: var(--cor-branco);
+}
+.btn-horario {
   background: #e0e7ff;
   border: 1px solid var(--cor-primaria-leve);
   border-radius: 8px;
@@ -77,11 +76,9 @@ label {
   font-weight: 600;
   transition: all 0.2s ease;
 }
-.btn-servico.selecionado, .btn-horario.selecionado,
-.btn-servico:hover, .btn-horario:hover {
+.btn-horario:hover, .btn-horario.selecionado {
   background: var(--cor-primaria);
   color: white;
-  border-color: var(--cor-primaria);
 }
 .detalhes-servico {
   background-color: #f8f9fa;
@@ -98,46 +95,27 @@ input[type="date"], input[type="text"], input[type="tel"], input[type="password"
   border: 1px solid #ccc;
   box-sizing: border-box;
 }
-button#btn-confirmar-agendamento {
-  background: var(--cor-sucesso);
-  border: none;
+button {
+  width: 100%;
   padding: 12px 18px;
-  color: white;
   font-size: 1.1em;
   font-weight: 700;
+  border: none;
   border-radius: 8px;
-  width: 100%;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s ease;
+}
+button:hover {
+    transform: translateY(-2px);
+}
+button#btn-confirmar-agendamento {
+  background: var(--cor-sucesso);
+  color: white;
 }
 button#btn-confirmar-agendamento:disabled {
   background: #a7f3d0;
   cursor: not-allowed;
-}
-.btn-flutuante {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: var(--cor-primaria);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    padding: 15px 20px;
-    font-size: 16px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    cursor: pointer;
-    z-index: 1000;
-}
-.saudacao {
-    max-width: 700px;
-    margin: 0 auto 15px auto;
-    text-align: center;
-    padding: 10px;
-    background-color: #e7f3ff;
-    border: 1px solid #cce5ff;
-    color: #004085;
-    border-radius: 8px;
-    font-weight: 500;
+  transform: none;
 }
 .modal {
     position: fixed;
@@ -166,12 +144,7 @@ button#btn-confirmar-agendamento:disabled {
     width: 100%;
     margin-top: 15px;
     background: var(--cor-primaria);
-    border: none;
-    padding: 12px;
     color: white;
-    font-size: 1.1em;
-    border-radius: 8px;
-    cursor: pointer;
 }
 .fechar-modal {
     color: #aaa;
@@ -181,33 +154,6 @@ button#btn-confirmar-agendamento:disabled {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
-}
-#agendamentos-cliente .agendamento-item {
-  padding: 15px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f9f9f9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.btn-cancelar {
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-.btn-verificar-agendamentos {
-    background: var(--cor-primaria);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
 }
 .notification-message {
     position: fixed;
@@ -245,7 +191,7 @@ button#btn-confirmar-agendamento:disabled {
     margin-top: 5px;
 }
 
-/* --- NOVOS ESTILOS ADICIONADOS PARA O LAYOUT DE MENU --- */
+/* --- NOVOS ESTILOS PARA O LAYOUT DE MENU --- */
 .vitrine-container {
   display: flex;
   max-width: 1100px;
@@ -267,6 +213,24 @@ button#btn-confirmar-agendamento:disabled {
 .main-content-vitrine {
   flex-grow: 1;
   width: 100%;
+}
+.sidebar-header {
+  text-align: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+.sidebar-header img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--cor-primaria-leve);
+  margin-bottom: 10px;
+}
+.sidebar-header h1 {
+  font-size: 1.5em;
+  color: var(--cor-primaria);
+  margin: 0;
 }
 .sidebar-menu {
   margin-top: 20px;
@@ -291,7 +255,7 @@ button#btn-confirmar-agendamento:disabled {
 }
 .menu-btn.ativo {
   background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-  color: var(--cor-branco);
+  color: white;
 }
 .card {
   background: var(--cor-branco);
@@ -309,7 +273,7 @@ button#btn-confirmar-agendamento:disabled {
 .lista-agendamentos-resultado {
     margin-top: 20px;
 }
-.agendamento-item-visualizacao, .agendamento-item-cancelamento {
+.agendamento-item-visualizacao, .agendamento-item-cancelamento, .agendamento-item {
     padding: 15px;
     margin-bottom: 10px;
     border: 1px solid #eee;
@@ -325,7 +289,7 @@ button#btn-confirmar-agendamento:disabled {
     padding: 8px 12px;
     width: auto;
 }
-.btn-submit { /* Classe para os botões de ação nas abas */
+.btn-submit {
     background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-    color: var(--cor-branco);
+    color: white;
 }
