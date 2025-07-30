@@ -5,6 +5,9 @@
   --cor-primaria-leve: #a5b4fc;
   --cor-texto-leve: #4b5563;
   --cor-sucesso: #22c55e;
+  --cor-branco: #ffffff; /* Adicionado para consistência */
+  --cor-texto: #1f2937; /* Adicionado para consistência */
+  --sombra: 0 4px 12px rgba(0,0,0,0.1); /* Adicionado para consistência */
 }
 body {
   margin: 0;
@@ -243,7 +246,6 @@ button#btn-confirmar-agendamento:disabled {
 }
 
 /* --- NOVOS ESTILOS ADICIONADOS PARA O LAYOUT DE MENU --- */
-
 .vitrine-container {
   display: flex;
   max-width: 1100px;
@@ -256,9 +258,9 @@ button#btn-confirmar-agendamento:disabled {
 .sidebar-vitrine {
   width: 280px;
   flex-shrink: 0;
-  background: white;
+  background: var(--cor-branco);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--sombra);
   padding: 20px;
   height: fit-content;
 }
@@ -289,13 +291,13 @@ button#btn-confirmar-agendamento:disabled {
 }
 .menu-btn.ativo {
   background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-  color: white;
+  color: var(--cor-branco);
 }
 .card {
-  background: white;
+  background: var(--cor-branco);
   border-radius: 12px;
   padding: 25px 30px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--sombra);
   margin-bottom: 25px;
 }
 .menu-content {
@@ -323,7 +325,7 @@ button#btn-confirmar-agendamento:disabled {
     padding: 8px 12px;
     width: auto;
 }
-.btn-submit { /* Classe genérica para botões de ação nas abas */
+.btn-submit { /* Classe para os botões de ação nas abas */
     background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-    color: white;
+    color: var(--cor-branco);
 }
