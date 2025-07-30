@@ -27,7 +27,6 @@
         <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
         <button class="menu-btn" data-menu="cancelamento">Cancelar Agendamento</button>
         <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
-        <!-- Botão suspenso de Primeiro Acesso -->
         <div class="dropdown-info">
           <button id="btn-primeiro-acesso" class="dropdown-toggle">Primeiro Acesso ⌄</button>
           <div id="primeiro-acesso-menu" class="dropdown-menu">
@@ -44,7 +43,8 @@
     </aside>
 
     <div class="main-content-vitrine">
-      
+
+      <!-- Informações -->
       <div id="menu-informacoes" class="menu-content ativo">
         <div class="card">
           <h2>Sobre o Negócio</h2>
@@ -60,6 +60,7 @@
         </div>
       </div>
 
+      <!-- Agendamento -->
       <div id="menu-agendamento" class="menu-content">
         <div class="card">
           <h2>Faça o seu Agendamento</h2>
@@ -91,33 +92,56 @@
         </div>
       </div>
 
+      <!-- Visualização -->
       <div id="menu-visualizacao" class="menu-content">
         <div class="card">
-            <h2>Meus Agendamentos</h2>
-            <p>Digite o telefone que usou para agendar para ver seus compromissos.</p>
-            <div class="form-group">
-                <label for="input-telefone-visualizacao">Seu Telefone</label>
-                <input type="tel" id="input-telefone-visualizacao" placeholder="(XX) XXXXX-XXXX">
-            </div>
-            <button id="btn-visualizar-agendamentos" class="btn-submit">Visualizar</button>
-            <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
+          <h2>Meus Agendamentos</h2>
+          <p>Digite o telefone que usou para agendar para ver seus compromissos.</p>
+          <div class="form-group">
+            <label for="input-telefone-visualizacao">Seu Telefone</label>
+            <input type="tel" id="input-telefone-visualizacao" placeholder="(XX) XXXXX-XXXX">
+          </div>
+          <button id="btn-visualizar-agendamentos" class="btn-submit">Visualizar</button>
+          <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
         </div>
       </div>
 
+      <!-- Cancelamento -->
       <div id="menu-cancelamento" class="menu-content">
         <div class="card">
-            <h2>Cancelar Agendamento</h2>
-            <p>Para cancelar, precisamos do seu telefone e do PIN que você criou no momento do agendamento.</p>
-            <div class="form-group">
-                <label for="input-telefone-cancelamento">Seu Telefone</label>
-                <input type="tel" id="input-telefone-cancelamento" placeholder="(XX) XXXXX-XXXX">
-            </div>
-            <div class="form-group">
-                <label for="input-pin-cancelamento">Seu PIN</label>
-                <input type="password" id="input-pin-cancelamento" placeholder="PIN de 4 a 6 dígitos">
-            </div>
-            <button id="btn-buscar-cancelamento" class="btn-submit">Buscar Agendamentos</button>
-            <div id="lista-agendamentos-cancelamento" class="lista-agendamentos-resultado"></div>
+          <h2>Cancelar Agendamento</h2>
+          <p>Para cancelar, precisamos do seu telefone e do PIN que você criou no momento do agendamento.</p>
+          <div class="form-group">
+            <label for="input-telefone-cancelamento">Seu Telefone</label>
+            <input type="tel" id="input-telefone-cancelamento" placeholder="(XX) XXXXX-XXXX">
+          </div>
+          <div class="form-group">
+            <label for="input-pin-cancelamento">Seu PIN</label>
+            <input type="password" id="input-pin-cancelamento" placeholder="PIN de 4 a 6 dígitos">
+          </div>
+          <button id="btn-buscar-cancelamento" class="btn-submit">Buscar Agendamentos</button>
+          <div id="lista-agendamentos-cancelamento" class="lista-agendamentos-resultado"></div>
+        </div>
+      </div>
+
+      <!-- Perfil -->
+      <div id="menu-perfil" class="menu-content">
+        <div class="card">
+          <h2>Meu Perfil</h2>
+          <p>Atualize suas informações pessoais abaixo.</p>
+          <div class="form-group">
+            <label for="perfil-nome">Nome Completo</label>
+            <input type="text" id="perfil-nome" placeholder="Digite seu nome completo">
+          </div>
+          <div class="form-group">
+            <label for="perfil-telefone">Telefone (WhatsApp)</label>
+            <input type="tel" id="perfil-telefone" placeholder="(XX) XXXXX-XXXX">
+          </div>
+          <div class="form-group">
+            <label for="perfil-pin">PIN de Acesso</label>
+            <input type="password" id="perfil-pin" placeholder="PIN de 4 a 6 dígitos">
+          </div>
+          <button id="btn-salvar-perfil" class="btn-submit">Salvar Perfil</button>
         </div>
       </div>
 
