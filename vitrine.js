@@ -2,7 +2,6 @@
 //  SETUP INICIAL E IMPORTAÇÕES DO FIREBASE
 // ==========================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
-// --- CORREÇÃO APLICADA NA LINHA ABAIXO ---
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
@@ -45,6 +44,7 @@ const listaAgendamentosVisualizacao = document.getElementById("lista-agendamento
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
 const cardResultados = document.getElementById("card-resultados");
 const tituloResultados = document.getElementById("titulo-resultados");
+
 
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
@@ -89,7 +89,7 @@ function iniciarAbaMeusAgendamentos() {
     if(cardResultados) cardResultados.style.display = 'none';
     
     if (telefoneSalvo) {
-        inputTelefoneVisualizacao.value = telefoneSalvo;
+        if(inputTelefoneVisualizacao) inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
         if(listaAgendamentosVisualizacao) listaAgendamentosVisualizacao.innerHTML = '';
@@ -105,7 +105,7 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
     
     if(cardResultados) cardResultados.style.display = 'block';
     if(tituloResultados) tituloResultados.textContent = modo === 'ativos' ? 'Agendamentos Ativos' : 'Histórico de Agendamentos';
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando...</p>';
+    if(listaAgendamentosVisualizacao) listaAgendamentosVisualizacao.innerHTML = '<p>Buscando...</p>';
 
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
@@ -349,15 +349,24 @@ function verificarEstadoBotaoConfirmar() {
     btnConfirmar.disabled = !(servico && data && horario && nomeOK && telOK && pinOK);
 }
 
+// --- FUNÇÃO CORRIGIDA ---
 function preencherCamposComPerfilSalvo() {
     const nome = localStorage.getItem('clienteNome') || '';
     const telefone = localStorage.getItem('clienteTelefone') || '';
-    document.getElementById('perfil-nome').value = nome;
-    document.getElementById('perfil-telefone').value = telefone;
-    if (!nomeClienteInput.value) nomeClienteInput.value = nome;
-    if (!telefoneClienteInput.value) telefoneClienteInput.value = telefone;
-    inputTelefoneVisualizacao.value = telefone;
-    document.getElementById('input-telefone-cancelamento').value = telefone;
+    
+    const perfilNome = document.getElementById('perfil-nome');
+    if(perfilNome) perfilNome.value = nome;
+    
+    const perfilTelefone = document.getElementById('perfil-telefone');
+    if(perfilTelefone) perfilTelefone.value = telefone;
+
+    if (nomeClienteInput && !nomeClienteInput.value) nomeClienteInput.value = nome;
+    if (telefoneClienteInput && !telefoneClienteInput.value) telefoneClienteInput.value = telefone;
+    
+    if (inputTelefoneVisualizacao) inputTelefoneVisualizacao.value = telefone;
+    
+    const inputTelCancelamento = document.getElementById('input-telefone-cancelamento');
+    if(inputTelCancelamento) inputTelCancelamento.value = telefone;
 }
 
 function salvarPerfilCliente() {
