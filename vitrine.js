@@ -93,11 +93,19 @@ async function getUidFromSlug(slug) {
 async function carregarDadosDoFirebase() {
     const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
         getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
-        // ### ALTERAÇÃO 1: Buscando TODOS os serviços, sem filtro no Firebase ###
         getDocs(collection(db, "users", profissionalUid, "servicos")),
         getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
     ]);
     return { perfilDoc, servicosSnapshot, horariosDoc };
+}
+
+function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
+    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
+    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
+    
+    professionalData.servicos = servicosSnapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(servico => servico.visivelNaVitrine !== false);
 }
 
 function validarDadosDoProfissional() {
@@ -114,21 +122,8 @@ function validarDadosDoProfissional() {
     return erros;
 }
 
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
-    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
-    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
-    
-    // ### ALTERAÇÃO 2: O filtro agora é feito aqui, no aplicativo ###
-    // Esta regra mostra o serviço se o campo for 'true' OU se ele não existir (undefined).
-    // Ele só esconde se estiver explicitamente marcado como 'false'.
-    professionalData.servicos = servicosSnapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(servico => servico.visivelNaVitrine !== false);
-}
-
-
 // ==========================================================================
-//  LÓGICA DE AGENDAMENTO (sem alterações)
+//  LÓGICA DE AGENDAMENTO
 // ==========================================================================
 async function carregarAgendaInicial() {
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
@@ -144,13 +139,11 @@ async function carregarAgendaInicial() {
         await gerarHorariosDisponiveis();
     }
 }
-function calcularSlotsDisponiveis(data, agendamentosOcupados) {
-    const dataObj = new Date(data + 'T00:00:00');
-    const diaSemana = dataObj.getDay();
-    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana]; // Variável corrigida para 'nomeDia'
-    const configDia = professionalData.horarios[nomeDia]; // Agora funciona
-    // ... resto da função
-}
+
+async function gerarHorariosDisponiveis() {
+    if (!agendamentoState.data || !agendamentoState.servico) {
+        horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
+        return;
     }
     horariosContainer.innerHTML = '<p class="aviso-horarios">Verificando horários...</p>';
     try {
@@ -182,13 +175,15 @@ async function buscarAgendamentosDoDia(dataString) {
 function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     const dataObj = new Date(data + 'T00:00:00');
     const diaSemana = dataObj.getDay();
-    const nomesDias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
+    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
     const configDia = professionalData.horarios[nomeDia];
     if (!configDia || !configDia.ativo) return [];
+    
     const horarios = [];
     const intervalo = professionalData.horarios.intervalo || 30;
     const duracaoServicoAtual = agendamentoState.servico.duracao;
     const blocosDeTrabalho = configDia.blocos || [];
+    
     blocosDeTrabalho.forEach(bloco => {
         if (!bloco.inicio || !bloco.fim) return;
         let horarioAtual = new Date(`${data}T${bloco.inicio}`);
@@ -206,11 +201,9 @@ function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     return horarios;
 }
 
-
 // ==========================================================================
-//  Restante do código (Renderização, Eventos, etc.) - SEM ALTERAÇÕES
+//  RENDERIZAÇÃO E MANIPULAÇÃO DO DOM
 // ==========================================================================
-
 function renderizarInformacoesGerais() {
     const { perfil, servicos } = professionalData;
     nomeNegocioEl.textContent = perfil.nomeNegocio || "Nome não definido";
