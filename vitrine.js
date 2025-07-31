@@ -37,13 +37,13 @@ const telefoneClienteInput = document.getElementById("telefone-cliente");
 const pinClienteInput = document.getElementById("pin-cliente");
 const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
 const notificationMessageEl = document.getElementById("notification-message");
+
+// --- Elementos da Aba "Meus Agendamentos" ---
 const inputTelefoneVisualizacao = document.getElementById("input-telefone-visualizacao");
 const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
 const btnVerHistorico = document.getElementById("btn-ver-historico");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
-const containerBuscaManual = document.getElementById("container-busca-manual-view"); 
-const containerFiltros = document.getElementById("botoes-agendamento");
 
 
 // ==========================================================================
@@ -80,6 +80,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+function showError(message) {
+    loader.style.display = 'block';
+    content.style.display = 'none';
+    loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
+}
+
+// ==========================================================================
+//  BUSCA E VALIDAÇÃO DE DADOS
+// ==========================================================================
+async function getUidFromSlug(slug) {
+    const docSnap = await getDoc(doc(db, "slugs", slug));
+    return docSnap.exists() ? docSnap.data().uid : null;
+}
+
+async function carregarDadosDoFirebase() {
+    const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
+        getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
+        // CORREÇÃO: Buscando TODOS os serviços
+        getDocs(collection(db, "users", profissionalUid, "servicos")),
+        getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
+    ]);
+    return { perfilDoc, servicosSnapshot, horariosDoc };
+}
+
+function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
+    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
+    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
+    
+    // CORREÇÃO: Filtrando os serviços no aplicativo
+    professionalData.servicos = servicosSnapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(servico => servico.visivelNaVitrine !== false);
+}
+
+function validarDadosDoProfissional() {
+    const erros = [];
+    if (!professionalData.perfil.nomeNegocio) {
+        erros.push("O perfil do negócio (com nome) não foi configurado.");
+    }
+    if (Object.keys(professionalData.horarios).length === 0) {
+        erros.push("Os horários de atendimento não foram configurados.");
+    }
+    if (professionalData.servicos.length === 0) {
+        erros.push("Nenhum serviço foi disponibilizado para a vitrine.");
+    }
+    return erros;
+}
 
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
@@ -102,7 +149,7 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
         return;
     }
     
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
+    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
 
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
@@ -116,26 +163,12 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
         const agora = new Date();
         const todosAgendamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // ### CORREÇÃO APLICADA AQUI ###
-        // Adicionamos uma verificação de segurança antes de chamar a função .toDate()
         const agendamentosFiltrados = (modo === 'ativos')
             ? todosAgendamentos
-                .filter(ag => {
-                    // Garante que o campo horario existe e é um Timestamp válido
-                    if (ag.horario && typeof ag.horario.toDate === 'function') {
-                        return ag.horario.toDate() >= agora && ag.status === 'agendado';
-                    }
-                    return false; // Descarta agendamentos com formato inválido
-                })
+                .filter(ag => ag.horario && typeof ag.horario.toDate === 'function' && ag.horario.toDate() >= agora && ag.status === 'agendado')
                 .sort((a, b) => a.horario.toMillis() - b.horario.toMillis())
             : todosAgendamentos
-                .filter(ag => {
-                    // Garante que o campo horario existe e é um Timestamp válido
-                    if (ag.horario && typeof ag.horario.toDate === 'function') {
-                        return ag.horario.toDate() < agora;
-                    }
-                    return false; // Descarta agendamentos com formato inválido
-                })
+                .filter(ag => ag.horario && typeof ag.horario.toDate === 'function' && ag.horario.toDate() < agora)
                 .sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
         
         renderizarAgendamentosComoCards(agendamentosFiltrados, modo);
@@ -152,8 +185,8 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
         listaAgendamentosVisualizacao.innerHTML = `<p>${mensagem}</p>`;
         return;
     }
+
     listaAgendamentosVisualizacao.innerHTML = agendamentos.map(ag => {
-        // Verificação final para garantir que não vai quebrar a renderização
         if (!ag.horario || typeof ag.horario.toDate !== 'function') return '';
 
         const data = ag.horario.toDate();
@@ -222,50 +255,8 @@ function configurarTodosEventListeners() {
 }
 
 // ==========================================================================
-//  DEMAIS FUNÇÕES (código restante sem alterações)
+//  DEMAIS FUNÇÕES (Lógica de agendamento, perfil, etc.)
 // ==========================================================================
-function showError(message) {
-    loader.style.display = 'block';
-    content.style.display = 'none';
-    loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
-}
-
-async function getUidFromSlug(slug) {
-    const docSnap = await getDoc(doc(db, "slugs", slug));
-    return docSnap.exists() ? docSnap.data().uid : null;
-}
-
-async function carregarDadosDoFirebase() {
-    const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
-        getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
-        getDocs(query(collection(db, "users", profissionalUid, "servicos"), where("visivelNaVitrine", "==", true))),
-        getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
-    ]);
-    return { perfilDoc, servicosSnapshot, horariosDoc };
-}
-
-function validarDadosDoProfissional() {
-    const erros = [];
-    if (!professionalData.perfil.nomeNegocio) {
-        erros.push("O nome do negócio não foi configurado.");
-    }
-    if (Object.keys(professionalData.horarios).length === 0) {
-        erros.push("Os horários de atendimento não foram configurados.");
-    }
-    if (professionalData.servicos.length === 0) {
-        erros.push("Nenhum serviço foi disponibilizado para a vitrine.");
-    }
-    return erros;
-}
-
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
-    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
-    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
-    professionalData.servicos = servicosSnapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(servico => servico.visivelNaVitrine !== false);
-}
-
 async function carregarAgendaInicial() {
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
     dataInput.value = hoje.toISOString().split('T')[0];
