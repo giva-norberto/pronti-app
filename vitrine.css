@@ -1,33 +1,39 @@
 /* =============================================== */
-/* TEMA "AZUL GRADIENTE" E VARIAVEIS GLOBAIS */
+/* TEMA PRONTI APLICADO À VITRINE            */
 /* =============================================== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
 :root {
-  --cor-fundo: #f8fafc;        /* Fundo cinza bem claro (quase branco) */
-  --cor-primaria: #4f46e5;      /* Azul-índigo vibrante */
-  --cor-primaria-leve: #e0e7ff; /* Azul-índigo bem clarinho */
-  --cor-secundaria: #22d3ee;    /* Ciano / Azul piscina */
-  --cor-texto-leve: #6b7280;   /* Cinza para textos secundários */
-  --cor-sucesso: #22c55e;      /* Verde sucesso */
-  --cor-branco: #ffffff;      /* Branco puro */
-  --cor-texto: #111827;        /* Preto/Cinza bem escuro para texto */
-  --cor-borda: #d1d5db;       /* Cinza para bordas */
-  --sombra: 0 4px 12px rgba(79, 70, 229, 0.1);
-  --sombra-hover: 0 8px 16px rgba(79, 70, 229, 0.15);
+  --cor-primaria: #6366f1;
+  --cor-primaria-leve: #e0e7ff;
+  --cor-secundaria: #ec4899;
+  --cor-sucesso: #22c55e;
+  --cor-perigo: #ef4444;
+  --cor-aviso: #f59e0b;
+  --cor-fundo: #f3f4f6;
+  --cor-branco: #ffffff;
+  --cor-texto: #1f2937;
+  --cor-texto-leve: #6b7280;
+  --sombra: 0 6px 12px rgba(0, 0, 0, 0.08);
+  --sombra-elevada: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
+/* =============================================== */
+/* ESTRUTURA GERAL                       */
+/* =============================================== */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+body {
   font-family: 'Poppins', sans-serif;
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
 }
 
-/* Acessibilidade com foco visível */
+/* Acessibilidade */
 button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
   outline: 3px solid var(--cor-secundaria);
   outline-offset: 3px;
@@ -35,7 +41,7 @@ button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
 }
 
 /* =============================================== */
-/* ESTRUTURA PRINCIPAL DA VITRINE        */
+/* LAYOUT DA VITRINE                     */
 /* =============================================== */
 .vitrine-container {
   display: flex;
@@ -54,46 +60,64 @@ button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
   padding: 25px;
   box-shadow: var(--sombra);
   height: fit-content;
-  border: 1px solid var(--cor-borda);
+  border: 1px solid #e5e7eb;
 }
 
 .main-content-vitrine {
   flex-grow: 1;
 }
 
-/* ESTILO ESSENCIAL DO CARD DE CONTEÚDO */
+/* =============================================== */
+/* CARDS DE CONTEÚDO (PADRÃO PRONTI)       */
+/* =============================================== */
 .card {
-  background: var(--cor-branco);
+  background-color: var(--cor-branco);
   border-radius: 12px;
-  padding: 25px 30px;
-  box-shadow: var(--sombra);
+  padding: 30px;
   margin-bottom: 25px;
-  border: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra);
+  border: 1px solid #e5e7eb;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sombra-elevada);
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--cor-primaria);
+  border-radius: 12px 0 0 12px;
 }
 
 h2 {
-  font-size: 1.4em;
+  font-size: 1.6em;
   margin-bottom: 25px;
   padding-bottom: 15px;
   color: var(--cor-texto);
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
 }
 
-.menu-content {
-  display: none;
-}
-.menu-content.ativo {
-  display: block;
-}
+.menu-content { display: none; }
+.menu-content.ativo { display: block; }
 
 /* =============================================== */
-/* CABEÇALHO E MENU (VERSÃO PROFISSIONAL)      */
+/* CABEÇALHO E MENU (PADRÃO PRONTI)        */
 /* =============================================== */
 .header-vitrine {
   text-align: center;
   margin-bottom: 25px;
   padding-bottom: 25px;
-  border-bottom: 1px solid var(--cor-borda);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-vitrine img {
@@ -106,239 +130,133 @@ h2 {
 }
 
 .header-vitrine h1 {
-  font-size: 1.6em;
-  color: var(--cor-texto);
-  margin: 0;
+  font-size: 1.8em;
+  font-weight: 700;
+  color: var(--cor-primaria);
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .menu-btn {
   all: unset;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   box-sizing: border-box;
   width: 100%;
   padding: 15px 20px;
-  border-radius: 10px;
+  border-radius: 8px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  color: var(--cor-texto-leve);
   background-color: var(--cor-branco);
-  border: 1px solid transparent;
-  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  color: var(--cor-texto);
+  transition: all 0.3s ease-in-out;
 }
 
 .menu-btn:hover {
-  background-color: var(--cor-primaria-leve);
+  background: linear-gradient(90deg, var(--cor-primaria-leve), #d3d6f7);
   color: var(--cor-primaria);
-  transform: translateX(5px);
+  transform: translateX(4px) translateY(-1px);
+  box-shadow: var(--sombra);
+  border-right: 4px solid var(--cor-primaria);
 }
 
 .menu-btn.ativo {
-  background-color: var(--cor-primaria-leve);
-  color: var(--cor-primaria);
+  background: var(--cor-primaria);
+  color: var(--cor-branco);
   font-weight: 700;
+  transform: translateX(8px) translateY(-2px);
+  box-shadow: var(--sombra-elevada);
   border-right: 4px solid var(--cor-secundaria);
 }
 
-.dropdown-info {
-  margin-top: 15px;
-  border-top: 1px solid var(--cor-borda);
-  padding-top: 15px;
-}
-
-#btn-primeiro-acesso {
-  all: unset;
-  box-sizing: border-box;
-  width: 100%;
-  background-color: var(--cor-fundo);
-  border: 1px solid var(--cor-borda);
-  color: var(--cor-texto-leve);
-  font-weight: 600;
-  padding: 12px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s ease;
-}
-
-#btn-primeiro-acesso:hover {
-  border-color: var(--cor-primaria);
-  color: var(--cor-primaria);
-}
-
-#primeiro-acesso-menu {
-  display: none;
-  background-color: var(--cor-branco);
-  border: 1px solid var(--cor-borda);
-  padding: 15px;
-  margin-top: 5px;
-  border-radius: 8px;
-  font-size: 0.9em;
-  box-shadow: var(--sombra);
-}
-
-#primeiro-acesso-menu.ativo {
-  display: block;
-}
-
-
 /* =============================================== */
-/* CARTÕES DE SERVIÇO (Informações)        */
+/* FORMULÁRIO (PADRÃO PRONTI)            */
 /* =============================================== */
-#info-servicos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.servico-info-card {
-  background-color: #f8f9fa;
-  border: 1px solid var(--cor-borda);
-  border-radius: 10px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.servico-info-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--sombra);
-}
-
-.servico-info-card h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 1.1em;
-  color: var(--cor-texto);
-}
-
-.servico-info-card .servico-detalhe {
-  font-size: 0.9em;
-  color: var(--cor-texto-leve);
-  margin: 0 0 12px 0;
-}
-
-.servico-info-card .servico-preco {
-  font-size: 1.2em;
-  font-weight: 700;
-  color: var(--cor-primaria);
-  margin: 0;
-}
-
-/* =============================================== */
-/* DESIGN REFINADO PARA O FORMULÁRIO DE AGENDAMENTO */
-/* =============================================== */
-#menu-agendamento .card {
-  border: none;
-}
-
-#menu-agendamento h2 {
-  font-size: 1.8em;
-  font-weight: 700;
-  color: var(--cor-texto);
-  border-bottom: none;
-  text-align: left;
-  margin-bottom: 40px;
-}
-
 .form-group {
-  margin-bottom: 35px;
+  margin-bottom: 25px;
 }
 
-#menu-agendamento label {
-  font-size: 1.1em;
+label {
+  display: block;
+  margin-bottom: 8px;
   font-weight: 600;
-  color: var(--cor-texto);
-  margin-bottom: 15px;
+  color: var(--cor-texto-leve);
+}
+
+input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1em;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
 }
 
 #lista-servicos, #grade-horarios {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
 
 .service-item, .btn-horario {
-  background-color: var(--cor-branco);
-  border: 1px solid var(--cor-borda);
-  color: var(--cor-texto-leve);
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 12px 22px;
-  transition: all 0.2s ease-in-out;
-  cursor: pointer;
-}
-
-.service-item:hover, .btn-horario:hover {
-  border-color: var(--cor-primaria);
+  padding: 10px 20px;
+  border: 1px solid var(--cor-primaria);
   color: var(--cor-primaria);
-  transform: translateY(-2px);
+  background-color: var(--cor-branco);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
 }
 
+.service-item:hover, .btn-horario:hover,
 .service-item.selecionado, .btn-horario.selecionado {
   background-color: var(--cor-primaria);
-  border-color: var(--cor-primaria);
   color: var(--cor-branco);
-  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
   transform: translateY(-2px);
-}
-
-input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
-  background-color: var(--cor-fundo);
-  border: 1px solid var(--cor-borda);
-  border-radius: 8px;
-  padding: 15px;
-  font-size: 1em;
-  font-family: 'Poppins', sans-serif;
-  color: var(--cor-texto);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset;
-}
-
-input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
-  border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
-}
-
-.pin-input-group {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: var(--cor-fundo);
-  border-radius: 8px;
-  border: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra);
 }
 
 .btn-submit, button#btn-confirmar-agendamento {
-  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
-  border: none;
-  padding: 16px 20px;
-  color: white;
-  font-size: 1.1em;
-  font-weight: 700;
-  border-radius: 8px;
+  display: inline-block;
   width: 100%;
+  padding: 12px 20px;
+  font-size: 1.1em;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.3s ease, box-shadow 0.2s ease;
-  box-shadow: var(--sombra);
-  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
+  background-color: var(--cor-sucesso);
+  color: var(--cor-branco);
 }
 
 .btn-submit:hover, button#btn-confirmar-agendamento:not(:disabled):hover {
-  opacity: 0.9;
   transform: translateY(-2px);
-  box-shadow: var(--sombra-hover);
+  box-shadow: var(--sombra);
 }
 
 button#btn-confirmar-agendamento:disabled {
-  background: #e5e7eb;
+  background-color: #d1d5db;
   color: var(--cor-texto-leve);
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
 }
 
 /* =============================================== */
@@ -353,5 +271,6 @@ button#btn-confirmar-agendamento:disabled {
   }
   .sidebar-vitrine {
     width: 100%;
+    position: static;
   }
 }
