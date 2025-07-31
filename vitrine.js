@@ -110,7 +110,7 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
         return;
     }
     
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
+    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
     if (containerBuscaManual && containerFiltros) {
         containerBuscaManual.style.display = 'none';
         containerFiltros.style.display = 'flex';
