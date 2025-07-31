@@ -4,6 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 
+// --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
     authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -36,16 +37,13 @@ const telefoneClienteInput = document.getElementById("telefone-cliente");
 const pinClienteInput = document.getElementById("pin-cliente");
 const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
 const notificationMessageEl = document.getElementById("notification-message");
-
-// --- Elementos da Aba "Meus Agendamentos" ---
 const inputTelefoneVisualizacao = document.getElementById("input-telefone-visualizacao");
 const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
 const btnVerHistorico = document.getElementById("btn-ver-historico");
-const btnVerAtivos = document.getElementById("btn-ver-ativos");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
-const containerBuscaManual = document.getElementById("container-busca-manual");
-const containerFiltros = document.getElementById("container-filtros");
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
+const containerBuscaManual = document.getElementById("container-busca-manual-view");
+const containerFiltros = document.getElementById("botoes-agendamento");
 
 
 // ==========================================================================
@@ -65,7 +63,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const errosDeConfiguracao = validarDadosDoProfissional();
         if (errosDeConfiguracao.length > 0) {
-            throw new Error("Esta vitrine não está configurada corretamente.");
+            const msgErro = "Esta vitrine não está configurada corretamente.<br><ul>" + errosDeConfiguracao.map(e => `<li>- ${e}</li>`).join('') + "</ul>";
+            throw new Error(msgErro);
         }
 
         renderizarInformacoesGerais();
@@ -81,25 +80,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+function showError(message) {
+    loader.style.display = 'block';
+    content.style.display = 'none';
+    loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
+}
 
 // ==========================================================================
-//  LÓGICA DE "MEUS AGENDAMENTOS" (AGORA INTELIGENTE)
+//  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
     
+    // Assegura que os elementos corretos são mostrados/escondidos
+    const buscaManualContainer = document.getElementById('container-busca-manual-view'); 
+    const filtrosContainer = document.getElementById('botoes-agendamento'); 
+    
     if (telefoneSalvo) {
-        // Se o telefone está salvo, esconde a busca manual e mostra os filtros
-        containerBuscaManual.style.display = 'none';
-        containerFiltros.style.display = 'block';
-        inputTelefoneVisualizacao.value = telefoneSalvo; // Garante que o valor está lá para a busca
-        
-        // Faz a busca automática pelos agendamentos ATIVOS
+        if(buscaManualContainer) buscaManualContainer.style.display = 'none';
+        if(filtrosContainer) filtrosContainer.style.display = 'flex';
+        inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
-        // Se não tem telefone salvo, mostra a busca manual e esconde os filtros
-        containerBuscaManual.style.display = 'block';
-        containerFiltros.style.display = 'none';
+        if(buscaManualContainer) buscaManualContainer.style.display = 'block';
+        if(filtrosContainer) filtrosContainer.style.display = 'flex'; // Mantém botões visíveis
         listaAgendamentosVisualizacao.innerHTML = '<p>Salve seu telefone na aba "Perfil" para carregar seus agendamentos automaticamente.</p>';
     }
 }
@@ -112,9 +116,6 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
     }
     
     listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
-    // Após a primeira busca, o container de filtros sempre deve estar visível
-    containerBuscaManual.style.display = 'none';
-    containerFiltros.style.display = 'block';
 
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
@@ -178,19 +179,15 @@ function configurarTodosEventListeners() {
             document.getElementById(`menu-${menu}`).classList.add('ativo');
             button.classList.add('ativo');
 
-            // Lógica inteligente para a aba "Meus Agendamentos"
             if (menu === 'visualizacao') {
                 iniciarAbaMeusAgendamentos();
             }
         });
     });
 
-    // Botões da aba "Meus Agendamentos"
     btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    btnVerAtivos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
     btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
 
-    // ... (restante dos listeners) ...
     const dropdownToggle = document.getElementById('btn-primeiro-acesso');
     const dropdownMenu = document.getElementById('primeiro-acesso-menu');
     if (dropdownToggle && dropdownMenu) {
@@ -220,46 +217,9 @@ function configurarTodosEventListeners() {
     btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelar);
 }
 
-
 // ==========================================================================
-//  DEMAIS FUNÇÕES (sem alterações significativas)
+//  DEMAIS FUNÇÕES
 // ==========================================================================
-function showError(message) { /* ... */ }
-async function getUidFromSlug(slug) { /* ... */ }
-async function carregarDadosDoFirebase() { /* ... */ }
-function validarDadosDoProfissional() { /* ... */ }
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) { /* ... */ }
-async function carregarAgendaInicial() { /* ... */ }
-async function gerarHorariosDisponiveis() { /* ... */ }
-async function buscarAgendamentosDoDia(dataString) { /* ... */ }
-function calcularSlotsDisponiveis(data, agendamentosOcupados) { /* ... */ }
-function renderizarInformacoesGerais() { /* ... */ }
-function verificarEstadoBotaoConfirmar() { /* ... */ }
-function salvarPerfilCliente() { /* ... */ }
-async function salvarAgendamento() { /* ... */ }
-async function buscarAgendamentosParaCancelar() { /* ... */ }
-async function cancelarAgendamento(id) { /* ... */ }
-function showNotification(message, isError = false) { /* ... */ }
-async function gerarHashSHA256(texto) { /* ... */ }
-function preencherCamposComPerfilSalvo() {
-    const nome = localStorage.getItem('clienteNome') || '';
-    const telefone = localStorage.getItem('clienteTelefone') || '';
-    document.getElementById('perfil-nome').value = nome;
-    document.getElementById('perfil-telefone').value = telefone;
-    if (!nomeClienteInput.value) nomeClienteInput.value = nome;
-    if (!telefoneClienteInput.value) telefoneClienteInput.value = telefone;
-    inputTelefoneVisualizacao.value = telefone;
-    document.getElementById('input-telefone-cancelamento').value = telefone;
-}
-// Colei as implementações completas abaixo para garantir que o arquivo esteja 100%
-// (As funções acima com /* ... */ são apenas para encurtar a visualização aqui,
-// o código abaixo é o completo e funcional)
-function showError(message) {
-    loader.style.display = 'block';
-    content.style.display = 'none';
-    loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
-}
-
 async function getUidFromSlug(slug) {
     const docSnap = await getDoc(doc(db, "slugs", slug));
     return docSnap.exists() ? docSnap.data().uid : null;
