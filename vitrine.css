@@ -306,6 +306,71 @@ button#btn-confirmar-agendamento:disabled {
 }
 
 /* =============================================== */
+/* ESTILO "MEUS AGENDAMENTOS"              */
+/* =============================================== */
+
+.botoes-agendamento {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.btn-secondary {
+  flex-grow: 1;
+  padding: 12px 18px;
+  background-color: transparent;
+  border: 2px solid var(--cor-borda);
+  color: var(--cor-texto-leve);
+  font-size: 1em;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+}
+
+.lista-agendamentos-resultado {
+  margin-top: 20px;
+  display: grid;
+  gap: 15px;
+}
+
+.agendamento-card {
+  background-color: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-left: 5px solid var(--cor-primaria);
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.agendamento-card.passado {
+  border-left-color: var(--cor-texto-leve);
+  opacity: 0.8;
+}
+
+.agendamento-card h4 {
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
+  color: var(--cor-texto);
+}
+
+.agendamento-card p {
+  margin: 4px 0;
+  color: var(--cor-texto-leve);
+  font-weight: 500;
+}
+
+.agendamento-card strong {
+  color: var(--cor-texto);
+}
+
+
+/* =============================================== */
 /* RESPONSIVIDADE                        */
 /* =============================================== */
 @media (max-width: 960px) {
