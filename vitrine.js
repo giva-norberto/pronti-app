@@ -40,10 +40,6 @@ const inputTelefoneVisualizacao = document.getElementById("input-telefone-visual
 const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
 const btnVerHistorico = document.getElementById("btn-ver-historico");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
-const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
-const cardResultados = document.getElementById("card-resultados");
-const tituloResultados = document.getElementById("titulo-resultados");
-
 
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
@@ -79,35 +75,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
-    cardResultados.style.display = 'none';
-    
     if (telefoneSalvo) {
-        inputTelefoneVisualizacao.value = telefoneSalvo;
-        buscarEExibirAgendamentos('ativos');
+        //inputTelefoneVisualizacao.value = telefoneSalvo; // O campo não existe mais, não precisa preencher
+        buscarEExibirAgendamentos('ativos', telefoneSalvo);
     } else {
-        listaAgendamentosVisualizacao.innerHTML = '';
+        listaAgendamentosVisualizacao.innerHTML = '<p>Salve seu perfil com seu telefone para ver seus agendamentos aqui.</p>';
     }
 }
 
-async function buscarEExibirAgendamentos(modo = 'ativos') {
-    const telefone = inputTelefoneVisualizacao.value.replace(/\D/g, '');
-    if (!telefone) {
-        showNotification("Seu telefone não está preenchido.", true);
+async function buscarEExibirAgendamentos(modo = 'ativos', telefone) {
+    const telefoneBusca = telefone || localStorage.getItem('clienteTelefone');
+    if (!telefoneBusca) {
+        listaAgendamentosVisualizacao.innerHTML = '<p>Não foi possível identificar seu telefone. Por favor, salve-o na aba "Perfil".</p>';
         return;
     }
     
-    cardResultados.style.display = 'block';
-    tituloResultados.textContent = modo === 'ativos' ? 'Agendamentos Ativos' : 'Histórico de Agendamentos';
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando...</p>';
+    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
 
     try {
-        const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
+        const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefoneBusca.replace(/\D/g, '')));
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
@@ -120,14 +111,13 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
 
         const agendamentosFiltrados = (modo === 'ativos')
             ? todosAgendamentos
-                .filter(ag => ag.horario && typeof ag.horario.toDate === 'function' && ag.horario.toDate() >= agora && ag.status === 'agendado')
+                .filter(ag => ag.horario.toDate() >= agora && ag.status === 'agendado')
                 .sort((a, b) => a.horario.toMillis() - b.horario.toMillis())
             : todosAgendamentos
-                .filter(ag => ag.horario && typeof ag.horario.toDate === 'function' && ag.horario.toDate() < agora)
+                .filter(ag => ag.horario.toDate() < agora)
                 .sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
         
         renderizarAgendamentosComoCards(agendamentosFiltrados, modo);
-
     } catch (error) {
         console.error("Erro ao buscar agendamentos:", error);
         listaAgendamentosVisualizacao.innerHTML = '<p>Ocorreu um erro ao buscar os agendamentos.</p>';
@@ -140,6 +130,7 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
         listaAgendamentosVisualizacao.innerHTML = `<p>${mensagem}</p>`;
         return;
     }
+
     listaAgendamentosVisualizacao.innerHTML = agendamentos.map(ag => {
         if (!ag.horario || typeof ag.horario.toDate !== 'function') return '';
         const data = ag.horario.toDate();
@@ -150,12 +141,19 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
         if (modo === 'historico' && ag.status === 'agendado') {
             statusExibido = 'Concluído';
         }
+
+        // Adiciona o botão de cancelar apenas se o agendamento for ativo
+        const botaoCancelarHtml = (modo === 'ativos' && ag.status === 'agendado')
+            ? `<button class="btn-cancelar" data-id="${ag.id}">Cancelar Agendamento</button>`
+            : '';
+
         return `
             <div class="${cardClass}">
                 <h4>${ag.servicoNome || 'Serviço não informado'}</h4>
                 <p><strong>Data:</strong> ${dataFormatada}</p>
                 <p><strong>Horário:</strong> ${horaFormatada}</p>
                 <p><strong>Status:</strong> ${statusExibido}</p>
+                ${botaoCancelarHtml}
             </div>
         `;
     }).join('');
@@ -163,7 +161,7 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
 
 
 // ==========================================================================
-//  EVENT LISTENERS
+//  EVENT LISTENERS E FUNÇÕES DE INTERAÇÃO
 // ==========================================================================
 function configurarTodosEventListeners() {
     document.querySelectorAll('.menu-btn').forEach(button => {
@@ -178,12 +176,16 @@ function configurarTodosEventListeners() {
         });
     });
 
-    if (btnVisualizarAgendamentos) {
-        btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    }
-    if (btnVerHistorico) {
-        btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
-    }
+    btnVerAtivos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+
+    // Listener de delegação para os botões de cancelar
+    listaAgendamentosVisualizacao.addEventListener('click', (e) => {
+        if (e.target && e.target.classList.contains('btn-cancelar')) {
+            const agendamentoId = e.target.dataset.id;
+            cancelarAgendamento(agendamentoId);
+        }
+    });
 
     const dropdownToggle = document.getElementById('btn-primeiro-acesso');
     const dropdownMenu = document.getElementById('primeiro-acesso-menu');
@@ -211,11 +213,38 @@ function configurarTodosEventListeners() {
     document.getElementById('menu-agendamento').addEventListener('input', verificarEstadoBotaoConfirmar);
     btnConfirmar.addEventListener('click', salvarAgendamento);
     document.getElementById('btn-salvar-perfil').addEventListener('click', salvarPerfilCliente);
-    btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelar);
 }
 
+async function cancelarAgendamento(id) {
+    const pin = prompt("Para confirmar, digite o PIN criado para este agendamento:");
+    if (pin === null || pin.trim() === '') return;
+
+    try {
+        const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", id);
+        const docSnap = await getDoc(agendamentoRef);
+
+        if (!docSnap.exists()) {
+            showNotification("Agendamento não encontrado.", true);
+            return;
+        }
+
+        const pinHashDigitado = await gerarHashSHA256(pin.trim());
+        if (docSnap.data().pinHash === pinHashDigitado) {
+            await updateDoc(agendamentoRef, { status: 'cancelado_pelo_cliente' });
+            showNotification("Agendamento cancelado com sucesso!");
+            buscarEExibirAgendamentos('ativos'); // Atualiza a lista de ativos
+        } else {
+            showNotification("PIN incorreto. O cancelamento não foi efetuado.", true);
+        }
+    } catch(error) {
+        showNotification("Erro ao cancelar.", true);
+        console.error(error);
+    }
+}
+
+
 // ==========================================================================
-//  DEMAIS FUNÇÕES
+//  DEMAIS FUNÇÕES (código de apoio, sem alterações)
 // ==========================================================================
 function showError(message) {
     loader.style.display = 'block';
@@ -421,19 +450,6 @@ async function buscarAgendamentosParaCancelar() {
         output.querySelectorAll('.btn-cancelar').forEach(btn => {
             btn.addEventListener('click', (e) => cancelarAgendamento(e.target.dataset.id));
         });
-    }
-}
-
-async function cancelarAgendamento(id) {
-    if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
-    try {
-        const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", id);
-        await updateDoc(agendamentoRef, { status: 'cancelado_pelo_cliente' });
-        showNotification("Agendamento cancelado com sucesso!");
-        buscarAgendamentosParaCancelar();
-    } catch(error) {
-        showNotification("Erro ao cancelar.", true);
-        console.error(error);
     }
 }
 
