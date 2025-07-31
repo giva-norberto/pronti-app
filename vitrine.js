@@ -88,7 +88,6 @@ function atualizarUIparaUsuario(user) {
     }
 }
 
-
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
 // ==========================================================================
@@ -115,12 +114,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 async function buscarEExibirAgendamentos(modo = 'ativos') {
-    // CORREÇÃO: Adicionada verificação de segurança
     if (!currentUser) {
         const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
         if(agendamentosPrompt) agendamentosPrompt.style.display = 'block';
@@ -236,7 +233,7 @@ async function cancelarAgendamento(id) {
 
 
 // ==========================================================================
-//  EVENT LISTENERS E DEMAIS FUNÇÕES
+//  EVENT LISTENERS E FUNÇÕES DE APOIO
 // ==========================================================================
 function configurarTodosEventListeners() {
     document.getElementById('btn-login').addEventListener('click', fazerLogin);
@@ -245,19 +242,18 @@ function configurarTodosEventListeners() {
     document.querySelectorAll('.menu-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.menu-content, .menu-btn').forEach(el => el.classList.remove('ativo'));
-            const menuContent = document.getElementById(`menu-${button.dataset.menu}`);
-            if (menuContent) menuContent.classList.add('ativo');
+            document.getElementById(`menu-${button.dataset.menu}`).classList.add('ativo');
             button.classList.add('ativo');
             if(button.dataset.menu === 'visualizacao') buscarEExibirAgendamentos('ativos');
         });
     });
-    
+
     const btnVerAtivos = document.getElementById('btn-ver-ativos');
-    if(btnVerAtivos) btnVerAtivos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    if (btnVerAtivos) btnVerAtivos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
     
     const btnVerHistorico = document.getElementById('btn-ver-historico');
-    if(btnVerHistorico) btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
-    
+    if (btnVerHistorico) btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+
     const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
     if(listaAgendamentos) listaAgendamentos.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-cancelar')) {
@@ -298,22 +294,18 @@ async function getUidFromSlug(slug) {
     const docSnap = await getDoc(doc(db, "slugs", slug));
     return docSnap.exists() ? docSnap.data().uid : null;
 }
+
 async function carregarDadosDoFirebase() {
-    // CORREÇÃO: Buscando TODOS os serviços do Firebase
     const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
         getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
-        getDocs(collection(db, "users", profissionalUid, "servicos")),
+        getDocs(query(collection(db, "users", profissionalUid, "servicos"), where("visivelNaVitrine", "==", true))),
         getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
     ]);
-    return { perfilDoc, servicosSnapshot, horariosDoc };
+    professionalData.perfil = perfilDoc.exists() ? perfilDoc.data() : {};
+    professionalData.horarios = horariosDoc.exists() ? horariosDoc.data() : {};
+    professionalData.servicos = servicosSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
-    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
-    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
-    // CORREÇÃO: Filtrando os serviços aqui no aplicativo
-    professionalData.servicos = servicosSnapshot.docs.map(d => ({ id: d.id, ...d.data() }))
-        .filter(servico => servico.visivelNaVitrine !== false);
-}
+
 function renderizarInformacoesGerais() {
     const { perfil, servicos } = professionalData;
     document.getElementById('nome-negocio-publico').textContent = perfil.nomeNegocio || "Nome do Negócio";
@@ -323,6 +315,7 @@ function renderizarInformacoesGerais() {
     document.getElementById('info-servicos').innerHTML = servicos.map(s => `<div class="servico-info-card"><h4>${s.nome}</h4><p>${s.duracao} min</p><p>R$ ${s.preco}</p></div>`).join('');
     document.getElementById('lista-servicos').innerHTML = servicos.map(s => `<button class="service-item" data-id="${s.id}">${s.nome} - R$ ${s.preco}</button>`).join('');
 }
+
 async function carregarAgendaInicial() {
     const dataInput = document.getElementById('data-agendamento');
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
@@ -333,20 +326,15 @@ async function carregarAgendaInicial() {
         document.querySelector('.service-item').click();
     }
 }
+
 function verificarEstadoBotaoConfirmar() {
-    // CORREÇÃO: Validação sem PIN, baseada no login e telefone
     const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
     const { servico, data, horario } = agendamentoState;
     const telefoneCliente = document.getElementById('telefone-cliente');
     const telefoneOK = telefoneCliente && telefoneCliente.value.length > 9;
     btnConfirmar.disabled = !(servico && data && horario && currentUser && telefoneOK);
 }
-async function gerarHorariosDisponiveis() { /* ... */ }
-async function buscarAgendamentosDoDia(dataString) { /* ... */ }
-function calcularSlotsDisponiveis(data, agendamentosOcupados) { /* ... */ }
-function showNotification(message, isError = false) { /* ... */ }
 
-// Implementações completas para funções de apoio
 async function gerarHorariosDisponiveis() {
     if (!agendamentoState.data || !agendamentoState.servico) return;
     const horariosContainer = document.getElementById('grade-horarios');
@@ -355,6 +343,7 @@ async function gerarHorariosDisponiveis() {
     const horariosDisponiveis = calcularSlotsDisponiveis(agendamentoState.data, agendamentosDoDia);
     horariosContainer.innerHTML = horariosDisponiveis.length > 0 ? horariosDisponiveis.map(h => `<button class="btn-horario">${h}</button>`).join('') : '<p>Nenhum horário disponível.</p>';
 }
+
 async function buscarAgendamentosDoDia(dataString) {
     const inicioDoDia = Timestamp.fromDate(new Date(dataString + 'T00:00:00'));
     const fimDoDia = Timestamp.fromDate(new Date(dataString + 'T23:59:59'));
@@ -367,6 +356,7 @@ async function buscarAgendamentosDoDia(dataString) {
         return { inicio, fim };
     });
 }
+
 function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     const diaSemana = new Date(data + 'T00:00:00').getDay();
     const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
@@ -389,6 +379,7 @@ function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     });
     return horarios;
 }
+
 function showNotification(message, isError = false) {
     const el = document.getElementById("notification-message");
     if (!el) return;
