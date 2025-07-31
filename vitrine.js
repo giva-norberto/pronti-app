@@ -37,15 +37,14 @@ const telefoneClienteInput = document.getElementById("telefone-cliente");
 const pinClienteInput = document.getElementById("pin-cliente");
 const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
 const notificationMessageEl = document.getElementById("notification-message");
-
-// --- Elementos da Aba "Meus Agendamentos" ---
 const inputTelefoneVisualizacao = document.getElementById("input-telefone-visualizacao");
 const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
 const btnVerHistorico = document.getElementById("btn-ver-historico");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
-const containerBuscaManual = document.getElementById("container-busca-manual");
-const containerFiltros = document.getElementById("container-filtros");
+const containerBuscaManual = document.getElementById("container-busca-manual-view"); 
+const containerFiltros = document.getElementById("botoes-agendamento");
+
 
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
@@ -88,35 +87,70 @@ function showError(message) {
 }
 
 // ==========================================================================
+//  BUSCA E VALIDAÇÃO DE DADOS
+// ==========================================================================
+async function getUidFromSlug(slug) {
+    const docSnap = await getDoc(doc(db, "slugs", slug));
+    return docSnap.exists() ? docSnap.data().uid : null;
+}
+
+async function carregarDadosDoFirebase() {
+    const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
+        getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
+        // CORREÇÃO DEFINITIVA: Buscando TODOS os serviços
+        getDocs(collection(db, "users", profissionalUid, "servicos")),
+        getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
+    ]);
+    return { perfilDoc, servicosSnapshot, horariosDoc };
+}
+
+function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
+    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
+    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
+    
+    // CORREÇÃO DEFINITIVA: Filtrando os serviços no aplicativo
+    professionalData.servicos = servicosSnapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(servico => servico.visivelNaVitrine !== false);
+}
+
+function validarDadosDoProfissional() {
+    const erros = [];
+    if (!professionalData.perfil.nomeNegocio) {
+        erros.push("O perfil do negócio (com nome) não foi configurado.");
+    }
+    if (Object.keys(professionalData.horarios).length === 0) {
+        erros.push("Os horários de atendimento não foram configurados.");
+    }
+    if (professionalData.servicos.length === 0) {
+        erros.push("Nenhum serviço foi disponibilizado para a vitrine.");
+    }
+    return erros;
+}
+
+
+// ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
     
     if (telefoneSalvo) {
-        if(containerBuscaManual) containerBuscaManual.style.display = 'none';
-        if(containerFiltros) containerFiltros.style.display = 'block';
         inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
-        if(containerBuscaManual) containerBuscaManual.style.display = 'block';
-        if(containerFiltros) containerFiltros.style.display = 'none';
-        listaAgendamentosVisualizacao.innerHTML = '<p>Salve seu telefone na aba "Perfil" para carregar seus agendamentos automaticamente.</p>';
+        listaAgendamentosVisualizacao.innerHTML = '<p>Digite seu telefone e clique em "Ver Agendamentos Ativos" para buscar.</p>';
     }
 }
 
 async function buscarEExibirAgendamentos(modo = 'ativos') {
     const telefone = inputTelefoneVisualizacao.value.replace(/\D/g, '');
     if (!telefone) {
-        showNotification("Seu telefone não está preenchido. Salve-o na aba 'Perfil'.", true);
+        showNotification("Digite seu telefone para buscar.", true);
         return;
     }
     
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
-    if (containerBuscaManual && containerFiltros) {
-        containerBuscaManual.style.display = 'none';
-        containerFiltros.style.display = 'block';
-    }
+    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
 
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
@@ -186,8 +220,8 @@ function configurarTodosEventListeners() {
         });
     });
 
-    if(btnVisualizarAgendamentos) btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    if(btnVerHistorico) btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+    btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
 
     const dropdownToggle = document.getElementById('btn-primeiro-acesso');
     const dropdownMenu = document.getElementById('primeiro-acesso-menu');
@@ -219,42 +253,8 @@ function configurarTodosEventListeners() {
 }
 
 // ==========================================================================
-//  DEMAIS FUNÇÕES
+//  DEMAIS FUNÇÕES (Lógica de agendamento, perfil, etc.)
 // ==========================================================================
-async function getUidFromSlug(slug) {
-    const docSnap = await getDoc(doc(db, "slugs", slug));
-    return docSnap.exists() ? docSnap.data().uid : null;
-}
-
-async function carregarDadosDoFirebase() {
-    const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
-        getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
-        getDocs(query(collection(db, "users", profissionalUid, "servicos"), where("visivelNaVitrine", "==", true))),
-        getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
-    ]);
-    return { perfilDoc, servicosSnapshot, horariosDoc };
-}
-
-function validarDadosDoProfissional() {
-    const erros = [];
-    if (!professionalData.perfil.nomeNegocio) {
-        erros.push("O nome do negócio não foi configurado.");
-    }
-    if (Object.keys(professionalData.horarios).length === 0) {
-        erros.push("Os horários de atendimento não foram configurados.");
-    }
-    if (professionalData.servicos.length === 0) {
-        erros.push("Nenhum serviço foi disponibilizado para a vitrine.");
-    }
-    return erros;
-}
-
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
-    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
-    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
-    professionalData.servicos = servicosSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
 async function carregarAgendaInicial() {
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
     dataInput.value = hoje.toISOString().split('T')[0];
@@ -349,7 +349,6 @@ function verificarEstadoBotaoConfirmar() {
     btnConfirmar.disabled = !(servico && data && horario && nomeOK && telOK && pinOK);
 }
 
-// ### FUNÇÃO RESTAURADA ###
 function preencherCamposComPerfilSalvo() {
     const nome = localStorage.getItem('clienteNome') || '';
     const telefone = localStorage.getItem('clienteTelefone') || '';
