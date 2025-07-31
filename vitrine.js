@@ -89,6 +89,7 @@ function atualizarUIparaUsuario(user) {
     }
 }
 
+
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
 // ==========================================================================
@@ -111,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error("Erro ao inicializar:", error);
         const loader = document.getElementById("vitrine-loader");
-        if(loader) loader.innerHTML = `<p style="color:red">${error.message}</p>`;
+        loader.innerHTML = `<p style="color:red">${error.message}</p>`;
     }
 });
 
@@ -120,11 +121,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 async function buscarEExibirAgendamentos(modo = 'ativos') {
-    if (!currentUser) {
+    if (!currentUser) { 
         const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
-        const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
         if(agendamentosPrompt) agendamentosPrompt.style.display = 'block';
-        if(agendamentosLista) agendamentosLista.innerHTML = '';
+        document.getElementById('lista-agendamentos-visualizacao').innerHTML = '';
         return;
     }
 
@@ -151,7 +151,6 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
 
     } catch (error) {
         console.error("Erro ao buscar agendamentos:", error);
-        listaAgendamentosVisualizacao.innerHTML = '<p>Ocorreu um erro ao buscar os agendamentos.</p>';
     }
 }
 
@@ -240,11 +239,8 @@ async function cancelarAgendamento(id) {
 //  EVENT LISTENERS E FUNÇÕES DE APOIO
 // ==========================================================================
 function configurarTodosEventListeners() {
-    const btnLogin = document.getElementById('btn-login');
-    if(btnLogin) btnLogin.addEventListener('click', fazerLogin);
-    
-    const btnLogout = document.getElementById('btn-logout');
-    if(btnLogout) btnLogout.addEventListener('click', fazerLogout);
+    document.getElementById('btn-login').addEventListener('click', fazerLogin);
+    document.getElementById('btn-logout').addEventListener('click', fazerLogout);
 
     document.querySelectorAll('.menu-btn').forEach(button => {
         button.addEventListener('click', () => {
@@ -326,21 +322,24 @@ function renderizarInformacoesGerais() {
 
 async function carregarAgendaInicial() {
     const dataInput = document.getElementById('data-agendamento');
+    if(!dataInput) return;
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
     dataInput.value = hoje.toISOString().split('T')[0];
     dataInput.min = hoje.toISOString().split('T')[0];
     agendamentoState.data = dataInput.value;
     if (professionalData.servicos.length > 0) {
-        document.querySelector('.service-item').click();
+        const primeiroServicoBtn = document.querySelector('.service-item');
+        if(primeiroServicoBtn) primeiroServicoBtn.click();
     }
 }
 
 function verificarEstadoBotaoConfirmar() {
     const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
+    if(!btnConfirmar) return;
     const { servico, data, horario } = agendamentoState;
     const telefoneCliente = document.getElementById('telefone-cliente');
     const telefoneOK = telefoneCliente && telefoneCliente.value.length > 9;
-    if(btnConfirmar) btnConfirmar.disabled = !(servico && data && horario && currentUser && telefoneOK);
+    btnConfirmar.disabled = !(servico && data && horario && currentUser && telefoneOK);
 }
 
 async function gerarHorariosDisponiveis() { 
