@@ -86,8 +86,9 @@ h2 {
 }
 
 /* =============================================== */
-/* CABEÇALHO E MENU                      */
+/* CABEÇALHO E MENU (VERSÃO PROFISSIONAL)      */
 /* =============================================== */
+
 .header-vitrine {
   text-align: center;
   margin-bottom: 25px;
@@ -113,76 +114,83 @@ h2 {
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 10px; /* Espaçamento entre os botões */
 }
 
+/* Estilo base para TODOS os botões do menu (inativos) */
 .menu-btn {
-  all: unset;
+  all: unset; /* Reseta o botão para um estado limpo */
   box-sizing: border-box;
   width: 100%;
-  padding: 15px;
-  border-radius: 8px;
+  padding: 15px 20px;
+  border-radius: 10px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
+  color: var(--cor-texto-leve); /* Cor cinza para texto inativo */
+  background-color: var(--cor-branco);
+  border: 1px solid transparent; /* Evita que o layout "pule" no hover */
+  transition: all 0.2s ease-in-out;
 }
 
+/* Efeito ao passar o mouse sobre um botão inativo */
 .menu-btn:hover {
   background-color: var(--cor-primaria-leve);
   color: var(--cor-primaria);
+  transform: translateX(5px); /* Efeito de deslize sutil */
 }
 
+/* Estilo do botão ATIVO, como no painel do empresário */
 .menu-btn.ativo {
-  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
-  color: white;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+  background-color: var(--cor-primaria-leve); /* Fundo claro */
+  color: var(--cor-primaria); /* Texto com a cor primária */
+  font-weight: 700;
+  /* O detalhe na lateral direita */
+  border-right: 4px solid var(--cor-secundaria); 
 }
 
-/* =============================================== */
-/* CARTÕES DE SERVIÇO (Informações)        */
-/* =============================================== */
-#info-servicos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+/* --- Estilo para o botão "Primeiro Acesso" --- */
+
+.dropdown-info {
+  margin-top: 15px;
+  border-top: 1px solid var(--cor-borda);
+  padding-top: 15px;
 }
 
-.servico-info-card {
-  background-color: #f8f9fa;
+#btn-primeiro-acesso {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  background-color: var(--cor-fundo);
   border: 1px solid var(--cor-borda);
-  border-radius: 10px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  color: var(--cor-texto-leve);
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
 }
 
-.servico-info-card:hover {
-  transform: translateY(-4px);
+#btn-primeiro-acesso:hover {
+    border-color: var(--cor-primaria);
+    color: var(--cor-primaria);
+}
+
+#primeiro-acesso-menu {
+  display: none; /* Controlado por JS */
+  background-color: var(--cor-branco);
+  border: 1px solid var(--cor-borda);
+  padding: 15px;
+  margin-top: 5px;
+  border-radius: 8px;
+  font-size: 0.9em;
   box-shadow: var(--sombra);
 }
 
-.servico-info-card h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 1.1em;
-  color: var(--cor-texto);
+#primeiro-acesso-menu.ativo {
+  display: block;
 }
-
-.servico-info-card .servico-detalhe {
-  font-size: 0.9em;
-  color: var(--cor-texto-leve);
-  margin: 0 0 12px 0;
-}
-
-.servico-info-card .servico-preco {
-  font-size: 1.2em;
-  font-weight: 700;
-  color: var(--cor-primaria);
-  margin: 0;
-}
-
 /* =============================================== */
 /* --- DESIGN REFINADO PARA O FORMULÁRIO DE AGENDAMENTO --- */
 /* =============================================== */
