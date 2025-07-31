@@ -13,7 +13,6 @@ const firebaseConfig = {
     messagingSenderId: "736700619274",
     appId: "1:736700619274:web:557aa247905e5df3"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -44,6 +43,7 @@ const listaAgendamentosVisualizacao = document.getElementById("lista-agendamento
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
 const cardResultados = document.getElementById("card-resultados");
 const tituloResultados = document.getElementById("titulo-resultados");
+
 
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showError(error.message);
     }
 });
+
 
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
@@ -177,8 +178,12 @@ function configurarTodosEventListeners() {
         });
     });
 
-    btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+    if (btnVisualizarAgendamentos) {
+        btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    }
+    if (btnVerHistorico) {
+        btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+    }
 
     const dropdownToggle = document.getElementById('btn-primeiro-acesso');
     const dropdownMenu = document.getElementById('primeiro-acesso-menu');
