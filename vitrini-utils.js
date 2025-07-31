@@ -1,6 +1,6 @@
 // vitrini-utils.js
 export function showNotification(message, erro = false) {
-    const container = document.getElementById('notificacao');
+    const container = document.getElementById('notification-message');
     if (!container) return;
     container.textContent = message;
     container.style.color = erro ? 'red' : 'green';
