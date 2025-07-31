@@ -46,29 +46,20 @@
 
         <div class="main-content-vitrine">
             
-          <div id="menu-visualizacao" class="menu-content">
-    <div class="card">
-        <h2>Meus Agendamentos</h2>
-
-        <div id="container-busca-manual">
-            <p>Digite o telefone salvo no seu perfil para ver seus compromissos.</p>
-            <div class="form-group">
-                <label for="input-telefone-visualizacao">Seu Telefone</label>
-                <input type="tel" id="input-telefone-visualizacao" placeholder="(XX) XXXXX-XXXX">
+            <div id="menu-informacoes" class="menu-content ativo">
+                <div class="card">
+                    <h2>Sobre o Negócio</h2>
+                    <div id="info-negocio"></div>
+                </div>
+                <div class="card">
+                    <h2>Serviços Oferecidos</h2>
+                    <div id="info-servicos"></div>
+                </div>
+                <div class="card">
+                    <h2>Contato</h2>
+                    <div id="info-contato"></div>
+                </div>
             </div>
-            <button id="btn-visualizar-agendamentos" class="btn-submit">Visualizar</button>
-        </div>
-
-        <div id="container-filtros" style="display: none;">
-            <div class="botoes-agendamento">
-                <button id="btn-ver-ativos" class="btn-submit">Agendamentos Ativos</button>
-                <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
-            </div>
-        </div>
-
-        <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
-    </div>
-</div>
 
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
@@ -104,16 +95,18 @@
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
-                    <div class="form-group">
-                        <label for="input-telefone-visualizacao">Seu Telefone</label>
-                        <input type="tel" id="input-telefone-visualizacao" placeholder="(XX) XXXXX-XXXX">
+                    <div id="container-busca-manual-view">
+                        <p>Digite o telefone salvo no seu perfil para ver seus compromissos.</p>
+                        <div class="form-group">
+                            <label for="input-telefone-visualizacao">Seu Telefone</label>
+                            <input type="tel" id="input-telefone-visualizacao" placeholder="(XX) XXXXX-XXXX">
+                        </div>
                     </div>
                     <div class="botoes-agendamento">
-                        <button id="btn-visualizar-agendamentos" class="btn-submit">Ver Agendamentos Ativos</button>
-                        <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
+                         <button id="btn-visualizar-agendamentos" class="btn-submit">Ver Agendamentos Ativos</button>
+                         <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
                     </div>
-                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado">
-                        </div>
+                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
                 </div>
             </div>
 
@@ -129,7 +122,7 @@
                         <label for="input-pin-cancelamento">Seu PIN</label>
                         <input type="password" id="input-pin-cancelamento" placeholder="PIN de 4 a 6 dígitos">
                     </div>
-                    <button id="btn-buscar-cancelamento" class="btn-submit">Buscar Agendamentos</button>
+                    <button id="btn-buscar-cancelamento" class="btn-submit">Buscar Agendamentos para Cancelar</button>
                     <div id="lista-agendamentos-cancelamento" class="lista-agendamentos-resultado"></div>
                 </div>
             </div>
@@ -149,7 +142,6 @@
                     <button id="btn-salvar-perfil" class="btn-submit">Salvar Perfil</button>
                 </div>
             </div>
-
         </div>
     </div>
 
