@@ -17,10 +17,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ... (O resto das variáveis e elementos do DOM continuam os mesmos) ...
+// ==========================================================================
+//  VARIÁVEIS GLOBAIS E ESTADO DA APLICAÇÃO
+// ==========================================================================
 let profissionalUid = null;
 let professionalData = { perfil: {}, servicos: [], horarios: {} };
 let agendamentoState = { servico: null, data: null, horario: null };
+
+// --- Cache de Elementos do DOM ---
 const loader = document.getElementById("vitrine-loader");
 const content = document.getElementById("vitrine-content");
 const nomeNegocioEl = document.getElementById("nome-negocio-publico");
@@ -28,7 +32,13 @@ const logoEl = document.getElementById("logo-publico");
 const servicosContainer = document.getElementById("lista-servicos");
 const dataInput = document.getElementById("data-agendamento");
 const horariosContainer = document.getElementById("grade-horarios");
-// ... etc ...
+const nomeClienteInput = document.getElementById("nome-cliente");
+const telefoneClienteInput = document.getElementById("telefone-cliente");
+const pinClienteInput = document.getElementById("pin-cliente");
+const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
+const notificationMessageEl = document.getElementById("notification-message");
+const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
+const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
 
 
 // ==========================================================================
@@ -38,14 +48,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const slug = urlParams.get('slug');
-        if (!slug) throw new Error("Link inválido.");
+        if (!slug) throw new Error("Link inválido. O profissional não foi especificado.");
 
         profissionalUid = await getUidFromSlug(slug);
-        if (!profissionalUid) throw new Error("Profissional não encontrado.");
+        if (!profissionalUid) throw new Error("Profissional não encontrado. Verifique o link.");
 
-        const dadosBrutos = await carregarDadosDoFirebase(); // Esta função foi alterada para DEBUG
+        const dadosBrutos = await carregarDadosDoFirebase();
 
-        // O filtro será aplicado aqui no código por enquanto, após o debug
         processarDadosCarregados(dadosBrutos);
 
         const errosDeConfiguracao = validarDadosDoProfissional();
@@ -62,11 +71,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         loader.style.display = 'none';
         content.style.display = 'flex';
     } catch (error) {
+        console.error("Erro ao inicializar a vitrine:", error);
         showError(error.message);
-        console.error("Erro ao inicializar:", error);
     }
 });
 
+function showError(message) {
+    loader.style.display = 'block';
+    content.style.display = 'none';
+    loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
+}
 
 // ==========================================================================
 //  BUSCA E VALIDAÇÃO DE DADOS
@@ -76,54 +90,26 @@ async function getUidFromSlug(slug) {
     return docSnap.exists() ? docSnap.data().uid : null;
 }
 
-// ### FUNÇÃO ALTERADA PARA DEBUG ###
 async function carregarDadosDoFirebase() {
-    console.log("Iniciando modo de depuração para serviços...");
-    
-    // Busca o perfil e horários normalmente
-    const perfilPromise = getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile"));
-    const horariosPromise = getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"));
-
-    // --- ALTERAÇÃO PARA DEBUG ---
-    // Busca TODOS os serviços, ignorando a validação 'visivelNaVitrine'
-    const servicosPromise = getDocs(collection(db, "users", profissionalUid, "servicos"));
-
     const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
-        perfilPromise,
-        servicosPromise,
-        horariosPromise
+        getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
+        // ### ALTERAÇÃO 1: Buscando TODOS os serviços, sem filtro no Firebase ###
+        getDocs(collection(db, "users", profissionalUid, "servicos")),
+        getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
     ]);
-    
-    // --- LOGS DE DEBUG ---
-    console.log("--- DEBUG: DADOS BRUTOS DOS SERVIÇOS VINDOS DO FIREBASE ---");
-    if (servicosSnapshot.empty) {
-        console.log("Nenhum documento de serviço encontrado na coleção.");
-    } else {
-        servicosSnapshot.docs.forEach(d => {
-            const dados = d.data();
-            console.log("----------------------------------------------------");
-            console.log("ID do Serviço:", d.id);
-            console.log("Dados:", dados);
-            // Imprime o campo problemático e seu tipo
-            console.log("Campo 'visivelNaVitrine':", dados.visivelNaVitrine);
-            console.log("Tipo do campo:", typeof dados.visivelNaVitrine);
-        });
-        console.log("--- FIM DO DEBUG ---");
-    }
-
     return { perfilDoc, servicosSnapshot, horariosDoc };
 }
 
 function validarDadosDoProfissional() {
     const erros = [];
     if (!professionalData.perfil.nomeNegocio) {
-        erros.push("O nome do negócio não foi configurado.");
+        erros.push("O perfil do negócio (com nome) não foi configurado.");
     }
     if (Object.keys(professionalData.horarios).length === 0) {
         erros.push("Os horários de atendimento não foram configurados.");
     }
     if (professionalData.servicos.length === 0) {
-        erros.push("Nenhum serviço foi disponibilizado para a vitrine (verifique se estão marcados como 'Ativo na Vitrine').");
+        erros.push("Nenhum serviço foi disponibilizado para a vitrine.");
     }
     return erros;
 }
@@ -132,22 +118,18 @@ function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) 
     if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
     if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
     
-    // APLICANDO O FILTRO AQUI DEPOIS DO DEBUG
+    // ### ALTERAÇÃO 2: O filtro agora é feito aqui, no aplicativo ###
+    // Esta regra mostra o serviço se o campo for 'true' OU se ele não existir (undefined).
+    // Ele só esconde se estiver explicitamente marcado como 'false'.
     professionalData.servicos = servicosSnapshot.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(servico => servico.visivelNaVitrine === true);
+        .filter(servico => servico.visivelNaVitrine !== false);
 }
 
 
-// O RESTANTE DO CÓDIGO (LÓGICA DE AGENDAMENTO, RENDERIZAÇÃO, EVENTOS, ETC.) CONTINUA EXATAMENTE O MESMO.
-// Colei-o abaixo para que o arquivo fique completo.
-
-function showError(message) {
-    loader.style.display = 'block';
-    content.style.display = 'none';
-    loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
-}
-
+// ==========================================================================
+//  LÓGICA DE AGENDAMENTO (sem alterações)
+// ==========================================================================
 async function carregarAgendaInicial() {
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
     dataInput.value = hoje.toISOString().split('T')[0];
@@ -222,6 +204,11 @@ function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     return horarios;
 }
 
+
+// ==========================================================================
+//  Restante do código (Renderização, Eventos, etc.) - SEM ALTERAÇÕES
+// ==========================================================================
+
 function renderizarInformacoesGerais() {
     const { perfil, servicos } = professionalData;
     nomeNegocioEl.textContent = perfil.nomeNegocio || "Nome não definido";
@@ -277,8 +264,8 @@ function configurarTodosEventListeners() {
     document.getElementById('menu-agendamento').addEventListener('input', verificarEstadoBotaoConfirmar);
     btnConfirmar.addEventListener('click', salvarAgendamento);
     document.getElementById('btn-salvar-perfil').addEventListener('click', salvarPerfilCliente);
-    document.getElementById('btn-visualizar-agendamentos').addEventListener('click', visualizarAgendamentos);
-    document.getElementById('btn-buscar-cancelamento').addEventListener('click', buscarAgendamentosParaCancelar);
+    btnVisualizarAgendamentos.addEventListener('click', visualizarAgendamentos);
+    btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelar);
 }
 
 function verificarEstadoBotaoConfirmar() {
@@ -310,19 +297,94 @@ function salvarPerfilCliente() {
 }
 
 async function salvarAgendamento() {
-    // ...
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'Salvando...';
+    try {
+        const pin = pinClienteInput.value;
+        if (pin.length < 4) {
+            showNotification("O PIN precisa ter entre 4 e 6 dígitos.", true);
+            btnConfirmar.disabled = false;
+            btnConfirmar.textContent = 'Confirmar Agendamento';
+            return;
+        }
+        const [hora, minuto] = agendamentoState.horario.split(':').map(Number);
+        const dataAgendamento = new Date(agendamentoState.data + "T00:00:00");
+        dataAgendamento.setHours(hora, minuto);
+        const dadosAgendamento = {
+            clienteNome: nomeClienteInput.value.trim(),
+            clienteTelefone: telefoneClienteInput.value.replace(/\D/g, ''),
+            pinHash: await gerarHashSHA256(pin),
+            servicoId: agendamentoState.servico.id,
+            servicoNome: agendamentoState.servico.nome,
+            servicoDuracao: agendamentoState.servico.duracao,
+            servicoPreco: agendamentoState.servico.preco,
+            horario: Timestamp.fromDate(dataAgendamento),
+            status: 'agendado'
+        };
+        await addDoc(collection(db, "users", profissionalUid, "agendamentos"), dadosAgendamento);
+        showNotification("Agendamento realizado com sucesso!");
+        setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+        showNotification("Falha ao agendar. Tente novamente.", true);
+        console.error("Erro ao salvar agendamento:", error);
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Confirmar Agendamento';
+    }
 }
 
 async function visualizarAgendamentos() {
-    // ...
+    const telefone = document.getElementById('input-telefone-visualizacao').value.replace(/\D/g, '');
+    const output = document.getElementById('lista-agendamentos-visualizacao');
+    if (!telefone) { showNotification("Digite um telefone.", true); return; }
+    output.innerHTML = '<p>Buscando...</p>';
+    const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone), where("status", "==", "agendado"));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        output.innerHTML = '<p>Nenhum agendamento ativo encontrado.</p>';
+    } else {
+        output.innerHTML = snapshot.docs.map(doc => {
+            const ag = doc.data();
+            return `<div><h4>${ag.servicoNome}</h4><p>Data: ${ag.horario.toDate().toLocaleString('pt-BR')}</p></div>`;
+        }).join('');
+    }
 }
 
 async function buscarAgendamentosParaCancelar() {
-    // ...
+     const telefone = document.getElementById('input-telefone-cancelamento').value.replace(/\D/g, '');
+     const pin = document.getElementById('input-pin-cancelamento').value;
+     const output = document.getElementById('lista-agendamentos-cancelamento');
+     if (!telefone || !pin) { showNotification("Preencha telefone e PIN.", true); return; }
+     output.innerHTML = '<p>Buscando...</p>';
+     const pinHash = await gerarHashSHA256(pin);
+     const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone), where("pinHash", "==", pinHash), where("status", "==", "agendado"));
+     const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        output.innerHTML = '<p>Nenhum agendamento encontrado com estes dados.</p>';
+    } else {
+        output.innerHTML = snapshot.docs.map(doc => `
+            <div>
+                <h4>${doc.data().servicoNome}</h4>
+                <p>Data: ${doc.data().horario.toDate().toLocaleString('pt-BR')}</p>
+                <button class="btn-cancelar" data-id="${doc.id}">Cancelar Agendamento</button>
+            </div>
+        `).join('');
+        output.querySelectorAll('.btn-cancelar').forEach(btn => {
+            btn.addEventListener('click', (e) => cancelarAgendamento(e.target.dataset.id));
+        });
+    }
 }
 
 async function cancelarAgendamento(id) {
-    // ...
+    if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
+    try {
+        const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", id);
+        await updateDoc(agendamentoRef, { status: 'cancelado_pelo_cliente' });
+        showNotification("Agendamento cancelado com sucesso!");
+        buscarAgendamentosParaCancelar();
+    } catch(error) {
+        showNotification("Erro ao cancelar.", true);
+        console.error(error);
+    }
 }
 
 function showNotification(message, isError = false) {
@@ -335,4 +397,10 @@ function showNotification(message, isError = false) {
         notificationMessageEl.style.opacity = "0";
         setTimeout(() => { notificationMessageEl.style.display = "none"; }, 500);
     }, 3500);
+}
+
+async function gerarHashSHA256(texto) {
+    const data = new TextEncoder().encode(texto);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
