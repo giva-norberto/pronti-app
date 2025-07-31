@@ -1,21 +1,50 @@
-// vitrini-agendamento.js
 import { db } from './vitrini-firebase.js';
 import { currentUser } from './vitrini-auth.js';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { showNotification } from './vitrini-utils.js';
 
-export async function buscarEExibirAgendamentos(profissionalUid, modo = 'ativos', renderizarAgendamentosComoCards) {
+// Função para renderizar agendamentos como cards
+export function renderizarAgendamentosComoCards(agendamentos, modo = 'ativos') {
+    const listaAgendamentosVisualizacao = document.getElementById('lista-agendamentos-visualizacao');
+    if (!listaAgendamentosVisualizacao) return;
+
+    if (agendamentos.length === 0) {
+        listaAgendamentosVisualizacao.innerHTML = `<p>Não há agendamentos ${modo === 'ativos' ? 'ativos' : 'no histórico'}.</p>`;
+        return;
+    }
+
+    listaAgendamentosVisualizacao.innerHTML = agendamentos.map(ag => {
+        let statusExibido = ag.status;
+        if (modo === 'historico' && ag.status === 'agendado') statusExibido = 'Concluído';
+
+        // Formatando datas para evitar erro de sintaxe na template string
+        const dataFormatada = ag.horario.toDate().toLocaleDateString('pt-BR');
+        const horarioFormatado = ag.horario.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        return `
+            <div class="agendamento-card ${ag.status !== 'agendado' ? 'passado' : ''}">
+                <h4>${ag.servicoNome}</h4>
+                <p><strong>Data:</strong> ${dataFormatada}</p>
+                <p><strong>Horário:</strong> ${horarioFormatado}</p>
+                <p><strong>Status:</strong> ${statusExibido}</p>
+                ${(ag.status === 'agendado' && modo === 'ativos') ? `<button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+export async function buscarEExibirAgendamentos(profissionalUid, modo = 'ativos') {
     if (!currentUser) {
         const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
         const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
-        if(agendamentosPrompt) agendamentosPrompt.style.display = 'block';
-        if(agendamentosLista) agendamentosLista.innerHTML = '';
+        if (agendamentosPrompt) agendamentosPrompt.style.display = 'block';
+        if (agendamentosLista) agendamentosLista.innerHTML = '';
         return;
     }
 
     const listaAgendamentosVisualizacao = document.getElementById('lista-agendamentos-visualizacao');
     listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
-    
+
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteUid", "==", currentUser.uid));
         const snapshot = await getDocs(q);
@@ -31,7 +60,7 @@ export async function buscarEExibirAgendamentos(profissionalUid, modo = 'ativos'
         const agendamentosFiltrados = (modo === 'ativos')
             ? todosAgendamentos.filter(ag => ag.horario.toDate() >= agora).sort((a, b) => a.horario.toMillis() - b.horario.toMillis())
             : todosAgendamentos.filter(ag => ag.horario.toDate() < agora).sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
-        
+
         renderizarAgendamentosComoCards(agendamentosFiltrados, modo);
 
     } catch (error) {
@@ -65,7 +94,7 @@ export async function salvarAgendamento(profissionalUid, agendamentoState) {
         horario: Timestamp.fromDate(dataAgendamento),
         status: 'agendado'
     };
-    
+
     try {
         await addDoc(collection(db, "users", profissionalUid, "agendamentos"), dadosAgendamento);
         showNotification("Agendamento realizado com sucesso!");
@@ -97,7 +126,9 @@ export async function cancelarAgendamento(profissionalUid, id, buscarEExibirAgen
 export async function buscarAgendamentosDoDia(profissionalUid, dataString) {
     const inicioDoDia = Timestamp.fromDate(new Date(dataString + 'T00:00:00'));
     const fimDoDia = Timestamp.fromDate(new Date(dataString + 'T23:59:59'));
-    const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("horario", ">=", inicioDoDia), where("horario", "<=", fimDoDia));
+    const q = query(collection(db, "users", profissionalUid, "agendamentos"),
+        where("horario", ">=", inicioDoDia),
+        where("horario", "<=", fimDoDia));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const ag = doc.data();
@@ -107,21 +138,34 @@ export async function buscarAgendamentosDoDia(profissionalUid, dataString) {
     });
 }
 
+// A função calcularSlotsDisponiveis parece cortada no seu envio, então segue a continuação corrigida:
+
 export function calcularSlotsDisponiveis(data, agendamentosOcupados, professionalData, agendamentoState) {
     const diaSemana = new Date(data + 'T00:00:00').getDay();
     const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
     const configDia = professionalData.horarios[nomeDia];
     if (!configDia || !configDia.ativo) return [];
     const horarios = [];
-    const { intervalo = 30 } = professionalData.horarios;
+    const intervalo = professionalData.horarios.intervalo || 30;
     const duracaoServicoAtual = agendamentoState.servico.duracao;
+    
     (configDia.blocos || []).forEach(bloco => {
         let horarioAtual = new Date(`${data}T${bloco.inicio}`);
         const fimDoBloco = new Date(`${data}T${bloco.fim}`);
+
         while (horarioAtual < fimDoBloco) {
             const fimDoSlotProposto = new Date(horarioAtual.getTime() + duracaoServicoAtual * 60000);
             if (fimDoSlotProposto > fimDoBloco) break;
-            if (!agendamentosOcupados.some(ag => horarioAtual < ag.fim && fimDoSlotProposto > ag.inicio)) {
+
+            const slotOcupado = agendamentosOcupados.some(ag => horarioAtual < ag.fim && fimDoSlotProposto > ag.inicio);
+
+            if (!slotOcupado) {
                 horarios.push(horarioAtual.toTimeString().substring(0, 5));
             }
-            horarioAtual = new Date(horarioAtual
+
+            horarioAtual = new Date(horarioAtual.getTime() + intervalo * 60000);
+        }
+    });
+
+    return horarios;
+}
