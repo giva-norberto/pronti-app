@@ -87,11 +87,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
     
+    // Assegura que os elementos corretos são mostrados/escondidos
+    const buscaManualContainer = document.getElementById('container-busca-manual-view'); 
+    const filtrosContainer = document.getElementById('botoes-agendamento'); 
+    
     if (telefoneSalvo) {
+        if(buscaManualContainer) buscaManualContainer.style.display = 'none';
+        if(filtrosContainer) filtrosContainer.style.display = 'flex';
         inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
-        listaAgendamentosVisualizacao.innerHTML = '<p>Digite seu telefone e clique em "Ver Agendamentos Ativos" para buscar.</p>';
+        if(buscaManualContainer) buscaManualContainer.style.display = 'block';
+        if(filtrosContainer) filtrosContainer.style.display = 'flex'; // Mantém botões visíveis
+        listaAgendamentosVisualizacao.innerHTML = '<p>Salve seu telefone na aba "Perfil" para carregar seus agendamentos automaticamente.</p>';
     }
 }
 
@@ -102,7 +110,11 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
         return;
     }
     
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
+    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
+    if (containerBuscaManual && containerFiltros) {
+        containerBuscaManual.style.display = 'none';
+        containerFiltros.style.display = 'flex';
+    }
 
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
@@ -178,8 +190,8 @@ function configurarTodosEventListeners() {
         });
     });
 
-    btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+    if(btnVisualizarAgendamentos) btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    if(btnVerHistorico) btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
 
     const dropdownToggle = document.getElementById('btn-primeiro-acesso');
     const dropdownMenu = document.getElementById('primeiro-acesso-menu');
