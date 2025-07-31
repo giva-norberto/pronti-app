@@ -184,87 +184,107 @@ h2 {
 }
 
 /* =============================================== */
-/* --- NOVO DESIGN PARA O FORMULÁRIO DE AGENDAMENTO --- */
+/* --- DESIGN REFINADO PARA O FORMULÁRIO DE AGENDAMENTO --- */
 /* =============================================== */
 
-/* Ajuste geral no card da aba de agendamento */
+/* Remove a borda do card principal para um visual mais integrado */
 #menu-agendamento .card {
   border: none;
+  background-color: var(--cor-branco);
 }
 
-/* Título da seção */
+/* Título principal da página */
 #menu-agendamento h2 {
-  font-size: 1.8em;
+  font-size: 2em; /* Maior e mais impactante */
   font-weight: 700;
   color: var(--cor-texto);
   border-bottom: none;
-  text-align: center;
+  text-align: left; /* Alinhado à esquerda para um look mais clássico */
+  margin-bottom: 40px;
+}
+
+/* Grupos do formulário (espaçamento) */
+.form-group {
   margin-bottom: 35px;
 }
 
-/* Rótulos (1. Escolha um serviço, etc.) */
-.form-group {
-  margin-bottom: 30px;
-}
-
+/* Rótulos dos passos (1. Escolha um serviço, etc.) */
 #menu-agendamento label {
-  font-size: 1.1em;
+  font-size: 1.2em;
   font-weight: 600;
   color: var(--cor-texto);
   margin-bottom: 15px;
 }
 
-/* Botões de Serviço e Horário */
-#lista-servicos, #grade-horarios {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.service-item, .btn-horario {
-  background-color: var(--cor-fundo);
-  border: 2px solid var(--cor-primaria-leve);
+/* Botões de Serviço e Horário - Estado Padrão */
+#lista-servicos .service-item,
+#grade-horarios .btn-horario {
+  background-color: var(--cor-branco);
+  border: 1px solid var(--cor-borda);
   color: var(--cor-texto-leve);
   font-weight: 600;
   border-radius: 8px;
   padding: 12px 22px;
   transition: all 0.2s ease-in-out;
-  cursor: pointer;
 }
 
-.service-item:hover, .btn-horario:hover {
+/* Botões de Serviço e Horário - Ao passar o mouse */
+#lista-servicos .service-item:hover,
+#grade-horarios .btn-horario:hover {
   border-color: var(--cor-primaria);
   color: var(--cor-primaria);
   transform: translateY(-2px);
 }
 
-.service-item.selecionado, .btn-horario.selecionado {
-  background-color: var(--cor-primaria);
+/* Botões de Serviço e Horário - SELECIONADO */
+#lista-servicos .service-item.selecionado,
+#grade-horarios .btn-horario.selecionado {
+  background: var(--cor-primaria);
   border-color: var(--cor-primaria);
   color: var(--cor-branco);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
   transform: translateY(-2px);
 }
 
 /* Campos de Texto (Nome, Telefone, PIN) */
-input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
-  width: 100%;
-  padding: 14px;
-  font-size: 1em;
+input[type="date"],
+input[type="text"],
+input[type="tel"],
+input[type="password"] {
+  background-color: var(--cor-branco); /* Fundo branco para mais contraste */
+  border: 1px solid var(--cor-borda);
   border-radius: 8px;
-  border: 2px solid var(--cor-borda);
-  background-color: var(--cor-fundo);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 15px; /* Mais espaçamento interno */
+  font-size: 1em;
   font-family: 'Poppins', sans-serif;
   color: var(--cor-texto);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset; /* Sombra interna sutil */
 }
 
-input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
+input[type="date"]:focus,
+input[type="text"]:focus,
+input[type="tel"]:focus,
+input[type="password"]:focus {
   border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
+  box-shadow: 0 0 0 3px var(--cor-primaria-leve); /* Efeito de foco mais forte */
 }
 
+/* Grupo do PIN */
+.pin-input-group {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: var(--cor-fundo);
+  border-radius: 8px;
+  border: 1px solid var(--cor-borda);
+}
 
+/* Botão de Confirmar Agendamento */
+#btn-confirmar-agendamento {
+  padding: 16px 20px;
+  font-size: 1.1em;
+  border-radius: 8px;
+  margin-top: 10px;
+}
 /* =============================================== */
 /* BOTÕES E OUTROS                       */
 /* =============================================== */
