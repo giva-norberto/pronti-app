@@ -385,3 +385,46 @@ button#btn-confirmar-agendamento:disabled {
     position: static;
   }
 }
+/* =============================================== */
+/* --- MELHORIA BOTÕES MEUS AGENDAMENTOS --- */
+/* =============================================== */
+
+/* Faz o container dos botões ocupar a largura total */
+.botoes-agendamento {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+/* Estilo base compartilhado para os dois botões */
+.botoes-agendamento .btn-submit,
+.botoes-agendamento .btn-secondary {
+  flex: 1; /* <-- A MÁGICA ACONTECE AQUI: faz os botões dividirem o espaço igualmente */
+  padding: 12px;
+  font-size: 0.95em;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+/* Estilo para o botão INATIVO */
+.botoes-agendamento .btn-inativo {
+  background-color: transparent;
+  border-color: var(--cor-borda);
+  color: var(--cor-texto-leve);
+}
+.botoes-agendamento .btn-inativo:hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+}
+
+/* Estilo para o botão ATIVO */
+.botoes-agendamento .btn-ativo {
+  background: var(--cor-sucesso); /* Usando a cor de sucesso para clareza */
+  color: var(--cor-branco);
+  border-color: var(--cor-sucesso);
+  box-shadow: var(--sombra);
+}
