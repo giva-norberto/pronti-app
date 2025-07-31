@@ -225,10 +225,7 @@ function configurarTodosEventListeners() {
 // ==========================================================================
 //  DEMAIS FUNÇÕES
 // ==========================================================================
-function showError(message) {
-    loader.style.display = 'block';
-    content.style.display = 'none';
-    loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
+
 }
 
 async function getUidFromSlug(slug) {
