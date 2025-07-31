@@ -93,19 +93,10 @@ async function getUidFromSlug(slug) {
 async function carregarDadosDoFirebase() {
     const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
         getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
-        getDocs(collection(db, "users", profissionalUid, "servicos")),
+        getDocs(query(collection(db, "users", profissionalUid, "servicos"), where("visivelNaVitrine", "==", true))),
         getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
     ]);
     return { perfilDoc, servicosSnapshot, horariosDoc };
-}
-
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
-    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
-    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
-    
-    professionalData.servicos = servicosSnapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(servico => servico.visivelNaVitrine !== false);
 }
 
 function validarDadosDoProfissional() {
@@ -121,6 +112,13 @@ function validarDadosDoProfissional() {
     }
     return erros;
 }
+
+function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
+    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
+    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
+    professionalData.servicos = servicosSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
 
 // ==========================================================================
 //  LÓGICA DE AGENDAMENTO
@@ -210,10 +208,24 @@ function renderizarInformacoesGerais() {
     if (perfil.logoUrl) logoEl.src = perfil.logoUrl;
     document.getElementById('info-negocio').innerHTML = `<p>${perfil.descricao || 'Nenhuma descrição fornecida.'}</p>`;
     document.getElementById('info-contato').innerHTML = `${perfil.telefone ? `<p><strong>Telefone:</strong> ${perfil.telefone}</p>` : ''}${perfil.endereco ? `<p><strong>Endereço:</strong> ${perfil.endereco}</p>` : ''}`;
-    document.getElementById('info-servicos').innerHTML = servicos.length > 0 ? servicos.map(s => `<div><strong>${s.nome}</strong> (${s.duracao} min) - R$ ${parseFloat(s.preco || 0).toFixed(2)}</div>`).join('') : '<p>Nenhum serviço disponível.</p>';
+    
+    // ### ALTERAÇÃO AQUI para gerar os cartões ###
+    document.getElementById('info-servicos').innerHTML = servicos.length > 0
+        ? servicos.map(s => `
+            <div class="servico-info-card">
+                <h4>${s.nome}</h4>
+                <p class="servico-detalhe">${s.duracao} min</p>
+                <p class="servico-preco">R$ ${parseFloat(s.preco || 0).toFixed(2)}</p>
+            </div>
+        `).join('')
+        : '<p>Nenhum serviço disponível.</p>';
+    
     servicosContainer.innerHTML = servicos.length > 0 ? servicos.map(s => `<button class="service-item" data-id="${s.id}">${s.nome} - R$ ${parseFloat(s.preco || 0).toFixed(2)}</button>`).join('') : '<p>Nenhum serviço para agendamento.</p>';
 }
 
+// ==========================================================================
+//  EVENTOS E FUNÇÕES DE INTERAÇÃO
+// ==========================================================================
 function configurarTodosEventListeners() {
     document.querySelectorAll('.menu-btn').forEach(button => {
         button.addEventListener('click', () => {
