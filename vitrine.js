@@ -37,14 +37,15 @@ const telefoneClienteInput = document.getElementById("telefone-cliente");
 const pinClienteInput = document.getElementById("pin-cliente");
 const btnConfirmar = document.getElementById("btn-confirmar-agendamento");
 const notificationMessageEl = document.getElementById("notification-message");
+
+// --- Elementos da Aba "Meus Agendamentos" ---
 const inputTelefoneVisualizacao = document.getElementById("input-telefone-visualizacao");
 const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agendamentos");
 const btnVerHistorico = document.getElementById("btn-ver-historico");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
-const containerBuscaManual = document.getElementById("container-busca-manual-view");
-const containerFiltros = document.getElementById("botoes-agendamento");
-
+const containerBuscaManual = document.getElementById("container-busca-manual");
+const containerFiltros = document.getElementById("container-filtros");
 
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
@@ -92,18 +93,14 @@ function showError(message) {
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
     
-    // Assegura que os elementos corretos são mostrados/escondidos
-    const buscaManualContainer = document.getElementById('container-busca-manual-view'); 
-    const filtrosContainer = document.getElementById('botoes-agendamento'); 
-    
     if (telefoneSalvo) {
-        if(buscaManualContainer) buscaManualContainer.style.display = 'none';
-        if(filtrosContainer) filtrosContainer.style.display = 'flex';
+        if(containerBuscaManual) containerBuscaManual.style.display = 'none';
+        if(containerFiltros) containerFiltros.style.display = 'block';
         inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
-        if(buscaManualContainer) buscaManualContainer.style.display = 'block';
-        if(filtrosContainer) filtrosContainer.style.display = 'flex'; // Mantém botões visíveis
+        if(containerBuscaManual) containerBuscaManual.style.display = 'block';
+        if(containerFiltros) containerFiltros.style.display = 'none';
         listaAgendamentosVisualizacao.innerHTML = '<p>Salve seu telefone na aba "Perfil" para carregar seus agendamentos automaticamente.</p>';
     }
 }
@@ -111,11 +108,15 @@ function iniciarAbaMeusAgendamentos() {
 async function buscarEExibirAgendamentos(modo = 'ativos') {
     const telefone = inputTelefoneVisualizacao.value.replace(/\D/g, '');
     if (!telefone) {
-        showNotification("Digite seu telefone para buscar.", true);
+        showNotification("Seu telefone não está preenchido. Salve-o na aba 'Perfil'.", true);
         return;
     }
     
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
+    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
+    if (containerBuscaManual && containerFiltros) {
+        containerBuscaManual.style.display = 'none';
+        containerFiltros.style.display = 'block';
+    }
 
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
@@ -185,8 +186,8 @@ function configurarTodosEventListeners() {
         });
     });
 
-    btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+    if(btnVisualizarAgendamentos) btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    if(btnVerHistorico) btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
 
     const dropdownToggle = document.getElementById('btn-primeiro-acesso');
     const dropdownMenu = document.getElementById('primeiro-acesso-menu');
@@ -346,6 +347,18 @@ function verificarEstadoBotaoConfirmar() {
     const telOK = telefoneClienteInput.value.replace(/\D/g, '').length >= 10;
     const pinOK = pinClienteInput.value.length >= 4;
     btnConfirmar.disabled = !(servico && data && horario && nomeOK && telOK && pinOK);
+}
+
+// ### FUNÇÃO RESTAURADA ###
+function preencherCamposComPerfilSalvo() {
+    const nome = localStorage.getItem('clienteNome') || '';
+    const telefone = localStorage.getItem('clienteTelefone') || '';
+    document.getElementById('perfil-nome').value = nome;
+    document.getElementById('perfil-telefone').value = telefone;
+    if (!nomeClienteInput.value) nomeClienteInput.value = nome;
+    if (!telefoneClienteInput.value) telefoneClienteInput.value = telefone;
+    inputTelefoneVisualizacao.value = telefone;
+    document.getElementById('input-telefone-cancelamento').value = telefone;
 }
 
 function salvarPerfilCliente() {
