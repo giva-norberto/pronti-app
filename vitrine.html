@@ -12,7 +12,7 @@
 <body>
 
     <div id="vitrine-loader">
-        <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do profissional...</p>
+        <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar...</p>
     </div>
 
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
@@ -22,25 +22,23 @@
                 <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
                 <h1 id="nome-negocio-publico">Nome do Negócio</h1>
             </div>
+
+            <div id="user-auth-section" class="user-auth-section">
+                <div id="user-info" style="display: none;">
+                    <img id="user-photo" src="" alt="Foto do Usuário">
+                    <span id="user-name"></span>
+                    <button id="btn-logout" class="btn-logout">Sair</button>
+                </div>
+                <button id="btn-login" class="btn-login">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon">
+                    Login com Google
+                </button>
+            </div>
+
             <nav class="sidebar-menu">
                 <button class="menu-btn ativo" data-menu="informacoes">Informações</button>
                 <button class="menu-btn" data-menu="agendamento">Agendar</button>
                 <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
-                <button class="menu-btn" data-menu="cancelamento">Cancelar Agendamento</button>
-                <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
-                
-                <div class="dropdown-info">
-                    <button id="btn-primeiro-acesso" class="dropdown-toggle">Primeiro Acesso ⌄</button>
-                    <div id="primeiro-acesso-menu" class="dropdown-menu">
-                        <p><strong>Bem-vindo!</strong> Para agendar:</p>
-                        <ul>
-                            <li>Escolha um serviço disponível</li>
-                            <li>Selecione a data e horário</li>
-                            <li>Preencha seus dados e PIN</li>
-                            <li>Guarde seu PIN para cancelamentos</li>
-                        </ul>
-                    </div>
-                </div>
             </nav>
         </aside>
 
@@ -64,95 +62,47 @@
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
-                    <div class="form-group">
-                        <label>1. Escolha um serviço</label>
-                        <div id="lista-servicos"></div>
+                    <div id="agendamento-login-prompt" style="display: none;">
+                        <p>Por favor, faça login para continuar com o agendamento.</p>
                     </div>
-                    <div class="form-group">
-                        <label for="data-agendamento">2. Escolha uma data</label>
-                        <input type="date" id="data-agendamento" required>
-                    </div>
-                    <div class="form-group">
-                        <label>3. Escolha um horário</label>
-                        <div id="grade-horarios">
-                            <p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>
+                    <div id="agendamento-form-container">
+                        <div class="form-group">
+                            <label>1. Escolha um serviço</label>
+                            <div id="lista-servicos"></div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>4. Seus dados</label>
-                        <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
-                        <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required>
-                        <div class="pin-input-group">
-                            <label for="pin-cliente">Crie um PIN para seu agendamento:</label>
-                            <input type="password" id="pin-cliente" placeholder="Digite um PIN de 4-6 dígitos" required maxlength="6">
-                            <small>Este PIN será necessário para cancelar ou verificar este agendamento.</small>
+                        <div class="form-group">
+                            <label for="data-agendamento">2. Escolha uma data</label>
+                            <input type="date" id="data-agendamento" required>
                         </div>
+                        <div class="form-group">
+                            <label>3. Escolha um horário</label>
+                            <div id="grade-horarios">
+                                <p class="aviso-horarios">Selecione um serviço e uma data.</p>
+                            </div>
+                        </div>
+                        <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                     </div>
-                    <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                 </div>
             </div>
 
             <div id="menu-visualizacao" class="menu-content">
-                <div class="card">
+                 <div class="card">
                     <h2>Meus Agendamentos</h2>
-                    <div id="container-busca-manual-view">
-                        <p>Digite o telefone salvo no seu perfil para ver seus compromissos.</p>
-                        <div class="form-group">
-                            <label for="input-telefone-visualizacao">Seu Telefone</label>
-                            <input type="tel" id="input-telefone-visualizacao" placeholder="(XX) XXXXX-XXXX">
-                        </div>
+                    <div id="agendamentos-login-prompt" style="display: none;">
+                        <p>Por favor, faça login para ver seus agendamentos.</p>
                     </div>
-                    <div id="botoes-agendamento" class="botoes-agendamento">
-                        <button id="btn-visualizar-agendamentos" class="btn-submit">Ver Agendamentos Ativos</button>
-                        <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
+                    <div id="botoes-agendamento" class="botoes-agendamento" style="display: none;">
+                         <button id="btn-ver-ativos" class="btn-submit">Agendamentos Ativos</button>
+                         <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
                     </div>
-                </div>
-
-                <div id="card-resultados" class="card" style="display: none;">
-                    <h2 id="titulo-resultados">Resultados</h2>
-                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado">
-                        </div>
-                </div>
-            </div>
-
-            <div id="menu-cancelamento" class="menu-content">
-                <div class="card">
-                    <h2>Cancelar Agendamento</h2>
-                    <p>Para cancelar, precisamos do seu telefone e do PIN que você criou.</p>
-                    <div class="form-group">
-                        <label for="input-telefone-cancelamento">Seu Telefone</label>
-                        <input type="tel" id="input-telefone-cancelamento" placeholder="(XX) XXXXX-XXXX">
-                    </div>
-                    <div class="form-group">
-                        <label for="input-pin-cancelamento">Seu PIN</label>
-                        <input type="password" id="input-pin-cancelamento" placeholder="PIN de 4 a 6 dígitos">
-                    </div>
-                    <button id="btn-buscar-cancelamento" class="btn-submit">Buscar Agendamentos para Cancelar</button>
-                    <div id="lista-agendamentos-cancelamento" class="lista-agendamentos-resultado"></div>
-                </div>
+                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
+                 </div>
             </div>
             
-            <div id="menu-perfil" class="menu-content">
-                <div class="card">
-                    <h2>Meu Perfil</h2>
-                    <p>Salve seus dados para preencher o agendamento mais rápido.</p>
-                    <div class="form-group">
-                        <label for="perfil-nome">Nome Completo</label>
-                        <input type="text" id="perfil-nome" placeholder="Digite seu nome completo">
-                    </div>
-                    <div class="form-group">
-                        <label for="perfil-telefone">Telefone (WhatsApp)</label>
-                        <input type="tel" id="perfil-telefone" placeholder="(XX) XXXXX-XXXX">
-                    </div>
-                    <button id="btn-salvar-perfil" class="btn-submit">Salvar Perfil</button>
-                </div>
-            </div>
         </div>
     </div>
 
     <div id="notification-message" class="notification-message"></div>
-
     <script type="module" src="vitrine.js"></script>
-
 </body>
 </html>
