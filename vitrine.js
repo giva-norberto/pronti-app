@@ -64,28 +64,27 @@ function atualizarUIparaUsuario(user) {
     const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
 
     if (user) { // Usuário está LOGADO
-        userInfo.style.display = 'flex';
-        btnLogin.style.display = 'none';
-        document.getElementById('user-name').textContent = user.displayName;
-        document.getElementById('user-photo').src = user.photoURL;
+        if(userInfo) userInfo.style.display = 'flex';
+        if(btnLogin) btnLogin.style.display = 'none';
+        if(document.getElementById('user-name')) document.getElementById('user-name').textContent = user.displayName;
+        if(document.getElementById('user-photo')) document.getElementById('user-photo').src = user.photoURL;
 
-        agendamentoForm.style.display = 'block';
-        agendamentoPrompt.style.display = 'none';
-        agendamentosPrompt.style.display = 'none';
-        agendamentosBotoes.style.display = 'flex';
+        if(agendamentoForm) agendamentoForm.style.display = 'block';
+        if(agendamentoPrompt) agendamentoPrompt.style.display = 'none';
+        if(agendamentosPrompt) agendamentosPrompt.style.display = 'none';
+        if(agendamentosBotoes) agendamentosBotoes.style.display = 'flex';
         
-        // Dispara a busca automática de agendamentos ao logar
         buscarEExibirAgendamentos('ativos');
 
     } else { // Usuário está DESLOGADO
-        userInfo.style.display = 'none';
-        btnLogin.style.display = 'block';
+        if(userInfo) userInfo.style.display = 'none';
+        if(btnLogin) btnLogin.style.display = 'block';
 
-        agendamentoForm.style.display = 'none';
-        agendamentoPrompt.style.display = 'block';
-        agendamentosPrompt.style.display = 'block';
-        agendamentosBotoes.style.display = 'none';
-        agendamentosLista.innerHTML = '';
+        if(agendamentoForm) agendamentoForm.style.display = 'none';
+        if(agendamentoPrompt) agendamentoPrompt.style.display = 'block';
+        if(agendamentosPrompt) agendamentosPrompt.style.display = 'block';
+        if(agendamentosBotoes) agendamentosBotoes.style.display = 'none';
+        if(agendamentosLista) agendamentosLista.innerHTML = '';
     }
 }
 
@@ -111,21 +110,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById("vitrine-content").style.display = 'flex';
     } catch (error) {
         console.error("Erro ao inicializar:", error);
-        document.getElementById("vitrine-loader").innerHTML = `<p style="color:red">${error.message}</p>`;
+        const loader = document.getElementById("vitrine-loader");
+        loader.innerHTML = `<p style="color:red">${error.message}</p>`;
     }
 });
 
 
 // ==========================================================================
-//  LÓGICA DE "MEUS AGENDAMENTOS" (AGORA USA UID)
+//  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 async function buscarEExibirAgendamentos(modo = 'ativos') {
-    if (!currentUser) { // Se não há usuário logado, mostra o aviso.
-        const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
-        agendamentosPrompt.style.display = 'block';
-        document.getElementById('lista-agendamentos-visualizacao').innerHTML = '';
-        return;
-    }
+    if (!currentUser) return; 
 
     const listaAgendamentosVisualizacao = document.getElementById('lista-agendamentos-visualizacao');
     listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
@@ -177,7 +172,7 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
 
 
 // ==========================================================================
-//  SALVAR E CANCELAR AGENDAMENTO (SEM PIN)
+//  SALVAR E CANCELAR AGENDAMENTO
 // ==========================================================================
 async function salvarAgendamento() {
     if (!currentUser) {
@@ -209,7 +204,8 @@ async function salvarAgendamento() {
         await addDoc(collection(db, "users", profissionalUid, "agendamentos"), dadosAgendamento);
         showNotification("Agendamento realizado com sucesso!");
         setTimeout(() => {
-            document.querySelector('.menu-btn[data-menu="visualizacao"]').click();
+            const btnMenu = document.querySelector('.menu-btn[data-menu="visualizacao"]');
+            if (btnMenu) btnMenu.click();
         }, 1500);
     } catch (error) {
         showNotification("Falha ao agendar.", true);
@@ -237,21 +233,30 @@ async function cancelarAgendamento(id) {
 //  EVENT LISTENERS E DEMAIS FUNÇÕES
 // ==========================================================================
 function configurarTodosEventListeners() {
-    document.getElementById('btn-login').addEventListener('click', fazerLogin);
-    document.getElementById('btn-logout').addEventListener('click', fazerLogout);
+    const btnLogin = document.getElementById('btn-login');
+    if(btnLogin) btnLogin.addEventListener('click', fazerLogin);
+    
+    const btnLogout = document.getElementById('btn-logout');
+    if(btnLogout) btnLogout.addEventListener('click', fazerLogout);
 
     document.querySelectorAll('.menu-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.menu-content, .menu-btn').forEach(el => el.classList.remove('ativo'));
-            document.getElementById(`menu-${button.dataset.menu}`).classList.add('ativo');
+            const menuContent = document.getElementById(`menu-${button.dataset.menu}`);
+            if(menuContent) menuContent.classList.add('ativo');
             button.classList.add('ativo');
             if(button.dataset.menu === 'visualizacao') buscarEExibirAgendamentos('ativos');
         });
     });
-
-    document.getElementById('btn-ver-ativos').addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    document.getElementById('btn-ver-historico').addEventListener('click', () => buscarEExibirAgendamentos('historico'));
-    document.getElementById('lista-agendamentos-visualizacao').addEventListener('click', (e) => {
+    
+    const btnVerAtivos = document.getElementById('btn-ver-ativos');
+    if(btnVerAtivos) btnVerAtivos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    
+    const btnVerHistorico = document.getElementById('btn-ver-historico');
+    if(btnVerHistorico) btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
+    
+    const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
+    if(listaAgendamentos) listaAgendamentos.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-cancelar')) {
             cancelarAgendamento(e.target.dataset.id);
         }
@@ -260,8 +265,10 @@ function configurarTodosEventListeners() {
     const dataInput = document.getElementById('data-agendamento');
     const servicosContainer = document.getElementById('lista-servicos');
     const horariosContainer = document.getElementById('grade-horarios');
-    dataInput.addEventListener('change', (e) => { agendamentoState.data = e.target.value; gerarHorariosDisponiveis(); });
-    servicosContainer.addEventListener('click', (e) => {
+    
+    if(dataInput) dataInput.addEventListener('change', (e) => { agendamentoState.data = e.target.value; gerarHorariosDisponiveis(); });
+    
+    if(servicosContainer) servicosContainer.addEventListener('click', (e) => {
         if (e.target.closest('.service-item')) {
             const target = e.target.closest('.service-item');
             agendamentoState.servico = professionalData.servicos.find(s => s.id === target.dataset.id);
@@ -270,7 +277,8 @@ function configurarTodosEventListeners() {
             gerarHorariosDisponiveis();
         }
     });
-    horariosContainer.addEventListener('click', (e) => {
+
+    if(horariosContainer) horariosContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-horario')) {
             agendamentoState.horario = e.target.textContent;
             document.querySelectorAll('.btn-horario.selecionado').forEach(el => el.classList.remove('selecionado'));
@@ -278,14 +286,15 @@ function configurarTodosEventListeners() {
             verificarEstadoBotaoConfirmar();
         }
     });
-    document.getElementById('agendamento-form-container').addEventListener('input', verificarEstadoBotaoConfirmar);
+
+    const formAgendamento = document.getElementById('agendamento-form-container');
+    if(formAgendamento) formAgendamento.addEventListener('input', verificarEstadoBotaoConfirmar);
 }
 
 async function getUidFromSlug(slug) {
     const docSnap = await getDoc(doc(db, "slugs", slug));
     return docSnap.exists() ? docSnap.data().uid : null;
 }
-
 async function carregarDadosDoFirebase() {
     const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
         getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
@@ -296,7 +305,6 @@ async function carregarDadosDoFirebase() {
     professionalData.horarios = horariosDoc.exists() ? horariosDoc.data() : {};
     professionalData.servicos = servicosSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
-
 function renderizarInformacoesGerais() {
     const { perfil, servicos } = professionalData;
     document.getElementById('nome-negocio-publico').textContent = perfil.nomeNegocio || "Nome do Negócio";
@@ -306,7 +314,6 @@ function renderizarInformacoesGerais() {
     document.getElementById('info-servicos').innerHTML = servicos.map(s => `<div class="servico-info-card"><h4>${s.nome}</h4><p>${s.duracao} min</p><p>R$ ${s.preco}</p></div>`).join('');
     document.getElementById('lista-servicos').innerHTML = servicos.map(s => `<button class="service-item" data-id="${s.id}">${s.nome} - R$ ${s.preco}</button>`).join('');
 }
-
 async function carregarAgendaInicial() {
     const dataInput = document.getElementById('data-agendamento');
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
@@ -314,18 +321,19 @@ async function carregarAgendaInicial() {
     dataInput.min = hoje.toISOString().split('T')[0];
     agendamentoState.data = dataInput.value;
     if (professionalData.servicos.length > 0) {
-        document.querySelector('.service-item').click();
+        // Simula o clique para garantir que toda a lógica de seleção seja executada
+        const primeiroServicoBtn = document.querySelector('.service-item');
+        if (primeiroServicoBtn) primeiroServicoBtn.click();
     }
 }
-
 function verificarEstadoBotaoConfirmar() {
     const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
     const { servico, data, horario } = agendamentoState;
-    const telefoneOK = document.getElementById('telefone-cliente').value.length > 9;
+    const telefoneCliente = document.getElementById('telefone-cliente');
+    const telefoneOK = telefoneCliente && telefoneCliente.value.length > 9;
     btnConfirmar.disabled = !(servico && data && horario && currentUser && telefoneOK);
 }
-
-async function gerarHorariosDisponiveis() {
+async function gerarHorariosDisponiveis() { 
     if (!agendamentoState.data || !agendamentoState.servico) return;
     const horariosContainer = document.getElementById('grade-horarios');
     horariosContainer.innerHTML = '<p>Verificando...</p>';
@@ -333,7 +341,6 @@ async function gerarHorariosDisponiveis() {
     const horariosDisponiveis = calcularSlotsDisponiveis(agendamentoState.data, agendamentosDoDia);
     horariosContainer.innerHTML = horariosDisponiveis.length > 0 ? horariosDisponiveis.map(h => `<button class="btn-horario">${h}</button>`).join('') : '<p>Nenhum horário disponível.</p>';
 }
-
 async function buscarAgendamentosDoDia(dataString) {
     const inicioDoDia = Timestamp.fromDate(new Date(dataString + 'T00:00:00'));
     const fimDoDia = Timestamp.fromDate(new Date(dataString + 'T23:59:59'));
@@ -346,7 +353,6 @@ async function buscarAgendamentosDoDia(dataString) {
         return { inicio, fim };
     });
 }
-
 function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     const diaSemana = new Date(data + 'T00:00:00').getDay();
     const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
@@ -369,7 +375,6 @@ function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     });
     return horarios;
 }
-
 function showNotification(message, isError = false) {
     const el = document.getElementById("notification-message");
     el.textContent = message;
