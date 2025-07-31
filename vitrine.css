@@ -1,4 +1,3 @@
-@@ -1,430 +1,393 @@
 /* =============================================== */
 /* TEMA PRONTI APLICADO À VITRINE            */
 /* =============================================== */
@@ -30,19 +29,20 @@
 
 body {
   font-family: 'Poppins', sans-serif;
-  background-color: var(--cor-fundo);
+  background: linear-gradient(135deg, var(--cor-fundo), #e0e7ff);
   color: var(--cor-texto);
+  background-attachment: fixed;
 }
 
 /* Acessibilidade */
 button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
   outline: 3px solid var(--cor-secundaria);
   outline-offset: 3px;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 /* =============================================== */
-/* LAYOUT DA VITRINE                     */
+/* LAYOUT DA VITRINE (PADRÃO PRONTI)     */
 /* =============================================== */
 .vitrine-container {
   display: flex;
@@ -59,7 +59,7 @@ button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
   background: var(--cor-branco);
   border-radius: 12px;
   padding: 25px;
-  box-shadow: var(--sombra);
+  box-shadow: var(--sombra-elevada);
   height: fit-content;
   border: 1px solid #e5e7eb;
 }
@@ -163,7 +163,7 @@ h2 {
 .menu-btn:hover {
   background: linear-gradient(90deg, var(--cor-primaria-leve), #d3d6f7);
   color: var(--cor-primaria);
-  transform: translateX(4px) translateY(-1px);
+  transform: translateX(4px);
   box-shadow: var(--sombra);
   border-right: 4px solid var(--cor-primaria);
 }
@@ -172,10 +172,11 @@ h2 {
   background: var(--cor-primaria);
   color: var(--cor-branco);
   font-weight: 700;
-  transform: translateX(8px) translateY(-2px);
+  transform: translateX(8px);
   box-shadow: var(--sombra-elevada);
   border-right: 4px solid var(--cor-secundaria);
 }
+
 
 /* =============================================== */
 /* ESTILOS DOS CARTÕES DE SERVIÇO (Informações) */
@@ -205,7 +206,7 @@ h2 {
   margin-top: 0;
   margin-bottom: 8px;
   font-size: 1.1em;
-  color: var(--cor-texto);
+  color: var(--cor-primaria);
   font-weight: 600;
 }
 
@@ -218,7 +219,7 @@ h2 {
 .servico-info-card .servico-preco {
   font-size: 1.2em;
   font-weight: 700;
-  color: var(--cor-primaria);
+  color: var(--cor-texto);
   margin: 0;
 }
 
@@ -289,7 +290,7 @@ input:focus {
   border: none;
   border-radius: 8px;
   transition: all 0.2s ease-in-out;
-  background-color: var(--cor-sucesso);
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
   color: var(--cor-branco);
 }
 
@@ -309,7 +310,6 @@ button#btn-confirmar-agendamento:disabled {
 /* =============================================== */
 /* ESTILO "MEUS AGENDAMENTOS"              */
 /* =============================================== */
-
 .botoes-agendamento {
   display: flex;
   gap: 15px;
@@ -370,7 +370,6 @@ button#btn-confirmar-agendamento:disabled {
   color: var(--cor-texto);
 }
 
-
 /* =============================================== */
 /* RESPONSIVIDADE                        */
 /* =============================================== */
@@ -386,45 +385,3 @@ button#btn-confirmar-agendamento:disabled {
     position: static;
   }
 }
-/* =============================================== */
-/* --- MELHORIA BOTÕES MEUS AGENDAMENTOS --- */
-/* =============================================== */
-
-/* Faz o container dos botões ocupar a largura total */
-.botoes-agendamento {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 25px;
-}
-
-/* Estilo base compartilhado para os dois botões */
-.botoes-agendamento .btn-submit,
-.botoes-agendamento .btn-secondary {
-  flex: 1; /* <-- A MÁGICA ACONTECE AQUI: faz os botões dividirem o espaço igualmente */
-  padding: 12px;
-  font-size: 0.95em;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: center;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-/* Estilo para o botão INATIVO */
-.botoes-agendamento .btn-inativo {
-  background-color: transparent;
-  border-color: var(--cor-borda);
-  color: var(--cor-texto-leve);
-}
-.botoes-agendamento .btn-inativo:hover {
-  border-color: var(--cor-primaria);
-  color: var(--cor-primaria);
-}
-
-/* Estilo para o botão ATIVO */
-.botoes-agendamento .btn-ativo {
-  background: var(--cor-sucesso); /* Usando a cor de sucesso para clareza */
-  color: var(--cor-branco);
-  border-color: var(--cor-sucesso);
-  box-shadow: var(--sombra);
