@@ -1,5 +1,5 @@
 /* =============================================== */
-/* TEMA "AZUL GRADIENTE"                     */
+/* TEMA "AZUL GRADIENTE" E VARIAVEIS GLOBAIS */
 /* =============================================== */
 :root {
   --cor-fundo: #f8fafc;        /* Fundo cinza bem claro (quase branco) */
@@ -61,6 +61,7 @@ button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
   flex-grow: 1;
 }
 
+/* ESTILO ESSENCIAL DO CARD DE CONTEÚDO */
 .card {
   background: var(--cor-branco);
   border-radius: 12px;
@@ -88,7 +89,6 @@ h2 {
 /* =============================================== */
 /* CABEÇALHO E MENU (VERSÃO PROFISSIONAL)      */
 /* =============================================== */
-
 .header-vitrine {
   text-align: center;
   margin-bottom: 25px;
@@ -114,12 +114,11 @@ h2 {
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Espaçamento entre os botões */
+  gap: 10px;
 }
 
-/* Estilo base para TODOS os botões do menu (inativos) */
 .menu-btn {
-  all: unset; /* Reseta o botão para um estado limpo */
+  all: unset;
   box-sizing: border-box;
   width: 100%;
   padding: 15px 20px;
@@ -127,29 +126,24 @@ h2 {
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  color: var(--cor-texto-leve); /* Cor cinza para texto inativo */
+  color: var(--cor-texto-leve);
   background-color: var(--cor-branco);
-  border: 1px solid transparent; /* Evita que o layout "pule" no hover */
+  border: 1px solid transparent;
   transition: all 0.2s ease-in-out;
 }
 
-/* Efeito ao passar o mouse sobre um botão inativo */
 .menu-btn:hover {
   background-color: var(--cor-primaria-leve);
   color: var(--cor-primaria);
-  transform: translateX(5px); /* Efeito de deslize sutil */
+  transform: translateX(5px);
 }
 
-/* Estilo do botão ATIVO, como no painel do empresário */
 .menu-btn.ativo {
-  background-color: var(--cor-primaria-leve); /* Fundo claro */
-  color: var(--cor-primaria); /* Texto com a cor primária */
+  background-color: var(--cor-primaria-leve);
+  color: var(--cor-primaria);
   font-weight: 700;
-  /* O detalhe na lateral direita */
-  border-right: 4px solid var(--cor-secundaria); 
+  border-right: 4px solid var(--cor-secundaria);
 }
-
-/* --- Estilo para o botão "Primeiro Acesso" --- */
 
 .dropdown-info {
   margin-top: 15px;
@@ -173,12 +167,12 @@ h2 {
 }
 
 #btn-primeiro-acesso:hover {
-    border-color: var(--cor-primaria);
-    color: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
 }
 
 #primeiro-acesso-menu {
-  display: none; /* Controlado por JS */
+  display: none;
   background-color: var(--cor-branco);
   border: 1px solid var(--cor-borda);
   padding: 15px;
@@ -191,42 +185,86 @@ h2 {
 #primeiro-acesso-menu.ativo {
   display: block;
 }
-/* =============================================== */
-/* --- DESIGN REFINADO PARA O FORMULÁRIO DE AGENDAMENTO --- */
-/* =============================================== */
 
-/* Remove a borda do card principal para um visual mais integrado */
-#menu-agendamento .card {
-  border: none;
-  background-color: var(--cor-branco);
+
+/* =============================================== */
+/* CARTÕES DE SERVIÇO (Informações)        */
+/* =============================================== */
+#info-servicos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
 }
 
-/* Título principal da página */
+.servico-info-card {
+  background-color: #f8f9fa;
+  border: 1px solid var(--cor-borda);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.servico-info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sombra);
+}
+
+.servico-info-card h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+  color: var(--cor-texto);
+}
+
+.servico-info-card .servico-detalhe {
+  font-size: 0.9em;
+  color: var(--cor-texto-leve);
+  margin: 0 0 12px 0;
+}
+
+.servico-info-card .servico-preco {
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--cor-primaria);
+  margin: 0;
+}
+
+/* =============================================== */
+/* DESIGN REFINADO PARA O FORMULÁRIO DE AGENDAMENTO */
+/* =============================================== */
+#menu-agendamento .card {
+  border: none;
+}
+
 #menu-agendamento h2 {
-  font-size: 2em; /* Maior e mais impactante */
+  font-size: 1.8em;
   font-weight: 700;
   color: var(--cor-texto);
   border-bottom: none;
-  text-align: left; /* Alinhado à esquerda para um look mais clássico */
+  text-align: left;
   margin-bottom: 40px;
 }
 
-/* Grupos do formulário (espaçamento) */
 .form-group {
   margin-bottom: 35px;
 }
 
-/* Rótulos dos passos (1. Escolha um serviço, etc.) */
 #menu-agendamento label {
-  font-size: 1.2em;
+  font-size: 1.1em;
   font-weight: 600;
   color: var(--cor-texto);
   margin-bottom: 15px;
 }
 
-/* Botões de Serviço e Horário - Estado Padrão */
-#lista-servicos .service-item,
-#grade-horarios .btn-horario {
+#lista-servicos, #grade-horarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.service-item, .btn-horario {
   background-color: var(--cor-branco);
   border: 1px solid var(--cor-borda);
   color: var(--cor-texto-leve);
@@ -234,50 +272,39 @@ h2 {
   border-radius: 8px;
   padding: 12px 22px;
   transition: all 0.2s ease-in-out;
+  cursor: pointer;
 }
 
-/* Botões de Serviço e Horário - Ao passar o mouse */
-#lista-servicos .service-item:hover,
-#grade-horarios .btn-horario:hover {
+.service-item:hover, .btn-horario:hover {
   border-color: var(--cor-primaria);
   color: var(--cor-primaria);
   transform: translateY(-2px);
 }
 
-/* Botões de Serviço e Horário - SELECIONADO */
-#lista-servicos .service-item.selecionado,
-#grade-horarios .btn-horario.selecionado {
-  background: var(--cor-primaria);
+.service-item.selecionado, .btn-horario.selecionado {
+  background-color: var(--cor-primaria);
   border-color: var(--cor-primaria);
   color: var(--cor-branco);
   box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
   transform: translateY(-2px);
 }
 
-/* Campos de Texto (Nome, Telefone, PIN) */
-input[type="date"],
-input[type="text"],
-input[type="tel"],
-input[type="password"] {
-  background-color: var(--cor-branco); /* Fundo branco para mais contraste */
+input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
+  background-color: var(--cor-fundo);
   border: 1px solid var(--cor-borda);
   border-radius: 8px;
-  padding: 15px; /* Mais espaçamento interno */
+  padding: 15px;
   font-size: 1em;
   font-family: 'Poppins', sans-serif;
   color: var(--cor-texto);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset; /* Sombra interna sutil */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05) inset;
 }
 
-input[type="date"]:focus,
-input[type="text"]:focus,
-input[type="tel"]:focus,
-input[type="password"]:focus {
+input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
   border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 3px var(--cor-primaria-leve); /* Efeito de foco mais forte */
+  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
 }
 
-/* Grupo do PIN */
 .pin-input-group {
   margin-top: 20px;
   padding: 20px;
@@ -286,16 +313,6 @@ input[type="password"]:focus {
   border: 1px solid var(--cor-borda);
 }
 
-/* Botão de Confirmar Agendamento */
-#btn-confirmar-agendamento {
-  padding: 16px 20px;
-  font-size: 1.1em;
-  border-radius: 8px;
-  margin-top: 10px;
-}
-/* =============================================== */
-/* BOTÕES E OUTROS                       */
-/* =============================================== */
 .btn-submit, button#btn-confirmar-agendamento {
   background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
   border: none;
@@ -318,7 +335,7 @@ input[type="password"]:focus {
 }
 
 button#btn-confirmar-agendamento:disabled {
-  background: #d1d5db;
+  background: #e5e7eb;
   color: var(--cor-texto-leve);
   cursor: not-allowed;
   box-shadow: none;
