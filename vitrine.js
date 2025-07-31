@@ -42,8 +42,7 @@ const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agenda
 const btnVerHistorico = document.getElementById("btn-ver-historico");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
-const cardResultados = document.getElementById("card-resultados");
-const tituloResultados = document.getElementById("titulo-resultados");
+
 
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
@@ -79,31 +78,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
-    if (cardResultados) cardResultados.style.display = 'none';
-    
     if (telefoneSalvo) {
         inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
-        if(listaAgendamentosVisualizacao) listaAgendamentosVisualizacao.innerHTML = '';
+        listaAgendamentosVisualizacao.innerHTML = '<p>Digite seu telefone para buscar ou salve seu perfil para carregar automaticamente.</p>';
     }
 }
 
 async function buscarEExibirAgendamentos(modo = 'ativos') {
     const telefone = inputTelefoneVisualizacao.value.replace(/\D/g, '');
     if (!telefone) {
-        showNotification("Seu telefone não está preenchido.", true);
+        showNotification("Digite um telefone para buscar.", true);
         return;
     }
     
-    if (cardResultados) cardResultados.style.display = 'block';
-    if (tituloResultados) tituloResultados.textContent = modo === 'ativos' ? 'Agendamentos Ativos' : 'Histórico de Agendamentos';
-    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando...</p>';
+    listaAgendamentosVisualizacao.innerHTML = '<p>Buscando agendamentos...</p>';
 
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
@@ -162,7 +158,7 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
 
 
 // ==========================================================================
-//  EVENT LISTENERS
+//  EVENT LISTENERS E FUNÇÕES DE INTERAÇÃO
 // ==========================================================================
 function configurarTodosEventListeners() {
     document.querySelectorAll('.menu-btn').forEach(button => {
@@ -177,14 +173,8 @@ function configurarTodosEventListeners() {
         });
     });
 
-    // --- CORREÇÃO DO ERRO ---
-    // Usando a variável correta 'btnVisualizarAgendamentos' e adicionando uma verificação
-    if (btnVisualizarAgendamentos) {
-        btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
-    }
-    if (btnVerHistorico) {
-        btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
-    }
+    if(btnVisualizarAgendamentos) btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
+    if(btnVerHistorico) btnVerHistorico.addEventListener('click', () => buscarEExibirAgendamentos('historico'));
 
     const dropdownToggle = document.getElementById('btn-primeiro-acesso');
     const dropdownMenu = document.getElementById('primeiro-acesso-menu');
