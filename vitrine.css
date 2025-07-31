@@ -1,18 +1,18 @@
 /* =============================================== */
-/* TEMA "BOBINAS E COLORIDAS"                */
+/* TEMA "AZUL GRADIENTE"                     */
 /* =============================================== */
 :root {
-  --cor-fundo: #fff9f0;
-  --cor-primaria: #ff6bcb;       /* Rosa chiclete */
-  --cor-primaria-leve: #ffe3f7;  /* Rosa clarinho */
-  --cor-secundaria: #6beaff;     /* Azul piscina */
-  --cor-texto-leve: #8a8a8a;
-  --cor-sucesso: #32d17c;
-  --cor-branco: #ffffff;
-  --cor-texto: #333;
-  --cor-borda: #ffd6ec;
-  --sombra: 0 4px 12px rgba(255, 105, 180, 0.1);
-  --sombra-hover: 0 8px 16px rgba(255, 105, 180, 0.15);
+  --cor-fundo: #f8fafc;        /* Fundo cinza bem claro (quase branco) */
+  --cor-primaria: #4f46e5;      /* Azul-índigo vibrante */
+  --cor-primaria-leve: #e0e7ff; /* Azul-índigo bem clarinho */
+  --cor-secundaria: #22d3ee;    /* Ciano / Azul piscina */
+  --cor-texto-leve: #6b7280;   /* Cinza para textos secundários */
+  --cor-sucesso: #22c55e;      /* Verde sucesso */
+  --cor-branco: #ffffff;      /* Branco puro */
+  --cor-texto: #111827;        /* Preto/Cinza bem escuro para texto */
+  --cor-borda: #d1d5db;       /* Cinza para bordas */
+  --sombra: 0 4px 12px rgba(79, 70, 229, 0.1);
+  --sombra-hover: 0 8px 16px rgba(79, 70, 229, 0.15);
 }
 
 * {
@@ -22,15 +22,16 @@
 }
 
 html, body {
-  font-family: 'Fredoka', cursive;
+  font-family: 'Poppins', sans-serif; /* Voltamos para a fonte original */
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
 }
 
-/* MELHORIA: Acessibilidade com foco visível */
+/* Acessibilidade com foco visível */
 button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
   outline: 3px solid var(--cor-secundaria);
   outline-offset: 3px;
+  border-radius: 4px;
 }
 
 /* =============================================== */
@@ -49,7 +50,7 @@ button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
   width: 280px;
   flex-shrink: 0;
   background: var(--cor-branco);
-  border-radius: 20px;
+  border-radius: 12px;
   padding: 25px;
   box-shadow: var(--sombra);
   height: fit-content;
@@ -62,7 +63,7 @@ button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
 
 .card {
   background: var(--cor-branco);
-  border-radius: 20px;
+  border-radius: 12px;
   padding: 25px 30px;
   box-shadow: var(--sombra);
   margin-bottom: 25px;
@@ -70,12 +71,11 @@ button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
 }
 
 h2 {
-  font-size: 1.6em;
+  font-size: 1.4em;
   margin-bottom: 25px;
   padding-bottom: 15px;
-  color: var(--cor-primaria);
-  border-bottom: 2px solid var(--cor-primaria-leve);
-  font-weight: 700;
+  color: var(--cor-texto);
+  border-bottom: 1px solid var(--cor-borda);
 }
 
 .menu-content {
@@ -105,10 +105,9 @@ h2 {
 }
 
 .header-vitrine h1 {
-  font-size: 1.8em;
+  font-size: 1.6em;
   color: var(--cor-texto);
   margin: 0;
-  font-weight: 700;
 }
 
 .sidebar-menu {
@@ -122,24 +121,22 @@ h2 {
   box-sizing: border-box;
   width: 100%;
   padding: 15px;
-  border-radius: 20px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  border-radius: 8px;
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease;
 }
 
 .menu-btn:hover {
-  transform: scale(1.05) rotate(-1deg);
-  background-color: var(--cor-secundaria);
-  color: white;
+  background-color: var(--cor-primaria-leve);
+  color: var(--cor-primaria);
 }
 
 .menu-btn.ativo {
   background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
   color: white;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
 }
 
 /* =============================================== */
@@ -152,26 +149,25 @@ h2 {
 }
 
 .servico-info-card {
-  background-color: var(--cor-branco);
+  background-color: #f8f9fa;
   border: 1px solid var(--cor-borda);
-  border-radius: 15px;
+  border-radius: 10px;
   padding: 20px;
   text-align: center;
-  box-shadow: var(--sombra);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .servico-info-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--sombra-hover);
+  box-shadow: var(--sombra);
 }
 
 .servico-info-card h4 {
   margin-top: 0;
   margin-bottom: 8px;
-  font-size: 1.2em;
-  color: var(--cor-primaria);
-  font-weight: 700;
+  font-size: 1.1em;
+  color: var(--cor-texto);
 }
 
 .servico-info-card .servico-detalhe {
@@ -181,9 +177,9 @@ h2 {
 }
 
 .servico-info-card .servico-preco {
-  font-size: 1.3em;
+  font-size: 1.2em;
   font-weight: 700;
-  color: var(--cor-texto);
+  color: var(--cor-primaria);
   margin: 0;
 }
 
@@ -196,7 +192,7 @@ h2 {
 
 label {
   display: block;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 10px;
   font-size: 1.1em;
   color: var(--cor-texto);
@@ -210,40 +206,37 @@ label {
 
 .service-item, .btn-horario {
   background: var(--cor-branco);
-  border: 2px solid var(--cor-borda);
-  border-radius: 20px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
   padding: 10px 20px;
   cursor: pointer;
-  color: var(--cor-texto);
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  color: var(--cor-texto-leve);
+  font-weight: 600;
   transition: all 0.2s ease-in-out;
 }
 
-.service-item.selecionado, .btn-horario.selecionado {
+.service-item.selecionado, .btn-horario.selecionado,
+.service-item:hover, .btn-horario:hover {
   background: var(--cor-primaria);
   color: white;
   border-color: var(--cor-primaria);
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(255, 105, 180, 0.2);
-}
-
-.service-item:hover, .btn-horario:hover {
-  transform: scale(1.05) rotate(-1deg);
-  background-color: var(--cor-secundaria);
-  color: white;
-  border-color: var(--cor-secundaria);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
 }
 
 input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
   width: 100%;
-  padding: 15px;
+  padding: 12px;
   font-size: 1em;
-  border-radius: 20px;
-  border: 2px solid var(--cor-borda);
-  background-color: var(--cor-branco);
+  border-radius: 8px;
+  border: 1px solid var(--cor-borda);
+  background-color: #f9fafb;
   transition: border-color 0.2s, box-shadow 0.2s;
-  font-family: 'Fredoka', cursive;
+}
+
+input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
 }
 
 /* =============================================== */
@@ -254,23 +247,23 @@ input[type="date"], input[type="text"], input[type="tel"], input[type="password"
   border: none;
   padding: 15px 20px;
   color: white;
-  font-size: 1.2em;
+  font-size: 1.1em;
   font-weight: 700;
-  letter-spacing: 1px;
-  border-radius: 20px;
+  border-radius: 8px;
   width: 100%;
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.3s ease, box-shadow 0.2s ease;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--sombra);
 }
 
 .btn-submit:hover, button#btn-confirmar-agendamento:not(:disabled):hover {
-  transform: translateY(-3px);
+  opacity: 0.9;
+  transform: translateY(-2px);
   box-shadow: var(--sombra-hover);
 }
 
 button#btn-confirmar-agendamento:disabled {
-  background: #e2e2e2;
+  background: #d1d5db;
   color: var(--cor-texto-leve);
   cursor: not-allowed;
   box-shadow: none;
