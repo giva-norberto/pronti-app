@@ -1,5 +1,5 @@
 import { auth, provider } from './vitrini-firebase.js';
-import { currentUser, initAuthListener, login, logout } from './vitrini-auth.js';
+import { currentUser, iniciarAuthListener, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import { 
   getSlugFromURL, 
   getProfissionalUidBySlug, 
@@ -27,7 +27,7 @@ let agendamentoState = {
 
 async function init() {
   // Configura listener de autenticação
-  initAuthListener(updateUIOnAuthChange);
+  iniciarAuthListener(updateUIOnAuthChange);
 
   // Pega slug da URL
   const slug = getSlugFromURL();
@@ -70,8 +70,6 @@ async function init() {
 function selecionarServico(servico) {
   agendamentoState.servico = servico;
   showNotification(`Serviço selecionado: ${servico.nome}`);
-  // Exibir formulário ou próxima etapa no agendamento
-  // Exemplo: ativar campo de data e horário
 }
 
 function configurarEventos() {
@@ -86,7 +84,6 @@ function configurarEventos() {
   // Confirmar agendamento
   const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
   if (btnConfirmar) btnConfirmar.onclick = async () => {
-    // Coletar data e horário do formulário
     const dataInput = document.getElementById('data-agendamento');
     const horarioInput = document.getElementById('horario-agendamento');
 
@@ -107,7 +104,7 @@ function configurarEventos() {
     buscarEExibirAgendamentos(profissionalUid, 'ativos');
   };
 
-  // Cancelar agendamento - delegação de evento
+  // Cancelar agendamento
   const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
   if (listaAgendamentos) {
     listaAgendamentos.onclick = (e) => {
@@ -118,18 +115,15 @@ function configurarEventos() {
     };
   }
 
-  // Quando o usuário muda a data para agendamento, carregar horários disponíveis
+  // Mudança na data de agendamento
   const dataInput = document.getElementById('data-agendamento');
   if (dataInput) {
     dataInput.onchange = async () => {
       if (!agendamentoState.servico) return;
       const dataSelecionada = dataInput.value;
-      // Buscar agendamentos ocupados no dia para o profissional
       const agendamentosOcupados = await buscarAgendamentosDoDia(profissionalUid, dataSelecionada);
-      // Calcular slots livres
       const slotsLivres = calcularSlotsDisponiveis(dataSelecionada, agendamentosOcupados, dadosProfissional, agendamentoState);
 
-      // Atualizar dropdown de horários disponíveis
       const horarioInput = document.getElementById('horario-agendamento');
       horarioInput.innerHTML = slotsLivres.length > 0
         ? slotsLivres.map(h => `<option value="${h}">${h}</option>`).join('')
@@ -139,7 +133,6 @@ function configurarEventos() {
 }
 
 function updateUIOnAuthChange(user) {
-  // Atualiza interface conforme usuário logado ou não
   const loginSection = document.getElementById('login-section');
   const userSection = document.getElementById('user-section');
   const agendamentoSection = document.getElementById('agendamento-section');
@@ -149,11 +142,9 @@ function updateUIOnAuthChange(user) {
     if (userSection) userSection.style.display = 'block';
     if (agendamentoSection) agendamentoSection.style.display = 'block';
 
-    // Atualiza nome do usuário na UI
     const nomeUsuario = document.getElementById('nome-usuario');
     if (nomeUsuario) nomeUsuario.textContent = user.displayName || user.email;
 
-    // Atualiza agendamentos ativos
     if (profissionalUid) {
       buscarEExibirAgendamentos(profissionalUid, 'ativos');
     }
@@ -162,7 +153,6 @@ function updateUIOnAuthChange(user) {
     if (userSection) userSection.style.display = 'none';
     if (agendamentoSection) agendamentoSection.style.display = 'none';
 
-    // Limpar agendamentos e seleção
     const listaAgendamentosVisualizacao = document.getElementById('lista-agendamentos-visualizacao');
     if (listaAgendamentosVisualizacao) listaAgendamentosVisualizacao.innerHTML = '';
   }
