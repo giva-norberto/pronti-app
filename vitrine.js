@@ -2,7 +2,8 @@
 //  SETUP INICIAL E IMPORTAÇÕES DO FIREBASE
 // ==========================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firestore.js";
+// --- CORREÇÃO APLICADA NA LINHA ABAIXO ---
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
@@ -44,7 +45,6 @@ const listaAgendamentosVisualizacao = document.getElementById("lista-agendamento
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
 const cardResultados = document.getElementById("card-resultados");
 const tituloResultados = document.getElementById("titulo-resultados");
-
 
 // ==========================================================================
 //  LÓGICA PRINCIPAL - INICIALIZAÇÃO
@@ -179,7 +179,6 @@ function configurarTodosEventListeners() {
         });
     });
 
-    // Adicionando verificação para garantir que os elementos existem antes de adicionar listeners
     if (btnVisualizarAgendamentos) {
         btnVisualizarAgendamentos.addEventListener('click', () => buscarEExibirAgendamentos('ativos'));
     }
@@ -193,8 +192,8 @@ function configurarTodosEventListeners() {
         dropdownToggle.addEventListener('click', (event) => { event.stopPropagation(); dropdownMenu.classList.toggle('ativo'); });
         document.addEventListener('click', () => { if (dropdownMenu.classList.contains('ativo')) { dropdownMenu.classList.remove('ativo'); }});
     }
-    if (dataInput) dataInput.addEventListener('change', (e) => { agendamentoState.data = e.target.value; gerarHorariosDisponiveis(); });
-    if (servicosContainer) servicosContainer.addEventListener('click', (e) => {
+    if(dataInput) dataInput.addEventListener('change', (e) => { agendamentoState.data = e.target.value; gerarHorariosDisponiveis(); });
+    if(servicosContainer) servicosContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('service-item')) {
             const servicoId = e.target.dataset.id;
             agendamentoState.servico = professionalData.servicos.find(s => s.id === servicoId);
@@ -203,7 +202,7 @@ function configurarTodosEventListeners() {
             gerarHorariosDisponiveis();
         }
     });
-    if (horariosContainer) horariosContainer.addEventListener('click', (e) => {
+    if(horariosContainer) horariosContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-horario')) {
             agendamentoState.horario = e.target.textContent;
             document.querySelectorAll('.btn-horario.selecionado').forEach(el => el.classList.remove('selecionado'));
@@ -211,14 +210,14 @@ function configurarTodosEventListeners() {
         }
     });
     const menuAgendamento = document.getElementById('menu-agendamento');
-    if (menuAgendamento) menuAgendamento.addEventListener('input', verificarEstadoBotaoConfirmar);
+    if(menuAgendamento) menuAgendamento.addEventListener('input', verificarEstadoBotaoConfirmar);
     
-    if (btnConfirmar) btnConfirmar.addEventListener('click', salvarAgendamento);
+    if(btnConfirmar) btnConfirmar.addEventListener('click', salvarAgendamento);
     
     const btnSalvarPerfil = document.getElementById('btn-salvar-perfil');
-    if (btnSalvarPerfil) btnSalvarPerfil.addEventListener('click', salvarPerfilCliente);
+    if(btnSalvarPerfil) btnSalvarPerfil.addEventListener('click', salvarPerfilCliente);
     
-    if (btnBuscarCancelamento) btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelar);
+    if(btnBuscarCancelamento) btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelar);
 }
 
 // ==========================================================================
