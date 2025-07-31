@@ -103,17 +103,22 @@
                         </div>
                     </div>
                     <div id="botoes-agendamento" class="botoes-agendamento">
-                         <button id="btn-visualizar-agendamentos" class="btn-submit">Ver Agendamentos Ativos</button>
-                         <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
+                        <button id="btn-visualizar-agendamentos" class="btn-submit">Ver Agendamentos Ativos</button>
+                        <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
                     </div>
-                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
+                </div>
+
+                <div id="card-resultados" class="card" style="display: none;">
+                    <h2 id="titulo-resultados">Resultados</h2>
+                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado">
+                        </div>
                 </div>
             </div>
 
             <div id="menu-cancelamento" class="menu-content">
                 <div class="card">
                     <h2>Cancelar Agendamento</h2>
-                    <p>Para cancelar, precisamos do seu telefone e do PIN que você criou no momento do agendamento.</p>
+                    <p>Para cancelar, precisamos do seu telefone e do PIN que você criou.</p>
                     <div class="form-group">
                         <label for="input-telefone-cancelamento">Seu Telefone</label>
                         <input type="tel" id="input-telefone-cancelamento" placeholder="(XX) XXXXX-XXXX">
