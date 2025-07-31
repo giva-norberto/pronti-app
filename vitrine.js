@@ -64,29 +64,28 @@ function atualizarUIparaUsuario(user) {
     const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
 
     if (user) { // Usuário está LOGADO
-        if (userInfo) userInfo.style.display = 'flex';
-        if (btnLogin) btnLogin.style.display = 'none';
-        if (document.getElementById('user-name')) document.getElementById('user-name').textContent = user.displayName;
-        if (document.getElementById('user-photo')) document.getElementById('user-photo').src = user.photoURL;
+        if(userInfo) userInfo.style.display = 'flex';
+        if(btnLogin) btnLogin.style.display = 'none';
+        if(document.getElementById('user-name')) document.getElementById('user-name').textContent = user.displayName;
+        if(document.getElementById('user-photo')) document.getElementById('user-photo').src = user.photoURL;
 
-        if (agendamentoForm) agendamentoForm.style.display = 'block';
-        if (agendamentoPrompt) agendamentoPrompt.style.display = 'none';
-        if (agendamentosPrompt) agendamentosPrompt.style.display = 'none';
-        if (agendamentosBotoes) agendamentosBotoes.style.display = 'flex';
-
+        if(agendamentoForm) agendamentoForm.style.display = 'block';
+        if(agendamentoPrompt) agendamentoPrompt.style.display = 'none';
+        if(agendamentosPrompt) agendamentosPrompt.style.display = 'none';
+        if(agendamentosBotoes) agendamentosBotoes.style.display = 'flex';
+        
         const menuAtivo = document.querySelector('.menu-btn.ativo');
         if (menuAtivo && menuAtivo.dataset.menu === 'visualizacao') {
-            buscarEExibirAgendamentos('ativos');
+             buscarEExibirAgendamentos('ativos');
         }
     } else { // Usuário está DESLOGADO
-        if (userInfo) userInfo.style.display = 'none';
-        if (btnLogin) btnLogin.style.display = 'block';
-
-        if (agendamentoForm) agendamentoForm.style.display = 'none';
-        if (agendamentoPrompt) agendamentoPrompt.style.display = 'block';
-        if (agendamentosPrompt) agendamentosPrompt.style.display = 'block';
-        if (agendamentosBotoes) agendamentosBotoes.style.display = 'none';
-        if (agendamentosLista) agendamentosLista.innerHTML = '';
+        if(userInfo) userInfo.style.display = 'none';
+        if(btnLogin) btnLogin.style.display = 'block';
+        if(agendamentoForm) agendamentoForm.style.display = 'none';
+        if(agendamentoPrompt) agendamentoPrompt.style.display = 'block';
+        if(agendamentosPrompt) agendamentosPrompt.style.display = 'block';
+        if(agendamentosBotoes) agendamentosBotoes.style.display = 'none';
+        if(agendamentosLista) agendamentosLista.innerHTML = '';
     }
 }
 
@@ -105,7 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await carregarDadosDoFirebase();
         renderizarInformacoesGerais();
         configurarTodosEventListeners();
-        await carregarAgendaInicial();
+        await carregarAgendaInicial(); 
 
         document.getElementById("vitrine-loader").style.display = 'none';
         document.getElementById("vitrine-content").style.display = 'flex';
@@ -116,20 +115,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 async function buscarEExibirAgendamentos(modo = 'ativos') {
     if (!currentUser) {
         const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
-        if (agendamentosPrompt) agendamentosPrompt.style.display = 'block';
-        document.getElementById('lista-agendamentos-visualizacao').innerHTML = '';
+        const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
+        if(agendamentosPrompt) agendamentosPrompt.style.display = 'block';
+        if(agendamentosLista) agendamentosLista.innerHTML = '';
         return;
     }
 
     const listaAgendamentosVisualizacao = document.getElementById('lista-agendamentos-visualizacao');
     listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
-
+    
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteUid", "==", currentUser.uid));
         const snapshot = await getDocs(q);
@@ -145,18 +146,17 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
         const agendamentosFiltrados = (modo === 'ativos')
             ? todosAgendamentos.filter(ag => ag.horario.toDate() >= agora).sort((a, b) => a.horario.toMillis() - b.horario.toMillis())
             : todosAgendamentos.filter(ag => ag.horario.toDate() < agora).sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
-
+        
         renderizarAgendamentosComoCards(agendamentosFiltrados, modo);
 
     } catch (error) {
         console.error("Erro ao buscar agendamentos:", error);
+        listaAgendamentosVisualizacao.innerHTML = '<p>Ocorreu um erro ao buscar os agendamentos.</p>';
     }
 }
 
 function renderizarAgendamentosComoCards(agendamentos, modo) {
     const listaAgendamentosVisualizacao = document.getElementById('lista-agendamentos-visualizacao');
-    if (!listaAgendamentosVisualizacao) return;
-
     if (agendamentos.length === 0) {
         listaAgendamentosVisualizacao.innerHTML = `<p>${modo === 'ativos' ? 'Nenhum agendamento ativo.' : 'Nenhum histórico.'}</p>`;
         return;
@@ -326,24 +326,21 @@ function renderizarInformacoesGerais() {
 
 async function carregarAgendaInicial() {
     const dataInput = document.getElementById('data-agendamento');
-    if(!dataInput) return;
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
     dataInput.value = hoje.toISOString().split('T')[0];
     dataInput.min = hoje.toISOString().split('T')[0];
     agendamentoState.data = dataInput.value;
     if (professionalData.servicos.length > 0) {
-        const primeiroServicoBtn = document.querySelector('.service-item');
-        if(primeiroServicoBtn) primeiroServicoBtn.click();
+        document.querySelector('.service-item').click();
     }
 }
 
 function verificarEstadoBotaoConfirmar() {
     const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
-    if(!btnConfirmar) return;
     const { servico, data, horario } = agendamentoState;
     const telefoneCliente = document.getElementById('telefone-cliente');
     const telefoneOK = telefoneCliente && telefoneCliente.value.length > 9;
-    btnConfirmar.disabled = !(servico && data && horario && currentUser && telefoneOK);
+    if(btnConfirmar) btnConfirmar.disabled = !(servico && data && horario && currentUser && telefoneOK);
 }
 
 async function gerarHorariosDisponiveis() { 
