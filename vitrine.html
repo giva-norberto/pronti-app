@@ -26,7 +26,6 @@
                 <button class="menu-btn ativo" data-menu="informacoes">Informações</button>
                 <button class="menu-btn" data-menu="agendamento">Agendar</button>
                 <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
-                <button class="menu-btn" data-menu="cancelamento">Cancelar Agendamento</button>
                 <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
                 
                 <div class="dropdown-info">
@@ -95,40 +94,16 @@
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
-                    <div id="container-busca-manual-view">
-                        <p>Digite o telefone salvo no seu perfil para ver seus compromissos.</p>
-                        <div class="form-group">
-                            <label for="input-telefone-visualizacao">Seu Telefone</label>
-                            <input type="tel" id="input-telefone-visualizacao" placeholder="(XX) XXXXX-XXXX">
-                        </div>
+                    <p>Aqui você encontra seus agendamentos ativos e seu histórico.</p>
+                    <div class="botoes-agendamento">
+                        <button id="btn-ver-ativos" class="btn-submit">Ver Agendamentos Ativos</button>
+                        <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
                     </div>
-                    <div id="botoes-agendamento" class="botoes-agendamento">
-                         <button id="btn-visualizar-agendamentos" class="btn-submit">Ver Agendamentos Ativos</button>
-                         <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
-                    </div>
-                </div>
-                <div id="card-resultados" class="card" style="display: none;">
-                     <h2 id="titulo-resultados">Resultados</h2>
-                     <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
+                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
                 </div>
             </div>
 
-            <div id="menu-cancelamento" class="menu-content">
-                <div class="card">
-                    <h2>Cancelar Agendamento</h2>
-                    <p>Para cancelar, precisamos do seu telefone e do PIN.</p>
-                    <div class="form-group">
-                        <label for="input-telefone-cancelamento">Seu Telefone</label>
-                        <input type="tel" id="input-telefone-cancelamento" placeholder="(XX) XXXXX-XXXX">
-                    </div>
-                    <div class="form-group">
-                        <label for="input-pin-cancelamento">Seu PIN</label>
-                        <input type="password" id="input-pin-cancelamento" placeholder="PIN de 4 a 6 dígitos">
-                    </div>
-                    <button id="btn-buscar-cancelamento" class="btn-submit">Buscar Agendamentos</button>
-                    <div id="lista-agendamentos-cancelamento" class="lista-agendamentos-resultado"></div>
-                </div>
-            </div>
+            <div id="menu-cancelamento" class="menu-content"></div>
             
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
