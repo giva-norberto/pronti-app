@@ -1,398 +1,148 @@
-/* --- SEU CSS ORIGINAL COMPLETO --- */
+/* =============================================== */
+/* VARIÁVEIS GLOBAIS E ESTILO BASE          */
+/* =============================================== */
 :root {
-  --cor-fundo: #f5f7fa;
-  --cor-primaria: #6366f1;
-  --cor-primaria-leve: #a5b4fc;
-  --cor-texto-leve: #4b5563;
-  --cor-sucesso: #22c55e;
-  --cor-branco: #ffffff;
-  --cor-texto: #1f2937;
-  --sombra: 0 4px 12px rgba(0,0,0,0.1);
+  --cor-fundo: #f5f7fa;
+  --cor-primaria: #6366f1;
+  --cor-primaria-leve: #e0e7ff;
+  --cor-secundaria: #ec4899;
+  --cor-texto-leve: #6b7280;
+  --cor-sucesso: #22c55e;
+  --cor-branco: #ffffff;
+  --cor-texto: #1f2937;
+  --cor-borda: #e5e7eb;
+  --sombra: 0 4px 12px rgba(0,0,0,0.08);
 }
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: var(--cor-fundo);
-  color: #333;
-  padding: 20px;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
-main.main-content {
-  max-width: 700px;
-  width: 100%;
-  background: white;
-  border-radius: 12px;
-  padding: 25px 30px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+html, body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
 }
-.header-vitrine {
-  text-align: center;
-  margin-bottom: 30px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 20px;
-}
-.header-vitrine img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--cor-primaria-leve);
-  margin-bottom: 10px;
-}
-.header-vitrine h1 {
-  font-size: 2em;
-  color: var(--cor-primaria);
-  margin: 0;
-}
-.header-vitrine p {
-  margin: 5px 0 0;
-  color: var(--cor-texto-leve);
-}
-h2 {
-  font-size: 1.3em;
-  margin-bottom: 15px;
-  border-bottom: 2px solid var(--cor-primaria-leve);
-  padding-bottom: 10px;
-  color: var(--cor-primaria);
-}
-.form-group {
-  margin-bottom: 25px;
-}
-label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: var(--cor-primaria);
-}
-#lista-servicos, #grade-horarios {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.btn-servico, .btn-horario {
-  background: #e0e7ff;
-  border: 1px solid var(--cor-primaria-leve);
-  border-radius: 8px;
-  padding: 10px 15px;
-  cursor: pointer;
-  color: var(--cor-primaria);
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-.btn-servico.selecionado, .btn-horario.selecionado,
-.btn-servico:hover, .btn-horario:hover {
-  background: var(--cor-primaria);
-  color: white;
-  border-color: var(--cor-primaria);
-}
-.detalhes-servico {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  margin-top: 5px;
-  border-left: 3px solid var(--cor-primaria);
-}
-input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 1em;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-}
-button#btn-confirmar-agendamento {
-  background: var(--cor-sucesso);
-  border: none;
-  padding: 12px 18px;
-  color: white;
-  font-size: 1.1em;
-  font-weight: 700;
-  border-radius: 8px;
-  width: 100%;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-button#btn-confirmar-agendamento:disabled {
-  background: #a7f3d0;
-  cursor: not-allowed;
-}
-.btn-flutuante {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: var(--cor-primaria);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    padding: 15px 20px;
-    font-size: 16px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    cursor: pointer;
-    z-index: 1000;
-}
-.saudacao {
-    max-width: 700px;
-    margin: 0 auto 15px auto;
-    text-align: center;
-    padding: 10px;
-    background-color: #e7f3ff;
-    border: 1px solid #cce5ff;
-    color: #004085;
-    border-radius: 8px;
-    font-weight: 500;
-}
-.modal {
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-.modal-content {
-    background-color: #fefefe;
-    padding: 25px 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 400px;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-.modal-content h3 { color: var(--cor-primaria); }
-.modal-content button {
-    width: 100%;
-    margin-top: 15px;
-    background: var(--cor-primaria);
-    border: none;
-    padding: 12px;
-    color: white;
-    font-size: 1.1em;
-    border-radius: 8px;
-    cursor: pointer;
-}
-.fechar-modal {
-    color: #aaa;
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-#agendamentos-cliente .agendamento-item {
-  padding: 15px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #f9f9f9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.btn-cancelar {
-    background-color: #ef4444;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-.btn-verificar-agendamentos {
-    background: var(--cor-primaria);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
-}
-.notification-message {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    z-index: 1002;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
-}
-.notification-message.error {
-    background-color: #f44336;
-}
-.pin-input-group {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-}
-.pin-input-group label {
-    font-size: 0.9em;
-    color: #495057;
-    margin-bottom: 5px;
-}
-.pin-input-group small {
-    color: #6c757d;
-    font-size: 0.8em;
-    display: block;
-    margin-top: 5px;
-}
+
+/* =============================================== */
+/* ESTRUTURA PRINCIPAL DA VITRINE         */
+/* =============================================== */
 .vitrine-container {
-  display: flex;
-  max-width: 1100px;
-  width: 100%;
-  margin: 0 auto;
-  gap: 30px;
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 20px;
 }
+
 .sidebar-vitrine {
-  width: 280px;
-  flex-shrink: 0;
-  background: var(--cor-branco);
-  border-radius: 12px;
-  box-shadow: var(--sombra);
-  padding: 20px;
-  height: fit-content;
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--cor-branco);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: var(--sombra);
+  height: fit-content; /* Impede que a sidebar estique desnecessariamente */
 }
+
 .main-content-vitrine {
-  flex-grow: 1;
-  width: 100%;
+  flex-grow: 1;
+  width: 100%;
 }
-.sidebar-menu {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.menu-btn {
-  all: unset;
-  box-sizing: border-box;
-  width: 100%;
-  padding: 15px;
-  border-radius: 8px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.menu-btn:hover {
-  background-color: var(--cor-primaria-leve);
-  color: var(--cor-primaria);
-}
-.menu-btn.ativo {
-  background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-  color: white;
-}
+
 .card {
-  background: var(--cor-branco);
-  border-radius: 12px;
-  padding: 25px 30px;
-  box-shadow: var(--sombra);
-  margin-bottom: 25px;
+  background: var(--cor-branco);
+  border-radius: 12px;
+  padding: 25px 30px;
+  box-shadow: var(--sombra);
+  margin-bottom: 25px;
 }
+
+h2 {
+  font-size: 1.4em;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  color: var(--cor-texto);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
 .menu-content {
-  display: none;
+  display: none;
 }
 .menu-content.ativo {
-  display: block;
+  display: block;
 }
-.lista-agendamentos-resultado {
-    margin-top: 20px;
-}
-.agendamento-item-visualizacao, .agendamento-item-cancelamento {
-    padding: 15px;
-    margin-bottom: 10px;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    background: #f9f9f9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.btn-cancelar-agendamento {
-    background-color: #ef4444;
-    color: white;
-    padding: 8px 12px;
-    width: auto;
-}
-.btn-submit {
-    background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-    color: white;
-}
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-html, body {
-  height: 100%;
-  font-family: 'Poppins', sans-serif;
-}
-.dropdown-info {
-  position: relative;
-  margin-top: 10px;
-}
-#btn-primeiro-acesso {
-  background: linear-gradient(90deg, var(--cor-primaria), #ec4899);
-  color: white;
-  font-weight: 600;
-  border: none;
-  padding: 12px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  transition: background-color 0.3s ease;
-}
-#btn-primeiro-acesso:hover {
-  background-color: var(--cor-primaria-leve);
-}
-#primeiro-acesso-menu {
-  display: none;
-  position: absolute;
-  top: 110%;
-  left: 0;
-  width: 100%;
-  background-color: white;
-  border: 1px solid #ccc;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  z-index: 100;
-  color: #333;
-  font-size: 0.95em;
-}
-#primeiro-acesso-menu ul {
-  padding-left: 20px;
-  margin: 0;
-}
-#primeiro-acesso-menu li {
-  margin-bottom: 8px;
-}
-
 
 /* =============================================== */
-/* --- ESTILO DOS CARTÕES DE SERVIÇO (NOVO) --- */
+/* CABEÇALHO E MENU                */
 /* =============================================== */
+.header-vitrine {
+  text-align: center;
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid var(--cor-borda);
+}
 
-/* O container que vai alinhar os cartões em uma grade */
+.header-vitrine img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--cor-primaria-leve);
+  margin-bottom: 15px;
+}
+
+.header-vitrine h1 {
+  font-size: 1.6em;
+  color: var(--cor-texto);
+  margin: 0;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menu-btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 15px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-btn:hover {
+  background-color: var(--cor-primaria-leve);
+  color: var(--cor-primaria);
+}
+
+.menu-btn.ativo {
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+  color: white;
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
+}
+
+/* =============================================== */
+/* CARTÕES DE SERVIÇO (Informações)        */
+/* =============================================== */
 #info-servicos {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px; /* Espaçamento entre os cartões */
+  gap: 20px;
 }
 
-/* O estilo de cada cartão individual */
 .servico-info-card {
-  background-color: var(--cor-branco);
-  border: 1px solid #e5e7eb;
+  background-color: #f8f9fa;
+  border: 1px solid var(--cor-borda);
   border-radius: 10px;
   padding: 20px;
   text-align: center;
@@ -400,13 +150,11 @@ html, body {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Efeito ao passar o mouse por cima */
 .servico-info-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--sombra);
 }
 
-/* Estilo do nome do serviço (título do cartão) */
 .servico-info-card h4 {
   margin-top: 0;
   margin-bottom: 8px;
@@ -414,17 +162,94 @@ html, body {
   color: var(--cor-texto);
 }
 
-/* Estilo dos detalhes (duração) */
 .servico-info-card .servico-detalhe {
   font-size: 0.9em;
   color: var(--cor-texto-leve);
   margin: 0 0 12px 0;
 }
 
-/* Estilo do preço */
 .servico-info-card .servico-preco {
   font-size: 1.2em;
   font-weight: 700;
   color: var(--cor-primaria);
   margin: 0;
+}
+
+
+/* =============================================== */
+/* FORMULÁRIO DE AGENDAMENTO              */
+/* =============================================== */
+.form-group {
+  margin-bottom: 25px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.95em;
+}
+
+#lista-servicos, #grade-horarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.service-item, .btn-horario {
+  background: #f3f4f6;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  color: var(--cor-texto-leve);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.service-item.selecionado, .btn-horario.selecionado,
+.service-item:hover, .btn-horario:hover {
+  background: var(--cor-primaria);
+  color: white;
+  border-color: var(--cor-primaria);
+}
+
+/* =============================================== */
+/* BOTÕES E OUTROS                */
+/* =============================================== */
+.btn-submit, button#btn-confirmar-agendamento {
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+  border: none;
+  padding: 12px 18px;
+  color: white;
+  font-size: 1.1em;
+  font-weight: 700;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.btn-submit:hover, button#btn-confirmar-agendamento:hover {
+  opacity: 0.9;
+}
+
+button#btn-confirmar-agendamento:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* =============================================== */
+/* RESPONSIVIDADE                 */
+/* =============================================== */
+@media (max-width: 960px) {
+  .vitrine-container {
+    flex-direction: column;
+    margin-top: 20px;
+    gap: 20px;
+  }
+  .sidebar-vitrine {
+    width: 100%;
+  }
 }
