@@ -144,11 +144,13 @@ async function carregarAgendaInicial() {
         await gerarHorariosDisponiveis();
     }
 }
-
-async function gerarHorariosDisponiveis() {
-    if (!agendamentoState.data || !agendamentoState.servico) {
-        horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
-        return;
+function calcularSlotsDisponiveis(data, agendamentosOcupados) {
+    const dataObj = new Date(data + 'T00:00:00');
+    const diaSemana = dataObj.getDay();
+    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana]; // Variável corrigida para 'nomeDia'
+    const configDia = professionalData.horarios[nomeDia]; // Agora funciona
+    // ... resto da função
+}
     }
     horariosContainer.innerHTML = '<p class="aviso-horarios">Verificando horários...</p>';
     try {
