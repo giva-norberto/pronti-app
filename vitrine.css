@@ -22,7 +22,7 @@
 }
 
 html, body {
-  font-family: 'Poppins', sans-serif; /* Voltamos para a fonte original */
+  font-family: 'Poppins', sans-serif;
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
 }
@@ -184,20 +184,37 @@ h2 {
 }
 
 /* =============================================== */
-/* FORMULÁRIO DE AGENDAMENTO             */
+/* --- NOVO DESIGN PARA O FORMULÁRIO DE AGENDAMENTO --- */
 /* =============================================== */
+
+/* Ajuste geral no card da aba de agendamento */
+#menu-agendamento .card {
+  border: none;
+}
+
+/* Título da seção */
+#menu-agendamento h2 {
+  font-size: 1.8em;
+  font-weight: 700;
+  color: var(--cor-texto);
+  border-bottom: none;
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+/* Rótulos (1. Escolha um serviço, etc.) */
 .form-group {
   margin-bottom: 30px;
 }
 
-label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 10px;
+#menu-agendamento label {
   font-size: 1.1em;
+  font-weight: 600;
   color: var(--cor-texto);
+  margin-bottom: 15px;
 }
 
+/* Botões de Serviço e Horário */
 #lista-servicos, #grade-horarios {
   display: flex;
   flex-wrap: wrap;
@@ -205,33 +222,41 @@ label {
 }
 
 .service-item, .btn-horario {
-  background: var(--cor-branco);
-  border: 1px solid var(--cor-borda);
-  border-radius: 8px;
-  padding: 10px 20px;
-  cursor: pointer;
+  background-color: var(--cor-fundo);
+  border: 2px solid var(--cor-primaria-leve);
   color: var(--cor-texto-leve);
   font-weight: 600;
+  border-radius: 8px;
+  padding: 12px 22px;
   transition: all 0.2s ease-in-out;
+  cursor: pointer;
 }
 
-.service-item.selecionado, .btn-horario.selecionado,
 .service-item:hover, .btn-horario:hover {
-  background: var(--cor-primaria);
-  color: white;
   border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
 }
 
+.service-item.selecionado, .btn-horario.selecionado {
+  background-color: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: var(--cor-branco);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Campos de Texto (Nome, Telefone, PIN) */
 input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   font-size: 1em;
   border-radius: 8px;
-  border: 1px solid var(--cor-borda);
-  background-color: #f9fafb;
+  border: 2px solid var(--cor-borda);
+  background-color: var(--cor-fundo);
   transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: 'Poppins', sans-serif;
+  color: var(--cor-texto);
 }
 
 input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
@@ -239,13 +264,14 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, inp
   box-shadow: 0 0 0 3px var(--cor-primaria-leve);
 }
 
+
 /* =============================================== */
 /* BOTÕES E OUTROS                       */
 /* =============================================== */
 .btn-submit, button#btn-confirmar-agendamento {
   background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
   border: none;
-  padding: 15px 20px;
+  padding: 16px 20px;
   color: white;
   font-size: 1.1em;
   font-weight: 700;
@@ -254,6 +280,7 @@ input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, inp
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.3s ease, box-shadow 0.2s ease;
   box-shadow: var(--sombra);
+  margin-top: 10px;
 }
 
 .btn-submit:hover, button#btn-confirmar-agendamento:not(:disabled):hover {
