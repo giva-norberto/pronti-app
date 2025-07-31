@@ -42,8 +42,6 @@ const btnVisualizarAgendamentos = document.getElementById("btn-visualizar-agenda
 const btnVerHistorico = document.getElementById("btn-ver-historico");
 const listaAgendamentosVisualizacao = document.getElementById("lista-agendamentos-visualizacao");
 const btnBuscarCancelamento = document.getElementById("btn-buscar-cancelamento");
-const containerBuscaManual = document.getElementById("container-busca-manual-view");
-const containerFiltros = document.getElementById("botoes-agendamento");
 
 
 // ==========================================================================
@@ -70,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderizarInformacoesGerais();
         configurarTodosEventListeners();
         preencherCamposComPerfilSalvo();
-        await carregarAgendaInicial();
+        await carregarAgendaInicial(); 
 
         loader.style.display = 'none';
         content.style.display = 'flex';
@@ -80,26 +78,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
     
-    // Assegura que os elementos corretos são mostrados/escondidos
-    const buscaManualContainer = document.getElementById('container-busca-manual-view');
-    const filtrosContainer = document.getElementById('botoes-agendamento');
-
     if (telefoneSalvo) {
-        if(buscaManualContainer) buscaManualContainer.style.display = 'none';
-        if(filtrosContainer) filtrosContainer.style.display = 'flex';
         inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
-        if(buscaManualContainer) buscaManualContainer.style.display = 'block';
-        if(filtrosContainer) filtrosContainer.style.display = 'flex';
-        listaAgendamentosVisualizacao.innerHTML = '<p>Salve seu telefone na aba "Perfil" para carregar seus agendamentos automaticamente.</p>';
+        listaAgendamentosVisualizacao.innerHTML = '<p>Digite seu telefone e clique em "Ver Agendamentos Ativos" para buscar.</p>';
     }
 }
 
@@ -109,13 +98,9 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
         showNotification("Seu telefone não está preenchido. Salve-o na aba 'Perfil'.", true);
         return;
     }
-
+    
     listaAgendamentosVisualizacao.innerHTML = '<p>Buscando seus agendamentos...</p>';
-    if (containerBuscaManual && containerFiltros) {
-        containerBuscaManual.style.display = 'none';
-        containerFiltros.style.display = 'flex';
-    }
-
+    
     try {
         const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteTelefone", "==", telefone));
         const snapshot = await getDocs(q);
@@ -135,7 +120,7 @@ async function buscarEExibirAgendamentos(modo = 'ativos') {
             : todosAgendamentos
                 .filter(ag => ag.horario && typeof ag.horario.toDate === 'function' && ag.horario.toDate() < agora)
                 .sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
-
+        
         renderizarAgendamentosComoCards(agendamentosFiltrados, modo);
 
     } catch (error) {
@@ -221,6 +206,7 @@ function configurarTodosEventListeners() {
     document.getElementById('btn-salvar-perfil').addEventListener('click', salvarPerfilCliente);
     btnBuscarCancelamento.addEventListener('click', buscarAgendamentosParaCancelar);
 }
+
 
 // ==========================================================================
 //  DEMAIS FUNÇÕES
