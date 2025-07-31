@@ -93,10 +93,21 @@ async function getUidFromSlug(slug) {
 async function carregarDadosDoFirebase() {
     const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
         getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
-        getDocs(query(collection(db, "users", profissionalUid, "servicos"), where("visivelNaVitrine", "==", true))),
+        // CORREÇÃO: Buscando TODOS os serviços, sem filtro, como combinado.
+        getDocs(collection(db, "users", profissionalUid, "servicos")),
         getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
     ]);
     return { perfilDoc, servicosSnapshot, horariosDoc };
+}
+
+function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
+    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
+    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
+    
+    // CORREÇÃO: O filtro é feito aqui no aplicativo, como combinado.
+    professionalData.servicos = servicosSnapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(servico => servico.visivelNaVitrine !== false);
 }
 
 function validarDadosDoProfissional() {
@@ -112,13 +123,6 @@ function validarDadosDoProfissional() {
     }
     return erros;
 }
-
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
-    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
-    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
-    professionalData.servicos = servicosSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
 
 // ==========================================================================
 //  LÓGICA DE AGENDAMENTO
@@ -199,6 +203,7 @@ function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     return horarios;
 }
 
+
 // ==========================================================================
 //  RENDERIZAÇÃO E MANIPULAÇÃO DO DOM
 // ==========================================================================
@@ -209,7 +214,7 @@ function renderizarInformacoesGerais() {
     document.getElementById('info-negocio').innerHTML = `<p>${perfil.descricao || 'Nenhuma descrição fornecida.'}</p>`;
     document.getElementById('info-contato').innerHTML = `${perfil.telefone ? `<p><strong>Telefone:</strong> ${perfil.telefone}</p>` : ''}${perfil.endereco ? `<p><strong>Endereço:</strong> ${perfil.endereco}</p>` : ''}`;
     
-    // ### ALTERAÇÃO AQUI para gerar os cartões ###
+    // Renderiza os serviços na aba Informações como cartões
     document.getElementById('info-servicos').innerHTML = servicos.length > 0
         ? servicos.map(s => `
             <div class="servico-info-card">
@@ -220,6 +225,7 @@ function renderizarInformacoesGerais() {
         `).join('')
         : '<p>Nenhum serviço disponível.</p>';
     
+    // Renderiza os serviços na aba Agendamento como botões
     servicosContainer.innerHTML = servicos.length > 0 ? servicos.map(s => `<button class="service-item" data-id="${s.id}">${s.nome} - R$ ${parseFloat(s.preco || 0).toFixed(2)}</button>`).join('') : '<p>Nenhum serviço para agendamento.</p>';
 }
 
