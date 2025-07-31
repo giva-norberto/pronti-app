@@ -1,5 +1,5 @@
 /* =============================================== */
-/* VARIÁVEIS GLOBAIS E ESTILO BASE          */
+/* GERAL E VARIÁVEIS                     */
 /* =============================================== */
 :root {
   --cor-fundo: #f5f7fa;
@@ -12,6 +12,7 @@
   --cor-texto: #1f2937;
   --cor-borda: #e5e7eb;
   --sombra: 0 4px 12px rgba(0,0,0,0.08);
+  --sombra-hover: 0 8px 16px rgba(0,0,0,0.1);
 }
 
 * {
@@ -21,20 +22,26 @@
 }
 
 html, body {
-  height: 100%;
   font-family: 'Poppins', sans-serif;
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
 }
 
+/* MELHORIA: Acessibilidade com foco visível */
+button:focus, a:focus, input:focus, .service-item:focus, .btn-horario:focus {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 3px;
+  border-radius: 4px; /* Adiciona borda arredondada ao foco */
+}
+
 /* =============================================== */
-/* ESTRUTURA PRINCIPAL DA VITRINE         */
+/* ESTRUTURA PRINCIPAL DA VITRINE        */
 /* =============================================== */
 .vitrine-container {
   display: flex;
   flex-direction: row;
   gap: 30px;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 40px auto;
   padding: 0 20px;
 }
@@ -46,12 +53,11 @@ html, body {
   border-radius: 12px;
   padding: 25px;
   box-shadow: var(--sombra);
-  height: fit-content; /* Impede que a sidebar estique desnecessariamente */
+  height: fit-content;
 }
 
 .main-content-vitrine {
   flex-grow: 1;
-  width: 100%;
 }
 
 .card {
@@ -64,8 +70,8 @@ html, body {
 
 h2 {
   font-size: 1.4em;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
   color: var(--cor-texto);
   border-bottom: 1px solid var(--cor-borda);
 }
@@ -78,7 +84,7 @@ h2 {
 }
 
 /* =============================================== */
-/* CABEÇALHO E MENU                */
+/* CABEÇALHO E MENU                      */
 /* =============================================== */
 .header-vitrine {
   text-align: center;
@@ -118,6 +124,7 @@ h2 {
   text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
 .menu-btn:hover {
@@ -175,36 +182,37 @@ h2 {
   margin: 0;
 }
 
-
 /* =============================================== */
-/* FORMULÁRIO DE AGENDAMENTO              */
+/* FORMULÁRIO DE AGENDAMENTO             */
 /* =============================================== */
 .form-group {
-  margin-bottom: 25px;
+  margin-bottom: 30px;
 }
 
 label {
   display: block;
   font-weight: 600;
-  margin-bottom: 8px;
-  font-size: 0.95em;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+  color: var(--cor-texto);
 }
 
 #lista-servicos, #grade-horarios {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 
+/* CORREÇÃO E MELHORIA: Unifica .service-item e .btn-horario */
 .service-item, .btn-horario {
-  background: #f3f4f6;
+  background: var(--cor-branco);
   border: 1px solid var(--cor-borda);
-  border-radius: 8px;
-  padding: 10px 15px;
+  border-radius: 25px; /* Deixa mais arredondado e moderno */
+  padding: 10px 20px;
   cursor: pointer;
   color: var(--cor-texto-leve);
   font-weight: 600;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-in-out;
 }
 
 .service-item.selecionado, .btn-horario.selecionado,
@@ -212,42 +220,65 @@ label {
   background: var(--cor-primaria);
   color: white;
   border-color: var(--cor-primaria);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
 }
 
+input[type="date"], input[type="text"], input[type="tel"], input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  font-size: 1em;
+  border-radius: 8px;
+  border: 1px solid var(--cor-borda);
+  background-color: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="date"]:focus, input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
+}
+
+
 /* =============================================== */
-/* BOTÕES E OUTROS                */
+/* BOTÕES E OUTROS                       */
 /* =============================================== */
 .btn-submit, button#btn-confirmar-agendamento {
   background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
   border: none;
-  padding: 12px 18px;
+  padding: 15px 20px;
   color: white;
   font-size: 1.1em;
   font-weight: 700;
   border-radius: 8px;
   width: 100%;
   cursor: pointer;
-  transition: opacity 0.3s ease;
+  transition: transform 0.2s ease, opacity 0.3s ease, box-shadow 0.2s ease;
+  box-shadow: var(--sombra);
 }
 
-.btn-submit:hover, button#btn-confirmar-agendamento:hover {
+.btn-submit:hover, button#btn-confirmar-agendamento:not(:disabled):hover {
   opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(99, 102, 241, 0.25);
 }
 
 button#btn-confirmar-agendamento:disabled {
   background: #d1d5db;
+  color: #9ca3af;
   cursor: not-allowed;
-  opacity: 1;
+  box-shadow: none;
 }
 
 /* =============================================== */
-/* RESPONSIVIDADE                 */
+/* RESPONSIVIDADE                        */
 /* =============================================== */
 @media (max-width: 960px) {
   .vitrine-container {
     flex-direction: column;
     margin-top: 20px;
     gap: 20px;
+    padding: 0 15px;
   }
   .sidebar-vitrine {
     width: 100%;
