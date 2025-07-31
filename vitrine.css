@@ -272,3 +272,53 @@ button#btn-confirmar-agendamento:disabled {
   cursor: not-allowed;
   opacity: 1;
 }
+/* =============================================== */
+/* --- ESTILO DOS CARTÕES DE SERVIÇO (NOVO) --- */
+/* =============================================== */
+
+/* O container que vai alinhar os cartões em uma grade */
+#info-servicos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px; /* Espaçamento entre os cartões */
+}
+
+/* O estilo de cada cartão individual */
+.servico-info-card {
+  background-color: var(--cor-branco);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Efeito ao passar o mouse por cima */
+.servico-info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sombra);
+}
+
+/* Estilo do nome do serviço (título do cartão) */
+.servico-info-card h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+  color: var(--cor-texto);
+}
+
+/* Estilo dos detalhes (duração) */
+.servico-info-card .servico-detalhe {
+  font-size: 0.9em;
+  color: var(--cor-texto-leve);
+  margin: 0 0 12px 0;
+}
+
+/* Estilo do preço */
+.servico-info-card .servico-preco {
+  font-size: 1.2em;
+  font-weight: 700;
+  color: var(--cor-primaria);
+  margin: 0;
+}
