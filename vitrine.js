@@ -78,25 +78,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// ==========================================================================
+//  BUSCA E VALIDAÇÃO DE DADOS
+// ==========================================================================
+async function getUidFromSlug(slug) {
+    const docSnap = await getDoc(doc(db, "slugs", slug));
+    return docSnap.exists() ? docSnap.data().uid : null;
+}
+
+async function carregarDadosDoFirebase() {
+    const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
+        getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
+        getDocs(collection(db, "users", profissionalUid, "servicos")),
+        getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
+    ]);
+    return { perfilDoc, servicosSnapshot, horariosDoc };
+}
+
+function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
+    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
+    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
+    
+    // Filtro feito no aplicativo para garantir que todos os serviços sejam considerados
+    professionalData.servicos = servicosSnapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(servico => servico.visivelNaVitrine !== false);
+}
+
+function validarDadosDoProfissional() {
+    const erros = [];
+    if (!professionalData.perfil.nomeNegocio) { erros.push("O perfil do negócio (com nome) não foi configurado."); }
+    if (Object.keys(professionalData.horarios).length === 0) { erros.push("Os horários de atendimento não foram configurados."); }
+    if (professionalData.servicos.length === 0) { erros.push("Nenhum serviço foi disponibilizado para a vitrine."); }
+    return erros;
+}
+
 
 // ==========================================================================
 //  LÓGICA DE "MEUS AGENDAMENTOS"
 // ==========================================================================
 function iniciarAbaMeusAgendamentos() {
     const telefoneSalvo = localStorage.getItem('clienteTelefone');
-    
     if (telefoneSalvo) {
         inputTelefoneVisualizacao.value = telefoneSalvo;
         buscarEExibirAgendamentos('ativos');
     } else {
-        listaAgendamentosVisualizacao.innerHTML = '<p>Digite seu telefone e clique em "Ver Agendamentos Ativos" para buscar.</p>';
+        listaAgendamentosVisualizacao.innerHTML = '<p>Digite seu telefone para buscar ou salve seu perfil para carregar automaticamente.</p>';
     }
 }
 
 async function buscarEExibirAgendamentos(modo = 'ativos') {
     const telefone = inputTelefoneVisualizacao.value.replace(/\D/g, '');
     if (!telefone) {
-        showNotification("Seu telefone não está preenchido. Salve-o na aba 'Perfil'.", true);
+        showNotification("Digite um telefone para buscar.", true);
         return;
     }
     
@@ -136,9 +170,9 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
         listaAgendamentosVisualizacao.innerHTML = `<p>${mensagem}</p>`;
         return;
     }
+
     listaAgendamentosVisualizacao.innerHTML = agendamentos.map(ag => {
         if (!ag.horario || typeof ag.horario.toDate !== 'function') return '';
-
         const data = ag.horario.toDate();
         const dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
         const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -169,7 +203,6 @@ function configurarTodosEventListeners() {
             document.querySelectorAll('.menu-content, .menu-btn').forEach(el => el.classList.remove('ativo'));
             document.getElementById(`menu-${menu}`).classList.add('ativo');
             button.classList.add('ativo');
-
             if (menu === 'visualizacao') {
                 iniciarAbaMeusAgendamentos();
             }
@@ -217,45 +250,6 @@ function showError(message) {
     loader.innerHTML = `<div style="color:red; text-align:center; padding: 20px;">${message}</div>`;
 }
 
-async function getUidFromSlug(slug) {
-    const docSnap = await getDoc(doc(db, "slugs", slug));
-    return docSnap.exists() ? docSnap.data().uid : null;
-}
-
-async function carregarDadosDoFirebase() {
-    const [perfilDoc, servicosSnapshot, horariosDoc] = await Promise.all([
-        getDoc(doc(db, "users", profissionalUid, "publicProfile", "profile")),
-        // CORREÇÃO DEFINITIVA: Buscando TODOS os serviços do Firebase
-        getDocs(collection(db, "users", profissionalUid, "servicos")),
-        getDoc(doc(db, "users", profissionalUid, "configuracoes", "horarios"))
-    ]);
-    return { perfilDoc, servicosSnapshot, horariosDoc };
-}
-
-function processarDadosCarregados({ perfilDoc, servicosSnapshot, horariosDoc }) {
-    if (perfilDoc.exists()) professionalData.perfil = perfilDoc.data();
-    if (horariosDoc.exists()) professionalData.horarios = horariosDoc.data();
-    
-    // CORREÇÃO DEFINITIVA: Filtrando os serviços aqui no aplicativo
-    professionalData.servicos = servicosSnapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(servico => servico.visivelNaVitrine !== false);
-}
-
-function validarDadosDoProfissional() {
-    const erros = [];
-    if (!professionalData.perfil.nomeNegocio) {
-        erros.push("O nome do negócio não foi configurado.");
-    }
-    if (Object.keys(professionalData.horarios).length === 0) {
-        erros.push("Os horários de atendimento não foram configurados.");
-    }
-    if (professionalData.servicos.length === 0) {
-        erros.push("Nenhum serviço foi disponibilizado para a vitrine.");
-    }
-    return erros;
-}
-
 async function carregarAgendaInicial() {
     const hoje = new Date(new Date().getTime() - (new Date().getTimezoneOffset()*60*1000));
     dataInput.value = hoje.toISOString().split('T')[0];
@@ -264,9 +258,7 @@ async function carregarAgendaInicial() {
     if (professionalData.servicos.length > 0) {
         agendamentoState.servico = professionalData.servicos[0];
         const primeiroBotaoServico = servicosContainer.querySelector('.service-item');
-        if (primeiroBotaoServico) {
-            primeiroBotaoServico.classList.add('selecionado');
-        }
+        if (primeiroBotaoServico) { primeiroBotaoServico.classList.add('selecionado'); }
         await gerarHorariosDisponiveis();
     }
 }
@@ -309,12 +301,10 @@ function calcularSlotsDisponiveis(data, agendamentosOcupados) {
     const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
     const configDia = professionalData.horarios[nomeDia];
     if (!configDia || !configDia.ativo) return [];
-    
     const horarios = [];
     const intervalo = professionalData.horarios.intervalo || 30;
     const duracaoServicoAtual = agendamentoState.servico.duracao;
     const blocosDeTrabalho = configDia.blocos || [];
-    
     blocosDeTrabalho.forEach(bloco => {
         if (!bloco.inicio || !bloco.fim) return;
         let horarioAtual = new Date(`${data}T${bloco.inicio}`);
