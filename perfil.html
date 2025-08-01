@@ -49,7 +49,7 @@
          style="display: none; white-space: nowrap;">
          Abrir Vitrine
       </a>
-      </div>
+    </div>
     <p>Defina aqui todas as informações do seu negócio que aparecerão para os clientes.</p>
 
     <div class="form-card">
@@ -59,12 +59,10 @@
           <label for="nomeNegocio">Nome do Negócio</label>
           <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
         </div>
-        <div class="form-group">
-          <label for="slug">URL da sua Vitrine</label>
-          <div style="display: flex; align-items: center; border: 1px solid #d1d5db; border-radius: 8px; padding-left: 12px; background-color: #f9fafb;">
-            <span id="url-base" style="color: var(--cor-texto-leve); font-size: 0.9em; white-space: nowrap;"></span>
-            <input type="text" id="slug" placeholder="barbearia-do-joao" required style="border: none; background: transparent; padding: 12px 10px; flex-grow: 1; outline: none; font-weight: 600; color: var(--cor-primaria);">
-          </div>
+
+        <div class="form-group" id="container-link-vitrine" style="display: none;">
+            <label>Link da sua Vitrine Pública</label>
+            <p style="padding: 12px; background-color: #f9fafb; border-radius: 8px; color: var(--cor-primaria); font-weight: 600; word-wrap: break-word;" id="url-vitrine-display"></p>
         </div>
         <div class="form-group">
           <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
@@ -93,7 +91,7 @@
         </div>
         <div id="dias-container"></div>
         
-        <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-top: 30px; margin-bottom: 15px; background: var(--cor-aviso);">Copiar Link da Vitrine</button>
+        <button type="button" id="btn-copiar-link" class="btn-submit" style="width: 100%; margin-top: 30px; margin-bottom: 15px; background: var(--cor-aviso); display: none;">Copiar Link da Vitrine</button>
         <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
       </form>
     </div>
@@ -101,22 +99,6 @@
 
   <script src="firebase-config.js" type="module"></script>
   <script src="perfil.js" type="module"></script>
-  <script>
-    const btnUploadLogo = document.getElementById('btn-upload-logo');
-    const logoInput = document.getElementById('logoNegocio');
-    const logoPreview = document.getElementById('logo-preview');
-    if(btnUploadLogo) {
-      btnUploadLogo.addEventListener('click', () => logoInput.click());
-      logoInput.addEventListener('change', () => {
-        const file = logoInput.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => { logoPreview.src = e.target.result; };
-          reader.readAsDataURL(file);
-        }
-      });
-    }
-  </script>
-
-</body>
+  
+  </body>
 </html>
