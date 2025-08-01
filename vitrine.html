@@ -9,11 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ================================================== */
-        /* ESTILO DO BOTÃO DE CONFIRMAÇÃO                */
-        /* ================================================== */
+        /* ESTILO DO BOTÃO DE CONFIRMAÇÃO */
         #btn-confirmar-agendamento {
-            background: linear-gradient(to right, #8B5CF6, #EC4899); /* Gradiente de Roxo para Rosa */
+            background: linear-gradient(to right, #8B5CF6, #EC4899);
             color: white;
             border: none;
             padding: 15px;
@@ -24,18 +22,64 @@
             width: 100%;
             text-align: center;
             transition: opacity 0.3s ease, transform 0.2s ease;
-            margin-top: 1rem; /* Adiciona um espaço acima do botão */
+            margin-top: 1rem;
         }
 
         #btn-confirmar-agendamento:hover:not(:disabled) {
             opacity: 0.9;
-            transform: translateY(-2px); /* Efeito de elevação ao passar o mouse */
+            transform: translateY(-2px);
         }
 
         #btn-confirmar-agendamento:disabled {
-            background: #D1D5DB; /* Cor cinza para o estado desabilitado */
+            background: #E5E7EB; /* Cinza mais claro para o estado desabilitado */
+            color: #9CA3AF;
             cursor: not-allowed;
-            opacity: 0.8;
+        }
+
+        /* ================================================== */
+        /* NOVOS ESTILOS PARA OS BOTÕES DE SELEÇÃO         */
+        /* ================================================== */
+
+        /* Estilo para os botões de serviço */
+        .servicos-container-cards .service-item {
+            background-color: white;
+            border: 1px solid #D1D5DB;
+            color: #4B5563;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 4px;
+            font-size: 14px;
+        }
+
+        .servicos-container-cards .service-item.selecionado {
+            background-color: #6D28D9; /* Roxo */
+            color: white;
+            border-color: #6D28D9;
+        }
+
+        /* Estilo para os botões de horário */
+        .horarios-container-grid .btn-horario {
+            background-color: white;
+            border: 1px solid #D1D5DB;
+            color: #4B5563;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .horarios-container-grid .btn-horario:hover {
+            border-color: #9CA3AF;
+        }
+
+        .horarios-container-grid .btn-horario.selecionado {
+            background-color: #FCE7F3; /* Fundo rosa claro */
+            border-color: #EC4899; /* Borda rosa */
+            color: #EC4899; /* Texto rosa */
+            font-weight: 600;
         }
     </style>
 </head>
@@ -101,7 +145,6 @@
                                 <p class="aviso-horarios">Selecione um serviço e uma data.</p>
                             </div>
                         </div>
-                        <!-- Botão agora sem a classe 'btn-submit' para usar o estilo do ID -->
                         <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                     </div>
                 </div>
