@@ -1,30 +1,43 @@
 /**
- * perfil.js (Versão Final com Botão de Vitrine Integrado)
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM LOGOUT INTEGRADO)
+ *
+ * Esta é a versão definitiva do painel do empresário.
+ * Lógica Principal:
+ * 1. Ao carregar, verifica se o usuário logado já possui uma empresa na coleção 'empresarios'.
+ * 2. Se NÃO tiver, a página age como um formulário de CADASTRO.
+ * 3. Se JÁ tiver, a página carrega os dados e age como um painel de EDIÇÃO.
+ * 4. Salva e lê dados da estrutura `empresarios/{empresaId}/profissionais/{profissionalId}`.
+ * 5. O link da vitrine é gerado automaticamente com o ID da empresa.
+ * 6. Inclui a funcionalidade de logout no botão 'Sair'.
  */
 
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
+// [NOVO] Importa a função de logout
+import { fazerLogout } from './vitrini-auth.js';
 
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
 // --- Elementos do DOM ---
+const h1Titulo = document.querySelector('.main-content h1');
 const form = document.getElementById('form-perfil');
 const nomeNegocioInput = document.getElementById('nomeNegocio');
-const slugInput = document.getElementById('slug');
-const slugFeedbackEl = document.createElement('div');
 const descricaoInput = document.getElementById('descricao');
 const logoInput = document.getElementById('logoNegocio');
 const logoPreview = document.getElementById('logo-preview');
+const btnUploadLogo = document.getElementById('btn-upload-logo');
 const btnSalvar = form.querySelector('button[type="submit"]');
 const btnCopiarLink = document.getElementById('btn-copiar-link');
-const urlBaseEl = document.getElementById('url-base');
+const containerLinkVitrine = document.getElementById('container-link-vitrine');
+const urlVitrineEl = document.getElementById('url-vitrine-display');
 const intervaloSelect = document.getElementById('intervalo-atendimento');
 const diasContainer = document.getElementById('dias-container');
-const btnAbrirVitrine = document.getElementById('btn-abrir-vitrine'); // Botão adicionado
+const btnAbrirVitrine = document.getElementById('btn-abrir-vitrine');
+const btnLogout = document.getElementById('btn-logout');
 
 const diasDaSemana = [
     { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
@@ -33,139 +46,135 @@ const diasDaSemana = [
     { id: 'dom', nome: 'Domingo' }
 ];
 
-let uid;
-let slugOriginal = '';
+// --- Variáveis de Estado ---
+let currentUser;
+let empresaId = null;
 
 // --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        uid = user.uid;
-        gerarEstruturaDosDias();
-        carregarTodosOsDados(uid);
+        currentUser = user;
+        verificarEcarregarDados(user.uid);
         adicionarListenersDeEvento();
-        if (urlBaseEl) {
-            urlBaseEl.textContent = `${window.location.origin}/vitrine.html?slug=`;
-        }
+        gerarEstruturaDosDias();
     } else {
         window.location.href = 'login.html';
     }
 });
 
-function adicionarListenersDeEvento() {
-    slugInput.insertAdjacentElement('afterend', slugFeedbackEl);
-    nomeNegocioInput.addEventListener('keyup', () => {
-        slugInput.value = gerarSlug(nomeNegocioInput.value);
-    });
-    form.addEventListener('submit', handleFormSubmit);
-    btnCopiarLink.addEventListener('click', copiarLink);
-    
-    // Listener para o botão de upload de logo
-    const btnUploadLogo = document.getElementById('btn-upload-logo');
-    if(btnUploadLogo && logoInput) {
-        btnUploadLogo.addEventListener('click', () => logoInput.click());
+/**
+ * Lógica "Porteiro": Verifica se o usuário já tem uma empresa.
+ */
+async function verificarEcarregarDados(uid) {
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        // NOVO EMPRESÁRIO
+        h1Titulo.textContent = "Crie seu Perfil de Negócio";
+        btnAbrirVitrine.style.display = 'none';
+        if (containerLinkVitrine) containerLinkVitrine.style.display = 'none';
+        if (btnCopiarLink) btnCopiarLink.style.display = 'none';
+    } else {
+        // EMPRESÁRIO EXISTENTE
+        const empresaDoc = snapshot.docs[0];
+        empresaId = empresaDoc.id;
+        const dadosEmpresa = empresaDoc.data();
+        
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+        const profissionalSnap = await getDoc(profissionalRef);
+        const dadosProfissional = profissionalSnap.exists() ? profissionalSnap.data() : {};
+
+        preencherFormulario(dadosEmpresa, dadosProfissional);
     }
 }
 
-async function carregarTodosOsDados(userId) {
-    await Promise.all([
-        carregarDadosDoPerfil(userId),
-        carregarHorarios(userId)
-    ]);
-}
+/**
+ * Preenche o formulário com os dados carregados do Firebase.
+ */
+function preencherFormulario(dadosEmpresa, dadosProfissional) {
+    nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+    descricaoInput.value = dadosEmpresa.descricao || '';
+    if (dadosEmpresa.logoUrl) {
+        logoPreview.src = dadosEmpresa.logoUrl;
+    }
 
-// --- FUNÇÃO CORRIGIDA ---
-async function carregarDadosDoPerfil(userId) {
-    try {
-        const perfilRef = doc(db, "users", userId, "publicProfile", "profile");
-        const docSnap = await getDoc(perfilRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            nomeNegocioInput.value = data.nomeNegocio || '';
-            slugInput.value = data.slug || '';
-            slugOriginal = data.slug || '';
-            descricaoInput.value = data.descricao || '';
-            if (data.logoUrl) logoPreview.src = data.logoUrl;
-
-            // Lógica para ativar o botão "Abrir Vitrine"
-            if (data.slug) {
-                btnAbrirVitrine.href = `vitrine.html?slug=${data.slug}`;
-                btnAbrirVitrine.style.display = 'inline-block'; // Mostra o botão
+    const horarios = dadosProfissional.horarios || {};
+    intervaloSelect.value = horarios.intervalo || '30';
+    diasDaSemana.forEach(dia => {
+        const diaData = horarios[dia.id];
+        const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
+        const containerBlocos = document.getElementById(`blocos-${dia.id}`);
+        if (toggleAtivo && containerBlocos) {
+            toggleAtivo.checked = diaData ? diaData.ativo : false;
+            containerBlocos.innerHTML = '';
+            if (diaData && diaData.ativo && diaData.blocos) {
+                diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
+            } else if (diaData && diaData.ativo) {
+                adicionarBlocoDeHorario(dia.id);
             }
+            toggleAtivo.dispatchEvent(new Event('change'));
         }
-    } catch (error) { console.error("Erro ao carregar perfil:", error); }
+    });
+    
+    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+    if (urlVitrineEl) urlVitrineEl.textContent = urlCompleta;
+    if (containerLinkVitrine) containerLinkVitrine.style.display = 'block';
+    if (btnCopiarLink) btnCopiarLink.style.display = 'block';
+
+    btnAbrirVitrine.href = urlCompleta;
+    btnAbrirVitrine.style.display = 'inline-block';
 }
 
-async function carregarHorarios(userId) {
-    try {
-        const horariosRef = doc(db, "users", userId, "configuracoes", "horarios");
-        const docSnap = await getDoc(horariosRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            intervaloSelect.value = data.intervalo || '30';
-            diasDaSemana.forEach(dia => {
-                const diaData = data[dia.id];
-                const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
-                const containerBlocos = document.getElementById(`blocos-${dia.id}`);
-                
-                if (diaData && toggleAtivo && containerBlocos) {
-                    toggleAtivo.checked = diaData.ativo;
-                    containerBlocos.innerHTML = ''; 
-                    
-                    if (diaData.ativo && diaData.blocos && diaData.blocos.length > 0) {
-                        diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
-                    } else if (diaData.ativo) {
-                        adicionarBlocoDeHorario(dia.id);
-                    }
-                    toggleAtivo.dispatchEvent(new Event('change'));
-                }
-            });
-        }
-    } catch (error) { console.error("Erro ao carregar horários:", error); }
-}
-
-// --- FUNÇÃO CORRIGIDA ---
+/**
+ * Lida com o envio do formulário, criando ou atualizando a empresa.
+ */
 async function handleFormSubmit(event) {
     event.preventDefault();
     btnSalvar.disabled = true;
-    btnSalvar.textContent = 'A verificar URL...';
-    slugFeedbackEl.textContent = '';
+    btnSalvar.textContent = 'A salvar...';
 
-    const slugAtual = slugInput.value.trim();
-    if (!slugAtual) {
-        alert("A URL da vitrine (slug) é obrigatória.");
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Todas as Configurações';
-        return;
-    }
-    
     try {
-        const slugDisponivel = await verificarDisponibilidadeSlug(slugAtual);
-        if (!slugDisponivel) {
-            throw new Error(`A URL "${slugAtual}" já está em uso. Por favor, escolha outra.`);
+        const uid = currentUser.uid;
+        const nomeNegocio = nomeNegocioInput.value.trim();
+        if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
+
+        const dadosEmpresa = {
+            nomeFantasia: nomeNegocio,
+            descricao: descricaoInput.value.trim(),
+            donoId: uid
+        };
+        const dadosProfissional = {
+            nome: currentUser.displayName || nomeNegocio,
+            fotoUrl: currentUser.photoURL || '',
+            horarios: coletarDadosDeHorarios()
+        };
+
+        const logoFile = logoInput.files[0];
+        if (logoFile) {
+            const storageRef = ref(storage, `logos/${uid}/logo`);
+            const uploadResult = await uploadBytes(storageRef, logoFile);
+            dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
         }
 
-        btnSalvar.textContent = 'A salvar...';
-        await salvarDadosDoPerfil(slugAtual);
-        await salvarHorarios();
-        
-        if (slugOriginal && slugOriginal !== slugAtual) {
-            const batch = writeBatch(db);
-            const slugAntigoRef = doc(db, "slugs", slugOriginal);
-            batch.delete(slugAntigoRef);
-            await batch.commit();
+        if (empresaId) {
+            // ATUALIZA
+            const empresaRef = doc(db, "empresarios", empresaId);
+            await setDoc(empresaRef, dadosEmpresa, { merge: true });
+            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+            await setDoc(profissionalRef, dadosProfissional, { merge: true });
+            alert("Perfil atualizado com sucesso!");
+        } else {
+            // CRIA
+            const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+            empresaId = novaEmpresaRef.id;
+            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+            await setDoc(profissionalRef, dadosProfissional);
+            alert("Seu negócio foi cadastrado com sucesso!");
+            window.location.reload();
         }
-        slugOriginal = slugAtual;
-        
-        // Atualiza o link do botão imediatamente após salvar
-        btnAbrirVitrine.href = `vitrine.html?slug=${slugAtual}`;
-        btnAbrirVitrine.style.display = 'inline-block';
-        
-        alert("Todas as configurações foram salvas com sucesso!");
-
     } catch (error) {
-        console.error("ERRO GERAL AO SALVAR:", error);
-        slugFeedbackEl.textContent = error.message;
-        slugFeedbackEl.style.color = 'red';
+        console.error("Erro ao salvar perfil:", error);
         alert("Ocorreu um erro ao salvar: " + error.message);
     } finally {
         btnSalvar.disabled = false;
@@ -173,40 +182,10 @@ async function handleFormSubmit(event) {
     }
 }
 
-async function verificarDisponibilidadeSlug(slug) {
-    if (slug === slugOriginal) return true;
-    const slugRef = doc(db, "slugs", slug);
-    const docSnap = await getDoc(slugRef);
-    return !docSnap.exists();
-}
-
-async function salvarDadosDoPerfil(slug) {
-    const nomeNegocio = nomeNegocioInput.value.trim();
-    const logoFile = logoInput.files[0];
-    if (!nomeNegocio) throw new Error("Nome do negócio é obrigatório.");
-
-    let logoUrl = logoPreview.src;
-    if (logoFile) {
-        const storageRef = ref(storage, `logos/${uid}/${slug}-${logoFile.name}`);
-        const uploadResult = await uploadBytes(storageRef, logoFile);
-        logoUrl = await getDownloadURL(uploadResult.ref);
-    }
-  
-    const perfilData = {
-        nomeNegocio, slug,
-        descricao: descricaoInput.value.trim(),
-        logoUrl, ownerId: uid
-    };
-
-    const batch = writeBatch(db);
-    const perfilPrivadoRef = doc(db, "users", uid, "publicProfile", "profile");
-    batch.set(perfilPrivadoRef, perfilData, { merge: true });
-    const slugPublicoRef = doc(db, "slugs", slug);
-    batch.set(slugPublicoRef, { uid: uid });
-    await batch.commit();
-}
-
-async function salvarHorarios() {
+/**
+ * Coleta os dados de horários do formulário.
+ */
+function coletarDadosDeHorarios() {
     const horariosData = { intervalo: parseInt(intervaloSelect.value, 10) };
     diasDaSemana.forEach(dia => {
         const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
@@ -221,28 +200,48 @@ async function salvarHorarios() {
         }
         horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
     });
-    const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
-    await setDoc(horariosRef, horariosData);
+    return horariosData;
 }
 
-function gerarSlug(texto) {
-    if (!texto) return "";
-    return texto.toString().toLowerCase().trim()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, '-').replace(/[^\w\-]+/g, '')
-        .replace(/\-\-+/g, '-');
+// --- FUNÇÕES UTILITÁRIAS E DE UI (PRESERVADAS) ---
+
+function adicionarListenersDeEvento() {
+    form.addEventListener('submit', handleFormSubmit);
+    if(btnCopiarLink) btnCopiarLink.addEventListener('click', copiarLink);
+    if (btnUploadLogo && logoInput) {
+        btnUploadLogo.addEventListener('click', () => logoInput.click());
+    }
+    if(logoInput) {
+        logoInput.addEventListener('change', () => {
+            if (logoInput.files && logoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { logoPreview.src = e.target.result; };
+                reader.readAsDataURL(logoInput.files[0]);
+            }
+        });
+    }
+
+    // [NOVO] Adiciona o listener para o botão de logout
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            fazerLogout();
+        });
+    }
 }
 
 function copiarLink() {
-    const slug = slugInput.value.trim();
-    if (!slug) { alert("Preencha o campo 'URL da sua Vitrine' para poder copiar o link."); return; }
-    const urlCompleta = `${window.location.origin}/vitrine.html?slug=${slug}`;
+    if (!empresaId) {
+        alert("Salve seu perfil primeiro para gerar o link da sua vitrine.");
+        return;
+    }
+    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
     navigator.clipboard.writeText(urlCompleta).then(() => {
         alert("Link da vitrine copiado para a área de transferência!");
     });
 }
 
 function gerarEstruturaDosDias() {
+    if (!diasContainer) return;
     diasContainer.innerHTML = '';
     diasDaSemana.forEach(dia => {
         const divDia = document.createElement('div');
@@ -252,21 +251,25 @@ function gerarEstruturaDosDias() {
                 <span class="dia-semana-nome">${dia.nome}</span>
                 <div class="toggle-atendimento">
                     <label class="switch">
-                        <input type="checkbox" id="${dia.id}-ativo" checked>
+                        <input type="checkbox" id="${dia.id}-ativo">
                         <span class="slider"></span>
                     </label>
                 </div>
             </div>
-            <div class="horarios-container" id="container-${dia.id}">
+            <div class="horarios-container" id="container-${dia.id}" style="display: none;">
                 <div class="horarios-blocos" id="blocos-${dia.id}"></div>
                 <button type="button" class="btn-adicionar-bloco" data-dia="${dia.id}">+ Adicionar Horário</button>
             </div>
         `;
         diasContainer.appendChild(divDia);
-        adicionarBlocoDeHorario(dia.id); 
+        
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
         toggleAtivo.addEventListener('change', (e) => {
-            document.getElementById(`container-${dia.id}`).style.display = e.target.checked ? 'block' : 'none';
+            const container = document.getElementById(`container-${dia.id}`);
+            container.style.display = e.target.checked ? 'block' : 'none';
+            if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
+                adicionarBlocoDeHorario(dia.id);
+            }
         });
     });
     diasContainer.addEventListener('click', function(e) {
