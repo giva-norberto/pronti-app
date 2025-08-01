@@ -99,25 +99,59 @@
             border-radius: 8px;
         }
 
+        /* Estilos para os botões do menu lateral */
+        .sidebar-menu .menu-btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            text-align: left;
+            font-size: 16px;
+            font-weight: 600;
+            color: #4B5563;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu .menu-btn:hover:not(.ativo) {
+            background-color: #F3F4F6; /* Cinza claro no hover */
+        }
+
+        .sidebar-menu .menu-btn.ativo {
+            background-color: #6D28D9; /* Roxo */
+            color: white;
+        }
+
         .lista-agendamentos-resultado {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            margin-top: 20px; /* Adiciona espaço para separar do card de cima */
+            margin-top: 20px;
         }
         .agendamento-card {
             background-color: #F9FAFB;
             border: 1px solid #E5E7EB;
             border-radius: 8px;
             padding: 20px;
-            display: flex; /* MUDANÇA: Usando flexbox para alinhar */
+            display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 20px;
+            transition: all 0.3s ease; /* Adicionada transição suave */
         }
+        
+        /* CORREÇÃO: Efeito de hover para os cards de agendamento */
+        .agendamento-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-color: #D1D5DB;
+        }
+
         .agendamento-info {
             display: flex;
-            flex-direction: column; /* Empilha as informações verticalmente */
+            flex-direction: column;
             gap: 4px;
         }
         .agendamento-info h4 {
@@ -212,7 +246,6 @@
                 </div>
             </div>
 
-            <!-- CORREÇÃO: A lista de agendamentos foi movida para fora do card principal -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
@@ -224,7 +257,6 @@
                         <button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button>
                     </div>
                 </div>
-                <!-- A lista de cards agora é renderizada aqui, separadamente -->
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             
