@@ -1,14 +1,18 @@
 // vitrini-auth.js
-import { auth, provider } from './vitrini-firebase.js';
-import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+
+// Importa apenas o que é necessário do nosso módulo central do Firebase
+import { auth, provider, onAuthStateChanged, signInWithPopup, signOut } from './vitrini-firebase.js';
 import { showNotification } from './vitrini-utils.js';
 
 export let currentUser = null;
 
-export function iniciarAuthListener(atualizarUIparaUsuario) {
+// CORREÇÃO: A função foi renomeada para 'initializeAuth' para corresponder ao que o 'vitrine.js' está importando.
+export function initializeAuth(callback) {
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
-        atualizarUIparaUsuario(user);
+        if (callback && typeof callback === 'function') {
+            callback(user);
+        }
     });
 }
 
