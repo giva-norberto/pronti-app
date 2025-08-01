@@ -147,8 +147,6 @@ export async function buscarAgendamentosDoDia(profissionalUid, dataString) {
 }
 
 export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico) {
-    // CORREÇÃO: Adicionada uma verificação de segurança. Se o profissional não
-    // configurou os horários, a função retorna uma lista vazia em vez de falhar.
     if (!horariosConfig) {
         console.warn("Configuração de horários não fornecida. Nenhum slot será gerado.");
         return [];
@@ -186,4 +184,41 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
     });
 
     return slots;
+}
+
+/**
+ * Procura o primeiro dia com horários disponíveis, começando a partir de hoje.
+ * @param {string} profissionalUid - UID do profissional.
+ * @param {object} professionalData - Objeto com os dados do profissional (horarios, servicos).
+ * @returns {Promise<string>} A data do primeiro dia disponível no formato YYYY-MM-DD.
+ */
+export async function encontrarPrimeiraDataComSlots(profissionalUid, professionalData) {
+    if (!professionalData?.horarios || !professionalData?.servicos || professionalData.servicos.length === 0) {
+        const hoje = new Date();
+        return new Date(hoje.getTime() - (hoje.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    }
+    
+    let dataAtual = new Date();
+    const servicoParaTeste = professionalData.servicos[0];
+
+    for (let i = 0; i < 30; i++) { // Procura nos próximos 30 dias
+        const dataISO = new Date(dataAtual.getTime() - (dataAtual.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+        const agendamentosDoDia = await buscarAgendamentosDoDia(profissionalUid, dataISO);
+        const slotsDisponiveis = calcularSlotsDisponiveis(
+            dataISO,
+            agendamentosDoDia,
+            professionalData.horarios,
+            servicoParaTeste.duracao
+        );
+
+        if (slotsDisponiveis.length > 0) {
+            return dataISO; // Encontrou! Retorna a data.
+        }
+
+        dataAtual.setDate(dataAtual.getDate() + 1);
+    }
+
+    const hoje = new Date();
+    return new Date(hoje.getTime() - (hoje.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 }
