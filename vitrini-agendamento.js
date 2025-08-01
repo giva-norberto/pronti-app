@@ -94,7 +94,6 @@ function renderizarAgendamentosComoCards(profissionalUid, agendamentos, modo) {
         return;
     }
 
-    // CORREÇÃO: Estrutura HTML dos cards atualizada para melhor formatação
     container.innerHTML = agendamentos.map(ag => {
         const horarioDate = ag.horario.toDate();
         const horarioStr = horarioDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -122,17 +121,18 @@ function renderizarAgendamentosComoCards(profissionalUid, agendamentos, modo) {
 }
 
 
+// --- FUNÇÃO ALTERADA ---
 export async function cancelarAgendamento(profissionalUid, agendamentoId, callback) {
-    if (!confirm("Tem a certeza que deseja cancelar este agendamento?")) return;
-    try {
-        const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", agendamentoId);
-        await updateDoc(agendamentoRef, { status: 'cancelado_pelo_cliente' });
-        showNotification("Agendamento cancelado com sucesso.");
-        if (callback) callback();
-    } catch (error) {
-        console.error("Erro ao cancelar agendamento:", error);
-        showNotification("Ocorreu um erro ao cancelar. Tente novamente.", true);
-    }
+    // A LINHA DO 'confirm()' FOI REMOVIDA DAQUI
+    try {
+        const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", agendamentoId);
+        await updateDoc(agendamentoRef, { status: 'cancelado_pelo_cliente' });
+        showNotification("Agendamento cancelado com sucesso.");
+        if (callback) callback();
+    } catch (error) {
+        console.error("Erro ao cancelar agendamento:", error);
+        showNotification("Ocorreu um erro ao cancelar. Tente novamente.", true);
+    }
 }
 
 export async function buscarAgendamentosDoDia(profissionalUid, dataString) {
