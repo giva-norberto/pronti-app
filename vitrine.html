@@ -50,7 +50,7 @@
             font-size: 14px;
         }
         .servicos-container-cards .service-item.selecionado {
-            background-color: #6D28D9; /* Roxo */
+            background-color: #6D28D9;
             color: white;
             border-color: #6D28D9;
         }
@@ -71,15 +71,13 @@
         }
         
         .horarios-container-grid .btn-horario.selecionado {
-            background-color: #4F46E5; /* Azul índigo */
+            background-color: #4F46E5;
             border-color: #4F46E5;
             color: white;
             font-weight: 600;
         }
 
-        /* ================================================== */
-        /* NOVOS ESTILOS PARA A ABA MEUS AGENDAMENTOS      */
-        /* ================================================== */
+        /* ESTILOS PARA A ABA MEUS AGENDAMENTOS */
         .botoes-agendamento {
             display: flex;
             gap: 10px;
@@ -105,35 +103,35 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
+            margin-top: 20px; /* Adiciona espaço para separar do card de cima */
         }
         .agendamento-card {
             background-color: #F9FAFB;
             border: 1px solid #E5E7EB;
             border-radius: 8px;
             padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr auto; /* Coluna para texto, coluna para botão */
-            grid-template-rows: auto auto; /* Duas linhas para o texto */
-            gap: 5px 20px; /* Espaçamento entre linhas e colunas */
+            display: flex; /* MUDANÇA: Usando flexbox para alinhar */
+            justify-content: space-between;
             align-items: center;
+            gap: 20px;
         }
-        .agendamento-card h4 {
-            grid-column: 1 / 2;
-            grid-row: 1 / 2;
+        .agendamento-info {
+            display: flex;
+            flex-direction: column; /* Empilha as informações verticalmente */
+            gap: 4px;
+        }
+        .agendamento-info h4 {
             margin: 0;
             font-size: 1.1rem;
             color: #111827;
         }
-        .agendamento-card p {
-            grid-column: 1 / 2;
-            grid-row: 2 / 3;
+        .agendamento-info p {
             margin: 0;
             color: #6B7280;
+            font-size: 0.9rem;
         }
-        .agendamento-card .btn-cancelar {
-            grid-column: 2 / 3;
-            grid-row: 1 / 3; /* Ocupa as duas linhas para alinhar ao centro */
-            background-color: #EF4444; /* Vermelho */
+        .agendamento-acao .btn-cancelar {
+            background-color: #EF4444;
             color: white;
             border: none;
             border-radius: 6px;
@@ -141,10 +139,9 @@
             cursor: pointer;
             font-weight: 600;
             transition: background-color 0.2s ease;
-            justify-self: end; /* Alinha o botão à direita */
         }
-        .agendamento-card .btn-cancelar:hover {
-            background-color: #DC2626; /* Vermelho mais escuro */
+        .agendamento-acao .btn-cancelar:hover {
+            background-color: #DC2626;
         }
     </style>
 </head>
@@ -215,19 +212,20 @@
                 </div>
             </div>
 
+            <!-- CORREÇÃO: A lista de agendamentos foi movida para fora do card principal -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
                     <div id="agendamentos-login-prompt" style="display: none;">
                          <p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p>
                     </div>
-                    <!-- Estrutura dos botões de toggle atualizada -->
                     <div id="botoes-agendamento" class="botoes-agendamento" style="display: none;">
                         <button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button>
                         <button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button>
                     </div>
-                    <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
                 </div>
+                <!-- A lista de cards agora é renderizada aqui, separadamente -->
+                <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             
             <div id="menu-perfil" class="menu-content">
