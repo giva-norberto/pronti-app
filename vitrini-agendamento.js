@@ -16,9 +16,6 @@ export async function salvarAgendamento(profissionalUid, currentUser, agendament
     }
 
     try {
-        // CORREÇÃO: Combina a data e a hora numa única string.
-        // O construtor `new Date()` irá interpretar esta string no fuso horário local do navegador,
-        // o que preserva a hora que o utilizador selecionou (ex: 10:00).
         const dataHoraString = `${agendamentoState.data}T${agendamentoState.horario}:00`;
         const dataAgendamento = new Date(dataHoraString);
 
@@ -37,10 +34,11 @@ export async function salvarAgendamento(profissionalUid, currentUser, agendament
         await addDoc(collection(db, "users", profissionalUid, "agendamentos"), dadosAgendamento);
         showNotification("Agendamento realizado com sucesso!");
 
-        agendamentoState.servico = null;
-        agendamentoState.data = null;
-        agendamentoState.horario = null;
-        document.querySelector('.menu-btn[data-menu="visualizacao"]')?.click();
+        // CORREÇÃO: Em vez de clicar num botão, esperamos um pouco e recarregamos a página.
+        // Isto garante que o utilizador veja a mensagem de sucesso e a página seja atualizada corretamente.
+        setTimeout(() => {
+            location.reload();
+        }, 1500); // Espera 1.5 segundos
 
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
