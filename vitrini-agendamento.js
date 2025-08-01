@@ -34,11 +34,9 @@ export async function salvarAgendamento(profissionalUid, currentUser, agendament
         await addDoc(collection(db, "users", profissionalUid, "agendamentos"), dadosAgendamento);
         showNotification("Agendamento realizado com sucesso!");
 
-        // CORREÇÃO: Em vez de clicar num botão, esperamos um pouco e recarregamos a página.
-        // Isto garante que o utilizador veja a mensagem de sucesso e a página seja atualizada corretamente.
         setTimeout(() => {
             location.reload();
-        }, 1500); // Espera 1.5 segundos
+        }, 1500);
 
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
@@ -83,6 +81,12 @@ export async function buscarEExibirAgendamentos(profissionalUid, currentUser, mo
     }
 }
 
+/**
+ * Renderiza os cards de agendamento na tela.
+ * @param {string} profissionalUid - UID do profissional.
+ * @param {Array} agendamentos - A lista de agendamentos para exibir.
+ * @param {string} modo - 'ativos' ou 'historico'.
+ */
 function renderizarAgendamentosComoCards(profissionalUid, agendamentos, modo) {
     const container = document.getElementById('lista-agendamentos-visualizacao');
     if (!agendamentos || agendamentos.length === 0) {
@@ -90,6 +94,7 @@ function renderizarAgendamentosComoCards(profissionalUid, agendamentos, modo) {
         return;
     }
 
+    // CORREÇÃO: Nova estrutura HTML para os cards
     container.innerHTML = agendamentos.map(ag => {
         const horarioDate = ag.horario.toDate();
         const horarioStr = horarioDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -103,10 +108,9 @@ function renderizarAgendamentosComoCards(profissionalUid, agendamentos, modo) {
         if(modo !== 'ativos' && ag.status === 'agendado') statusExibido = 'Concluído';
 
         return `
-        <div class="agendamento-card status-${ag.status}">
+        <div class="agendamento-card">
             <h4>${ag.servicoNome}</h4>
-            <p><strong>Data:</strong> ${horarioStr}</p>
-            <p><strong>Status:</strong> ${statusExibido}</p>
+            <p>Data: ${horarioStr} &bull; Status: ${statusExibido}</p>
             ${btnCancelar}
         </div>`;
     }).join('');
