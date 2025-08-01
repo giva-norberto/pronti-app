@@ -1,7 +1,7 @@
 // vitrine.js
 
 // ==========================================================================
-// IMPORT/S DOS MÓDULOS
+// IMPORTS DOS MÓDULOS
 // ==========================================================================
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import {
@@ -15,7 +15,8 @@ import {
     salvarAgendamento,
     cancelarAgendamento,
     buscarAgendamentosDoDia,
-    calcularSlotsDisponiveis
+    calcularSlotsDisponiveis,
+    encontrarPrimeiraDataComSlots // Importa a nova função
 } from './vitrini-agendamento.js';
 
 import { renderizarServicos, renderizarDadosProfissional, updateUIOnAuthChange } from './vitrini-ui.js';
@@ -69,12 +70,23 @@ async function init() {
         // Renderiza informações na tela
         renderizarDadosProfissional(professionalData.perfil);
         renderizarServicos(professionalData.servicos, selecionarServico);
-        renderizarInfoServicos(professionalData.servicos); // CORREÇÃO: Adicionada chamada para renderizar os cards de info
+        renderizarInfoServicos(professionalData.servicos);
         console.log("[Debug vitrine.js] Informações iniciais renderizadas.");
 
         // Configura todos os botões e eventos da página
         configurarEventos();
         console.log("[Debug vitrine.js] Eventos configurados.");
+
+        // CORREÇÃO: Encontra e preenche a primeira data com horários disponíveis
+        console.log("[Debug] A procurar a primeira data com horários...");
+        const primeiraData = await encontrarPrimeiraDataComSlots(profissionalUid, professionalData);
+        const dataInput = document.getElementById('data-agendamento');
+        if (dataInput) {
+            dataInput.value = primeiraData;
+            // Define a data mínima como hoje para não permitir agendamentos no passado
+            dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            console.log(`[Debug] Data inicial definida para: ${primeiraData}`);
+        }
 
         // Esconde o loader e mostra o conteúdo principal
         document.getElementById("vitrine-loader").style.display = 'none';
@@ -117,21 +129,22 @@ function renderizarInfoServicos(servicos) {
 }
 
 /**
- * Guarda o serviço selecionado no estado da aplicação.
+ * Guarda o serviço selecionado no estado da aplicação e atualiza os horários.
  * @param {object} servico - O objeto do serviço clicado.
  */
 function selecionarServico(servico) {
     agendamentoState.servico = servico;
     showNotification(`Serviço selecionado: ${servico.nome}`);
-    document.getElementById('data-agendamento').value = '';
-    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione uma data para ver os horários.</p>';
+    // Dispara o evento 'change' no input da data para recarregar os horários
+    // com o novo serviço selecionado e a data já preenchida.
+    document.getElementById('data-agendamento').dispatchEvent(new Event('change'));
 }
 
 /**
  * Configura todos os event listeners da aplicação.
  */
 function configurarEventos() {
-    // CORREÇÃO: Adicionada navegação do menu principal
+    // Navegação do menu principal
     document.querySelectorAll('.sidebar-menu .menu-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.sidebar-menu .menu-btn.ativo').forEach(btn => btn.classList.remove('ativo'));
@@ -185,8 +198,9 @@ function configurarEventos() {
     document.getElementById('data-agendamento')?.addEventListener('change', async (e) => {
         const dataSelecionada = e.target.value;
         if (!agendamentoState.servico) {
-            showNotification("Primeiro, selecione um serviço.", true);
-            e.target.value = '';
+            if (dataSelecionada) {
+                 showNotification("Primeiro, selecione um serviço.", true);
+            }
             return;
         }
         if (!dataSelecionada) return;
