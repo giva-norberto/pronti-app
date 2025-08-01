@@ -21,7 +21,7 @@
             font-weight: 600;
             width: 100%;
             text-align: center;
-            transition: opacity 0.3s ease, transform 0.2s ease;
+            transition: all 0.3s ease;
             margin-top: 1rem;
         }
 
@@ -31,16 +31,14 @@
         }
 
         #btn-confirmar-agendamento:disabled {
-            background: #E5E7EB; /* Cinza mais claro para o estado desabilitado */
+            background: #E5E7EB;
             color: #9CA3AF;
             cursor: not-allowed;
+            transform: translateY(0);
         }
 
-        /* ================================================== */
-        /* NOVOS ESTILOS PARA OS BOTÕES DE SELEÇÃO         */
-        /* ================================================== */
-
-        /* Estilo para os botões de serviço */
+        /* ESTILOS PARA OS BOTÕES DE SELEÇÃO */
+        .servicos-container-cards { display: flex; flex-wrap: wrap; gap: 8px; }
         .servicos-container-cards .service-item {
             background-color: white;
             border: 1px solid #D1D5DB;
@@ -49,17 +47,15 @@
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s ease;
-            margin: 4px;
             font-size: 14px;
         }
-
         .servicos-container-cards .service-item.selecionado {
             background-color: #6D28D9; /* Roxo */
             color: white;
             border-color: #6D28D9;
         }
 
-        /* Estilo para os botões de horário */
+        .horarios-container-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
         .horarios-container-grid .btn-horario {
             background-color: white;
             border: 1px solid #D1D5DB;
@@ -70,16 +66,15 @@
             text-align: center;
             transition: all 0.2s ease;
         }
-
-        .horarios-container-grid .btn-horario:hover {
+        .horarios-container-grid .btn-horario:hover:not(.selecionado) {
             border-color: #9CA3AF;
         }
-
         .horarios-container-grid .btn-horario.selecionado {
-            background-color: #FCE7F3; /* Fundo rosa claro */
-            border-color: #EC4899; /* Borda rosa */
-            color: #EC4899; /* Texto rosa */
+            background-color: #FDF2F8; /* Fundo rosa bem claro */
+            border: 2px solid #EC4899; /* Borda rosa mais forte */
+            color: #be185d; /* Texto rosa escuro */
             font-weight: 600;
+            padding: 9px; /* Ajuste para compensar a borda */
         }
     </style>
 </head>
