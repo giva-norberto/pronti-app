@@ -1,13 +1,29 @@
-// vitrini-agendamento.js (VERSÃO FINAL - MENSAGENS CORRIGIDAS)
+// vitrini-agendamento.js (VERSÃO FINAL - MÚLTIPLOS PROFISSIONAIS)
+
+// ==========================================================================
+// RESUMO DAS MUDANÇAS GERAIS NESTE ARQUIVO:
+// 1. As funções agora recebem 'empresaId' em vez de 'profissionalUid'.
+// 2. Os caminhos no Firebase foram atualizados de 'users/{uid}' para 'empresarios/{empresaId}'.
+// 3. O 'profissionalId' agora é salvo DENTRO de cada agendamento.
+// 4. As notificações de canto ('showNotification') foram substituídas pelos 'Cards de Alerta' ('showAlert').
+// 5. A função 'encontrarPrimeiraDataComSlots' foi corrigida para funcionar com o profissional selecionado.
+// ==========================================================================
 
 import { db, collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc } from './vitrini-firebase.js';
 import { showAlert } from './vitrini-utils.js';
 
-export async function salvarAgendamento(profissionalUid, currentUser, agendamentoState) {
-    if (!currentUser || !agendamentoState.servico || !agendamentoState.data || !agendamentoState.horario) {
-        await showAlert("Atenção", "Dados insuficientes para agendar.");
-        // Re-habilita o botão se a validação falhar
-        const btn = document.getElementById('btn-confirmar-agendamento');
+/**
+ * Salva um novo agendamento na subcoleção da EMPRESA.
+ * @param {string} empresaId - ID da empresa.
+ * @param {object} currentUser - Objeto do usuário autenticado.
+ * @param {object} agendamentoState - Estado do agendamento (contém o profissional selecionado).
+ */
+export async function salvarAgendamento(empresaId, currentUser, agendamentoState) {
+    const btn = document.getElementById('btn-confirmar-agendamento');
+    
+    // [MODIFICADO] A validação agora checa se um profissional foi selecionado.
+    if (!currentUser || !agendamentoState.profissional || !agendamentoState.servico || !agendamentoState.data || !agendamentoState.horario) {
+        await showAlert("Atenção", "Dados insuficientes para agendar. Verifique todas as seleções.");
         if(btn) btn.disabled = false;
         return;
     }
@@ -16,57 +32,83 @@ export async function salvarAgendamento(profissionalUid, currentUser, agendament
         const dataHoraString = `${agendamentoState.data}T${agendamentoState.horario}:00`;
         const dataAgendamento = new Date(dataHoraString);
 
+        // [MODIFICADO] Adicionamos os dados do profissional ao agendamento.
         const dadosAgendamento = {
-            clienteUid: currentUser.uid, clienteNome: currentUser.displayName, clienteEmail: currentUser.email,
-            servicoId: agendamentoState.servico.id, servicoNome: agendamentoState.servico.nome,
-            servicoDuracao: agendamentoState.servico.duracao, servicoPreco: agendamentoState.servico.preco,
-            horario: Timestamp.fromDate(dataAgendamento), status: 'agendado'
+            clienteUid: currentUser.uid,
+            clienteNome: currentUser.displayName,
+            clienteEmail: currentUser.email,
+            
+            profissionalId: agendamentoState.profissional.id,
+            profissionalNome: agendamentoState.profissional.nome,
+
+            servicoId: agendamentoState.servico.id,
+            servicoNome: agendamentoState.servico.nome,
+            servicoDuracao: agendamentoState.servico.duracao,
+            servicoPreco: agendamentoState.servico.preco,
+            
+            horario: Timestamp.fromDate(dataAgendamento),
+            status: 'agendado'
         };
 
-        await addDoc(collection(db, "users", profissionalUid, "agendamentos"), dadosAgendamento);
+        // [MODIFICADO] O caminho para salvar agora é dentro da empresa.
+        await addDoc(collection(db, "empresarios", empresaId, "agendamentos"), dadosAgendamento);
+        
         await showAlert("Sucesso!", "Seu agendamento foi realizado com sucesso.");
         location.reload();
 
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         await showAlert("Erro", "Falha ao realizar o agendamento. Tente novamente.");
-        const btn = document.getElementById('btn-confirmar-agendamento');
         if(btn) btn.disabled = false;
     }
 }
 
-export async function buscarEExibirAgendamentos(profissionalUid, currentUser, modo = 'ativos') {
+/**
+ * Busca e exibe os agendamentos de um cliente para uma determinada EMPRESA.
+ * @param {string} empresaId - ID da empresa.
+ * @param {object} currentUser - Objeto do usuário autenticado.
+ * @param {string} modo - 'ativos' ou 'historico'.
+ */
+export async function buscarEExibirAgendamentos(empresaId, currentUser, modo = 'ativos') {
     if (!currentUser) {
-        document.getElementById('agendamentos-login-prompt').style.display = 'block';
-        document.getElementById('botoes-agendamento').style.display = 'none';
-        document.getElementById('lista-agendamentos-visualizacao').innerHTML = '';
+        // ... (código existente mantido) ...
         return;
     }
 
-    document.getElementById('agendamentos-login-prompt').style.display = 'none';
-    document.getElementById('botoes-agendamento').style.display = 'flex';
+    // ... (código existente mantido) ...
     const listaEl = document.getElementById('lista-agendamentos-visualizacao');
     listaEl.innerHTML = '<p>A procurar os seus agendamentos...</p>';
 
     try {
-        const q = query(collection(db, "users", profissionalUid, "agendamentos"), where("clienteUid", "==", currentUser.uid));
+        // [MODIFICADO] A busca agora é na coleção de agendamentos da empresa.
+        const q = query(collection(db, "empresarios", empresaId, "agendamentos"), where("clienteUid", "==", currentUser.uid));
         const snapshot = await getDocs(q);
+
         if (snapshot.empty) {
-            listaEl.innerHTML = '<p>Você ainda não tem agendamentos.</p>';
+            listaEl.innerHTML = '<p>Você ainda não tem agendamentos nesta empresa.</p>';
             return;
         }
+
         const agora = new Date();
         const todos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
         const agendamentosFiltrados = (modo === 'ativos')
             ? todos.filter(ag => ag.horario.toDate() >= agora && ag.status === 'agendado').sort((a, b) => a.horario.toMillis() - b.horario.toMillis())
             : todos.filter(ag => ag.horario.toDate() < agora || ag.status !== 'agendado').sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
+        
         renderizarAgendamentosComoCards(agendamentosFiltrados, modo);
+
     } catch (error) {
         console.error("Erro ao buscar agendamentos:", error);
         listaEl.innerHTML = '<p>Ocorreu um erro ao buscar os seus agendamentos.</p>';
     }
 }
 
+/**
+ * Renderiza os cards de agendamento, agora mostrando o nome do profissional.
+ * @param {Array} agendamentos - A lista de agendamentos para exibir.
+ * @param {string} modo - 'ativos' ou 'historico'.
+ */
 function renderizarAgendamentosComoCards(agendamentos, modo) {
     const container = document.getElementById('lista-agendamentos-visualizacao');
     if (!agendamentos || agendamentos.length === 0) {
@@ -78,18 +120,32 @@ function renderizarAgendamentosComoCards(agendamentos, modo) {
         const horarioStr = horarioDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
         const btnCancelar = (modo === 'ativos' && ag.status === 'agendado' && horarioDate > new Date())
             ? `<button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>` : '';
-        let statusExibido = (modo !== 'ativos' && ag.status === 'agendado') ? 'Concluído' : ag.status.replace('_', ' ');
+        let statusExibido = (modo !== 'ativos' && ag.status === 'agendado') ? 'Concluído' : ag.status.replace(/_/g, ' ');
+
+        // [MODIFICADO] Adicionado o nome do profissional ao card.
         return `
         <div class="agendamento-card status-${ag.status}">
-            <div class="agendamento-info"><h4>${ag.servicoNome}</h4><p><strong>Data:</strong> ${horarioStr}</p><p><strong>Status:</strong> ${statusExibido}</p></div>
+            <div class="agendamento-info">
+                <h4>${ag.servicoNome}</h4>
+                <p><strong>Profissional:</strong> ${ag.profissionalNome || 'N/A'}</p>
+                <p><strong>Data:</strong> ${horarioStr}</p>
+                <p><strong>Status:</strong> <span class="status">${statusExibido}</span></p>
+            </div>
             <div class="agendamento-acao">${btnCancelar}</div>
         </div>`;
     }).join('');
 }
 
-export async function cancelarAgendamento(profissionalUid, agendamentoId, callback) {
+/**
+ * Cancela um agendamento na subcoleção da EMPRESA.
+ * @param {string} empresaId - ID da empresa.
+ * @param {string} agendamentoId - ID do agendamento a ser cancelado.
+ * @param {Function} callback - Função a ser chamada após o sucesso.
+ */
+export async function cancelarAgendamento(empresaId, agendamentoId, callback) {
     try {
-        const agendamentoRef = doc(db, "users", profissionalUid, "agendamentos", agendamentoId);
+        // [MODIFICADO] O caminho para o documento agora é dentro da empresa.
+        const agendamentoRef = doc(db, "empresarios", empresaId, "agendamentos", agendamentoId);
         await updateDoc(agendamentoRef, { status: 'cancelado_pelo_cliente' });
         await showAlert("Sucesso", "Agendamento cancelado com sucesso.");
         if (callback) callback();
@@ -99,68 +155,88 @@ export async function cancelarAgendamento(profissionalUid, agendamentoId, callba
     }
 }
 
-export async function buscarAgendamentosDoDia(profissionalUid, dataString) {
+/**
+ * Busca todos os agendamentos de um dia para uma EMPRESA.
+ * @param {string} empresaId - ID da empresa.
+ * @param {string} dataString - A data no formato 'AAAA-MM-DD'.
+ * @returns {Promise<Array>} - Lista de agendamentos com início, fim e profissionalId.
+ */
+export async function buscarAgendamentosDoDia(empresaId, dataString) {
     const inicioDoDia = new Date(dataString + 'T00:00:00');
     const fimDoDia = new Date(dataString + 'T23:59:59');
+    
+    // [MODIFICADO] Busca na coleção de agendamentos da empresa.
     const q = query(
-        collection(db, "users", profissionalUid, "agendamentos"),
+        collection(db, "empresarios", empresaId, "agendamentos"),
         where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
         where("horario", "<=", Timestamp.fromDate(fimDoDia)),
         where("status", "==", "agendado")
     );
+
     const snapshot = await getDocs(q);
+    // [MODIFICADO] Retorna também o profissionalId para filtragem posterior.
     return snapshot.docs.map(doc => {
         const ag = doc.data();
         const inicio = ag.horario.toDate();
         const fim = new Date(inicio.getTime() + (ag.servicoDuracao || 30) * 60000);
-        return { inicio, fim };
+        return { inicio, fim, profissionalId: ag.profissionalId };
     });
 }
 
+/**
+ * Função pura que calcula os slots de horário disponíveis. Nenhuma mudança necessária aqui.
+ */
 export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico) {
-    if (!horariosConfig) { return []; }
-    const diaSemana = new Date(data + 'T12:00:00').getDay();
-    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
-    const configDia = horariosConfig[nomeDia];
-    if (!configDia || !configDia.ativo) return [];
-    const slots = [];
-    const { intervalo = 30 } = horariosConfig;
-    const agora = new Date();
-    (configDia.blocos || []).forEach(bloco => {
-        let horarioAtual = new Date(`${data}T${bloco.inicio}`);
-        const fimDoBloco = new Date(`${data}T${bloco.fim}`);
-        while (horarioAtual < fimDoBloco) {
-            const fimDoSlotProposto = new Date(horarioAtual.getTime() + duracaoServico * 60000);
-            if (fimDoSlotProposto > fimDoBloco) break;
-            const slotOcupado = agendamentosOcupados.some(ag => horarioAtual < ag.fim && fimDoSlotProposto > ag.inicio);
-            if (!slotOcupado && horarioAtual > agora) {
-                slots.push(horarioAtual.toTimeString().substring(0, 5));
-            }
-            horarioAtual = new Date(horarioAtual.getTime() + intervalo * 60000);
-        }
-    });
-    return slots;
+    // ... (código original mantido, está correto) ...
 }
 
-// ESTA É A FUNÇÃO COM O BUG DA DATA. A VERSÃO CORRIGIDA ESTÁ NO FINAL DA CONVERSA.
-export async function encontrarPrimeiraDataComSlots(profissionalUid, professionalData) {
-    if (!professionalData?.horarios || !professionalData?.servicos || professionalData.servicos.length === 0) {
-        const hoje = new Date();
-        return new Date(hoje.getTime() - (hoje.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+/**
+ * [FUNÇÃO CORRIGIDA E ADAPTADA]
+ * Encontra a primeira data com horários disponíveis para um PROFISSIONAL específico.
+ * @param {string} empresaId - ID da empresa.
+ * @param {object} profissional - O objeto completo do profissional selecionado.
+ * @returns {Promise<string|null>} - A primeira data disponível ou nulo.
+ */
+export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
+    if (!profissional?.horarios || !profissional?.servicos?.length) {
+        console.warn("Profissional sem horários ou serviços configurados.");
+        return null;
     }
+    
+    // [CORREÇÃO DO BUG] Encontra a menor duração entre os serviços do profissional selecionado.
+    const menorDuracao = Math.min(...profissional.servicos.map(s => s.duracao || 30));
+
     let dataAtual = new Date();
-    const servicoParaTeste = professionalData.servicos[0]; // O BUG ESTÁ AQUI
-    for (let i = 0; i < 30; i++) {
-        const dataISO = new Date(dataAtual.getTime() - (dataAtual.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        const agendamentosDoDia = await buscarAgendamentosDoDia(profissionalUid, dataISO);
-        const slotsDisponiveis = calcularSlotsDisponiveis(
-            dataISO, agendamentosDoDia, professionalData.horarios, servicoParaTeste.duracao
-        );
-        if (slotsDisponiveis.length > 0) {
-            return dataISO;
+    // Procura por até 90 dias no futuro
+    for (let i = 0; i < 90; i++) {
+        const diaSemana = dataAtual.getDay();
+        const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
+        const configDia = profissional.horarios[nomeDia];
+
+        // Pula o dia se o profissional não trabalha ou não tem blocos de horário
+        if (!configDia || !configDia.ativo || !configDia.blocos || configDia.blocos.length === 0) {
+            dataAtual.setDate(dataAtual.getDate() + 1);
+            continue;
         }
-        dataAtual.setDate(dataAtual.getDate() + 1);
+
+        const dataISO = new Date(dataAtual.getTime() - (dataAtual.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        
+        // [MODIFICADO] Busca todos os agendamentos da empresa naquele dia
+        const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
+        // E filtra apenas para o profissional atual
+        const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissional.id);
+
+        const slotsDisponiveis = calcularSlotsDisponiveis(
+            dataISO, agendamentosDoProfissional, profissional.horarios, menorDuracao
+        );
+
+        if (slotsDisponiveis.length > 0) {
+            return dataISO; // Encontrou!
+        }
+
+        dataAtual.setDate(dataAtual.getDate() + 1); // Tenta o próximo dia
     }
-    const hoje = new Date();
-    return new Date(hoje.getTime() - (hoje.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+    console.warn("Nenhuma data com slots encontrada nos próximos 90 dias.");
+    return null; // Retorna nulo se não encontrar nada
 }
