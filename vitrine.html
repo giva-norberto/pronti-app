@@ -143,7 +143,7 @@
         .agendamento-card {
             background-color: #F9FAFB;
             border: 1px solid #E5E7EB;
-            border-left: 5px solid #4F46E5; /* CORREÇÃO: Adicionada a borda azul */
+            border-left: 5px solid #4F46E5;
             border-radius: 8px;
             padding: 20px;
             display: flex;
@@ -186,6 +186,79 @@
         }
         .agendamento-acao .btn-cancelar:hover {
             background-color: #DC2626;
+        }
+
+        /* ================================================== */
+        /* ESTILOS DO MODAL DE CONFIRMAÇÃO                 */
+        /* ================================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.ativo {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.ativo .modal-box {
+            transform: scale(1);
+        }
+        .modal-box h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #111827;
+        }
+        .modal-box p {
+            margin-bottom: 25px;
+            color: #4B5563;
+        }
+        .modal-botoes {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .modal-botoes button {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        #modal-btn-confirmar {
+            background-color: #EF4444;
+            color: white;
+        }
+        #modal-btn-confirmar:hover {
+            background-color: #DC2626;
+        }
+        #modal-btn-cancelar {
+            background-color: #E5E7EB;
+            color: #4B5563;
+        }
+        #modal-btn-cancelar:hover {
+            background-color: #D1D5DB;
         }
     </style>
 </head>
@@ -282,6 +355,18 @@
                          <button class="btn-submit">Fazer Login com Google</button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESTRUTURA DO MODAL DE CONFIRMAÇÃO -->
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p>
+            <div class="modal-botoes">
+                <button id="modal-btn-cancelar">Cancelar</button>
+                <button id="modal-btn-confirmar">Confirmar</button>
             </div>
         </div>
     </div>
