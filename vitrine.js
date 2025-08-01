@@ -4,21 +4,10 @@
 // IMPORTS DOS MÓDULOS
 // ==========================================================================
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
-import {
-    getSlugFromURL,
-    getProfissionalUidBySlug,
-    getDadosProfissional
-} from './vitrini-profissionais.js';
-import {
-    buscarEExibirAgendamentos,
-    salvarAgendamento,
-    cancelarAgendamento,
-    buscarAgendamentosDoDia,
-    calcularSlotsDisponiveis,
-    encontrarPrimeiraDataComSlots
-} from './vitrini-agendamento.js';
+import { getSlugFromURL, getProfissionalUidBySlug, getDadosProfissional } from './vitrini-profissionais.js';
+import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 import { renderizarServicos, renderizarDadosProfissional, updateUIOnAuthChange } from './vitrini-ui.js';
-import { showNotification } from './vitrini-utils.js';
+import { showNotification, showCustomConfirm } from './vitrini-utils.js';
 
 // ==========================================================================
 // ESTADO DA APLICAÇÃO
@@ -39,32 +28,24 @@ async function init() {
         initializeAuth((user) => {
             updateUIOnAuthChange(user, profissionalUid);
         });
-
         const slug = getSlugFromURL();
         if (!slug) throw new Error("URL inválida: slug do profissional não encontrado.");
-
         profissionalUid = await getProfissionalUidBySlug(slug);
         if (!profissionalUid) throw new Error("Profissional não encontrado.");
-
         professionalData = await getDadosProfissional(profissionalUid);
         if (!professionalData) throw new Error("Falha ao carregar dados do profissional.");
-
         renderizarDadosProfissional(professionalData.perfil);
         renderizarServicos(professionalData.servicos, selecionarServico);
         renderizarInfoServicos(professionalData.servicos);
-
         configurarEventos();
-
         const primeiraData = await encontrarPrimeiraDataComSlots(profissionalUid, professionalData);
         const dataInput = document.getElementById('data-agendamento');
         if (dataInput) {
             dataInput.value = primeiraData;
             dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         }
-
         document.getElementById("vitrine-loader").style.display = 'none';
         document.getElementById("vitrine-content").style.display = 'flex';
-
     } catch (error) {
         console.error("Erro na inicialização:", error);
         showNotification(error.message, true);
@@ -91,32 +72,17 @@ function renderizarInfoServicos(servicos) {
 
 function selecionarServico(servico) {
     agendamentoState.servico = servico;
-    agendamentoState.horario = null; // Limpa o horário ao trocar de serviço
+    agendamentoState.horario = null;
     showNotification(`Serviço selecionado: ${servico.nome}`);
     document.getElementById('data-agendamento').dispatchEvent(new Event('change'));
-    updateConfirmButtonState(); // Verifica o estado do botão
+    updateConfirmButtonState();
 }
 
-/**
- * Função central para controlar o estado do botão de confirmação.
- * O botão só é ativado se todas as 3 condições forem verdadeiras.
- */
 function updateConfirmButtonState() {
     const btn = document.getElementById('btn-confirmar-agendamento');
     if (!btn) return;
-
-    const servicoOk = !!agendamentoState.servico;
-    const dataOk = !!agendamentoState.data;
-    const horarioOk = !!agendamentoState.horario;
-
-    // Linhas de Debug para vermos o estado no console
-    console.log(`Verificando botão: Serviço? ${servicoOk}, Data? ${dataOk}, Horário? ${horarioOk}`);
-
-    if (servicoOk && dataOk && horarioOk) {
-        btn.disabled = false;
-    } else {
-        btn.disabled = true;
-    }
+    const isReady = agendamentoState.servico && agendamentoState.data && agendamentoState.horario;
+    btn.disabled = !isReady;
 }
 
 function configurarEventos() {
@@ -131,21 +97,26 @@ function configurarEventos() {
             }
         });
     });
-
     document.getElementById('btn-login')?.addEventListener('click', login);
     document.getElementById('login-link-agendamento')?.addEventListener('click', login);
     document.getElementById('login-link-visualizacao')?.addEventListener('click', login);
     document.getElementById('btn-logout')?.addEventListener('click', logout);
 
+    // CORREÇÃO: Lógica de confirmação de agendamento simplificada
     document.getElementById('btn-confirmar-agendamento')?.addEventListener('click', async () => {
-        // Dupla verificação antes de salvar
+        if (!currentUser) {
+            showNotification("Você precisa fazer login para agendar.", true);
+            return;
+        }
         if (!agendamentoState.servico || !agendamentoState.data || !agendamentoState.horario) {
             showNotification("Por favor, selecione serviço, data e horário.", true);
             return;
         }
+
+        // Desativa o botão e chama diretamente a função para salvar
         document.getElementById('btn-confirmar-agendamento').disabled = true;
         await salvarAgendamento(profissionalUid, currentUser, agendamentoState);
-        // Não reativamos o botão aqui, pois o utilizador será redirecionado
+        // A função salvarAgendamento já mostra a notificação e recarrega a página
     });
 
     document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', (e) => {
@@ -158,21 +129,17 @@ function configurarEventos() {
             }
         }
     });
-
     document.getElementById('data-agendamento')?.addEventListener('change', async (e) => {
         const dataSelecionada = e.target.value;
-        agendamentoState.data = dataSelecionada; // Guarda a data
-        agendamentoState.horario = null; // Limpa o horário ao mudar a data
-
+        agendamentoState.data = dataSelecionada;
+        agendamentoState.horario = null;
         if (!agendamentoState.servico) {
             if (dataSelecionada) showNotification("Primeiro, selecione um serviço.", true);
             return;
         }
         if (!dataSelecionada) return;
-
         const horariosContainer = document.getElementById('grade-horarios');
         horariosContainer.innerHTML = '<p>Verificando horários...</p>';
-
         const agendamentosDoDia = await buscarAgendamentosDoDia(profissionalUid, dataSelecionada);
         const slotsDisponiveis = calcularSlotsDisponiveis(
             dataSelecionada,
@@ -180,20 +147,17 @@ function configurarEventos() {
             professionalData.horarios,
             agendamentoState.servico.duracao
         );
-
         horariosContainer.innerHTML = slotsDisponiveis.length > 0 ? slotsDisponiveis.map(horario =>
             `<button class="btn-horario">${horario}</button>`
         ).join('') : '<p>Nenhum horário disponível para esta data.</p>';
-        
-        updateConfirmButtonState(); // Verifica o estado do botão
+        updateConfirmButtonState();
     });
-
     document.getElementById('grade-horarios')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-horario')) {
             document.querySelectorAll('.btn-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
             e.target.classList.add('selecionado');
-            agendamentoState.horario = e.target.textContent; // Guarda o horário
-            updateConfirmButtonState(); // Verifica o estado do botão
+            agendamentoState.horario = e.target.textContent;
+            updateConfirmButtonState();
         }
     });
 }
