@@ -94,7 +94,7 @@ function renderizarAgendamentosComoCards(profissionalUid, agendamentos, modo) {
         return;
     }
 
-    // CORREÇÃO: Nova estrutura HTML para os cards
+    // CORREÇÃO: Estrutura HTML dos cards atualizada para melhor formatação
     container.innerHTML = agendamentos.map(ag => {
         const horarioDate = ag.horario.toDate();
         const horarioStr = horarioDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -109,9 +109,14 @@ function renderizarAgendamentosComoCards(profissionalUid, agendamentos, modo) {
 
         return `
         <div class="agendamento-card">
-            <h4>${ag.servicoNome}</h4>
-            <p>Data: ${horarioStr} &bull; Status: ${statusExibido}</p>
-            ${btnCancelar}
+            <div class="agendamento-info">
+                <h4>${ag.servicoNome}</h4>
+                <p><strong>Data:</strong> ${horarioStr}</p>
+                <p><strong>Status:</strong> ${statusExibido}</p>
+            </div>
+            <div class="agendamento-acao">
+                ${btnCancelar}
+            </div>
         </div>`;
     }).join('');
 }
