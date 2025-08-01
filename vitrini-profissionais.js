@@ -1,6 +1,6 @@
 // vitrini-profissionais.js
 
-import { db, doc, getDoc, collection, getDocs, query, where } from './vitrini-firebase.js';
+import { db, doc, getDoc, collection, getDocs, query } from './vitrini-firebase.js';
 
 /**
  * Obtém o slug (identificador) do profissional a partir dos parâmetros da URL.
@@ -35,46 +35,34 @@ export async function getProfissionalUidBySlug(slug) {
 
 /**
  * Carrega todos os dados públicos de um profissional (perfil, serviços e horários).
- * Esta função foi corrigida para ler apenas das subcoleções públicas,
- * alinhando-se com as regras de segurança do Firestore.
  * @param {string} uid - O UID do profissional.
  * @returns {Promise<object|null>} Um objeto com os dados do profissional ou null.
  */
 export async function getDadosProfissional(uid) {
     if (!uid) return null;
 
-    console.log(`[Debug] Iniciando getDadosProfissional para o UID: ${uid}`); // DEBUG
-
     try {
-        // CORREÇÃO: Em vez de ler o documento 'users/{uid}', lemos diretamente
-        // os documentos das subcoleções públicas, que são permitidas pelas regras.
         const perfilRef = doc(db, "users", uid, "publicProfile", "profile");
         const servicosRef = collection(db, "users", uid, "servicos");
         const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
 
-        console.log("[Debug] A executar buscas no Firestore em paralelo..."); // DEBUG
-
-        // Executa todas as buscas em paralelo para mais eficiência
+        // CORREÇÃO: A consulta aos serviços foi alterada para buscar TODOS os serviços.
+        // O filtro 'where("visivelNaVitrine", "==", true)' foi removido.
+        // Isto garante que todos os serviços que você cadastrou apareçam.
         const [perfilSnap, servicosSnap, horariosSnap] = await Promise.all([
             getDoc(perfilRef),
-            getDocs(query(servicosRef, where("visivelNaVitrine", "==", true))),
+            getDocs(query(servicosRef)), // A consulta foi simplificada aqui
             getDoc(horariosRef)
         ]);
 
-        console.log("[Debug] Buscas no Firestore concluídas."); // DEBUG
-
         if (!perfilSnap.exists()) {
-            console.warn("[Debug] Perfil público não encontrado para o UID:", uid); // DEBUG
+            console.warn("Perfil público não encontrado para o UID:", uid);
             return null;
         }
-
-        console.log("[Debug] Perfil encontrado. A processar dados..."); // DEBUG
 
         const perfil = perfilSnap.data();
         const horarios = horariosSnap.exists() ? horariosSnap.data() : {};
         const servicos = servicosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        console.log("[Debug] Dados processados. A retornar objeto completo."); // DEBUG
 
         return {
             uid,
@@ -84,7 +72,6 @@ export async function getDadosProfissional(uid) {
         };
 
     } catch (error) {
-        // O erro de permissão será capturado aqui
         console.error("Erro ao carregar dados do profissional:", error);
         throw new Error("Falha ao carregar dados do profissional.");
     }
