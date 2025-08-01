@@ -7,7 +7,6 @@ import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout
 import { getSlugFromURL, getProfissionalUidBySlug, getDadosProfissional } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 import { renderizarServicos, renderizarDadosProfissional, updateUIOnAuthChange } from './vitrini-ui.js';
-// [MODIFICAÇÃO] Importamos a nova função de confirmação.
 import { showNotification, showCustomConfirm } from './vitrini-utils.js';
 
 // ==========================================================================
@@ -73,7 +72,7 @@ function renderizarInfoServicos(servicos) {
 function selecionarServico(servico) {
     agendamentoState.servico = servico;
     agendamentoState.horario = null;
-    showNotification(`Serviço selecionado: ${servico.nome}`);
+    // A linha de notificação foi ELIMINADA daqui, como combinado.
     document.getElementById('data-agendamento').dispatchEvent(new Event('change'));
     updateConfirmButtonState();
 }
@@ -102,7 +101,6 @@ function configurarEventos() {
     document.getElementById('login-link-visualizacao')?.addEventListener('click', login);
     document.getElementById('btn-logout')?.addEventListener('click', logout);
 
-    // [MODIFICAÇÃO] Adicionada a confirmação ao agendar.
     document.getElementById('btn-confirmar-agendamento')?.addEventListener('click', async () => {
         if (!currentUser) {
             showNotification("Você precisa fazer login para agendar.", true);
@@ -124,7 +122,6 @@ function configurarEventos() {
         }
     });
 
-    // [MODIFICAÇÃO] Adicionada a confirmação ao cancelar e o 'async' no evento.
     document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', async (e) => {
         if (e.target.classList.contains('btn-cancelar')) {
             const agendamentoId = e.target.dataset.id;
