@@ -1,13 +1,14 @@
 // vitrine.js
 
 // ==========================================================================
-// IMPORTS DOS MÓDULOS
+// IMPORTS DOS MÓDulos
 // ==========================================================================
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import { getSlugFromURL, getProfissionalUidBySlug, getDadosProfissional } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 import { renderizarServicos, renderizarDadosProfissional, updateUIOnAuthChange } from './vitrini-ui.js';
-import { showNotification, showCustomConfirm } from './vitrini-utils.js';
+// CORREÇÃO: Removida a importação de 'showCustomConfirm' que estava a causar o erro.
+import { showNotification } from './vitrini-utils.js';
 
 // ==========================================================================
 // ESTADO DA APLICAÇÃO
@@ -102,7 +103,7 @@ function configurarEventos() {
     document.getElementById('login-link-visualizacao')?.addEventListener('click', login);
     document.getElementById('btn-logout')?.addEventListener('click', logout);
 
-    // CORREÇÃO: Lógica de confirmação de agendamento simplificada
+    // Lógica de confirmação de agendamento simplificada
     document.getElementById('btn-confirmar-agendamento')?.addEventListener('click', async () => {
         if (!currentUser) {
             showNotification("Você precisa fazer login para agendar.", true);
