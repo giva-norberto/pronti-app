@@ -9,6 +9,16 @@ export function renderizarAgendamentosComoCards(agendamentos, modo = 'ativos') {
         container.innerHTML = `<p>Não há agendamentos ${modo === 'ativos' ? 'ativos' : 'finalizados'}.</p>`;
         return;
     }
+export function renderizarDadosProfissional(dados) {
+  const container = document.getElementById('info-negocio');
+  if (!container || !dados) return;
+
+  container.innerHTML = `
+    <p><strong>Nome:</strong> ${dados.nome || 'Não informado'}</p>
+    <p><strong>Descrição:</strong> ${dados.bio || 'Sem descrição'}</p>
+    ${dados.fotoUrl ? `<img src="${dados.fotoUrl}" alt="Foto de ${dados.nome}" style="max-width: 150px; border-radius: 8px;" />` : ''}
+  `;
+}
 
     container.innerHTML = agendamentos.map(ag => {
         const horarioStr = ag.horario.toDate().toLocaleString();
