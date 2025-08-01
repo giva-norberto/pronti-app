@@ -38,6 +38,7 @@ let agendamentoState = {
 // FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO
 // ==========================================================================
 async function init() {
+    console.log("[Debug vitrine.js] Iniciando a aplicação..."); // DEBUG
     try {
         // Configura listener de autenticação que atualiza a UI
         initializeAuth((user) => {
@@ -49,29 +50,44 @@ async function init() {
         if (!slug) {
             throw new Error("URL inválida: slug do profissional não encontrado.");
         }
+        console.log(`[Debug vitrine.js] Slug encontrado: ${slug}`); // DEBUG
 
         // Busca UID do profissional
         profissionalUid = await getProfissionalUidBySlug(slug);
         if (!profissionalUid) {
             throw new Error("Profissional não encontrado.");
         }
+        console.log(`[Debug vitrine.js] UID do profissional encontrado: ${profissionalUid}`); // DEBUG
 
         // Busca dados e serviços do profissional
         professionalData = await getDadosProfissional(profissionalUid);
         if (!professionalData) {
             throw new Error("Falha ao carregar dados do profissional.");
         }
+        console.log("[Debug vitrine.js] Dados do profissional carregados com sucesso."); // DEBUG
 
         // Renderiza informações na tela
         renderizarDadosProfissional(professionalData.perfil);
         renderizarServicos(professionalData.servicos, selecionarServico);
+        console.log("[Debug vitrine.js] Informações iniciais renderizadas."); // DEBUG
 
         // Configura todos os botões e eventos da página
         configurarEventos();
+        console.log("[Debug vitrine.js] Eventos configurados."); // DEBUG
+
+        // ==================================================================
+        // CORREÇÃO FINAL: Esconde o loader e mostra o conteúdo principal
+        // ==================================================================
+        document.getElementById("vitrine-loader").style.display = 'none';
+        document.getElementById("vitrine-content").style.display = 'flex';
+        console.log("[Debug vitrine.js] Loader escondido, conteúdo principal visível. Inicialização completa!"); // DEBUG
 
     } catch (error) {
         console.error("Erro na inicialização:", error);
         showNotification(error.message, true);
+        // Em caso de erro, também esconde o loader e mostra a mensagem de erro
+        const loader = document.getElementById("vitrine-loader");
+        if(loader) loader.innerHTML = `<p style="color:red; text-align: center;">${error.message}</p>`;
     }
 }
 
