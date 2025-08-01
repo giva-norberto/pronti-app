@@ -8,6 +8,36 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================== */
+        /* ESTILO DO BOTÃO DE CONFIRMAÇÃO                */
+        /* ================================================== */
+        #btn-confirmar-agendamento {
+            background: linear-gradient(to right, #8B5CF6, #EC4899); /* Gradiente de Roxo para Rosa */
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            text-align: center;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+            margin-top: 1rem; /* Adiciona um espaço acima do botão */
+        }
+
+        #btn-confirmar-agendamento:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-2px); /* Efeito de elevação ao passar o mouse */
+        }
+
+        #btn-confirmar-agendamento:disabled {
+            background: #D1D5DB; /* Cor cinza para o estado desabilitado */
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
 
@@ -47,24 +77,18 @@
                 </div>
             </div>
 
-            <!-- ================================================== -->
-            <!--      NOVA TELA DE AGENDAMENTO                      -->
-            <!-- ================================================== -->
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
                     
-                    <!-- Mensagem para utilizadores não logados -->
                     <div id="agendamento-login-prompt" style="display: none;">
                         <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
                     </div>
 
-                    <!-- Formulário visível apenas para utilizadores logados -->
                     <div id="agendamento-form-container">
                         <div class="form-group">
                             <label>1. Escolha um serviço</label>
                             <div id="lista-servicos" class="servicos-container-cards">
-                                <!-- Os serviços em formato de card serão renderizados aqui pelo JS -->
                             </div>
                         </div>
                         <div class="form-group">
@@ -77,7 +101,8 @@
                                 <p class="aviso-horarios">Selecione um serviço e uma data.</p>
                             </div>
                         </div>
-                        <button id="btn-confirmar-agendamento" class="btn-submit" disabled>Confirmar Agendamento</button>
+                        <!-- Botão agora sem a classe 'btn-submit' para usar o estilo do ID -->
+                        <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                     </div>
                 </div>
             </div>
