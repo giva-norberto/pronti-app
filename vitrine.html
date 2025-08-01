@@ -120,8 +120,20 @@
         }
 
         .sidebar-menu .menu-btn.ativo {
-            background-color: #6D28D9; /* Roxo */
+            background-color: #4F46E5; /* Azul índigo */
             color: white;
+        }
+
+        /* ================================================== */
+        /* EFEITO DE HOVER PARA TODOS OS CARDS             */
+        /* ================================================== */
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .lista-agendamentos-resultado {
@@ -139,10 +151,9 @@
             justify-content: space-between;
             align-items: center;
             gap: 20px;
-            transition: all 0.3s ease; /* Adicionada transição suave */
+            transition: all 0.3s ease;
         }
         
-        /* CORREÇÃO: Efeito de hover para os cards de agendamento */
         .agendamento-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
