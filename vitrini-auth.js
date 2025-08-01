@@ -1,12 +1,10 @@
-// vitrini-auth.js
+// vitrini-auth.js (VERSÃO FINAL)
 
-// Importa apenas o que é necessário do nosso módulo central do Firebase
 import { auth, provider, onAuthStateChanged, signInWithPopup, signOut } from './vitrini-firebase.js';
-import { showNotification } from './vitrini-utils.js';
+import { showAlert } from './vitrini-utils.js';
 
 export let currentUser = null;
 
-// CORREÇÃO: A função foi renomeada para 'initializeAuth' para corresponder ao que o 'vitrine.js' está importando.
 export function initializeAuth(callback) {
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
@@ -19,18 +17,19 @@ export function initializeAuth(callback) {
 export async function fazerLogin() {
     try {
         await signInWithPopup(auth, provider);
-        showNotification("Login realizado com sucesso!");
+        // Não precisa de alerta de sucesso, a página irá recarregar e mostrar o estado de logado.
     } catch (error) {
-        console.error("Erro no login:", error);
-        showNotification("Erro ao fazer login.", true);
+        console.error("Erro no login:", error.message);
+        await showAlert("Erro no Login", "Não foi possível fazer o login. Por favor, tente novamente.");
     }
 }
 
 export async function fazerLogout() {
     try {
         await signOut(auth);
-        showNotification("Você saiu da sua conta.");
+        await showAlert("Até logo!", "Você saiu da sua conta com sucesso.");
     } catch (error) {
         console.error("Erro no logout:", error);
+        await showAlert("Erro", "Ocorreu um erro ao tentar sair da conta.");
     }
 }
