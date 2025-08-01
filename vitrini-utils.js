@@ -1,50 +1,70 @@
-// vitrini-utils.js
-export function showNotification(message, erro = false) {
-    const container = document.getElementById('notification-message');
-    if (!container) return;
-    container.textContent = message;
-    container.style.color = erro ? 'red' : 'green';
-    container.style.opacity = '1';
-    setTimeout(() => {
-        container.style.opacity = '0';
-    }, 3000);
-}
-// Adicione esta função em vitrini-utils.js
+// vitrini-utils.js (VERSÃO FINAL E DEFINITIVA)
 
 /**
- * Exibe um modal de confirmação personalizado e retorna uma promessa.
- * @param {string} title - O título do modal.
- * @param {string} message - A mensagem a ser exibida.
- * @returns {Promise<boolean>} - Resolve com 'true' se confirmado, 'false' se cancelado.
+ * Exibe um modal genérico na tela.
+ * Esta é a função interna que alimenta showAlert e showCustomConfirm.
  */
-export function showCustomConfirm(title, message) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-confirm-modal');
-        const modalTitle = document.getElementById('modal-titulo');
-        const modalMessage = document.getElementById('modal-mensagem');
-        const btnConfirmar = document.getElementById('modal-btn-confirmar');
-        const btnCancelar = document.getElementById('modal-btn-cancelar');
+function showModal(title, message, buttons) {
+    return new Promise(resolve => {
+        const overlay = document.getElementById('custom-modal-overlay');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
+        const buttonsContainer = document.getElementById('modal-buttons-container');
 
-        if (!modal || !modalTitle || !modalMessage || !btnConfirmar || !btnCancelar) {
-            // Se o modal não existir, usa o confirm() antigo como alternativa
-            resolve(confirm(message));
+        if (!overlay || !titleEl || !messageEl || !buttonsContainer) {
+            console.error("Elementos do modal unificado não encontrados no DOM. Verifique o Passo 1 do HTML.");
+            resolve(false); // Retorna falso para não travar a aplicação
             return;
         }
 
-        modalTitle.textContent = title;
-        modalMessage.textContent = message;
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        buttonsContainer.innerHTML = ''; // Limpa botões antigos para segurança
 
-        const close = (value) => {
-            modal.classList.remove('ativo');
-            // Remove os event listeners para não se acumularem
-            btnConfirmar.replaceWith(btnConfirmar.cloneNode(true));
-            btnCancelar.replaceWith(btnCancelar.cloneNode(true));
+        // Função de limpeza para remover listeners após o clique
+        const cleanupAndResolve = (value) => {
+            overlay.style.display = 'none';
+            buttonsContainer.innerHTML = '';
             resolve(value);
         };
 
-        document.getElementById('modal-btn-confirmar').addEventListener('click', () => close(true), { once: true });
-        document.getElementById('modal-btn-cancelar').addEventListener('click', () => close(false), { once: true });
+        // Cria os botões dinamicamente
+        buttons.forEach(buttonInfo => {
+            const button = document.createElement('button');
+            button.textContent = buttonInfo.text;
+            // Adapta as classes do CSS que já criamos
+            button.className = `btn-confirm ${buttonInfo.styleClass}`; 
+            button.addEventListener('click', () => cleanupAndResolve(buttonInfo.value));
+            buttonsContainer.appendChild(button);
+        });
 
-        modal.classList.add('ativo');
+        overlay.style.display = 'flex';
     });
+}
+
+/**
+ * Exibe um "Card de Alerta" central com um único botão "OK".
+ * @param {string} title - O título do alerta.
+ * @param {string} message - A mensagem do alerta.
+ */
+export function showAlert(title, message) {
+    const buttons = [
+        { text: 'OK', styleClass: 'btn-ok', value: true }
+    ];
+    return showModal(title, message, buttons);
+}
+
+/**
+ * Exibe um "Card de Pergunta" central com botões de confirmação e cancelamento.
+ * @param {string} title - O título da pergunta.
+ * @param {string} message - A mensagem da pergunta.
+ * @returns {Promise<boolean>} - Retorna true para confirmação, false para cancelamento.
+ */
+export function showCustomConfirm(title, message) {
+    const buttons = [
+        { text: 'Cancelar', styleClass: 'btn-cancel', value: false },
+        { text: 'Confirmar', styleClass: 'btn-ok', value: true }
+    ];
+    // O botão de cancelar vem primeiro visualmente
+    return showModal(title, message, buttons.reverse());
 }
