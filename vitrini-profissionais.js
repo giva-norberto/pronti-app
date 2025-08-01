@@ -1,6 +1,11 @@
-// vitrini-profissionais.js
+// vitrini-profissionais.js (VERSÃO ATUALIZADA)
 
 import { db, doc, getDoc, collection, getDocs, query } from './vitrini-firebase.js';
+
+// ==========================================================================
+// FUNÇÕES ORIGINAIS (PARA UM ÚNICO PROFISSIONAL VIA SLUG)
+// Estas funções serão mantidas por enquanto, mas não serão usadas na nova lógica.
+// ==========================================================================
 
 /**
  * Obtém o slug (identificador) do profissional a partir dos parâmetros da URL.
@@ -40,18 +45,14 @@ export async function getProfissionalUidBySlug(slug) {
  */
 export async function getDadosProfissional(uid) {
     if (!uid) return null;
-
     try {
         const perfilRef = doc(db, "users", uid, "publicProfile", "profile");
         const servicosRef = collection(db, "users", uid, "servicos");
         const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
 
-        // CORREÇÃO: A consulta aos serviços foi alterada para buscar TODOS os serviços.
-        // O filtro 'where("visivelNaVitrine", "==", true)' foi removido.
-        // Isto garante que todos os serviços que você cadastrou apareçam.
         const [perfilSnap, servicosSnap, horariosSnap] = await Promise.all([
             getDoc(perfilRef),
-            getDocs(query(servicosRef)), // A consulta foi simplificada aqui
+            getDocs(query(servicosRef)),
             getDoc(horariosRef)
         ]);
 
@@ -75,4 +76,43 @@ export async function getDadosProfissional(uid) {
         console.error("Erro ao carregar dados do profissional:", error);
         throw new Error("Falha ao carregar dados do profissional.");
     }
+}
+
+
+// ==========================================================================
+// NOVAS FUNÇÕES (PARA MÚLTIPLOS PROFISSIONAIS VIA EMPRESA)
+// Estas são as novas funções que usaremos para a Vitrine da Empresa.
+// ==========================================================================
+
+/**
+ * Pega o ID da empresa da URL (ex: ?empresa=EMPRESA_ID_123)
+ * @returns {string|null} O ID da empresa ou nulo.
+ */
+export function getEmpresaIdFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('empresa');
+}
+
+/**
+ * Busca os dados de uma empresa específica no Firestore.
+ * @param {string} empresaId - O ID do documento da empresa na coleção 'empresarios'.
+ * @returns {Promise<object|null>} Os dados da empresa ou nulo se não encontrada.
+ */
+export async function getDadosEmpresa(empresaId) {
+    if (!empresaId) return null;
+    const empresaRef = doc(db, "empresarios", empresaId);
+    const docSnap = await getDoc(empresaRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+}
+
+/**
+ * Busca todos os profissionais de uma empresa na subcoleção 'profissionais'.
+ * @param {string} empresaId - O ID do documento da empresa.
+ * @returns {Promise<Array>} Uma lista com os dados dos profissionais.
+ */
+export async function getProfissionaisDaEmpresa(empresaId) {
+    if (!empresaId) return [];
+    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+    const snapshot = await getDocs(profissionaisRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
