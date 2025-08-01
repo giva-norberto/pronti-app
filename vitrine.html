@@ -27,19 +27,6 @@
                 <button class="menu-btn" data-menu="agendamento">Agendar</button>
                 <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
                 <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
-                
-                <div class="dropdown-info">
-                    <button id="btn-primeiro-acesso" class="dropdown-toggle">Primeiro Acesso ⌄</button>
-                    <div id="primeiro-acesso-menu" class="dropdown-menu">
-                        <p><strong>Bem-vindo!</strong> Para agendar:</p>
-                        <ul>
-                            <li>Escolha um serviço disponível</li>
-                            <li>Selecione a data e horário</li>
-                            <li>Preencha seus dados e PIN</li>
-                            <li>Guarde seu PIN para cancelamentos</li>
-                        </ul>
-                    </div>
-                </div>
             </nav>
         </aside>
 
@@ -60,64 +47,66 @@
                 </div>
             </div>
 
+            <!-- ================================================== -->
+            <!--      NOVA TELA DE AGENDAMENTO                      -->
+            <!-- ================================================== -->
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
-                    <div class="form-group">
-                        <label>1. Escolha um serviço</label>
-                        <div id="lista-servicos"></div>
+                    
+                    <!-- Mensagem para utilizadores não logados -->
+                    <div id="agendamento-login-prompt" style="display: none;">
+                        <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
                     </div>
-                    <div class="form-group">
-                        <label for="data-agendamento">2. Escolha uma data</label>
-                        <input type="date" id="data-agendamento" required>
-                    </div>
-                    <div class="form-group">
-                        <label>3. Escolha um horário</label>
-                        <div id="grade-horarios">
-                            <p class="aviso-horarios">Selecione um serviço e uma data.</p>
+
+                    <!-- Formulário visível apenas para utilizadores logados -->
+                    <div id="agendamento-form-container">
+                        <div class="form-group">
+                            <label>1. Escolha um serviço</label>
+                            <div id="lista-servicos" class="servicos-container-cards">
+                                <!-- Os serviços em formato de card serão renderizados aqui pelo JS -->
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>4. Seus dados</label>
-                        <input type="text" id="nome-cliente" placeholder="O seu nome completo" required>
-                        <input type="tel" id="telefone-cliente" placeholder="O seu telefone (WhatsApp)" required>
-                        <div class="pin-input-group">
-                            <label for="pin-cliente">Crie um PIN para seu agendamento:</label>
-                            <input type="password" id="pin-cliente" placeholder="Digite um PIN de 4-6 dígitos" required maxlength="6">
-                            <small>Este PIN será necessário para cancelar.</small>
+                        <div class="form-group">
+                            <label for="data-agendamento">2. Escolha uma data</label>
+                            <input type="date" id="data-agendamento" required>
                         </div>
+                        <div class="form-group">
+                            <label>3. Escolha um horário</label>
+                            <div id="grade-horarios" class="horarios-container-grid">
+                                <p class="aviso-horarios">Selecione um serviço e uma data.</p>
+                            </div>
+                        </div>
+                        <button id="btn-confirmar-agendamento" class="btn-submit" disabled>Confirmar Agendamento</button>
                     </div>
-                    <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                 </div>
             </div>
 
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
-                    <p>Aqui você encontra seus agendamentos ativos e seu histórico.</p>
-                    <div class="botoes-agendamento">
-                        <button id="btn-ver-ativos" class="btn-submit">Ver Agendamentos Ativos</button>
+                    <div id="agendamentos-login-prompt" style="display: none;">
+                         <p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p>
+                    </div>
+                    <div id="botoes-agendamento" style="display: none;">
+                        <button id="btn-ver-ativos" class="btn-submit">Ver Ativos</button>
                         <button id="btn-ver-historico" class="btn-secondary">Ver Histórico</button>
                     </div>
                     <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
                 </div>
             </div>
-
-            <div id="menu-cancelamento" class="menu-content"></div>
             
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
                     <h2>Meu Perfil</h2>
-                    <p>Salve seus dados para preencher o agendamento mais rápido.</p>
-                    <div class="form-group">
-                        <label for="perfil-nome">Nome Completo</label>
-                        <input type="text" id="perfil-nome" placeholder="Digite seu nome completo">
+                    <div id="user-info" style="display: none;">
+                        <img id="user-photo" src="" alt="Foto do Utilizador">
+                        <p id="user-name"></p>
+                        <button id="btn-logout" class="btn-secondary">Sair</button>
                     </div>
-                    <div class="form-group">
-                        <label for="perfil-telefone">Telefone (WhatsApp)</label>
-                        <input type="tel" id="perfil-telefone" placeholder="(XX) XXXXX-XXXX">
+                    <div id="btn-login" style="display: none;">
+                         <button class="btn-submit">Fazer Login com Google</button>
                     </div>
-                    <button id="btn-salvar-perfil" class="btn-submit">Salvar Perfil</button>
                 </div>
             </div>
         </div>
