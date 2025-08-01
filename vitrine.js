@@ -1,13 +1,12 @@
 // vitrine.js
 
 // ==========================================================================
-// IMPORTS DOS MÓDulos
+// IMPORTS DOS MÓDULOS
 // ==========================================================================
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import { getSlugFromURL, getProfissionalUidBySlug, getDadosProfissional } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 import { renderizarServicos, renderizarDadosProfissional, updateUIOnAuthChange } from './vitrini-ui.js';
-// CORREÇÃO: Removida a importação de 'showCustomConfirm' que estava a causar o erro.
 import { showNotification } from './vitrini-utils.js';
 
 // ==========================================================================
@@ -94,6 +93,7 @@ function configurarEventos() {
             const menuContent = document.getElementById(`menu-${button.dataset.menu}`);
             if (menuContent) menuContent.classList.add('ativo');
             if (button.dataset.menu === 'visualizacao' && currentUser) {
+                // Ao entrar na aba, mostra os ativos por padrão
                 buscarEExibirAgendamentos(profissionalUid, currentUser, 'ativos');
             }
         });
@@ -114,10 +114,8 @@ function configurarEventos() {
             return;
         }
 
-        // Desativa o botão e chama diretamente a função para salvar
         document.getElementById('btn-confirmar-agendamento').disabled = true;
         await salvarAgendamento(profissionalUid, currentUser, agendamentoState);
-        // A função salvarAgendamento já mostra a notificação e recarrega a página
     });
 
     document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', (e) => {
@@ -160,6 +158,23 @@ function configurarEventos() {
             agendamentoState.horario = e.target.textContent;
             updateConfirmButtonState();
         }
+    });
+
+    // ==========================================================
+    // CÓDIGO ADICIONADO PARA CORRIGIR O PROBLEMA
+    // ==========================================================
+    document.getElementById('btn-ver-ativos')?.addEventListener('click', (e) => {
+        if (!currentUser) return;
+        document.querySelector('.botoes-agendamento .btn-toggle.ativo')?.classList.remove('ativo');
+        e.target.classList.add('ativo');
+        buscarEExibirAgendamentos(profissionalUid, currentUser, 'ativos');
+    });
+
+    document.getElementById('btn-ver-historico')?.addEventListener('click', (e) => {
+        if (!currentUser) return;
+        document.querySelector('.botoes-agendamento .btn-toggle.ativo')?.classList.remove('ativo');
+        e.target.classList.add('ativo');
+        buscarEExibirAgendamentos(profissionalUid, currentUser, 'historico');
     });
 }
 
