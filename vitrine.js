@@ -1,7 +1,7 @@
 // vitrine.js
 
 // ==========================================================================
-// IMPORTS DOS MÓDULOS
+// IMPORT/S DOS MÓDULOS
 // ==========================================================================
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import {
@@ -38,7 +38,7 @@ let agendamentoState = {
 // FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO
 // ==========================================================================
 async function init() {
-    console.log("[Debug vitrine.js] Iniciando a aplicação..."); // DEBUG
+    console.log("[Debug vitrine.js] Iniciando a aplicação...");
     try {
         // Configura listener de autenticação que atualiza a UI
         initializeAuth((user) => {
@@ -50,42 +50,40 @@ async function init() {
         if (!slug) {
             throw new Error("URL inválida: slug do profissional não encontrado.");
         }
-        console.log(`[Debug vitrine.js] Slug encontrado: ${slug}`); // DEBUG
+        console.log(`[Debug vitrine.js] Slug encontrado: ${slug}`);
 
         // Busca UID do profissional
         profissionalUid = await getProfissionalUidBySlug(slug);
         if (!profissionalUid) {
             throw new Error("Profissional não encontrado.");
         }
-        console.log(`[Debug vitrine.js] UID do profissional encontrado: ${profissionalUid}`); // DEBUG
+        console.log(`[Debug vitrine.js] UID do profissional encontrado: ${profissionalUid}`);
 
         // Busca dados e serviços do profissional
         professionalData = await getDadosProfissional(profissionalUid);
         if (!professionalData) {
             throw new Error("Falha ao carregar dados do profissional.");
         }
-        console.log("[Debug vitrine.js] Dados do profissional carregados com sucesso."); // DEBUG
+        console.log("[Debug vitrine.js] Dados do profissional carregados com sucesso.");
 
         // Renderiza informações na tela
         renderizarDadosProfissional(professionalData.perfil);
         renderizarServicos(professionalData.servicos, selecionarServico);
-        console.log("[Debug vitrine.js] Informações iniciais renderizadas."); // DEBUG
+        renderizarInfoServicos(professionalData.servicos); // CORREÇÃO: Adicionada chamada para renderizar os cards de info
+        console.log("[Debug vitrine.js] Informações iniciais renderizadas.");
 
         // Configura todos os botões e eventos da página
         configurarEventos();
-        console.log("[Debug vitrine.js] Eventos configurados."); // DEBUG
+        console.log("[Debug vitrine.js] Eventos configurados.");
 
-        // ==================================================================
-        // CORREÇÃO FINAL: Esconde o loader e mostra o conteúdo principal
-        // ==================================================================
+        // Esconde o loader e mostra o conteúdo principal
         document.getElementById("vitrine-loader").style.display = 'none';
         document.getElementById("vitrine-content").style.display = 'flex';
-        console.log("[Debug vitrine.js] Loader escondido, conteúdo principal visível. Inicialização completa!"); // DEBUG
+        console.log("[Debug vitrine.js] Loader escondido, conteúdo principal visível. Inicialização completa!");
 
     } catch (error) {
         console.error("Erro na inicialização:", error);
         showNotification(error.message, true);
-        // Em caso de erro, também esconde o loader e mostra a mensagem de erro
         const loader = document.getElementById("vitrine-loader");
         if(loader) loader.innerHTML = `<p style="color:red; text-align: center;">${error.message}</p>`;
     }
@@ -97,13 +95,34 @@ async function init() {
 // ==========================================================================
 
 /**
+ * Renderiza os cards de informação dos serviços.
+ * @param {Array} servicos - A lista de serviços do profissional.
+ */
+function renderizarInfoServicos(servicos) {
+    const container = document.getElementById('info-servicos');
+    if (!container) return;
+
+    if (!servicos || servicos.length === 0) {
+        container.innerHTML = '<p>Nenhum serviço oferecido no momento.</p>';
+        return;
+    }
+    
+    container.innerHTML = servicos.map(s => `
+        <div class="servico-info-card">
+            <h4>${s.nome}</h4>
+            <p>${s.duracao || 'N/A'} min</p>
+            <p>R$ ${s.preco || 'N/A'}</p>
+        </div>
+    `).join('');
+}
+
+/**
  * Guarda o serviço selecionado no estado da aplicação.
  * @param {object} servico - O objeto do serviço clicado.
  */
 function selecionarServico(servico) {
     agendamentoState.servico = servico;
     showNotification(`Serviço selecionado: ${servico.nome}`);
-    // Ao selecionar um novo serviço, limpa os horários e força o usuário a buscar novamente
     document.getElementById('data-agendamento').value = '';
     document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione uma data para ver os horários.</p>';
 }
@@ -112,6 +131,25 @@ function selecionarServico(servico) {
  * Configura todos os event listeners da aplicação.
  */
 function configurarEventos() {
+    // CORREÇÃO: Adicionada navegação do menu principal
+    document.querySelectorAll('.sidebar-menu .menu-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.sidebar-menu .menu-btn.ativo').forEach(btn => btn.classList.remove('ativo'));
+            document.querySelectorAll('.main-content-vitrine .menu-content.ativo').forEach(content => content.classList.remove('ativo'));
+
+            button.classList.add('ativo');
+            const menuTargetId = `menu-${button.dataset.menu}`;
+            const menuContent = document.getElementById(menuTargetId);
+            if (menuContent) {
+                menuContent.classList.add('ativo');
+            }
+
+            if (button.dataset.menu === 'visualizacao' && currentUser) {
+                buscarEExibirAgendamentos(profissionalUid, currentUser, 'ativos');
+            }
+        });
+    });
+
     // Botão de login
     document.getElementById('btn-login')?.addEventListener('click', login);
 
@@ -148,7 +186,7 @@ function configurarEventos() {
         const dataSelecionada = e.target.value;
         if (!agendamentoState.servico) {
             showNotification("Primeiro, selecione um serviço.", true);
-            e.target.value = ''; // Limpa a data
+            e.target.value = '';
             return;
         }
         if (!dataSelecionada) return;
@@ -177,9 +215,7 @@ function configurarEventos() {
     // Delegação de evento para os botões de horário
     document.getElementById('grade-horarios')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-horario')) {
-            // Remove a seleção de outros botões
             document.querySelectorAll('.btn-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
-            // Adiciona a classe ao botão clicado
             e.target.classList.add('selecionado');
             agendamentoState.horario = e.target.textContent;
         }
