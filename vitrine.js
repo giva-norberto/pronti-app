@@ -7,7 +7,8 @@ import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout
 import { getSlugFromURL, getProfissionalUidBySlug, getDadosProfissional } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 import { renderizarServicos, renderizarDadosProfissional, updateUIOnAuthChange } from './vitrini-ui.js';
-import { showNotification } from './vitrini-utils.js';
+// [MODIFICAÇÃO] Importamos a nova função de confirmação.
+import { showNotification, showCustomConfirm } from './vitrini-utils.js';
 
 // ==========================================================================
 // ESTADO DA APLICAÇÃO
@@ -57,7 +58,6 @@ async function init() {
 // ==========================================================================
 // LÓGICA E MANIPULADORES DE EVENTOS
 // ==========================================================================
-
 function renderizarInfoServicos(servicos) {
     const container = document.getElementById('info-servicos');
     if (!container || !servicos) return;
@@ -93,7 +93,6 @@ function configurarEventos() {
             const menuContent = document.getElementById(`menu-${button.dataset.menu}`);
             if (menuContent) menuContent.classList.add('ativo');
             if (button.dataset.menu === 'visualizacao' && currentUser) {
-                // Ao entrar na aba, mostra os ativos por padrão
                 buscarEExibirAgendamentos(profissionalUid, currentUser, 'ativos');
             }
         });
@@ -103,7 +102,7 @@ function configurarEventos() {
     document.getElementById('login-link-visualizacao')?.addEventListener('click', login);
     document.getElementById('btn-logout')?.addEventListener('click', logout);
 
-    // Lógica de confirmação de agendamento simplificada
+    // [MODIFICAÇÃO] Adicionada a confirmação ao agendar.
     document.getElementById('btn-confirmar-agendamento')?.addEventListener('click', async () => {
         if (!currentUser) {
             showNotification("Você precisa fazer login para agendar.", true);
@@ -114,20 +113,35 @@ function configurarEventos() {
             return;
         }
 
-        document.getElementById('btn-confirmar-agendamento').disabled = true;
-        await salvarAgendamento(profissionalUid, currentUser, agendamentoState);
+        const confirmado = await showCustomConfirm(
+            "Confirmar Agendamento",
+            `Deseja agendar "${agendamentoState.servico.nome}" para ${new Date(agendamentoState.data + 'T00:00:00').toLocaleDateString()} às ${agendamentoState.horario}?`
+        );
+
+        if (confirmado) {
+            document.getElementById('btn-confirmar-agendamento').disabled = true;
+            await salvarAgendamento(profissionalUid, currentUser, agendamentoState);
+        }
     });
 
-    document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', (e) => {
+    // [MODIFICAÇÃO] Adicionada a confirmação ao cancelar e o 'async' no evento.
+    document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', async (e) => {
         if (e.target.classList.contains('btn-cancelar')) {
             const agendamentoId = e.target.dataset.id;
-            if (agendamentoId) {
+            
+            const confirmado = await showCustomConfirm(
+                "Cancelar Agendamento",
+                "Tem certeza que deseja cancelar este agendamento?"
+            );
+
+            if (confirmado && agendamentoId) {
                 cancelarAgendamento(profissionalUid, agendamentoId, () => {
                     buscarEExibirAgendamentos(profissionalUid, currentUser, 'ativos');
                 });
             }
         }
     });
+
     document.getElementById('data-agendamento')?.addEventListener('change', async (e) => {
         const dataSelecionada = e.target.value;
         agendamentoState.data = dataSelecionada;
@@ -151,6 +165,7 @@ function configurarEventos() {
         ).join('') : '<p>Nenhum horário disponível para esta data.</p>';
         updateConfirmButtonState();
     });
+
     document.getElementById('grade-horarios')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-horario')) {
             document.querySelectorAll('.btn-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
@@ -159,10 +174,7 @@ function configurarEventos() {
             updateConfirmButtonState();
         }
     });
-
-    // ==========================================================
-    // CÓDIGO ADICIONADO PARA CORRIGIR O PROBLEMA
-    // ==========================================================
+    
     document.getElementById('btn-ver-ativos')?.addEventListener('click', (e) => {
         if (!currentUser) return;
         document.querySelector('.botoes-agendamento .btn-toggle.ativo')?.classList.remove('ativo');
