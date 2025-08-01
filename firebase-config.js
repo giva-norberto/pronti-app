@@ -1,5 +1,6 @@
-// firebase-config.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
+// firebase-config.js (VERSÃO CORRIGIDA E FINAL)
+
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 
@@ -12,9 +13,21 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-const app = initializeApp(firebaseConfig);
+// ==================================================================
+// BLOCO DE CORREÇÃO: LÓGICA ANTI-DUPLICAÇÃO
+// ==================================================================
+// Esta lógica garante que o Firebase seja inicializado apenas UMA VEZ.
+let app;
+if (!getApps().length) {
+  // Se nenhum app Firebase foi inicializado ainda, inicializa.
+  app = initializeApp(firebaseConfig);
+} else {
+  // Se já existir um, simplesmente pega a instância que já está rodando.
+  app = getApps()[0];
+}
+// ==================================================================
+
 const db = getFirestore(app);
 const auth = getAuth(app);
 
 export { app, db, auth };
-
