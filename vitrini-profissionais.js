@@ -43,12 +43,16 @@ export async function getProfissionalUidBySlug(slug) {
 export async function getDadosProfissional(uid) {
     if (!uid) return null;
 
+    console.log(`[Debug] Iniciando getDadosProfissional para o UID: ${uid}`); // DEBUG
+
     try {
         // CORREÇÃO: Em vez de ler o documento 'users/{uid}', lemos diretamente
         // os documentos das subcoleções públicas, que são permitidas pelas regras.
         const perfilRef = doc(db, "users", uid, "publicProfile", "profile");
         const servicosRef = collection(db, "users", uid, "servicos");
         const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
+
+        console.log("[Debug] A executar buscas no Firestore em paralelo..."); // DEBUG
 
         // Executa todas as buscas em paralelo para mais eficiência
         const [perfilSnap, servicosSnap, horariosSnap] = await Promise.all([
@@ -57,14 +61,20 @@ export async function getDadosProfissional(uid) {
             getDoc(horariosRef)
         ]);
 
+        console.log("[Debug] Buscas no Firestore concluídas."); // DEBUG
+
         if (!perfilSnap.exists()) {
-            console.warn("Perfil público não encontrado para o UID:", uid);
+            console.warn("[Debug] Perfil público não encontrado para o UID:", uid); // DEBUG
             return null;
         }
+
+        console.log("[Debug] Perfil encontrado. A processar dados..."); // DEBUG
 
         const perfil = perfilSnap.data();
         const horarios = horariosSnap.exists() ? horariosSnap.data() : {};
         const servicos = servicosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        console.log("[Debug] Dados processados. A retornar objeto completo."); // DEBUG
 
         return {
             uid,
