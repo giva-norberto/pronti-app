@@ -11,7 +11,7 @@
     <style>
         /* ESTILO DO BOTÃO DE CONFIRMAÇÃO */
         #btn-confirmar-agendamento {
-            background: linear-gradient(to right, #8B5CF6, #EC4899);
+            background: linear-gradient(to right, #8B5CF6, #EC4899 );
             color: white;
             border: none;
             padding: 15px;
@@ -227,7 +227,7 @@
         .modal-box h3 {
             margin-top: 0;
             margin-bottom: 15px;
-            color: #4F46E5; /* CORREÇÃO: Cor do título alterada para azul */
+            color: #4F46E5;
         }
         .modal-box p {
             margin-bottom: 25px;
@@ -260,12 +260,55 @@
         #modal-btn-cancelar:hover {
             background-color: #D1D5DB;
         }
+
+        /* ====================================================== */
+        /* [NOVO] ESTILOS PARA A SELEÇÃO DE PROFISSIONAIS         */
+        /* ====================================================== */
+        .profissionais-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .card-profissional {
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .card-profissional:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            border-color: #A5B4FC;
+        }
+        .card-profissional.selecionado {
+            border-color: #4F46E5;
+            background-color: #EEF2FF;
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.15);
+            transform: translateY(-4px);
+        }
+        .card-profissional img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 12px;
+            border: 2px solid white;
+        }
+        .card-profissional h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1F2937;
+        }
     </style>
 </head>
 <body>
 
     <div id="vitrine-loader">
-        <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do profissional...</p>
+        <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do negócio...</p>
     </div>
 
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
@@ -308,20 +351,29 @@
                         <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
                     </div>
 
-                    <div id="agendamento-form-container">
+                    <!-- [NOVO] Seção para escolher o profissional -->
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 1.1rem; color: #374151;">1. Escolha um profissional</label>
+                        <div id="lista-profissionais" class="profissionais-container">
+                            <!-- Cards dos profissionais serão inseridos aqui pelo JS -->
+                        </div>
+                    </div>
+
+                    <!-- [ALTERADO] O restante do formulário agora fica oculto até um profissional ser selecionado -->
+                    <div id="agendamento-form-container" style="display: none; margin-top: 2rem; border-top: 1px solid #E5E7EB; padding-top: 2rem;">
                         <div class="form-group">
-                            <label>1. Escolha um serviço</label>
+                            <label style="font-weight: 600; font-size: 1.1rem; color: #374151;">2. Escolha um serviço</label>
                             <div id="lista-servicos" class="servicos-container-cards">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="data-agendamento">2. Escolha uma data</label>
+                            <label for="data-agendamento" style="font-weight: 600; font-size: 1.1rem; color: #374151;">3. Escolha uma data</label>
                             <input type="date" id="data-agendamento" required>
                         </div>
                         <div class="form-group">
-                            <label>3. Escolha um horário</label>
+                            <label style="font-weight: 600; font-size: 1.1rem; color: #374151;">4. Escolha um horário</label>
                             <div id="grade-horarios" class="horarios-container-grid">
-                                <p class="aviso-horarios">Selecione um serviço e uma data.</p>
+                                <p class="aviso-horarios">Selecione um profissional, um serviço e uma data.</p>
                             </div>
                         </div>
                         <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
