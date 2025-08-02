@@ -51,7 +51,8 @@ async function carregarDashboard(uid) {
         if (profissionalSnapshot.exists() && profissionalSnapshot.data().servicos) {
             const servicosArray = profissionalSnapshot.data().servicos;
             servicosArray.forEach(servico => {
-                servicosMap.set(servico.id, servico);
+                // Garantimos que o ID está no mapa, mesmo que seja string ou número
+                servicosMap.set(String(servico.id), servico);
             });
         }
         
@@ -89,7 +90,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
     });
    
     const agendamentosEnriquecidos = agendamentosDeHoje.map(ag => {
-        const servico = servicosMap.get(ag.servicoId);
+        const servico = servicosMap.get(String(ag.servicoId)); // Usamos String() para garantir a correspondência
         if (!servico) return null;
         const inicio = ag.horario.toDate();
         const fim = new Date(inicio.getTime() + (servico.duracao || 30) * 60000);
@@ -239,61 +240,61 @@ function gerarGraficoMensal(agendamentos) {
 }
 
 function gerarGraficoServicos(servicosMap, agendamentos) {
-  const contagemServicos = {};
-  agendamentos.forEach(ag => {
-    const servicoId = ag.servicoId;
-    contagemServicos[servicoId] = (contagemServicos[servicoId] || 0) + 1;
-  });
-  const labels = Object.keys(contagemServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
-  const dados = Object.values(contagemServicos);
-  const ctx = document.getElementById('graficoServicos').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Nº de Agendamentos',
-        data: dados,
-        backgroundColor: 'rgba(13, 110, 253, 0.5)',
-        borderColor: 'rgba(13, 110, 253, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: { 
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-      responsive: true,
-      plugins: { legend: { display: false } }
-    }
-  });
+    const contagemServicos = {};
+    agendamentos.forEach(ag => {
+        const servicoId = String(ag.servicoId); // Usamos String() para garantir a correspondência
+        contagemServicos[servicoId] = (contagemServicos[servicoId] || 0) + 1;
+    });
+    const labels = Object.keys(contagemServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
+    const dados = Object.values(contagemServicos);
+    const ctx = document.getElementById('graficoServicos').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Nº de Agendamentos',
+                data: dados,
+                backgroundColor: 'rgba(13, 110, 253, 0.5)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { 
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
 }
 
 function gerarGraficoFaturamento(servicosMap, agendamentos) {
-  const faturamentoServicos = {};
-  agendamentos.forEach(ag => {
-    const servico = servicosMap.get(ag.servicoId);
-    if (servico && servico.preco !== undefined) {
-      const precoNum = parseFloat(servico.preco);
-      faturamentoServicos[ag.servicoId] = (faturamentoServicos[ag.servicoId] || 0) + precoNum;
-    }
-  });
-  const labels = Object.keys(faturamentoServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
-  const dados = Object.values(faturamentoServicos);
-  const ctx = document.getElementById('graficoFaturamento').getContext('2d');
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Faturamento (R$)',
-        data: dados,
-        backgroundColor: ['rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)'],
-      }]
-    },
-    options: {
-        indexAxis: 'y',
-        scales: { x: { beginAtZero: true, title: { display: true, text: 'Faturamento (R$)' } } },
-        responsive: true,
-        plugins: { legend: { display: false } }
-    }
-  });
+    const faturamentoServicos = {};
+    agendamentos.forEach(ag => {
+        const servico = servicosMap.get(String(ag.servicoId)); // Usamos String() para garantir a correspondência
+        if (servico && servico.preco !== undefined) {
+            const precoNum = parseFloat(servico.preco);
+            faturamentoServicos[String(ag.servicoId)] = (faturamentoServicos[String(ag.servicoId)] || 0) + precoNum;
+        }
+    });
+    const labels = Object.keys(faturamentoServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
+    const dados = Object.values(faturamentoServicos);
+    const ctx = document.getElementById('graficoFaturamento').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: dados,
+                backgroundColor: ['rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)'],
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            scales: { x: { beginAtZero: true, title: { display: true, text: 'Faturamento (R$)' } } },
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
 }
