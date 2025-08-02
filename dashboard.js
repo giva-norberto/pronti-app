@@ -1,8 +1,8 @@
 /**
- * dashboard.js - Versão Final com Filtro de Intervalo e Melhorias Visuais
+ * dashboard.js - Versão Final com a busca de dados corrigida
  */
 
-import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 import { gerarResumoDiarioInteligente } from './inteligencia.js';
@@ -20,45 +20,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// =======================================================
+// FUNÇÃO CORRIGIDA PARA USAR A ESTRUTURA 'empresarios'
+// =======================================================
 async function carregarDashboard(uid) {
-  try {
-    const servicosCollection = collection(db, "users", uid, "servicos");
-    const agendamentosCollection = collection(db, "users", uid, "agendamentos");
+    try {
+        // 1. Encontrar a empresa que pertence ao usuário logado (donoId)
+        const empresaQuery = query(collection(db, "empresarios"), where("donoId", "==", uid));
+        const empresaSnapshot = await getDocs(empresaQuery);
 
-    const [servicosSnapshot, agendamentosSnapshot] = await Promise.all([
-      getDocs(servicosCollection),
-      getDocs(agendamentosCollection)
-    ]);
+        if (empresaSnapshot.empty) {
+            throw new Error("Nenhum perfil de empresa encontrado para este usuário.");
+        }
+        const empresaId = empresaSnapshot.docs[0].id;
 
-    const agendamentos = agendamentosSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-    const servicosMap = new Map();
-    servicosSnapshot.forEach(doc => {
-      servicosMap.set(doc.id, doc.data());
-    });
+        // 2. Com o ID da empresa, buscar os serviços e agendamentos
+        // Assumindo que os serviços estão no documento do profissional (que tem o mesmo ID do dono)
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+        const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
 
-    processarResumoIA(agendamentos, servicosMap);
+        const [profissionalSnapshot, agendamentosSnapshot] = await Promise.all([
+            getDoc(profissionalRef),
+            getDocs(agendamentosCollection)
+        ]);
+        
+        // 3. Organizar os dados como as suas funções de gráfico esperam
+        const agendamentos = agendamentosSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+        
+        const servicosMap = new Map();
+        if (profissionalSnapshot.exists() && profissionalSnapshot.data().servicos) {
+            const servicosArray = profissionalSnapshot.data().servicos;
+            servicosArray.forEach(servico => {
+                servicosMap.set(servico.id, servico);
+            });
+        }
+        
+        // 4. Chamar as suas funções originais com os dados corretos
+        processarResumoIA(agendamentos, servicosMap);
+        if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
+        if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
+        if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
 
-    if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
-    if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
-    if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
-
-  } catch (error) {
-    console.error("Erro ao carregar dados do dashboard:", error);
-    const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content');
-    container.innerHTML = '<p style="color:red;">Não foi possível carregar os dados do dashboard.</p>';
-  }
+    } catch (error) {
+        console.error("Erro ao carregar dados do dashboard:", error);
+        const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content');
+        container.innerHTML = `<p style="color:red;">Não foi possível carregar os dados do dashboard. Causa: ${error.message}</p>`;
+    }
 }
 
+
+// O restante do seu código original permanece exatamente igual
 function processarResumoIA(todosAgendamentos, servicosMap) {
     const container = document.getElementById('resumo-diario-container');
     if (!container) return;
-  
+   
     container.innerHTML = '<p>🧠 Analisando seu dia...</p>';
-  
+   
     const hoje = new Date();
     const inicioDoDia = new Date(hoje.setHours(0, 0, 0, 0));
     const fimDoDia = new Date(hoje.setHours(23, 59, 59, 999));
-  
+   
     const agendamentosDeHoje = todosAgendamentos.filter(ag => {
         if (!ag.horario || typeof ag.horario.toDate !== 'function') {
           return false;
@@ -66,7 +87,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
         const dataAgendamento = ag.horario.toDate();
         return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
     });
-  
+   
     const agendamentosEnriquecidos = agendamentosDeHoje.map(ag => {
         const servico = servicosMap.get(ag.servicoId);
         if (!servico) return null;
@@ -80,7 +101,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
             fim
         };
     }).filter(Boolean);
-  
+   
     const resumo = gerarResumoDiarioInteligente(agendamentosEnriquecidos);
     container.innerHTML = criarHTMLDoResumo(resumo);
 }
@@ -112,25 +133,21 @@ function criarHTMLDoResumo(resumo) {
     return html;
 }
 
-// =======================================================
-// SEÇÃO DOS GRÁFICOS
-// =======================================================
+// SEÇÃO DOS GRÁFICOS (Sem alterações)
 let graficoMensalInstance = null;
-
 function gerarGraficoMensal(agendamentos) {
     const filtroMesInicio = document.getElementById('filtro-mes-inicio');
     const filtroAnoInicio = document.getElementById('filtro-ano-inicio');
     const filtroMesFim = document.getElementById('filtro-mes-fim');
     const filtroAnoFim = document.getElementById('filtro-ano-fim');
 
-    // 1. Popula os filtros de ano dinamicamente
     const anos = [...new Set(
         agendamentos
             .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
             .map(ag => ag.horario.toDate().getFullYear())
     )];
     anos.sort((a, b) => b - a);
-    
+   
     filtroAnoInicio.innerHTML = '';
     filtroAnoFim.innerHTML = '';
     anos.forEach(ano => {
@@ -138,20 +155,17 @@ function gerarGraficoMensal(agendamentos) {
         option1.value = ano;
         option1.textContent = ano;
         filtroAnoInicio.appendChild(option1);
-
         const option2 = document.createElement('option');
         option2.value = ano;
         option2.textContent = ano;
         filtroAnoFim.appendChild(option2);
     });
 
-    // 2. Define os valores padrão do filtro para 2025
-    filtroMesInicio.value = '0'; // Janeiro
+    filtroMesInicio.value = '0';
     filtroAnoInicio.value = '2025';
-    filtroMesFim.value = '11'; // Dezembro
+    filtroMesFim.value = '11';
     filtroAnoFim.value = '2025';
 
-    // 3. Função principal para renderizar/atualizar o gráfico
     const atualizarGrafico = () => {
         const dataInicio = new Date(filtroAnoInicio.value, filtroMesInicio.value, 1);
         const dataFim = new Date(filtroAnoFim.value, parseInt(filtroMesFim.value) + 1, 0);
@@ -216,13 +230,11 @@ function gerarGraficoMensal(agendamentos) {
         });
     };
 
-    // Adiciona os listeners para os filtros
     filtroMesInicio.addEventListener('change', atualizarGrafico);
     filtroAnoInicio.addEventListener('change', atualizarGrafico);
     filtroMesFim.addEventListener('change', atualizarGrafico);
     filtroAnoFim.addEventListener('change', atualizarGrafico);
 
-    // Renderiza o gráfico pela primeira vez com os valores padrão
     atualizarGrafico();
 }
 
