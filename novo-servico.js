@@ -1,125 +1,107 @@
 /**
- * novo-servico.js (VERSÃO FINAL - GERENCIAMENTO DE EMPRESA)
- *
- * Lógica Principal:
- * 1. Ao carregar, identifica o usuário logado (o dono da empresa) e encontra o ID da sua empresa.
- * 2. Ao salvar, busca o documento do profissional correspondente (o próprio dono).
- * 3. Lê a lista de serviços que já existe para aquele profissional.
- * 4. Adiciona o novo serviço a essa lista.
- * 5. Salva a lista inteira de volta no documento do profissional, usando `updateDoc`.
- * 6. Usa os "Cards de Alerta" para feedback e redireciona para a página de serviços.
+ * novo-servico.js (VERSÃO CORRIGIDA E ALINHADA COM A ESTRUTURA 'empresarios')
  */
 
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
-// [MODIFICADO] Usando nosso novo sistema de alertas
-import { showAlert } from "./vitrini-utils.js"; 
 
 const db = getFirestore(app);
 const auth = getAuth(app);
+const form = document.getElementById('form-servico');
 
-const formServico = document.getElementById('form-servico');
-let currentUser = null;
-let empresaId = null;
+let profissionalRef = null; // Guardará a referência para o documento do profissional
 
 /**
- * Busca o ID da empresa com base no ID do dono (usuário logado).
- * @param {string} uid - O UID do usuário.
- * @returns {string|null} O ID da empresa ou nulo.
+ * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
  */
 async function getEmpresaIdDoDono(uid) {
-    if (!uid) return null;
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        console.error("Nenhuma empresa encontrada para este dono. É necessário cadastrar o perfil primeiro.");
-        return null;
-    }
+    if (snapshot.empty) return null;
     return snapshot.docs[0].id;
 }
 
-/**
- * Lida com o envio do formulário para salvar um novo serviço.
- * @param {Event} event - O evento de submit do formulário.
- */
-async function handleFormSubmit(event) {
-    event.preventDefault();
-    const btnSalvar = formServico.querySelector('button[type="submit"]');
-    btnSalvar.disabled = true;
-    btnSalvar.textContent = 'Salvando...';
-
-    if (!currentUser || !empresaId) {
-        await showAlert("Erro", "Usuário não autenticado ou empresa não encontrada. Por favor, recarregue a página.");
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Serviço';
-        return;
-    }
-
-    try {
-        // 1. Coleta e valida os dados do formulário
-        const nome = document.getElementById('nome-servico').value.trim();
-        const descricao = document.getElementById('descricao-servico').value.trim();
-        const preco = parseFloat(document.getElementById('preco-servico').value);
-        const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
-
-        if (!nome || isNaN(preco) || preco < 0 || isNaN(duracao) || duracao <= 0) {
-            throw new Error("Por favor, preencha todos os campos obrigatórios corretamente.");
-        }
-
-        const novoServico = {
-            id: `serv_${Date.now()}`, // Cria um ID local único para o serviço
-            nome,
-            descricao,
-            preco,
-            duracao,
-            criadoEm: new Date()
-        };
-
-        // 2. Busca o documento do profissional (o próprio dono, neste caso)
-        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", currentUser.uid);
-        const profissionalSnap = await getDoc(profissionalRef);
-
-        if (!profissionalSnap.exists()) {
-            throw new Error("Perfil profissional não encontrado. Cadastre seu perfil primeiro.");
-        }
-
-        // 3. Adiciona o novo serviço à lista de serviços existente
-        const dadosProfissional = profissionalSnap.data();
-        const servicosAtuais = dadosProfissional.servicos || []; // Pega a lista atual ou cria uma nova se não existir
-        servicosAtuais.push(novoServico);
-
-        // 4. Salva a lista de serviços atualizada de volta no documento do profissional
-        await updateDoc(profissionalRef, {
-            servicos: servicosAtuais
-        });
-
-        await showAlert("Sucesso!", "Novo serviço salvo com sucesso.");
-        // Redireciona para a lista de serviços após o sucesso
-        window.location.href = 'servicos.html'; 
-
-    } catch (error) {
-        console.error("Erro ao salvar serviço:", error);
-        await showAlert("Erro ao Salvar", error.message);
-    } finally {
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Serviço';
-    }
-}
-
-// --- INICIALIZAÇÃO DA PÁGINA ---
+// O "porteiro": só executa a lógica depois de confirmar que o usuário está logado.
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        currentUser = user;
-        // Descobre a empresa do usuário antes de habilitar o formulário
-        empresaId = await getEmpresaIdDoDono(user.uid);
-        if(empresaId) {
-            formServico.addEventListener('submit', handleFormSubmit);
+        const empresaId = await getEmpresaIdDoDono(user.uid);
+        if (empresaId) {
+            // Define a referência ao documento do profissional (o dono)
+            profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+            form.addEventListener('submit', handleFormSubmit);
         } else {
-            await showAlert("Atenção", "Não foi possível encontrar sua empresa. Por favor, complete seu cadastro na página 'Meu Perfil' antes de adicionar serviços.");
+            alert("Empresa não encontrada. Por favor, complete o seu perfil.");
+            form.querySelector('button[type="submit"]').disabled = true;
         }
     } else {
-        // Se não estiver logado, redireciona para login
         window.location.href = 'login.html';
     }
 });
+
+/**
+ * Lida com o envio do formulário para adicionar um novo serviço ao array do profissional.
+ */
+async function handleFormSubmit(event) {
+    event.preventDefault();
+    if (!profissionalRef) {
+        alert("Erro: Referência do profissional não encontrada.");
+        return;
+    }
+
+    const nome = document.getElementById('nome-servico').value;
+    const descricao = document.getElementById('descricao-servico').value;
+    const preco = parseFloat(document.getElementById('preco-servico').value);
+    const duracao = parseInt(document.getElementById('duracao-servico').value);
+    
+    // Cria um novo objeto de serviço com um ID único baseado na data atual
+    const novoServico = { 
+        id: `serv_${Date.now()}`, // Cria um ID único
+        nome, 
+        descricao, 
+        preco, 
+        duracao,
+        visivelNaVitrine: true // Padrão: visível
+    };
+
+    const btnSalvar = form.querySelector('button[type="submit"]');
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = "Salvando...";
+
+    try {
+        // 1. Pega o documento do profissional para ler a lista de serviços atual.
+        const docSnap = await getDoc(profissionalRef);
+        const servicosAtuais = (docSnap.exists() && docSnap.data().servicos) ? docSnap.data().servicos : [];
+
+        // 2. Adiciona o novo serviço à lista.
+        const novaListaDeServicos = [...servicosAtuais, novoServico];
+
+        // 3. Atualiza o documento do profissional com a lista completa.
+        await updateDoc(profissionalRef, {
+            servicos: novaListaDeServicos
+        });
+
+        Toastify({
+            text: "Serviço salvo com sucesso!",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            style: { background: "linear-gradient(to right, #00b09b, #96c93d)" }
+        }).showToast();
+
+        setTimeout(() => { window.location.href = 'servicos.html'; }, 2000);
+
+    } catch (error) {
+        console.error("Erro ao salvar o serviço: ", error);
+        Toastify({ 
+            text: "Erro ao salvar o serviço.", 
+            duration: 3000, 
+            gravity: "top", 
+            position: "right", 
+            style: { background: "#dc3545" } 
+        }).showToast();
+    } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = "Salvar Serviço";
+    }
+}
