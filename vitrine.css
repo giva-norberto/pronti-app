@@ -349,3 +349,41 @@ input[type="date"] {
         width: 100%;
     }
 }
+/* =============================================== */
+/* [CORREÇÃO] ESTILOS PARA CARDS DE SERVIÇOS (ABA INFO) */
+/* =============================================== */
+
+#info-servicos {
+    display: grid;
+    /* Cria um grid responsivo para os cards */
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.servico-info-card {
+    background-color: #F9FAFB; /* Um cinza bem claro, quase branco */
+    border: 1px solid #E5E7EB; /* Borda sutil */
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.servico-info-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #D1D5DB;
+}
+
+.servico-info-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4F46E5; /* Cor primária para o título */
+}
+
+.servico-info-card p {
+    margin: 4px 0;
+    color: #6B7280; /* Cor de texto mais suave */
+    font-size: 0.9rem;
+}
