@@ -1,415 +1,351 @@
 /* =============================================== */
-/* TEMA PRONTI APLICADO À VITRINE            */
+/* ESTILOS GERAIS E LAYOUT                         */
 /* =============================================== */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap' );
-
-:root {
-  --cor-primaria: #6366f1;
-  --cor-primaria-leve: #e0e7ff;
-  --cor-secundaria: #ec4899;
-  --cor-sucesso: #22c55e;
-  --cor-perigo: #ef4444;
-  --cor-aviso: #f59e0b;
-  --cor-fundo: #f3f4f6;
-  --cor-branco: #ffffff;
-  --cor-texto: #1f2937;
-  --cor-texto-leve: #6b7280;
-  --cor-borda: #e5e7eb;
-  --sombra: 0 4px 8px rgba(0, 0, 0, 0.07);
-  --sombra-elevada: 0 8px 16px rgba(0, 0, 0, 0.1);
-}
-
-/* =============================================== */
-/* ESTRUTURA GERAL                       */
-/* =============================================== */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
-  font-family: 'Poppins', sans-serif;
-  background-color: var(--cor-fundo);
-  color: var(--cor-texto);
+    font-family: 'Poppins', sans-serif;
+    background-color: #F3F4F6; /* Cor de fundo suave */
 }
 
-#vitrine-loader {
-  text-align: center;
-  padding-top: 100px;
-  font-size: 1.2em;
-  color: var(--cor-texto-leve);
-}
-
-/* =============================================== */
-/* LAYOUT DA VITRINE     */
-/* =============================================== */
 .vitrine-container {
-  display: flex;
-  flex-direction: row;
-  gap: 30px;
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 20px;
+    display: flex;
+    max-width: 1200px;
+    margin: 30px auto;
+    gap: 20px;
+    padding: 0 15px;
 }
 
 .sidebar-vitrine {
-  width: 280px;
-  flex-shrink: 0;
-  background: var(--cor-branco);
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: var(--sombra);
-  height: fit-content;
-  border: 1px solid var(--cor-borda);
+    width: 280px;
+    flex-shrink: 0;
 }
 
-.main-content-vitrine { flex-grow: 1; }
-
-/* =============================================== */
-/* CARDS DE CONTEÚDO       */
-/* =============================================== */
-.card {
-  background-color: var(--cor-branco);
-  border-radius: 12px;
-  padding: 30px;
-  margin-bottom: 25px;
-  box-shadow: var(--sombra);
-  border: 1px solid var(--cor-borda);
-  transition: all 0.2s ease-in-out;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--sombra-elevada);
-}
-
-h2 {
-  font-size: 1.5em;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  color: var(--cor-texto);
-  border-bottom: 1px solid var(--cor-borda);
-  font-weight: 600;
+.main-content-vitrine {
+    flex-grow: 1;
 }
 
 .menu-content { display: none; }
 .menu-content.ativo { display: block; }
 
 /* =============================================== */
-/* CABEÇALHO E MENU        */
+/* CABEÇALHO E MENU LATERAL                        */
 /* =============================================== */
 .header-vitrine {
-  text-align: center;
-  margin-bottom: 25px;
-  padding-bottom: 25px;
-  border-bottom: 1px solid var(--cor-borda);
+    text-align: center;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #E5E7EB;
 }
 
 .header-vitrine img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid var(--cor-primaria-leve);
-  margin-bottom: 15px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
 }
 
 .header-vitrine h1 {
-  font-size: 1.5em;
-  font-weight: 700;
-  color: var(--cor-primaria);
+    font-size: 1.4rem;
+    color: #111827;
 }
 
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.sidebar-menu .menu-btn {
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 16px;
+    font-weight: 600;
+    color: #4B5563;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    margin-bottom: 5px;
 }
 
-.menu-btn {
-  all: unset;
-  box-sizing: border-box;
-  width: 100%;
-  padding: 14px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--cor-texto-leve);
-  transition: all 0.2s ease-in-out;
+.sidebar-menu .menu-btn:hover:not(.ativo) {
+    background-color: #F3F4F6;
 }
 
-.menu-btn:hover {
-  background-color: var(--cor-primaria-leve);
-  color: var(--cor-primaria);
-}
-
-.menu-btn.ativo {
-  background-color: var(--cor-primaria);
-  color: var(--cor-branco);
-  box-shadow: var(--sombra);
+.sidebar-menu .menu-btn.ativo {
+    background-color: #4F46E5;
+    color: white;
 }
 
 /* =============================================== */
-/* FORMULÁRIO E BOTÕES DE SELEÇÃO            */
+/* CARDS E CONTEÚDO PRINCIPAL                      */
 /* =============================================== */
-.form-group { margin-bottom: 25px; }
+.card {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
 
-label {
-  display: block;
-  margin-bottom: 10px;
-  font-weight: 600;
-  color: var(--cor-texto);
-  font-size: 1.1em;
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #374151;
+    margin-bottom: 8px;
 }
 
 input[type="date"] {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--cor-borda);
-  border-radius: 8px;
-  font-size: 1em;
-  font-family: inherit;
-}
-
-.servicos-container-cards, .horarios-container-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.horarios-container-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-}
-
-.service-item, .btn-horario {
-  padding: 8px 16px;
-  border: 1px solid var(--cor-borda);
-  color: var(--cor-texto-leve);
-  background-color: var(--cor-branco);
-  border-radius: 20px; /* Estilo "pílula" para serviços */
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-}
-
-.btn-horario {
-  border-radius: 8px; /* Botões de horário mais quadrados */
-  text-align: center;
-}
-
-.service-item:hover, .btn-horario:hover {
-  border-color: var(--cor-primaria);
-  color: var(--cor-primaria);
-}
-
-.service-item.selecionado, .btn-horario.selecionado {
-  background-color: var(--cor-primaria);
-  color: var(--cor-branco);
-  border-color: var(--cor-primaria);
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-size: 1rem;
 }
 
 /* =============================================== */
-/* SELEÇÃO DE PROFISSIONAL     */
+/* SELEÇÃO DE PROFISSIONAIS                        */
 /* =============================================== */
 .profissionais-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
 }
 
 .card-profissional {
-  background-color: var(--cor-branco);
-  border: 2px solid var(--cor-borda);
-  border-radius: 12px;
-  padding: 15px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .card-profissional:hover {
-  transform: translateY(-4px);
-  border-color: var(--cor-primaria-leve);
-  box-shadow: var(--sombra);
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    border-color: #A5B4FC;
 }
 
 .card-profissional.selecionado {
-  border-color: var(--cor-primaria);
-  background-color: var(--cor-primaria-leve);
-  transform: translateY(-4px);
-  box-shadow: var(--sombra);
+    border-color: #4F46E5;
+    background-color: #EEF2FF;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.15);
+    transform: translateY(-4px);
 }
 
 .card-profissional img {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 10px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 12px;
+    border: 2px solid white;
 }
 
 .card-profissional h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--cor-texto);
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1F2937;
 }
 
 #agendamento-form-container {
     margin-top: 2rem;
-    border-top: 1px solid var(--cor-borda);
+    border-top: 1px solid #E5E7EB;
     padding-top: 2rem;
 }
 
 /* =============================================== */
-/* ESTILO "MEUS AGENDAMENTOS"              */
+/* BOTÕES DE SELEÇÃO (SERVIÇOS E HORÁRIOS)         */
 /* =============================================== */
-.botoes-agendamento {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+.servicos-container-cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.servicos-container-cards .service-item {
+    background-color: white;
+    border: 1px solid #D1D5DB;
+    color: #4B5563;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+.servicos-container-cards .service-item.selecionado {
+    background-color: #6D28D9;
+    color: white;
+    border-color: #6D28D9;
 }
 
-.btn-toggle {
-  flex-grow: 1;
-  padding: 10px 15px;
-  background-color: var(--cor-fundo);
-  border: 1px solid var(--cor-borda);
-  color: var(--cor-texto-leve);
-  font-size: 0.9em;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.horarios-container-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
+.horarios-container-grid .btn-horario {
+    background-color: white;
+    border: 1px solid #D1D5DB;
+    color: #4B5563;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
 }
-
-.btn-toggle.ativo {
-  background: var(--cor-primaria);
-  color: var(--cor-branco);
-  border-color: var(--cor-primaria);
+.horarios-container-grid .btn-horario:hover:not(.selecionado) {
+    border-color: #9CA3AF;
 }
-
-.lista-agendamentos-resultado {
-  margin-top: 20px;
-  display: grid;
-  gap: 15px;
-}
-
-.agendamento-card {
-  background-color: var(--cor-branco);
-  border: 1px solid var(--cor-borda);
-  border-left: 5px solid var(--cor-primaria);
-  border-radius: 8px;
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-}
-
-.agendamento-card.passado {
-  border-left-color: var(--cor-texto-leve);
-  opacity: 0.8;
-}
-
-.agendamento-info h4 {
-  margin: 0 0 5px 0;
-  font-size: 1.1em;
-  color: var(--cor-texto);
-}
-
-.agendamento-info p {
-  margin: 2px 0;
-  color: var(--cor-texto-leve);
-  font-size: 0.9em;
-}
-
-.agendamento-acao .btn-cancelar {
-  background-color: var(--cor-perigo);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: 600;
+.horarios-container-grid .btn-horario.selecionado {
+    background-color: #4F46E5;
+    border-color: #4F46E5;
+    color: white;
+    font-weight: 600;
 }
 
 /* =============================================== */
-/* BOTÕES PRINCIPAIS E SECUNDÁRIOS */
+/* BOTÕES DE AÇÃO PRINCIPAIS                       */
 /* =============================================== */
-.btn-submit, #btn-confirmar-agendamento {
-  width: 100%;
-  padding: 14px 20px;
-  font-size: 1em;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
-  color: var(--cor-branco);
-  transition: all 0.2s ease;
+#btn-confirmar-agendamento, .btn-submit {
+    background: linear-gradient(to right, #8B5CF6, #EC4899);
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    text-align: center;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
 }
 
-.btn-submit:hover, #btn-confirmar-agendamento:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: var(--sombra-elevada);
+#btn-confirmar-agendamento:hover:not(:disabled), .btn-submit:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
 }
 
 #btn-confirmar-agendamento:disabled {
-  background: var(--cor-borda);
-  color: var(--cor-texto-leve);
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  padding: 12px 20px;
-  background-color: var(--cor-fundo);
-  border: 1px solid var(--cor-borda);
-  color: var(--cor-texto);
-  border-radius: 8px;
-  cursor: pointer;
+    background: #E5E7EB;
+    color: #9CA3AF;
+    cursor: not-allowed;
+    transform: translateY(0);
+    opacity: 1;
 }
 
 /* =============================================== */
-/* MODAL DE CONFIRMAÇÃO */
+/* ABA "MEUS AGENDAMENTOS"                         */
+/* =============================================== */
+.botoes-agendamento {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+.botoes-agendamento .btn-toggle {
+    background: none;
+    border: 1px solid #D1D5DB;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #6B7280;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    flex-grow: 1;
+}
+.botoes-agendamento .btn-toggle.ativo {
+    background: linear-gradient(to right, #8B5CF6, #EC4899);
+    color: white;
+    border-color: transparent;
+}
+
+.lista-agendamentos-resultado {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+.agendamento-card {
+    background-color: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-left: 5px solid #4F46E5;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+.agendamento-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.agendamento-info h4 { margin: 0; font-size: 1.1rem; color: #111827; }
+.agendamento-info p { margin: 0; color: #6B7280; font-size: 0.9rem; }
+.agendamento-acao .btn-cancelar {
+    background-color: #EF4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+.agendamento-acao .btn-cancelar:hover { background-color: #DC2626; }
+
+/* =============================================== */
+/* MODAL DE CONFIRMAÇÃO                            */
 /* =============================================== */
 .modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex; justify-content: center; align-items: center;
-  z-index: 1000;
-  opacity: 0; visibility: hidden;
-  transition: opacity 0.3s ease;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 .modal-overlay.ativo { opacity: 1; visibility: visible; }
-
 .modal-box {
-  background-color: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 90%; max-width: 400px;
-  text-align: center;
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    width: 90%; max-width: 400px;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
 }
-.modal-box h3 { margin-top: 0; color: var(--cor-primaria); }
-.modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-.modal-botoes button {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-}
-#modal-btn-confirmar { background-color: var(--cor-perigo); color: white; }
-#modal-btn-cancelar { background-color: var(--cor-borda); color: var(--cor-texto); }
+.modal-overlay.ativo .modal-box { transform: scale(1); }
+.modal-box h3 { margin-top: 0; margin-bottom: 15px; color: #4F46E5; }
+.modal-box p { margin-bottom: 25px; color: #4B5563; }
+.modal-botoes { display: flex; justify-content: center; gap: 15px; }
+.modal-botoes button { border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; }
+#modal-btn-confirmar { background-color: #EF4444; color: white; }
+#modal-btn-confirmar:hover { background-color: #DC2626; }
+#modal-btn-cancelar { background-color: #E5E7EB; color: #4B5563; }
+#modal-btn-cancelar:hover { background-color: #D1D5DB; }
 
 /* =============================================== */
-/* RESPONSIVIDADE */
+/* RESPONSIVIDADE                                  */
 /* =============================================== */
-@media (max-width: 960px) {
-  .vitrine-container {
-    flex-direction: column;
-    margin-top: 20px;
-    gap: 20px;
-    padding: 0 15px;
-  }
-  .sidebar-vitrine { width: 100%; }
+@media (max-width: 768px) {
+    .vitrine-container {
+        flex-direction: column;
+    }
+    .sidebar-vitrine {
+        width: 100%;
+    }
 }
