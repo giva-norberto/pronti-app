@@ -1,183 +1,190 @@
 /**
- * servicos.js (VERSÃO FINAL - GERENCIAMENTO DE EMPRESA)
+ * servicos.js (VERSÃO FINAL E DEFINITIVA)
  *
  * Lógica Principal:
- * 1. Encontra a empresa e o perfil profissional do usuário logado (dono).
- * 2. Lê o campo 'servicos' (que é uma lista/array) de dentro do documento do profissional.
- * 3. Renderiza essa lista na tela.
- * 4. As ações de Excluir e Atualizar Visibilidade modificam a lista em memória
- * e depois salvam a lista inteira de volta no Firebase com 'updateDoc'.
+ * 1. [CORREÇÃO] Espera o HTML da página carregar completamente (DOMContentLoaded).
+ * 2. Encontra a empresa e o perfil profissional do usuário logado (dono).
+ * 3. Lê o campo 'servicos' (array) de dentro do documento do profissional.
+ * 4. Renderiza essa lista na tela.
+ * 5. As ações de Excluir e Atualizar Visibilidade manipulam a lista e salvam
+ * o documento de volta no Firebase com 'updateDoc'.
  */
 
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
-// Assumindo que o vitrini-utils.js está acessível a partir desta pasta
-import { showAlert, showCustomConfirm } from "./vitrini-utils.js"; 
+import { showAlert, showCustomConfirm } from "./vitrini-utils.js";
 
-const db = getFirestore(app);
-const auth = getAuth(app);
-const listaServicosDiv = document.getElementById('lista-servicos');
+// [CORREÇÃO DE SINCRONIA] Garante que o script só roda após o HTML estar pronto.
+document.addEventListener('DOMContentLoaded', () => {
 
-let currentUser = null;
-let empresaId = null;
-let profissionalRef = null; // Referência direta ao documento do profissional
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const listaServicosDiv = document.getElementById('lista-servicos');
 
-/**
- * Busca o ID da empresa com base no ID do dono.
- * @param {string} uid - O UID do usuário logado.
- * @returns {string|null} O ID da empresa ou nulo.
- */
-async function getEmpresaIdDoDono(uid) {
-    if (!uid) return null;
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    return snapshot.docs[0].id;
-}
+    let currentUser = null;
+    let empresaId = null;
+    let profissionalRef = null; // Referência direta ao documento do profissional
 
-/**
- * Carrega e renderiza a LISTA de serviços do documento do profissional.
- */
-async function carregarErenderizarServicos() {
-    if (!profissionalRef) {
-        listaServicosDiv.innerHTML = '<p style="color:red;">Não foi possível encontrar o perfil profissional. Complete seu cadastro em "Meu Perfil".</p>';
-        return;
+    /**
+     * Busca o ID da empresa com base no ID do dono.
+     * @param {string} uid - O UID do usuário logado.
+     * @returns {string|null} O ID da empresa ou nulo.
+     */
+    async function getEmpresaIdDoDono(uid) {
+        if (!uid) return null;
+        const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return null;
+        return snapshot.docs[0].id;
     }
-    listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
 
-    try {
-        const docSnap = await getDoc(profissionalRef);
-
-        if (!docSnap.exists() || !docSnap.data().servicos || docSnap.data().servicos.length === 0) {
-            listaServicosDiv.innerHTML = '<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>';
+    /**
+     * Carrega e renderiza a LISTA de serviços do documento do profissional.
+     */
+    async function carregarErenderizarServicos() {
+        if (!profissionalRef) {
+            listaServicosDiv.innerHTML = '<p style="color:red;">Não foi possível encontrar o perfil profissional. Complete seu cadastro em "Meu Perfil".</p>';
             return;
         }
+        listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
 
-        const servicos = docSnap.data().servicos;
-        listaServicosDiv.innerHTML = ''; // Limpa a lista antes de renderizar
-        
-        servicos.sort((a, b) => a.nome.localeCompare(b.nome));
+        try {
+            const docSnap = await getDoc(profissionalRef);
 
-        servicos.forEach(servico => {
-            const isVisible = servico.visivelNaVitrine !== false;
-            const el = document.createElement('div');
-            el.className = 'servico-item'; // Use uma classe do seu style.css para o container
-            
-            el.innerHTML = `
-                <div class="item-info">
-                    <h3>${servico.nome}</h3>
-                    <p><strong>Preço:</strong> R$ ${parseFloat(servico.preco || 0).toFixed(2).replace('.', ',')}</p>
-                    <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
-                </div>
-                <div class="item-acoes">
-                    <div class="acao-visibilidade">
-                        <label class="switch-label">Ativo na Vitrine</label>
-                        <label class="switch">
-                            <input type="checkbox" class="toggle-visibilidade" data-id="${servico.id}" ${isVisible ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <button class="btn-editar" data-id="${servico.id}">Editar</button>
-                    <button class="btn-excluir" data-id="${servico.id}">Excluir</button>
-                </div>
-            `;
-            listaServicosDiv.appendChild(el);
-        });
-
-    } catch (error) {
-        console.error("Erro ao buscar serviços:", error);
-        listaServicosDiv.innerHTML = '<p style="color:red;">Erro ao carregar os serviços. Verifique suas regras de segurança.</p>';
-    }
-}
-
-/**
- * Exclui um serviço da LISTA e atualiza o documento.
- * @param {string} servicoId - O ID local do serviço a ser excluído.
- */
-async function excluirServico(servicoId) {
-    const confirmado = await showCustomConfirm("Confirmar Exclusão", "Você tem certeza? Esta ação é permanente.");
-    if (!confirmado) return;
-
-    try {
-        const docSnap = await getDoc(profissionalRef);
-        if (!docSnap.exists()) throw new Error("Documento do profissional não encontrado.");
-
-        const servicosAtuais = docSnap.data().servicos || [];
-        const novaListaDeServicos = servicosAtuais.filter(s => s.id !== servicoId);
-
-        await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
-        
-        await showAlert("Sucesso", "Serviço excluído com sucesso.");
-        carregarErenderizarServicos();
-    } catch (error) {
-        console.error("Erro ao excluir serviço: ", error);
-        await showAlert("Erro", "Erro ao excluir serviço.");
-    }
-}
-
-/**
- * Atualiza a visibilidade de um serviço na LISTA e atualiza o documento.
- * @param {string} servicoId - O ID local do serviço a ser atualizado.
- * @param {boolean} visivel - O novo estado de visibilidade.
- */
-async function atualizarVisibilidade(servicoId, visivel) {
-    try {
-        const docSnap = await getDoc(profissionalRef);
-        if (!docSnap.exists()) throw new Error("Documento do profissional não encontrado.");
-
-        const servicosAtuais = docSnap.data().servicos || [];
-        const novaListaDeServicos = servicosAtuais.map(s => {
-            if (s.id === servicoId) {
-                return { ...s, visivelNaVitrine: visivel };
+            if (!docSnap.exists() || !docSnap.data().servicos || docSnap.data().servicos.length === 0) {
+                listaServicosDiv.innerHTML = '<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>';
+                return;
             }
-            return s;
-        });
 
-        await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
-    } catch (error) {
-        console.error("Erro ao atualizar visibilidade:", error);
-        await showAlert("Erro", "Erro ao alterar visibilidade.");
-        carregarErenderizarServicos();
-    }
-}
+            const servicos = docSnap.data().servicos;
+            listaServicosDiv.innerHTML = ''; // Limpa a lista antes de renderizar
+            
+            servicos.sort((a, b) => a.nome.localeCompare(b.nome));
 
-// --- INICIALIZAÇÃO E EVENTOS ---
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        empresaId = await getEmpresaIdDoDono(user.uid);
-        
-        if (empresaId) {
-            profissionalRef = doc(db, "empresarios", empresaId, "profissionais", currentUser.uid);
-            carregarErenderizarServicos();
-        } else {
-            listaServicosDiv.innerHTML = '<p>Empresa não encontrada. Por favor, complete seu cadastro na página "Meu Perfil".</p>';
+            servicos.forEach(servico => {
+                const isVisible = servico.visivelNaVitrine !== false;
+                const el = document.createElement('div');
+                el.className = 'servico-item';
+                // Use estilos no seu CSS, mas mantendo aqui para garantir a aparência
+                el.style.cssText = 'padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;';
+
+                el.innerHTML = `
+                    <div class="item-info">
+                        <h3>${servico.nome}</h3>
+                        <p><strong>Preço:</strong> R$ ${parseFloat(servico.preco || 0).toFixed(2).replace('.', ',')}</p>
+                        <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
+                    </div>
+                    <div class="item-acoes" style="display: flex; gap: 10px; align-items: center;">
+                        <div class="acao-visibilidade" style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+                            <label class="switch-label" style="font-size: 0.8em;">Ativo na Vitrine</label>
+                            <label class="switch">
+                                <input type="checkbox" class="toggle-visibilidade" data-id="${servico.id}" ${isVisible ? 'checked' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <button class="btn-editar" data-id="${servico.id}">Editar</button>
+                        <button class="btn-excluir" data-id="${servico.id}">Excluir</button>
+                    </div>
+                `;
+                listaServicosDiv.appendChild(el);
+            });
+
+        } catch (error) {
+            console.error("Erro ao buscar serviços:", error);
+            listaServicosDiv.innerHTML = '<p style="color:red;">Erro ao carregar os serviços.</p>';
         }
-    } else {
-        window.location.href = 'login.html';
-    }
-});
-
-listaServicosDiv.addEventListener('click', (event) => {
-    const target = event.target;
-    const servicoId = target.dataset.id;
-    if (!servicoId) return;
-
-    if (target.classList.contains('btn-editar')) {
-        window.location.href = `editar-servico.html?id=${servicoId}`;
     }
 
-    if (target.classList.contains('btn-excluir')) {
-        excluirServico(servicoId);
-    }
-});
+    /**
+     * Exclui um serviço da LISTA e atualiza o documento.
+     * @param {string} servicoId - O ID local do serviço a ser excluído.
+     */
+    async function excluirServico(servicoId) {
+        const confirmado = await showCustomConfirm("Confirmar Exclusão", "Você tem certeza? Esta ação é permanente.");
+        if (!confirmado) return;
 
-listaServicosDiv.addEventListener('change', (event) => {
-    const target = event.target;
-    if (target.classList.contains('toggle-visibilidade')) {
+        try {
+            const docSnap = await getDoc(profissionalRef);
+            if (!docSnap.exists()) throw new Error("Documento do profissional não encontrado.");
+
+            const servicosAtuais = docSnap.data().servicos || [];
+            const novaListaDeServicos = servicosAtuais.filter(s => s.id !== servicoId);
+
+            await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
+            
+            await showAlert("Sucesso", "Serviço excluído com sucesso.");
+            carregarErenderizarServicos();
+        } catch (error) {
+            console.error("Erro ao excluir serviço: ", error);
+            await showAlert("Erro", "Erro ao excluir serviço.");
+        }
+    }
+
+    /**
+     * Atualiza a visibilidade de um serviço na LISTA e atualiza o documento.
+     * @param {string} servicoId - O ID local do serviço a ser atualizado.
+     * @param {boolean} visivel - O novo estado de visibilidade.
+     */
+    async function atualizarVisibilidade(servicoId, visivel) {
+        try {
+            const docSnap = await getDoc(profissionalRef);
+            if (!docSnap.exists()) throw new Error("Documento do profissional não encontrado.");
+
+            const servicosAtuais = docSnap.data().servicos || [];
+            const novaListaDeServicos = servicosAtuais.map(s => {
+                if (s.id === servicoId) {
+                    return { ...s, visivelNaVitrine: visivel };
+                }
+                return s;
+            });
+
+            await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
+        } catch (error) {
+            console.error("Erro ao atualizar visibilidade:", error);
+            await showAlert("Erro", "Erro ao alterar visibilidade.");
+            carregarErenderizarServicos();
+        }
+    }
+
+    // --- INICIALIZAÇÃO E EVENTOS ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            empresaId = await getEmpresaIdDoDono(user.uid);
+            
+            if (empresaId) {
+                profissionalRef = doc(db, "empresarios", empresaId, "profissionais", currentUser.uid);
+                carregarErenderizarServicos();
+            } else {
+                listaServicosDiv.innerHTML = '<p>Empresa não encontrada. Por favor, complete seu cadastro na página "Meu Perfil".</p>';
+            }
+        } else {
+            window.location.href = 'login.html';
+        }
+    });
+
+    listaServicosDiv.addEventListener('click', (event) => {
+        const target = event.target;
         const servicoId = target.dataset.id;
-        const isVisible = target.checked;
-        atualizarVisibilidade(servicoId, isVisible);
-    }
-});
+        if (!servicoId) return;
+
+        if (target.classList.contains('btn-editar')) {
+            window.location.href = `editar-servico.html?id=${servicoId}`;
+        }
+
+        if (target.classList.contains('btn-excluir')) {
+            excluirServico(servicoId);
+        }
+    });
+
+    listaServicosDiv.addEventListener('change', (event) => {
+        const target = event.target;
+        if (target.classList.contains('toggle-visibilidade')) {
+            const servicoId = target.dataset.id;
+            const isVisible = target.checked;
+            atualizarVisibilidade(servicoId, isVisible);
+        }
+    });
+
+}); // Fim do DOMContentLoaded
