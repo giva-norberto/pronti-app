@@ -1,45 +1,57 @@
-// Conteúdo do arquivo: link-fixer.js
+/**
+ * link-fixer.js (VERSÃO CORRIGIDA E ALINHADA)
+ *
+ * Lógica Principal:
+ * 1. IMPORTA a configuração do Firebase, em vez de reinicializar.
+ * 2. Encontra a 'empresaId' do usuário logado.
+ * 3. Atualiza o link "Minha Vitrine" com o URL correto, baseado no 'empresaId'.
+ */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
+// CORREÇÃO: Importamos db e auth, em vez de inicializar o app aqui.
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, doc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { app } from "./firebase-config.js";
 
-// Configuração do Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
-  authDomain: "pronti-app-37c6e.firebaseapp.com",
-  projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com",
-  messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e5df3"
-};
-
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Função que busca o slug e atualiza o link da vitrine
+/**
+ * [NOVO] Função auxiliar para encontrar o ID da empresa do dono.
+ */
+async function getEmpresaIdDoDono(uid) {
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].id;
+}
+
+
+/**
+ * CORREÇÃO: Busca o 'empresaId' e atualiza o link da vitrine.
+ * @param {string} uid - O UID do usuário logado.
+ */
 async function atualizarLinkVitrine(uid) {
     const linkVitrine = document.getElementById('link-minha-vitrine');
     if (!linkVitrine) return;
 
     try {
-        const perfilRef = doc(db, "users", uid, "publicProfile", "profile");
-        const docSnap = await getDoc(perfilRef);
+        const empresaId = await getEmpresaIdDoDono(uid);
 
-        if (docSnap.exists() && docSnap.data().slug) {
-            const slug = docSnap.data().slug;
-            linkVitrine.href = `vitrine.html?slug=${slug}`;
+        if (empresaId) {
+            // Se encontrou a empresa, monta o link correto.
+            linkVitrine.href = `vitrine.html?empresa=${empresaId}`;
+            linkVitrine.title = 'Ver a sua vitrine pública';
         } else {
+            // Se não encontrou, aponta para a página de perfil para o usuário se cadastrar.
             linkVitrine.href = 'perfil.html';
-            linkVitrine.title = 'Configure seu slug na página de perfil para ativar a vitrine';
+            linkVitrine.title = 'Complete seu perfil para ativar sua vitrine';
         }
     } catch (error) {
-        console.error("Erro ao buscar slug para link da vitrine:", error);
+        console.error("Erro ao buscar empresa para o link da vitrine:", error);
     }
 }
 
-// Verifica o login e atualiza o link
+// Verifica o login e atualiza o link (lógica mantida, mas agora chama a função correta)
 onAuthStateChanged(auth, (user) => {
     if (user) {
         atualizarLinkVitrine(user.uid);
