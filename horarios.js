@@ -1,10 +1,13 @@
 /**
- * horarios.js
- * Gere a página "Meus Horários", permitindo ao empresário
- * carregar e salvar os seus horários de atendimento no Firestore.
+ * horarios.js (VERSÃO CORRIGIDA E ALINHADA COM A ESTRUTURA 'empresarios')
+ *
+ * Lógica Principal:
+ * 1. Identifica o dono logado e a sua 'empresaId'.
+ * 2. Carrega e salva os horários no documento do profissional correto,
+ * que está em 'empresarios/{empresaId}/profissionais/{donoId}'.
  */
 
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -14,84 +17,104 @@ const auth = getAuth(app);
 const form = document.getElementById('form-horarios');
 const diasDaSemana = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
 
-let uid;
-
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    uid = user.uid;
-    // Só adiciona o listener se o formulário existir na página
-    if (form) {
-        carregarHorarios(uid);
-        form.addEventListener('submit', handleFormSubmit);
-    }
-  } else {
-    window.location.href = 'login.html';
-  }
-});
+let profissionalRef = null; // Guardará a referência para o documento do profissional
 
 /**
- * Carrega os horários salvos do Firestore e preenche o formulário.
- * @param {string} userId - O ID do utilizador autenticado.
+ * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
  */
-async function carregarHorarios(userId) {
-  try {
-    const horariosRef = doc(db, "users", userId, "configuracoes", "horarios");
-    const docSnap = await getDoc(horariosRef);
+async function getEmpresaIdDoDono(uid) {
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].id;
+}
 
-    if (docSnap.exists()) {
-      const horarios = docSnap.data();
-      diasDaSemana.forEach(dia => {
-        if (horarios[dia]) {
-          // --- INÍCIO DA CORREÇÃO ---
-          const inputInicio = document.getElementById(`${dia}-inicio`);
-          const inputFim = document.getElementById(`${dia}-fim`);
-          const checkAtivo = document.getElementById(`${dia}-ativo`);
-
-          // Verifica se os 3 elementos existem na página antes de tentar usá-los
-          if (inputInicio && inputFim && checkAtivo) {
-            inputInicio.value = horarios[dia].inicio;
-            inputFim.value = horarios[dia].fim;
-            checkAtivo.checked = horarios[dia].ativo;
-          }
-          // --- FIM DA CORREÇÃO ---
+// Ponto de partida: verifica o login antes de fazer qualquer coisa.
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const empresaId = await getEmpresaIdDoDono(user.uid);
+        if (empresaId) {
+            // CORREÇÃO: A referência agora aponta para o documento do profissional (o dono)
+            profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+            
+            if (form) {
+                carregarHorarios();
+                form.addEventListener('submit', handleFormSubmit);
+            }
+        } else {
+            alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
         }
-      });
     } else {
-      console.log("Nenhum horário configurado. A usar valores padrão.");
+        window.location.href = 'login.html';
     }
-  } catch (error) {
-    console.error("Erro ao carregar horários:", error);
-  }
+});
+
+
+/**
+ * CORREÇÃO: Carrega os horários salvos do documento do profissional.
+ */
+async function carregarHorarios() {
+    if (!profissionalRef) return;
+    try {
+        const docSnap = await getDoc(profissionalRef);
+
+        if (docSnap.exists() && docSnap.data().horarios) {
+            const horarios = docSnap.data().horarios; // Pega o objeto 'horarios'
+            diasDaSemana.forEach(dia => {
+                if (horarios[dia]) {
+                    const inputInicio = document.getElementById(`${dia}-inicio`);
+                    const inputFim = document.getElementById(`${dia}-fim`);
+                    const checkAtivo = document.getElementById(`${dia}-ativo`);
+
+                    if (inputInicio && inputFim && checkAtivo) {
+                        inputInicio.value = horarios[dia].inicio;
+                        inputFim.value = horarios[dia].fim;
+                        checkAtivo.checked = horarios[dia].ativo;
+                    }
+                }
+            });
+        } else {
+            console.log("Nenhum horário configurado. Usando valores padrão.");
+        }
+    } catch (error) {
+        console.error("Erro ao carregar horários:", error);
+    }
 }
 
 /**
- * Lida com o envio do formulário para salvar os horários.
+ * CORREÇÃO: Salva os horários como um campo 'horarios' no documento do profissional.
  * @param {Event} event - O evento de submit.
  */
 async function handleFormSubmit(event) {
-  event.preventDefault();
-  const btnSalvar = form.querySelector('button[type="submit"]');
-  btnSalvar.disabled = true;
-  btnSalvar.textContent = 'A salvar...';
+    event.preventDefault();
+    if (!profissionalRef) {
+        alert("Erro: não foi possível encontrar o perfil para salvar.");
+        return;
+    }
 
-  const horariosData = {};
-  diasDaSemana.forEach(dia => {
-    horariosData[dia] = {
-      inicio: document.getElementById(`${dia}-inicio`).value,
-      fim: document.getElementById(`${dia}-fim`).value,
-      ativo: document.getElementById(`${dia}-ativo`).checked
-    };
-  });
+    const btnSalvar = form.querySelector('button[type="submit"]');
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'Salvando...';
 
-  try {
-    const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
-    await setDoc(horariosRef, horariosData);
-    alert("Horários salvos com sucesso!");
-  } catch (error) {
-    console.error("Erro ao salvar horários:", error);
-    alert("Ocorreu um erro ao salvar os horários.");
-  } finally {
-    btnSalvar.disabled = false;
-    btnSalvar.textContent = 'Salvar Horários';
-  }
+    const horariosData = {};
+    diasDaSemana.forEach(dia => {
+        horariosData[dia] = {
+            inicio: document.getElementById(`${dia}-inicio`).value,
+            fim: document.getElementById(`${dia}-fim`).value,
+            ativo: document.getElementById(`${dia}-ativo`).checked
+        };
+    });
+
+    try {
+        // CORREÇÃO: Usa 'setDoc' com 'merge: true' para atualizar ou criar o campo 'horarios'
+        // sem apagar outros dados do profissional (como a lista de serviços).
+        await setDoc(profissionalRef, { horarios: horariosData }, { merge: true });
+        alert("Horários salvos com sucesso!");
+    } catch (error) {
+        console.error("Erro ao salvar horários:", error);
+        alert("Ocorreu um erro ao salvar os horários.");
+    } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar Horários';
+    }
 }
