@@ -1,693 +1,415 @@
 /* =============================================== */
-/* ARQUIVO PRINCIPAL DA VITRINE (vitrine.js)       */
+/* TEMA PRONTI APLICADO À VITRINE            */
 /* =============================================== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap' );
 
-// Importa as funções necessárias do SDK do Firebase que você usará.
-// Certifique-se de que seu arquivo firebase-config.js está correto.
-import { app, auth, db } from './firebase-config.js';
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-// ===============================================
-// ESTADO DA APLICAÇÃO E VARIÁVEIS GLOBAIS
-// ===============================================
-let currentUser = null; // Armazena o usuário logado
-let empresaData = null; // Armazena os dados da empresa/negócio
-let profissionais = []; // Armazena a lista de profissionais
-let agendamentosCache = { ativos: [], historico: [] }; // Cache para os agendamentos do usuário
-
-// Mapeamento dos IDs dos elementos do DOM para fácil acesso
-const DOM = {
-    loader: document.getElementById('vitrine-loader' ),
-    content: document.getElementById('vitrine-content'),
-    logo: document.getElementById('logo-publico'),
-    nomeNegocio: document.getElementById('nome-negocio-publico'),
-    infoNegocio: document.getElementById('info-negocio'),
-    infoServicos: document.getElementById('info-servicos'),
-    infoContato: document.getElementById('info-contato'),
-    menuButtons: document.querySelectorAll('.sidebar-menu .menu-btn'),
-    menuContents: document.querySelectorAll('.main-content-vitrine .menu-content'),
-    // Agendamento
-    listaProfissionais: document.getElementById('lista-profissionais'),
-    agendamentoFormContainer: document.getElementById('agendamento-form-container'),
-    listaServicos: document.getElementById('lista-servicos'),
-    dataAgendamento: document.getElementById('data-agendamento'),
-    gradeHorarios: document.getElementById('grade-horarios'),
-    btnConfirmarAgendamento: document.getElementById('btn-confirmar-agendamento'),
-    // Visualização de Agendamentos
-    agendamentosLoginPrompt: document.getElementById('agendamentos-login-prompt'),
-    botoesAgendamento: document.getElementById('botoes-agendamento'),
-    btnVerAtivos: document.getElementById('btn-ver-ativos'),
-    btnVerHistorico: document.getElementById('btn-ver-historico'),
-    listaAgendamentosVisualizacao: document.getElementById('lista-agendamentos-visualizacao'),
-    // Perfil e Login
-    userInfo: document.getElementById('user-info'),
-    userPhoto: document.getElementById('user-photo'),
-    userName: document.getElementById('user-name'),
-    btnLogin: document.getElementById('btn-login'),
-    btnLogout: document.getElementById('btn-logout'),
-    loginLinkAgendamento: document.getElementById('login-link-agendamento'),
-    loginLinkVisualizacao: document.getElementById('login-link-visualizacao'),
-    agendamentoLoginPrompt: document.getElementById('agendamento-login-prompt'),
-    // Modal de Confirmação
-    modalOverlay: document.getElementById('custom-confirm-modal'),
-    modalTitulo: document.getElementById('modal-titulo'),
-    modalMensagem: document.getElementById('modal-mensagem'),
-    modalBtnConfirmar: document.getElementById('modal-btn-confirmar'),
-    modalBtnCancelar: document.getElementById('modal-btn-cancelar'),
-};
-
-// ===============================================
-// FUNÇÕES DE INICIALIZAÇÃO E ROTEAMENTO
-// ===============================================
-
-/**
- * Função principal que é executada quando a página carrega.
- */
-async function init() {
-    const empresaId = getEmpresaIdFromUrl();
-    if (!empresaId) {
-        showError("ID da empresa não encontrado na URL.");
-        return;
-    }
-
-    try {
-        await carregarDadosEmpresa(empresaId);
-        await carregarProfissionais(empresaId);
-        setupEventListeners();
-        setupAuthStateObserver();
-        DOM.loader.style.display = 'none';
-        DOM.content.style.display = 'flex';
-    } catch (error) {
-        console.error("Erro ao inicializar a vitrine:", error);
-        showError("Não foi possível carregar os dados do negócio. Verifique o ID e tente novamente.");
-    }
+:root {
+  --cor-primaria: #6366f1;
+  --cor-primaria-leve: #e0e7ff;
+  --cor-secundaria: #ec4899;
+  --cor-sucesso: #22c55e;
+  --cor-perigo: #ef4444;
+  --cor-aviso: #f59e0b;
+  --cor-fundo: #f3f4f6;
+  --cor-branco: #ffffff;
+  --cor-texto: #1f2937;
+  --cor-texto-leve: #6b7280;
+  --cor-borda: #e5e7eb;
+  --sombra: 0 4px 8px rgba(0, 0, 0, 0.07);
+  --sombra-elevada: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-/**
- * Extrai o ID da empresa dos parâmetros da URL.
- * @returns {string|null} O ID da empresa ou nulo.
- */
-function getEmpresaIdFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('id');
+/* =============================================== */
+/* ESTRUTURA GERAL                       */
+/* =============================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
 }
 
-/**
- * Exibe uma mensagem de erro no lugar do loader.
- * @param {string} message - A mensagem de erro a ser exibida.
- */
-function showError(message) {
-    DOM.loader.innerHTML = `<p style="text-align: center; color: #ef4444; width: 100%; margin-top: 50px;">${message}</p>`;
-    DOM.loader.style.display = 'block';
-    DOM.content.style.display = 'none';
+#vitrine-loader {
+  text-align: center;
+  padding-top: 100px;
+  font-size: 1.2em;
+  color: var(--cor-texto-leve);
 }
 
-// ===============================================
-// CARREGAMENTO DE DADOS (FIREBASE)
-// ===============================================
-
-/**
- * Carrega os dados principais da empresa do Firestore.
- * @param {string} empresaId - O ID do documento da empresa.
- */
-async function carregarDadosEmpresa(empresaId) {
-    const docRef = doc(db, "empresas", empresaId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-        throw new Error("Empresa não encontrada.");
-    }
-    empresaData = { id: docSnap.id, ...docSnap.data() };
-    renderizarInformacoesEmpresa();
+/* =============================================== */
+/* LAYOUT DA VITRINE     */
+/* =============================================== */
+.vitrine-container {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
 }
 
-/**
- * Carrega os profissionais associados à empresa.
- * @param {string} empresaId - O ID da empresa.
- */
-async function carregarProfissionais(empresaId) {
-    const q = query(collection(db, "profissionais"), where("empresaId", "==", empresaId));
-    const querySnapshot = await getDocs(q);
-    profissionais = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderizarProfissionais();
+.sidebar-vitrine {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--cor-branco);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: var(--sombra);
+  height: fit-content;
+  border: 1px solid var(--cor-borda);
 }
 
-// ===============================================
-// RENDERIZAÇÃO (EXIBIÇÃO DOS DADOS NA TELA)
-// ===============================================
+.main-content-vitrine { flex-grow: 1; }
 
-/**
- * Preenche a tela com as informações da empresa carregadas.
- */
-function renderizarInformacoesEmpresa() {
-    DOM.logo.src = empresaData.logoUrl || 'https://placehold.co/100x100/e0e7ff/6366f1?text=Logo';
-    DOM.nomeNegocio.textContent = empresaData.nome;
-    
-    // Aba "Informações"
-    DOM.infoNegocio.innerHTML = `<p>${empresaData.descricao || "Nenhuma descrição fornecida."}</p>`;
-    DOM.infoContato.innerHTML = `
-        <p><strong>Endereço:</strong> ${empresaData.endereco || "Não informado"}</p>
-        <p><strong>Telefone:</strong> ${empresaData.telefone || "Não informado"}</p>
-        <p><strong>Email:</strong> ${empresaData.email || "Não informado"}</p>
-    `;
-
-    // Renderiza os serviços na aba de informações
-    if (empresaData.servicos && empresaData.servicos.length > 0 ) {
-        DOM.infoServicos.innerHTML = empresaData.servicos.map(s => `
-            <div class="servico-info-card">
-                <h4>${s.nome}</h4>
-                <p class="servico-detalhe">Duração: ${s.duracao} min</p>
-                <p class="servico-preco">R$ ${s.preco.toFixed(2)}</p>
-            </div>
-        `).join('');
-    } else {
-        DOM.infoServicos.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
-    }
+/* =============================================== */
+/* CARDS DE CONTEÚDO       */
+/* =============================================== */
+.card {
+  background-color: var(--cor-branco);
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 25px;
+  box-shadow: var(--sombra);
+  border: 1px solid var(--cor-borda);
+  transition: all 0.2s ease-in-out;
 }
 
-/**
- * Renderiza os cards de profissionais na aba de agendamento.
- */
-function renderizarProfissionais() {
-    if (profissionais.length === 0) {
-        DOM.listaProfissionais.innerHTML = "<p>Nenhum profissional disponível no momento.</p>";
-        return;
-    }
-    DOM.listaProfissionais.innerHTML = profissionais.map(p => `
-        <div class="card-profissional" data-id="${p.id}">
-            <img src="${p.fotoUrl || 'https://placehold.co/80x80/e0e7ff/6366f1?text=Perfil'}" alt="Foto de ${p.nome}">
-            <h3>${p.nome}</h3>
-        </div>
-    ` ).join('');
-
-    // Adiciona event listeners para cada card de profissional
-    document.querySelectorAll('.card-profissional').forEach(card => {
-        card.addEventListener('click', () => handleSelecaoProfissional(card.dataset.id));
-    });
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sombra-elevada);
 }
 
-/**
- * Renderiza os serviços oferecidos pelo profissional selecionado.
- * @param {string} profissionalId - O ID do profissional selecionado.
- */
-function renderizarServicosDoProfissional(profissionalId) {
-    const profissional = profissionais.find(p => p.id === profissionalId);
-    if (!profissional || !profissional.servicos || profissional.servicos.length === 0) {
-        DOM.listaServicos.innerHTML = "<p>Este profissional não oferece serviços no momento.</p>";
-        return;
-    }
-
-    // Filtra os serviços completos da empresa com base nos IDs que o profissional oferece
-    const servicosOferecidos = empresaData.servicos.filter(servico => 
-        profissional.servicos.includes(servico.id)
-    );
-
-    DOM.listaServicos.innerHTML = servicosOferecidos.map(s => `
-        <div class="service-item" data-id="${s.id}" data-duracao="${s.duracao}">
-            ${s.nome} (R$ ${s.preco.toFixed(2)})
-        </div>
-    `).join('');
-
-    document.querySelectorAll('.service-item').forEach(item => {
-        item.addEventListener('click', () => handleSelecaoServico(item));
-    });
+h2 {
+  font-size: 1.5em;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  color: var(--cor-texto);
+  border-bottom: 1px solid var(--cor-borda);
+  font-weight: 600;
 }
 
-/**
- * Renderiza a grade de horários disponíveis.
- * @param {Array<string>} horarios - Lista de horários (ex: "09:00").
- */
-function renderizarHorarios(horarios) {
-    if (horarios.length === 0) {
-        DOM.gradeHorarios.innerHTML = '<p class="aviso-horarios">Não há horários disponíveis para esta data.</p>';
-        return;
-    }
-    DOM.gradeHorarios.innerHTML = horarios.map(h => `
-        <button class="btn-horario">${h}</button>
-    `).join('');
+.menu-content { display: none; }
+.menu-content.ativo { display: block; }
 
-    document.querySelectorAll('.btn-horario').forEach(btn => {
-        btn.addEventListener('click', () => handleSelecaoHorario(btn));
-    });
+/* =============================================== */
+/* CABEÇALHO E MENU        */
+/* =============================================== */
+.header-vitrine {
+  text-align: center;
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid var(--cor-borda);
 }
 
-// ===============================================
-// LÓGICA DE AGENDAMENTO (HANDLERS)
-// ===============================================
-
-/**
- * Lida com o clique na seleção de um profissional.
- * @param {string} profissionalId - O ID do profissional clicado.
- */
-function handleSelecaoProfissional(profissionalId) {
-    // Estilo de seleção
-    document.querySelectorAll('.card-profissional').forEach(card => {
-        card.classList.toggle('selecionado', card.dataset.id === profissionalId);
-    });
-
-    // Limpa e reseta o formulário
-    resetarFormularioAgendamento();
-    
-    // Renderiza os serviços do profissional e exibe o formulário
-    renderizarServicosDoProfissional(profissionalId);
-    DOM.agendamentoFormContainer.style.display = 'block';
+.header-vitrine img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--cor-primaria-leve);
+  margin-bottom: 15px;
 }
 
-/**
- * Lida com o clique na seleção de um serviço.
- * @param {HTMLElement} servicoElement - O elemento do serviço clicado.
- */
-function handleSelecaoServico(servicoElement) {
-    document.querySelectorAll('.service-item').forEach(item => item.classList.remove('selecionado'));
-    servicoElement.classList.add('selecionado');
-    verificarDisponibilidade();
+.header-vitrine h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--cor-primaria);
 }
 
-/**
- * Lida com o clique na seleção de um horário.
- * @param {HTMLElement} horarioElement - O elemento do horário clicado.
- */
-function handleSelecaoHorario(horarioElement) {
-    document.querySelectorAll('.btn-horario').forEach(btn => btn.classList.remove('selecionado'));
-    horarioElement.classList.add('selecionado');
-    validarFormulario();
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/**
- * Verifica a disponibilidade de horários quando data ou serviço mudam.
- */
-async function verificarDisponibilidade() {
-    const profissionalSelecionado = document.querySelector('.card-profissional.selecionado');
-    const servicoSelecionado = document.querySelector('.service-item.selecionado');
-    const dataSelecionada = DOM.dataAgendamento.value;
-
-    if (!profissionalSelecionado || !servicoSelecionado || !dataSelecionada) {
-        return;
-    }
-
-    DOM.gradeHorarios.innerHTML = '<p class="aviso-horarios">A verificar horários...</p>';
-
-    const profissionalId = profissionalSelecionado.dataset.id;
-    const profissional = profissionais.find(p => p.id === profissionalId);
-    const duracaoServico = parseInt(servicoSelecionado.dataset.duracao, 10);
-
-    try {
-        // 1. Obter os horários de trabalho do profissional para o dia da semana selecionado
-        const diaDaSemana = new Date(dataSelecionada + 'T00:00:00').getDay(); // 0=Domingo, 1=Segunda...
-        const horariosTrabalho = profissional.horarios[diaDaSemana];
-        if (!horariosTrabalho || !horariosTrabalho.ativo) {
-            renderizarHorarios([]);
-            return;
-        }
-
-        // 2. Gerar todos os slots possíveis
-        const todosOsSlots = gerarSlotsDeHorario(horariosTrabalho.inicio, horariosTrabalho.fim, duracaoServico);
-
-        // 3. Obter agendamentos existentes para esse profissional e dia
-        const agendamentosDoDia = await getAgendamentosPorDia(profissionalId, dataSelecionada);
-
-        // 4. Filtrar os slots disponíveis
-        const horariosDisponiveis = todosOsSlots.filter(slot => {
-            return !agendamentosDoDia.some(agendamento => {
-                const agendamentoInicio = agendamento.horario;
-                const agendamentoFim = adicionarMinutos(agendamentoInicio, agendamento.duracao);
-                const slotFim = adicionarMinutos(slot, duracaoServico);
-                // Verifica se há sobreposição
-                return agendamentoInicio < slotFim && agendamentoFim > slot;
-            });
-        });
-
-        renderizarHorarios(horariosDisponiveis);
-    } catch (error) {
-        console.error("Erro ao verificar disponibilidade:", error);
-        DOM.gradeHorarios.innerHTML = '<p class="aviso-horarios" style="color: #ef4444;">Erro ao buscar horários.</p>';
-    }
+.menu-btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--cor-texto-leve);
+  transition: all 0.2s ease-in-out;
 }
 
-/**
- * Valida o formulário de agendamento e habilita/desabilita o botão de confirmação.
- */
-function validarFormulario() {
-    const profissional = document.querySelector('.card-profissional.selecionado');
-    const servico = document.querySelector('.service-item.selecionado');
-    const data = DOM.dataAgendamento.value;
-    const horario = document.querySelector('.btn-horario.selecionado');
-
-    DOM.btnConfirmarAgendamento.disabled = !(profissional && servico && data && horario && currentUser);
+.menu-btn:hover {
+  background-color: var(--cor-primaria-leve);
+  color: var(--cor-primaria);
 }
 
-/**
- * Reseta o formulário de agendamento para o estado inicial.
- */
-function resetarFormularioAgendamento() {
-    DOM.listaServicos.innerHTML = '';
-    DOM.gradeHorarios.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
-    DOM.dataAgendamento.value = '';
-    DOM.btnConfirmarAgendamento.disabled = true;
+.menu-btn.ativo {
+  background-color: var(--cor-primaria);
+  color: var(--cor-branco);
+  box-shadow: var(--sombra);
 }
 
-/**
- * Confirma e salva o agendamento no Firestore.
- */
-async function confirmarAgendamento() {
-    validarFormulario();
-    if (DOM.btnConfirmarAgendamento.disabled) {
-        alert("Por favor, preencha todos os campos e faça login para agendar.");
-        return;
-    }
+/* =============================================== */
+/* FORMULÁRIO E BOTÕES DE SELEÇÃO            */
+/* =============================================== */
+.form-group { margin-bottom: 25px; }
 
-    const profissionalEl = document.querySelector('.card-profissional.selecionado');
-    const servicoEl = document.querySelector('.service-item.selecionado');
-    const horarioEl = document.querySelector('.btn-horario.selecionado');
-
-    const servicoId = servicoEl.dataset.id;
-    const servicoCompleto = empresaData.servicos.find(s => s.id === servicoId);
-
-    const agendamento = {
-        empresaId: empresaData.id,
-        empresaNome: empresaData.nome,
-        profissionalId: profissionalEl.dataset.id,
-        profissionalNome: profissionais.find(p => p.id === profissionalEl.dataset.id).nome,
-        clienteId: currentUser.uid,
-        clienteNome: currentUser.displayName,
-        servicoId: servicoId,
-        servicoNome: servicoCompleto.nome,
-        preco: servicoCompleto.preco,
-        duracao: servicoCompleto.duracao,
-        data: DOM.dataAgendamento.value,
-        horario: horarioEl.textContent,
-        status: "ativo", // "ativo", "cancelado", "concluido"
-        criadoEm: serverTimestamp()
-    };
-
-    try {
-        DOM.btnConfirmarAgendamento.textContent = "A agendar...";
-        DOM.btnConfirmarAgendamento.disabled = true;
-        
-        const docRef = await addDoc(collection(db, "agendamentos"), agendamento);
-        alert(`Agendamento confirmado com sucesso para ${agendamento.data} às ${agendamento.horario}!`);
-        
-        // Limpa tudo para um novo agendamento
-        document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
-        DOM.agendamentoFormContainer.style.display = 'none';
-        resetarFormularioAgendamento();
-
-    } catch (error) {
-        console.error("Erro ao salvar agendamento: ", error);
-        alert("Ocorreu um erro ao tentar confirmar seu agendamento. Tente novamente.");
-    } finally {
-        DOM.btnConfirmarAgendamento.textContent = "Confirmar Agendamento";
-        validarFormulario();
-    }
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: var(--cor-texto);
+  font-size: 1.1em;
 }
 
-// ===============================================
-// AUTENTICAÇÃO (FIREBASE AUTH)
-// ===============================================
-
-/**
- * Configura o observador de estado de autenticação.
- */
-function setupAuthStateObserver() {
-    onAuthStateChanged(auth, user => {
-        currentUser = user;
-        updateUIForAuthState();
-        validarFormulario();
-        if (user) {
-            carregarMeusAgendamentos();
-        }
-    });
+input[type="date"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  font-size: 1em;
+  font-family: inherit;
 }
 
-/**
- * Atualiza a interface do usuário com base no estado de login.
- */
-function updateUIForAuthState() {
-    if (currentUser) {
-        // Usuário logado
-        DOM.userInfo.style.display = 'block';
-        DOM.userPhoto.src = currentUser.photoURL;
-        DOM.userName.textContent = currentUser.displayName;
-        DOM.btnLogin.style.display = 'none';
-        DOM.agendamentoLoginPrompt.style.display = 'none';
-        DOM.agendamentosLoginPrompt.style.display = 'none';
-        DOM.botoesAgendamento.style.display = 'flex';
-    } else {
-        // Usuário deslogado
-        DOM.userInfo.style.display = 'none';
-        DOM.btnLogin.style.display = 'block';
-        DOM.agendamentoLoginPrompt.style.display = 'block';
-        DOM.agendamentosLoginPrompt.style.display = 'block';
-        DOM.botoesAgendamento.style.display = 'none';
-        DOM.listaAgendamentosVisualizacao.innerHTML = '';
-    }
+.servicos-container-cards, .horarios-container-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-/**
- * Inicia o fluxo de login com o Google.
- */
-async function loginComGoogle() {
-    const provider = new GoogleAuthProvider();
-    try {
-        await signInWithPopup(auth, provider);
-    } catch (error) {
-        console.error("Erro ao fazer login com Google:", error);
-        alert("Não foi possível fazer login. Tente novamente.");
-    }
+.horarios-container-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
 }
 
-/**
- * Realiza o logout do usuário.
- */
-async function logout() {
-    try {
-        await signOut(auth);
-    } catch (error) {
-        console.error("Erro ao fazer logout:", error);
-    }
+.service-item, .btn-horario {
+  padding: 8px 16px;
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto-leve);
+  background-color: var(--cor-branco);
+  border-radius: 20px; /* Estilo "pílula" para serviços */
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
 }
 
-// ===============================================
-// VISUALIZAÇÃO DE AGENDAMENTOS
-// ===============================================
-
-/**
- * Carrega os agendamentos do usuário logado do Firestore.
- */
-async function carregarMeusAgendamentos() {
-    if (!currentUser) return;
-
-    const q = query(
-        collection(db, "agendamentos"),
-        where("clienteId", "==", currentUser.uid),
-        orderBy("data", "desc"),
-        orderBy("horario", "desc")
-    );
-
-    const querySnapshot = await getDocs(q);
-    const agendamentos = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    const hoje = new Date().toISOString().split('T')[0];
-    agendamentosCache.ativos = agendamentos.filter(a => a.data >= hoje && a.status === 'ativo');
-    agendamentosCache.historico = agendamentos.filter(a => a.data < hoje || a.status !== 'ativo');
-
-    // Exibe os agendamentos ativos por padrão
-    renderizarListaAgendamentos('ativos');
+.btn-horario {
+  border-radius: 8px; /* Botões de horário mais quadrados */
+  text-align: center;
 }
 
-/**
- * Renderiza a lista de agendamentos (ativos ou histórico).
- * @param {'ativos' | 'historico'} tipo - O tipo de agendamento a ser exibido.
- */
-function renderizarListaAgendamentos(tipo) {
-    const lista = agendamentosCache[tipo];
-    DOM.listaAgendamentosVisualizacao.innerHTML = '';
-
-    if (lista.length === 0) {
-        DOM.listaAgendamentosVisualizacao.innerHTML = `<p>Você não tem agendamentos na categoria "${tipo}".</p>`;
-        return;
-    }
-
-    lista.forEach(ag => {
-        const card = document.createElement('div');
-        card.className = 'agendamento-card';
-        if (ag.status !== 'ativo') {
-            card.classList.add('passado'); // Adiciona estilo para cancelados/concluídos
-        }
-        
-        const dataFormatada = new Date(ag.data + 'T00:00:00').toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-
-        card.innerHTML = `
-            <div class="agendamento-info">
-                <h4>${ag.servicoNome}</h4>
-                <p><strong>Profissional:</strong> ${ag.profissionalNome}</p>
-                <p><strong>Data:</strong> ${dataFormatada} às ${ag.horario}</p>
-                <p><strong>Status:</strong> <span class="status-${ag.status}">${ag.status.toUpperCase()}</span></p>
-            </div>
-            ${ag.status === 'ativo' ? `
-            <div class="agendamento-acao">
-                <button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>
-            </div>` : ''}
-        `;
-        DOM.listaAgendamentosVisualizacao.appendChild(card);
-    });
-
-    // Adiciona listener para os botões de cancelar
-    document.querySelectorAll('.btn-cancelar').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const agendamentoId = e.target.dataset.id;
-            mostrarModalConfirmacao(
-                "Cancelar Agendamento",
-                "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.",
-                () => cancelarAgendamento(agendamentoId)
-            );
-        });
-    });
+.service-item:hover, .btn-horario:hover {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
 }
 
-/**
- * Cancela um agendamento, atualizando seu status no Firestore.
- * @param {string} agendamentoId - O ID do agendamento a ser cancelado.
- */
-async function cancelarAgendamento(agendamentoId) {
-    const agendamentoRef = doc(db, "agendamentos", agendamentoId);
-    try {
-        await updateDoc(agendamentoRef, {
-            status: "cancelado"
-        });
-        alert("Agendamento cancelado com sucesso.");
-        carregarMeusAgendamentos(); // Recarrega a lista
-    } catch (error) {
-        console.error("Erro ao cancelar agendamento:", error);
-        alert("Não foi possível cancelar o agendamento. Tente novamente.");
-    }
+.service-item.selecionado, .btn-horario.selecionado {
+  background-color: var(--cor-primaria);
+  color: var(--cor-branco);
+  border-color: var(--cor-primaria);
 }
 
-// ===============================================
-// FUNÇÕES UTILITÁRIAS
-// ===============================================
-
-/**
- * Gera slots de horário com base no início, fim e duração.
- * @param {string} inicio - Horário de início (ex: "09:00").
- * @param {string} fim - Horário de fim (ex: "18:00").
- * @param {number} duracao - Duração do serviço em minutos.
- * @returns {Array<string>} Uma lista de slots de horário.
- */
-function gerarSlotsDeHorario(inicio, fim, duracao) {
-    const slots = [];
-    let atual = inicio;
-    while (adicionarMinutos(atual, duracao) <= fim) {
-        slots.push(atual);
-        atual = adicionarMinutos(atual, duracao);
-    }
-    return slots;
+/* =============================================== */
+/* SELEÇÃO DE PROFISSIONAL     */
+/* =============================================== */
+.profissionais-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
 }
 
-/**
- * Adiciona minutos a um horário no formato "HH:MM".
- * @param {string} horario - O horário inicial.
- * @param {number} minutos - Minutos a serem adicionados.
- * @returns {string} O novo horário.
- */
-function adicionarMinutos(horario, minutos) {
-    const [h, m] = horario.split(':').map(Number);
-    const data = new Date();
-    data.setHours(h, m + minutos, 0, 0);
-    return data.toTimeString().slice(0, 5);
+.card-profissional {
+  background-color: var(--cor-branco);
+  border: 2px solid var(--cor-borda);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/**
- * Busca agendamentos para um profissional em um dia específico.
- * @param {string} profissionalId - ID do profissional.
- * @param {string} data - Data no formato "AAAA-MM-DD".
- * @returns {Promise<Array<object>>} Uma lista de objetos de agendamento.
- */
-async function getAgendamentosPorDia(profissionalId, data) {
-    const q = query(
-        collection(db, "agendamentos"),
-        where("profissionalId", "==", profissionalId),
-        where("data", "==", data),
-        where("status", "==", "ativo")
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => doc.data());
+.card-profissional:hover {
+  transform: translateY(-4px);
+  border-color: var(--cor-primaria-leve);
+  box-shadow: var(--sombra);
 }
 
-/**
- * Mostra um modal de confirmação genérico.
- * @param {string} titulo - O título do modal.
- * @param {string} mensagem - A mensagem do modal.
- * @param {Function} onConfirm - A função a ser executada se o usuário confirmar.
- */
-function mostrarModalConfirmacao(titulo, mensagem, onConfirm) {
-    DOM.modalTitulo.textContent = titulo;
-    DOM.modalMensagem.textContent = mensagem;
-    DOM.modalOverlay.classList.add('ativo');
-
-    // Remove listeners antigos para evitar chamadas múltiplas
-    const novoBtnConfirmar = DOM.modalBtnConfirmar.cloneNode(true);
-    DOM.modalBtnConfirmar.parentNode.replaceChild(novoBtnConfirmar, DOM.modalBtnConfirmar);
-    DOM.modalBtnConfirmar = novoBtnConfirmar;
-
-    DOM.modalBtnConfirmar.addEventListener('click', () => {
-        onConfirm();
-        DOM.modalOverlay.classList.remove('ativo');
-    });
+.card-profissional.selecionado {
+  border-color: var(--cor-primaria);
+  background-color: var(--cor-primaria-leve);
+  transform: translateY(-4px);
+  box-shadow: var(--sombra);
 }
 
-// ===============================================
-// SETUP DE EVENT LISTENERS
-// ===============================================
-
-/**
- * Configura todos os event listeners da página.
- */
-function setupEventListeners() {
-    // Navegação do menu lateral
-    DOM.menuButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const menuAlvo = button.dataset.menu;
-            DOM.menuButtons.forEach(btn => btn.classList.remove('ativo'));
-            DOM.menuContents.forEach(content => content.classList.remove('ativo'));
-            button.classList.add('ativo');
-            document.getElementById(`menu-${menuAlvo}`).classList.add('ativo');
-        });
-    });
-
-    // Formulário de agendamento
-    DOM.dataAgendamento.addEventListener('change', verificarDisponibilidade);
-    DOM.btnConfirmarAgendamento.addEventListener('click', confirmarAgendamento);
-
-    // Autenticação
-    DOM.btnLogin.addEventListener('click', loginComGoogle);
-    DOM.btnLogout.addEventListener('click', logout);
-    DOM.loginLinkAgendamento.addEventListener('click', (e) => { e.preventDefault(); loginComGoogle(); });
-    DOM.loginLinkVisualizacao.addEventListener('click', (e) => { e.preventDefault(); loginComGoogle(); });
-
-    // Visualização de agendamentos
-    DOM.btnVerAtivos.addEventListener('click', () => {
-        DOM.btnVerAtivos.classList.add('ativo');
-        DOM.btnVerHistorico.classList.remove('ativo');
-        renderizarListaAgendamentos('ativos');
-    });
-    DOM.btnVerHistorico.addEventListener('click', () => {
-        DOM.btnVerHistorico.classList.add('ativo');
-        DOM.btnVerAtivos.classList.remove('ativo');
-        renderizarListaAgendamentos('historico');
-    });
-
-    // Modal
-    DOM.modalBtnCancelar.addEventListener('click', () => DOM.modalOverlay.classList.remove('ativo'));
-    DOM.modalOverlay.addEventListener('click', (e) => {
-        if (e.target === DOM.modalOverlay) {
-            DOM.modalOverlay.classList.remove('ativo');
-        }
-    });
+.card-profissional img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
 }
 
-// ===============================================
-// INICIALIZAÇÃO DA APLICAÇÃO
-// ===============================================
-document.addEventListener('DOMContentLoaded', init);
+.card-profissional h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+#agendamento-form-container {
+    margin-top: 2rem;
+    border-top: 1px solid var(--cor-borda);
+    padding-top: 2rem;
+}
+
+/* =============================================== */
+/* ESTILO "MEUS AGENDAMENTOS"              */
+/* =============================================== */
+.botoes-agendamento {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn-toggle {
+  flex-grow: 1;
+  padding: 10px 15px;
+  background-color: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto-leve);
+  font-size: 0.9em;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle.ativo {
+  background: var(--cor-primaria);
+  color: var(--cor-branco);
+  border-color: var(--cor-primaria);
+}
+
+.lista-agendamentos-resultado {
+  margin-top: 20px;
+  display: grid;
+  gap: 15px;
+}
+
+.agendamento-card {
+  background-color: var(--cor-branco);
+  border: 1px solid var(--cor-borda);
+  border-left: 5px solid var(--cor-primaria);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.agendamento-card.passado {
+  border-left-color: var(--cor-texto-leve);
+  opacity: 0.8;
+}
+
+.agendamento-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 1.1em;
+  color: var(--cor-texto);
+}
+
+.agendamento-info p {
+  margin: 2px 0;
+  color: var(--cor-texto-leve);
+  font-size: 0.9em;
+}
+
+.agendamento-acao .btn-cancelar {
+  background-color: var(--cor-perigo);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* =============================================== */
+/* BOTÕES PRINCIPAIS E SECUNDÁRIOS */
+/* =============================================== */
+.btn-submit, #btn-confirmar-agendamento {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+  color: var(--cor-branco);
+  transition: all 0.2s ease;
+}
+
+.btn-submit:hover, #btn-confirmar-agendamento:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-elevada);
+}
+
+#btn-confirmar-agendamento:disabled {
+  background: var(--cor-borda);
+  color: var(--cor-texto-leve);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 12px 20px;
+  background-color: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  color: var(--cor-texto);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* =============================================== */
+/* MODAL DE CONFIRMAÇÃO */
+/* =============================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.3s ease;
+}
+.modal-overlay.ativo { opacity: 1; visibility: visible; }
+
+.modal-box {
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%; max-width: 400px;
+  text-align: center;
+}
+.modal-box h3 { margin-top: 0; color: var(--cor-primaria); }
+.modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+.modal-botoes button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+#modal-btn-confirmar { background-color: var(--cor-perigo); color: white; }
+#modal-btn-cancelar { background-color: var(--cor-borda); color: var(--cor-texto); }
+
+/* =============================================== */
+/* RESPONSIVIDADE */
+/* =============================================== */
+@media (max-width: 960px) {
+  .vitrine-container {
+    flex-direction: column;
+    margin-top: 20px;
+    gap: 20px;
+    padding: 0 15px;
+  }
+  .sidebar-vitrine { width: 100%; }
+}
