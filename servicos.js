@@ -1,3 +1,5 @@
+// servicos.js (VERSÃO CORRIGIDA SEM ONCLICK)
+
 // Dados dos serviços (simulando um banco de dados)
 let servicos = [
     {
@@ -78,6 +80,8 @@ function renderizarServicos() {
         return;
     }
     
+    // --- ALTERAÇÃO 1: REMOVIDO O 'onclick' DO HTML ---
+    // Agora os botões têm apenas 'data-id' para identificação.
     listaServicos.innerHTML = servicos.map(servico => `
         <div class="servico-card">
             <div class="servico-header">
@@ -91,10 +95,10 @@ function renderizarServicos() {
                     <span class="servico-duracao"> • ${formatarDuracao(servico.duracao)}</span>
                 </div>
                 <div class="servico-acoes">
-                    <button class="btn-acao btn-editar" onclick="editarServico(${servico.id})">
+                    <button class="btn-acao btn-editar" data-id="${servico.id}">
                         Editar
                     </button>
-                    <button class="btn-acao btn-excluir" onclick="confirmarExclusao(${servico.id})">
+                    <button class="btn-acao btn-excluir" data-id="${servico.id}">
                         Excluir
                     </button>
                 </div>
@@ -148,7 +152,8 @@ function editarServico(id) {
     }
 }
 
-// Event listeners para os botões do modal
+// --- ALTERAÇÃO 2: 'addEventListener' CENTRALIZADO ---
+// Todo o controle de cliques agora acontece aqui, no JavaScript.
 document.addEventListener('DOMContentLoaded', function() {
     // Renderizar serviços ao carregar a página
     renderizarServicos();
@@ -170,6 +175,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             fecharModal();
+        }
+    });
+
+    // NOVO: Adiciona um único "escutador" para todos os cliques na lista de serviços
+    document.getElementById('lista-servicos').addEventListener('click', function(e) {
+        const target = e.target.closest('.btn-acao'); // Procura pelo botão mais próximo que foi clicado
+        if (!target) return; // Se não clicou em um botão de ação, não faz nada
+
+        const id = Number(target.dataset.id); // Pega o ID do botão e converte para número
+
+        if (target.classList.contains('btn-editar')) {
+            editarServico(id);
+        }
+
+        if (target.classList.contains('btn-excluir')) {
+            confirmarExclusao(id);
         }
     });
 });
