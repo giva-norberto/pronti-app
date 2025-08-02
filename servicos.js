@@ -1,9 +1,8 @@
 /**
- * servicos.js (VERSÃO FINAL E CORRIGIDA)
+ * servicos.js (VERSÃO FINAL COM LOGS DE DEBUG)
  *
- * Correção: Os 'imports' foram movidos para o topo do arquivo para corrigir
- * o SyntaxError, enquanto o resto da lógica permanece dentro do DOMContentLoaded
- * para resolver o problema de timing.
+ * Adicionados console.log na função 'excluirServico' para
+ * podermos rastrear o fluxo de execução e os dados no console do navegador.
  */
 
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -81,17 +80,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * [FUNÇÃO COM LOGS DE DEBUG]
+     * Exclui um serviço da LISTA e atualiza o documento.
+     * @param {string} servicoId - O ID local do serviço a ser excluído.
+     */
     async function excluirServico(servicoId) {
+        console.log("Clicou para excluir:", servicoId); // 👈 LOG AQUI
         const confirmado = await showCustomConfirm("Confirmar Exclusão", "Você tem certeza? Esta ação é permanente.");
-        if (!confirmado) return;
+        
+        // Se o usuário clicou em "Cancelar", 'confirmado' será 'false' e a função para aqui.
+        if (!confirmado) {
+            console.log("Ação de exclusão cancelada pelo usuário."); // 👈 LOG EXTRA
+            return;
+        }
 
         try {
             const docSnap = await getDoc(profissionalRef);
+            console.log("Documento do profissional encontrado:", docSnap.exists()); // 👈 LOG AQUI
             if (!docSnap.exists()) throw new Error("Documento do profissional não encontrado.");
 
             const servicosAtuais = docSnap.data().servicos || [];
+            console.log("Serviços atuais antes de excluir:", servicosAtuais); // 👈 LOG AQUI
+
             const novaListaDeServicos = servicosAtuais.filter(s => s.id !== servicoId);
-            
+            console.log("Nova lista após o filtro:", novaListaDeServicos); // 👈 LOG AQUI
+
             await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
             
             await showAlert("Sucesso", "Serviço excluído com sucesso.");
