@@ -4,11 +4,12 @@
 // IMPORTS DOS MÓDULOS
 // ==========================================================================
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
-// As funções de busca foram atualizadas para a nova lógica de empresa
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
-// A função renderizarDadosProfissional foi renomeada no import para clareza
-import { renderizarServicos, renderizarDadosProfissional as renderizarInfoProfissional, updateUIOnAuthChange } from './vitrini-ui.js';
+
+// [CORREÇÃO] A importação foi ajustada para pedir apenas as funções que realmente vêm do vitrini-ui.js.
+// As outras (renderizarDadosEmpresa e renderizarProfissionais) estão definidas neste próprio arquivo.
+import { renderizarServicos, updateUIOnAuthChange } from './vitrini-ui.js';
 import { showAlert, showCustomConfirm } from './vitrini-utils.js';
 
 // ==========================================================================
@@ -138,7 +139,7 @@ async function selecionarProfissional(profissional) {
         dataInput.dispatchEvent(new Event('change'));
     }
     
-    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horários">Selecione um serviço e uma data para ver os horários.</p>';
+    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>';
 }
 
 // ==========================================================================
@@ -251,9 +252,6 @@ function configurarEventosGerais() {
             btn.disabled = false;
         }
     });
-    
-    // A lógica de cancelamento e de visualização de histórico/ativos será ajustada no próximo passo,
-    // pois depende de modificações no arquivo 'vitrini-agendamento.js'
 }
 
 // Inicia a aplicação quando o HTML estiver pronto
