@@ -1,11 +1,13 @@
 /**
- * clientes.js (Painel do Dono - Corrigido para Multi-Utilizador)
- * * Este script foi construído sobre o código-base fornecido pelo utilizador,
- * * adicionando a camada de segurança para múltiplos utilizadores sem alterar
- * * as funções e fórmulas originais.
+ * clientes.js (Painel do Dono - Corrigido para a estrutura 'empresarios')
+ *
+ * Alterações:
+ * - A lógica agora primeiro descobre o 'empresaId' do dono logado.
+ * - As funções de carregar e excluir clientes agora apontam para a
+ * subcoleção 'empresarios/{empresaId}/clientes'.
  */
 
-import { getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -18,12 +20,18 @@ const modalMensagem = document.getElementById('modal-mensagem');
 const btnModalConfirmar = document.getElementById('btn-modal-confirmar');
 const btnModalCancelar = document.getElementById('btn-modal-cancelar');
 
+let empresaId = null; // Variável global para guardar o ID da empresa
+
 // A verificação de login é o "porteiro" da página.
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
-    // O utilizador está autenticado, podemos executar a lógica da página.
-    const uid = user.uid;
-    inicializarPaginaClientes(uid);
+    // O utilizador está autenticado, podemos buscar o ID da empresa dele.
+    empresaId = await getEmpresaIdDoDono(user.uid);
+    if (empresaId) {
+        inicializarPaginaClientes();
+    } else {
+        listaClientesDiv.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
+    }
   } else {
     // Se não há utilizador autenticado, redireciona para a tela de login.
     console.log("Nenhum utilizador autenticado. A redirecionar para login.html...");
@@ -32,11 +40,21 @@ onAuthStateChanged(auth, (user) => {
 });
 
 /**
- * Função que inicializa toda a lógica da página de clientes.
- * @param {string} uid - O ID do utilizador autenticado.
+ * Função para encontrar o ID da empresa com base no ID do dono.
+ * @param {string} uid - O ID do dono da empresa.
+ * @returns {string|null} - O ID da empresa.
  */
-function inicializarPaginaClientes(uid) {
-    // --- SUAS FUNÇÕES ORIGINAIS (ADAPTADAS PARA O UID) ---
+async function getEmpresaIdDoDono(uid) {
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].id;
+}
+
+/**
+ * Função que inicializa toda a lógica da página de clientes.
+ */
+function inicializarPaginaClientes() {
 
     function mostrarConfirmacao(mensagem) {
       modalMensagem.textContent = mensagem;
@@ -60,9 +78,9 @@ function inicializarPaginaClientes(uid) {
     async function carregarClientesDoFirebase() {
         listaClientesDiv.innerHTML = "<p>A carregar clientes...</p>";
         try {
-            // MUDANÇA: Aponta para a coleção segura do utilizador.
-            const clientesUserCollection = collection(db, "users", uid, "clientes");
-            const clientesQuery = query(clientesUserCollection, orderBy("nome"));
+            // CORREÇÃO: Aponta para a subcoleção 'clientes' dentro da empresa correta.
+            const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
+            const clientesQuery = query(clientesCollection, orderBy("nome"));
             const clientesSnapshot = await getDocs(clientesQuery);
 
             if (clientesSnapshot.empty) {
@@ -75,8 +93,8 @@ function inicializarPaginaClientes(uid) {
                     const el = document.createElement('div');
                     el.classList.add('cliente-item'); el.dataset.id = clienteId;
                     el.innerHTML = `
-                      <div class="item-info"><h3>${cliente.nome}</h3><p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ''}</p></div>
-                      <div class="item-acoes"><a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a><button class="btn-excluir" data-id="${clienteId}">Excluir</button></div>
+                        <div class="item-info"><h3>${cliente.nome}</h3><p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ''}</p></div>
+                        <div class="item-acoes"><a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a><button class="btn-excluir" data-id="${clienteId}">Excluir</button></div>
                     `;
                     listaClientesDiv.appendChild(el);
                 }
@@ -86,8 +104,8 @@ function inicializarPaginaClientes(uid) {
 
     async function excluirCliente(id) {
         try {
-            // MUDANÇA: Aponta para o documento dentro da coleção segura do utilizador.
-            await deleteDoc(doc(db, "users", uid, "clientes", id));
+            // CORREÇÃO: Aponta para o documento dentro da subcoleção 'clientes' da empresa correta.
+            await deleteDoc(doc(db, "empresarios", empresaId, "clientes", id));
             // AVISO: A biblioteca Toastify não é padrão. Se não funcionar, substitua por alert().
             Toastify({ text: "Cliente excluído com sucesso!", style: { background: "var(--cor-perigo)" } }).showToast();
             const itemRemovido = document.querySelector(`.cliente-item[data-id="${id}"]`);
@@ -98,7 +116,6 @@ function inicializarPaginaClientes(uid) {
         }
     }
 
-    // --- SEU EVENT LISTENER ORIGINAL ---
     listaClientesDiv.addEventListener('click', async (event) => {
         if (event.target && event.target.classList.contains('btn-excluir')) {
             const clienteId = event.target.dataset.id;
@@ -110,6 +127,5 @@ function inicializarPaginaClientes(uid) {
         }
     });
 
-    // --- SUA CHAMADA INICIAL ORIGINAL ---
     carregarClientesDoFirebase();
 }
