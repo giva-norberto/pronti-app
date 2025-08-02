@@ -1,4 +1,4 @@
-// vitrine.js (VERSÃO COMPLETA E FINAL - MÚLTIPLOS PROFISSIONAIS)
+// vitrine.js (VERSÃO FINAL E COMPLETA - MÚLTIPLOS PROFISSIONAIS COM ABA DE INFORMAÇÕES)
 
 // ==========================================================================
 // IMPORTS DOS MÓDULOS
@@ -6,28 +6,23 @@
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
-
-// [CORREÇÃO] A importação foi ajustada para pedir apenas as funções que realmente vêm do vitrini-ui.js.
-// As outras (renderizarDadosEmpresa e renderizarProfissionais) estão definidas neste próprio arquivo.
 import { renderizarServicos, updateUIOnAuthChange } from './vitrini-ui.js';
 import { showAlert, showCustomConfirm } from './vitrini-utils.js';
 
 // ==========================================================================
-// ESTADO DA APLICAÇÃO (MODIFICADO)
+// ESTADO DA APLICAÇÃO
 // ==========================================================================
 let empresaId = null;
 let dadosEmpresa = {};
 let listaProfissionais = [];
-let profissionalSelecionado = null; // Guardará os dados do profissional escolhido
-// Adicionado 'profissional' ao estado do agendamento para rastreamento
-let agendamentoState = { data: null, horario: null, servico: null, profissional: null }; 
+let profissionalSelecionado = null;
+let agendamentoState = { data: null, horario: null, servico: null, profissional: null };
 
 // ==========================================================================
-// NOVA FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO
+// FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO
 // ==========================================================================
 async function init() {
     try {
-        // O formulário de agendamento começa escondido. Só aparece após escolher um profissional.
         document.getElementById('agendamento-form-container').style.display = 'none';
 
         initializeAuth((user) => {
@@ -40,10 +35,13 @@ async function init() {
         dadosEmpresa = await getDadosEmpresa(empresaId);
         if (!dadosEmpresa) throw new Error("Empresa não encontrada.");
 
-        // Usa os dados da empresa para preencher o topo da página (nome, logo, etc)
+        // Usa os dados da empresa para preencher o topo da página
         renderizarDadosEmpresa(dadosEmpresa);
 
         listaProfissionais = await getProfissionaisDaEmpresa(empresaId);
+
+        // [NOVO] Chama a função para preencher a aba "Informações"
+        renderizarInformacoesDaEmpresa(dadosEmpresa, listaProfissionais);
         
         if (listaProfissionais.length === 0) {
             const containerProfissionais = document.getElementById('lista-profissionais');
@@ -53,7 +51,6 @@ async function init() {
             renderizarProfissionais(listaProfissionais);
         }
         
-        // Configura os eventos gerais da página que não dependem de um profissional
         configurarEventosGerais(); 
 
         document.getElementById("vitrine-loader").style.display = 'none';
@@ -68,12 +65,11 @@ async function init() {
 }
 
 // ==========================================================================
-// NOVAS FUNÇÕES DE RENDERIZAÇÃO E SELEÇÃO DE PROFISSIONAIS
+// FUNÇÕES DE RENDERIZAÇÃO E SELEÇÃO
 // ==========================================================================
 
 /**
- * Renderiza os dados gerais da empresa na tela (título da página, nome do negócio, logo).
- * @param {object} empresa - Os dados do documento da empresa.
+ * Renderiza os dados gerais da empresa na tela (título, nome, logo).
  */
 function renderizarDadosEmpresa(empresa) {
     document.title = empresa.nomeFantasia || "Agendamento Online";
@@ -84,8 +80,50 @@ function renderizarDadosEmpresa(empresa) {
 }
 
 /**
+ * [NOVA FUNÇÃO]
+ * Preenche a aba "Informações" com os dados da empresa e uma lista de serviços.
+ * @param {object} empresa - Os dados do documento da empresa.
+ * @param {Array} profissionais - A lista de todos os profissionais da empresa.
+ */
+function renderizarInformacoesDaEmpresa(empresa, profissionais) {
+    const infoNegocioDiv = document.getElementById('info-negocio');
+    const infoServicosDiv = document.getElementById('info-servicos');
+
+    // 1. Renderiza a descrição do negócio, se existir.
+    if (infoNegocioDiv) {
+        infoNegocioDiv.innerHTML = empresa.descricao ? `<p>${empresa.descricao}</p>` : `<p>Bem-vindo ao nosso espaço! Utilize a aba "Agendar" para marcar seu horário.</p>`;
+    }
+
+    // 2. Cria e renderiza uma lista única de todos os serviços oferecidos.
+    if (infoServicosDiv) {
+        const todosOsServicos = new Map();
+        profissionais.forEach(prof => {
+            (prof.servicos || []).forEach(servico => {
+                if (!todosOsServicos.has(servico.nome)) {
+                    todosOsServicos.set(servico.nome, servico);
+                }
+            });
+        });
+
+        const listaDeServicos = Array.from(todosOsServicos.values());
+
+        if (listaDeServicos.length > 0) {
+            infoServicosDiv.innerHTML = listaDeServicos.map(s => `
+                <div class="servico-info-card">
+                    <h4>${s.nome}</h4>
+                    <p>${s.duracao || 'N/A'} min</p>
+                    <p>R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</p>
+                </div>
+            `).join('');
+        } else {
+            infoServicosDiv.innerHTML = '<p>Os serviços oferecidos aparecerão aqui.</p>';
+        }
+    }
+}
+
+
+/**
  * Cria e exibe os cards para cada profissional disponível para seleção.
- * @param {Array} profissionais - A lista de profissionais da empresa.
  */
 function renderizarProfissionais(profissionais) {
     const container = document.getElementById('lista-profissionais');
@@ -97,7 +135,6 @@ function renderizarProfissionais(profissionais) {
         </div>
     `).join('');
 
-    // Adiciona o evento de clique para cada card de profissional
     document.querySelectorAll('.card-profissional').forEach(card => {
         card.addEventListener('click', () => {
             const id = card.dataset.id;
@@ -111,23 +148,18 @@ function renderizarProfissionais(profissionais) {
 
 /**
  * Ação executada quando um profissional é selecionado pelo cliente.
- * @param {object} profissional - Os dados do profissional que foi clicado.
  */
 async function selecionarProfissional(profissional) {
     profissionalSelecionado = profissional;
-    agendamentoState.profissional = { id: profissional.id, nome: profissional.nome }; // Guarda o profissional no estado
+    agendamentoState.profissional = { id: profissional.id, nome: profissional.nome };
     
-    // Destaca o card do profissional selecionado
     document.querySelectorAll('.card-profissional').forEach(card => card.classList.remove('selecionado'));
     document.querySelector(`.card-profissional[data-id="${profissional.id}"]`).classList.add('selecionado');
 
-    // Mostra o formulário de agendamento
     document.getElementById('agendamento-form-container').style.display = 'block';
     
-    // Funções que já existiam, agora são chamadas com os dados do profissional correto
     renderizarServicos(profissionalSelecionado.servicos, selecionarServico);
     
-    // Busca a primeira data disponível para o profissional selecionado
     const primeiraData = await encontrarPrimeiraDataComSlots(empresaId, profissionalSelecionado);
     const dataInput = document.getElementById('data-agendamento');
     if (dataInput) {
@@ -135,20 +167,14 @@ async function selecionarProfissional(profissional) {
             dataInput.value = primeiraData;
         }
         dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        // Dispara o evento 'change' para que os horários do dia sejam carregados
         dataInput.dispatchEvent(new Event('change'));
     }
     
     document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data para ver os horários.</p>';
 }
 
-// ==========================================================================
-// FUNÇÕES E EVENTOS EXISTENTES (COM AJUSTES PARA A NOVA LÓGICA)
-// ==========================================================================
-
 /**
  * Ação executada quando um serviço é selecionado.
- * @param {object} servico - O serviço escolhido.
  */
 function selecionarServico(servico) {
     agendamentoState.servico = servico;
@@ -197,7 +223,7 @@ function configurarEventosGerais() {
         agendamentoState.horario = null;
         updateConfirmButtonState();
 
-        if (!profissionalSelecionado) return; // Segurança
+        if (!profissionalSelecionado) return; 
         if (!agendamentoState.servico) {
             document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Primeiro, escolha um serviço.</p>';
             return;
@@ -208,7 +234,6 @@ function configurarEventosGerais() {
         horariosContainer.innerHTML = '<p>Verificando horários...</p>';
         
         const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataSelecionada);
-        // Filtra agendamentos para mostrar apenas os horários livres do profissional selecionado
         const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissionalSelecionado.id);
 
         const slotsDisponiveis = calcularSlotsDisponiveis(
