@@ -1,20 +1,17 @@
 /**
- * servicos.js (VERSÃO FINAL - COM CORREÇÃO DE TIMING)
+ * servicos.js (VERSÃO FINAL E CORRIGIDA)
  *
- * A única alteração é a adição do 'DOMContentLoaded' para garantir
- * que o script só execute depois que o HTML da página (incluindo o modal)
- * esteja 100% carregado, resolvendo o erro "Elementos do modal não encontrados".
+ * Correção: Os 'imports' foram movidos para o topo do arquivo para corrigir
+ * o SyntaxError, enquanto o resto da lógica permanece dentro do DOMContentLoaded
+ * para resolver o problema de timing.
  */
 
-// [CORREÇÃO DE SINCRONIA] O código inteiro agora está dentro deste bloco.
-document.addEventListener('DOMContentLoaded', () => {
+import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { app } from "./firebase-config.js";
+import { showAlert, showCustomConfirm } from "./vitrini-utils.js";
 
-    // Seus imports foram movidos para dentro para garantir o escopo correto do módulo
-    import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-    import { app } from "./firebase-config.js";
-    // Assumindo que o vitrini-utils.js está na mesma pasta ou o caminho está correto
-    import { showAlert, showCustomConfirm } from "./vitrini-utils.js";
+document.addEventListener('DOMContentLoaded', () => {
 
     const db = getFirestore(app);
     const auth = getAuth(app);
@@ -56,8 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isVisible = servico.visivelNaVitrine !== false;
                 const el = document.createElement('div');
                 el.classList.add('servico-item');
-                // Seus estilos inline foram mantidos
-                el.style.cssText = 'padding: 8px 12px; margin-bottom: 10px; font-size: 0.9rem; border: 1px solid #ddd; border-radius: 6px; background-color: #fafafa; display: flex; justify-content: space-between; align-items: center;';
+                el.style.cssText = 'padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; background-color: #fafafa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;';
 
                 el.innerHTML = `
                     <div class="item-info">
@@ -65,9 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><strong>Preço:</strong> R$ ${parseFloat(servico.preco || 0).toFixed(2).replace('.', ',')}</p>
                         <p><strong>Duração:</strong> ${servico.duracao} minutos</p>
                     </div>
-                    <div class="item-acoes">
-                        <div class="acao-visibilidade">
-                            <label class="switch-label">Ativo na Vitrine</label>
+                    <div class="item-acoes" style="display: flex; gap: 10px; align-items: center;">
+                        <div class="acao-visibilidade" style="display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+                            <label class="switch-label" style="font-size: 0.8em;">Ativo na Vitrine</label>
                             <label class="switch">
                                 <input type="checkbox" class="toggle-visibilidade" data-id="${servico.id}" ${isVisible ? 'checked' : ''}>
                                 <span class="slider"></span>
@@ -85,9 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function excluirServico(id) {
-        // A lógica de confirmação e exclusão foi movida para o event listener
-        // para garantir que showCustomConfirm seja encontrado no escopo correto.
+    async function excluirServico(servicoId) {
         const confirmado = await showCustomConfirm("Confirmar Exclusão", "Você tem certeza? Esta ação é permanente.");
         if (!confirmado) return;
 
@@ -96,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!docSnap.exists()) throw new Error("Documento do profissional não encontrado.");
 
             const servicosAtuais = docSnap.data().servicos || [];
-            const novaListaDeServicos = servicosAtuais.filter(s => s.id !== id);
+            const novaListaDeServicos = servicosAtuais.filter(s => s.id !== servicoId);
             
             await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
             
@@ -108,14 +102,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function atualizarVisibilidade(id, visivel) {
+    async function atualizarVisibilidade(servicoId, visivel) {
         try {
             const docSnap = await getDoc(profissionalRef);
             if (!docSnap.exists()) throw new Error("Documento do profissional não encontrado.");
 
             const servicosAtuais = docSnap.data().servicos || [];
             const novaListaDeServicos = servicosAtuais.map(s => {
-                if (s.id === id) {
+                if (s.id === servicoId) {
                     return { ...s, visivelNaVitrine: visivel };
                 }
                 return s;
