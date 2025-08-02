@@ -1,24 +1,77 @@
-// vitrini-ui.js (VERSÃO FINAL E COMPLETA - MÚLTIPLOS PROFISSIONAIS)
+// vitrini-ui.js (VERSÃO COMPLETA E CORRIGIDA)
 
 import { cancelarAgendamento, buscarEExibirAgendamentos } from './vitrini-agendamento.js';
 import { currentUser } from './vitrini-auth.js';
 
 /**
- * Renderiza os dados gerais da empresa na tela (nome, logo, descrição).
+ * [NOVA FUNÇÃO PRINCIPAL]
+ * Renderiza toda a página de "Informações", incluindo dados da empresa,
+ * serviços e contato.
  * @param {object} empresa - Dados do documento da empresa.
+ * @param {Array} profissionais - Lista de profissionais da empresa.
  */
-export function renderizarDadosEmpresa(empresa) {
+export function renderizarPaginaInformacoes(empresa, profissionais) {
     if (!empresa) return;
+
+    // Preenche o topo (nome e logo)
+    document.title = empresa.nomeFantasia || "Agendamento Online";
     document.getElementById('nome-negocio-publico').textContent = empresa.nomeFantasia || "Nome do Negócio";
     if (empresa.logoUrl) {
         document.getElementById('logo-publico').src = empresa.logoUrl;
     }
-    document.getElementById('info-negocio').innerHTML = `<p>${empresa.descricao || 'Nenhuma descrição fornecida.'}</p>`;
-    // Você pode adicionar o preenchimento do card de contato aqui se os dados estiverem na empresa
+
+    // Preenche o card "Sobre o Negócio"
+    const infoNegocioDiv = document.getElementById('info-negocio');
+    if (infoNegocioDiv) {
+        infoNegocioDiv.innerHTML = `<p>${empresa.descricao || 'Nenhuma descrição fornecida.'}</p>`;
+    }
+
+    // Preenche o card "Contato" (pegando os dados do profissional que é o dono)
+    const dono = profissionais.find(p => p.id === empresa.donoId);
+    const containerContato = document.getElementById('info-contato');
+    if (containerContato) {
+        if (dono) {
+            containerContato.innerHTML = `
+                ${dono.telefone ? `<p><strong>Telefone:</strong> ${dono.telefone}</p>` : ''}
+                ${dono.email ? `<p><strong>Email:</strong> ${dono.email}</p>` : ''}
+                ${dono.endereco ? `<p><strong>Endereço:</strong> ${dono.endereco}</p>` : ''}
+            `;
+        } else {
+            containerContato.innerHTML = "<p>Informações de contato não disponíveis.</p>";
+        }
+    }
+
+    // Preenche o card "Serviços Oferecidos"
+    const todosOsServicos = new Map();
+    profissionais.forEach(prof => {
+        if (prof.servicos && prof.visivelNaVitrine !== false) {
+            prof.servicos.forEach(servico => {
+                if (servico.visivelNaVitrine !== false) {
+                    todosOsServicos.set(servico.nome, servico);
+                }
+            });
+        }
+    });
+    
+    const containerServicos = document.getElementById('info-servicos');
+    if (containerServicos) {
+        if (todosOsServicos.size > 0) {
+            containerServicos.innerHTML = [...todosOsServicos.values()]
+                .sort((a, b) => a.nome.localeCompare(b.nome))
+                .map(s => `
+                    <div class="servico-info-item">
+                        <strong>${s.nome}</strong>
+                        <span>R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</span>
+                    </div>
+                `).join('');
+        } else {
+            containerServicos.innerHTML = "<p>Nenhum serviço oferecido no momento.</p>";
+        }
+    }
 }
 
 /**
- * Renderiza os cards de todos os profissionais disponíveis para seleção.
+ * Renderiza os cards de todos os profissionais disponíveis para seleção na aba "Agendar".
  * @param {Array} profissionais - Lista de profissionais da empresa.
  * @param {Function} onSelectProfissional - Callback a ser chamado quando um profissional é selecionado.
  */
@@ -38,76 +91,28 @@ export function renderizarProfissionais(profissionais, onSelectProfissional) {
             const id = card.dataset.id;
             const profissional = profissionais.find(p => p.id === id);
             if (profissional) {
-                onSelectProfissional(profissional); // Chama a função principal para lidar com a seleção
+                onSelectProfissional(profissional);
             }
         });
     });
 }
 
 /**
- * Renderiza os cards de agendamentos de um cliente.
- * @param {string} empresaId - O ID da empresa.
- * @param {Array} agendamentos - A lista de agendamentos para exibir.
- * @param {string} modo - 'ativos' ou 'historico'.
- */
-export function renderizarAgendamentosComoCards(empresaId, agendamentos, modo = 'ativos') {
-    const container = document.getElementById('lista-agendamentos-visualizacao');
-    if (!container) return;
-
-    if (!agendamentos || agendamentos.length === 0) {
-        container.innerHTML = `<p>Não há agendamentos para exibir.</p>`;
-        return;
-    }
-
-    container.innerHTML = agendamentos.map(ag => {
-        const horarioDate = ag.horario.toDate();
-        const horarioStr = horarioDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-        const btnCancelar = (modo === 'ativos' && ag.status === 'agendado' && horarioDate > new Date())
-            ? `<button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>` : '';
-        const statusExibido = (modo !== 'ativos' && ag.status === 'agendado') ? 'Concluído' : ag.status.replace(/_/g, ' ');
-
-        return `
-        <div class="agendamento-card status-${ag.status}">
-            <h4>${ag.servicoNome}</h4>
-            <p><strong>Profissional:</strong> ${ag.profissionalNome || 'N/A'}</p>
-            <p><strong>Data:</strong> ${horarioStr}</p>
-            <p><strong>Status:</strong> <span class="status">${statusExibido}</span></p>
-            <div class="agendamento-acao">${btnCancelar}</div>
-        </div>`;
-    }).join('');
-
-    container.querySelectorAll('.btn-cancelar').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const agendamentoId = btn.dataset.id;
-            cancelarAgendamento(empresaId, agendamentoId, () => {
-                buscarEExibirAgendamentos(empresaId, currentUser, 'ativos');
-            });
-        });
-    });
-}
-
-/**
- * Renderiza a lista de serviços de um profissional selecionado.
+ * Renderiza a lista de serviços de um profissional selecionado na aba "Agendar".
  * @param {Array} servicos - A lista de serviços.
  * @param {Function} onServiceSelect - A função a ser chamada quando um serviço é selecionado.
  */
 export function renderizarServicos(servicos, onServiceSelect) {
     const container = document.getElementById('lista-servicos');
     if (!container) return;
-
     if (!servicos || servicos.length === 0) {
         container.innerHTML = '<p>Este profissional não oferece serviços no momento.</p>';
         return;
     }
-
     container.innerHTML = servicos
         .filter(s => s.visivelNaVitrine !== false)
-        .map(s =>
-            `<button class="service-item" data-id="${s.id}">
-                ${s.nome} - R$ ${s.preco}
-            </button>`
-        ).join('');
-
+        .map(s => `<button class="service-item" data-id="${s.id}">${s.nome} - R$ ${s.preco}</button>`)
+        .join('');
     container.querySelectorAll('.service-item').forEach(btn => {
         btn.addEventListener('click', () => {
             container.querySelectorAll('.service-item.selecionado').forEach(b => b.classList.remove('selecionado'));
@@ -128,32 +133,25 @@ export function renderizarServicos(servicos, onServiceSelect) {
 export function updateUIOnAuthChange(user, empresaId) {
     const userInfo = document.getElementById('user-info');
     const btnLogin = document.getElementById('btn-login');
-    const agendamentoPrompt = document.getElementById('agendamento-login-prompt');
     const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
     const agendamentosBotoes = document.getElementById('botoes-agendamento');
     const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
 
-    if (user) { // Usuário LOGADO
+    if (user) {
         if (userInfo) {
             userInfo.style.display = 'flex';
             document.getElementById('user-name').textContent = user.displayName;
             document.getElementById('user-photo').src = user.photoURL;
         }
         if (btnLogin) btnLogin.style.display = 'none';
-        
-        if (agendamentoPrompt) agendamentoPrompt.style.display = 'none';
         if (agendamentosPrompt) agendamentosPrompt.style.display = 'none';
         if (agendamentosBotoes) agendamentosBotoes.style.display = 'flex';
-
         if (empresaId) {
             buscarEExibirAgendamentos(empresaId, user, 'ativos');
         }
-
-    } else { // Usuário DESLOGADO
+    } else {
         if (userInfo) userInfo.style.display = 'none';
         if (btnLogin) btnLogin.style.display = 'block';
-        
-        if (agendamentoPrompt) agendamentoPrompt.style.display = 'block';
         if (agendamentosPrompt) agendamentosPrompt.style.display = 'block';
         if (agendamentosBotoes) agendamentosBotoes.style.display = 'none';
         if (agendamentosLista) agendamentosLista.innerHTML = '';
