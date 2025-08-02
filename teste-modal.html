@@ -2,13 +2,13 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Teste de Modal</title>
+    <title>Teste Final de Exclusão</title>
 </head>
 <body>
 
-    <h1>Página de Teste do Modal</h1>
-    <p>O objetivo desta página é verificar se o modal de confirmação funciona em um ambiente limpo.</p>
-    <button id="botao-teste" style="padding: 10px 20px; font-size: 16px;">Testar Exclusão</button>
+    <h1>Página de Teste do Botão Excluir</h1>
+    <p>Clique no botão abaixo para testar a chamada do modal de confirmação.</p>
+    <button id="botao-excluir-teste" style="padding: 10px 20px; font-size: 16px; background-color: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer;">Testar Exclusão</button>
 
     <div id="custom-modal-overlay" class="modal-overlay" style="display: none;">
         <div class="modal-box">
@@ -27,29 +27,28 @@
     </style>
 
     <script>
-        // Espera o HTML estar 100% pronto antes de executar qualquer código
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("Página de teste carregada. O HTML está pronto.");
+            console.log("Página de teste-excluir.html carregada. O HTML está pronto.");
 
-            const botaoTeste = document.getElementById('botao-teste');
+            const botaoTeste = document.getElementById('botao-excluir-teste');
             
-            // Função do modal (versão simplificada do nosso vitrini-utils.js)
+            // Função do modal (lógica auto-contida)
             function showCustomConfirm(title, message) {
                 return new Promise(resolve => {
-                    console.log("showCustomConfirm foi chamada. Procurando elementos do modal...");
+                    console.log("Procurando elementos do modal...");
                     const overlay = document.getElementById('custom-modal-overlay');
+                    if (!overlay) {
+                        console.error("ERRO CRÍTICO: O elemento 'custom-modal-overlay' NÃO FOI ENCONTRADO.");
+                        alert("ERRO: O elemento 'custom-modal-overlay' NÃO FOI ENCONTRADO.");
+                        return resolve(false);
+                    }
+                    console.log("Elemento 'overlay' encontrado!");
+                    // ... (restante da lógica do modal)
+                    
                     const titleEl = document.getElementById('modal-title');
                     const messageEl = document.getElementById('modal-message');
                     const buttonsContainer = document.getElementById('modal-buttons-container');
-
-                    if (!overlay || !titleEl || !messageEl || !buttonsContainer) {
-                        console.error("ERRO CRÍTICO: Elementos do modal não encontrados no DOM nesta página de teste!");
-                        alert("ERRO: Elementos do modal não encontrados no DOM.");
-                        return resolve(false);
-                    }
                     
-                    console.log("Elementos do modal encontrados com sucesso!");
-
                     titleEl.textContent = title;
                     messageEl.textContent = message;
                     buttonsContainer.innerHTML = '';
@@ -76,15 +75,15 @@
                 });
             }
 
-            // Adiciona o evento de clique ao botão de teste
+            // Evento de clique no botão de teste
             botaoTeste.addEventListener('click', async () => {
-                console.log("Botão de teste clicado. Chamando o modal...");
-                const confirmado = await showCustomConfirm("Teste de Exclusão", "Você confirma?");
+                console.log("Botão de teste 'Excluir' foi clicado.");
+                const confirmado = await showCustomConfirm("Confirmar Teste", "O modal apareceu corretamente?");
                 
                 if (confirmado) {
-                    alert("Você clicou em CONFIRMAR! O teste funcionou.");
+                    alert("Teste bem-sucedido! O usuário confirmou.");
                 } else {
-                    alert("Você clicou em CANCELAR. O teste também funcionou.");
+                    alert("Teste bem-sucedido! O usuário cancelou.");
                 }
             });
         });
