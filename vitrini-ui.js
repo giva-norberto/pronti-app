@@ -1,10 +1,9 @@
-// vitrini-ui.js (VERSÃO CORRIGIDA)
+// vitrini-ui.js (VERSÃO FINAL E COMPLETA - MÚLTIPLOS PROFISSIONAIS)
 
 import { cancelarAgendamento, buscarEExibirAgendamentos } from './vitrini-agendamento.js';
 import { currentUser } from './vitrini-auth.js';
 
 /**
- * [FUNÇÃO RENOMEADA]
  * Renderiza os dados gerais da empresa na tela (nome, logo, descrição).
  * @param {object} empresa - Dados do documento da empresa.
  */
@@ -15,8 +14,8 @@ export function renderizarDadosEmpresa(empresa) {
         document.getElementById('logo-publico').src = empresa.logoUrl;
     }
     document.getElementById('info-negocio').innerHTML = `<p>${empresa.descricao || 'Nenhuma descrição fornecida.'}</p>`;
+    // Você pode adicionar o preenchimento do card de contato aqui se os dados estiverem na empresa
 }
-
 
 /**
  * Renderiza os cards de todos os profissionais disponíveis para seleção.
@@ -127,5 +126,36 @@ export function renderizarServicos(servicos, onServiceSelect) {
  * @param {string} empresaId - O ID da empresa para buscar agendamentos.
  */
 export function updateUIOnAuthChange(user, empresaId) {
-    // ... seu código para esta função permanece o mesmo
+    const userInfo = document.getElementById('user-info');
+    const btnLogin = document.getElementById('btn-login');
+    const agendamentoPrompt = document.getElementById('agendamento-login-prompt');
+    const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
+    const agendamentosBotoes = document.getElementById('botoes-agendamento');
+    const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
+
+    if (user) { // Usuário LOGADO
+        if (userInfo) {
+            userInfo.style.display = 'flex';
+            document.getElementById('user-name').textContent = user.displayName;
+            document.getElementById('user-photo').src = user.photoURL;
+        }
+        if (btnLogin) btnLogin.style.display = 'none';
+        
+        if (agendamentoPrompt) agendamentoPrompt.style.display = 'none';
+        if (agendamentosPrompt) agendamentosPrompt.style.display = 'none';
+        if (agendamentosBotoes) agendamentosBotoes.style.display = 'flex';
+
+        if (empresaId) {
+            buscarEExibirAgendamentos(empresaId, user, 'ativos');
+        }
+
+    } else { // Usuário DESLOGADO
+        if (userInfo) userInfo.style.display = 'none';
+        if (btnLogin) btnLogin.style.display = 'block';
+        
+        if (agendamentoPrompt) agendamentoPrompt.style.display = 'block';
+        if (agendamentosPrompt) agendamentosPrompt.style.display = 'block';
+        if (agendamentosBotoes) agendamentosBotoes.style.display = 'none';
+        if (agendamentosLista) agendamentosLista.innerHTML = '';
+    }
 }
