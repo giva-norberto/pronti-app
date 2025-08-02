@@ -4,315 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Agendamento Online</title>
+    
+    <!-- Link para o arquivo CSS externo. É aqui que os estilos serão carregados. -->
     <link rel="stylesheet" href="vitrine.css">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* ESTILO DO BOTÃO DE CONFIRMAÇÃO */
-        #btn-confirmar-agendamento {
-            background: linear-gradient(to right, #8B5CF6, #EC4899 );
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            text-align: center;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-        }
-
-        #btn-confirmar-agendamento:hover:not(:disabled) {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
-        #btn-confirmar-agendamento:disabled {
-            background: #E5E7EB;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            transform: translateY(0);
-        }
-
-        /* ESTILOS PARA OS BOTÕES DE SELEÇÃO */
-        .servicos-container-cards { display: flex; flex-wrap: wrap; gap: 8px; }
-        .servicos-container-cards .service-item {
-            background-color: white;
-            border: 1px solid #D1D5DB;
-            color: #4B5563;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
-        .servicos-container-cards .service-item.selecionado {
-            background-color: #6D28D9;
-            color: white;
-            border-color: #6D28D9;
-        }
-
-        .horarios-container-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
-        .horarios-container-grid .btn-horario {
-            background-color: white;
-            border: 1px solid #D1D5DB;
-            color: #4B5563;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s ease;
-        }
-        .horarios-container-grid .btn-horario:hover:not(.selecionado) {
-            border-color: #9CA3AF;
-        }
-        
-        .horarios-container-grid .btn-horario.selecionado {
-            background-color: #4F46E5;
-            border-color: #4F46E5;
-            color: white;
-            font-weight: 600;
-        }
-
-        /* ESTILOS PARA A ABA MEUS AGENDAMENTOS */
-        .botoes-agendamento {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            align-items: center;
-        }
-        .botoes-agendamento .btn-toggle {
-            background: none;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            color: #6B7280;
-            transition: all 0.2s ease;
-        }
-        .botoes-agendamento .btn-toggle.ativo {
-            background: linear-gradient(to right, #8B5CF6, #EC4899);
-            color: white;
-            border-radius: 8px;
-        }
-
-        /* Estilos para os botões do menu lateral */
-        .sidebar-menu .menu-btn {
-            width: 100%;
-            padding: 12px 20px;
-            border: none;
-            background: none;
-            text-align: left;
-            font-size: 16px;
-            font-weight: 600;
-            color: #4B5563;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            margin-bottom: 5px;
-        }
-
-        .sidebar-menu .menu-btn:hover:not(.ativo) {
-            background-color: #F3F4F6; /* Cinza claro no hover */
-        }
-
-        .sidebar-menu .menu-btn.ativo {
-            background-color: #4F46E5; /* Azul índigo */
-            color: white;
-        }
-
-        /* EFEITO DE HOVER PARA TODOS OS CARDS */
-        .card {
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .lista-agendamentos-resultado {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .agendamento-card {
-            background-color: #F9FAFB;
-            border: 1px solid #E5E7EB;
-            border-left: 5px solid #4F46E5;
-            border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        .agendamento-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border-color: #D1D5DB;
-        }
-
-        .agendamento-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .agendamento-info h4 {
-            margin: 0;
-            font-size: 1.1rem;
-            color: #111827;
-        }
-        .agendamento-info p {
-            margin: 0;
-            color: #6B7280;
-            font-size: 0.9rem;
-        }
-        .agendamento-acao .btn-cancelar {
-            background-color: #EF4444;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s ease;
-        }
-        .agendamento-acao .btn-cancelar:hover {
-            background-color: #DC2626;
-        }
-
-        /* ================================================== */
-        /* ESTILOS DO MODAL DE CONFIRMAÇÃO                    */
-        /* ================================================== */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .modal-overlay.ativo {
-            opacity: 1;
-            visibility: visible;
-        }
-        .modal-box {
-            background-color: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-        .modal-overlay.ativo .modal-box {
-            transform: scale(1);
-        }
-        .modal-box h3 {
-            margin-top: 0;
-            margin-bottom: 15px;
-            color: #4F46E5;
-        }
-        .modal-box p {
-            margin-bottom: 25px;
-            color: #4B5563;
-        }
-        .modal-botoes {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-        .modal-botoes button {
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        #modal-btn-confirmar {
-            background-color: #EF4444;
-            color: white;
-        }
-        #modal-btn-confirmar:hover {
-            background-color: #DC2626;
-        }
-        #modal-btn-cancelar {
-            background-color: #E5E7EB;
-            color: #4B5563;
-        }
-        #modal-btn-cancelar:hover {
-            background-color: #D1D5DB;
-        }
-
-        /* ====================================================== */
-        /* [NOVO] ESTILOS PARA A SELEÇÃO DE PROFISSIONAIS         */
-        /* ====================================================== */
-        .profissionais-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .card-profissional {
-            border: 2px solid #E5E7EB;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .card-profissional:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-            border-color: #A5B4FC;
-        }
-        .card-profissional.selecionado {
-            border-color: #4F46E5;
-            background-color: #EEF2FF;
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.15);
-            transform: translateY(-4px);
-        }
-        .card-profissional img {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 12px;
-            border: 2px solid white;
-        }
-        .card-profissional h3 {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #1F2937;
-        }
-    </style>
 </head>
 <body>
 
+    <!-- Loader Inicial -->
     <div id="vitrine-loader">
         <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do negócio...</p>
     </div>
 
+    <!-- Conteúdo Principal da Vitrine -->
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
         
+        <!-- Barra Lateral (Sidebar ) -->
         <aside class="sidebar-vitrine">
             <div class="header-vitrine">
                 <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
@@ -326,8 +36,10 @@
             </nav>
         </aside>
 
-        <div class="main-content-vitrine">
+        <!-- Conteúdo Principal -->
+        <main class="main-content-vitrine">
             
+            <!-- Aba: Informações -->
             <div id="menu-informacoes" class="menu-content ativo">
                 <div class="card">
                     <h2>Sobre o Negócio</h2>
@@ -343,6 +55,7 @@
                 </div>
             </div>
 
+            <!-- Aba: Agendamento -->
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
@@ -351,29 +64,24 @@
                         <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
                     </div>
 
-                    <!-- [NOVO] Seção para escolher o profissional -->
                     <div class="form-group">
-                        <label style="font-weight: 600; font-size: 1.1rem; color: #374151;">1. Escolha um profissional</label>
-                        <div id="lista-profissionais" class="profissionais-container">
-                            <!-- Cards dos profissionais serão inseridos aqui pelo JS -->
-                        </div>
+                        <label>1. Escolha um profissional</label>
+                        <div id="lista-profissionais" class="profissionais-container"></div>
                     </div>
 
-                    <!-- [ALTERADO] O restante do formulário agora fica oculto até um profissional ser selecionado -->
-                    <div id="agendamento-form-container" style="display: none; margin-top: 2rem; border-top: 1px solid #E5E7EB; padding-top: 2rem;">
+                    <div id="agendamento-form-container" style="display: none;">
                         <div class="form-group">
-                            <label style="font-weight: 600; font-size: 1.1rem; color: #374151;">2. Escolha um serviço</label>
-                            <div id="lista-servicos" class="servicos-container-cards">
-                            </div>
+                            <label>2. Escolha um serviço</label>
+                            <div id="lista-servicos" class="servicos-container-cards"></div>
                         </div>
                         <div class="form-group">
-                            <label for="data-agendamento" style="font-weight: 600; font-size: 1.1rem; color: #374151;">3. Escolha uma data</label>
+                            <label for="data-agendamento">3. Escolha uma data</label>
                             <input type="date" id="data-agendamento" required>
                         </div>
                         <div class="form-group">
-                            <label style="font-weight: 600; font-size: 1.1rem; color: #374151;">4. Escolha um horário</label>
+                            <label>4. Escolha um horário</label>
                             <div id="grade-horarios" class="horarios-container-grid">
-                                <p class="aviso-horarios">Selecione um profissional, um serviço e uma data.</p>
+                                <p class="aviso-horarios">Selecione um profissional, serviço e data.</p>
                             </div>
                         </div>
                         <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
@@ -381,6 +89,7 @@
                 </div>
             </div>
 
+            <!-- Aba: Meus Agendamentos -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
@@ -395,6 +104,7 @@
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             
+            <!-- Aba: Perfil -->
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
                     <h2>Meu Perfil</h2>
@@ -403,14 +113,15 @@
                         <p id="user-name"></p>
                         <button id="btn-logout" class="btn-secondary">Sair</button>
                     </div>
-                    <div id="btn-login" style="display: none;">
-                         <button class="btn-submit">Fazer Login com Google</button>
+                    <div id="btn-login-container">
+                         <button id="btn-login" class="btn-submit">Fazer Login com Google</button>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
+    <!-- Modal de Confirmação -->
     <div id="custom-confirm-modal" class="modal-overlay">
         <div class="modal-box">
             <h3 id="modal-titulo">Confirmar Ação</h3>
@@ -421,8 +132,8 @@
             </div>
         </div>
     </div>
-
     
+    <!-- Scripts -->
     <script type="module" src="vitrine.js"></script>
 </body>
 </html>
