@@ -47,5 +47,62 @@
     .btn-ok { background-color: #007BFF; color: white; }
     .btn-cancel { background-color: #e9ecef; color: #333; }
 </style>
+  <div id="custom-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+        <h2 id="modal-title">Título Padrão</h2>
+        <p id="modal-message">Mensagem padrão.</p>
+        <div id="modal-buttons-container" class="modal-buttons">
+            </div>
+    </div>
+</div>
+
+<style>
+    .modal-overlay { 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        background: rgba(0,0,0,0.6); 
+        display: none; /* Começa escondido, o JS o ativa */
+        justify-content: center; 
+        align-items: center; 
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .modal-box { 
+        background: white; 
+        padding: 30px; 
+        border-radius: 12px; 
+        box-shadow: 0 5px 20px rgba(0,0,0,0.25); 
+        text-align: center; 
+        max-width: 420px; 
+        width: 90%; 
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+    }
+    .modal-buttons { 
+        display: flex; 
+        justify-content: center; 
+        gap: 15px; 
+    }
+    .btn-confirm { 
+        border: none; 
+        padding: 12px 30px; 
+        border-radius: 8px; 
+        font-size: 1em; 
+        font-weight: bold; 
+        cursor: pointer; 
+    }
+    .btn-ok { 
+        background-color: #007BFF; 
+        color: white; 
+    }
+    .btn-cancel { 
+        background-color: #e9ecef; 
+        color: #333; 
+    }
+</style>
 </body>
 </html>
