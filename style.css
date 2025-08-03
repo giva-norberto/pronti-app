@@ -622,3 +622,42 @@ h1, h2, h3 {
   background-color: #f44336; /* Vermelho */
   color: white;
 }
+/* ======================================================= */
+/* --- ESTILOS PARA O MODAL (VERSÃO CORRIGIDA) --- */
+/* ======================================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none; /* Começa escondido, o JS muda para 'flex' */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Z-INDEX MAIS ALTO DA APLICAÇÃO */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.ativo {
+    opacity: 1;
+}
+
+.modal-box {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+    text-align: center;
+    max-width: 420px;
+    width: 90%;
+}
+
+.modal-botoes {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
