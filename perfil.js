@@ -65,24 +65,21 @@ async function verificarEcarregarDados(uid) {
     const secaoEquipe = elements.btnAddProfissional?.closest('.form-section');
 
     if (snapshot.empty) {
-        // Se não tem empresa, prepara a UI para criação
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
         if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
-        if (secaoEquipe) secaoEquipe.style.display = 'none'; // Esconde a seção de equipe
+        if (secaoEquipe) secaoEquipe.style.display = 'none';
     } else {
-        // Se já tem empresa, carrega os dados
         const empresaDoc = snapshot.docs[0];
-        empresaId = empresaDoc.id; // Guarda o ID da empresa
+        empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
         
-        // Busca os dados do profissional (que é o dono)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
         const dadosProfissional = profissionalSnap.exists() ? profissionalSnap.data() : {};
 
         preencherFormulario(dadosEmpresa, dadosProfissional);
-        if (secaoEquipe) secaoEquipe.style.display = 'block'; // Mostra a seção de equipe
+        if (secaoEquipe) secaoEquipe.style.display = 'block';
         renderizarListaProfissionais(empresaId);
     }
 }
@@ -133,7 +130,8 @@ function preencherFormulario(dadosEmpresa, dadosProfissional) {
         }
     });
     
-   const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
+    // [CORREÇÃO] A URL agora é gerada com "?id=" para ser compatível com a vitrine.
+    const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
     if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
     if (elements.btnAbrirVitrine) {
         elements.btnAbrirVitrine.href = urlCompleta;
@@ -175,6 +173,7 @@ async function handleFormSubmit(event) {
         }
 
         if (empresaId) {
+            // Se a empresa já existe, apenas atualiza os dados.
             await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             const docOriginal = await getDoc(profissionalRef);
@@ -182,11 +181,16 @@ async function handleFormSubmit(event) {
             await setDoc(profissionalRef, dadosProfissional, { merge: true });
             alert("Perfil atualizado com sucesso!");
         } else {
+            // Se a empresa NÃO existe, cria a empresa e o profissional.
             dadosProfissional.servicos = [];
             const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-            empresaId = novaEmpresaRef.id;
+            empresaId = novaEmpresaRef.id; // Guarda o ID da nova empresa.
             await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
             alert("Seu negócio foi cadastrado com sucesso!");
+            
+            // [CORREÇÃO CRÍTICA] Força o recarregamento da página.
+            // Isso garante que a função verificarEcarregarDados() seja chamada novamente,
+            // lendo o 'empresaId' recém-criado e gerando o link da vitrine corretamente.
             window.location.reload();
         }
     } catch (error) {
@@ -232,7 +236,6 @@ function adicionarListenersDeEvento() {
         catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
     });
 
-    // Eventos do Modal de Adicionar Profissional
     if (elements.btnAddProfissional) elements.btnAddProfissional.addEventListener('click', () => {
         if (!empresaId) {
             alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
@@ -246,7 +249,6 @@ function adicionarListenersDeEvento() {
         if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
     });
 
-    // [CORREÇÃO] Lógica para salvar o novo profissional
     if (elements.formAddProfissional) elements.formAddProfissional.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnSubmit = e.target.querySelector('button[type="submit"]');
@@ -264,20 +266,12 @@ function adicionarListenersDeEvento() {
                 fotoUrl = await getDownloadURL(uploadResult.ref);
             }
             
-            // Cria um objeto com os dados básicos do novo profissional
-            const novoProfissional = { 
-                nome, 
-                fotoUrl, 
-                servicos: [], // Começa sem serviços
-                horarios: {}  // Começa sem horários definidos
-            };
-            
-            // Adiciona o novo profissional na subcoleção 'profissionais' da empresa atual
+            const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {} };
             await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
 
             alert("Profissional adicionado com sucesso!");
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-            renderizarListaProfissionais(empresaId); // Atualiza a lista na tela
+            renderizarListaProfissionais(empresaId);
         } catch (error) {
             console.error("Erro ao adicionar profissional:", error);
             alert("Erro ao adicionar profissional: " + error.message);
@@ -290,9 +284,16 @@ function adicionarListenersDeEvento() {
 
 // Copia o link da vitrine para a área de transferência
 function copiarLink() {
-    if (!empresaId) return alert("Salve seu perfil para gerar o link.");
+    if (!empresaId) {
+        alert("Salve seu perfil para gerar o link.");
+        return;
+    }
     const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
-    navigator.clipboard.writeText(urlCompleta).then(() => alert("Link da vitrine copiado!"));
+    navigator.clipboard.writeText(urlCompleta).then(() => {
+        alert("Link da vitrine copiado!");
+    }, () => {
+        alert("Falha ao copiar o link.");
+    });
 }
 
 // Gera a estrutura HTML para os dias da semana
@@ -313,7 +314,7 @@ function gerarEstruturaDosDias() {
                     <span class="toggle-label">Fechado</span>
                 </div>
             </div>
-            <div class="horarios-container" style="display: none;" id="container-${dia.id}">
+            <div class="horarios-container" style.display: none;" id="container-${dia.id}">
                 <div class="horarios-blocos" id="blocos-${dia.id}"></div>
                 <button type="button" class="btn-add-slot" data-dia="${dia.id}">+ Adicionar Horário</button>
             </div>`;
