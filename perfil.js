@@ -1,11 +1,14 @@
 /**
- * perfil.js (VERSÃO FINAL E COMPLETA - Integrado com o novo layout)
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM GERENCIAMENTO DE EQUIPE)
  *
- * Este script controla a página de perfil do empresário.
+ * Esta é a versão definitiva do painel do empresário.
+ * Lógica Principal:
  * - Detecta se o usuário é novo e apresenta um formulário de cadastro.
  * - Carrega os dados de um usuário existente para edição.
  * - Salva todas as informações na estrutura de dados 'empresarios' no Firebase.
- * - Preserva a estrutura e o design do HTML/CSS fornecido.
+ * - Lista os profissionais da equipe.
+ * - Permite adicionar novos profissionais através de um modal.
+ * - Inclui a funcionalidade de logout.
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -17,7 +20,7 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// --- Mapeamento de Elementos do DOM (Baseado no seu HTML final) ---
+// --- Mapeamento de Elementos do DOM ---
 const elements = {
     h1Titulo: document.querySelector('.main-content h1'),
     form: document.getElementById('form-perfil'),
@@ -34,7 +37,12 @@ const elements = {
     diasContainer: document.getElementById('dias-container'),
     btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
     btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
-    btnLogout: document.getElementById('btn-logout')
+    btnLogout: document.getElementById('btn-logout'),
+    listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
+    btnAddProfissional: document.getElementById('btn-add-profissional'),
+    modalAddProfissional: document.getElementById('modal-add-profissional'),
+    formAddProfissional: document.getElementById('form-add-profissional'),
+    btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
 };
 
 const diasDaSemana = [
@@ -49,7 +57,7 @@ let currentUser;
 let empresaId = null;
 
 // --- INICIALIZAÇÃO ---
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(getAuth(app), (user) => {
     if (user) {
         currentUser = user;
         verificarEcarregarDados(user.uid);
@@ -62,34 +70,59 @@ onAuthStateChanged(auth, (user) => {
 
 /**
  * Lógica "Porteiro": Verifica se o usuário já tem uma empresa cadastrada.
- * Se tiver, carrega os dados para edição. Senão, prepara a página para o primeiro cadastro.
  */
 async function verificarEcarregarDados(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-        // NOVO EMPRESÁRIO
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
         if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
+        const secaoEquipe = document.querySelector('#lista-profissionais-painel')?.closest('.form-section');
+        if (secaoEquipe) secaoEquipe.style.display = 'none';
     } else {
-        // EMPRESÁRIO EXISTENTE
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
         
-        // O profissional a ser editado é o próprio dono (uid === profissionalId)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
         const dadosProfissional = profissionalSnap.exists() ? profissionalSnap.data() : {};
 
         preencherFormulario(dadosEmpresa, dadosProfissional);
+        renderizarListaProfissionais(empresaId);
     }
 }
 
 /**
- * Preenche o formulário com os dados carregados do Firebase.
+ * Busca os profissionais da empresa no Firebase e os exibe na tela.
+ */
+async function renderizarListaProfissionais(idDaEmpresa) {
+    if (!elements.listaProfissionaisPainel) return;
+    elements.listaProfissionaisPainel.innerHTML = `<p>Carregando equipe...</p>`;
+
+    const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
+    const snapshot = await getDocs(profissionaisRef);
+
+    if (snapshot.empty) {
+        elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+        return;
+    }
+
+    elements.listaProfissionaisPainel.innerHTML = snapshot.docs.map(doc => {
+        const profissional = doc.data();
+        return `
+            <div class="profissional-card" style="border: 1px solid #ccc; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                <img src="${profissional.fotoUrl || 'https://placehold.co/60x60/eef2ff/4f46e5?text=Foto'}" alt="Foto de ${profissional.nome}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                <span class="profissional-nome" style="font-weight: 600;">${profissional.nome}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Preenche o formulário com os dados da empresa e do profissional.
  */
 function preencherFormulario(dadosEmpresa, dadosProfissional) {
     elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
@@ -129,7 +162,7 @@ function preencherFormulario(dadosEmpresa, dadosProfissional) {
 }
 
 /**
- * Lida com o envio do formulário, criando ou atualizando a empresa e o perfil profissional.
+ * Lida com o envio do formulário principal, criando ou atualizando a empresa.
  */
 async function handleFormSubmit(event) {
     event.preventDefault();
@@ -166,7 +199,7 @@ async function handleFormSubmit(event) {
             }
         }
 
-        if (empresaId) { // Atualiza dados existentes
+        if (empresaId) {
             const empresaRef = doc(db, "empresarios", empresaId);
             await setDoc(empresaRef, dadosEmpresa, { merge: true });
             
@@ -175,8 +208,8 @@ async function handleFormSubmit(event) {
             dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
             await setDoc(profissionalRef, dadosProfissional, { merge: true });
             alert("Perfil atualizado com sucesso!");
-        } else { // Cria nova empresa
-            dadosProfissional.servicos = []; // Adiciona uma lista de serviços vazia no cadastro inicial
+        } else {
+            dadosProfissional.servicos = [];
             const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
             empresaId = novaEmpresaRef.id;
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
@@ -193,6 +226,9 @@ async function handleFormSubmit(event) {
     }
 }
 
+/**
+ * Coleta os dados de horários do formulário.
+ */
 function coletarDadosDeHorarios() {
     const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
     diasDaSemana.forEach(dia => {
@@ -211,6 +247,9 @@ function coletarDadosDeHorarios() {
     return horariosData;
 }
 
+/**
+ * Adiciona todos os listeners de eventos da página.
+ */
 function adicionarListenersDeEvento() {
     elements.form.addEventListener('submit', handleFormSubmit);
     if(elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
@@ -228,12 +267,63 @@ function adicionarListenersDeEvento() {
     }
     if (elements.btnLogout) {
         elements.btnLogout.addEventListener('click', async () => {
+            try { await signOut(auth); window.location.href = 'login.html'; }
+            catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
+        });
+    }
+
+    if (elements.btnAddProfissional) {
+        elements.btnAddProfissional.addEventListener('click', () => {
+            if (elements.formAddProfissional) elements.formAddProfissional.reset();
+            if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
+        });
+    }
+
+    if (elements.btnCancelarProfissional) {
+        elements.btnCancelarProfissional.addEventListener('click', () => {
+            if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+        });
+    }
+
+    if (elements.formAddProfissional) {
+        elements.formAddProfissional.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Salvando...';
+
             try {
-                await signOut(auth);
-                window.location.href = 'login.html';
+                const nome = document.getElementById('nome-profissional').value.trim();
+                const fotoFile = document.getElementById('foto-profissional').files[0];
+                if (!nome) throw new Error("O nome do profissional é obrigatório.");
+
+                let fotoUrl = '';
+                if (fotoFile) {
+                    const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+                    const uploadResult = await uploadBytes(storageRef, fotoFile);
+                    fotoUrl = await getDownloadURL(uploadResult.ref);
+                }
+
+                const novoProfissional = {
+                    nome,
+                    fotoUrl,
+                    servicos: [],
+                    horarios: {}
+                };
+
+                const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+                await addDoc(profissionaisRef, novoProfissional);
+
+                alert("Profissional adicionado com sucesso!");
+                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+                renderizarListaProfissionais(empresaId);
+
             } catch (error) {
-                console.error("Erro no logout:", error);
-                alert("Ocorreu um erro ao sair.");
+                console.error("Erro ao adicionar profissional:", error);
+                alert("Erro ao adicionar profissional: " + error.message);
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = 'Salvar Profissional';
             }
         });
     }
