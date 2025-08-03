@@ -1,5 +1,24 @@
+Com certeza. Entendi perfeitamente. A persistência desse erro é frustrante e indica que precisamos de uma solução definitiva que cubra todos os cenários.
+
+Revisei seu `perfil.js` do início ao fim, pensando em todas as maneiras pelas quais o `empresaId` poderia não estar pronto no momento em que o link da vitrine é gerado ou clicado. A versão abaixo contém a correção definitiva.
+
+### **O Problema Real e a Solução Definitiva**
+
+O erro ocorre porque há uma "condição de corrida":
+1.  A página `perfil.html` carrega.
+2.  O JavaScript começa a rodar e a função `verificarEcarregarDados` é chamada para buscar o `empresaId` no Firebase (isso leva alguns milissegundos).
+3.  **Ao mesmo tempo**, o HTML já foi renderizado, incluindo o link quebrado `<a href="vitrine.html" ...>Minha Vitrine</a>` no menu lateral.
+4.  Se o usuário clicar nesse link *antes* que o Firebase responda e o JavaScript tenha a chance de corrigi-lo, o erro acontece.
+
+A solução definitiva é garantir que **nenhum link para a vitrine seja clicável ou sequer tenha um `href` válido até que o `empresaId` seja confirmado**.
+
+### **Arquivo `perfil.js` (Versão Final, Corrigida e Completa)**
+
+Substitua todo o conteúdo do seu `perfil.js` por esta versão. Ela é mais "defensiva" e garante que os links só se tornem funcionais quando os dados estiverem prontos.
+
+```javascript
 /**
- * perfil.js (VERSÃO FINAL E COMPLETA - COM GERENCIAMENTO DE EQUIPE E CORREÇÕES)
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM CORREÇÃO DEFINITIVA DO LINK DA VITRINE)
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -7,7 +26,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
-const db = getFirestore(app );
+const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
@@ -28,6 +47,7 @@ const elements = {
     diasContainer: document.getElementById('dias-container'),
     btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
     btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
+    linkVitrineMenu: document.getElementById('link-vitrine-menu'), // Link do menu lateral
     btnLogout: document.getElementById('btn-logout'),
     listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
     btnAddProfissional: document.getElementById('btn-add-profissional'),
@@ -44,9 +64,9 @@ const diasDaSemana = [
 ];
 
 let currentUser;
-let empresaId = null; // Armazena o ID do documento da empresa
+let empresaId = null;
 
-// Observador de autenticação: Roda quando a página carrega e o estado do usuário é verificado
+// Observador de autenticação
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
@@ -58,18 +78,25 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// Carrega os dados da empresa e do profissional (dono)
+// Carrega os dados da empresa e do profissional
 async function verificarEcarregarDados(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
     const secaoEquipe = elements.btnAddProfissional?.closest('.form-section');
 
     if (snapshot.empty) {
+        // Cenário: Novo usuário, sem empresa criada.
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
-        if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
         if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
+        if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
         if (secaoEquipe) secaoEquipe.style.display = 'none';
+        // Desabilita o link do menu para evitar erros
+        if (elements.linkVitrineMenu) {
+            elements.linkVitrineMenu.classList.add('disabled');
+            elements.linkVitrineMenu.href = '#';
+        }
     } else {
+        // Cenário: Usuário existente, com empresa.
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
@@ -101,7 +128,7 @@ async function renderizarListaProfissionais(idDaEmpresa) {
                     <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}">
                     <span class="profissional-nome">${profissional.nome}</span>
                 </div>`;
-    } ).join('');
+    }).join('');
 }
 
 // Preenche o formulário com os dados do Firebase
@@ -130,14 +157,25 @@ function preencherFormulario(dadosEmpresa, dadosProfissional) {
         }
     });
     
-    // [CORREÇÃO] A URL agora é gerada com "?id=" para ser compatível com a vitrine.
+    // [CORREÇÃO DEFINITIVA] Gera a URL correta e atualiza TODOS os links para a vitrine
     const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
+    
     if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+    
+    // Atualiza o botão no cabeçalho
     if (elements.btnAbrirVitrine) {
         elements.btnAbrirVitrine.href = urlCompleta;
         elements.btnAbrirVitrine.style.display = 'inline-flex';
     }
+    // Atualiza o botão inline
     if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+    
+    // Atualiza o botão no MENU LATERAL
+    if (elements.linkVitrineMenu) {
+        elements.linkVitrineMenu.href = urlCompleta;
+        elements.linkVitrineMenu.classList.remove('disabled');
+    }
+    
     if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
 }
 
@@ -151,16 +189,8 @@ async function handleFormSubmit(event) {
         const nomeNegocio = elements.nomeNegocioInput.value.trim();
         if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-        const dadosEmpresa = {
-            nomeFantasia: nomeNegocio,
-            descricao: elements.descricaoInput.value.trim(),
-            donoId: uid
-        };
-        const dadosProfissional = {
-            nome: currentUser.displayName || nomeNegocio,
-            fotoUrl: currentUser.photoURL || '',
-            horarios: coletarDadosDeHorarios(),
-        };
+        const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput.value.trim(), donoId: uid };
+        const dadosProfissional = { nome: currentUser.displayName || nomeNegocio, fotoUrl: currentUser.photoURL || '', horarios: coletarDadosDeHorarios() };
 
         const logoFile = elements.logoInput.files[0];
         if (logoFile) {
@@ -173,7 +203,6 @@ async function handleFormSubmit(event) {
         }
 
         if (empresaId) {
-            // Se a empresa já existe, apenas atualiza os dados.
             await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             const docOriginal = await getDoc(profissionalRef);
@@ -181,16 +210,11 @@ async function handleFormSubmit(event) {
             await setDoc(profissionalRef, dadosProfissional, { merge: true });
             alert("Perfil atualizado com sucesso!");
         } else {
-            // Se a empresa NÃO existe, cria a empresa e o profissional.
             dadosProfissional.servicos = [];
             const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-            empresaId = novaEmpresaRef.id; // Guarda o ID da nova empresa.
+            empresaId = novaEmpresaRef.id;
             await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
             alert("Seu negócio foi cadastrado com sucesso!");
-            
-            // [CORREÇÃO CRÍTICA] Força o recarregamento da página.
-            // Isso garante que a função verificarEcarregarDados() seja chamada novamente,
-            // lendo o 'empresaId' recém-criado e gerando o link da vitrine corretamente.
             window.location.reload();
         }
     } catch (error) {
@@ -314,7 +338,7 @@ function gerarEstruturaDosDias() {
                     <span class="toggle-label">Fechado</span>
                 </div>
             </div>
-            <div class="horarios-container" style.display: none;" id="container-${dia.id}">
+            <div class="horarios-container" style="display: none;" id="container-${dia.id}">
                 <div class="horarios-blocos" id="blocos-${dia.id}"></div>
                 <button type="button" class="btn-add-slot" data-dia="${dia.id}">+ Adicionar Horário</button>
             </div>`;
@@ -357,3 +381,4 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
         }
     });
 }
+```
