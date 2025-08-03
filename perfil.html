@@ -54,12 +54,8 @@
                         <div class="vitrine-link-container">
                             <div class="vitrine-url" id="url-vitrine-display"></div>
                             <div class="vitrine-actions">
-                                <button type="button" id="btn-copiar-link" class="btn-copy">
-                                    <span class="copy-text">Copiar</span>
-                                </button>
-                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">
-                                    Abrir
-                                </a>
+                                <button type="button" id="btn-copiar-link" class="btn-copy">Copiar</button>
+                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">Abrir</a>
                             </div>
                         </div>
                     </div>
@@ -70,7 +66,8 @@
                             <img id="logo-preview" src="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Pré-visualização do logótipo">
                             <div class="logo-upload-actions">
                                 <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                                <button type="button" id="btn-upload-logo" class="btn-upload">Escolher Ficheiro</button>
+                                <!-- [MELHORIA DE ESTILO] Adicionada a classe 'btn-secondary' -->
+                                <button type="button" id="btn-upload-logo" class="btn-secondary">Escolher Ficheiro</button>
                             </div>
                         </div>
                     </div>
@@ -84,7 +81,7 @@
                 <div class="form-section">
                     <h3>Meus Horários de Atendimento</h3>
                     <div class="form-group">
-                        <label for="intervalo-atendimento">Intervalo Padrão na Agenda (em minutos)</label>
+                        <label for="intervalo-atendimento">Intervalo Padrão na Agenda (em minutos )</label>
                         <input type="number" id="intervalo-atendimento" min="5" step="5" value="30" required>
                     </div>
                     <div class="schedule-container">
@@ -95,8 +92,7 @@
 
                 <div class="form-section">
                     <h3>Equipe de Profissionais</h3>
-                    <div id="lista-profissionais-painel">
-                        </div>
+                    <div id="lista-profissionais-painel"></div>
                     <button type="button" id="btn-add-profissional" class="btn-secondary" style="margin-top: 15px;">
                         + Adicionar Novo Funcionário
                     </button>
@@ -119,7 +115,10 @@
                 </div>
                 <div class="form-group" style="text-align: left;">
                     <label for="foto-profissional">Foto (Opcional)</label>
-                    <input type="file" id="foto-profissional" accept="image/png, image/jpeg">
+                    <!-- [MELHORIA DE ESTILO] Adicionado um container para o botão de upload -->
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="foto-profissional" accept="image/png, image/jpeg">
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" id="btn-cancelar-profissional" class="btn-secondary">Cancelar</button>
