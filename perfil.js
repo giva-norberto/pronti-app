@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL E COMPLETA - COM GERENCIAMENTO DE EQUIPE)
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM GERENCIAMENTO DE EQUIPE E CORREÇÕES)
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -7,10 +7,11 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
-const db = getFirestore(app);
+const db = getFirestore(app );
 const auth = getAuth(app);
 const storage = getStorage(app);
 
+// Mapeamento dos elementos do DOM para fácil acesso
 const elements = {
     h1Titulo: document.getElementById('main-title'),
     form: document.getElementById('form-perfil'),
@@ -43,8 +44,9 @@ const diasDaSemana = [
 ];
 
 let currentUser;
-let empresaId = null;
+let empresaId = null; // Armazena o ID do documento da empresa
 
+// Observador de autenticação: Roda quando a página carrega e o estado do usuário é verificado
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
@@ -56,31 +58,36 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// Carrega os dados da empresa e do profissional (dono)
 async function verificarEcarregarDados(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
     const secaoEquipe = elements.btnAddProfissional?.closest('.form-section');
 
     if (snapshot.empty) {
+        // Se não tem empresa, prepara a UI para criação
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
         if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
-        if (secaoEquipe) secaoEquipe.style.display = 'none';
+        if (secaoEquipe) secaoEquipe.style.display = 'none'; // Esconde a seção de equipe
     } else {
+        // Se já tem empresa, carrega os dados
         const empresaDoc = snapshot.docs[0];
-        empresaId = empresaDoc.id;
+        empresaId = empresaDoc.id; // Guarda o ID da empresa
         const dadosEmpresa = empresaDoc.data();
         
+        // Busca os dados do profissional (que é o dono)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
         const dadosProfissional = profissionalSnap.exists() ? profissionalSnap.data() : {};
 
         preencherFormulario(dadosEmpresa, dadosProfissional);
-        if (secaoEquipe) secaoEquipe.style.display = 'block';
+        if (secaoEquipe) secaoEquipe.style.display = 'block'; // Mostra a seção de equipe
         renderizarListaProfissionais(empresaId);
     }
 }
 
+// Mostra a lista de profissionais na tela
 async function renderizarListaProfissionais(idDaEmpresa) {
     if (!elements.listaProfissionaisPainel) return;
     elements.listaProfissionaisPainel.innerHTML = `<p>Carregando equipe...</p>`;
@@ -93,13 +100,14 @@ async function renderizarListaProfissionais(idDaEmpresa) {
     }
     elements.listaProfissionaisPainel.innerHTML = snapshot.docs.map(doc => {
         const profissional = doc.data();
-        return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white;">
-                    <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                    <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
+        return `<div class="profissional-card">
+                    <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}">
+                    <span class="profissional-nome">${profissional.nome}</span>
                 </div>`;
-    }).join('');
+    } ).join('');
 }
 
+// Preenche o formulário com os dados do Firebase
 function preencherFormulario(dadosEmpresa, dadosProfissional) {
     elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
     elements.descricaoInput.value = dadosEmpresa.descricao || '';
@@ -125,7 +133,7 @@ function preencherFormulario(dadosEmpresa, dadosProfissional) {
         }
     });
     
-    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+    const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
     if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
     if (elements.btnAbrirVitrine) {
         elements.btnAbrirVitrine.href = urlCompleta;
@@ -135,6 +143,7 @@ function preencherFormulario(dadosEmpresa, dadosProfissional) {
     if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
 }
 
+// Lida com o salvamento do formulário principal
 async function handleFormSubmit(event) {
     event.preventDefault();
     elements.btnSalvar.disabled = true;
@@ -189,13 +198,14 @@ async function handleFormSubmit(event) {
     }
 }
 
+// Coleta os horários do formulário
 function coletarDadosDeHorarios() {
     const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
     diasDaSemana.forEach(dia => {
         const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
         const blocos = [];
         if (estaAtivo) {
-            document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
+            document.querySelectorAll(`#blocos-${dia.id} .slot-horario`).forEach(blocoEl => {
                 const inputs = blocoEl.querySelectorAll('input[type="time"]');
                 if (inputs[0].value && inputs[1].value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
             });
@@ -205,6 +215,7 @@ function coletarDadosDeHorarios() {
     return horariosData;
 }
 
+// Configura todos os "ouvintes de eventos" da página
 function adicionarListenersDeEvento() {
     elements.form.addEventListener('submit', handleFormSubmit);
     if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
@@ -221,7 +232,12 @@ function adicionarListenersDeEvento() {
         catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
     });
 
+    // Eventos do Modal de Adicionar Profissional
     if (elements.btnAddProfissional) elements.btnAddProfissional.addEventListener('click', () => {
+        if (!empresaId) {
+            alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
+            return;
+        }
         if (elements.formAddProfissional) elements.formAddProfissional.reset();
         if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
     });
@@ -230,6 +246,7 @@ function adicionarListenersDeEvento() {
         if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
     });
 
+    // [CORREÇÃO] Lógica para salvar o novo profissional
     if (elements.formAddProfissional) elements.formAddProfissional.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnSubmit = e.target.querySelector('button[type="submit"]');
@@ -246,12 +263,21 @@ function adicionarListenersDeEvento() {
                 const uploadResult = await uploadBytes(storageRef, fotoFile);
                 fotoUrl = await getDownloadURL(uploadResult.ref);
             }
-            const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {} };
+            
+            // Cria um objeto com os dados básicos do novo profissional
+            const novoProfissional = { 
+                nome, 
+                fotoUrl, 
+                servicos: [], // Começa sem serviços
+                horarios: {}  // Começa sem horários definidos
+            };
+            
+            // Adiciona o novo profissional na subcoleção 'profissionais' da empresa atual
             await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
 
             alert("Profissional adicionado com sucesso!");
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-            renderizarListaProfissionais(empresaId);
+            renderizarListaProfissionais(empresaId); // Atualiza a lista na tela
         } catch (error) {
             console.error("Erro ao adicionar profissional:", error);
             alert("Erro ao adicionar profissional: " + error.message);
@@ -262,12 +288,14 @@ function adicionarListenersDeEvento() {
     });
 }
 
+// Copia o link da vitrine para a área de transferência
 function copiarLink() {
     if (!empresaId) return alert("Salve seu perfil para gerar o link.");
-    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+    const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
     navigator.clipboard.writeText(urlCompleta).then(() => alert("Link da vitrine copiado!"));
 }
 
+// Gera a estrutura HTML para os dias da semana
 function gerarEstruturaDosDias() {
     if (!elements.diasContainer) return;
     elements.diasContainer.innerHTML = '';
@@ -309,6 +337,7 @@ function gerarEstruturaDosDias() {
     });
 }
 
+// Adiciona um bloco de horário para um dia específico
 function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
     const container = document.getElementById(`blocos-${diaId}`);
     const divBloco = document.createElement('div');
