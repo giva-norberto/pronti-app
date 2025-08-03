@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL E CORRIGIDA COM DOMContentLoaded)
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM LÓGICA 'ehDono' E 'DOMContentLoaded')
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -7,7 +7,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
-// GARANTE QUE TODO O CÓDIGO SÓ RODE APÓS O HTML ESTAR PRONTO
+// Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener('DOMContentLoaded', () => {
 
     const db = getFirestore(app);
@@ -83,11 +83,22 @@ window.addEventListener('DOMContentLoaded', () => {
             
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             const profissionalSnap = await getDoc(profissionalRef);
-            const dadosProfissional = profissionalSnap.exists() ? profissionalSnap.data() : {};
+            
+            let dadosProfissional = {};
+            let ehDono = false;
+            if (profissionalSnap.exists()) {
+                dadosProfissional = profissionalSnap.data();
+                ehDono = dadosProfissional.ehDono === true;
+            }
 
             preencherFormulario(dadosEmpresa, dadosProfissional);
-            if (secaoEquipe) secaoEquipe.style.display = 'block';
-            renderizarListaProfissionais(empresaId);
+
+            if (ehDono) {
+                if (secaoEquipe) secaoEquipe.style.display = 'block';
+                renderizarListaProfissionais(empresaId);
+            } else {
+                if (secaoEquipe) secaoEquipe.style.display = 'none';
+            }
         }
     }
 
@@ -161,7 +172,11 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
             const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput.value.trim(), donoId: uid };
-            const dadosProfissional = { nome: currentUser.displayName || nomeNegocio, fotoUrl: currentUser.photoURL || '', horarios: coletarDadosDeHorarios() };
+            const dadosProfissional = { 
+                nome: currentUser.displayName || nomeNegocio, 
+                fotoUrl: currentUser.photoURL || '', 
+                horarios: coletarDadosDeHorarios() 
+            };
 
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
@@ -178,10 +193,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
                 const docOriginal = await getDoc(profissionalRef);
                 dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
+                // Garante que a flag 'ehDono' não seja removida na atualização
+                dadosProfissional.ehDono = docOriginal.exists() ? docOriginal.data().ehDono : true;
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
                 dadosProfissional.servicos = [];
+                dadosProfissional.ehDono = true; // Define o criador como dono
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 empresaId = novaEmpresaRef.id;
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
@@ -214,7 +232,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 fotoUrl = await getDownloadURL(uploadResult.ref);
             }
             
-            const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {} };
+            const novoProfissional = { 
+                nome, 
+                fotoUrl, 
+                servicos: [], 
+                horarios: {},
+                ehDono: false // Define novos funcionários como NÃO donos
+            };
             await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
 
             alert("Profissional adicionado com sucesso!");
