@@ -133,7 +133,7 @@ function preencherFormulario(dadosEmpresa, dadosProfissional) {
         }
     });
     
-    const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
+   const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
     if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
     if (elements.btnAbrirVitrine) {
         elements.btnAbrirVitrine.href = urlCompleta;
