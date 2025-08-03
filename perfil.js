@@ -2,7 +2,7 @@
  * perfil.js (VERSÃO FINAL E COMPLETA - COM LÓGICA 'ehDono' E 'DOMContentLoaded')
  */
 
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
@@ -48,6 +48,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let currentUser;
     let empresaId = null;
+    let unsubProfissionais = null; // Variável para guardar o listener e poder desligá-lo
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -95,25 +96,36 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (ehDono) {
                 if (secaoEquipe) secaoEquipe.style.display = 'block';
-                renderizarListaProfissionais(empresaId);
+                iniciarListenerDeProfissionais(empresaId);
             } else {
                 if (secaoEquipe) secaoEquipe.style.display = 'none';
             }
         }
     }
 
-    async function renderizarListaProfissionais(idDaEmpresa) {
+    function iniciarListenerDeProfissionais(idDaEmpresa) {
         if (!elements.listaProfissionaisPainel) return;
-        elements.listaProfissionaisPainel.innerHTML = `<p>Carregando equipe...</p>`;
-        const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
-        const snapshot = await getDocs(profissionaisRef);
-
-        if (snapshot.empty) {
-            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
-            return;
+        // Se já houver um listener ativo, desliga-o antes de criar um novo
+        if (unsubProfissionais) {
+            unsubProfissionais();
         }
-        elements.listaProfissionaisPainel.innerHTML = snapshot.docs.map(doc => {
-            const profissional = doc.data();
+        
+        const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
+        
+        unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
+            if (snapshot.empty) {
+                elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+                return;
+            }
+            const profissionais = snapshot.docs.map(doc => doc.data());
+            renderizarListaProfissionais(profissionais);
+        });
+    }
+
+    function renderizarListaProfissionais(profissionais) {
+        if (!elements.listaProfissionaisPainel) return;
+        
+        elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
             return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
                         <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                         <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
@@ -203,10 +215,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
-
             } else {
                 dadosProfissional.servicos = [];
-                dadosProfissional.ehDono = true; 
+                dadosProfissional.ehDono = true;
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 empresaId = novaEmpresaRef.id;
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
@@ -244,7 +255,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             alert("Profissional adicionado com sucesso!");
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-            renderizarListaProfissionais(empresaId);
+            // A lista irá se atualizar automaticamente por causa do onSnapshot
         } catch (error) {
             console.error("Erro ao adicionar profissional:", error);
             alert("Erro ao adicionar profissional: " + error.message);
