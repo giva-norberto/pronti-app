@@ -1,13 +1,11 @@
 /**
- * perfil.js (VERSÃO FINAL - GERENCIAMENTO DE EMPRESA E PROFISSIONAL)
+ * perfil.js (VERSÃO FINAL E COMPLETA - Integrado com o novo layout)
  *
- * Lógica Principal:
- * 1. Ao carregar, verifica se o usuário logado já possui uma empresa na coleção 'empresarios'.
- * 2. Se NÃO tiver, a página age como um formulário de CADASTRO.
- * 3. Se JÁ tiver, a página carrega os dados e age como um painel de EDIÇÃO.
- * 4. Salva e lê dados da estrutura `empresarios/{empresaId}/profissionais/{profissionalId}`.
- * 5. O link da vitrine é gerado automaticamente com o ID da empresa.
- * 6. Inclui a funcionalidade de logout.
+ * Este script controla a página de perfil do empresário.
+ * - Detecta se o usuário é novo e apresenta um formulário de cadastro.
+ * - Carrega os dados de um usuário existente para edição.
+ * - Salva todas as informações na estrutura de dados 'empresarios' no Firebase.
+ * - Preserva a estrutura e o design do HTML/CSS fornecido.
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -19,23 +17,25 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// --- Elementos do DOM ---
-const h1Titulo = document.querySelector('.main-content h1');
-const form = document.getElementById('form-perfil');
-const nomeNegocioInput = document.getElementById('nomeNegocio');
-const descricaoInput = document.getElementById('descricao');
-const logoInput = document.getElementById('logoNegocio');
-const logoPreview = document.getElementById('logo-preview');
-const btnUploadLogo = document.getElementById('btn-upload-logo');
-const btnSalvar = form.querySelector('button[type="submit"]');
-const btnCopiarLink = document.getElementById('btn-copiar-link');
-const containerLinkVitrine = document.getElementById('container-link-vitrine');
-const urlVitrineEl = document.getElementById('url-vitrine-display');
-const intervaloSelect = document.getElementById('intervalo-atendimento');
-const diasContainer = document.getElementById('dias-container');
-const btnAbrirVitrine = document.getElementById('btn-abrir-vitrine');
-// Assumindo que você adicionou um botão de logout no seu HTML
-const btnLogout = document.getElementById('btn-logout');
+// --- Mapeamento de Elementos do DOM (Baseado no seu HTML final) ---
+const elements = {
+    h1Titulo: document.querySelector('.main-content h1'),
+    form: document.getElementById('form-perfil'),
+    nomeNegocioInput: document.getElementById('nomeNegocio'),
+    descricaoInput: document.getElementById('descricao'),
+    logoInput: document.getElementById('logoNegocio'),
+    logoPreview: document.getElementById('logo-preview'),
+    btnUploadLogo: document.getElementById('btn-upload-logo'),
+    btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
+    btnCopiarLink: document.getElementById('btn-copiar-link'),
+    containerLinkVitrine: document.getElementById('container-link-vitrine'),
+    urlVitrineEl: document.getElementById('url-vitrine-display'),
+    intervaloSelect: document.getElementById('intervalo-atendimento'),
+    diasContainer: document.getElementById('dias-container'),
+    btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
+    btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
+    btnLogout: document.getElementById('btn-logout')
+};
 
 const diasDaSemana = [
     { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
@@ -46,7 +46,7 @@ const diasDaSemana = [
 
 // --- Variáveis de Estado ---
 let currentUser;
-let empresaId = null; // Guardará o ID da empresa do usuário logado
+let empresaId = null;
 
 // --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, (user) => {
@@ -56,32 +56,30 @@ onAuthStateChanged(auth, (user) => {
         adicionarListenersDeEvento();
         gerarEstruturaDosDias();
     } else {
-        window.location.href = 'login.html'; // Redireciona se não estiver logado
+        window.location.href = 'login.html';
     }
 });
 
 /**
- * Lógica "Porteiro": Verifica se o usuário já tem uma empresa.
- * Se sim, carrega os dados. Se não, prepara a página para o cadastro.
- * @param {string} uid - O UID do usuário autenticado.
+ * Lógica "Porteiro": Verifica se o usuário já tem uma empresa cadastrada.
+ * Se tiver, carrega os dados para edição. Senão, prepara a página para o primeiro cadastro.
  */
 async function verificarEcarregarDados(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-        // NOVO EMPRESÁRIO: A página se comporta como um formulário de cadastro.
-        h1Titulo.textContent = "Crie seu Perfil de Negócio";
-        btnAbrirVitrine.style.display = 'none';
-        if (containerLinkVitrine) containerLinkVitrine.style.display = 'none';
-        if (btnCopiarLink) btnCopiarLink.style.display = 'none';
+        // NOVO EMPRESÁRIO
+        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
+        if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
+        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
     } else {
-        // EMPRESÁRIO EXISTENTE: Carrega os dados para edição.
+        // EMPRESÁRIO EXISTENTE
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
         
-        // Consideramos que o profissional a ser editado é o próprio dono (uid === profissionalId)
+        // O profissional a ser editado é o próprio dono (uid === profissionalId)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
         const dadosProfissional = profissionalSnap.exists() ? profissionalSnap.data() : {};
@@ -91,79 +89,76 @@ async function verificarEcarregarDados(uid) {
 }
 
 /**
- * Preenche o formulário com os dados da empresa e do profissional carregados do Firebase.
- * @param {object} dadosEmpresa - Dados do documento da empresa.
- * @param {object} dadosProfissional - Dados do documento do profissional.
+ * Preenche o formulário com os dados carregados do Firebase.
  */
 function preencherFormulario(dadosEmpresa, dadosProfissional) {
-    nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
-    descricaoInput.value = dadosEmpresa.descricao || '';
+    elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+    elements.descricaoInput.value = dadosEmpresa.descricao || '';
     if (dadosEmpresa.logoUrl) {
-        logoPreview.src = dadosEmpresa.logoUrl;
+        elements.logoPreview.src = dadosEmpresa.logoUrl;
     }
 
     const horarios = dadosProfissional.horarios || {};
-    intervaloSelect.value = horarios.intervalo || '30';
+    elements.intervaloSelect.value = horarios.intervalo || '30';
     diasDaSemana.forEach(dia => {
         const diaData = horarios[dia.id];
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
-        const containerBlocos = document.getElementById(`blocos-${dia.id}`);
-        if (toggleAtivo && containerBlocos) {
+        if (toggleAtivo) {
             toggleAtivo.checked = diaData ? diaData.ativo : false;
-            containerBlocos.innerHTML = '';
-            if (diaData?.ativo && diaData.blocos) {
-                diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
-            } else if (diaData?.ativo) {
-                adicionarBlocoDeHorario(dia.id);
+            const containerBlocos = document.getElementById(`blocos-${dia.id}`);
+            if (containerBlocos) {
+                containerBlocos.innerHTML = '';
+                if (diaData?.ativo && diaData.blocos) {
+                    diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
+                } else if (diaData?.ativo) {
+                    adicionarBlocoDeHorario(dia.id);
+                }
             }
             toggleAtivo.dispatchEvent(new Event('change'));
         }
     });
     
-    // Configura os botões de link da vitrine
     const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-    if (urlVitrineEl) urlVitrineEl.textContent = urlCompleta;
-    if (containerLinkVitrine) containerLinkVitrine.style.display = 'block';
-    if (btnCopiarLink) btnCopiarLink.style.display = 'block';
-    btnAbrirVitrine.href = urlCompleta;
-    btnAbrirVitrine.style.display = 'inline-block';
+    if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+    if (elements.btnAbrirVitrine) {
+        elements.btnAbrirVitrine.href = urlCompleta;
+        elements.btnAbrirVitrine.style.display = 'inline-flex';
+    }
+    if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+    if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
 }
 
 /**
- * Lida com o envio do formulário, criando uma nova empresa ou atualizando uma existente.
+ * Lida com o envio do formulário, criando ou atualizando a empresa e o perfil profissional.
  */
 async function handleFormSubmit(event) {
     event.preventDefault();
-    btnSalvar.disabled = true;
-    btnSalvar.textContent = 'Salvando...';
+    elements.btnSalvar.disabled = true;
+    elements.btnSalvar.textContent = 'Salvando...';
 
     try {
         const uid = currentUser.uid;
-        const nomeNegocio = nomeNegocioInput.value.trim();
+        const nomeNegocio = elements.nomeNegocioInput.value.trim();
         if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-        // 1. Prepara os dados da empresa
         const dadosEmpresa = {
             nomeFantasia: nomeNegocio,
-            descricao: descricaoInput.value.trim(),
+            descricao: elements.descricaoInput.value.trim(),
             donoId: uid
         };
-
-        // 2. Prepara os dados do profissional (o dono, neste caso)
+        
         const dadosProfissional = {
             nome: currentUser.displayName || nomeNegocio,
             fotoUrl: currentUser.photoURL || '',
-            horarios: coletarDadosDeHorarios()
+            horarios: coletarDadosDeHorarios(),
         };
 
-        // 3. Lida com o Upload do Logo
-        const logoFile = logoInput.files[0];
+        const logoFile = elements.logoInput.files[0];
         if (logoFile) {
             const storageRef = ref(storage, `logos/${uid}/logo`);
             const uploadResult = await uploadBytes(storageRef, logoFile);
             dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
         } else if (empresaId) {
-            // Mantém a URL do logo existente se não for enviado um novo
             const empresaAtualRef = doc(db, "empresarios", empresaId);
             const empresaAtualSnap = await getDoc(empresaAtualRef);
             if (empresaAtualSnap.exists()) {
@@ -171,39 +166,35 @@ async function handleFormSubmit(event) {
             }
         }
 
-        // 4. Salva no Firebase (Cria ou Atualiza)
-        if (empresaId) {
-            // ATUALIZA empresa e profissional existentes
+        if (empresaId) { // Atualiza dados existentes
             const empresaRef = doc(db, "empresarios", empresaId);
             await setDoc(empresaRef, dadosEmpresa, { merge: true });
+            
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+            const docOriginal = await getDoc(profissionalRef);
+            dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
             await setDoc(profissionalRef, dadosProfissional, { merge: true });
             alert("Perfil atualizado com sucesso!");
-        } else {
-            // CRIA nova empresa e o primeiro profissional
+        } else { // Cria nova empresa
+            dadosProfissional.servicos = []; // Adiciona uma lista de serviços vazia no cadastro inicial
             const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
             empresaId = novaEmpresaRef.id;
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             await setDoc(profissionalRef, dadosProfissional);
             alert("Seu negócio foi cadastrado com sucesso!");
-            window.location.reload(); // Recarrega para entrar no modo de edição
+            window.location.reload();
         }
-
     } catch (error) {
         console.error("Erro ao salvar perfil:", error);
         alert("Ocorreu um erro ao salvar: " + error.message);
     } finally {
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Salvar Todas as Configurações';
+        elements.btnSalvar.disabled = false;
+        elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
     }
 }
 
-/**
- * Coleta os dados de horários do formulário e retorna um objeto.
- * @returns {object} - Objeto com a configuração de horários.
- */
 function coletarDadosDeHorarios() {
-    const horariosData = { intervalo: parseInt(intervaloSelect.value, 10) };
+    const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
     diasDaSemana.forEach(dia => {
         const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
         const blocos = [];
@@ -220,26 +211,23 @@ function coletarDadosDeHorarios() {
     return horariosData;
 }
 
-// --- FUNÇÕES UTILITÁRIAS E DE UI (PRESERVADAS) ---
-
 function adicionarListenersDeEvento() {
-    form.addEventListener('submit', handleFormSubmit);
-    if(btnCopiarLink) btnCopiarLink.addEventListener('click', copiarLink);
-    if (btnUploadLogo && logoInput) {
-        btnUploadLogo.addEventListener('click', () => logoInput.click());
+    elements.form.addEventListener('submit', handleFormSubmit);
+    if(elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
+    if (elements.btnUploadLogo && elements.logoInput) {
+        elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
     }
-    if(logoInput) {
-        logoInput.addEventListener('change', () => {
-            if (logoInput.files && logoInput.files[0]) {
+    if(elements.logoInput) {
+        elements.logoInput.addEventListener('change', () => {
+            if (elements.logoInput.files && elements.logoInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = (e) => { logoPreview.src = e.target.result; };
-                reader.readAsDataURL(logoInput.files[0]);
+                reader.onload = (e) => { elements.logoPreview.src = e.target.result; };
+                reader.readAsDataURL(elements.logoInput.files[0]);
             }
         });
     }
-
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async () => {
+    if (elements.btnLogout) {
+        elements.btnLogout.addEventListener('click', async () => {
             try {
                 await signOut(auth);
                 window.location.href = 'login.html';
@@ -263,41 +251,42 @@ function copiarLink() {
 }
 
 function gerarEstruturaDosDias() {
-    if (!diasContainer) return;
-    diasContainer.innerHTML = '';
+    if (!elements.diasContainer) return;
+    elements.diasContainer.innerHTML = '';
     diasDaSemana.forEach(dia => {
         const divDia = document.createElement('div');
         divDia.className = 'dia-semana';
-        // HTML da estrutura do dia
         divDia.innerHTML = `
-            <div class="dia-semana-header">
-                <span class="dia-semana-nome">${dia.nome}</span>
-                <div class="toggle-atendimento">
+            <div class="dia-info">
+                <span class="dia-nome">${dia.nome}</span>
+                <div class="toggle-container">
                     <label class="switch">
                         <input type="checkbox" id="${dia.id}-ativo">
                         <span class="slider"></span>
                     </label>
+                    <span class="toggle-label">Fechado</span>
                 </div>
             </div>
-            <div class="horarios-container" id="container-${dia.id}" style="display: none;">
+            <div class="horarios-container" style="display: none;" id="container-${dia.id}">
                 <div class="horarios-blocos" id="blocos-${dia.id}"></div>
-                <button type="button" class="btn-adicionar-bloco" data-dia="${dia.id}">+ Adicionar Horário</button>
+                <button type="button" class="btn-add-slot" data-dia="${dia.id}">+ Adicionar Horário</button>
             </div>
         `;
-        diasContainer.appendChild(divDia);
+        elements.diasContainer.appendChild(divDia);
         
-        // Listeners para o toggle e botão de adicionar
         const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
         toggleAtivo.addEventListener('change', (e) => {
             const container = document.getElementById(`container-${dia.id}`);
-            container.style.display = e.target.checked ? 'block' : 'none';
+            const label = e.target.closest('.toggle-container').querySelector('.toggle-label');
+            container.style.display = e.target.checked ? 'flex' : 'none';
+            label.textContent = e.target.checked ? 'Aberto' : 'Fechado';
             if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
                 adicionarBlocoDeHorario(dia.id);
             }
         });
     });
-    diasContainer.addEventListener('click', function(e) {
-        if (e.target.classList.contains('btn-adicionar-bloco')) {
+    elements.diasContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-add-slot')) {
             adicionarBlocoDeHorario(e.target.dataset.dia);
         }
     });
@@ -306,20 +295,18 @@ function gerarEstruturaDosDias() {
 function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
     const container = document.getElementById(`blocos-${diaId}`);
     const divBloco = document.createElement('div');
-    divBloco.className = 'bloco-horario';
-    // HTML do bloco de horário
+    divBloco.className = 'slot-horario';
     divBloco.innerHTML = `
         <input type="time" value="${inicio}">
-        <span>até</span>
+        <span class="ate">até</span>
         <input type="time" value="${fim}">
-        <button type="button" class="btn-remover-bloco">-</button>
+        <button type="button" class="btn-remove-slot">Remover</button>
     `;
     container.appendChild(divBloco);
     
-    // Listener para o botão de remover
-    divBloco.querySelector('.btn-remover-bloco').addEventListener('click', (e) => {
+    divBloco.querySelector('.btn-remove-slot').addEventListener('click', (e) => {
         if (container.childElementCount > 1) {
-            e.target.closest('.bloco-horario').remove();
+            e.target.closest('.slot-horario').remove();
         } else {
             alert("Para não atender neste dia, desative o botão na parte superior.");
         }
