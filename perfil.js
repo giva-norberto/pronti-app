@@ -1,5 +1,13 @@
 /**
- * perfil.js (VERSÃO FINAL E COMPLETA - COM TODAS AS FUNÇÕES PRESERVADAS)
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM TODAS AS FUNÇÕES E CORREÇÕES)
+ *
+ * Funcionalidades:
+ * - Cadastro e edição do perfil da empresa e horários do dono.
+ * - Lista os profissionais da equipe.
+ * - Abre um modal para cadastrar novos funcionários.
+ * - Salva novos funcionários na subcoleção 'profissionais' da empresa.
+ * - Inclui a funcionalidade de logout.
+ * - [CORREÇÃO] Gera todos os links para a vitrine com o parâmetro correto '?empresa='.
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -7,7 +15,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
-const db = getFirestore(app );
+const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
@@ -27,7 +35,7 @@ const elements = {
     diasContainer: document.getElementById('dias-container'),
     btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
     btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
-    linkVitrineMenu: document.getElementById('link-vitrine-menu'),
+    linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
     btnLogout: document.getElementById('btn-logout'),
     listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
     btnAddProfissional: document.getElementById('btn-add-profissional'),
@@ -68,7 +76,7 @@ async function verificarEcarregarDados(uid) {
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
         if (secaoEquipe) secaoEquipe.style.display = 'none';
         if (elements.linkVitrineMenu) {
-            elements.linkVitrineMenu.classList.add('disabled');
+            elements.linkVitrineMenu.classList.add('disabled'); // Adiciona uma classe para estilizar como desabilitado
             elements.linkVitrineMenu.href = '#';
         }
     } else {
@@ -102,7 +110,7 @@ async function renderizarListaProfissionais(idDaEmpresa) {
                     <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}">
                     <span class="profissional-nome">${profissional.nome}</span>
                 </div>`;
-    } ).join('');
+    }).join('');
 }
 
 function preencherFormulario(dadosEmpresa, dadosProfissional) {
@@ -130,7 +138,8 @@ function preencherFormulario(dadosEmpresa, dadosProfissional) {
         }
     });
     
-    const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
+    // [CORREÇÃO CRÍTICA] Usa '?empresa=' para criar o link
+    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
     
     if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
     if (elements.btnAbrirVitrine) {
@@ -274,7 +283,8 @@ function copiarLink() {
         alert("Salve seu perfil para gerar o link.");
         return;
     }
-    const urlCompleta = `${window.location.origin}/vitrine.html?id=${empresaId}`;
+    // [CORREÇÃO CRÍTICA] Usa '?empresa=' para criar o link
+    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
     navigator.clipboard.writeText(urlCompleta).then(() => {
         alert("Link da vitrine copiado!");
     }, () => {
