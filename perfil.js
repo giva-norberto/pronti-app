@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL E COMPLETA - COM GERENCIAMENTO DE EQUIPE)
+ * perfil.js (VERSÃO COMPLETA DE DEPURAÇÃO)
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -48,6 +48,7 @@ let empresaId = null;
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
+        console.log("PONTO 1: Utilizador autenticado. A iniciar a página..."); // PONTO 1
         currentUser = user;
         verificarEcarregarDados(user.uid);
         adicionarListenersDeEvento();
@@ -194,9 +195,6 @@ async function handleFormSubmit(event) {
     }
 }
 
-// ==========================================================================
-// NOVA FUNÇÃO DEDICADA PARA ADICIONAR UM PROFISSIONAL
-// ==========================================================================
 async function handleAdicionarProfissional(event) {
     event.preventDefault();
     const btnSubmit = event.target.querySelector('button[type="submit"]');
@@ -214,20 +212,12 @@ async function handleAdicionarProfissional(event) {
             fotoUrl = await getDownloadURL(uploadResult.ref);
         }
         
-        const novoProfissional = { 
-            nome, 
-            fotoUrl, 
-            servicos: [], // Começa com lista de serviços vazia
-            horarios: {}  // Começa com horários vazios
-        };
-
-        // Adiciona o novo documento na subcoleção 'profissionais'
+        const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {} };
         await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
 
         alert("Profissional adicionado com sucesso!");
         if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-        renderizarListaProfissionais(empresaId); // Atualiza a lista na tela
-
+        renderizarListaProfissionais(empresaId);
     } catch (error) {
         console.error("Erro ao adicionar profissional:", error);
         alert("Erro ao adicionar profissional: " + error.message);
@@ -254,6 +244,7 @@ function coletarDadosDeHorarios() {
 }
 
 function adicionarListenersDeEvento() {
+    console.log("PONTO 2: A função 'adicionarListenersDeEvento' foi chamada."); // PONTO 2
     elements.form.addEventListener('submit', handleFormSubmit);
     if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
     if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
@@ -270,7 +261,11 @@ function adicionarListenersDeEvento() {
     });
 
     if (elements.btnAddProfissional) {
+        console.log("PONTO 3: Botão 'Adicionar Novo Funcionário' foi encontrado no HTML."); // PONTO 3
         elements.btnAddProfissional.addEventListener('click', () => {
+            console.log("PONTO 4: Clique no botão 'Adicionar Novo Funcionário' detectado!"); // PONTO 4
+            console.log("Valor de 'empresaId' no momento do clique:", empresaId); // VERIFICAÇÃO CRÍTICA
+
             if (!empresaId) {
                 alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
                 return;
@@ -278,6 +273,8 @@ function adicionarListenersDeEvento() {
             if (elements.formAddProfissional) elements.formAddProfissional.reset();
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
         });
+    } else {
+        console.error("FALHA PONTO 3: Botão 'Adicionar Novo Funcionário' (id='btn-add-profissional') NÃO foi encontrado no HTML.");
     }
 
     if (elements.btnCancelarProfissional) {
@@ -286,7 +283,6 @@ function adicionarListenersDeEvento() {
         });
     }
 
-    // [CORREÇÃO] O event listener do formulário agora chama a nova função dedicada
     if (elements.formAddProfissional) {
         elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
     }
