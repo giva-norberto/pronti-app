@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL E COMPLETA - COM CORREÇÃO NO 'handleFormSubmit')
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM LÓGICA 'ehDono' E 'DOMContentLoaded')
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -7,6 +7,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
+// Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener('DOMContentLoaded', () => {
 
     const db = getFirestore(app);
@@ -71,6 +72,9 @@ window.addEventListener('DOMContentLoaded', () => {
             if (secaoEquipe) secaoEquipe.style.display = 'none';
             if (elements.linkVitrineMenu) {
                 elements.linkVitrineMenu.classList.add('disabled');
+                elements.linkVitrineMenu.style.pointerEvents = 'none';
+                elements.linkVitrineMenu.style.opacity = '0.5';
+                elements.linkVitrineMenu.href = '#';
             }
         } else {
             const empresaDoc = snapshot.docs[0];
@@ -97,11 +101,11 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
-    async function renderizarListaProfissionais(idDaSemana) {
+
+    async function renderizarListaProfissionais(idDaEmpresa) {
         if (!elements.listaProfissionaisPainel) return;
         elements.listaProfissionaisPainel.innerHTML = `<p>Carregando equipe...</p>`;
-        const profissionaisRef = collection(db, "empresarios", idDaSemana, "profissionais");
+        const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
         const snapshot = await getDocs(profissionaisRef);
 
         if (snapshot.empty) {
@@ -110,9 +114,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         elements.listaProfissionaisPainel.innerHTML = snapshot.docs.map(doc => {
             const profissional = doc.data();
-            return `<div class="profissional-card">
-                        <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}">
-                        <span class="profissional-nome">${profissional.nome}</span>
+            return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
+                        <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
                     </div>`;
         }).join('');
     }
@@ -152,6 +156,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.linkVitrineMenu) {
             elements.linkVitrineMenu.href = urlCompleta;
             elements.linkVitrineMenu.classList.remove('disabled');
+            elements.linkVitrineMenu.style.pointerEvents = 'auto';
+            elements.linkVitrineMenu.style.opacity = '1';
         }
         if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
     }
@@ -189,12 +195,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 
                 dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
                 
-                // --- CORREÇÃO DEFINITIVA PARA 'ehDono' ---
-                // Garante que 'ehDono' seja sempre um booleano (true/false) e nunca 'undefined'.
                 if (docOriginal.exists() && docOriginal.data().ehDono === true) {
                     dadosProfissional.ehDono = true;
                 } else {
-                    dadosProfissional.ehDono = false; // Garante que o valor seja sempre 'false' se não for explicitamente 'true'
+                    dadosProfissional.ehDono = false;
                 }
 
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
