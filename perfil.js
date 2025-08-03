@@ -105,7 +105,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function iniciarListenerDeProfissionais(idDaEmpresa) {
         if (!elements.listaProfissionaisPainel) return;
-        // Se já houver um listener ativo, desliga-o antes de criar um novo
         if (unsubProfissionais) {
             unsubProfissionais();
         }
@@ -255,7 +254,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
             alert("Profissional adicionado com sucesso!");
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-            // A lista irá se atualizar automaticamente por causa do onSnapshot
         } catch (error) {
             console.error("Erro ao adicionar profissional:", error);
             alert("Erro ao adicionar profissional: " + error.message);
