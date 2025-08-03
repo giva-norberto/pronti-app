@@ -7,7 +7,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
-// A MÁGICA ACONTECE AQUI: GARANTE QUE O SCRIPT SÓ RODE APÓS O HTML ESTAR PRONTO
+// GARANTE QUE TODO O CÓDIGO SÓ RODE APÓS O HTML ESTAR PRONTO
 window.addEventListener('DOMContentLoaded', () => {
 
     const db = getFirestore(app);
