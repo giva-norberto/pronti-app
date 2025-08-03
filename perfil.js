@@ -194,6 +194,49 @@ async function handleFormSubmit(event) {
     }
 }
 
+// ==========================================================================
+// NOVA FUNÇÃO DEDICADA PARA ADICIONAR UM PROFISSIONAL
+// ==========================================================================
+async function handleAdicionarProfissional(event) {
+    event.preventDefault();
+    const btnSubmit = event.target.querySelector('button[type="submit"]');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Salvando...';
+    try {
+        const nome = document.getElementById('nome-profissional').value.trim();
+        const fotoFile = document.getElementById('foto-profissional').files[0];
+        if (!nome) throw new Error("O nome do profissional é obrigatório.");
+
+        let fotoUrl = '';
+        if (fotoFile) {
+            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+            const uploadResult = await uploadBytes(storageRef, fotoFile);
+            fotoUrl = await getDownloadURL(uploadResult.ref);
+        }
+        
+        const novoProfissional = { 
+            nome, 
+            fotoUrl, 
+            servicos: [], // Começa com lista de serviços vazia
+            horarios: {}  // Começa com horários vazios
+        };
+
+        // Adiciona o novo documento na subcoleção 'profissionais'
+        await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
+
+        alert("Profissional adicionado com sucesso!");
+        if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+        renderizarListaProfissionais(empresaId); // Atualiza a lista na tela
+
+    } catch (error) {
+        console.error("Erro ao adicionar profissional:", error);
+        alert("Erro ao adicionar profissional: " + error.message);
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Salvar Profissional';
+    }
+}
+
 function coletarDadosDeHorarios() {
     const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
     diasDaSemana.forEach(dia => {
@@ -243,38 +286,9 @@ function adicionarListenersDeEvento() {
         });
     }
 
+    // [CORREÇÃO] O event listener do formulário agora chama a nova função dedicada
     if (elements.formAddProfissional) {
-        elements.formAddProfissional.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btnSubmit = e.target.querySelector('button[type="submit"]');
-            btnSubmit.disabled = true;
-            btnSubmit.textContent = 'Salvando...';
-            try {
-                const nome = document.getElementById('nome-profissional').value.trim();
-                const fotoFile = document.getElementById('foto-profissional').files[0];
-                if (!nome) throw new Error("O nome do profissional é obrigatório.");
-
-                let fotoUrl = '';
-                if (fotoFile) {
-                    const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
-                    const uploadResult = await uploadBytes(storageRef, fotoFile);
-                    fotoUrl = await getDownloadURL(uploadResult.ref);
-                }
-                
-                const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {} };
-                await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
-
-                alert("Profissional adicionado com sucesso!");
-                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-                renderizarListaProfissionais(empresaId);
-            } catch (error) {
-                console.error("Erro ao adicionar profissional:", error);
-                alert("Erro ao adicionar profissional: " + error.message);
-            } finally {
-                btnSubmit.disabled = false;
-                btnSubmit.textContent = 'Salvar Profissional';
-            }
-        });
+        elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
     }
 }
 
