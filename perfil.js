@@ -2,12 +2,11 @@
  * perfil.js (VERSÃO FINAL E COMPLETA - COM GERENCIAMENTO DE EQUIPE)
  *
  * Esta é a versão definitiva do painel do empresário.
- * Lógica Principal:
- * - Detecta se o usuário é novo e apresenta um formulário de cadastro.
- * - Carrega os dados de um usuário existente para edição.
- * - Salva todas as informações na estrutura de dados 'empresarios' no Firebase.
+ * Funcionalidades:
+ * - Cadastro e edição do perfil da empresa e horários do dono.
  * - Lista os profissionais da equipe.
- * - Permite adicionar novos profissionais através de um modal.
+ * - Abre um modal para cadastrar novos funcionários.
+ * - Salva novos funcionários na subcoleção 'profissionais' da empresa.
  * - Inclui a funcionalidade de logout.
  */
 
@@ -22,7 +21,7 @@ const storage = getStorage(app);
 
 // --- Mapeamento de Elementos do DOM ---
 const elements = {
-    h1Titulo: document.querySelector('.main-content h1'),
+    h1Titulo: document.getElementById('main-title'),
     form: document.getElementById('form-perfil'),
     nomeNegocioInput: document.getElementById('nomeNegocio'),
     descricaoInput: document.getElementById('descricao'),
@@ -113,9 +112,9 @@ async function renderizarListaProfissionais(idDaEmpresa) {
     elements.listaProfissionaisPainel.innerHTML = snapshot.docs.map(doc => {
         const profissional = doc.data();
         return `
-            <div class="profissional-card" style="border: 1px solid #ccc; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
-                <img src="${profissional.fotoUrl || 'https://placehold.co/60x60/eef2ff/4f46e5?text=Foto'}" alt="Foto de ${profissional.nome}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-                <span class="profissional-nome" style="font-weight: 600;">${profissional.nome}</span>
+            <div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white;">
+                <img src="${profissional.fotoUrl || 'https://placehold.co/60x60/eef2ff/4f46e5?text=Foto'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
             </div>
         `;
     }).join('');
@@ -199,7 +198,7 @@ async function handleFormSubmit(event) {
             }
         }
 
-        if (empresaId) {
+        if (empresaId) { // Atualiza dados existentes
             const empresaRef = doc(db, "empresarios", empresaId);
             await setDoc(empresaRef, dadosEmpresa, { merge: true });
             
@@ -208,8 +207,8 @@ async function handleFormSubmit(event) {
             dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
             await setDoc(profissionalRef, dadosProfissional, { merge: true });
             alert("Perfil atualizado com sucesso!");
-        } else {
-            dadosProfissional.servicos = [];
+        } else { // Cria nova empresa
+            dadosProfissional.servicos = []; 
             const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
             empresaId = novaEmpresaRef.id;
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
@@ -271,53 +270,44 @@ function adicionarListenersDeEvento() {
             catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
         });
     }
-
     if (elements.btnAddProfissional) {
         elements.btnAddProfissional.addEventListener('click', () => {
             if (elements.formAddProfissional) elements.formAddProfissional.reset();
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
         });
     }
-
     if (elements.btnCancelarProfissional) {
         elements.btnCancelarProfissional.addEventListener('click', () => {
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
         });
     }
-
     if (elements.formAddProfissional) {
         elements.formAddProfissional.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btnSubmit = e.target.querySelector('button[type="submit"]');
             btnSubmit.disabled = true;
             btnSubmit.textContent = 'Salvando...';
-
             try {
                 const nome = document.getElementById('nome-profissional').value.trim();
                 const fotoFile = document.getElementById('foto-profissional').files[0];
                 if (!nome) throw new Error("O nome do profissional é obrigatório.");
-
                 let fotoUrl = '';
                 if (fotoFile) {
                     const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
                     const uploadResult = await uploadBytes(storageRef, fotoFile);
                     fotoUrl = await getDownloadURL(uploadResult.ref);
                 }
-
                 const novoProfissional = {
                     nome,
                     fotoUrl,
                     servicos: [],
                     horarios: {}
                 };
-
                 const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
                 await addDoc(profissionaisRef, novoProfissional);
-
                 alert("Profissional adicionado com sucesso!");
                 if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
                 renderizarListaProfissionais(empresaId);
-
             } catch (error) {
                 console.error("Erro ao adicionar profissional:", error);
                 alert("Erro ao adicionar profissional: " + error.message);
