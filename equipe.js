@@ -63,7 +63,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         equipe.forEach(profissional => {
             const div = document.createElement('div');
-            div.className = 'profissional-card';
+            div.className = 'profissional-card'; // Use uma classe para estilizar no style.css
             div.innerHTML = `
                 <img src="${profissional.fotoUrl || 'https://placehold.co/40x40'}" alt="Foto de ${profissional.nome}">
                 <span class="profissional-nome">${profissional.nome}</span>
