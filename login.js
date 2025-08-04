@@ -1,4 +1,8 @@
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+// login.js
+// Este script lida com a autenticação de usuários via Google
+// e os redireciona para o dashboard após o login.
+
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
@@ -6,31 +10,35 @@ const provider = new GoogleAuthProvider();
 
 const btnLoginGoogle = document.getElementById('btn-login-google');
 
-if (!btnLoginGoogle) {
-  console.error("Botão btn-login-google não encontrado!");
-} else {
+// Checa se o usuário JÁ está logado.
+// Se estiver, redireciona direto para o dashboard, evitando que ele veja a tela de login.
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("Usuário já está logado. Redirecionando para o dashboard...");
+    window.location.href = 'dashboard.html';
+  }
+});
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("Usuário já está logado. Redirecionando para o dashboard...");
+// Adiciona o evento de clique ao botão de login com Google.
+btnLoginGoogle.addEventListener('click', () => {
+  btnLoginGoogle.disabled = true; // Desabilita o botão para evitar cliques múltiplos
+
+  signInWithPopup(auth, provider)
+    .then((result) => {
+      // Login bem-sucedido!
+      const user = result.user;
+      console.log("Login com Google bem-sucedido para:", user.displayName);
+
+      // Redireciona para o dashboard após o sucesso.
       window.location.href = 'dashboard.html';
-    }
-  });
 
-  btnLoginGoogle.addEventListener('click', () => {
-    btnLoginGoogle.disabled = true; // bloqueia para evitar múltiplos clicks
+    }).catch((error) => {
+      // Lida com erros de login.
+      console.error("Erro no login com Google:", error);
+      alert(`Erro ao fazer login: ${error.message}`);
 
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        console.log("Login com Google bem-sucedido para:", result.user.displayName);
-        window.location.href = 'dashboard.html';
-      })
-      .catch((error) => {
-        console.error("Erro no login com Google:", error);
-        alert(`Erro ao fazer login: ${error.message}`);
-      })
-      .finally(() => {
-        btnLoginGoogle.disabled = false; // libera botão
-      });
-  });
-}
+    }).finally(() => {
+      btnLoginGoogle.disabled = false; // Reabilita o botão
+    });
+});
+
