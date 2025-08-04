@@ -281,24 +281,28 @@ window.addEventListener("DOMContentLoaded", () => {
                 }
             });
             divDia.querySelector(`.btn-add-bloco`).addEventListener("click", (e) => {
-                adicionarBlocoDeHorario(e.target.dataset.dia);
+                adicionarBlocoDeHorario(dia.id);
             });
         });
     }
 
     function adicionarBlocoDeHorario(diaId, inicio = "", fim = "") {
         const blocosContainer = document.getElementById(`blocos-${diaId}`);
+        if (!blocosContainer) return;
         const blocoDiv = document.createElement("div");
         blocoDiv.className = "bloco-horario";
+        blocoDiv.style.display = "flex";
+        blocoDiv.style.alignItems = "center";
+        blocoDiv.style.gap = "8px";
         blocoDiv.style.marginBottom = "6px";
         blocoDiv.innerHTML = `
-            <input type="time" class="hora-inicio" value="${inicio}" required>
-            <span>às</span>
-            <input type="time" class="hora-fim" value="${fim}" required>
-            <button type="button" class="btn-remover-bloco" title="Remover bloco">✕</button>
+            <input type="time" value="${inicio}" required>
+            <span>a</span>
+            <input type="time" value="${fim}" required>
+            <button type="button" class="btn-remove-bloco" aria-label="Remover bloco" style="background:#e53e3e; border:none; color:#fff; padding:0 6px; border-radius:4px; cursor:pointer;">✕</button>
         `;
-        blocoDiv.querySelector(".btn-remover-bloco").addEventListener("click", () => {
-            blocoDiv.remove();
+        blocoDiv.querySelector(".btn-remove-bloco").addEventListener("click", () => {
+            blocosContainer.removeChild(blocoDiv);
         });
         blocosContainer.appendChild(blocoDiv);
     }
