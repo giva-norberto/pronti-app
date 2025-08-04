@@ -1,9 +1,8 @@
-// firebase-config.js (VERSÃO CORRIGIDA E FINAL)
-
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js"; // Adicionamos o Storage aqui
+// firebase-config.js (versão 10.7.1 compatível com equipe.js)
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
@@ -14,23 +13,19 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// ==================================================================
-// BLOCO DE CORREÇÃO: LÓGICA ANTI-DUPLICAÇÃO
-// ==================================================================
-// Esta lógica garante que o Firebase seja inicializado apenas UMA VEZ.
+// Inicializa o app Firebase somente uma vez
 let app;
 if (!getApps().length) {
-  // Se nenhum app Firebase foi inicializado ainda, inicializa.
   app = initializeApp(firebaseConfig);
 } else {
-  // Se já existir um, simplesmente pega a instância que já está rodando.
   app = getApps()[0];
 }
-// ==================================================================
 
+// Inicializa os serviços Firebase Firestore, Auth e Storage
 const db = getFirestore(app);
 const auth = getAuth(app);
-const storage = getStorage(app); // Adicionamos a inicialização do Storage
+const storage = getStorage(app);
 
-// Exportamos todos os serviços necessários para os outros arquivos
+// Exporta os objetos para usar nos outros scripts
 export { app, db, auth, storage };
+
