@@ -65,5 +65,17 @@
     </div>
 
     <script src="equipe.js" type="module"></script>
+    <script>
+        // Adicionar logout functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnLogout = document.getElementById('btn-logout');
+            if (btnLogout) {
+                btnLogout.addEventListener('click', () => {
+                    // Implementar logout quando necessário
+                    console.log('Logout clicado');
+                });
+            }
+        });
+    </script>
 </body>
 </html>
