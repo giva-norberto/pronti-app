@@ -1,18 +1,18 @@
 /**
- * novo-servico.js (VERSÃO FINAL - COM ALERTAS PADRONIZADOS)
+ * novo-servico.js (VERSÃO FINAL E COMPLETA)
  */
 
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
-// [MODIFICADO] Importando nosso sistema de alertas
+// Usando nosso sistema de alertas padrão
 import { showAlert } from "./vitrini-utils.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
 const form = document.getElementById('form-servico');
 
-let profissionalRef = null;
+let profissionalRef = null; // Guardará a referência para o documento do profissional
 
 /**
  * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
@@ -47,7 +47,7 @@ onAuthStateChanged(auth, async (user) => {
 async function handleFormSubmit(event) {
     event.preventDefault();
     if (!profissionalRef) {
-        await showAlert("Erro", "Referência do profissional não encontrada.");
+        await showAlert("Erro", "Referência do profissional não encontrada. Recarregue a página.");
         return;
     }
 
@@ -56,7 +56,7 @@ async function handleFormSubmit(event) {
     const preco = parseFloat(document.getElementById('preco-servico').value);
     const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
 
-    if (!nome || isNaN(preco) || isNaN(duracao)) {
+    if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
         await showAlert("Atenção", "Por favor, preencha todos os campos obrigatórios corretamente.");
         return;
     }
@@ -86,7 +86,6 @@ async function handleFormSubmit(event) {
 
         // [MODIFICADO] Trocado Toastify por showAlert
         await showAlert("Sucesso!", "Serviço salvo com sucesso!");
-        // O setTimeout não é mais necessário, pois o usuário precisa clicar "OK" no alerta
         window.location.href = 'servicos.html';
 
     } catch (error) {
