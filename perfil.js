@@ -1,7 +1,4 @@
-**
- * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
- */
-
+/* perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA) */
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
@@ -9,7 +6,6 @@ import { app } from "./firebase-config.js";
 
 // Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener("DOMContentLoaded", () => {
-
     const db = getFirestore(app);
     const auth = getAuth(app);
     const storage = getStorage(app);
@@ -67,6 +63,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const secaoEquipe = elements.btnAddProfissional?.closest(".form-section");
 
         if (snapshot.empty) {
+            // Cenário: Novo usuário, precisa criar a empresa
             if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
             if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = "none";
             if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = "none";
@@ -78,20 +75,24 @@ window.addEventListener("DOMContentLoaded", () => {
                 elements.linkVitrineMenu.href = "#";
             }
         } else {
+            // Cenário: Usuário existente, carrega dados da empresa
             const empresaDoc = snapshot.docs[0];
             empresaId = empresaDoc.id;
             const dadosEmpresa = empresaDoc.data();
-            
+
+            // Busca os dados do profissional logado (que pode ser o dono ou um membro da equipe)
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             const profissionalSnap = await getDoc(profissionalRef);
-            
+
             let dadosProfissional = {};
             let ehDono = false;
+
             if (profissionalSnap.exists()) {
                 dadosProfissional = profissionalSnap.data();
                 ehDono = dadosProfissional.ehDono === true;
             }
 
+            if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite seu Perfil de Negócio";
             preencherFormulario(dadosEmpresa, dadosProfissional);
 
             if (ehDono) {
@@ -106,11 +107,10 @@ window.addEventListener("DOMContentLoaded", () => {
     function iniciarListenerDeProfissionais(idDaEmpresa) {
         if (!elements.listaProfissionaisPainel) return;
         if (unsubProfissionais) {
-            unsubProfissionais();
+            unsubProfissionais(); // Cancela o listener anterior para evitar duplicatas
         }
-        
+
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
-        
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
             const profissionais = snapshot.docs.map(doc => doc.data());
             renderizarListaProfissionais(profissionais);
@@ -119,12 +119,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function renderizarListaProfissionais(profissionais) {
         if (!elements.listaProfissionaisPainel) return;
-        
+
         if (profissionais.length === 0) {
             elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
             return;
         }
-        
+
         elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
             return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
                         <img src="${profissional.fotoUrl || "https://placehold.co/40x40/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
@@ -140,6 +140,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
         const horarios = dadosProfissional.horarios || {};
         elements.intervaloSelect.value = horarios.intervalo || "30";
+
         diasDaSemana.forEach(dia => {
             const diaData = horarios[dia.id];
             const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
@@ -154,10 +155,11 @@ window.addEventListener("DOMContentLoaded", () => {
                         adicionarBlocoDeHorario(dia.id);
                     }
                 }
+                // Dispara o evento 'change' para garantir que a UI dos blocos seja exibida corretamente
                 toggleAtivo.dispatchEvent(new Event("change"));
             }
         });
-        
+
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) {
@@ -178,16 +180,21 @@ window.addEventListener("DOMContentLoaded", () => {
         event.preventDefault();
         elements.btnSalvar.disabled = true;
         elements.btnSalvar.textContent = "Salvando...";
+
         try {
             const uid = currentUser.uid;
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-            const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput.value.trim(), donoId: uid };
-            const dadosProfissional = { 
-                nome: currentUser.displayName || nomeNegocio, 
-                fotoUrl: currentUser.photoURL || "", 
-                horarios: coletarDadosDeHorarios() 
+            const dadosEmpresa = {
+                nomeFantasia: nomeNegocio,
+                descricao: elements.descricaoInput.value.trim(),
+                donoId: uid
+            };
+            const dadosProfissional = {
+                nome: currentUser.displayName || nomeNegocio,
+                fotoUrl: currentUser.photoURL || "",
+                horarios: coletarDadosDeHorarios()
             };
 
             const logoFile = elements.logoInput.files[0];
@@ -197,27 +204,38 @@ window.addEventListener("DOMContentLoaded", () => {
                 dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
             } else if (empresaId) {
                 const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
-                if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || "";
+                if (empresaAtualSnap.exists()) {
+                    dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || "";
+                }
             }
 
             if (empresaId) {
+                // Lógica para ATUALIZAR uma empresa existente
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+
                 const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
                 const docOriginal = await getDoc(profissionalRef);
-                
+
                 dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
                 dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
-
+                
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
+                // Lógica para CRIAR uma nova empresa
                 dadosProfissional.servicos = [];
                 dadosProfissional.ehDono = true;
+
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-                empresaId = novaEmpresaRef.id;
+                empresaId = novaEmpresaRef.id; // Atualiza o ID da empresa globalmente
+
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
+
                 alert("Seu negócio foi cadastrado com sucesso!");
-                window.location.reload();
+
+                // **CORREÇÃO PRINCIPAL:** Em vez de recarregar a página, atualizamos a UI dinamicamente.
+                // window.location.reload(); // <--- Linha removida
+                await atualizarUIAposCriacao(empresaId); // <--- Nova função chamada
             }
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
@@ -228,15 +246,56 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // NOVO: Função para atualizar a interface do usuário após a criação bem-sucedida da empresa
+    async function atualizarUIAposCriacao(novoEmpresaId) {
+        if (elements.h1Titulo) {
+            elements.h1Titulo.textContent = "Edite seu Perfil de Negócio";
+        }
+
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${novoEmpresaId}`;
+        
+        // Atualiza e exibe o link da vitrine
+        if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = "block";
+
+        // Atualiza e exibe os botões de abrir a vitrine
+        if (elements.btnAbrirVitrine) {
+            elements.btnAbrirVitrine.href = urlCompleta;
+            elements.btnAbrirVitrine.style.display = "inline-flex";
+        }
+        if (elements.btnAbrirVitrineInline) {
+             elements.btnAbrirVitrineInline.href = urlCompleta;
+        }
+
+        // Habilita o link do menu
+        if (elements.linkVitrineMenu) {
+            elements.linkVitrineMenu.href = urlCompleta;
+            elements.linkVitrineMenu.classList.remove("disabled");
+            elements.linkVitrineMenu.style.pointerEvents = "auto";
+            elements.linkVitrineMenu.style.opacity = "1";
+        }
+
+        // Mostra a seção de gerenciamento de equipe
+        const secaoEquipe = elements.btnAddProfissional?.closest(".form-section");
+        if (secaoEquipe) {
+            secaoEquipe.style.display = "block";
+        }
+
+        // Inicia o listener para a lista de profissionais (que agora terá o dono)
+        iniciarListenerDeProfissionais(novoEmpresaId);
+    }
+
     async function handleAdicionarProfissional(event) {
         event.preventDefault();
         const btnSubmit = event.target.querySelector("button[type=\"submit\"]");
         btnSubmit.disabled = true;
         btnSubmit.textContent = "Salvando...";
+
         try {
             const nome = document.getElementById("nome-profissional").value.trim();
-            const email = document.getElementById("email-profissional").value.trim(); // Adicionado campo de email
+            const email = document.getElementById("email-profissional").value.trim();
             const fotoFile = document.getElementById("foto-profissional").files[0];
+
             if (!nome) throw new Error("O nome do profissional é obrigatório.");
 
             let fotoUrl = "";
@@ -245,39 +304,47 @@ window.addEventListener("DOMContentLoaded", () => {
                 const uploadResult = await uploadBytes(storageRef, fotoFile);
                 fotoUrl = await getDownloadURL(uploadResult.ref);
             }
-            
-            // Verificar se o email já existe como um usuário no Firebase Auth
-            // Isso é um placeholder, pois a verificação de usuário por email no Auth não é direta no cliente
-            // Em um ambiente de produção, isso seria feito por uma função de backend (Cloud Function)
+
+            // CORREÇÃO (Conceitual - Alerta de Segurança e Lógica)
+            // A lógica abaixo é INSEGURA e NÃO FUNCIONAL para um ambiente de produção.
+            // Gerar um UID a partir de um e-mail no lado do cliente é falho.
+            // A maneira CORRETA é usar uma Firebase Cloud Function que:
+            // 1. Recebe o e-mail do profissional.
+            // 2. Usa o Admin SDK para buscar o UID real do usuário no Firebase Auth.
+            // 3. Retorna o UID para o cliente.
+            // 4. O cliente então usa esse UID real para criar o documento do profissional.
+            // Isso garante que o perfil do profissional está VINCULADO à sua conta de autenticação.
             let profissionalUid = null;
             if (email) {
-                // Simulação de busca de UID por email. Na vida real, isso requer Admin SDK ou Cloud Function.
-                // Por simplicidade, vamos assumir que se o email for fornecido, ele será o UID para o profissional.
-                // Isso NÃO é seguro para produção e é apenas para fins de demonstração.
-                profissionalUid = email.replace(/[^a-zA-Z0-9]/g, ""); // Gerar um UID simples a partir do email
+                // Esta linha é apenas uma simulação e NÃO deve ser usada em produção.
+                profissionalUid = email.replace(/[^a-zA-Z0-9]/g, ""); 
             }
 
-            const novoProfissional = { 
-                nome, 
-                fotoUrl, 
-                servicos: [], 
-                horarios: {}, 
-                ehDono: false, 
-                email: email || null, // Adiciona o email ao objeto do profissional
-                uid: profissionalUid // Adiciona o UID gerado/simulado
+            const novoProfissional = {
+                nome,
+                fotoUrl,
+                servicos: [],
+                horarios: {},
+                ehDono: false,
+                email: email || null
             };
 
-            // Usar setDoc com um ID explícito (o UID do profissional) para evitar IDs duplicados
-            // ou para vincular o profissional a um usuário existente no Firebase Auth
             if (profissionalUid) {
+                 // Adiciona o UID simulado ao objeto, se existir
+                novoProfissional.uid = profissionalUid;
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", profissionalUid), novoProfissional);
             } else {
-                // Se não houver UID (email não fornecido ou não encontrado), usa addDoc para gerar um ID automático
-                await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
+                // Se não houver UID (sem e-mail), usa addDoc para gerar um ID aleatório
+                const docRef = await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
+                // Opcional: atualizar o documento com seu próprio ID, se necessário
+                await setDoc(docRef, { uid: docRef.id }, { merge: true });
             }
+
 
             alert("Profissional adicionado com sucesso!");
             if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = "none";
+            elements.formAddProfissional.reset();
+
         } catch (error) {
             console.error("Erro ao adicionar profissional:", error);
             alert("Erro ao adicionar profissional: " + error.message);
@@ -286,7 +353,7 @@ window.addEventListener("DOMContentLoaded", () => {
             btnSubmit.textContent = "Salvar Profissional";
         }
     }
-    
+
     function coletarDadosDeHorarios() {
         const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
         diasDaSemana.forEach(dia => {
@@ -295,7 +362,9 @@ window.addEventListener("DOMContentLoaded", () => {
             if (estaAtivo) {
                 document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
                     const inputs = blocoEl.querySelectorAll("input[type=\"time\"]");
-                    if (inputs[0].value && inputs[1].value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+                    if (inputs[0].value && inputs[1].value) {
+                        blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+                    }
                 });
             }
             horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
@@ -305,8 +374,11 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function adicionarListenersDeEvento() {
         elements.form.addEventListener("submit", handleFormSubmit);
+
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener("click", copiarLink);
+        
         if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener("click", () => elements.logoInput.click());
+        
         if (elements.logoInput) elements.logoInput.addEventListener("change", () => {
             if (elements.logoInput.files[0]) {
                 const reader = new FileReader();
@@ -314,9 +386,15 @@ window.addEventListener("DOMContentLoaded", () => {
                 reader.readAsDataURL(elements.logoInput.files[0]);
             }
         });
+
         if (elements.btnLogout) elements.btnLogout.addEventListener("click", async () => {
-            try { await signOut(auth); window.location.href = "login.html"; }
-            catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
+            try {
+                await signOut(auth);
+                window.location.href = "login.html";
+            } catch (error) {
+                console.error("Erro no logout:", error);
+                alert("Ocorreu um erro ao sair.");
+            }
         });
 
         if (elements.btnAddProfissional) {
@@ -368,8 +446,8 @@ window.addEventListener("DOMContentLoaded", () => {
                     </label>
                     <label for="${dia.id}-ativo" class="toggle-label">${dia.nome}</label>
                 </div>
-                <div id="blocos-${dia.id}" class="horarios-blocos"></div>
-                <button type="button" class="btn-add-bloco" data-dia="${dia.id}">Adicionar Bloco</button>
+                <div id="blocos-${dia.id}" class="horarios-blocos" style="display: none;"></div>
+                <button type="button" class="btn-add-bloco" data-dia="${dia.id}" style="display: none;">Adicionar Bloco</button>
             `;
             elements.diasContainer.appendChild(divDia);
 
