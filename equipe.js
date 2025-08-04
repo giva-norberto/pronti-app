@@ -152,7 +152,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
 
                 try {
-                    await addDoc(collection(db, 'empresarios', empresaId, 'profissionais'), novoProfissional);
+                    if (!empresaId) {
+                        throw new Error("empresaId inválido. Não é possível adicionar profissional.");
+                    }
+                    const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
+                    await addDoc(profissionaisRef, novoProfissional);
                     console.log("✅ Profissional adicionado com sucesso!");
                     if (modalAddProfissional) modalAddProfissional.style.display = 'none';
                 } catch (error) {
@@ -173,9 +177,11 @@ window.addEventListener('DOMContentLoaded', () => {
             if (empresaId) {
                 iniciarListenerDaEquipe();
                 if (btnAddProfissional) btnAddProfissional.disabled = false;
-                adicionarListenersDeEvento(); // Adiciona os listeners depois de ter o empresaId
+                adicionarListenersDeEvento();
             } else {
-                if (listaProfissionaisPainel) listaProfissionaisPainel.innerHTML = `<p style="color: red;"><b>Ação Necessária:</b> Não foi possível encontrar a sua empresa. Por favor, vá à página "Meu Perfil" e clique em "Salvar Todas as Configurações" uma vez para garantir que o seu perfil de dono está corretamente registado.</p>`;
+                if (listaProfissionaisPainel) {
+                    listaProfissionaisPainel.innerHTML = `<p style="color: red;"><b>Ação Necessária:</b> Não foi possível encontrar a sua empresa. Por favor, vá à página "Meu Perfil" e clique em "Salvar Todas as Configurações" uma vez para garantir que o seu perfil de dono está corretamente registado.</p>`;
+                }
                 if (btnAddProfissional) btnAddProfissional.disabled = true;
             }
         } else {
