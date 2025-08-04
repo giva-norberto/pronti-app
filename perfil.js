@@ -1,17 +1,11 @@
-/* perfil.js (COMPLETO, CORRIGIDO E COM LAYOUT ORIGINAL) */
+//* perfil.js (VERSÃO 100% COMPLETA E FINAL) */
 
-// CORREÇÃO DEFINITIVA: Importa os serviços já prontos do firebase-config.js
 import { db, auth, storage } from "./firebase-config.js";
-
-// Imports necessários do SDK do Firebase (sempre bom mantê-los para clareza)
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Não há mais reinicialização aqui, usamos os serviços importados diretamente.
-
 window.addEventListener("DOMContentLoaded", () => {
-    // A partir daqui, o código pode confiar que 'db', 'auth' e 'storage' são válidos.
     const elements = {
         h1Titulo: document.getElementById("main-title"),
         form: document.getElementById("form-perfil"),
@@ -30,7 +24,6 @@ window.addEventListener("DOMContentLoaded", () => {
         btnAbrirVitrineInline: document.getElementById("btn-abrir-vitrine-inline"),
         linkVitrineMenu: document.querySelector(".sidebar-links a[href=\"vitrine.html\"]"),
         btnLogout: document.getElementById("btn-logout"),
-        // RESTAURADO: Funcionalidade de Equipe/Profissionais
         listaProfissionaisPainel: document.getElementById("lista-profissionais-painel"),
         btnAddProfissional: document.getElementById("btn-add-profissional"),
     };
@@ -64,9 +57,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
         if (snapshot.empty) {
             elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
-            elements.containerLinkVitrine.style.display = "none";
+            if(elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = "none";
             if(secaoEquipe) secaoEquipe.style.display = "none";
-            elements.linkVitrineMenu.classList.add("disabled");
+            if(elements.linkVitrineMenu) elements.linkVitrineMenu.classList.add("disabled");
         } else {
             const empresaDoc = snapshot.docs[0];
             empresaId = empresaDoc.id;
@@ -90,7 +83,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function iniciarListenerDeProfissionais(idDaEmpresa) {
         if (unsubProfissionais) unsubProfissionais();
-        
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
             const profissionais = snapshot.docs.map(doc => doc.data());
@@ -133,12 +125,14 @@ window.addEventListener("DOMContentLoaded", () => {
         });
 
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-        elements.urlVitrineEl.textContent = urlCompleta;
-        elements.btnAbrirVitrine.href = urlCompleta;
-        elements.btnAbrirVitrineInline.href = urlCompleta;
-        elements.linkVitrineMenu.href = urlCompleta;
-        elements.linkVitrineMenu.classList.remove("disabled");
-        elements.containerLinkVitrine.style.display = "block";
+        if(elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+        if(elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
+        if(elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+        if(elements.linkVitrineMenu) {
+            elements.linkVitrineMenu.href = urlCompleta;
+            elements.linkVitrineMenu.classList.remove("disabled");
+        }
+        if(elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = "block";
     }
 
     async function handleFormSubmit(event) {
@@ -149,31 +143,45 @@ window.addEventListener("DOMContentLoaded", () => {
             const uid = currentUser.uid;
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
+
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
                 descricao: elements.descricaoInput.value.trim(),
                 donoId: uid
-            };
-            const dadosProfissional = {
-                nome: currentUser.displayName || nomeNegocio,
-                fotoUrl: currentUser.photoURL || "",
-                horarios: coletarDadosDeHorarios(),
-                uid: uid
             };
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
                 const storageRef = ref(storage, `logos/${uid}/logo`);
                 dadosEmpresa.logoUrl = await getDownloadURL(await uploadBytes(storageRef, logoFile));
             }
+            const horariosColetados = coletarDadosDeHorarios();
+
             if (empresaId) {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
-                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
+                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+                const docProfissionalAtual = await getDoc(profissionalRef);
+                const dadosProfissionalAtualizado = {
+                    ...(docProfissionalAtual.exists() ? docProfissionalAtual.data() : {}),
+                    nome: currentUser.displayName || nomeNegocio,
+                    fotoUrl: currentUser.photoURL || "",
+                    uid: uid,
+                    horarios: horariosColetados
+                };
+                await setDoc(profissionalRef, dadosProfissionalAtualizado, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
-                dadosProfissional.servicos = [];
-                dadosProfissional.ehDono = true;
+                dadosEmpresa.criadaEm = new Date();
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-                await setDoc(doc(db, "empresarios", novaEmpresaRef.id, "profissionais", uid), dadosProfissional);
+                empresaId = novaEmpresaRef.id;
+                const dadosProfissionalNovo = {
+                    nome: currentUser.displayName || nomeNegocio,
+                    fotoUrl: currentUser.photoURL || "",
+                    horarios: horariosColetados,
+                    uid: uid,
+                    servicos: [],
+                    ehDono: true
+                };
+                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissionalNovo);
                 alert("Seu negócio foi cadastrado com sucesso!");
                 window.location.reload();
             }
@@ -205,7 +213,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function adicionarListenersDeEvento() {
-        elements.form.addEventListener("submit", handleFormSubmit);
+        if(elements.form) elements.form.addEventListener("submit", handleFormSubmit);
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener("click", () => {
              const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
              navigator.clipboard.writeText(urlCompleta).then(() => alert("Link copiado!"), () => alert("Falha ao copiar."));
@@ -223,11 +231,10 @@ window.addEventListener("DOMContentLoaded", () => {
             window.location.href = "login.html";
         });
         if(elements.btnAddProfissional) elements.btnAddProfissional.addEventListener("click", () => {
-             window.location.href = "equipe.html"; // Exemplo de como navegar para a página de equipe
+             window.location.href = "equipe.html";
         });
     }
 
-    // RESTAURADO: Lógica original para gerar os dias e horários, para não afetar seu layout.
     function gerarEstruturaDosDias() {
         if (!elements.diasContainer) return;
         elements.diasContainer.innerHTML = "";
@@ -267,7 +274,6 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // RESTAURADO: Lógica original para adicionar blocos de horário.
     function adicionarBlocoDeHorario(diaId, inicio = "", fim = "") {
         const container = document.getElementById(`blocos-${diaId}`);
         if (!container) return;
