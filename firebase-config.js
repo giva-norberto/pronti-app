@@ -28,4 +28,3 @@ const storage = getStorage(app);
 
 // Exporta os objetos para usar nos outros scripts
 export { app, db, auth, storage };
-
