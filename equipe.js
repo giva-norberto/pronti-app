@@ -1,10 +1,29 @@
 /**
  * equipe.js - Sistema de gerenciamento de equipe
  */
-import { collection, addDoc, onSnapshot, query, where, getDocs, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { db, auth, storage } from "./firebase-config.js";
+import {
+    collection,
+    addDoc,
+    onSnapshot,
+    query,
+    where,
+    getDocs,
+    doc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+    ref,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import {
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+    db,
+    auth,
+    storage
+} from "./firebase-config.js";
 
 // Verificar se o Firebase foi inicializado corretamente
 if (!db || !auth || !storage) {
@@ -14,7 +33,7 @@ if (!db || !auth || !storage) {
 
 window.addEventListener('DOMContentLoaded', () => {
     console.log("🚀 Carregando sistema de equipe...");
-    
+
     const btnAddProfissional = document.getElementById('btn-add-profissional');
     const modalAddProfissional = document.getElementById('modal-add-profissional');
     const formAddProfissional = document.getElementById('form-add-profissional');
@@ -24,37 +43,44 @@ window.addEventListener('DOMContentLoaded', () => {
     let empresaId = null;
     let unsubProfissionais = null;
 
-   async function getEmpresaIdDoDono(uid) {
-    console.log("🔍 Buscando empresa para o usuário:", uid);
-    const empresariosRef = collection(db, "empresarios");
-    const q = query(empresariosRef, where("donoId", "==", uid));
+    async function getEmpresaIdDoDono(uid) {
+        console.log("🔍 Buscando empresa para o usuário:", uid);
+        const empresariosRef = collection(db, "empresarios");
+        const q = query(empresariosRef, where("donoId", "==", uid));
 
-    try {
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-            console.log("✅ Empresa encontrada:", snapshot.docs[0].id);
-            return snapshot.docs[0].id;
+        try {
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                console.log("✅ Empresa encontrada:", snapshot.docs[0].id);
+                return snapshot.docs[0].id;
+            }
+
+            // Nenhuma empresa encontrada — criar uma nova
+            console.warn("⚠️ Nenhuma empresa encontrada. Criando uma nova...");
+            const novaEmpresa = {
+                donoId: uid,
+                nome: "Minha Empresa",
+                criadaEm: serverTimestamp(),
+            };
+
+            const docRef = await addDoc(empresariosRef, novaEmpresa);
+            console.log("✅ Nova empresa criada com ID:", docRef.id);
+            return docRef.id;
+        } catch (error) {
+            console.error("❌ Erro ao buscar ou criar empresa:", error);
+            return null;
         }
-
-        // Nenhuma empresa encontrada — criar uma nova
-        console.warn("⚠️ Nenhuma empresa encontrada. Criando uma nova...");
-        const novaEmpresa = {
-            donoId: uid,
-            nome: "Minha Empresa",
-            criadaEm: serverTimestamp(),
-            // adicione outros campos padrão aqui se desejar
-        };
-
-        const docRef = await addDoc(empresariosRef, novaEmpresa);
-        console.log("✅ Nova empresa criada com ID:", docRef.id);
-        return docRef.id;
-    } catch (error) {
-        console.error("❌ Erro ao buscar ou criar empresa:", error);
-        return null;
     }
-}
 
-            );
+    function iniciarListenerDaEquipe() {
+        try {
+            const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+            const q = query(profissionaisRef);
+            unsubProfissionais = onSnapshot(q, (snapshot) => {
+                const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("📥 Profissionais atualizados:", equipe);
+                renderizarEquipe(equipe);
+            });
         } catch (e) {
             console.error("❌ Erro ao iniciar listener da equipe:", e);
         }
