@@ -1,16 +1,12 @@
 /**
  * equipe.js (VERSÃO FINAL E DEFINITIVA)
  */
-import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { app } from "./firebase-config.js";
+import { collection, addDoc, onSnapshot, query, where, getDocs, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { db, auth, storage } from "./firebase-config.js";
 
 window.addEventListener('DOMContentLoaded', () => {
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const auth = getAuth(app);
-
     const btnAddProfissional = document.getElementById('btn-add-profissional');
     const modalAddProfissional = document.getElementById('modal-add-profissional');
     const formAddProfissional = document.getElementById('form-add-profissional');
@@ -22,12 +18,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function getEmpresaIdDoDono(uid) {
         const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-            console.error(`BUSCA FALHOU: Nenhum documento em 'empresarios' encontrado com donoId = ${uid}`);
+        try {
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                console.error(`BUSCA FALHOU: Nenhum documento em 'empresarios' encontrado com donoId = ${uid}`);
+                return null;
+            }
+            return snapshot.docs[0].id;
+        } catch (error) {
+            console.error("Erro ao buscar empresa:", error);
             return null;
         }
-        return snapshot.docs[0].id;
     }
 
     function iniciarListenerDaEquipe() {
@@ -35,9 +36,17 @@ window.addEventListener('DOMContentLoaded', () => {
         if (unsubProfissionais) unsubProfissionais();
 
         const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
-        unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
-            renderizarEquipe(snapshot.docs.map(doc => doc.data()));
-        });
+        unsubProfissionais = onSnapshot(profissionaisRef, 
+            (snapshot) => {
+                renderizarEquipe(snapshot.docs.map(doc => doc.data()));
+            },
+            (error) => {
+                console.error("Erro ao escutar profissionais:", error);
+                if (listaProfissionaisPainel) {
+                    listaProfissionaisPainel.innerHTML = '<p style="color: red;">Erro ao carregar profissionais. Verifique sua conexão.</p>';
+                }
+            }
+        );
     }
 
     function renderizarEquipe(equipe) {
