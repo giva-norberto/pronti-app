@@ -1,4 +1,3 @@
-
 // Arquivo: perfil.js (VERSÃO 100% COMPLETA E FINAL, agora com uploadService.js)
 import { db, auth } from "./firebase-config.js";
 import { 
