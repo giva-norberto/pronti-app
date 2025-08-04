@@ -112,10 +112,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
         
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
-            if (snapshot.empty) {
-                elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
-                return;
-            }
             const profissionais = snapshot.docs.map(doc => doc.data());
             renderizarListaProfissionais(profissionais);
         });
@@ -123,6 +119,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function renderizarListaProfissionais(profissionais) {
         if (!elements.listaProfissionaisPainel) return;
+        
+        if (profissionais.length === 0) {
+            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+            return;
+        }
         
         elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
             return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
@@ -257,7 +258,7 @@ window.addEventListener('DOMContentLoaded', () => {
             btnSubmit.textContent = 'Salvar Profissional';
         }
     }
-
+    
     function coletarDadosDeHorarios() {
         const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
         diasDaSemana.forEach(dia => {
@@ -367,7 +368,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
-        const container = document.getElementById(`blocos-${dia.id}`);
+        const container = document.getElementById(`blocos-${diaId}`);
         const divBloco = document.createElement('div');
         divBloco.className = 'slot-horario';
         divBloco.innerHTML = `
@@ -384,5 +385,4 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-}); // Fim do DOMContentLoaded
+});
