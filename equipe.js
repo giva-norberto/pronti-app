@@ -24,46 +24,36 @@ window.addEventListener('DOMContentLoaded', () => {
     let empresaId = null;
     let unsubProfissionais = null;
 
-    async function getEmpresaIdDoDono(uid) {
-        console.log("🔍 Buscando empresa para o usuário:", uid);
-        const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-        try {
-            const snapshot = await getDocs(q);
-            if (snapshot.empty) {
-                console.error(`❌ Nenhuma empresa encontrada para o usuário: ${uid}`);
-                return null;
-            }
+   async function getEmpresaIdDoDono(uid) {
+    console.log("🔍 Buscando empresa para o usuário:", uid);
+    const empresariosRef = collection(db, "empresarios");
+    const q = query(empresariosRef, where("donoId", "==", uid));
+
+    try {
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
             console.log("✅ Empresa encontrada:", snapshot.docs[0].id);
             return snapshot.docs[0].id;
-        } catch (error) {
-            console.error("❌ Erro ao buscar empresa:", error);
-            return null;
         }
+
+        // Nenhuma empresa encontrada — criar uma nova
+        console.warn("⚠️ Nenhuma empresa encontrada. Criando uma nova...");
+        const novaEmpresa = {
+            donoId: uid,
+            nome: "Minha Empresa",
+            criadaEm: serverTimestamp(),
+            // adicione outros campos padrão aqui se desejar
+        };
+
+        const docRef = await addDoc(empresariosRef, novaEmpresa);
+        console.log("✅ Nova empresa criada com ID:", docRef.id);
+        return docRef.id;
+    } catch (error) {
+        console.error("❌ Erro ao buscar ou criar empresa:", error);
+        return null;
     }
+}
 
-    function iniciarListenerDaEquipe() {
-        if (!empresaId || !listaProfissionaisPainel) {
-            console.warn("⚠️ empresaId ou listaProfissionaisPainel ausentes. Listener não iniciado.");
-            return;
-        }
-
-        console.log("👥 Iniciando listener da equipe para empresa:", empresaId);
-        
-        if (unsubProfissionais) unsubProfissionais();
-
-        try {
-            const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
-            unsubProfissionais = onSnapshot(profissionaisRef, 
-                (snapshot) => {
-                    console.log("📊 Profissionais carregados:", snapshot.docs.length);
-                    renderizarEquipe(snapshot.docs.map(doc => doc.data()));
-                },
-                (error) => {
-                    console.error("❌ Erro ao escutar profissionais:", error);
-                    if (listaProfissionaisPainel) {
-                        listaProfissionaisPainel.innerHTML = '<p style="color: red;">Erro ao carregar profissionais. Verifique sua conexão.</p>';
-                    }
-                }
             );
         } catch (e) {
             console.error("❌ Erro ao iniciar listener da equipe:", e);
