@@ -1,9 +1,8 @@
-//* perfil.js (VERSÃO 100% COMPLETA E FINAL) */
-
-import { db, auth, storage } from "./firebase-config.js";
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// Arquivo: perfil.js (VERSÃO 100% COMPLETA E FINAL, agora com uploadService.js)
+import { db, auth } from "./firebase-config.js";
+import { doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { uploadFile } from "./uploadService.js";
 
 window.addEventListener("DOMContentLoaded", () => {
     const elements = {
@@ -149,15 +148,23 @@ window.addEventListener("DOMContentLoaded", () => {
                 descricao: elements.descricaoInput.value.trim(),
                 donoId: uid
             };
+
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
-                const storageRef = ref(storage, `logos/${uid}/logo`);
-                dadosEmpresa.logoUrl = await getDownloadURL(await uploadBytes(storageRef, logoFile));
+                try {
+                    const caminho = `logos/${uid}/${Date.now()}_${logoFile.name}`;
+                    dadosEmpresa.logoUrl = await uploadFile(logoFile, caminho);
+                } catch (error) {
+                    console.error("Erro ao fazer upload do logo:", error);
+                    alert("Falha ao fazer upload do logo. O perfil será salvo sem ele.");
+                }
             }
+
             const horariosColetados = coletarDadosDeHorarios();
 
             if (empresaId) {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+
                 const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
                 const docProfissionalAtual = await getDoc(profissionalRef);
                 const dadosProfissionalAtualizado = {
@@ -173,6 +180,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 dadosEmpresa.criadaEm = new Date();
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 empresaId = novaEmpresaRef.id;
+
                 const dadosProfissionalNovo = {
                     nome: currentUser.displayName || nomeNegocio,
                     fotoUrl: currentUser.photoURL || "",
@@ -280,9 +288,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const blocoDiv = document.createElement("div");
         blocoDiv.className = "bloco-horario";
         blocoDiv.innerHTML = `
-            <input type="time" value="${inicio}">
-            <span>-</span>
-            <input type="time" value="${fim}">
+            <input type="time" value="${inicio}"><span>-</span><input type="time" value="${fim}">
             <button type="button" class="btn-remover-bloco">Remover</button>
         `;
         container.appendChild(blocoDiv);
