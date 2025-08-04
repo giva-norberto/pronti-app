@@ -3,7 +3,7 @@
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"; // <-- ADICIONADO
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
@@ -21,9 +21,6 @@ if (!getApps().length) {
   app = getApps()[0];
 }
 
-// Inicializa e exporta todos os serviços que a aplicação precisa
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app); // <-- ADICIONADO
-
-export { app, db, auth, storage }; // <-- ADICIONADO 'storage'
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const storage = getStorage(app);
