@@ -7,7 +7,7 @@ import {
     doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-// Importa sua função de upload
+// Garanta que você tem o arquivo uploadService.js no seu projeto
 import { uploadFile } from "./uploadService.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -22,6 +22,10 @@ document.addEventListener("DOMContentLoaded", () => {
         btnUploadLogo: document.getElementById("btn-upload-logo"),
         btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
         containerLinkVitrine: document.getElementById("container-link-vitrine"),
+        urlVitrineEl: document.getElementById('url-vitrine-display'),
+        btnCopiarLink: document.getElementById('btn-copiar-link'),
+        btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
+        btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
         linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
         btnLogout: document.getElementById("btn-logout"),
         intervaloSelect: document.getElementById('intervalo-atendimento'),
@@ -64,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const empresaDoc = snapshot.docs[0];
             empresaId = empresaDoc.id;
             const dadosEmpresa = empresaDoc.data();
+            
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             const profissionalSnap = await getDoc(profissionalRef);
             
@@ -107,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const horarios = dadosProfissional.horarios || {};
         elements.intervaloSelect.value = horarios.intervalo || "30";
+
         diasDaSemana.forEach(dia => {
             const diaData = horarios[dia.id];
             const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
@@ -126,12 +132,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-        const linkDisplay = elements.urlVitrineEl || document.getElementById('url-vitrine-display'); // Fallback
-        if(linkDisplay) linkDisplay.textContent = urlCompleta;
+        if(elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if(elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
         const btnAbrirInline = document.getElementById('btn-abrir-vitrine-inline');
         if(btnAbrirInline) btnAbrirInline.href = urlCompleta;
-        if(elements.linkVitrineMenu) elements.linkVitrineMenu.href = urlCompleta;
+        if(elements.linkVitrineMenu) {
+            elements.linkVitrineMenu.href = urlCompleta;
+            elements.linkVitrineMenu.classList.remove("disabled");
+        }
         if(elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = "block";
     }
 
@@ -162,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (empresaId) {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+                // Ao salvar o perfil principal, atualiza apenas os horários do dono, sem mexer em outros campos como 'serviços'
                 await setDoc(profissionalRef, { horarios: horariosColetados }, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
@@ -208,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function adicionarListenersDeEvento() {
         if(elements.form) elements.form.addEventListener("submit", handleFormSubmit);
-        const btnCopiar = document.getElementById('btn-copiar-link') || elements.btnCopiarLink;
+        const btnCopiar = document.getElementById('btn-copiar-link');
         if (btnCopiar) btnCopiar.addEventListener("click", () => {
              const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
              navigator.clipboard.writeText(urlCompleta).then(() => alert("Link copiado!")).catch(() => alert("Falha ao copiar."));
@@ -307,4 +316,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const blocoDiv = document.createElement("div");
         blocoDiv.className = "bloco-horario";
         blocoDiv.innerHTML = `
-            <input type="time
+            <input type="time" value="${inicio}" required>
+            <span>a</span>
+            <input type="time" value="${fim}" required>
+            <button type="button" class="btn-remove-bloco">Remover</button>
+        `;
+        blocoDiv.querySelector(".btn-remove-bloco").addEventListener("click", () => {
+            if (blocosContainer.children.length > 1) {
+                blocoDiv.remove();
+            } else {
+                alert("Para não atender neste dia, desative o botão.");
+            }
+        });
+        blocosContainer.appendChild(blocoDiv);
+    }
+});
