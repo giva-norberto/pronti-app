@@ -206,7 +206,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 const docOriginal = await getDoc(profissionalRef);
                 
                 dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
-                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
+                
+                if (docOriginal.exists() && docOriginal.data().ehDono === true) {
+                    dadosProfissional.ehDono = true;
+                } else {
+                    dadosProfissional.ehDono = false;
+                }
 
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
@@ -258,7 +263,7 @@ window.addEventListener('DOMContentLoaded', () => {
             btnSubmit.textContent = 'Salvar Profissional';
         }
     }
-    
+
     function coletarDadosDeHorarios() {
         const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
         diasDaSemana.forEach(dia => {
@@ -385,4 +390,5 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+
+}); // Fim do DOMContentLoaded
