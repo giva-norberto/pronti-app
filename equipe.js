@@ -18,6 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const listaProfissionaisPainel = document.getElementById('lista-profissionais-painel');
 
     let empresaId = null;
+    let unsubProfissionais = null;
 
     async function getEmpresaIdDoDono(uid) {
         const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
@@ -29,32 +30,22 @@ window.addEventListener('DOMContentLoaded', () => {
         return snapshot.docs[0].id;
     }
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            empresaId = await getEmpresaIdDoDono(user.uid);
-            if (empresaId) {
-                iniciarListenerDaEquipe();
-                btnAddProfissional.disabled = false;
-            } else {
-                listaProfissionaisPainel.innerHTML = `<p style="color: red;"><b>Ação Necessária:</b> Não foi possível encontrar a sua empresa. Por favor, vá à página "Meu Perfil" e clique em "Salvar Todas as Configurações" uma vez para garantir que o seu perfil de dono está corretamente registado.</p>`;
-                btnAddProfissional.disabled = true;
-            }
-        } else {
-            window.location.href = 'login.html';
-        }
-    });
-
     function iniciarListenerDaEquipe() {
+        if (!empresaId || !listaProfissionaisPainel) return;
+        if (unsubProfissionais) unsubProfissionais();
+
         const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
-        onSnapshot(profissionaisRef, (snapshot) => {
+        unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
             renderizarEquipe(snapshot.docs.map(doc => doc.data()));
         });
     }
 
     function renderizarEquipe(equipe) {
+        if (!listaProfissionaisPainel) return;
         listaProfissionaisPainel.innerHTML = '';
         if (equipe.length === 0) {
             listaProfissionaisPainel.innerHTML = '<p>Nenhum profissional na equipe ainda.</p>';
+            return;
         }
         equipe.forEach(profissional => {
             const div = document.createElement('div');
@@ -67,61 +58,90 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    btnAddProfissional.addEventListener('click', () => {
-        if (!empresaId) {
-            alert("Não foi possível identificar a sua empresa.");
-            return;
-        }
-        formAddProfissional.reset();
-        modalAddProfissional.style.display = 'flex';
-    });
-
-    btnCancelarProfissional.addEventListener('click', () => {
-        modalAddProfissional.style.display = 'none';
-    });
-
-    formAddProfissional.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btnSubmit = e.target.querySelector('button[type="submit"]');
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = "Salvando...";
-
-        const nome = document.getElementById('nome-profissional').value.trim();
-        const fotoFile = document.getElementById('foto-profissional').files[0];
-        if (!nome) {
-            alert("O nome do profissional é obrigatório.");
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = "Salvar Profissional";
-            return;
+    function adicionarListenersDeEvento() {
+        if (btnAddProfissional) {
+            btnAddProfissional.addEventListener('click', () => {
+                if (!empresaId) {
+                    alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página ou verifique se o seu perfil foi salvo corretamente.");
+                    return;
+                }
+                if (formAddProfissional) formAddProfissional.reset();
+                if (modalAddProfissional) modalAddProfissional.style.display = 'flex';
+            });
         }
 
-        let fotoURL = '';
-        if (fotoFile) {
-            try {
-                const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
-                await uploadBytes(storageRef, fotoFile);
-                fotoURL = await getDownloadURL(storageRef);
-            } catch (error) {
-                console.error("Erro no upload da foto:", error);
-                alert("Erro ao enviar a imagem.");
-                btnSubmit.disabled = false;
-                return;
+        if (btnCancelarProfissional) {
+            btnCancelarProfissional.addEventListener('click', () => {
+                if (modalAddProfissional) modalAddProfissional.style.display = 'none';
+            });
+        }
+
+        if (formAddProfissional) {
+            formAddProfissional.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btnSubmit = e.target.querySelector('button[type="submit"]');
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = "Salvando...";
+
+                const nome = document.getElementById('nome-profissional').value.trim();
+                const fotoFile = document.getElementById('foto-profissional').files[0];
+                if (!nome) {
+                    alert("O nome do profissional é obrigatório.");
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = "Salvar Profissional";
+                    return;
+                }
+
+                let fotoURL = '';
+                if (fotoFile) {
+                    try {
+                        const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+                        await uploadBytes(storageRef, fotoFile);
+                        fotoURL = await getDownloadURL(storageRef);
+                    } catch (error) {
+                        console.error("Erro no upload da foto:", error);
+                        alert("Erro ao enviar a imagem.");
+                        btnSubmit.disabled = false;
+                        return;
+                    }
+                }
+
+                const novoProfissional = {
+                    nome,
+                    fotoUrl: fotoURL,
+                    ehDono: false,
+                    servicos: [],
+                    horarios: {},
+                    criadoEm: serverTimestamp()
+                };
+
+                try {
+                    await addDoc(collection(db, 'empresarios', empresaId, 'profissionais'), novoProfissional);
+                    if (modalAddProfissional) modalAddProfissional.style.display = 'none';
+                } catch (error) {
+                    console.error("Erro ao adicionar profissional:", error);
+                    alert("Erro ao adicionar profissional.");
+                } finally {
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = "Salvar Profissional";
+                }
+            });
+        }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            empresaId = await getEmpresaIdDoDono(user.uid);
+            if (empresaId) {
+                iniciarListenerDaEquipe();
+                if (btnAddProfissional) btnAddProfissional.disabled = false;
+                adicionarListenersDeEvento(); // Adiciona os listeners depois de ter o empresaId
+            } else {
+                if (listaProfissionaisPainel) listaProfissionaisPainel.innerHTML = `<p style="color: red;"><b>Ação Necessária:</b> Não foi possível encontrar a sua empresa. Por favor, vá à página "Meu Perfil" e clique em "Salvar Todas as Configurações" uma vez para garantir que o seu perfil de dono está corretamente registado.</p>`;
+                if (btnAddProfissional) btnAddProfissional.disabled = true;
             }
-        }
-
-        const novoProfissional = {
-            nome, fotoUrl: fotoURL, ehDono: false, servicos: [], horarios: {}, criadoEm: serverTimestamp()
-        };
-
-        try {
-            await addDoc(collection(db, 'empresarios', empresaId, 'profissionais'), novoProfissional);
-            modalAddProfissional.style.display = 'none';
-        } catch (error) {
-            console.error("Erro ao adicionar profissional:", error);
-            alert("Erro ao adicionar profissional.");
-        } finally {
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = "Salvar Profissional";
+        } else {
+            window.location.href = 'login.html';
         }
     });
 });
