@@ -1,5 +1,5 @@
 /**
- * equipe.js (VERSÃO FINAL E CORRIGIDA)
+ * equipe.js (VERSÃO DE TESTE DEFINITIVO)
  */
 import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
@@ -21,15 +21,19 @@ window.addEventListener('DOMContentLoaded', () => {
     let unsubProfissionais = null;
 
     async function getEmpresaIdDoDono(uid) {
-        if (!uid) return null;
+        console.log("DEBUG: A procurar pela empresa do dono com UID:", uid); // PONTO A
         const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
         const snapshot = await getDocs(q);
+        
+        console.log("DEBUG: Consulta executada. Documentos encontrados:", snapshot.size); // PONTO B
+
         if (snapshot.empty) return null;
         return snapshot.docs[0].id;
     }
 
     if (btnAddProfissional) {
         btnAddProfissional.addEventListener('click', () => {
+            console.log("DEBUG: Botão 'Adicionar' clicado. O empresaId atual é:", empresaId); // PONTO C
             if (!empresaId) {
                 alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página ou verifique se o seu perfil foi salvo corretamente.");
                 return;
@@ -50,7 +54,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if (unsubProfissionais) unsubProfissionais();
         
         const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
-        
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
             renderizarEquipe(snapshot.docs.map(doc => doc.data()));
         });
@@ -59,12 +62,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function renderizarEquipe(equipe) {
         if (!listaProfissionaisPainel) return;
         listaProfissionaisPainel.innerHTML = '';
-
         if (equipe.length === 0) {
             listaProfissionaisPainel.innerHTML = '<p>Nenhum profissional na equipe ainda.</p>';
             return;
         }
-
         equipe.forEach(profissional => {
             const div = document.createElement('div');
             div.className = 'profissional-card';
@@ -80,15 +81,8 @@ window.addEventListener('DOMContentLoaded', () => {
         formAddProfissional.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btnSubmit = e.target.querySelector('button[type="submit"]');
-            
-            if (!empresaId) {
-                alert("Erro: ID da empresa não encontrado. Não é possível salvar.");
-                return;
-            }
-
             btnSubmit.disabled = true;
             btnSubmit.textContent = "Salvando...";
-
             const nome = document.getElementById('nome-profissional').value.trim();
             const fotoFile = document.getElementById('foto-profissional').files[0];
 
@@ -137,19 +131,25 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     onAuthStateChanged(auth, async (user) => {
+        console.log("--- DEBUG INICIAL ---");
         if (user) {
+            console.log("DEBUG: Usuário está logado com UID:", user.uid);
             empresaId = await getEmpresaIdDoDono(user.uid);
+            console.log("DEBUG: ID da empresa encontrado:", empresaId);
+            
             if (empresaId) {
                 iniciarListenerDaEquipe();
                 if(btnAddProfissional) btnAddProfissional.disabled = false;
             } else {
-                if (listaProfissionaisPainel) listaProfissionaisPainel.innerHTML = "<p>Empresa não encontrada. Por favor, salve o seu perfil primeiro.</p>";
+                if (listaProfissionaisPainel) listaProfissionaisPainel.innerHTML = "<p>Empresa não encontrada. Salve seu perfil primeiro.</p>";
                 if(btnAddProfissional) btnAddProfissional.disabled = true;
             }
         } else {
-            if (window.location.pathname.includes('/painel/')) {
+            console.log("DEBUG: Nenhum usuário logado. Redirecionando...");
+            if (window.location.pathname.includes('/painel/')) { // Adapte se necessário
                  window.location.href = '/login.html';
             }
         }
+        console.log("--- FIM DO DEBUG INICIAL ---");
     });
 });
