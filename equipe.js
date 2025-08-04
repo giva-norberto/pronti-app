@@ -42,25 +42,32 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function iniciarListenerDaEquipe() {
-        if (!empresaId || !listaProfissionaisPainel) return;
-        
+        if (!empresaId || !listaProfissionaisPainel) {
+            console.warn("⚠️ empresaId ou listaProfissionaisPainel ausentes. Listener não iniciado.");
+            return;
+        }
+
         console.log("👥 Iniciando listener da equipe para empresa:", empresaId);
         
         if (unsubProfissionais) unsubProfissionais();
 
-        const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
-        unsubProfissionais = onSnapshot(profissionaisRef, 
-            (snapshot) => {
-                console.log("📊 Profissionais carregados:", snapshot.docs.length);
-                renderizarEquipe(snapshot.docs.map(doc => doc.data()));
-            },
-            (error) => {
-                console.error("❌ Erro ao escutar profissionais:", error);
-                if (listaProfissionaisPainel) {
-                    listaProfissionaisPainel.innerHTML = '<p style="color: red;">Erro ao carregar profissionais. Verifique sua conexão.</p>';
+        try {
+            const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
+            unsubProfissionais = onSnapshot(profissionaisRef, 
+                (snapshot) => {
+                    console.log("📊 Profissionais carregados:", snapshot.docs.length);
+                    renderizarEquipe(snapshot.docs.map(doc => doc.data()));
+                },
+                (error) => {
+                    console.error("❌ Erro ao escutar profissionais:", error);
+                    if (listaProfissionaisPainel) {
+                        listaProfissionaisPainel.innerHTML = '<p style="color: red;">Erro ao carregar profissionais. Verifique sua conexão.</p>';
+                    }
                 }
-            }
-        );
+            );
+        } catch (e) {
+            console.error("❌ Erro ao iniciar listener da equipe:", e);
+        }
     }
 
     function renderizarEquipe(equipe) {
@@ -74,7 +81,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const div = document.createElement('div');
             div.className = 'profissional-card';
             div.innerHTML = `
-                <img src="${profissional.fotoUrl || 'https://placehold.co/40x40'}" alt="Foto de ${profissional.nome}">
+                <img src="${profissional.fotoUrl || 'https://placehold.co/40x40'}" alt="Foto de ${profissional.nome}">  
                 <span class="profissional-nome">${profissional.nome}</span>
             `;
             listaProfissionaisPainel.appendChild(div);
