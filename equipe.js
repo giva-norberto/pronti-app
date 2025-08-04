@@ -1,15 +1,16 @@
 /**
- * equipe.js (VERSÃO DE TESTE DEFINITIVO)
+ * equipe.js (VERSÃO FINAL COM IMPORTS CORRIGIDOS)
  */
-import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { app } from "./firebase-config.js";
+
+// Importa as FUNÇÕES que você vai usar diretamente do SDK do Firebase
+import { collection, addDoc, onSnapshot, query, where, getDocs, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// Importa as CONEXÕES JÁ PRONTAS do seu arquivo de configuração
+import { db, auth, storage } from "./firebase-config.js";
 
 window.addEventListener('DOMContentLoaded', () => {
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    const auth = getAuth(app);
 
     const btnAddProfissional = document.getElementById('btn-add-profissional');
     const modalAddProfissional = document.getElementById('modal-add-profissional');
@@ -21,21 +22,16 @@ window.addEventListener('DOMContentLoaded', () => {
     let unsubProfissionais = null;
 
     async function getEmpresaIdDoDono(uid) {
-        console.log("DEBUG: A procurar pela empresa do dono com UID:", uid); // PONTO A
         const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
         const snapshot = await getDocs(q);
-        
-        console.log("DEBUG: Consulta executada. Documentos encontrados:", snapshot.size); // PONTO B
-
         if (snapshot.empty) return null;
         return snapshot.docs[0].id;
     }
 
     if (btnAddProfissional) {
         btnAddProfissional.addEventListener('click', () => {
-            console.log("DEBUG: Botão 'Adicionar' clicado. O empresaId atual é:", empresaId); // PONTO C
             if (!empresaId) {
-                alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página ou verifique se o seu perfil foi salvo corretamente.");
+                alert("Não foi possível identificar a empresa. Recarregue a página.");
                 return;
             }
             if(formAddProfissional) formAddProfissional.reset();
@@ -52,7 +48,6 @@ window.addEventListener('DOMContentLoaded', () => {
     function iniciarListenerDaEquipe() {
         if (!empresaId || !listaProfissionaisPainel) return;
         if (unsubProfissionais) unsubProfissionais();
-        
         const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
             renderizarEquipe(snapshot.docs.map(doc => doc.data()));
@@ -131,25 +126,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     onAuthStateChanged(auth, async (user) => {
-        console.log("--- DEBUG INICIAL ---");
         if (user) {
-            console.log("DEBUG: Usuário está logado com UID:", user.uid);
             empresaId = await getEmpresaIdDoDono(user.uid);
-            console.log("DEBUG: ID da empresa encontrado:", empresaId);
-            
             if (empresaId) {
                 iniciarListenerDaEquipe();
                 if(btnAddProfissional) btnAddProfissional.disabled = false;
-            } else {
-                if (listaProfissionaisPainel) listaProfissionaisPainel.innerHTML = "<p>Empresa não encontrada. Salve seu perfil primeiro.</p>";
+            } else if (listaProfissionaisPainel) {
+                listaProfissionaisPainel.innerHTML = "<p>Empresa não encontrada. Salve seu perfil primeiro.</p>";
                 if(btnAddProfissional) btnAddProfissional.disabled = true;
             }
         } else {
-            console.log("DEBUG: Nenhum usuário logado. Redirecionando...");
-            if (window.location.pathname.includes('/painel/')) { // Adapte se necessário
-                 window.location.href = '/login.html';
+            if (window.location.pathname.includes('painel')) { // Adapte se o seu painel estiver numa subpasta
+                 window.location.href = 'login.html';
             }
         }
-        console.log("--- FIM DO DEBUG INICIAL ---");
     });
 });
