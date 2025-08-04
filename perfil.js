@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
+ * perfil.js (VERSÃO FINAL E COMPLETA - COM LÓGICA 'ehDono' E 'DOMContentLoaded')
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -48,7 +48,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let currentUser;
     let empresaId = null;
-    let unsubProfissionais = null;
+    let unsubProfissionais = null; // Variável para guardar o listener e poder desligá-lo
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -206,12 +206,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const docOriginal = await getDoc(profissionalRef);
                 
                 dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
-                
-                if (docOriginal.exists() && docOriginal.data().ehDono === true) {
-                    dadosProfissional.ehDono = true;
-                } else {
-                    dadosProfissional.ehDono = false;
-                }
+                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
 
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
@@ -373,7 +368,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
-        const container = document.getElementById(`blocos-${diaId}`);
+        const container = document.getElementById(`blocos-${dia.id}`);
         const divBloco = document.createElement('div');
         divBloco.className = 'slot-horario';
         divBloco.innerHTML = `
@@ -390,5 +385,4 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-}); // Fim do DOMContentLoaded
+});
