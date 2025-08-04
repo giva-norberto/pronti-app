@@ -391,4 +391,3 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 }); // Fim do DOMContentLoaded
-}); // Fim do DOMContentLoaded
