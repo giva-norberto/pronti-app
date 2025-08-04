@@ -48,7 +48,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let currentUser;
     let empresaId = null;
-    let unsubProfissionais = null; // Variável para guardar o listener e poder desligá-lo
+    let unsubProfissionais = null;
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -112,6 +112,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
         
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
+            if (snapshot.empty) {
+                elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+                return;
+            }
             const profissionais = snapshot.docs.map(doc => doc.data());
             renderizarListaProfissionais(profissionais);
         });
@@ -120,11 +124,6 @@ window.addEventListener('DOMContentLoaded', () => {
     function renderizarListaProfissionais(profissionais) {
         if (!elements.listaProfissionaisPainel) return;
         
-        if (profissionais.length === 0) {
-            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
-            return;
-        }
-
         elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
             return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
                         <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
@@ -206,7 +205,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const docOriginal = await getDoc(profissionalRef);
                 
                 dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
-                dadosProfissional.ehDono = docOriginal.exists() ? docOriginal.data().ehDono : true;
+                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
 
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
@@ -385,4 +384,5 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+
+}); // Fim do DOMContentLoaded
