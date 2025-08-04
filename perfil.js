@@ -48,7 +48,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let currentUser;
     let empresaId = null;
-    let unsubProfissionais = null; // Variável para guardar o listener e poder desligá-lo
+    let unsubProfissionais = null;
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -389,5 +389,4 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-}); // Fim do DOMContentLoaded
+});
