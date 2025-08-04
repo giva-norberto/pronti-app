@@ -1,14 +1,18 @@
-/* perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA) */
+/* perfil.js (VERSÃO SIMPLIFICADA E CORRIGIDA) */
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
-// Garante que o script só rode após o HTML estar completamente pronto.
+// --- CORREÇÃO PRINCIPAL ---
+// Inicializa os serviços do Firebase no topo do script.
+// Isso garante que 'db', 'auth' e 'storage' estejam sempre disponíveis para todas as funções.
+const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app);
+
+// O restante do código só roda quando o HTML estiver pronto.
 window.addEventListener("DOMContentLoaded", () => {
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    const storage = getStorage(app);
 
     const elements = {
         h1Titulo: document.getElementById("main-title"),
@@ -46,11 +50,12 @@ window.addEventListener("DOMContentLoaded", () => {
     let empresaId = null;
     let unsubProfissionais = null;
 
+    // Ponto de entrada principal da aplicação
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
             verificarEcarregarDados(user.uid);
-            adicionarListenersDeEvento();
+            adicionarListenersDeEvento(); // Adiciona os listeners uma vez que o usuário está logado
             gerarEstruturaDosDias();
         } else {
             window.location.href = "login.html";
@@ -70,8 +75,6 @@ window.addEventListener("DOMContentLoaded", () => {
             if (secaoEquipe) secaoEquipe.style.display = "none";
             if (elements.linkVitrineMenu) {
                 elements.linkVitrineMenu.classList.add("disabled");
-                elements.linkVitrineMenu.style.pointerEvents = "none";
-                elements.linkVitrineMenu.style.opacity = "0.5";
                 elements.linkVitrineMenu.href = "#";
             }
         } else {
@@ -80,23 +83,15 @@ window.addEventListener("DOMContentLoaded", () => {
             empresaId = empresaDoc.id;
             const dadosEmpresa = empresaDoc.data();
 
-            // Busca os dados do profissional logado (que pode ser o dono ou um membro da equipe)
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             const profissionalSnap = await getDoc(profissionalRef);
-
-            let dadosProfissional = {};
-            let ehDono = false;
-
-            if (profissionalSnap.exists()) {
-                dadosProfissional = profissionalSnap.data();
-                ehDono = dadosProfissional.ehDono === true;
-            }
-
+            
             if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite seu Perfil de Negócio";
-            preencherFormulario(dadosEmpresa, dadosProfissional);
+            preencherFormulario(dadosEmpresa, profissionalSnap.data());
 
-            if (ehDono) {
+            if (profissionalSnap.exists() && profissionalSnap.data().ehDono === true) {
                 if (secaoEquipe) secaoEquipe.style.display = "block";
+                // A chamada do listener está aqui, e agora `db` está garantido de existir
                 iniciarListenerDeProfissionais(empresaId);
             } else {
                 if (secaoEquipe) secaoEquipe.style.display = "none";
@@ -105,35 +100,27 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function iniciarListenerDeProfissionais(idDaEmpresa) {
-        if (!elements.listaProfissionaisPainel) return;
-        if (unsubProfissionais) {
-            unsubProfissionais(); // Cancela o listener anterior para evitar duplicatas
-        }
-
+        if (unsubProfissionais) unsubProfissionais();
+        
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
-            const profissionais = snapshot.docs.map(doc => doc.data());
+            const profissionais = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderizarListaProfissionais(profissionais);
         });
     }
 
     function renderizarListaProfissionais(profissionais) {
         if (!elements.listaProfissionaisPainel) return;
-
-        if (profissionais.length === 0) {
-            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
-            return;
-        }
-
-        elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
-            return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
-                        <img src="${profissional.fotoUrl || "https://placehold.co/40x40/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                        <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
-                    </div>`;
-        }).join("");
+        elements.listaProfissionaisPainel.innerHTML = profissionais.length === 0 
+            ? `<p>Nenhum profissional na equipe ainda.</p>`
+            : profissionais.map(p => `
+                <div class="profissional-card">
+                    <img src="${p.fotoUrl || 'https://placehold.co/40x40'}" alt="Foto de ${p.nome}">
+                    <span>${p.nome}</span>
+                </div>`).join("");
     }
 
-    function preencherFormulario(dadosEmpresa, dadosProfissional) {
+    function preencherFormulario(dadosEmpresa, dadosProfissional = {}) {
         elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || "";
         elements.descricaoInput.value = dadosEmpresa.descricao || "";
         if (dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
@@ -147,33 +134,22 @@ window.addEventListener("DOMContentLoaded", () => {
             if (toggleAtivo) {
                 toggleAtivo.checked = diaData ? diaData.ativo : false;
                 const containerBlocos = document.getElementById(`blocos-${dia.id}`);
-                if (containerBlocos) {
-                    containerBlocos.innerHTML = "";
-                    if (diaData?.ativo && diaData.blocos?.length > 0) {
-                        diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
-                    } else if (diaData?.ativo) {
-                        adicionarBlocoDeHorario(dia.id);
-                    }
+                containerBlocos.innerHTML = "";
+                if (diaData?.ativo && diaData.blocos?.length > 0) {
+                    diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
                 }
-                // Dispara o evento 'change' para garantir que a UI dos blocos seja exibida corretamente
                 toggleAtivo.dispatchEvent(new Event("change"));
             }
         });
 
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-        if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
-        if (elements.btnAbrirVitrine) {
-            elements.btnAbrirVitrine.href = urlCompleta;
-            elements.btnAbrirVitrine.style.display = "inline-flex";
-        }
-        if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
-        if (elements.linkVitrineMenu) {
-            elements.linkVitrineMenu.href = urlCompleta;
-            elements.linkVitrineMenu.classList.remove("disabled");
-            elements.linkVitrineMenu.style.pointerEvents = "auto";
-            elements.linkVitrineMenu.style.opacity = "1";
-        }
-        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = "block";
+        elements.urlVitrineEl.textContent = urlCompleta;
+        elements.btnAbrirVitrine.href = urlCompleta;
+        elements.btnAbrirVitrine.style.display = "inline-flex";
+        elements.btnAbrirVitrineInline.href = urlCompleta;
+        elements.linkVitrineMenu.href = urlCompleta;
+        elements.linkVitrineMenu.classList.remove("disabled");
+        elements.containerLinkVitrine.style.display = "block";
     }
 
     async function handleFormSubmit(event) {
@@ -194,48 +170,36 @@ window.addEventListener("DOMContentLoaded", () => {
             const dadosProfissional = {
                 nome: currentUser.displayName || nomeNegocio,
                 fotoUrl: currentUser.photoURL || "",
-                horarios: coletarDadosDeHorarios()
+                horarios: coletarDadosDeHorarios(),
+                uid: uid
             };
 
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
                 const storageRef = ref(storage, `logos/${uid}/logo`);
-                const uploadResult = await uploadBytes(storageRef, logoFile);
-                dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
-            } else if (empresaId) {
-                const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
-                if (empresaAtualSnap.exists()) {
-                    dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || "";
-                }
+                dadosEmpresa.logoUrl = await getDownloadURL(await uploadBytes(storageRef, logoFile));
             }
 
             if (empresaId) {
-                // Lógica para ATUALIZAR uma empresa existente
-                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+                // ATUALIZAR empresa
+                const empresaRef = doc(db, "empresarios", empresaId);
+                await setDoc(empresaRef, dadosEmpresa, { merge: true });
 
                 const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-                const docOriginal = await getDoc(profissionalRef);
-
-                dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
-                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
-                
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
-                // Lógica para CRIAR uma nova empresa
+                // CRIAR empresa
                 dadosProfissional.servicos = [];
                 dadosProfissional.ehDono = true;
 
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-                empresaId = novaEmpresaRef.id; // Atualiza o ID da empresa globalmente
-
-                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
-
+                await setDoc(doc(db, "empresarios", novaEmpresaRef.id, "profissionais", uid), dadosProfissional);
+                
                 alert("Seu negócio foi cadastrado com sucesso!");
-
-                // **CORREÇÃO PRINCIPAL:** Em vez de recarregar a página, atualizamos a UI dinamicamente.
-                // window.location.reload(); // <--- Linha removida
-                await atualizarUIAposCriacao(empresaId); // <--- Nova função chamada
+                // VOLTAMOS AO RELOAD PELA ESTABILIDADE.
+                // Após o cadastro, a página recarrega e já carrega os dados corretamente.
+                window.location.reload(); 
             }
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
@@ -243,114 +207,6 @@ window.addEventListener("DOMContentLoaded", () => {
         } finally {
             elements.btnSalvar.disabled = false;
             elements.btnSalvar.textContent = "Salvar Todas as Configurações";
-        }
-    }
-
-    // NOVO: Função para atualizar a interface do usuário após a criação bem-sucedida da empresa
-    async function atualizarUIAposCriacao(novoEmpresaId) {
-        if (elements.h1Titulo) {
-            elements.h1Titulo.textContent = "Edite seu Perfil de Negócio";
-        }
-
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${novoEmpresaId}`;
-        
-        // Atualiza e exibe o link da vitrine
-        if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
-        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = "block";
-
-        // Atualiza e exibe os botões de abrir a vitrine
-        if (elements.btnAbrirVitrine) {
-            elements.btnAbrirVitrine.href = urlCompleta;
-            elements.btnAbrirVitrine.style.display = "inline-flex";
-        }
-        if (elements.btnAbrirVitrineInline) {
-             elements.btnAbrirVitrineInline.href = urlCompleta;
-        }
-
-        // Habilita o link do menu
-        if (elements.linkVitrineMenu) {
-            elements.linkVitrineMenu.href = urlCompleta;
-            elements.linkVitrineMenu.classList.remove("disabled");
-            elements.linkVitrineMenu.style.pointerEvents = "auto";
-            elements.linkVitrineMenu.style.opacity = "1";
-        }
-
-        // Mostra a seção de gerenciamento de equipe
-        const secaoEquipe = elements.btnAddProfissional?.closest(".form-section");
-        if (secaoEquipe) {
-            secaoEquipe.style.display = "block";
-        }
-
-        // Inicia o listener para a lista de profissionais (que agora terá o dono)
-        iniciarListenerDeProfissionais(novoEmpresaId);
-    }
-
-    async function handleAdicionarProfissional(event) {
-        event.preventDefault();
-        const btnSubmit = event.target.querySelector("button[type=\"submit\"]");
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = "Salvando...";
-
-        try {
-            const nome = document.getElementById("nome-profissional").value.trim();
-            const email = document.getElementById("email-profissional").value.trim();
-            const fotoFile = document.getElementById("foto-profissional").files[0];
-
-            if (!nome) throw new Error("O nome do profissional é obrigatório.");
-
-            let fotoUrl = "";
-            if (fotoFile) {
-                const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
-                const uploadResult = await uploadBytes(storageRef, fotoFile);
-                fotoUrl = await getDownloadURL(uploadResult.ref);
-            }
-
-            // CORREÇÃO (Conceitual - Alerta de Segurança e Lógica)
-            // A lógica abaixo é INSEGURA e NÃO FUNCIONAL para um ambiente de produção.
-            // Gerar um UID a partir de um e-mail no lado do cliente é falho.
-            // A maneira CORRETA é usar uma Firebase Cloud Function que:
-            // 1. Recebe o e-mail do profissional.
-            // 2. Usa o Admin SDK para buscar o UID real do usuário no Firebase Auth.
-            // 3. Retorna o UID para o cliente.
-            // 4. O cliente então usa esse UID real para criar o documento do profissional.
-            // Isso garante que o perfil do profissional está VINCULADO à sua conta de autenticação.
-            let profissionalUid = null;
-            if (email) {
-                // Esta linha é apenas uma simulação e NÃO deve ser usada em produção.
-                profissionalUid = email.replace(/[^a-zA-Z0-9]/g, ""); 
-            }
-
-            const novoProfissional = {
-                nome,
-                fotoUrl,
-                servicos: [],
-                horarios: {},
-                ehDono: false,
-                email: email || null
-            };
-
-            if (profissionalUid) {
-                 // Adiciona o UID simulado ao objeto, se existir
-                novoProfissional.uid = profissionalUid;
-                await setDoc(doc(db, "empresarios", empresaId, "profissionais", profissionalUid), novoProfissional);
-            } else {
-                // Se não houver UID (sem e-mail), usa addDoc para gerar um ID aleatório
-                const docRef = await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
-                // Opcional: atualizar o documento com seu próprio ID, se necessário
-                await setDoc(docRef, { uid: docRef.id }, { merge: true });
-            }
-
-
-            alert("Profissional adicionado com sucesso!");
-            if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = "none";
-            elements.formAddProfissional.reset();
-
-        } catch (error) {
-            console.error("Erro ao adicionar profissional:", error);
-            alert("Erro ao adicionar profissional: " + error.message);
-        } finally {
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = "Salvar Profissional";
         }
     }
 
@@ -374,11 +230,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function adicionarListenersDeEvento() {
         elements.form.addEventListener("submit", handleFormSubmit);
-
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener("click", copiarLink);
-        
         if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener("click", () => elements.logoInput.click());
-        
         if (elements.logoInput) elements.logoInput.addEventListener("change", () => {
             if (elements.logoInput.files[0]) {
                 const reader = new FileReader();
@@ -386,59 +239,32 @@ window.addEventListener("DOMContentLoaded", () => {
                 reader.readAsDataURL(elements.logoInput.files[0]);
             }
         });
-
         if (elements.btnLogout) elements.btnLogout.addEventListener("click", async () => {
-            try {
-                await signOut(auth);
-                window.location.href = "login.html";
-            } catch (error) {
-                console.error("Erro no logout:", error);
-                alert("Ocorreu um erro ao sair.");
-            }
+            await signOut(auth);
+            window.location.href = "login.html";
         });
-
+        // Listeners para o modal de adicionar profissional (se existirem)
         if (elements.btnAddProfissional) {
             elements.btnAddProfissional.addEventListener("click", () => {
-                if (!empresaId) {
-                    alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
-                    return;
-                }
-                if (elements.formAddProfissional) elements.formAddProfissional.reset();
                 if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = "flex";
             });
         }
-
         if (elements.btnCancelarProfissional) {
             elements.btnCancelarProfissional.addEventListener("click", () => {
                 if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = "none";
             });
         }
-
-        if (elements.formAddProfissional) {
-            elements.formAddProfissional.addEventListener("submit", handleAdicionarProfissional);
-        }
     }
 
     function copiarLink() {
-        if (!empresaId) {
-            alert("Salve seu perfil para gerar o link.");
-            return;
-        }
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-        navigator.clipboard.writeText(urlCompleta).then(() => {
-            alert("Link da vitrine copiado!");
-        }, () => {
-            alert("Falha ao copiar o link.");
-        });
+        navigator.clipboard.writeText(urlCompleta).then(() => alert("Link da vitrine copiado!"), () => alert("Falha ao copiar o link."));
     }
 
     function gerarEstruturaDosDias() {
         if (!elements.diasContainer) return;
-        elements.diasContainer.innerHTML = "";
-        diasDaSemana.forEach(dia => {
-            const divDia = document.createElement("div");
-            divDia.className = "dia-semana";
-            divDia.innerHTML = `
+        elements.diasContainer.innerHTML = diasDaSemana.map(dia => `
+            <div class="dia-semana">
                 <div class="toggle-switch-container">
                     <label class="toggle-switch">
                         <input type="checkbox" id="${dia.id}-ativo" class="toggle-input">
@@ -448,47 +274,35 @@ window.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div id="blocos-${dia.id}" class="horarios-blocos" style="display: none;"></div>
                 <button type="button" class="btn-add-bloco" data-dia="${dia.id}" style="display: none;">Adicionar Bloco</button>
-            `;
-            elements.diasContainer.appendChild(divDia);
-
-            const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
-            toggleAtivo.addEventListener("change", (e) => {
-                const blocosContainer = document.getElementById(`blocos-${dia.id}`);
-                const btnAddBloco = divDia.querySelector(`.btn-add-bloco`);
-                if (e.target.checked) {
-                    blocosContainer.style.display = "block";
-                    btnAddBloco.style.display = "inline-block";
-                    if (blocosContainer.children.length === 0) {
-                        adicionarBlocoDeHorario(dia.id);
-                    }
-                } else {
-                    blocosContainer.style.display = "none";
-                    btnAddBloco.style.display = "none";
+            </div>`).join('');
+        
+        diasDaSemana.forEach(dia => {
+            const toggle = document.getElementById(`${dia.id}-ativo`);
+            const blocosContainer = document.getElementById(`blocos-${dia.id}`);
+            const btnAddBloco = document.querySelector(`.btn-add-bloco[data-dia="${dia.id}"]`);
+            
+            toggle.addEventListener("change", (e) => {
+                const mostrar = e.target.checked;
+                blocosContainer.style.display = mostrar ? "block" : "none";
+                btnAddBloco.style.display = mostrar ? "inline-block" : "none";
+                if (mostrar && blocosContainer.children.length === 0) {
+                    adicionarBlocoDeHorario(dia.id);
                 }
             });
-
-            divDia.querySelector(`.btn-add-bloco`).addEventListener("click", (e) => {
-                adicionarBlocoDeHorario(e.target.dataset.dia);
-            });
+            btnAddBloco.addEventListener("click", () => adicionarBlocoDeHorario(dia.id));
         });
     }
 
     function adicionarBlocoDeHorario(diaId, inicio = "", fim = "") {
         const container = document.getElementById(`blocos-${diaId}`);
-        if (!container) return;
-
         const blocoDiv = document.createElement("div");
         blocoDiv.className = "bloco-horario";
         blocoDiv.innerHTML = `
             <input type="time" value="${inicio}">
             <span>-</span>
             <input type="time" value="${fim}">
-            <button type="button" class="btn-remover-bloco">Remover</button>
-        `;
+            <button type="button" class="btn-remover-bloco">Remover</button>`;
+        blocoDiv.querySelector('.btn-remover-bloco').addEventListener('click', () => blocoDiv.remove());
         container.appendChild(blocoDiv);
-
-        blocoDiv.querySelector(`.btn-remover-bloco`).addEventListener("click", (e) => {
-            e.target.closest(".bloco-horario").remove();
-        });
     }
 });
