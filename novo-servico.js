@@ -1,16 +1,18 @@
 /**
- * novo-servico.js (VERSÃO CORRIGIDA E ALINHADA COM A ESTRUTURA 'empresarios')
+ * novo-servico.js (VERSÃO FINAL - COM ALERTAS PADRONIZADOS)
  */
 
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
+// [MODIFICADO] Importando nosso sistema de alertas
+import { showAlert } from "./vitrini-utils.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
 const form = document.getElementById('form-servico');
 
-let profissionalRef = null; // Guardará a referência para o documento do profissional
+let profissionalRef = null;
 
 /**
  * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
@@ -31,7 +33,7 @@ onAuthStateChanged(auth, async (user) => {
             profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
             form.addEventListener('submit', handleFormSubmit);
         } else {
-            alert("Empresa não encontrada. Por favor, complete o seu perfil.");
+            await showAlert("Atenção", "Empresa não encontrada. Por favor, complete seu cadastro na página 'Meu Perfil' primeiro.");
             form.querySelector('button[type="submit"]').disabled = true;
         }
     } else {
@@ -45,23 +47,27 @@ onAuthStateChanged(auth, async (user) => {
 async function handleFormSubmit(event) {
     event.preventDefault();
     if (!profissionalRef) {
-        alert("Erro: Referência do profissional não encontrada.");
+        await showAlert("Erro", "Referência do profissional não encontrada.");
         return;
     }
 
-    const nome = document.getElementById('nome-servico').value;
-    const descricao = document.getElementById('descricao-servico').value;
+    const nome = document.getElementById('nome-servico').value.trim();
+    const descricao = document.getElementById('descricao-servico').value.trim();
     const preco = parseFloat(document.getElementById('preco-servico').value);
-    const duracao = parseInt(document.getElementById('duracao-servico').value);
+    const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
+
+    if (!nome || isNaN(preco) || isNaN(duracao)) {
+        await showAlert("Atenção", "Por favor, preencha todos os campos obrigatórios corretamente.");
+        return;
+    }
     
-    // Cria um novo objeto de serviço com um ID único baseado na data atual
     const novoServico = { 
-        id: `serv_${Date.now()}`, // Cria um ID único
+        id: `serv_${Date.now()}`,
         nome, 
         descricao, 
         preco, 
         duracao,
-        visivelNaVitrine: true // Padrão: visível
+        visivelNaVitrine: true
     };
 
     const btnSalvar = form.querySelector('button[type="submit"]');
@@ -69,37 +75,24 @@ async function handleFormSubmit(event) {
     btnSalvar.textContent = "Salvando...";
 
     try {
-        // 1. Pega o documento do profissional para ler a lista de serviços atual.
         const docSnap = await getDoc(profissionalRef);
         const servicosAtuais = (docSnap.exists() && docSnap.data().servicos) ? docSnap.data().servicos : [];
 
-        // 2. Adiciona o novo serviço à lista.
         const novaListaDeServicos = [...servicosAtuais, novoServico];
 
-        // 3. Atualiza o documento do profissional com a lista completa.
         await updateDoc(profissionalRef, {
             servicos: novaListaDeServicos
         });
 
-        Toastify({
-            text: "Serviço salvo com sucesso!",
-            duration: 3000,
-            gravity: "top",
-            position: "right",
-            style: { background: "linear-gradient(to right, #00b09b, #96c93d)" }
-        }).showToast();
-
-        setTimeout(() => { window.location.href = 'servicos.html'; }, 2000);
+        // [MODIFICADO] Trocado Toastify por showAlert
+        await showAlert("Sucesso!", "Serviço salvo com sucesso!");
+        // O setTimeout não é mais necessário, pois o usuário precisa clicar "OK" no alerta
+        window.location.href = 'servicos.html';
 
     } catch (error) {
         console.error("Erro ao salvar o serviço: ", error);
-        Toastify({ 
-            text: "Erro ao salvar o serviço.", 
-            duration: 3000, 
-            gravity: "top", 
-            position: "right", 
-            style: { background: "#dc3545" } 
-        }).showToast();
+        // [MODIFICADO] Trocado Toastify por showAlert
+        await showAlert("Erro ao Salvar", "Ocorreu um erro ao salvar o serviço. Por favor, tente novamente.");
     } finally {
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Serviço";
