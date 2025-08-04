@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL E COMPLETA - COM LÓGICA 'ehDono' E 'DOMContentLoaded')
+ * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -48,7 +48,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let currentUser;
     let empresaId = null;
-    let unsubProfissionais = null;
+    let unsubProfissionais = null; // Variável para guardar o listener e poder desligá-lo
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -112,10 +112,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
         
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
-            if (snapshot.empty) {
-                elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
-                return;
-            }
             const profissionais = snapshot.docs.map(doc => doc.data());
             renderizarListaProfissionais(profissionais);
         });
@@ -124,6 +120,11 @@ window.addEventListener('DOMContentLoaded', () => {
     function renderizarListaProfissionais(profissionais) {
         if (!elements.listaProfissionaisPainel) return;
         
+        if (profissionais.length === 0) {
+            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+            return;
+        }
+
         elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
             return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
                         <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
@@ -205,12 +206,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const docOriginal = await getDoc(profissionalRef);
                 
                 dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
-                
-                if (docOriginal.exists() && docOriginal.data().ehDono === true) {
-                    dadosProfissional.ehDono = true;
-                } else {
-                    dadosProfissional.ehDono = false;
-                }
+                dadosProfissional.ehDono = docOriginal.exists() ? docOriginal.data().ehDono : true;
 
                 await setDoc(profissionalRef, dadosProfissional, { merge: true });
                 alert("Perfil atualizado com sucesso!");
@@ -372,7 +368,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
-        const container = document.getElementById(`blocos-${diaId}`);
+        const container = document.getElementById(`blocos-${dia.id}`);
         const divBloco = document.createElement('div');
         divBloco.className = 'slot-horario';
         divBloco.innerHTML = `
@@ -389,65 +385,4 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { getFirestore, doc, collection, addDoc } from "firebase/firestore";
-
-const storage = getStorage();
-const db = getFirestore();
-
-// Formulário do modal "Adicionar Novo Profissional"
-document.getElementById("form-add-profissional").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const nome = document.getElementById("nome-profissional").value.trim();
-    const arquivo = document.getElementById("foto-profissional").files[0];
-    const modal = document.getElementById("modal-add-profissional");
-    const empresaId = modal.getAttribute("data-empresa-id");
-
-    if (!nome || !empresaId) {
-        alert("Nome e empresa obrigatórios.");
-        return;
-    }
-
-    let urlFoto = null;
-
-    if (arquivo) {
-        try {
-            const caminho = `empresas/${empresaId}/profissionais/${Date.now()}_${arquivo.name}`;
-            const fotoRef = storageRef(storage, caminho);
-            await uploadBytes(fotoRef, arquivo);
-            urlFoto = await getDownloadURL(fotoRef);
-        } catch (erro) {
-            console.error("Erro ao enviar imagem:", erro);
-            alert("Erro ao fazer upload da imagem.");
-            return;
-        }
-    }
-
-    const profissional = {
-        nome,
-        fotoUrl: urlFoto || null,
-        criadoEm: new Date()
-    };
-
-    try {
-        const empresaRef = doc(db, "empresas", empresaId);
-        const profissionaisRef = collection(empresaRef, "profissionais");
-        await addDoc(profissionaisRef, profissional);
-        alert("Profissional adicionado com sucesso!");
-        fecharModalAdicionarProfissional();
-        // Aqui você pode chamar algo como carregarListaDeProfissionais() se quiser atualizar a lista na tela
-    } catch (err) {
-        console.error("Erro ao adicionar profissional:", err);
-        alert("Erro ao adicionar profissional.");
-    }
-});
-
-// Função auxiliar para fechar e resetar o modal
-function fecharModalAdicionarProfissional() {
-    const modal = document.getElementById("modal-add-profissional");
-    modal.classList.remove("aberto");
-    document.getElementById("form-add-profissional").reset();
-}
-
 });
