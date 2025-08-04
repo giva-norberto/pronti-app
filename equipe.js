@@ -1,12 +1,20 @@
 /**
- * equipe.js (VERSÃO FINAL E DEFINITIVA)
+ * equipe.js - Sistema de gerenciamento de equipe
  */
 import { collection, addDoc, onSnapshot, query, where, getDocs, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { db, auth, storage } from "./firebase-config.js";
 
+// Verificar se o Firebase foi inicializado corretamente
+if (!db || !auth || !storage) {
+    console.error("❌ Firebase não foi inicializado corretamente!");
+    alert("Erro de configuração do Firebase. Verifique o console para mais detalhes.");
+}
+
 window.addEventListener('DOMContentLoaded', () => {
+    console.log("🚀 Carregando sistema de equipe...");
+    
     const btnAddProfissional = document.getElementById('btn-add-profissional');
     const modalAddProfissional = document.getElementById('modal-add-profissional');
     const formAddProfissional = document.getElementById('form-add-profissional');
@@ -17,31 +25,37 @@ window.addEventListener('DOMContentLoaded', () => {
     let unsubProfissionais = null;
 
     async function getEmpresaIdDoDono(uid) {
+        console.log("🔍 Buscando empresa para o usuário:", uid);
         const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
         try {
             const snapshot = await getDocs(q);
             if (snapshot.empty) {
-                console.error(`BUSCA FALHOU: Nenhum documento em 'empresarios' encontrado com donoId = ${uid}`);
+                console.error(`❌ Nenhuma empresa encontrada para o usuário: ${uid}`);
                 return null;
             }
+            console.log("✅ Empresa encontrada:", snapshot.docs[0].id);
             return snapshot.docs[0].id;
         } catch (error) {
-            console.error("Erro ao buscar empresa:", error);
+            console.error("❌ Erro ao buscar empresa:", error);
             return null;
         }
     }
 
     function iniciarListenerDaEquipe() {
         if (!empresaId || !listaProfissionaisPainel) return;
+        
+        console.log("👥 Iniciando listener da equipe para empresa:", empresaId);
+        
         if (unsubProfissionais) unsubProfissionais();
 
         const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
         unsubProfissionais = onSnapshot(profissionaisRef, 
             (snapshot) => {
+                console.log("📊 Profissionais carregados:", snapshot.docs.length);
                 renderizarEquipe(snapshot.docs.map(doc => doc.data()));
             },
             (error) => {
-                console.error("Erro ao escutar profissionais:", error);
+                console.error("❌ Erro ao escutar profissionais:", error);
                 if (listaProfissionaisPainel) {
                     listaProfissionaisPainel.innerHTML = '<p style="color: red;">Erro ao carregar profissionais. Verifique sua conexão.</p>';
                 }
@@ -70,6 +84,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function adicionarListenersDeEvento() {
         if (btnAddProfissional) {
             btnAddProfissional.addEventListener('click', () => {
+                console.log("➕ Botão adicionar profissional clicado");
                 if (!empresaId) {
                     alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página ou verifique se o seu perfil foi salvo corretamente.");
                     return;
@@ -81,6 +96,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (btnCancelarProfissional) {
             btnCancelarProfissional.addEventListener('click', () => {
+                console.log("❌ Cancelar adicionar profissional");
                 if (modalAddProfissional) modalAddProfissional.style.display = 'none';
             });
         }
@@ -88,6 +104,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (formAddProfissional) {
             formAddProfissional.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log("💾 Salvando novo profissional...");
                 const btnSubmit = e.target.querySelector('button[type="submit"]');
                 btnSubmit.disabled = true;
                 btnSubmit.textContent = "Salvando...";
@@ -104,13 +121,16 @@ window.addEventListener('DOMContentLoaded', () => {
                 let fotoURL = '';
                 if (fotoFile) {
                     try {
+                        console.log("📸 Fazendo upload da foto...");
                         const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
                         await uploadBytes(storageRef, fotoFile);
                         fotoURL = await getDownloadURL(storageRef);
+                        console.log("✅ Foto enviada com sucesso!");
                     } catch (error) {
-                        console.error("Erro no upload da foto:", error);
+                        console.error("❌ Erro no upload da foto:", error);
                         alert("Erro ao enviar a imagem.");
                         btnSubmit.disabled = false;
+                        btnSubmit.textContent = "Salvar Profissional";
                         return;
                     }
                 }
@@ -126,9 +146,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 try {
                     await addDoc(collection(db, 'empresarios', empresaId, 'profissionais'), novoProfissional);
+                    console.log("✅ Profissional adicionado com sucesso!");
                     if (modalAddProfissional) modalAddProfissional.style.display = 'none';
                 } catch (error) {
-                    console.error("Erro ao adicionar profissional:", error);
+                    console.error("❌ Erro ao adicionar profissional:", error);
                     alert("Erro ao adicionar profissional.");
                 } finally {
                     btnSubmit.disabled = false;
@@ -140,6 +161,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
+            console.log("👤 Usuário autenticado:", user.uid);
             empresaId = await getEmpresaIdDoDono(user.uid);
             if (empresaId) {
                 iniciarListenerDaEquipe();
@@ -150,6 +172,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (btnAddProfissional) btnAddProfissional.disabled = true;
             }
         } else {
+            console.log("❌ Usuário não autenticado, redirecionando...");
             window.location.href = 'login.html';
         }
     });
