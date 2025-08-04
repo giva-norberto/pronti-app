@@ -1,6 +1,8 @@
 // Arquivo: perfil.js (VERSÃO 100% COMPLETA E FINAL, agora com uploadService.js)
 import { db, auth } from "./firebase-config.js";
-import { doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { 
+  doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { uploadFile } from "./uploadService.js";
 
@@ -224,7 +226,9 @@ window.addEventListener("DOMContentLoaded", () => {
         if(elements.form) elements.form.addEventListener("submit", handleFormSubmit);
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener("click", () => {
              const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-             navigator.clipboard.writeText(urlCompleta).then(() => alert("Link copiado!"), () => alert("Falha ao copiar."));
+             navigator.clipboard.writeText(urlCompleta)
+               .then(() => alert("Link copiado!"))
+               .catch(() => alert("Falha ao copiar."));
         });
         if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener("click", () => elements.logoInput.click());
         if (elements.logoInput) elements.logoInput.addEventListener("change", () => {
@@ -283,17 +287,19 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function adicionarBlocoDeHorario(diaId, inicio = "", fim = "") {
-        const container = document.getElementById(`blocos-${diaId}`);
-        if (!container) return;
+        const blocosContainer = document.getElementById(`blocos-${diaId}`);
         const blocoDiv = document.createElement("div");
         blocoDiv.className = "bloco-horario";
+        blocoDiv.style.marginBottom = "6px";
         blocoDiv.innerHTML = `
-            <input type="time" value="${inicio}"><span>-</span><input type="time" value="${fim}">
-            <button type="button" class="btn-remover-bloco">Remover</button>
+            <input type="time" class="hora-inicio" value="${inicio}" required>
+            <span>às</span>
+            <input type="time" class="hora-fim" value="${fim}" required>
+            <button type="button" class="btn-remover-bloco" title="Remover bloco">✕</button>
         `;
-        container.appendChild(blocoDiv);
-        blocoDiv.querySelector(`.btn-remover-bloco`).addEventListener("click", (e) => {
-            e.target.closest(".bloco-horario").remove();
+        blocoDiv.querySelector(".btn-remover-bloco").addEventListener("click", () => {
+            blocoDiv.remove();
         });
+        blocosContainer.appendChild(blocoDiv);
     }
 });
