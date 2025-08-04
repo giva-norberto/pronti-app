@@ -389,4 +389,65 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getFirestore, doc, collection, addDoc } from "firebase/firestore";
+
+const storage = getStorage();
+const db = getFirestore();
+
+// Formulário do modal "Adicionar Novo Profissional"
+document.getElementById("form-add-profissional").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const nome = document.getElementById("nome-profissional").value.trim();
+    const arquivo = document.getElementById("foto-profissional").files[0];
+    const modal = document.getElementById("modal-add-profissional");
+    const empresaId = modal.getAttribute("data-empresa-id");
+
+    if (!nome || !empresaId) {
+        alert("Nome e empresa obrigatórios.");
+        return;
+    }
+
+    let urlFoto = null;
+
+    if (arquivo) {
+        try {
+            const caminho = `empresas/${empresaId}/profissionais/${Date.now()}_${arquivo.name}`;
+            const fotoRef = storageRef(storage, caminho);
+            await uploadBytes(fotoRef, arquivo);
+            urlFoto = await getDownloadURL(fotoRef);
+        } catch (erro) {
+            console.error("Erro ao enviar imagem:", erro);
+            alert("Erro ao fazer upload da imagem.");
+            return;
+        }
+    }
+
+    const profissional = {
+        nome,
+        fotoUrl: urlFoto || null,
+        criadoEm: new Date()
+    };
+
+    try {
+        const empresaRef = doc(db, "empresas", empresaId);
+        const profissionaisRef = collection(empresaRef, "profissionais");
+        await addDoc(profissionaisRef, profissional);
+        alert("Profissional adicionado com sucesso!");
+        fecharModalAdicionarProfissional();
+        // Aqui você pode chamar algo como carregarListaDeProfissionais() se quiser atualizar a lista na tela
+    } catch (err) {
+        console.error("Erro ao adicionar profissional:", err);
+        alert("Erro ao adicionar profissional.");
+    }
+});
+
+// Função auxiliar para fechar e resetar o modal
+function fecharModalAdicionarProfissional() {
+    const modal = document.getElementById("modal-add-profissional");
+    modal.classList.remove("aberto");
+    document.getElementById("form-add-profissional").reset();
+}
+
 });
