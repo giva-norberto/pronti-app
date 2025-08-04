@@ -51,16 +51,14 @@ window.addEventListener('DOMContentLoaded', () => {
     let unsubProfissionais = null; // Variável para guardar o listener e poder desligá-lo
 
     onAuthStateChanged(auth, (user) => {
-    if (user) {
-        alert("Meu UID real é: " + user.uid); // <-- ADICIONE ESTA LINHA
-        currentUser = user;
-        verificarEcarregarDados(user.uid);
-        adicionarListenersDeEvento();
-        gerarEstruturaDosDias();
-    } else {
-        window.location.href = 'login.html';
-    }
-});
+        if (user) {
+            currentUser = user;
+            verificarEcarregarDados(user.uid);
+            adicionarListenersDeEvento();
+            gerarEstruturaDosDias();
+        } else {
+            window.location.href = 'login.html';
+        }
     });
 
     async function verificarEcarregarDados(uid) {
@@ -391,5 +389,4 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-}); // Fim do DOMContentLoaded
+});
