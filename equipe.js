@@ -237,7 +237,7 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 e.preventDefault();
                 debugLog("💾 Salvando novo profissional...");
                 
-                const btnSubmit = e.target.querySelector("button[type='submit']");
+                const btnSubmit = elementos['form-add-profissional'].querySelector('.btn-submit');
                 btnSubmit.disabled = true;
                 btnSubmit.textContent = "Salvando...";
 
