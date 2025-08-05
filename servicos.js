@@ -1,6 +1,4 @@
 // servicos.js (VERSÃO DEFINITIVA E CORRIGIDA PARA FIREBASE v10)
-console.log("servicos.js carregado!");
-
 // IMPORTS PRIMEIRO
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
