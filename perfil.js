@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO SIMPLIFICADA E AUTOSSUFICIENTE)
+ * perfil.js (VERSÃO FINAL COM ARQUITETURA MODULAR)
  */
 
 // Importa tudo que o Firebase precisa
@@ -7,24 +7,27 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// Importa o nosso serviço de upload separado
 import { uploadFile } from './uploadService.js';
-// 1. Configuração do Firebase (movida para cá )
+
+// 1. Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app", // <--- LINHA CORRIGIDA
+  storageBucket: "pronti-app-37c6e.firebasestorage.app",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
 // 2. Inicialização do Firebase
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig );
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// 3. Lógica da Página (só roda quando o HTML estiver pronto)
+// 3. Lógica da Página
 window.addEventListener('DOMContentLoaded', () => {
 
     const elements = {
@@ -63,7 +66,6 @@ window.addEventListener('DOMContentLoaded', () => {
     let empresaId = null;
     let unsubProfissionais = null;
 
-    // A ordem de execução aqui é crucial e agora está correta.
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
@@ -201,9 +203,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
-                const storageRef = ref(storage, `logos/${uid}/logo`);
-                const uploadResult = await uploadBytes(storageRef, logoFile);
-                dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
+                const storagePath = `logos/${uid}/logo`;
+                const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+                dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
             } else if (empresaId) {
                 const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
                 if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
@@ -249,9 +251,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             let fotoUrl = '';
             if (fotoFile) {
-                const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
-                const uploadResult = await uploadBytes(storageRef, fotoFile);
-                fotoUrl = await getDownloadURL(uploadResult.ref);
+                const storagePath = `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`;
+                const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+                fotoUrl = await uploadFile(firebaseDependencies, fotoFile, storagePath);
             }
             
             const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {}, ehDono: false };
