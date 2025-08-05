@@ -15,13 +15,13 @@
  */
 export async function uploadFile(firebase, file, storagePath) {
     if (!file || !storagePath) {
-        throw new Error("Um arquivo e um caminho de destino são obrigatórios.");
+        throw new Error("Um arquivo e um caminho de destino são obrigatórios para o upload.");
     }
     if (!firebase || !firebase.storage || !firebase.ref || !firebase.uploadBytes || !firebase.getDownloadURL) {
         throw new Error("As dependências do Firebase (storage, ref, uploadBytes, getDownloadURL) são obrigatórias.");
     }
 
-    // Validações (podemos adicionar de volta se necessário)
+    // Validações
     if (file.size > 2 * 1024 * 1024) { // 2MB
         throw new Error("Arquivo muito grande. Máximo permitido: 2 MB.");
     }
@@ -38,6 +38,7 @@ export async function uploadFile(firebase, file, storagePath) {
 
     } catch (error) {
         console.error("Erro no serviço de upload:", error);
-        throw new Error("Falha ao fazer o upload do arquivo.");
+        // Lança o erro original para que a função que chamou possa tratá-lo
+        throw error;
     }
 }
