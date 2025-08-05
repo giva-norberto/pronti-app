@@ -44,11 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!docSnap.exists()) return;
 
         const servicos = docSnap.data().servicos || [];
+        // DEBUG: Veja no console os serviços, o ID e o que foi encontrado
+        console.log("Servicos:", servicos);
+        console.log("ID Serviço:", idServico);
         const servico = servicos.find(s => String(s.id) === idServico);
+        console.log("Serviço encontrado:", servico);
+
         if (!servico) return;
 
         preencherFormulario(servico);
     });
 });
-
-// Aqui pode ir seu código de submit para salvar/atualizar o serviço!
