@@ -1,18 +1,18 @@
 /**
- * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
+ * perfil.js (VERSÃO FINAL COM IMPORTS CORRIGIDOS)
  */
 
+// [CORREÇÃO] Importa os serviços JÁ PRONTOS do seu arquivo de configuração
+import { db, auth, storage } from "./firebase-config.js";
+
+// Importa apenas as FUNÇÕES que você vai usar
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 
-// Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener('DOMContentLoaded', () => {
 
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    const storage = getStorage(app);
+    // [REMOVIDO] Não precisamos mais de recriar db, auth, e storage aqui. Eles já vêm prontos.
 
     const elements = {
         h1Titulo: document.getElementById('main-title'),
@@ -385,4 +385,5 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
 });
