@@ -2,37 +2,48 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Novo/Editar Serviço</title>
-  <link rel="stylesheet" href="seu-estilo.css">
+  <title>Novo Serviço</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Menu/cabeçalho, se quiser -->
-  <nav>
-    <!-- Seu menu aqui, se houver -->
-  </nav>
+  <!-- Sidebar/menu lateral -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">Jetio</a>
+    <nav class="sidebar-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="servicos.html" class="active">Serviços</a>
+      <a href="agendamentos.html">Agendamentos</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="perfil.html">Meu Perfil</a>
+      <!-- Adicione outros links conforme necessário -->
+    </nav>
+  </aside>
 
-  <main>
-    <form id="form-servico">
-      <label for="nome-servico">Nome do Serviço</label>
-      <input id="nome-servico" name="nome-servico" type="text" />
-
-      <label for="descricao-servico">Descrição</label>
-      <textarea id="descricao-servico" name="descricao-servico"></textarea>
-
-      <label for="preco-servico">Preço</label>
-      <input id="preco-servico" name="preco-servico" type="number" />
-
-      <label for="duracao-servico">Duração (minutos)</label>
-      <input id="duracao-servico" name="duracao-servico" type="number" />
-
-      <button type="submit">Salvar Serviço</button>
-    </form>
-  </main>
-
-  <!-- Rodapé, se quiser -->
-  <footer>
-    <!-- Seu rodapé aqui -->
-  </footer>
+  <!-- Conteúdo principal -->
+  <div class="main-content">
+    <h1>Novo Serviço</h1>
+    <div class="form-card">
+      <form id="form-servico">
+        <div class="form-group">
+          <label for="nome-servico">Nome do Serviço</label>
+          <input id="nome-servico" name="nome-servico" type="text" required />
+        </div>
+        <div class="form-group">
+          <label for="descricao-servico">Descrição</label>
+          <textarea id="descricao-servico" name="descricao-servico" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="preco-servico">Preço</label>
+          <input id="preco-servico" name="preco-servico" type="number" min="0" step="0.01" required />
+        </div>
+        <div class="form-group">
+          <label for="duracao-servico">Duração (minutos)</label>
+          <input id="duracao-servico" name="duracao-servico" type="number" min="1" required />
+        </div>
+        <button type="submit" class="btn-submit">Salvar Serviço</button>
+      </form>
+    </div>
+  </div>
 
   <script type="module" src="novo-servico.js"></script>
 </body>
