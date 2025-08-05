@@ -1,11 +1,10 @@
-// firebase-config.js (VERSÃO CORRIGIDA)
-
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-const firebaseConfig = {
+// EXPORTAÇÃO DIRETA DO OBJETO DE CONFIGURAÇÃO
+export const firebaseConfig = {
   apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
@@ -29,4 +28,3 @@ export const auth = getAuth(firebaseApp);
 export const storage = getStorage(firebaseApp);
 
 console.log("🔥 Firebase inicializado com sucesso e pronto a ser usado!");
-
