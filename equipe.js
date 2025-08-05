@@ -1,62 +1,128 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe
+ * equipe-melhorado.js - Sistema de gerenciamento de equipe com debug melhorado
  */
-import {
-    collection,
-    addDoc,
-    onSnapshot,
-    query,
-    where,
-    getDocs,
-    doc,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {
-    ref,
-    uploadBytes,
-    getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import {
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import {
-    db,
-    auth,
-    storage
-} from "./firebase-config.js";
 
-// Verificar se o Firebase foi inicializado corretamente
-if (!db || !auth || !storage) {
-    console.error("❌ Firebase não foi inicializado corretamente!");
-    alert("Erro de configuração do Firebase. Verifique o console para mais detalhes.");
+// Função para debug detalhado
+function debugLog(message, data = null) {
+    console.log(`[EQUIPE DEBUG] ${message}`, data || '');
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 Carregando sistema de equipe...");
+// Verificar se todos os elementos HTML existem
+function verificarElementosHTML() {
+    debugLog("🔍 Verificando elementos HTML...");
+    
+    const elementos = {
+        'btn-add-profissional': document.getElementById('btn-add-profissional'),
+        'modal-add-profissional': document.getElementById('modal-add-profissional'),
+        'form-add-profissional': document.getElementById('form-add-profissional'),
+        'btn-cancelar-profissional': document.getElementById('btn-cancelar-profissional'),
+        'lista-profissionais-painel': document.getElementById('lista-profissionais-painel'),
+        'nome-profissional': document.getElementById('nome-profissional'),
+        'foto-profissional': document.getElementById('foto-profissional')
+    };
 
-    const btnAddProfissional = document.getElementById('btn-add-profissional');
-    const modalAddProfissional = document.getElementById('modal-add-profissional');
-    const formAddProfissional = document.getElementById('form-add-profissional');
-    const btnCancelarProfissional = document.getElementById('btn-cancelar-profissional');
-    const listaProfissionaisPainel = document.getElementById('lista-profissionais-painel');
+    let todosEncontrados = true;
+    for (const [id, elemento] of Object.entries(elementos)) {
+        if (elemento) {
+            debugLog(`✅ Elemento encontrado: ${id}`);
+        } else {
+            debugLog(`❌ Elemento NÃO encontrado: ${id}`);
+            todosEncontrados = false;
+        }
+    }
+
+    return { elementos, todosEncontrados };
+}
+
+// Verificar se o Firebase está disponível
+function verificarFirebase() {
+    debugLog("🔥 Verificando Firebase...");
+    
+    try {
+        // Tentar importar dinamicamente
+        import('./firebase-config.js').then(({ db, auth, storage }) => {
+            if (db && auth && storage) {
+                debugLog("✅ Firebase configurado corretamente");
+                inicializarSistemaEquipe(db, auth, storage);
+            } else {
+                debugLog("❌ Firebase não configurado corretamente");
+                mostrarErroFirebase();
+            }
+        }).catch(error => {
+            debugLog("❌ Erro ao importar firebase-config.js:", error);
+            mostrarErroFirebase();
+        });
+    } catch (error) {
+        debugLog("❌ Erro geral do Firebase:", error);
+        mostrarErroFirebase();
+    }
+}
+
+function mostrarErroFirebase() {
+    const painel = document.getElementById('lista-profissionais-painel');
+    if (painel) {
+        painel.innerHTML = `
+            <div style="color: red; padding: 20px; border: 1px solid red; border-radius: 5px;">
+                <h4>❌ Erro de Configuração do Firebase</h4>
+                <p>O arquivo <code>firebase-config.js</code> não foi encontrado ou não está configurado corretamente.</p>
+                <p>Por favor, verifique se:</p>
+                <ul>
+                    <li>O arquivo <code>firebase-config.js</code> existe</li>
+                    <li>As credenciais do Firebase estão corretas</li>
+                    <li>O projeto Firebase está ativo</li>
+                </ul>
+            </div>
+        `;
+    }
+}
+
+async function inicializarSistemaEquipe(db, auth, storage) {
+    debugLog("🚀 Inicializando sistema de equipe...");
+    
+    const { elementos, todosEncontrados } = verificarElementosHTML();
+    
+    if (!todosEncontrados) {
+        debugLog("❌ Nem todos os elementos HTML foram encontrados. Abortando inicialização.");
+        return;
+    }
 
     let empresaId = null;
     let unsubProfissionais = null;
 
+    // Importar funções do Firestore dinamicamente
+    const { 
+        collection, 
+        addDoc, 
+        onSnapshot, 
+        query, 
+        where, 
+        getDocs, 
+        serverTimestamp 
+    } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    
+    const { 
+        ref, 
+        uploadBytes, 
+        getDownloadURL 
+    } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js");
+    
+    const { 
+        onAuthStateChanged 
+    } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+
     async function getEmpresaIdDoDono(uid) {
-        console.log("🔍 Buscando empresa para o usuário:", uid);
+        debugLog("🔍 Buscando empresa para o usuário:", uid);
         const empresariosRef = collection(db, "empresarios");
         const q = query(empresariosRef, where("donoId", "==", uid));
 
         try {
             const snapshot = await getDocs(q);
             if (!snapshot.empty) {
-                console.log("✅ Empresa encontrada:", snapshot.docs[0].id);
+                debugLog("✅ Empresa encontrada:", snapshot.docs[0].id);
                 return snapshot.docs[0].id;
             }
 
-            // Nenhuma empresa encontrada — criar uma nova
-            console.warn("⚠️ Nenhuma empresa encontrada. Criando uma nova...");
+            debugLog("⚠️ Nenhuma empresa encontrada. Criando uma nova...");
             const novaEmpresa = {
                 donoId: uid,
                 nome: "Minha Empresa",
@@ -64,76 +130,122 @@ window.addEventListener('DOMContentLoaded', () => {
             };
 
             const docRef = await addDoc(empresariosRef, novaEmpresa);
-            console.log("✅ Nova empresa criada com ID:", docRef.id);
+            debugLog("✅ Nova empresa criada com ID:", docRef.id);
             return docRef.id;
         } catch (error) {
-            console.error("❌ Erro ao buscar ou criar empresa:", error);
+            debugLog("❌ Erro ao buscar ou criar empresa:", error);
             return null;
         }
     }
 
     function iniciarListenerDaEquipe() {
         try {
+            debugLog("📡 Iniciando listener da equipe para empresa:", empresaId);
             const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
             const q = query(profissionaisRef);
+            
             unsubProfissionais = onSnapshot(q, (snapshot) => {
                 const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("📥 Profissionais atualizados:", equipe);
+                debugLog("📥 Profissionais atualizados:", equipe);
                 renderizarEquipe(equipe);
+            }, (error) => {
+                debugLog("❌ Erro no listener da equipe:", error);
             });
         } catch (e) {
-            console.error("❌ Erro ao iniciar listener da equipe:", e);
+            debugLog("❌ Erro ao iniciar listener da equipe:", e);
         }
     }
 
     function renderizarEquipe(equipe) {
-        if (!listaProfissionaisPainel) return;
-        listaProfissionaisPainel.innerHTML = '';
-        if (equipe.length === 0) {
-            listaProfissionaisPainel.innerHTML = '<p>Nenhum profissional na equipe ainda.</p>';
+        debugLog("🎨 Renderizando equipe:", equipe);
+        
+        if (!elementos['lista-profissionais-painel']) {
+            debugLog("❌ Painel de profissionais não encontrado");
             return;
         }
+        
+        elementos['lista-profissionais-painel'].innerHTML = "";
+        
+        if (equipe.length === 0) {
+            elementos['lista-profissionais-painel'].innerHTML = 
+                `<p>Nenhum profissional na equipe ainda. Clique em "Adicionar Profissional" para começar.</p>`;
+            return;
+        }
+        
         equipe.forEach(profissional => {
-            const div = document.createElement('div');
-            div.className = 'profissional-card';
+            const div = document.createElement("div");
+            div.className = "profissional-card";
             div.innerHTML = `
-                <img src="${profissional.fotoUrl || 'https://placehold.co/40x40'}" alt="Foto de ${profissional.nome}">  
-                <span class="profissional-nome">${profissional.nome}</span>
+                <div class="profissional-foto">
+                    <img src="${profissional.fotoUrl || "https://via.placeholder.com/60x60?text=👤"}" 
+                         alt="Foto de ${profissional.nome}"
+                         onerror="this.src='https://via.placeholder.com/60x60?text=👤'">
+                </div>
+                <div class="profissional-info">
+                    <span class="profissional-nome">${profissional.nome}</span>
+                    <span class="profissional-status">${profissional.ehDono ? 'Dono' : 'Funcionário'}</span>
+                </div>
             `;
-            listaProfissionaisPainel.appendChild(div);
+            elementos['lista-profissionais-painel'].appendChild(div);
         });
+        
+        debugLog("✅ Equipe renderizada com sucesso");
     }
 
     function adicionarListenersDeEvento() {
-        if (btnAddProfissional) {
-            btnAddProfissional.addEventListener('click', () => {
-                console.log("➕ Botão adicionar profissional clicado");
+        debugLog("🎯 Adicionando listeners de evento...");
+        
+        // Botão adicionar profissional
+        if (elementos['btn-add-profissional']) {
+            elementos['btn-add-profissional'].addEventListener("click", () => {
+                debugLog("➕ Botão adicionar profissional clicado");
+                
                 if (!empresaId) {
-                    alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página ou verifique se o seu perfil foi salvo corretamente.");
+                    debugLog("❌ empresaId não definido");
+                    alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página.");
                     return;
                 }
-                if (formAddProfissional) formAddProfissional.reset();
-                if (modalAddProfissional) modalAddProfissional.style.display = 'flex';
+                
+                if (elementos['form-add-profissional']) {
+                    elementos['form-add-profissional'].reset();
+                }
+                
+                if (elementos['modal-add-profissional']) {
+                    elementos['modal-add-profissional'].style.display = "flex";
+                    debugLog("✅ Modal exibido");
+                } else {
+                    debugLog("❌ Modal não encontrado");
+                }
             });
+            debugLog("✅ Listener do botão adicionar configurado");
         }
 
-        if (btnCancelarProfissional) {
-            btnCancelarProfissional.addEventListener('click', () => {
-                console.log("❌ Cancelar adicionar profissional");
-                if (modalAddProfissional) modalAddProfissional.style.display = 'none';
+        // Botão cancelar
+        if (elementos['btn-cancelar-profissional']) {
+            elementos['btn-cancelar-profissional'].addEventListener("click", () => {
+                debugLog("❌ Cancelar adicionar profissional");
+                if (elementos['modal-add-profissional']) {
+                    elementos['modal-add-profissional'].style.display = "none";
+                }
             });
+            debugLog("✅ Listener do botão cancelar configurado");
         }
 
-        if (formAddProfissional) {
-            formAddProfissional.addEventListener('submit', async (e) => {
+        // Formulário
+        if (elementos['form-add-profissional']) {
+            elementos['form-add-profissional'].addEventListener("submit", async (e) => {
                 e.preventDefault();
-                console.log("💾 Salvando novo profissional...");
-                const btnSubmit = e.target.querySelector('button[type="submit"]');
+                debugLog("💾 Salvando novo profissional...");
+                
+                const btnSubmit = e.target.querySelector("button[type='submit']");
                 btnSubmit.disabled = true;
                 btnSubmit.textContent = "Salvando...";
 
-                const nome = document.getElementById('nome-profissional').value.trim();
-                const fotoFile = document.getElementById('foto-profissional').files[0];
+                const nome = elementos['nome-profissional'].value.trim();
+                const fotoFile = elementos['foto-profissional'].files[0];
+                
+                debugLog("📝 Dados do formulário:", { nome, temFoto: !!fotoFile });
+                
                 if (!nome) {
                     alert("O nome do profissional é obrigatório.");
                     btnSubmit.disabled = false;
@@ -141,17 +253,17 @@ window.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                let fotoURL = '';
+                let fotoURL = "";
                 if (fotoFile) {
                     try {
-                        console.log("📸 Fazendo upload da foto...");
+                        debugLog("📸 Fazendo upload da foto...");
                         const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
                         await uploadBytes(storageRef, fotoFile);
                         fotoURL = await getDownloadURL(storageRef);
-                        console.log("✅ Foto enviada com sucesso!");
+                        debugLog("✅ Foto enviada com sucesso:", fotoURL);
                     } catch (error) {
-                        console.error("❌ Erro no upload da foto:", error);
-                        alert("Erro ao enviar a imagem.");
+                        debugLog("❌ Erro no upload da foto:", error);
+                        alert("Erro ao enviar a imagem: " + error.message);
                         btnSubmit.disabled = false;
                         btnSubmit.textContent = "Salvar Profissional";
                         return;
@@ -167,42 +279,68 @@ window.addEventListener('DOMContentLoaded', () => {
                     criadoEm: serverTimestamp()
                 };
 
+                debugLog("💾 Salvando profissional:", novoProfissional);
+
                 try {
-                    if (!empresaId) {
-                        throw new Error("empresaId inválido. Não é possível adicionar profissional.");
-                    }
-                    const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
+                    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
                     await addDoc(profissionaisRef, novoProfissional);
-                    console.log("✅ Profissional adicionado com sucesso!");
-                    if (modalAddProfissional) modalAddProfissional.style.display = 'none';
+                    debugLog("✅ Profissional adicionado com sucesso!");
+                    
+                    if (elementos['modal-add-profissional']) {
+                        elementos['modal-add-profissional'].style.display = "none";
+                    }
                 } catch (error) {
-                    console.error("❌ Erro ao adicionar profissional:", error);
-                    alert("Erro ao adicionar profissional.");
+                    debugLog("❌ Erro ao adicionar profissional:", error);
+                    alert("Erro ao adicionar profissional: " + error.message);
                 } finally {
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = "Salvar Profissional";
                 }
             });
+            debugLog("✅ Listener do formulário configurado");
         }
     }
 
+    // Monitorar autenticação
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            console.log("👤 Usuário autenticado:", user.uid);
+            debugLog("👤 Usuário autenticado:", user.uid);
             empresaId = await getEmpresaIdDoDono(user.uid);
+            
             if (empresaId) {
+                debugLog("🏢 Empresa identificada:", empresaId);
                 iniciarListenerDaEquipe();
-                if (btnAddProfissional) btnAddProfissional.disabled = false;
+                
+                if (elementos['btn-add-profissional']) {
+                    elementos['btn-add-profissional'].disabled = false;
+                }
+                
                 adicionarListenersDeEvento();
             } else {
-                if (listaProfissionaisPainel) {
-                    listaProfissionaisPainel.innerHTML = `<p style="color: red;"><b>Ação Necessária:</b> Não foi possível encontrar a sua empresa. Por favor, vá à página "Meu Perfil" e clique em "Salvar Todas as Configurações" uma vez para garantir que o seu perfil de dono está corretamente registado.</p>`;
+                debugLog("❌ Não foi possível identificar a empresa");
+                if (elementos['lista-profissionais-painel']) {
+                    elementos['lista-profissionais-painel'].innerHTML = `
+                        <div style="color: red; padding: 20px; border: 1px solid red; border-radius: 5px;">
+                            <h4>❌ Empresa não encontrada</h4>
+                            <p>Não foi possível encontrar a sua empresa.</p>
+                            <p>Por favor, vá à página "Meu Perfil" e clique em "Salvar Todas as Configurações".</p>
+                        </div>
+                    `;
                 }
-                if (btnAddProfissional) btnAddProfissional.disabled = true;
+                
+                if (elementos['btn-add-profissional']) {
+                    elementos['btn-add-profissional'].disabled = true;
+                }
             }
         } else {
-            console.log("❌ Usuário não autenticado, redirecionando...");
-            window.location.href = 'login.html';
+            debugLog("❌ Usuário não autenticado, redirecionando...");
+            window.location.href = "login.html";
         }
     });
+}
+
+// Inicializar quando o DOM estiver carregado
+window.addEventListener("DOMContentLoaded", () => {
+    debugLog("🌟 DOM carregado, iniciando verificações...");
+    verificarFirebase();
 });
