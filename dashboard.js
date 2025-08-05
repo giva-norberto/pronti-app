@@ -1,318 +1,388 @@
 /**
- * dashboard.js - Versão Final com a busca de dados corrigida
+ * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
  */
 
-import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
-import { gerarResumoDiarioInteligente } from './inteligencia.js';
 
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Garante que o script só rode após o HTML estar completamente pronto.
+window.addEventListener('DOMContentLoaded', () => {
 
-document.addEventListener('DOMContentLoaded', () => {
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+
+    const elements = {
+        h1Titulo: document.getElementById('main-title'),
+        form: document.getElementById('form-perfil'),
+        nomeNegocioInput: document.getElementById('nomeNegocio'),
+        descricaoInput: document.getElementById('descricao'),
+        logoInput: document.getElementById('logoNegocio'),
+        logoPreview: document.getElementById('logo-preview'),
+        btnUploadLogo: document.getElementById('btn-upload-logo'),
+        btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
+        btnCopiarLink: document.getElementById('btn-copiar-link'),
+        containerLinkVitrine: document.getElementById('container-link-vitrine'),
+        urlVitrineEl: document.getElementById('url-vitrine-display'),
+        intervaloSelect: document.getElementById('intervalo-atendimento'),
+        diasContainer: document.getElementById('dias-container'),
+        btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
+        btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
+        linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
+        btnLogout: document.getElementById('btn-logout'),
+        listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
+        btnAddProfissional: document.getElementById('btn-add-profissional'),
+        modalAddProfissional: document.getElementById('modal-add-profissional'),
+        formAddProfissional: document.getElementById('form-add-profissional'),
+        btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
+    };
+
+    const diasDaSemana = [
+        { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
+        { id: 'qua', nome: 'Quarta-feira' }, { id: 'qui', nome: 'Quinta-feira' },
+        { id: 'sex', nome: 'Sexta-feira' }, { id: 'sab', nome: 'Sábado' },
+        { id: 'dom', nome: 'Domingo' }
+    ];
+
+    let currentUser;
+    let empresaId = null;
+    let unsubProfissionais = null;
+
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            carregarDashboard(user.uid);
+            currentUser = user;
+            verificarEcarregarDados(user.uid);
+            adicionarListenersDeEvento();
+            gerarEstruturaDosDias();
         } else {
             window.location.href = 'login.html';
         }
     });
-});
 
-// =======================================================
-// FUNÇÃO CORRIGIDA PARA USAR A ESTRUTURA 'empresarios'
-// =======================================================
-async function carregarDashboard(uid) {
-    try {
-        // 1. Encontrar a empresa que pertence ao usuário logado (donoId)
-        const empresaQuery = query(collection(db, "empresarios"), where("donoId", "==", uid));
-        const empresaSnapshot = await getDocs(empresaQuery);
+    async function verificarEcarregarDados(uid) {
+        const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+        const snapshot = await getDocs(q);
+        const secaoEquipe = elements.btnAddProfissional?.closest('.form-section');
 
-        if (empresaSnapshot.empty) {
-            throw new Error("Nenhum perfil de empresa encontrado para este usuário.");
+        if (snapshot.empty) {
+            if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
+            if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
+            if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
+            if (secaoEquipe) secaoEquipe.style.display = 'none';
+            if (elements.linkVitrineMenu) {
+                elements.linkVitrineMenu.classList.add('disabled');
+                elements.linkVitrineMenu.style.pointerEvents = 'none';
+                elements.linkVitrineMenu.style.opacity = '0.5';
+                elements.linkVitrineMenu.href = '#';
+            }
+        } else {
+            const empresaDoc = snapshot.docs[0];
+            empresaId = empresaDoc.id;
+            const dadosEmpresa = empresaDoc.data();
+            
+            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+            const profissionalSnap = await getDoc(profissionalRef);
+            
+            let dadosProfissional = {};
+            let ehDono = false;
+            if (profissionalSnap.exists()) {
+                dadosProfissional = profissionalSnap.data();
+                ehDono = dadosProfissional.ehDono === true;
+            }
+
+            preencherFormulario(dadosEmpresa, dadosProfissional);
+
+            if (ehDono) {
+                if (secaoEquipe) secaoEquipe.style.display = 'block';
+                iniciarListenerDeProfissionais(empresaId);
+            } else {
+                if (secaoEquipe) secaoEquipe.style.display = 'none';
+            }
         }
-        const empresaId = empresaSnapshot.docs[0].id;
-
-        // 2. Com o ID da empresa, buscar os serviços e agendamentos
-        // Assumindo que os serviços estão no documento do profissional (que tem o mesmo ID do dono)
-        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-        const agendamentosCollection = collection(
-                doc(db, "empresarios", empresaId),
-                "agendamentos"
-        );
-
-        const [profissionalSnapshot, agendamentosSnapshot] = await Promise.all([
-            getDoc(profissionalRef),
-            getDocs(agendamentosCollection)
-        ]);
-        
-        // 3. Organizar os dados como as suas funções de gráfico esperam
-        const agendamentos = agendamentosSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-        
-        const servicosMap = new Map();
-        if (profissionalSnapshot.exists() && profissionalSnapshot.data().servicos) {
-            const servicosArray = profissionalSnapshot.data().servicos;
-            servicosArray.forEach(servico => {
-                // Garantimos que o ID está no mapa, mesmo que seja string ou número
-                servicosMap.set(String(servico.id), servico);
-            });
-        }
-        
-        // 4. Chamar as suas funções originais com os dados corretos
-        processarResumoIA(agendamentos, servicosMap);
-        if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
-        if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
-        if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
-
-    } catch (error) {
-        console.error("Erro ao carregar dados do dashboard:", error);
-        const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content');
-        container.innerHTML = `<p style="color:red;">Não foi possível carregar os dados do dashboard. Causa: ${error.message}</p>`;
     }
-}
 
-function processarResumoIA(todosAgendamentos, servicosMap) {
-    const container = document.getElementById('resumo-diario-container');
-    if (!container) return;
-   
-    container.innerHTML = '<p>🧠 Analisando seu dia...</p>';
-   
-    const hoje = new Date();
-    const inicioDoDia = new Date(hoje.setHours(0, 0, 0, 0));
-    const fimDoDia = new Date(hoje.setHours(23, 59, 59, 999));
-   
-    const agendamentosDeHoje = todosAgendamentos.filter(ag => {
-        if (!ag.horario || typeof ag.horario.toDate !== 'function') {
-          return false;
+    function iniciarListenerDeProfissionais(idDaEmpresa) {
+        if (!elements.listaProfissionaisPainel) return;
+        if (unsubProfissionais) {
+            unsubProfissionais();
         }
-        const dataAgendamento = ag.horario.toDate();
-        return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
-    });
-   
-    const agendamentosEnriquecidos = agendamentosDeHoje.map(ag => {
-        const servico = servicosMap.get(String(ag.servicoId));
-        if (!servico) return null;
-        const inicio = ag.horario.toDate();
-        const fim = new Date(inicio.getTime() + (servico.duracao || 30) * 60000);
-        return {
-            id: ag.id,
-            cliente: { nome: ag.clienteNome || 'Cliente' },
-            servico: { nome: servico.nome || 'Serviço', preco: servico.preco || 0 },
-            inicio,
-            fim
-        };
-    }).filter(Boolean);
-   
-    const resumo = gerarResumoDiarioInteligente(agendamentosEnriquecidos);
-    container.innerHTML = criarHTMLDoResumo(resumo);
-}
-
-function criarHTMLDoResumo(resumo) {
-    if (resumo.totalAtendimentos === 0) {
-        return `<div class="resumo-card"><h3>Resumo do Dia</h3><p>${resumo.mensagem}</p></div>`;
+        
+        const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
+        
+        unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
+            const profissionais = snapshot.docs.map(doc => doc.data());
+            renderizarListaProfissionais(profissionais);
+        });
     }
-    let html = `
-        <div class="resumo-card">
-            <h3>Resumo Diário Inteligente</h3>
-            <p>Hoje você tem <strong>${resumo.totalAtendimentos}</strong> atendimentos agendados:</p>
-            <ul>
-                <li><strong>Primeiro:</strong> ${resumo.primeiro.horario} — ${resumo.primeiro.servico} com ${resumo.primeiro.cliente}</li>
-                <li><strong>Último:</strong> ${resumo.ultimo.horario} — ${resumo.ultimo.servico} com ${resumo.ultimo.cliente}</li>
-            </ul>
-            <div class="resumo-metricas">
-                <div class="metrica">
-                    <span>💰 Faturamento Estimado</span>
-                    <strong>R$ ${resumo.faturamentoEstimado.toFixed(2).replace('.', ',')}</strong>
-                </div>`;
-    if (resumo.maiorIntervalo) {
-        html += `<div class="metrica">
-                    <span>🕓 Maior Intervalo</span>
-                    <strong>${resumo.maiorIntervalo.inicio} - ${resumo.maiorIntervalo.fim} (${resumo.maiorIntervalo.duracaoMinutos} min)</strong>
-                   </div>`;
-    }
-    html += `</div><p class="resumo-footer">Boa sorte com seu dia! 💪</p></div>`;
-    return html;
-}
 
-let graficoMensalInstance = null;
-function gerarGraficoMensal(agendamentos) {
-    const filtroMesInicio = document.getElementById('filtro-mes-inicio');
-    const filtroAnoInicio = document.getElementById('filtro-ano-inicio');
-    const filtroMesFim = document.getElementById('filtro-mes-fim');
-    const filtroAnoFim = document.getElementById('filtro-ano-fim');
-
-    if (!filtroMesInicio || !filtroAnoInicio || !filtroMesFim || !filtroAnoFim) return;
-
-    const anos = [...new Set(
-        agendamentos
-            .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
-            .map(ag => ag.horario.toDate().getFullYear())
-    )];
-    anos.sort((a, b) => b - a);
-   
-    filtroAnoInicio.innerHTML = '';
-    filtroAnoFim.innerHTML = '';
-    anos.forEach(ano => {
-        const option1 = document.createElement('option');
-        option1.value = ano;
-        option1.textContent = ano;
-        filtroAnoInicio.appendChild(option1);
-        const option2 = document.createElement('option');
-        option2.value = ano;
-        option2.textContent = ano;
-        filtroAnoFim.appendChild(option2);
-    });
-
-    filtroMesInicio.value = '0';
-    filtroAnoInicio.value = anos[0] || '2025';
-    filtroMesFim.value = '11';
-    filtroAnoFim.value = anos[0] || '2025';
-
-    const atualizarGrafico = () => {
-        const dataInicio = new Date(filtroAnoInicio.value, filtroMesInicio.value, 1);
-        const dataFim = new Date(filtroAnoFim.value, parseInt(filtroMesFim.value) + 1, 0);
-        dataFim.setHours(23, 59, 59, 999);
-
-        const agendamentosFiltrados = agendamentos.filter(ag => {
-            if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
-            const dataAgendamento = ag.horario.toDate();
-            return dataAgendamento >= dataInicio && dataAgendamento <= dataFim;
-        });
-
-        const contagemMensal = {};
-        agendamentosFiltrados.forEach(ag => {
-            const data = ag.horario.toDate();
-            const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-            contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
-        });
-
-        const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
-            const meses = { 'jan.':0, 'fev.':1, 'mar.':2, 'abr.':3, 'mai.':4, 'jun.':5, 'jul.':6, 'ago.':7, 'set.':8, 'out.':9, 'nov.':10, 'dez.':11 };
-            const [mesAStr, , anoA] = a.split(' ');
-            const [mesBStr, , anoB] = b.split(' ');
-            const dataA = new Date(anoA, meses[mesAStr.toLowerCase().replace('.', '')]);
-            const dataB = new Date(anoB, meses[mesBStr.toLowerCase().replace('.', '')]);
-            return dataA - dataB;
-        });
-
-        const dados = labelsOrdenados.map(label => contagemMensal[label]);
-
-        if (graficoMensalInstance) {
-            graficoMensalInstance.destroy();
+    function renderizarListaProfissionais(profissionais) {
+        if (!elements.listaProfissionaisPainel) return;
+        
+        if (profissionais.length === 0) {
+            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+            return;
         }
+        
+        elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
+            return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
+                        <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
+                    </div>`;
+        }).join('');
+    }
 
-        const ctx = document.getElementById('graficoMensal').getContext('2d');
-        graficoMensalInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labelsOrdenados,
-                datasets: [{
-                    label: 'Total de Agendamentos',
-                    data: dados,
-                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                    borderColor: 'rgb(75, 192, 192)',
-                    borderWidth: 1
-                }]
-            },
-            plugins: [ChartDataLabels],
-            options: {
-                scales: { 
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } } 
-                },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'top',
-                        formatter: Math.round,
-                        font: { weight: 'bold' }
+    function preencherFormulario(dadosEmpresa, dadosProfissional) {
+        elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+        elements.descricaoInput.value = dadosEmpresa.descricao || '';
+        if (dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
+
+        const horarios = dadosProfissional.horarios || {};
+        elements.intervaloSelect.value = horarios.intervalo || '30';
+        diasDaSemana.forEach(diaInfo => {
+            const diaData = horarios[diaInfo.id];
+            const toggleAtivo = document.getElementById(`${diaInfo.id}-ativo`);
+            if (toggleAtivo) {
+                toggleAtivo.checked = diaData ? diaData.ativo : false;
+                const containerBlocos = document.getElementById(`blocos-${diaInfo.id}`);
+                if (containerBlocos) {
+                    containerBlocos.innerHTML = '';
+                    if (diaData?.ativo && diaData.blocos?.length > 0) {
+                        diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(diaInfo.id, bloco.inicio, bloco.fim));
+                    } else if (diaData?.ativo) {
+                        adicionarBlocoDeHorario(diaInfo.id);
                     }
                 }
+                toggleAtivo.dispatchEvent(new Event('change'));
             }
         });
-    };
-
-    filtroMesInicio.addEventListener('change', atualizarGrafico);
-    filtroAnoInicio.addEventListener('change', atualizarGrafico);
-    filtroMesFim.addEventListener('change', atualizarGrafico);
-    filtroAnoFim.addEventListener('change', atualizarGrafico);
-
-    atualizarGrafico();
-}
-
-function gerarGraficoServicos(servicosMap, agendamentos) {
-    const contagemServicos = {};
-    agendamentos.forEach(ag => {
-        const servicoId = String(ag.servicoId);
-        contagemServicos[servicoId] = (contagemServicos[servicoId] || 0) + 1;
-    });
-    const labels = Object.keys(contagemServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
-    const dados = Object.values(contagemServicos);
-    const ctx = document.getElementById('graficoServicos').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Nº de Agendamentos',
-                data: dados,
-                backgroundColor: 'rgba(13, 110, 253, 0.5)',
-                borderColor: 'rgba(13, 110, 253, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: { 
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-            responsive: true,
-            plugins: { legend: { display: false } }
+        
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+        if (elements.btnAbrirVitrine) {
+            elements.btnAbrirVitrine.href = urlCompleta;
+            elements.btnAbrirVitrine.style.display = 'inline-flex';
         }
-    });
-}
-
-function gerarGraficoFaturamento(servicosMap, agendamentos) {
-    const faturamentoServicos = {};
-
-    agendamentos.forEach(ag => {
-        const servico = servicosMap.get(String(ag.servicoId));
-        if (servico && servico.preco) {
-            faturamentoServicos[servico.nome] = (faturamentoServicos[servico.nome] || 0) + servico.preco;
+        if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+        if (elements.linkVitrineMenu) {
+            elements.linkVitrineMenu.href = urlCompleta;
+            elements.linkVitrineMenu.classList.remove('disabled');
+            elements.linkVitrineMenu.style.pointerEvents = 'auto';
+            elements.linkVitrineMenu.style.opacity = '1';
         }
-    });
+        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
+    }
 
-    const labels = Object.keys(faturamentoServicos);
-    const dados = Object.values(faturamentoServicos);
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        elements.btnSalvar.disabled = true;
+        elements.btnSalvar.textContent = 'Salvando...';
+        try {
+            const uid = currentUser.uid;
+            const nomeNegocio = elements.nomeNegocioInput.value.trim();
+            if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-    const ctx = document.getElementById('graficoFaturamento').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Faturamento (R$)',
-                data: dados,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgba(54, 162, 235, 0.5)',
-                    'rgba(255, 206, 86, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(153, 102, 255, 0.5)'
-                ],
-                borderColor: [
-                    'rgb(255, 99, 132)',
-                    'rgb(54, 162, 235)',
-                    'rgb(255, 206, 86)',
-                    'rgb(75, 192, 192)',
-                    'rgb(153, 102, 255)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' }
+            const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput.value.trim(), donoId: uid };
+            const dadosProfissional = { 
+                nome: currentUser.displayName || nomeNegocio, 
+                fotoUrl: currentUser.photoURL || '', 
+                horarios: coletarDadosDeHorarios() 
+            };
+
+            const logoFile = elements.logoInput.files[0];
+            if (logoFile) {
+                const storageRef = ref(storage, `logos/${uid}/logo`);
+                const uploadResult = await uploadBytes(storageRef, logoFile);
+                dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
+            } else if (empresaId) {
+                const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
+                if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
             }
+
+            if (empresaId) {
+                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+                const docOriginal = await getDoc(profissionalRef);
+                
+                dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
+                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
+
+                await setDoc(profissionalRef, dadosProfissional, { merge: true });
+                alert("Perfil atualizado com sucesso!");
+            } else {
+                dadosProfissional.servicos = [];
+                dadosProfissional.ehDono = true;
+                const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+                empresaId = novaEmpresaRef.id;
+                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
+                alert("Seu negócio foi cadastrado com sucesso!");
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error("Erro ao salvar perfil:", error);
+            alert("Ocorreu um erro ao salvar: " + error.message);
+        } finally {
+            elements.btnSalvar.disabled = false;
+            elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
         }
-    });
-}
+    }
+
+    async function handleAdicionarProfissional(event) {
+        event.preventDefault();
+        const btnSubmit = event.target.querySelector('button[type="submit"]');
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Salvando...';
+        try {
+            const nome = document.getElementById('nome-profissional').value.trim();
+            const fotoFile = document.getElementById('foto-profissional').files[0];
+            if (!nome) throw new Error("O nome do profissional é obrigatório.");
+
+            let fotoUrl = '';
+            if (fotoFile) {
+                const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+                const uploadResult = await uploadBytes(storageRef, fotoFile);
+                fotoUrl = await getDownloadURL(uploadResult.ref);
+            }
+            
+            const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {}, ehDono: false };
+            await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
+
+            alert("Profissional adicionado com sucesso!");
+            if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+        } catch (error) {
+            console.error("Erro ao adicionar profissional:", error);
+            alert("Erro ao adicionar profissional: " + error.message);
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = 'Salvar Profissional';
+        }
+    }
+
+    function coletarDadosDeHorarios() {
+        const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
+        diasDaSemana.forEach(dia => {
+            const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
+            const blocos = [];
+            if (estaAtivo) {
+                document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
+                    const inputs = blocoEl.querySelectorAll('input[type="time"]');
+                    if (inputs[0].value && inputs[1].value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+                });
+            }
+            horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
+        });
+        return horariosData;
+    }
+
+    function adicionarListenersDeEvento() {
+        elements.form.addEventListener('submit', handleFormSubmit);
+        if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
+        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
+        if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
+            if (elements.logoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { elements.logoPreview.src = e.target.result; };
+                reader.readAsDataURL(elements.logoInput.files[0]);
+            }
+        });
+        if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
+            try { await signOut(auth); window.location.href = 'login.html'; }
+            catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
+        });
+
+        if (elements.btnAddProfissional) {
+            elements.btnAddProfissional.addEventListener('click', () => {
+                if (!empresaId) {
+                    alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
+                    return;
+                }
+                if (elements.formAddProfissional) elements.formAddProfissional.reset();
+                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
+            });
+        }
+
+        if (elements.btnCancelarProfissional) {
+            elements.btnCancelarProfissional.addEventListener('click', () => {
+                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+            });
+        }
+
+        if (elements.formAddProfissional) {
+            elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
+        }
+    }
+
+    function copiarLink() {
+        if (!empresaId) {
+            alert("Salve seu perfil para gerar o link.");
+            return;
+        }
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        navigator.clipboard.writeText(urlCompleta).then(() => {
+            alert("Link da vitrine copiado!");
+        }, () => {
+            alert("Falha ao copiar o link.");
+        });
+    }
+
+    function gerarEstruturaDosDias() {
+        if (!elements.diasContainer) return;
+        elements.diasContainer.innerHTML = '';
+        diasDaSemana.forEach(diaInfo => {
+            const divDia = document.createElement('div');
+            divDia.className = 'dia-semana';
+            divDia.innerHTML = `
+                <div class="dia-info">
+                    <span class="dia-nome">${diaInfo.nome}</span>
+                    <div class="toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" id="${diaInfo.id}-ativo">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">Fechado</span>
+                    </div>
+                </div>
+                <div class="horarios-container" style="display: none;" id="container-${diaInfo.id}">
+                    <div class="horarios-blocos" id="blocos-${diaInfo.id}"></div>
+                    <button type="button" class="btn-add-slot" data-dia="${diaInfo.id}">+ Adicionar Horário</button>
+                </div>`;
+            elements.diasContainer.appendChild(divDia);
+            
+            const toggleAtivo = document.getElementById(`${diaInfo.id}-ativo`);
+            toggleAtivo.addEventListener('change', (e) => {
+                const container = document.getElementById(`container-${diaInfo.id}`);
+                const label = e.target.closest('.toggle-container').querySelector('.toggle-label');
+                container.style.display = e.target.checked ? 'flex' : 'none';
+                label.textContent = e.target.checked ? 'Aberto' : 'Fechado';
+                if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
+                    adicionarBlocoDeHorario(diaInfo.id);
+                }
+            });
+        });
+        elements.diasContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-add-slot')) {
+                adicionarBlocoDeHorario(e.target.dataset.dia);
+            }
+        });
+    }
+
+    function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
+        const container = document.getElementById(`blocos-${diaId}`);
+        const divBloco = document.createElement('div');
+        divBloco.className = 'slot-horario';
+        divBloco.innerHTML = `
+            <input type="time" value="${inicio}">
+            <span class="ate">até</span>
+            <input type="time" value="${fim}">
+            <button type="button" class="btn-remove-slot">Remover</button>`;
+        container.appendChild(divBloco);
+        divBloco.querySelector('.btn-remove-slot').addEventListener('click', (e) => {
+            if (container.childElementCount > 1) {
+                e.target.closest('.slot-horario').remove();
+            } else {
+                alert("Para não atender neste dia, desative o botão na parte superior.");
+            }
+        });
+    }
+});
