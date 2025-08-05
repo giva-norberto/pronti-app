@@ -1,388 +1,389 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento de Equipe</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+/**
+ * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
+ */
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { app } from "./firebase-config.js";
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
+// Garante que o script só rode após o HTML estar completamente pronto.
+window.addEventListener('DOMContentLoaded', () => {
 
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
 
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
+    const elements = {
+        h1Titulo: document.getElementById('main-title'),
+        form: document.getElementById('form-perfil'),
+        nomeNegocioInput: document.getElementById('nomeNegocio'),
+        descricaoInput: document.getElementById('descricao'),
+        logoInput: document.getElementById('logoNegocio'),
+        logoPreview: document.getElementById('logo-preview'),
+        btnUploadLogo: document.getElementById('btn-upload-logo'),
+        btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
+        btnCopiarLink: document.getElementById('btn-copiar-link'),
+        containerLinkVitrine: document.getElementById('container-link-vitrine'),
+        urlVitrineEl: document.getElementById('url-vitrine-display'),
+        intervaloSelect: document.getElementById('intervalo-atendimento'),
+        diasContainer: document.getElementById('dias-container'),
+        btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
+        btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
+        linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
+        btnLogout: document.getElementById('btn-logout'),
+        listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
+        btnAddProfissional: document.getElementById('btn-add-profissional'),
+        modalAddProfissional: document.getElementById('modal-add-profissional'),
+        formAddProfissional: document.getElementById('form-add-profissional'),
+        btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
+    };
 
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
+    const diasDaSemana = [
+        { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
+        { id: 'qua', nome: 'Quarta-feira' }, { id: 'qui', nome: 'Quinta-feira' },
+        { id: 'sex', nome: 'Sexta-feira' }, { id: 'sab', nome: 'Sábado' },
+        { id: 'dom', nome: 'Domingo' }
+    ];
 
-        .content {
-            padding: 40px;
-        }
+    let currentUser;
+    let empresaId = null;
+    let unsubProfissionais = null;
 
-        .actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 15px;
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            verificarEcarregarDados(user.uid);
+            adicionarListenersDeEvento();
+            gerarEstruturaDosDias();
+        } else {
+            window.location.href = 'login.html';
         }
+    });
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
+    async function verificarEcarregarDados(uid) {
+        const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+        const snapshot = await getDocs(q);
+        const secaoEquipe = elements.btnAddProfissional?.closest('.form-section');
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #a8a8a8 0%, #7f8c8d 100%);
-        }
-
-        .equipe-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .profissional-card {
-            background: white;
-            border: 1px solid #e1e8ed;
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-
-        .profissional-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-        }
-
-        .profissional-foto {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-            border: 3px solid #4facfe;
-        }
-
-        .profissional-foto img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .profissional-info {
-            flex: 1;
-        }
-
-        .profissional-nome {
-            display: block;
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .profissional-status {
-            display: inline-block;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal.show {
-            display: flex !important;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-            transform: scale(0.9);
-            animation: modalShow 0.3s ease forwards;
-        }
-
-        @keyframes modalShow {
-            to {
-                transform: scale(1);
+        if (snapshot.empty) {
+            if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
+            if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
+            if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
+            if (secaoEquipe) secaoEquipe.style.display = 'none';
+            if (elements.linkVitrineMenu) {
+                elements.linkVitrineMenu.classList.add('disabled');
+                elements.linkVitrineMenu.style.pointerEvents = 'none';
+                elements.linkVitrineMenu.style.opacity = '0.5';
+                elements.linkVitrineMenu.href = '#';
             }
-        }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .modal-header h2 {
-            color: #2c3e50;
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #4facfe;
-            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: flex-end;
-            margin-top: 30px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-
-        .empty-state h3 {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-
-        .empty-state p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-
-        .debug-info {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-        }
-
-        .debug-info h4 {
-            color: #495057;
-            margin-bottom: 10px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 10px;
+        } else {
+            const empresaDoc = snapshot.docs[0];
+            empresaId = empresaDoc.id;
+            const dadosEmpresa = empresaDoc.data();
+            
+            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+            const profissionalSnap = await getDoc(profissionalRef);
+            
+            let dadosProfissional = {};
+            let ehDono = false;
+            if (profissionalSnap.exists()) {
+                dadosProfissional = profissionalSnap.data();
+                ehDono = dadosProfissional.ehDono === true;
             }
 
-            .content {
-                padding: 20px;
-            }
+            preencherFormulario(dadosEmpresa, dadosProfissional);
 
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .equipe-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .modal-content {
-                padding: 30px 20px;
-                margin: 20px;
-            }
-
-            .form-actions {
-                flex-direction: column;
+            if (ehDono) {
+                if (secaoEquipe) secaoEquipe.style.display = 'block';
+                iniciarListenerDeProfissionais(empresaId);
+            } else {
+                if (secaoEquipe) secaoEquipe.style.display = 'none';
             }
         }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>👥 Gerenciamento de Equipe</h1>
-            <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
-        </div>
+    }
 
-        <div class="content">
-            <div class="debug-info">
-                <h4>🔍 Status do Sistema:</h4>
-                <div id="debug-status">Carregando...</div>
-            </div>
+    function iniciarListenerDeProfissionais(idDaEmpresa) {
+        if (!elements.listaProfissionaisPainel) return;
+        if (unsubProfissionais) {
+            unsubProfissionais();
+        }
+        
+        const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
+        
+        unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
+            const profissionais = snapshot.docs.map(doc => doc.data());
+            renderizarListaProfissionais(profissionais);
+        });
+    }
 
-            <div class="actions">
-                <h2>Minha Equipe</h2>
-                <button id="btn-add-profissional" class="btn btn-success" disabled>
-                    ➕ Adicionar Profissional
-                </button>
-            </div>
+    function renderizarListaProfissionais(profissionais) {
+        if (!elements.listaProfissionaisPainel) return;
+        
+        if (profissionais.length === 0) {
+            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+            return;
+        }
+        
+        elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
+            return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
+                        <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
+                    </div>`;
+        }).join('');
+    }
 
-            <div id="lista-profissionais-painel" class="equipe-grid">
-                <div class="empty-state">
-                    <h3>Carregando equipe...</h3>
-                    <p>Por favor, aguarde enquanto carregamos os dados da sua equipe.</p>
+    function preencherFormulario(dadosEmpresa, dadosProfissional) {
+        elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+        elements.descricaoInput.value = dadosEmpresa.descricao || '';
+        if (dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
+
+        const horarios = dadosProfissional.horarios || {};
+        elements.intervaloSelect.value = horarios.intervalo || '30';
+        diasDaSemana.forEach(dia => {
+            const diaData = horarios[dia.id];
+            const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
+            if (toggleAtivo) {
+                toggleAtivo.checked = diaData ? diaData.ativo : false;
+                const containerBlocos = document.getElementById(`blocos-${dia.id}`);
+                if (containerBlocos) {
+                    containerBlocos.innerHTML = '';
+                    if (diaData?.ativo && diaData.blocos?.length > 0) {
+                        diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
+                    } else if (diaData?.ativo) {
+                        adicionarBlocoDeHorario(dia.id);
+                    }
+                }
+                toggleAtivo.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+        if (elements.btnAbrirVitrine) {
+            elements.btnAbrirVitrine.href = urlCompleta;
+            elements.btnAbrirVitrine.style.display = 'inline-flex';
+        }
+        if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+        if (elements.linkVitrineMenu) {
+            elements.linkVitrineMenu.href = urlCompleta;
+            elements.linkVitrineMenu.classList.remove('disabled');
+            elements.linkVitrineMenu.style.pointerEvents = 'auto';
+            elements.linkVitrineMenu.style.opacity = '1';
+        }
+        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
+    }
+
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        elements.btnSalvar.disabled = true;
+        elements.btnSalvar.textContent = 'Salvando...';
+        try {
+            const uid = currentUser.uid;
+            const nomeNegocio = elements.nomeNegocioInput.value.trim();
+            if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
+
+            const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput.value.trim(), donoId: uid };
+            const dadosProfissional = { 
+                nome: currentUser.displayName || nomeNegocio, 
+                fotoUrl: currentUser.photoURL || '', 
+                horarios: coletarDadosDeHorarios() 
+            };
+
+            const logoFile = elements.logoInput.files[0];
+            if (logoFile) {
+                const storageRef = ref(storage, `logos/${uid}/logo`);
+                const uploadResult = await uploadBytes(storageRef, logoFile);
+                dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
+            } else if (empresaId) {
+                const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
+                if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
+            }
+
+            if (empresaId) {
+                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+                const docOriginal = await getDoc(profissionalRef);
+                
+                dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
+                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
+
+                await setDoc(profissionalRef, dadosProfissional, { merge: true });
+                alert("Perfil atualizado com sucesso!");
+            } else {
+                dadosProfissional.servicos = [];
+                dadosProfissional.ehDono = true;
+                const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+                empresaId = novaEmpresaRef.id;
+                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
+                alert("Seu negócio foi cadastrado com sucesso!");
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error("Erro ao salvar perfil:", error);
+            alert("Ocorreu um erro ao salvar: " + error.message);
+        } finally {
+            elements.btnSalvar.disabled = false;
+            elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
+        }
+    }
+
+    async function handleAdicionarProfissional(event) {
+        event.preventDefault();
+        const btnSubmit = event.target.querySelector('button[type="submit"]');
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Salvando...';
+        try {
+            const nome = document.getElementById('nome-profissional').value.trim();
+            const fotoFile = document.getElementById('foto-profissional').files[0];
+            if (!nome) throw new Error("O nome do profissional é obrigatório.");
+
+            let fotoUrl = '';
+            if (fotoFile) {
+                const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+                const uploadResult = await uploadBytes(storageRef, fotoFile);
+                fotoUrl = await getDownloadURL(uploadResult.ref);
+            }
+            
+            const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {}, ehDono: false };
+            await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
+
+            alert("Profissional adicionado com sucesso!");
+            if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+        } catch (error) {
+            console.error("Erro ao adicionar profissional:", error);
+            alert("Erro ao adicionar profissional: " + error.message);
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = 'Salvar Profissional';
+        }
+    }
+    
+    function coletarDadosDeHorarios() {
+        const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
+        diasDaSemana.forEach(dia => {
+            const estaAtivo = document.getElementById(`${dia.id}-ativo`).checked;
+            const blocos = [];
+            if (estaAtivo) {
+                document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
+                    const inputs = blocoEl.querySelectorAll('input[type="time"]');
+                    if (inputs[0].value && inputs[1].value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+                });
+            }
+            horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
+        });
+        return horariosData;
+    }
+
+    function adicionarListenersDeEvento() {
+        elements.form.addEventListener('submit', handleFormSubmit);
+        if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
+        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
+        if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
+            if (elements.logoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { elements.logoPreview.src = e.target.result; };
+                reader.readAsDataURL(elements.logoInput.files[0]);
+            }
+        });
+        if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
+            try { await signOut(auth); window.location.href = 'login.html'; }
+            catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
+        });
+
+        if (elements.btnAddProfissional) {
+            elements.btnAddProfissional.addEventListener('click', () => {
+                if (!empresaId) {
+                    alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
+                    return;
+                }
+                if (elements.formAddProfissional) elements.formAddProfissional.reset();
+                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
+            });
+        }
+
+        if (elements.btnCancelarProfissional) {
+            elements.btnCancelarProfissional.addEventListener('click', () => {
+                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+            });
+        }
+
+        if (elements.formAddProfissional) {
+            elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
+        }
+    }
+
+    function copiarLink() {
+        if (!empresaId) {
+            alert("Salve seu perfil para gerar o link.");
+            return;
+        }
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        navigator.clipboard.writeText(urlCompleta).then(() => {
+            alert("Link da vitrine copiado!");
+        }, () => {
+            alert("Falha ao copiar o link.");
+        });
+    }
+
+    function gerarEstruturaDosDias() {
+        if (!elements.diasContainer) return;
+        elements.diasContainer.innerHTML = '';
+        diasDaSemana.forEach(dia => {
+            const divDia = document.createElement('div');
+            divDia.className = 'dia-semana';
+            divDia.innerHTML = `
+                <div class="dia-info">
+                    <span class="dia-nome">${dia.nome}</span>
+                    <div class="toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" id="${dia.id}-ativo">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">Fechado</span>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
+                <div class="horarios-container" style="display: none;" id="container-${dia.id}">
+                    <div class="horarios-blocos" id="blocos-${dia.id}"></div>
+                    <button type="button" class="btn-add-slot" data-dia="${dia.id}">+ Adicionar Horário</button>
+                </div>`;
+            elements.diasContainer.appendChild(divDia);
+            
+            const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
+            toggleAtivo.addEventListener('change', (e) => {
+                const container = document.getElementById(`container-${dia.id}`);
+                const label = e.target.closest('.toggle-container').querySelector('.toggle-label');
+                container.style.display = e.target.checked ? 'flex' : 'none';
+                label.textContent = e.target.checked ? 'Aberto' : 'Fechado';
+                if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
+                    adicionarBlocoDeHorario(dia.id);
+                }
+            });
+        });
+        elements.diasContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-add-slot')) {
+                adicionarBlocoDeHorario(e.target.dataset.dia);
+            }
+        });
+    }
 
-    <!-- Modal Adicionar Profissional -->
-    <div id="modal-add-profissional" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>➕ Adicionar Novo Profissional</h2>
-                <p>Preencha os dados do novo membro da equipe</p>
-            </div>
+    function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
+        const container = document.getElementById(`blocos-${diaId}`);
+        const divBloco = document.createElement('div');
+        divBloco.className = 'slot-horario';
+        divBloco.innerHTML = `
+            <input type="time" value="${inicio}">
+            <span class="ate">até</span>
+            <input type="time" value="${fim}">
+            <button type="button" class="btn-remove-slot">Remover</button>`;
+        container.appendChild(divBloco);
+        divBloco.querySelector('.btn-remove-slot').addEventListener('click', (e) => {
+            if (container.childElementCount > 1) {
+                e.target.closest('.slot-horario').remove();
+            } else {
+                alert("Para não atender neste dia, desative o botão na parte superior.");
+            }
+        });
+    }
 
-            <form id="form-add-profissional">
-                <div class="form-group">
-                    <label for="nome-profissional">Nome Completo *</label>
-                    <input 
-                        type="text" 
-                        id="nome-profissional" 
-                        name="nome" 
-                        class="form-control" 
-                        placeholder="Digite o nome completo do profissional"
-                        required
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="foto-profissional">Foto do Profissional</label>
-                    <input 
-                        type="file" 
-                        id="foto-profissional" 
-                        name="foto" 
-                        class="form-control"
-                        accept="image/*"
-                    >
-                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
-                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
-                    </small>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" id="btn-cancelar-profissional" class="btn btn-secondary">
-                        ❌ Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-success btn-submit">
-                        💾 Salvar Profissional
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="equipe-debug.js"></script>
-</body>
-</html>
-
+});
