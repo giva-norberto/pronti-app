@@ -1,3 +1,4 @@
+// novo-servico.js - Fluxo corrigido para garantir que sempre cria/salva no Firebase
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
@@ -5,10 +6,10 @@ import { showAlert } from "./vitrini-utils.js";
 
 const form = document.getElementById('form-servico');
 let profissionalRef = null;
-let servicoEditando = null; // Armazena o serviço em edição
+let servicoEditando = null;
 
 /**
- * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
+ * Busca empresa do usuário logado.
  */
 async function getEmpresaIdDoDono(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
@@ -18,7 +19,7 @@ async function getEmpresaIdDoDono(uid) {
 }
 
 /**
- * Função para pegar o id do serviço da URL
+ * Pega o id do serviço da URL (se em edição).
  */
 function getIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -26,7 +27,7 @@ function getIdFromUrl() {
 }
 
 /**
- * Preenche o formulário com os dados do serviço
+ * Preenche formulário com dados do serviço em edição.
  */
 function preencherFormulario(servico) {
     document.getElementById('nome-servico').value = servico.nome || '';
@@ -35,41 +36,53 @@ function preencherFormulario(servico) {
     document.getElementById('duracao-servico').value = servico.duracao || '';
 }
 
-// Executa a lógica depois de confirmar que o usuário está logado.
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const empresaId = await getEmpresaIdDoDono(user.uid);
-        if (empresaId) {
-            profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
-
-            // Cria o documento do profissional se não existir
-            const docSnap = await getDoc(profissionalRef);
-            if (!docSnap.exists()) {
-                await setDoc(profissionalRef, { servicos: [] });
-            }
-
-            // Se está em modo edição, preenche o formulário
-            const idServico = getIdFromUrl();
-            if (idServico) {
-                const servicos = docSnap.data().servicos || [];
-                servicoEditando = servicos.find(s => String(s.id) === idServico);
-                if (servicoEditando) {
-                    preencherFormulario(servicoEditando);
-                }
-            }
-
-            form.addEventListener('submit', handleFormSubmit);
-        } else {
-            await showAlert("Atenção", "Empresa não encontrada. Por favor, complete seu cadastro na página 'Meu Perfil' primeiro.");
-            form.querySelector('button[type=\"submit\"]').disabled = true;
-        }
-    } else {
-        window.location.href = 'login.html';
+/**
+ * Garante que o campo "servicos" existe no documento do profissional.
+ */
+async function garantirCampoServicos() {
+    const docSnap = await getDoc(profissionalRef);
+    if (!docSnap.exists()) {
+        // Cria documento do profissional com array vazio + dados mínimos
+        await setDoc(profissionalRef, { servicos: [] });
+        return [];
+    } else if (!docSnap.data().servicos) {
+        await updateDoc(profissionalRef, { servicos: [] });
+        return [];
     }
+    return docSnap.data().servicos || [];
+}
+
+// Fluxo principal: só depois do usuário logado!
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const empresaId = await getEmpresaIdDoDono(user.uid);
+    if (!empresaId) {
+        await showAlert("Atenção", "Empresa não encontrada. Complete seu cadastro na página 'Meu Perfil'.");
+        form.querySelector('button[type="submit"]').disabled = true;
+        return;
+    }
+
+    profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+
+    // Garante que existe campo "servicos"
+    const servicos = await garantirCampoServicos();
+
+    // Se está em modo edição, preenche o formulário
+    const idServico = getIdFromUrl();
+    if (idServico) {
+        servicoEditando = servicos.find(s => String(s.id) === idServico);
+        if (servicoEditando) preencherFormulario(servicoEditando);
+    }
+
+    form.addEventListener('submit', handleFormSubmit);
 });
 
 /**
- * Lida com o envio do formulário para adicionar ou editar um serviço do profissional.
+ * Envia (cria ou edita) um serviço para o Firebase.
  */
 async function handleFormSubmit(event) {
     event.preventDefault();
@@ -84,7 +97,7 @@ async function handleFormSubmit(event) {
     const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
 
     if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
-        await showAlert("Atenção", "Por favor, preencha todos os campos obrigatórios corretamente.");
+        await showAlert("Atenção", "Preencha todos os campos obrigatórios corretamente.");
         return;
     }
     
@@ -93,26 +106,20 @@ async function handleFormSubmit(event) {
     btnSalvar.textContent = "Salvando...";
 
     try {
+        // Sempre busca do banco (garante dados atualizados)
         const docSnap = await getDoc(profissionalRef);
-        const servicosAtuais = (docSnap.exists() && docSnap.data().servicos) ? docSnap.data().servicos : [];
+        let servicosAtuais = (docSnap.exists() && docSnap.data().servicos) ? docSnap.data().servicos : [];
 
         let novaListaDeServicos;
         if (servicoEditando) {
-            // EDIÇÃO: atualiza o serviço existente
-            novaListaDeServicos = servicosAtuais.map(s => {
-                if (String(s.id) === String(servicoEditando.id)) {
-                    return {
-                        ...s,
-                        nome,
-                        descricao,
-                        preco,
-                        duracao
-                    };
-                }
-                return s;
-            });
+            // EDIÇÃO
+            novaListaDeServicos = servicosAtuais.map(s => 
+                String(s.id) === String(servicoEditando.id)
+                ? { ...s, nome, descricao, preco, duracao }
+                : s
+            );
         } else {
-            // NOVO: adiciona serviço novo
+            // NOVO
             const novoServico = { 
                 id: `serv_${Date.now()}`,
                 nome, 
@@ -124,9 +131,7 @@ async function handleFormSubmit(event) {
             novaListaDeServicos = [...servicosAtuais, novoServico];
         }
 
-        await updateDoc(profissionalRef, {
-            servicos: novaListaDeServicos
-        });
+        await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
 
         await showAlert("Sucesso!", servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
         window.location.href = 'servicos.html';
