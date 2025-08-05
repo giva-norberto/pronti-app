@@ -37,7 +37,10 @@ async function carregarDashboard(uid) {
         // 2. Com o ID da empresa, buscar os serviços e agendamentos
         // Assumindo que os serviços estão no documento do profissional (que tem o mesmo ID do dono)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-        const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
+        const agendamentosCollection = collection(
+                doc(db, "empresarios", empresaId),
+                "agendamentos"
+        );
 
         const [profissionalSnapshot, agendamentosSnapshot] = await Promise.all([
             getDoc(profissionalRef),
