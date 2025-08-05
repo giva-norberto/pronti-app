@@ -1,29 +1,21 @@
-// servicos.js (VERSÃO DEFINITIVA E AUTOCONTIDA)
+// servicos.js (VERSÃO DEFINITIVA E CORRIGIDA PARA FIREBASE v10)
 
-// 1. IMPORTS: Importamos apenas o Firebase.
-import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
+// 1. IMPORTS: Use apenas os módulos necessários via v10 e instâncias do seu firebase-config.js.
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// Importando as instâncias já inicializadas!
+import { db, auth } from "./firebase-config.js";
 
 // =================================================================================
 // INICIALIZAÇÃO E ESTADO
 // =================================================================================
-const db = getFirestore(app);
-const auth = getAuth(app);
 const listaServicosDiv = document.getElementById('lista-servicos');
-
 let profissionalRef = null;
 
 // =================================================================================
-// FUNÇÕES DE UTILIDADE (AGORA DENTRO DESTE ARQUIVO)
+// FUNÇÕES DE UTILIDADE
 // =================================================================================
 
-/**
- * Exibe um modal de confirmação personalizado e retorna uma promessa.
- * @param {string} title - O título do modal.
- * @param {string} message - A mensagem a ser exibida.
- * @returns {Promise<boolean>} - Resolve com 'true' se confirmado, 'false' se cancelado.
- */
 function showCustomConfirm(title, message) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-confirm-modal');
@@ -46,7 +38,6 @@ function showCustomConfirm(title, message) {
             resolve(value);
         };
 
-        // Usamos .cloneNode e .replaceWith para garantir que os listeners antigos são removidos
         const newBtnConfirmar = btnConfirmar.cloneNode(true);
         const newBtnCancelar = btnCancelar.cloneNode(true);
         btnConfirmar.parentNode.replaceChild(newBtnConfirmar, btnConfirmar);
@@ -58,7 +49,6 @@ function showCustomConfirm(title, message) {
         modal.classList.add('ativo');
     });
 }
-
 
 // =================================================================================
 // FUNÇÕES DE LÓGICA PRINCIPAL
