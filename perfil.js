@@ -2,10 +2,9 @@
  * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
  */
 
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener('DOMContentLoaded', () => {
