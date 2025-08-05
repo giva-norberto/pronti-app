@@ -22,7 +22,7 @@ if (!getApps().length) {
   app = getApps()[0];
 }
 // --- FIM DA LÓGICA ---
-
+export const app = firebaseApp;
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
