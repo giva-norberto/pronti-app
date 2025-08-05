@@ -1,16 +1,9 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe com debug melhorado
+ * equipe.js - Sistema de gerenciamento de equipe (sem debug)
  */
-
-// Função para debug detalhado
-function debugLog(message, data = null) {
-    console.log(`[EQUIPE DEBUG] ${message}`, data || '');
-}
 
 // Verificar se todos os elementos HTML existem
 function verificarElementosHTML() {
-    debugLog("🔍 Verificando elementos HTML...");
-    
     const elementos = {
         'btn-add-profissional': document.getElementById('btn-add-profissional'),
         'modal-add-profissional': document.getElementById('modal-add-profissional'),
@@ -22,12 +15,10 @@ function verificarElementosHTML() {
     };
 
     let todosEncontrados = true;
-    for (const [id, elemento] of Object.entries(elementos)) {
-        if (elemento) {
-            debugLog(`✅ Elemento encontrado: ${id}`);
-        } else {
-            debugLog(`❌ Elemento NÃO encontrado: ${id}`);
+    for (const elemento of Object.values(elementos)) {
+        if (!elemento) {
             todosEncontrados = false;
+            break;
         }
     }
 
@@ -36,24 +27,17 @@ function verificarElementosHTML() {
 
 // Verificar se o Firebase está disponível
 function verificarFirebase() {
-    debugLog("🔥 Verificando Firebase...");
-    
     try {
-        // Tentar importar dinamicamente
         import('./firebase-config.js').then(({ db, auth, storage }) => {
             if (db && auth && storage) {
-                debugLog("✅ Firebase configurado corretamente");
                 inicializarSistemaEquipe(db, auth, storage);
             } else {
-                debugLog("❌ Firebase não configurado corretamente");
                 mostrarErroFirebase();
             }
-        }).catch(error => {
-            debugLog("❌ Erro ao importar firebase-config.js:", error);
+        }).catch(() => {
             mostrarErroFirebase();
         });
-    } catch (error) {
-        debugLog("❌ Erro geral do Firebase:", error);
+    } catch {
         mostrarErroFirebase();
     }
 }
@@ -77,19 +61,15 @@ function mostrarErroFirebase() {
 }
 
 async function inicializarSistemaEquipe(db, auth, storage) {
-    debugLog("🚀 Inicializando sistema de equipe...");
-    
     const { elementos, todosEncontrados } = verificarElementosHTML();
-    
+
     if (!todosEncontrados) {
-        debugLog("❌ Nem todos os elementos HTML foram encontrados. Abortando inicialização.");
         return;
     }
 
     let empresaId = null;
     let unsubProfissionais = null;
 
-    // Importar funções do Firestore dinamicamente
     const { 
         collection, 
         addDoc, 
@@ -99,30 +79,27 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         getDocs, 
         serverTimestamp 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-    
+
     const { 
         ref, 
         uploadBytes, 
         getDownloadURL 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js");
-    
+
     const { 
         onAuthStateChanged 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
 
     async function getEmpresaIdDoDono(uid) {
-        debugLog("🔍 Buscando empresa para o usuário:", uid);
         const empresariosRef = collection(db, "empresarios");
         const q = query(empresariosRef, where("donoId", "==", uid));
 
         try {
             const snapshot = await getDocs(q);
             if (!snapshot.empty) {
-                debugLog("✅ Empresa encontrada:", snapshot.docs[0].id);
                 return snapshot.docs[0].id;
             }
 
-            debugLog("⚠️ Nenhuma empresa encontrada. Criando uma nova...");
             const novaEmpresa = {
                 donoId: uid,
                 nome: "Minha Empresa",
@@ -130,39 +107,30 @@ async function inicializarSistemaEquipe(db, auth, storage) {
             };
 
             const docRef = await addDoc(empresariosRef, novaEmpresa);
-            debugLog("✅ Nova empresa criada com ID:", docRef.id);
             return docRef.id;
-        } catch (error) {
-            debugLog("❌ Erro ao buscar ou criar empresa:", error);
+        } catch {
             return null;
         }
     }
 
     function iniciarListenerDaEquipe() {
         try {
-            debugLog("📡 Iniciando listener da equipe para empresa:", empresaId);
             const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
             const q = query(profissionaisRef);
             
             unsubProfissionais = onSnapshot(q, (snapshot) => {
                 const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                debugLog("📥 Profissionais atualizados:", equipe);
                 renderizarEquipe(equipe);
-            }, (error) => {
-                debugLog("❌ Erro no listener da equipe:", error);
+            }, () => {
+                // Erro no listener, pode adicionar tratamento se quiser
             });
-        } catch (e) {
-            debugLog("❌ Erro ao iniciar listener da equipe:", e);
+        } catch {
+            // Erro ao iniciar listener
         }
     }
 
     function renderizarEquipe(equipe) {
-        debugLog("🎨 Renderizando equipe:", equipe);
-        
-        if (!elementos['lista-profissionais-painel']) {
-            debugLog("❌ Painel de profissionais não encontrado");
-            return;
-        }
+        if (!elementos['lista-profissionais-painel']) return;
         
         elementos['lista-profissionais-painel'].innerHTML = "";
         
@@ -188,20 +156,12 @@ async function inicializarSistemaEquipe(db, auth, storage) {
             `;
             elementos['lista-profissionais-painel'].appendChild(div);
         });
-        
-        debugLog("✅ Equipe renderizada com sucesso");
     }
 
     function adicionarListenersDeEvento() {
-        debugLog("🎯 Adicionando listeners de evento...");
-        
-        // Botão adicionar profissional
         if (elementos['btn-add-profissional']) {
             elementos['btn-add-profissional'].addEventListener("click", () => {
-                debugLog("➕ Botão adicionar profissional clicado");
-                
                 if (!empresaId) {
-                    debugLog("❌ empresaId não definido");
                     alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página.");
                     return;
                 }
@@ -212,30 +172,21 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 
                 if (elementos['modal-add-profissional']) {
                     elementos['modal-add-profissional'].style.display = "flex";
-                    debugLog("✅ Modal exibido");
-                } else {
-                    debugLog("❌ Modal não encontrado");
                 }
             });
-            debugLog("✅ Listener do botão adicionar configurado");
         }
 
-        // Botão cancelar
         if (elementos['btn-cancelar-profissional']) {
             elementos['btn-cancelar-profissional'].addEventListener("click", () => {
-                debugLog("❌ Cancelar adicionar profissional");
                 if (elementos['modal-add-profissional']) {
                     elementos['modal-add-profissional'].style.display = "none";
                 }
             });
-            debugLog("✅ Listener do botão cancelar configurado");
         }
 
-        // Formulário
         if (elementos['form-add-profissional']) {
             elementos['form-add-profissional'].addEventListener("submit", async (e) => {
                 e.preventDefault();
-                debugLog("💾 Salvando novo profissional...");
                 
                 const btnSubmit = elementos['form-add-profissional'].querySelector('.btn-submit');
                 btnSubmit.disabled = true;
@@ -243,8 +194,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
 
                 const nome = elementos['nome-profissional'].value.trim();
                 const fotoFile = elementos['foto-profissional'].files[0];
-                
-                debugLog("📝 Dados do formulário:", { nome, temFoto: !!fotoFile });
                 
                 if (!nome) {
                     alert("O nome do profissional é obrigatório.");
@@ -256,13 +205,10 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 let fotoURL = "";
                 if (fotoFile) {
                     try {
-                        debugLog("📸 Fazendo upload da foto...");
                         const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
                         await uploadBytes(storageRef, fotoFile);
                         fotoURL = await getDownloadURL(storageRef);
-                        debugLog("✅ Foto enviada com sucesso:", fotoURL);
                     } catch (error) {
-                        debugLog("❌ Erro no upload da foto:", error);
                         alert("Erro ao enviar a imagem: " + error.message);
                         btnSubmit.disabled = false;
                         btnSubmit.textContent = "Salvar Profissional";
@@ -279,36 +225,28 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                     criadoEm: serverTimestamp()
                 };
 
-                debugLog("💾 Salvando profissional:", novoProfissional);
-
                 try {
                     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
                     await addDoc(profissionaisRef, novoProfissional);
-                    debugLog("✅ Profissional adicionado com sucesso!");
                     
                     if (elementos['modal-add-profissional']) {
                         elementos['modal-add-profissional'].style.display = "none";
                     }
                 } catch (error) {
-                    debugLog("❌ Erro ao adicionar profissional:", error);
                     alert("Erro ao adicionar profissional: " + error.message);
                 } finally {
                     btnSubmit.disabled = false;
                     btnSubmit.textContent = "Salvar Profissional";
                 }
             });
-            debugLog("✅ Listener do formulário configurado");
         }
     }
 
-    // Monitorar autenticação
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            debugLog("👤 Usuário autenticado:", user.uid);
             empresaId = await getEmpresaIdDoDono(user.uid);
             
             if (empresaId) {
-                debugLog("🏢 Empresa identificada:", empresaId);
                 iniciarListenerDaEquipe();
                 
                 if (elementos['btn-add-profissional']) {
@@ -317,7 +255,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 
                 adicionarListenersDeEvento();
             } else {
-                debugLog("❌ Não foi possível identificar a empresa");
                 if (elementos['lista-profissionais-painel']) {
                     elementos['lista-profissionais-painel'].innerHTML = `
                         <div style="color: red; padding: 20px; border: 1px solid red; border-radius: 5px;">
@@ -333,7 +270,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 }
             }
         } else {
-            debugLog("❌ Usuário não autenticado, redirecionando...");
             window.location.href = "login.html";
         }
     });
@@ -341,6 +277,5 @@ async function inicializarSistemaEquipe(db, auth, storage) {
 
 // Inicializar quando o DOM estiver carregado
 window.addEventListener("DOMContentLoaded", () => {
-    debugLog("🌟 DOM carregado, iniciando verificações...");
     verificarFirebase();
 });
