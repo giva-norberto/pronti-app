@@ -1,9 +1,7 @@
 // servicos.js (VERSÃO DEFINITIVA E CORRIGIDA PARA FIREBASE v10)
 
-// 1. IMPORTS: Use apenas os módulos necessários via v10 e instâncias do seu firebase-config.js.
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-// Importando as instâncias já inicializadas!
 import { db, auth } from "./firebase-config.js";
 
 // =================================================================================
@@ -79,7 +77,7 @@ function renderizarServicos(servicos) {
         <div class="servico-card">
             <div class="servico-header">
                 <h3 class="servico-titulo">${servico.nome}</h3>
-                <span class="servico-categoria">${servico.categoria}</span>
+                <!-- Campo de categoria removido -->
             </div>
             <p class="servico-descricao">${servico.descricao}</p>
             <div class="servico-footer">
