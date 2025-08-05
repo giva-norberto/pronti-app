@@ -101,7 +101,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (secaoEquipe) secaoEquipe.style.display = 'none';
             }
         }
-    }
+    };
 
     function iniciarListenerDeProfissionais(idDaEmpresa) {
         if (!elements.listaProfissionaisPainel) return;
