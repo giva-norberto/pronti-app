@@ -1,18 +1,13 @@
 /**
- * novo-servico.js (VERSÃO FINAL E COMPLETA)
+ * novo-servico.js (VERSÃO CORRIGIDA PARA FIREBASE v10)
  */
-
-import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
-// Usando nosso sistema de alertas padrão
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { db, auth } from "./firebase-config.js";
 import { showAlert } from "./vitrini-utils.js";
 
-const db = getFirestore(app);
-const auth = getAuth(app);
 const form = document.getElementById('form-servico');
-
-let profissionalRef = null; // Guardará a referência para o documento do profissional
+let profissionalRef = null;
 
 /**
  * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
@@ -24,17 +19,23 @@ async function getEmpresaIdDoDono(uid) {
     return snapshot.docs[0].id;
 }
 
-// O "porteiro": só executa a lógica depois de confirmar que o usuário está logado.
+// Executa a lógica depois de confirmar que o usuário está logado.
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const empresaId = await getEmpresaIdDoDono(user.uid);
         if (empresaId) {
-            // Define a referência ao documento do profissional (o dono)
             profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+
+            // Cria o documento do profissional se não existir
+            const docSnap = await getDoc(profissionalRef);
+            if (!docSnap.exists()) {
+                await setDoc(profissionalRef, { servicos: [] });
+            }
+
             form.addEventListener('submit', handleFormSubmit);
         } else {
             await showAlert("Atenção", "Empresa não encontrada. Por favor, complete seu cadastro na página 'Meu Perfil' primeiro.");
-            form.querySelector('button[type="submit"]').disabled = true;
+            form.querySelector('button[type=\"submit\"]').disabled = true;
         }
     } else {
         window.location.href = 'login.html';
@@ -84,13 +85,11 @@ async function handleFormSubmit(event) {
             servicos: novaListaDeServicos
         });
 
-        // [MODIFICADO] Trocado Toastify por showAlert
         await showAlert("Sucesso!", "Serviço salvo com sucesso!");
         window.location.href = 'servicos.html';
 
     } catch (error) {
         console.error("Erro ao salvar o serviço: ", error);
-        // [MODIFICADO] Trocado Toastify por showAlert
         await showAlert("Erro ao Salvar", "Ocorreu um erro ao salvar o serviço. Por favor, tente novamente.");
     } finally {
         btnSalvar.disabled = false;
