@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
+ * dashboard.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -134,12 +134,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function preencherFormulario(dadosEmpresa, dadosProfissional) {
-        elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
-        elements.descricaoInput.value = dadosEmpresa.descricao || '';
-        if (dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
+        if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+        if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
+        if (dadosEmpresa.logoUrl && elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl;
 
         const horarios = dadosProfissional.horarios || {};
-        elements.intervaloSelect.value = horarios.intervalo || '30';
+        if (elements.intervaloSelect) elements.intervaloSelect.value = horarios.intervalo || '30';
         diasDaSemana.forEach(diaInfo => {
             const diaData = horarios[diaInfo.id];
             const toggleAtivo = document.getElementById(`${diaInfo.id}-ativo`);
@@ -176,21 +176,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function handleFormSubmit(event) {
         event.preventDefault();
-        elements.btnSalvar.disabled = true;
-        elements.btnSalvar.textContent = 'Salvando...';
+        if (elements.btnSalvar) {
+            elements.btnSalvar.disabled = true;
+            elements.btnSalvar.textContent = 'Salvando...';
+        }
         try {
             const uid = currentUser.uid;
-            const nomeNegocio = elements.nomeNegocioInput.value.trim();
+            const nomeNegocio = elements.nomeNegocioInput?.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-            const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput.value.trim(), donoId: uid };
+            const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput?.value.trim(), donoId: uid };
             const dadosProfissional = { 
                 nome: currentUser.displayName || nomeNegocio, 
                 fotoUrl: currentUser.photoURL || '', 
                 horarios: coletarDadosDeHorarios() 
             };
 
-            const logoFile = elements.logoInput.files[0];
+            const logoFile = elements.logoInput?.files[0];
             if (logoFile) {
                 const storageRef = ref(storage, `logos/${uid}/logo`);
                 const uploadResult = await uploadBytes(storageRef, logoFile);
@@ -223,8 +225,10 @@ window.addEventListener('DOMContentLoaded', () => {
             console.error("Erro ao salvar perfil:", error);
             alert("Ocorreu um erro ao salvar: " + error.message);
         } finally {
-            elements.btnSalvar.disabled = false;
-            elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
+            if (elements.btnSalvar) {
+                elements.btnSalvar.disabled = false;
+                elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
+            }
         }
     }
 
@@ -234,8 +238,11 @@ window.addEventListener('DOMContentLoaded', () => {
         btnSubmit.disabled = true;
         btnSubmit.textContent = 'Salvando...';
         try {
-            const nome = document.getElementById('nome-profissional').value.trim();
-            const fotoFile = document.getElementById('foto-profissional').files[0];
+            const nomeInput = document.getElementById('nome-profissional');
+            const fotoInput = document.getElementById('foto-profissional');
+            if (!nomeInput) throw new Error("Campo nome do profissional não encontrado no DOM.");
+            const nome = nomeInput.value.trim();
+            const fotoFile = fotoInput?.files[0];
             if (!nome) throw new Error("O nome do profissional é obrigatório.");
 
             let fotoUrl = '';
@@ -260,14 +267,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     
     function coletarDadosDeHorarios() {
-        const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
+        const horariosData = { intervalo: parseInt(elements.intervaloSelect?.value || '30', 10) };
         diasDaSemana.forEach(diaInfo => {
-            const estaAtivo = document.getElementById(`${diaInfo.id}-ativo`).checked;
+            const ativoEl = document.getElementById(`${diaInfo.id}-ativo`);
+            const estaAtivo = ativoEl ? ativoEl.checked : false;
             const blocos = [];
             if (estaAtivo) {
-                document.querySelectorAll(`#blocos-${diaInfo.id} .bloco-horario`).forEach(blocoEl => {
+                document.querySelectorAll(`#blocos-${diaInfo.id} .slot-horario`).forEach(blocoEl => {
                     const inputs = blocoEl.querySelectorAll('input[type="time"]');
-                    if (inputs[0].value && inputs[1].value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+                    if (inputs[0]?.value && inputs[1]?.value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
                 });
             }
             horariosData[diaInfo.id] = { ativo: estaAtivo, blocos: blocos };
@@ -276,11 +284,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function adicionarListenersDeEvento() {
-        elements.form.addEventListener('submit', handleFormSubmit);
+        if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
-        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
+        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput?.click());
         if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
-            if (elements.logoInput.files[0]) {
+            if (elements.logoInput.files[0] && elements.logoPreview) {
                 const reader = new FileReader();
                 reader.onload = (e) => { elements.logoPreview.src = e.target.result; };
                 reader.readAsDataURL(elements.logoInput.files[0]);
@@ -350,15 +358,19 @@ window.addEventListener('DOMContentLoaded', () => {
             elements.diasContainer.appendChild(divDia);
             
             const toggleAtivo = document.getElementById(`${diaInfo.id}-ativo`);
-            toggleAtivo.addEventListener('change', (e) => {
-                const container = document.getElementById(`container-${diaInfo.id}`);
-                const label = e.target.closest('.toggle-container').querySelector('.toggle-label');
-                container.style.display = e.target.checked ? 'flex' : 'none';
-                label.textContent = e.target.checked ? 'Aberto' : 'Fechado';
-                if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
-                    adicionarBlocoDeHorario(diaInfo.id);
-                }
-            });
+            if (toggleAtivo) {
+                toggleAtivo.addEventListener('change', (e) => {
+                    const container = document.getElementById(`container-${diaInfo.id}`);
+                    const label = e.target.closest('.toggle-container').querySelector('.toggle-label');
+                    if (container && label) {
+                        container.style.display = e.target.checked ? 'flex' : 'none';
+                        label.textContent = e.target.checked ? 'Aberto' : 'Fechado';
+                        if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
+                            adicionarBlocoDeHorario(diaInfo.id);
+                        }
+                    }
+                });
+            }
         });
         elements.diasContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-add-slot')) {
@@ -369,6 +381,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
         const container = document.getElementById(`blocos-${diaId}`);
+        if (!container) return;
         const divBloco = document.createElement('div');
         divBloco.className = 'slot-horario';
         divBloco.innerHTML = `
