@@ -1,5 +1,5 @@
 /**
- * perfil.js (VERSÃO FINAL, COMPLETA E SEM ERROS DE SINTAXE)
+ * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
  */
 
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
@@ -258,7 +258,7 @@ window.addEventListener('DOMContentLoaded', () => {
             btnSubmit.textContent = 'Salvar Profissional';
         }
     }
-    
+
     function coletarDadosDeHorarios() {
         const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
         diasDaSemana.forEach(dia => {
@@ -385,5 +385,4 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-}); // Fim do DOMContentLoaded
+});
