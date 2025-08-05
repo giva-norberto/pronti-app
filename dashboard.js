@@ -54,16 +54,17 @@ window.addEventListener('DOMContentLoaded', () => {
     let empresaId = null;
     let unsubProfissionais = null;
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUser = user;
-            verificarEcarregarDados(user.uid);
-            adicionarListenersDeEvento();
-            gerarEstruturaDosDias();
-        } else {
-            window.location.href = 'login.html';
-        }
-    };
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        verificarEcarregarDados(user.uid);
+        adicionarListenersDeEvento();
+        gerarEstruturaDosDias();
+    } else {
+        window.location.href = 'login.html';
+    }
+});
+
 
     async function verificarEcarregarDados(uid) {
         const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
