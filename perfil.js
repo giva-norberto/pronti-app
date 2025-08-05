@@ -3,7 +3,6 @@
  */
 
 // Importa tudo que o Firebase precisa
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -11,21 +10,8 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 // Importa o nosso serviço de upload separado
 import { uploadFile } from './uploadService.js';
 
-// 1. Configuração do Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
-  authDomain: "pronti-app-37c6e.firebaseapp.com",
-  projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app",
-  messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
-};
-
-// 2. Inicialização do Firebase
-const app = initializeApp(firebaseConfig );
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
+// Importa as instâncias já inicializadas do Firebase
+import { app, db, auth, storage } from "./firebase-config.js";
 
 // 3. Lógica da Página
 window.addEventListener('DOMContentLoaded', () => {
