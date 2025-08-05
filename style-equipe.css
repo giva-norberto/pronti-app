@@ -191,3 +191,38 @@
         width: 100%;
     }
 }
+/* ======================================================= */
+/* --- ESTILOS PARA GARANTIR A VISIBILIDADE DOS MODAIS --- */
+/* ======================================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    /* O JS muda o 'display' para 'flex' para mostrar o modal */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Z-INDEX MAIS ALTO DA APLICAÇÃO */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none; /* Não interage quando escondido */
+}
+
+/* O JS adiciona a classe 'ativo' ou muda o display diretamente */
+.modal-overlay.ativo, .modal-overlay[style*="display: flex"] {
+    opacity: 1;
+    pointer-events: auto; /* Permite interação quando visível */
+}
+
+.modal-box {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+    text-align: center;
+    max-width: 420px;
+    width: 90%;
+}
