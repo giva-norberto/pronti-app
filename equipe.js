@@ -1,5 +1,5 @@
 /**
- * equipe-melhorado.js - Sistema de gerenciamento de equipe com debug melhorado
+ * equipe.js - Sistema de gerenciamento de equipe com debug melhorado
  */
 
 // Função para debug detalhado
