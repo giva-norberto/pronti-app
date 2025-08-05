@@ -2,21 +2,14 @@
  * perfil.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
  */
 
-import { 
-    getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-import { 
-    getStorage, ref, uploadBytes, getDownloadURL 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
-import { 
-    getAuth, onAuthStateChanged, signOut 
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
+// Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener('DOMContentLoaded', () => {
+
     const db = getFirestore(app);
     const auth = getAuth(app);
     const storage = getStorage(app);
@@ -47,12 +40,9 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     const diasDaSemana = [
-        { id: 'seg', nome: 'Segunda-feira' },
-        { id: 'ter', nome: 'Terça-feira' },
-        { id: 'qua', nome: 'Quarta-feira' },
-        { id: 'qui', nome: 'Quinta-feira' },
-        { id: 'sex', nome: 'Sexta-feira' },
-        { id: 'sab', nome: 'Sábado' },
+        { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
+        { id: 'qua', nome: 'Quarta-feira' }, { id: 'qui', nome: 'Quinta-feira' },
+        { id: 'sex', nome: 'Sexta-feira' }, { id: 'sab', nome: 'Sábado' },
         { id: 'dom', nome: 'Domingo' }
     ];
 
@@ -91,10 +81,10 @@ window.addEventListener('DOMContentLoaded', () => {
             const empresaDoc = snapshot.docs[0];
             empresaId = empresaDoc.id;
             const dadosEmpresa = empresaDoc.data();
-
+            
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
             const profissionalSnap = await getDoc(profissionalRef);
-
+            
             let dadosProfissional = {};
             let ehDono = false;
             if (profissionalSnap.exists()) {
@@ -118,9 +108,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if (unsubProfissionais) {
             unsubProfissionais();
         }
-
+        
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
-
+        
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
             const profissionais = snapshot.docs.map(doc => doc.data());
             renderizarListaProfissionais(profissionais);
@@ -129,12 +119,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function renderizarListaProfissionais(profissionais) {
         if (!elements.listaProfissionaisPainel) return;
-
+        
         if (profissionais.length === 0) {
             elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
             return;
         }
-
+        
         elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
             return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
                         <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
@@ -167,7 +157,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 toggleAtivo.dispatchEvent(new Event('change'));
             }
         });
-
+        
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) {
@@ -191,223 +181,208 @@ window.addEventListener('DOMContentLoaded', () => {
         try {
             const uid = currentUser.uid;
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
-            const descricao = elements.descricaoInput.value.trim();
+            if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-            let logoUrl = elements.logoPreview.src || '';
+            const dadosEmpresa = { nomeFantasia: nomeNegocio, descricao: elements.descricaoInput.value.trim(), donoId: uid };
+            const dadosProfissional = { 
+                nome: currentUser.displayName || nomeNegocio, 
+                fotoUrl: currentUser.photoURL || '', 
+                horarios: coletarDadosDeHorarios() 
+            };
 
-            // Upload da logo se alterada
-            if (elements.logoInput.files && elements.logoInput.files[0]) {
-                logoUrl = await uploadLogo(uid, elements.logoInput.files[0]);
+            const logoFile = elements.logoInput.files[0];
+            if (logoFile) {
+                const storageRef = ref(storage, `logos/${uid}/logo`);
+                const uploadResult = await uploadBytes(storageRef, logoFile);
+                dadosEmpresa.logoUrl = await getDownloadURL(uploadResult.ref);
+            } else if (empresaId) {
+                const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
+                if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
             }
 
-            if (!empresaId) {
-                // Cria nova empresa
-                const novoDoc = await addDoc(collection(db, "empresarios"), {
-                    donoId: uid,
-                    nomeFantasia: nomeNegocio,
-                    descricao,
-                    logoUrl,
-                    criadoEm: new Date()
-                });
-                empresaId = novoDoc.id;
+            if (empresaId) {
+                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+                const docOriginal = await getDoc(profissionalRef);
+                
+                dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
+                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
+
+                await setDoc(profissionalRef, dadosProfissional, { merge: true });
+                alert("Perfil atualizado com sucesso!");
             } else {
-                // Atualiza empresa existente
-                const empresaRef = doc(db, "empresarios", empresaId);
-                await setDoc(empresaRef, {
-                    donoId: uid,
-                    nomeFantasia: nomeNegocio,
-                    descricao,
-                    logoUrl,
-                    atualizadoEm: new Date()
-                }, { merge: true });
+                dadosProfissional.servicos = [];
+                dadosProfissional.ehDono = true;
+                const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+                empresaId = novaEmpresaRef.id;
+                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
+                alert("Seu negócio foi cadastrado com sucesso!");
+                window.location.reload();
             }
-
-            // Atualiza o URL da vitrine e demais elementos
-            const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-            if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
-            if (elements.btnAbrirVitrine) {
-                elements.btnAbrirVitrine.href = urlCompleta;
-                elements.btnAbrirVitrine.style.display = 'inline-flex';
-            }
-            if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
-            if (elements.linkVitrineMenu) {
-                elements.linkVitrineMenu.href = urlCompleta;
-                elements.linkVitrineMenu.classList.remove('disabled');
-                elements.linkVitrineMenu.style.pointerEvents = 'auto';
-                elements.linkVitrineMenu.style.opacity = '1';
-            }
-            if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
-
-            alert('Perfil salvo com sucesso!');
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
-            alert('Erro ao salvar perfil. Tente novamente.');
+            alert("Ocorreu um erro ao salvar: " + error.message);
         } finally {
             elements.btnSalvar.disabled = false;
-            elements.btnSalvar.textContent = 'Salvar';
+            elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
         }
     }
 
-    async function uploadLogo(uid, file) {
-        const logoRef = ref(storage, `logos/${uid}/${file.name}`);
-        await uploadBytes(logoRef, file);
-        const url = await getDownloadURL(logoRef);
-        if (elements.logoPreview) elements.logoPreview.src = url;
-        return url;
+    async function handleAdicionarProfissional(event) {
+        event.preventDefault();
+        const btnSubmit = event.target.querySelector('button[type="submit"]');
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Salvando...';
+        try {
+            const nome = document.getElementById('nome-profissional').value.trim();
+            const fotoFile = document.getElementById('foto-profissional').files[0];
+            if (!nome) throw new Error("O nome do profissional é obrigatório.");
+
+            let fotoUrl = '';
+            if (fotoFile) {
+                const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+                const uploadResult = await uploadBytes(storageRef, fotoFile);
+                fotoUrl = await getDownloadURL(uploadResult.ref);
+            }
+            
+            const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {}, ehDono: false };
+            await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
+
+            alert("Profissional adicionado com sucesso!");
+            if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+        } catch (error) {
+            console.error("Erro ao adicionar profissional:", error);
+            alert("Erro ao adicionar profissional: " + error.message);
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = 'Salvar Profissional';
+        }
+    }
+    
+    function coletarDadosDeHorarios() {
+        const horariosData = { intervalo: parseInt(elements.intervaloSelect.value, 10) };
+        diasDaSemana.forEach(diaInfo => {
+            const estaAtivo = document.getElementById(`${diaInfo.id}-ativo`).checked;
+            const blocos = [];
+            if (estaAtivo) {
+                document.querySelectorAll(`#blocos-${diaInfo.id} .bloco-horario`).forEach(blocoEl => {
+                    const inputs = blocoEl.querySelectorAll('input[type="time"]');
+                    if (inputs[0].value && inputs[1].value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
+                });
+            }
+            horariosData[diaInfo.id] = { ativo: estaAtivo, blocos: blocos };
+        });
+        return horariosData;
+    }
+
+    function adicionarListenersDeEvento() {
+        elements.form.addEventListener('submit', handleFormSubmit);
+        if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
+        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
+        if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
+            if (elements.logoInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { elements.logoPreview.src = e.target.result; };
+                reader.readAsDataURL(elements.logoInput.files[0]);
+            }
+        });
+        if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
+            try { await signOut(auth); window.location.href = 'login.html'; }
+            catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
+        });
+
+        if (elements.btnAddProfissional) {
+            elements.btnAddProfissional.addEventListener('click', () => {
+                if (!empresaId) {
+                    alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
+                    return;
+                }
+                if (elements.formAddProfissional) elements.formAddProfissional.reset();
+                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
+            });
+        }
+
+        if (elements.btnCancelarProfissional) {
+            elements.btnCancelarProfissional.addEventListener('click', () => {
+                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
+            });
+        }
+
+        if (elements.formAddProfissional) {
+            elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
+        }
+    }
+
+    function copiarLink() {
+        if (!empresaId) {
+            alert("Salve seu perfil para gerar o link.");
+            return;
+        }
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        navigator.clipboard.writeText(urlCompleta).then(() => {
+            alert("Link da vitrine copiado!");
+        }, () => {
+            alert("Falha ao copiar o link.");
+        });
     }
 
     function gerarEstruturaDosDias() {
         if (!elements.diasContainer) return;
-
-        elements.diasContainer.innerHTML = diasDaSemana.map(dia => {
-            return `
-            <div class="dia-semana" data-dia="${dia.id}" style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
-                <label>
-                    <input type="checkbox" id="${dia.id}-ativo" class="toggle-dia" />
-                    <strong>${dia.nome}</strong>
-                </label>
-                <div id="blocos-${dia.id}" class="blocos-horarios" style="margin-top: 10px;"></div>
-                <button type="button" class="btn-add-bloco" data-dia="${dia.id}" style="margin-top: 8px;">Adicionar Bloco</button>
-            </div>
-            `;
-        }).join('');
-
-        // Adiciona listeners para toggle e adicionar blocos
-        diasDaSemana.forEach(dia => {
-            const toggle = document.getElementById(`${dia.id}-ativo`);
-            const btnAdd = elements.diasContainer.querySelector(`button.btn-add-bloco[data-dia="${dia.id}"]`);
-            const blocosContainer = document.getElementById(`blocos-${dia.id}`);
-
-            toggle.addEventListener('change', () => {
-                if (toggle.checked) {
-                    blocosContainer.style.display = 'block';
-                    if (blocosContainer.children.length === 0) {
-                        adicionarBlocoDeHorario(dia.id);
-                    }
-                } else {
-                    blocosContainer.style.display = 'none';
-                    blocosContainer.innerHTML = '';
+        elements.diasContainer.innerHTML = '';
+        diasDaSemana.forEach(diaInfo => {
+            const divDia = document.createElement('div');
+            divDia.className = 'dia-semana';
+            divDia.innerHTML = `
+                <div class="dia-info">
+                    <span class="dia-nome">${diaInfo.nome}</span>
+                    <div class="toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" id="${diaInfo.id}-ativo">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">Fechado</span>
+                    </div>
+                </div>
+                <div class="horarios-container" style="display: none;" id="container-${diaInfo.id}">
+                    <div class="horarios-blocos" id="blocos-${diaInfo.id}"></div>
+                    <button type="button" class="btn-add-slot" data-dia="${diaInfo.id}">+ Adicionar Horário</button>
+                </div>`;
+            elements.diasContainer.appendChild(divDia);
+            
+            const toggleAtivo = document.getElementById(`${diaInfo.id}-ativo`);
+            toggleAtivo.addEventListener('change', (e) => {
+                const container = document.getElementById(`container-${diaInfo.id}`);
+                const label = e.target.closest('.toggle-container').querySelector('.toggle-label');
+                container.style.display = e.target.checked ? 'flex' : 'none';
+                label.textContent = e.target.checked ? 'Aberto' : 'Fechado';
+                if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
+                    adicionarBlocoDeHorario(diaInfo.id);
                 }
             });
-
-            btnAdd.addEventListener('click', () => {
-                adicionarBlocoDeHorario(dia.id);
-            });
         });
-    }
-
-    function adicionarBlocoDeHorario(diaId, inicio = '', fim = '') {
-        const blocosContainer = document.getElementById(`blocos-${diaId}`);
-        if (!blocosContainer) return;
-
-        const blocoEl = document.createElement('div');
-        blocoEl.className = 'bloco-horario';
-        blocoEl.style.display = 'flex';
-        blocoEl.style.alignItems = 'center';
-        blocoEl.style.gap = '8px';
-        blocoEl.style.marginBottom = '6px';
-
-        blocoEl.innerHTML = `
-            <label>
-                Início: <input type="time" class="input-inicio" value="${inicio}" required />
-            </label>
-            <label>
-                Fim: <input type="time" class="input-fim" value="${fim}" required />
-            </label>
-            <button type="button" class="btn-remove-bloco" title="Remover bloco" style="background:#e53e3e;color:#fff;border:none;padding:0 8px;border-radius:4px;cursor:pointer;">×</button>
-        `;
-
-        blocoEl.querySelector('.btn-remove-bloco').addEventListener('click', () => {
-            blocoEl.remove();
-        });
-
-        blocosContainer.appendChild(blocoEl);
-    }
-
-    elements.form?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        if (!empresaId) {
-            alert('Ainda não foi possível identificar sua empresa. Tente recarregar a página.');
-            return;
-        }
-
-        // Atualizar dados do perfil de negócio
-        await handleFormSubmit(e);
-    });
-
-    elements.btnCopiarLink?.addEventListener('click', () => {
-        const url = elements.urlVitrineEl?.textContent;
-        if (url) {
-            navigator.clipboard.writeText(url).then(() => {
-                alert('Link copiado para a área de transferência!');
-            }).catch(() => {
-                alert('Erro ao copiar link.');
-            });
-        }
-    });
-
-    elements.btnLogout?.addEventListener('click', () => {
-        signOut(auth).then(() => {
-            window.location.href = 'login.html';
-        });
-    });
-
-    // --- Funções extras para validar e salvar horários do profissional ---
-
-    async function salvarHorariosDoProfissional() {
-        if (!empresaId) return;
-
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const profissionalDocRef = doc(profissionaisRef, currentUser.uid);
-
-        // Monta o objeto horarios
-        const horarios = {};
-        horarios.intervalo = elements.intervaloSelect.value;
-
-        diasDaSemana.forEach(dia => {
-            const ativo = document.getElementById(`${dia.id}-ativo`)?.checked ?? false;
-            const blocosContainer = document.getElementById(`blocos-${dia.id}`);
-            let blocos = [];
-
-            if (ativo && blocosContainer) {
-                blocos = Array.from(blocosContainer.querySelectorAll('.bloco-horario')).map(blocoEl => {
-                    const inicio = blocoEl.querySelector('input.input-inicio')?.value || '';
-                    const fim = blocoEl.querySelector('input.input-fim')?.value || '';
-                    return { inicio, fim };
-                });
+        elements.diasContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-add-slot')) {
+                adicionarBlocoDeHorario(e.target.dataset.dia);
             }
-
-            horarios[dia.id] = {
-                ativo,
-                blocos
-            };
         });
-
-        await setDoc(profissionalDocRef, { horarios }, { merge: true });
     }
 
-    // Salva horários sempre que o formulário for submetido
-    elements.form?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        elements.btnSalvar.disabled = true;
-        elements.btnSalvar.textContent = 'Salvando...';
-
-        try {
-            await handleFormSubmit(e);
-            await salvarHorariosDoProfissional();
-            alert('Perfil e horários salvos com sucesso!');
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao salvar dados. Tente novamente.');
-        } finally {
-            elements.btnSalvar.disabled = false;
-            elements.btnSalvar.textContent = 'Salvar';
-        }
-    });
-
-    function adicionarListenersDeEvento() {
-        // Pode adicionar outros listeners aqui no futuro
+    function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
+        const container = document.getElementById(`blocos-${diaId}`);
+        const divBloco = document.createElement('div');
+        divBloco.className = 'slot-horario';
+        divBloco.innerHTML = `
+            <input type="time" value="${inicio}">
+            <span class="ate">até</span>
+            <input type="time" value="${fim}">
+            <button type="button" class="btn-remove-slot">Remover</button>`;
+        container.appendChild(divBloco);
+        divBloco.querySelector('.btn-remove-slot').addEventListener('click', (e) => {
+            if (container.childElementCount > 1) {
+                e.target.closest('.slot-horario').remove();
+            } else {
+                alert("Para não atender neste dia, desative o botão na parte superior.");
+            }
+        });
     }
-
 });
