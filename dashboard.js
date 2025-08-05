@@ -63,7 +63,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
             window.location.href = 'login.html';
         }
-    });
+    };
 
     async function verificarEcarregarDados(uid) {
         const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
