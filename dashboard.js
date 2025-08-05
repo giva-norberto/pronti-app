@@ -269,5 +269,47 @@ function gerarGraficoServicos(servicosMap, agendamentos) {
 
 function gerarGraficoFaturamento(servicosMap, agendamentos) {
     const faturamentoServicos = {};
+
     agendamentos.forEach(ag => {
-        const servico = servicosMap.get(String(ag.servicoId
+        const servico = servicosMap.get(String(ag.servicoId));
+        if (servico && servico.preco) {
+            faturamentoServicos[servico.nome] = (faturamentoServicos[servico.nome] || 0) + servico.preco;
+        }
+    });
+
+    const labels = Object.keys(faturamentoServicos);
+    const dados = Object.values(faturamentoServicos);
+
+    const ctx = document.getElementById('graficoFaturamento').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: dados,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(153, 102, 255, 0.5)'
+                ],
+                borderColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 206, 86)',
+                    'rgb(75, 192, 192)',
+                    'rgb(153, 102, 255)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
