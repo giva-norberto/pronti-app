@@ -1,5 +1,6 @@
-// firebase-config.js (versão 10.7.1 compatível com equipe.js)
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+// firebase-config.js (VERSÃO CORRIGIDA)
+
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
@@ -13,15 +14,19 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Inicializa o app Firebase somente uma vez
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
+// Função para inicializar e obter o app Firebase de forma segura
+const initializeFirebaseApp = ( ) => {
+  const apps = getApps();
+  if (apps.length) {
+    return getApp(); // Retorna o app já inicializado
+  }
+  return initializeApp(firebaseConfig); // Inicializa o app se não existir
+};
 
-// Inicializa os serviços Firebase Firestore, Auth e Storage
+// Inicializa e exporta o app
+const app = initializeFirebaseApp();
+
+// Inicializa e exporta os serviços
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
