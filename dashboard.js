@@ -1,11 +1,15 @@
 /**
- * dashboard.js (VERSÃO FINAL, COMPLETA E CORRIGIDA)
+ * dashboard.js (Firebase v10 - VERSÃO FINAL, COMPLETA E CORRIGIDA)
  */
 
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-storage.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { firebaseConfig } from "./firebase-config.js"; // seu objeto de configuração
+
+// Inicialize o Firebase app
+const app = initializeApp(firebaseConfig);
 
 // Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener('DOMContentLoaded', () => {
@@ -101,16 +105,24 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (secaoEquipe) secaoEquipe.style.display = 'none';
             }
         }
-    };
+    }
 
     function iniciarListenerDeProfissionais(idDaEmpresa) {
         if (!elements.listaProfissionaisPainel) return;
         if (unsubProfissionais) {
             unsubProfissionais();
         }
-        
+        if (!db) {
+            console.error("Firestore (db) não inicializado!");
+            return;
+        }
+        if (!idDaEmpresa) {
+            console.error("idDaEmpresa indefinido ao buscar profissionais!");
+            return;
+        }
+        // Firebase 10 aceita essa chamada:
         const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
-        
+
         unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
             const profissionais = snapshot.docs.map(doc => doc.data());
             renderizarListaProfissionais(profissionais);
