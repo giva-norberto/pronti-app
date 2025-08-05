@@ -1,52 +1,54 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Novo Serviço</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
-  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-</head>
-<body>
- <aside class="sidebar">
-  <a href="index.html" class="sidebar-brand">Pronti</a>
-  <hr />
-  <div class="sidebar-links">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="index.html">Home</a>
-    <a href="servicos.html">Serviços</a>
-    <a href="agenda.html">Agenda</a>
-    <a href="clientes.html">Clientes</a>
-    <a href="perfil.html">Meu Perfil</a>
-    <a href="horarios.html">Meus Horários</a>
-    <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
-  </div>
-</aside>
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { db, auth } from "./firebase-config.js";
 
-  <main class="main-content">
-    <h1>Adicionar Novo Serviço</h1>
-    <p>Preencha os dados do novo serviço que você oferece.</p>
-    <form id="form-servico" class="form-card">
-      <div class="form-group">
-        <label for="nome-servico">Nome do Serviço:</label>
-        <input type="text" id="nome-servico" required>
-      </div>
-      <div class="form-group">
-        <label for="descricao-servico">Descrição do Serviço:</label>
-        <textarea id="descricao-servico" rows="4"></textarea>
-      </div>
-      <div class="form-group">
-        <label for="preco-servico">Preço (R$):</label>
-        <input type="number" id="preco-servico" min="0" step="0.01" placeholder="Ex: 35.50" required>
-      </div>
-      <div class="form-group">
-        <label for="duracao-servico">Duração (em minutos):</label>
-        <input type="number" id="duracao-servico" min="5" step="5" placeholder="Ex: 45" required>
-      </div>
-      <button type="submit" class="btn-submit">Salvar Serviço</button>
-    </form>
-  </main>
-  <script src="novo-servico.js" type="module"></script>
-</body>
-</html>
+// Função para pegar o id do serviço da URL
+function getIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+}
+
+// Função para buscar empresa pelo dono
+async function getEmpresaIdDoDono(uid) {
+    if (!uid) return null;
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].id;
+}
+
+// Preencher o formulário com os dados do serviço
+function preencherFormulario(servico) {
+    document.getElementById('nome-servico').value = servico.nome || '';
+    document.getElementById('descricao-servico').value = servico.descricao || '';
+    document.getElementById('preco-servico').value = servico.preco || '';
+    document.getElementById('duracao-servico').value = servico.duracao || '';
+}
+
+// Ao carregar a página, verifica se está em modo edição
+document.addEventListener('DOMContentLoaded', () => {
+    const idServico = getIdFromUrl();
+    if (!idServico) return; // Cadastro novo
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const empresaId = await getEmpresaIdDoDono(user.uid);
+        if (!empresaId) return;
+
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+        const docSnap = await getDoc(profissionalRef);
+        if (!docSnap.exists()) return;
+
+        const servicos = docSnap.data().servicos || [];
+        const servico = servicos.find(s => String(s.id) === idServico);
+        if (!servico) return;
+
+        preencherFormulario(servico);
+    });
+});
+
+// Aqui pode ir seu código de submit para salvar/atualizar o serviço!
