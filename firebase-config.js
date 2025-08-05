@@ -1,4 +1,4 @@
-// firebase-config.js (VERSÃO CORRIGIDA)
+// firebase-config.js (VERSÃO MAIS ROBUSTA)
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -14,22 +14,11 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Função para inicializar e obter o app Firebase de forma segura
-const initializeFirebaseApp = ( ) => {
-  const apps = getApps();
-  if (apps.length) {
-    return getApp(); // Retorna o app já inicializado
-  }
-  return initializeApp(firebaseConfig); // Inicializa o app se não existir
-};
+// Inicializa o app de forma segura e já o exporta.
+// Se não houver apps, inicializa um novo. Se já houver, pega o existente.
+export const app = getApps( ).length ? getApp() : initializeApp(firebaseConfig);
 
-// Inicializa e exporta o app
-const app = initializeFirebaseApp();
-
-// Inicializa e exporta os serviços
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
-
-// Exporta os objetos para usar nos outros scripts
-export { app, db, auth, storage };
+// Exporta os serviços diretamente, usando a constante 'app' que acabamos de criar.
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const storage = getStorage(app);
