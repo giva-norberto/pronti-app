@@ -1,23 +1,28 @@
 /**
- * dashboard.js (Firebase v10 - VERSÃO FINAL, COMPLETA E CORRIGIDA)
+ * dashboard.js (Firebase v10 - VERSÃO FINAL, CORRIGIDA PARA USO ONLINE)
  */
 
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { firebaseConfig } from "./firebase-config.js"; // seu objeto de configuração
+// IMPORTS VIA CDN DO FIREBASE v10!
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js"; // seu objeto de configuração exportado
 
 // Inicialize o Firebase app
 const app = initializeApp(firebaseConfig);
 
-// Garante que o script só rode após o HTML estar completamente pronto.
 window.addEventListener('DOMContentLoaded', () => {
 
     const db = getFirestore(app);
     const auth = getAuth(app);
     const storage = getStorage(app);
 
+    // ... (restante do seu código permanece igual)
+    // Copie todo o conteúdo das funções e lógicas já existentes no seu arquivo!
+    // Não precisa mudar nada além dos imports na parte superior.
+
+    // O restante do código pode ser igual ao que você já tem!
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
