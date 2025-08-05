@@ -1,9 +1,7 @@
 // servicos.js (VERSÃO DEFINITIVA E CORRIGIDA PARA FIREBASE v10)
 console.log("servicos.js carregado!");
-listaServicosDiv.addEventListener('click', function(e) {
-  console.log("Clique detectado em listaServicosDiv", e.target);
-  alert("Clique detectado em listaServicosDiv");
-});
+
+// IMPORTS PRIMEIRO
 import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
@@ -13,6 +11,16 @@ import { db, auth } from "./firebase-config.js";
 // =================================================================================
 const listaServicosDiv = document.getElementById('lista-servicos');
 let profissionalRef = null;
+
+// =================================================================================
+// EVENT LISTENER DE DIAGNÓSTICO (TESTE) - pode remover depois!
+listaServicosDiv.addEventListener('click', function(e) {
+  console.log("Clique detectado em listaServicosDiv", e.target);
+  // Se quiser testar só o clique no botão excluir, troque por:
+  // const target = e.target.closest('.btn-excluir');
+  // if (!target) return;
+  // alert("Clique detectado no botão Excluir! ID: " + target.dataset.id);
+});
 
 // =================================================================================
 // FUNÇÕES DE UTILIDADE
