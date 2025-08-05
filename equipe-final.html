@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Equipe - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <link href="style-equipe.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
     <aside class="sidebar">
@@ -39,8 +40,16 @@
         <div class="form-card">
             <h3>Profissionais Cadastrados</h3>
             <div id="lista-profissionais-painel">
-                <p>A verificar as suas permissões...</p>
+                <p>🔄 Carregando sistema de equipe...</p>
             </div>
+        </div>
+
+        <!-- Debug Panel (remover em produção) -->
+        <div class="form-card" style="margin-top: 20px; border: 2px dashed #ffc107;">
+            <h3>🐛 Painel de Debug</h3>
+            <p>Abra o console do navegador (F12) para ver logs detalhados do sistema.</p>
+            <button onclick="window.location.reload()" style="padding: 8px 16px; margin: 5px;">🔄 Recarregar Página</button>
+            <button onclick="console.clear()" style="padding: 8px 16px; margin: 5px;">🧹 Limpar Console</button>
         </div>
     </main>
     
@@ -49,12 +58,13 @@
             <h2>Adicionar Novo Profissional</h2>
             <form id="form-add-profissional">
                 <div class="form-group">
-                    <label for="nome-profissional">Nome do Profissional</label>
-                    <input type="text" id="nome-profissional" required>
+                    <label for="nome-profissional">Nome do Profissional *</label>
+                    <input type="text" id="nome-profissional" required placeholder="Digite o nome completo">
                 </div>
                 <div class="form-group">
-                    <label for="foto-profissional">Foto (Opcional)</label>
-                    <input type="file" id="foto-profissional" accept="image/png, image/jpeg">
+                    <label for="foto-profissional">Foto do Profissional (Opcional)</label>
+                    <input type="file" id="foto-profissional" accept="image/png, image/jpeg, image/jpg">
+                    <small style="color: #6c757d; font-size: 14px;">Formatos aceitos: PNG, JPG, JPEG</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" id="btn-cancelar-profissional" class="btn-secondary">Cancelar</button>
@@ -64,18 +74,26 @@
         </div>
     </div>
 
-    <script src="equipe.js" type="module"></script>
+    <!-- Carregar o script melhorado -->
+    <script src="equipe-melhorado.js" type="module"></script>
+    
     <script>
         // Adicionar logout functionality
         document.addEventListener('DOMContentLoaded', () => {
             const btnLogout = document.getElementById('btn-logout');
             if (btnLogout) {
                 btnLogout.addEventListener('click', () => {
+                    console.log('[LOGOUT] Botão logout clicado');
                     // Implementar logout quando necessário
-                    console.log('Logout clicado');
+                    if (confirm('Tem certeza que deseja sair?')) {
+                        // Aqui você pode adicionar a lógica de logout do Firebase
+                        // auth.signOut().then(() => window.location.href = 'login.html');
+                        console.log('[LOGOUT] Usuário confirmou logout');
+                    }
                 });
             }
         });
     </script>
 </body>
 </html>
+
