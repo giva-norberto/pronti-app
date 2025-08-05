@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gerenciamento de Equipe</title>
     <style>
         * {
@@ -16,15 +16,59 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+            display: flex;
         }
 
+        /* Menu lateral padrão do Pronti */
+        .sidebar {
+            width: 260px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            height: fit-content;
+        }
+
+        .sidebar h2 {
+            font-weight: 700;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            text-align: center;
+            letter-spacing: 1.2px;
+        }
+
+        .sidebar nav a {
+            display: block;
+            color: #ecf0f1;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar nav a:hover,
+        .sidebar nav a.active {
+            background: #4facfe;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,127,255,0.4);
+        }
+
+        /* Container principal fica ao lado do menu */
         .container {
             max-width: 1200px;
-            margin: 0 auto;
+            margin-left: 30px;
             background: white;
             border-radius: 15px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
+            flex-grow: 1;
         }
 
         .header {
@@ -272,8 +316,34 @@
         }
 
         @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                padding: 10px;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                padding: 15px 10px;
+                flex-direction: row;
+                justify-content: space-around;
+            }
+
+            .sidebar h2 {
+                display: none;
+            }
+
+            .sidebar nav a {
+                margin-bottom: 0;
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
             .container {
-                margin: 10px;
+                margin-left: 0;
+                max-width: 100%;
                 border-radius: 10px;
             }
 
@@ -305,6 +375,18 @@
     </style>
 </head>
 <body>
+    <aside class="sidebar">
+        <h2>Pronti</h2>
+        <nav>
+            <a href="dashboard.html" class="active">🏠 Dashboard</a>
+            <a href="perfil.html">⚙️ Perfil</a>
+            <a href="equipe.html">👥 Equipe</a>
+            <a href="agendamento.html">📅 Agendamentos</a>
+            <a href="relatorios.html">📊 Relatórios</a>
+            <a href="sair.html">🚪 Sair</a>
+        </nav>
+    </aside>
+
     <div class="container">
         <div class="header">
             <h1>👥 Gerenciamento de Equipe</h1>
