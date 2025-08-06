@@ -1,67 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meus Horários - Pronti IA</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
-  <style>
-    .dia-semana { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid var(--cor-fundo); flex-wrap: wrap; }
-    .dia-semana:last-child { border-bottom: none; }
-    .dia-semana-nome { font-weight: 600; width: 120px; }
-    .horarios-blocos { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
-    .bloco-horario { display: flex; align-items: center; gap: 10px; }
-    .bloco-horario input[type="time"] { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
-    .btn-remover-bloco { background: var(--cor-perigo); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; }
-    .btn-adicionar-bloco { background: var(--cor-sucesso); color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; margin-top: 10px; }
-  </style>
-</head>
-<body>
-
-  <aside class="sidebar">
-  <a href="index.html" class="sidebar-brand">Pronti</a>
-  <hr />
-  <div class="sidebar-links">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="index.html">Home</a>
-    <a href="servicos.html">Serviços</a>
-    <a href="agenda.html">Agenda</a>
-    <a href="clientes.html">Clientes</a>
-    <a href="perfil.html">Meu Perfil</a>
-    <a href="horarios.html">Meus Horários</a>
-    <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
+<form id="form-horarios">
+  <div class="form-group">
+    <label for="intervalo-atendimento">Intervalo dos agendamentos (minutos)</label>
+    <input type="number" id="intervalo-atendimento" min="5" step="5" value="30" required>
   </div>
-</aside>
-
-
-  <main class="main-content">
-    <h1>Meus Horários de Atendimento</h1>
-    <p>Defina os seus horários e a duração padrão dos seus atendimentos.</p>
-
-    <div class="form-card">
-      <form id="form-horarios">
-        <div class="form-group">
-            <label for="intervalo-atendimento">Duração Padrão dos Atendimentos (Intervalo na Agenda)</label>
-            <select id="intervalo-atendimento">
-                <option value="15">15 minutos</option>
-                <option value="30" selected>30 minutos</option>
-                <option value="45">45 minutos</option>
-                <option value="60">60 minutos</option>
-            </select>
-        </div>
-        
-        <!-- Dias da Semana -->
-        <div id="dias-container">
-            <!-- O JavaScript irá gerar os dias aqui -->
-        </div>
-
-        <button type="submit" class="btn-submit" style="margin-top: 25px;">Salvar Horários</button>
-      </form>
-    </div>
-  </main>
-
-  <script src="firebase-config.js" type="module"></script>
-  <script src="horarios.js" type="module"></script>
-
-</body>
-</html>
+  <div id="dias-container"></div>
+  <button type="submit" class="btn-submit">Salvar Horários</button>
+</form>
+<script src="horarios.js" type="module"></script>
