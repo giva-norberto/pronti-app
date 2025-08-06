@@ -1,14 +1,12 @@
 // vitrini-firebase.js
-
-// 1. Importa todas as funções necessárias do SDK do Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
     getAuth,
     GoogleAuthProvider,
     onAuthStateChanged,
     signInWithPopup,
     signOut
-} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
     getFirestore,
     collection,
@@ -20,7 +18,7 @@ import {
     addDoc,
     Timestamp,
     updateDoc
-} from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -38,7 +36,6 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// 2. Exporta as instâncias E re-exporta as funções importadas
 export {
     app,
     db,
