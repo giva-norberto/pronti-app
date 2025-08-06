@@ -121,6 +121,26 @@
         </main>
     </div>
 
+    <!-- Modal de Cadastro de Cliente (aparece apenas quando necessário) -->
+    <div id="cadastro-modal-bg" class="modal-bg" style="display:none;">
+      <div class="modal-card">
+        <h2>Cadastrar Novo Cliente</h2>
+        <p>Preencha os dados do novo cliente para continuar.</p>
+        <form id="form-cadastro-cliente">
+          <label>Nome Completo:
+            <input type="text" name="nome" required autocomplete="name"/>
+          </label>
+          <label>Telefone:
+            <input type="tel" name="telefone" required pattern="\(\d{2}\) \d{5}-\d{4}" placeholder="(xx) xxxxx-xxxx" autocomplete="tel"/>
+          </label>
+          <label>Email:
+            <input type="email" name="email" required autocomplete="email"/>
+          </label>
+          <button type="submit" class="btn-confirmar">Cadastrar</button>
+        </form>
+      </div>
+    </div>
+
     <!-- Modal de Confirmação -->
     <div id="custom-confirm-modal" class="modal-overlay">
         <div class="modal-box">
@@ -135,5 +155,6 @@
     
     <!-- Scripts -->
     <script type="module" src="vitrine.js"></script>
+    <script type="module" src="vitrine-cadastro-modal.js"></script>
 </body>
 </html>
