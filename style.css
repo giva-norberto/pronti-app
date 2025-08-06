@@ -563,3 +563,60 @@ h1, h2, h3 {
     border: 2px solid var(--cor-primaria-leve);
     background-color: var(--cor-fundo);
 }
+#nome-cliente-titulo {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #222;
+  font-family: 'Montserrat', Arial, sans-serif;
+}
+
+.main-content > p {
+  color: #444;
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+/* Estilo para cada agendamento */
+.agendamento-item {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 8px rgba(60,60,60,0.08);
+  padding: 18px 24px;
+  margin-bottom: 18px;
+  transition: box-shadow .2s;
+  font-family: 'Montserrat', Arial, sans-serif;
+}
+
+.agendamento-item h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2d334a;
+}
+
+.agendamento-info p {
+  margin: 0;
+  color: #555;
+  font-size: 1rem;
+}
+
+.main-content a {
+  color: #5d6ee4;
+  font-weight: 500;
+  margin-bottom: 24px;
+  display: inline-block;
+  transition: color .2s;
+  text-decoration: none;
+}
+.main-content a:hover {
+  color: #222;
+  text-decoration: underline;
+}
+
+/* Container centralizada */
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 30px 15px;
+}
