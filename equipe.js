@@ -1,10 +1,7 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe
- * Corrigido: placeholder de foto não usa emoji para evitar erros de carregamento em branco.
- * Também mantém a lógica para dono e funcionários.
+ * equipe.js - Sistema de gerenciamento de equipe (corrigido para evitar loop infinito de erro de imagem)
  */
 
-// Verificar se todos os elementos HTML existem
 function verificarElementosHTML() {
     const elementos = {
         'btn-add-profissional': document.getElementById('btn-add-profissional'),
@@ -23,11 +20,9 @@ function verificarElementosHTML() {
             break;
         }
     }
-
     return { elementos, todosEncontrados };
 }
 
-// Verificar se o Firebase está disponível
 function verificarFirebase() {
     try {
         import('./firebase-config.js').then(({ db, auth, storage }) => {
@@ -94,7 +89,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         onAuthStateChanged 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
 
-    // Função: cria ou atualiza o dono com nome/foto do usuário (Google/Firebase Auth)
     async function getEmpresaIdDoDono(uid, user) {
         const empresariosRef = collection(db, "empresarios");
         const q = query(empresariosRef, where("donoId", "==", uid));
@@ -112,7 +106,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 const fotoUrl = (user && user.photoURL) ? user.photoURL : "";
 
                 if (!donoDoc) {
-                    // Cadastra o dono se não existir
                     await addDoc(profissionaisRef, {
                         nome: nomeDono,
                         fotoUrl: fotoUrl,
@@ -121,7 +114,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                         criadoEm: serverTimestamp()
                     });
                 } else {
-                    // Atualiza nome/foto se estiver diferente do Google/Firebase Auth
                     const data = donoDoc.data();
                     if (data.nome !== nomeDono || data.fotoUrl !== fotoUrl) {
                         const donoRef = docRef(db, "empresarios", empresaId, "profissionais", donoDoc.id);
@@ -153,7 +145,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
             const q = query(profissionaisRef);
             
             unsubProfissionais = onSnapshot(q, (snapshot) => {
-                // Sempre mostra o dono em primeiro na lista
                 let equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 equipe.sort((a, b) => (b.ehDono ? 1 : 0) - (a.ehDono ? 1 : 0));
                 renderizarEquipe(equipe);
@@ -179,12 +170,12 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         equipe.forEach(profissional => {
             const div = document.createElement("div");
             div.className = "profissional-card";
-            // Corrigido: placeholder de imagem padrão sem emoji
+            // Corrigido: placeholder de imagem padrão sem emoji e sem loop de erro
             div.innerHTML = `
                 <div class="profissional-foto">
                     <img src="${profissional.fotoUrl || "https://via.placeholder.com/60x60?text=User"}" 
                          alt="Foto de ${profissional.nome}"
-                         onerror="this.src='https://via.placeholder.com/60x60?text=User'">
+                         onerror="this.onerror=null;this.src='https://placehold.co/60x60';">
                 </div>
                 <div class="profissional-info">
                     <span class="profissional-nome">${profissional.nome}</span>
@@ -253,7 +244,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                     }
                 }
 
-                // Novo profissional NÃO possui campo servicos, pois agora será uma subcoleção!
                 const novoProfissional = {
                     nome,
                     fotoUrl: fotoURL,
@@ -279,7 +269,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         }
     }
 
-    // Chamada: passa o user do Auth para usar displayName/photoURL do dono
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             empresaId = await getEmpresaIdDoDono(user.uid, user);
@@ -313,7 +302,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
     });
 }
 
-// Inicializar quando o DOM estiver carregado
 window.addEventListener("DOMContentLoaded", () => {
     verificarFirebase();
 });
