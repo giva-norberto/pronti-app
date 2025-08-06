@@ -1,6 +1,13 @@
-// vitrini-profissionais.js (VERSÃO ATUALIZADA)
+// vitrini-profissionais.js (VERSÃO ATUALIZADA Firebase v10.x+)
 
-import { db, doc, getDoc, collection, getDocs, query } from './vitrini-firebase.js';
+import { db } from './vitrini-firebase.js';
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  query
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ==========================================================================
 // FUNÇÕES ORIGINAIS (PARA UM ÚNICO PROFISSIONAL VIA SLUG)
