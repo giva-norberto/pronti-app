@@ -1,5 +1,5 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe (adaptado para subcoleção de serviços e distinção dono/funcionário)
+ * equipe.js - Sistema de gerenciamento de equipe (com distinção dono/funcionário, usando nome e foto do usuário dono)
  */
 
 // Verificar se todos os elementos HTML existem
@@ -90,7 +90,8 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         onAuthStateChanged 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
 
-    async function getEmpresaIdDoDono(uid) {
+    // Função atualizada: recebe o user do Auth e usa displayName/photoURL para o dono
+    async function getEmpresaIdDoDono(uid, user) {
         const empresariosRef = collection(db, "empresarios");
         const q = query(empresariosRef, where("donoId", "==", uid));
 
@@ -105,9 +106,9 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 const donoJaExiste = profissionaisSnap.docs.some(doc => doc.data().ehDono === true);
 
                 if (!donoJaExiste) {
-                    // Busca nome do dono pelo campo nomeFantasia ou similar, ou usa placeholder
-                    let nomeDono = empresaDoc.data().nomeFantasia || empresaDoc.data().nome || "Dono";
-                    let fotoUrl = empresaDoc.data().logoUrl || "";
+                    // Usa nome e foto do usuário logado!
+                    let nomeDono = (user && user.displayName) ? user.displayName : "Dono";
+                    let fotoUrl = (user && user.photoURL) ? user.photoURL : "";
                     await addDoc(profissionaisRef, {
                         nome: nomeDono,
                         fotoUrl: fotoUrl,
@@ -263,9 +264,10 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         }
     }
 
+    // Chamada atualizada: passa o user do Auth para usar displayName/photoURL do dono
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            empresaId = await getEmpresaIdDoDono(user.uid);
+            empresaId = await getEmpresaIdDoDono(user.uid, user);
             
             if (empresaId) {
                 iniciarListenerDaEquipe();
