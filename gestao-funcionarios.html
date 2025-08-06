@@ -1,0 +1,23 @@
+<div id="lista-profissionais-painel"></div>
+
+<!-- Modal de edição -->
+<div id="modal-editar-funcionario" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Editar Funcionário</h3>
+    <form id="form-editar-funcionario">
+      <label>Nome:
+        <input type="text" id="func-nome" required>
+      </label>
+      <div>
+        <label>Serviços:</label>
+        <div id="func-servicos"></div>
+      </div>
+      <div>
+        <label>Horários:</label>
+        <div id="func-horarios"></div>
+      </div>
+      <button type="submit">Salvar Alterações</button>
+      <button type="button" id="btn-fechar-modal">Cancelar</button>
+    </form>
+  </div>
+</div>
