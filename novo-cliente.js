@@ -1,36 +1,37 @@
 /**
- * novo-cliente.js (Painel do Dono - Firebase v10+ via CDN)
- * Atualizado para uso direto no navegador com a CDN oficial do Firebase v10+.
- * - Salva clientes em 'empresarios/{empresaId}/clientes'.
- * - Exibe mensagens Toastify se disponível, senão usa alert.
+ * clientes.js (Painel do Dono - Firebase v10+ via CDN)
+ * Atualizado para Firestore Modular v10+ e uso direto em navegador.
+ * - Busca e exibe clientes em 'empresarios/{empresaId}/clientes'.
+ * - Permite excluir cliente dessa subcoleção.
+ * - Usa Toastify se disponível, senão usa alert.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js"; // Seu firebase-config.js deve exportar firebaseConfig
 
-// Inicialização do Firebase
+// Inicialização Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ELEMENTOS DA PÁGINA
-const form = document.getElementById('form-cliente');
-const nomeInput = document.getElementById('nome-cliente');
-const telefoneInput = document.getElementById('telefone-cliente');
-const emailInput = document.getElementById('email-cliente');
-const btnSalvar = form.querySelector('button[type="submit"]');
+const listaClientesDiv = document.getElementById('lista-clientes');
+const modal = document.getElementById('modal-confirmacao');
+const modalMensagem = document.getElementById('modal-mensagem');
+const btnModalConfirmar = document.getElementById('btn-modal-confirmar');
+const btnModalCancelar = document.getElementById('btn-modal-cancelar');
 
-// Previne múltiplos listeners
-let formListenerAdicionado = false;
+let empresaId = null; // Variável global para guardar o ID da empresa
 
-onAuthStateChanged(auth, (user) => {
+// Validação de login e obtenção da empresa
+onAuthStateChanged(auth, async (user) => {
   if (user) {
-    const uid = user.uid;
-    if (!formListenerAdicionado) {
-      form.addEventListener('submit', (event) => handleFormSubmit(event, uid));
-      formListenerAdicionado = true;
+    empresaId = await getEmpresaIdDoDono(user.uid);
+    if (empresaId) {
+        inicializarPaginaClientes();
+    } else {
+        listaClientesDiv.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
     }
   } else {
     window.location.href = 'login.html';
@@ -38,83 +39,95 @@ onAuthStateChanged(auth, (user) => {
 });
 
 /**
- * Busca o ID da empresa do dono logado.
- * @param {string} uid
- * @returns {Promise<string|null>}
+ * Função para encontrar o ID da empresa com base no ID do dono.
+ * @param {string} uid - O ID do dono da empresa.
+ * @returns {Promise<string|null>} - O ID da empresa ou null se não encontrada.
  */
 async function getEmpresaIdDoDono(uid) {
-  const empresariosCol = collection(db, "empresarios");
-  const q = query(empresariosCol, where("donoId", "==", uid));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    console.error("Nenhuma empresa encontrada para o dono com UID:", uid);
-    return null;
-  }
-  return snapshot.docs[0].id;
+    const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(empresQ);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].id;
 }
 
 /**
- * Salva um novo cliente na subcoleção correta.
- * @param {Event} event
- * @param {string} uid
+ * Função que inicializa toda a lógica da página de clientes.
  */
-async function handleFormSubmit(event, uid) {
-  event.preventDefault();
+function inicializarPaginaClientes() {
 
-  const nome = nomeInput.value.trim();
-  const telefone = telefoneInput.value.trim();
-  const email = emailInput.value.trim();
+    function mostrarConfirmacao(mensagem) {
+      modalMensagem.textContent = mensagem;
+      modal.style.display = 'flex';
+      setTimeout(() => modal.classList.add('visivel'), 10);
 
-  if (!nome) {
-    mostrarToast("O campo 'Nome Completo' é obrigatório.", "var(--cor-aviso)");
-    return;
-  }
-
-  btnSalvar.disabled = true;
-  btnSalvar.textContent = 'A salvar...';
-
-  try {
-    // 1. Busca o ID da empresa do dono logado.
-    const empresaId = await getEmpresaIdDoDono(uid);
-    if (!empresaId) {
-      throw new Error("Não foi possível encontrar a empresa associada. Verifique seu perfil.");
+      return new Promise((resolve) => {
+        btnModalConfirmar.onclick = () => {
+          modal.classList.remove('visivel');
+          setTimeout(() => modal.style.display = 'none', 300);
+          resolve(true);
+        };
+        btnModalCancelar.onclick = () => {
+          modal.classList.remove('visivel');
+          setTimeout(() => modal.style.display = 'none', 300);
+          resolve(false);
+        };
+      });
     }
 
-    // 2. Subcoleção correta: 'empresarios/{empresaId}/clientes'
-    const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
+    async function carregarClientesDoFirebase() {
+        listaClientesDiv.innerHTML = "<p>A carregar clientes...</p>";
+        try {
+            // Subcoleção correta da empresa
+            const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
+            const clientesQuery = query(clientesCollection, orderBy("nome"));
+            const clientesSnapshot = await getDocs(clientesQuery);
 
-    // 3. Verifica duplicidade por nome
-    const q = query(clientesCollection, where("nome", "==", nome));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      mostrarToast(`Um cliente com o nome "${nome}" já existe.`, "var(--cor-aviso)");
-      btnSalvar.disabled = false;
-      btnSalvar.textContent = 'Salvar Cliente';
-      return;
+            if (clientesSnapshot.empty) {
+                listaClientesDiv.innerHTML = '<p>Nenhum cliente cadastrado.</p>'; return;
+            }
+            listaClientesDiv.innerHTML = '';
+            clientesSnapshot.forEach(docItem => {
+                const cliente = docItem.data(); const clienteId = docItem.id;
+                if (cliente.nome) { 
+                    const el = document.createElement('div');
+                    el.classList.add('cliente-item'); el.dataset.id = clienteId;
+                    el.innerHTML = `
+                        <div class="item-info"><h3>${cliente.nome}</h3><p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ''}</p></div>
+                        <div class="item-acoes"><a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a><button class="btn-excluir" data-id="${clienteId}">Excluir</button></div>
+                    `;
+                    listaClientesDiv.appendChild(el);
+                }
+            });
+        } catch (error) { 
+            console.error("Erro ao buscar clientes:", error); 
+            mostrarToast("Erro ao buscar clientes.", "var(--cor-perigo)");
+        }
     }
 
-    const novoCliente = {
-      nome,
-      telefone,
-      email,
-      criadoEm: Timestamp.now()
-    };
+    async function excluirCliente(id) {
+        try {
+            await deleteDoc(doc(db, "empresarios", empresaId, "clientes", id));
+            mostrarToast("Cliente excluído com sucesso!", "var(--cor-perigo)");
+            const itemRemovido = document.querySelector(`.cliente-item[data-id="${id}"]`);
+            if (itemRemovido) itemRemovido.remove();
+        } catch (error) {
+            console.error("Erro ao excluir cliente:", error);
+            mostrarToast("Erro ao excluir o cliente.", "var(--cor-perigo)");
+        }
+    }
 
-    await addDoc(clientesCollection, novoCliente);
+    listaClientesDiv.addEventListener('click', async (event) => {
+        if (event.target && event.target.classList.contains('btn-excluir')) {
+            const clienteId = event.target.dataset.id;
+            const nomeCliente = event.target.closest('.cliente-item').querySelector('h3').textContent;
+            const confirmado = await mostrarConfirmacao(`Tem a certeza de que deseja excluir "${nomeCliente}"? Esta ação é permanente.`);
+            if (confirmado) {
+                excluirCliente(clienteId);
+            }
+        }
+    });
 
-    mostrarToast(`Cliente "${nome}" salvo com sucesso!`, "var(--cor-sucesso)");
-
-    form.reset();
-    setTimeout(() => { window.location.href = 'clientes.html'; }, 2000);
-
-  } catch (error) {
-    console.error("Erro ao salvar cliente: ", error);
-    mostrarToast(`Erro ao salvar o cliente: ${error.message}`, "var(--cor-perigo)");
-  } finally {
-    btnSalvar.disabled = false;
-    btnSalvar.textContent = 'Salvar Cliente';
-  }
+    carregarClientesDoFirebase();
 }
 
 /**
