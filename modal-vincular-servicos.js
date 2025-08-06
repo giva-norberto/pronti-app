@@ -11,7 +11,7 @@ import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/fireba
 export function abrirModalServicosFuncionario(funcionario, todosServicos, empresaId, onSaved) {
     const modal = document.getElementById('modal-servicos-funcionario');
     const listaDiv = document.getElementById('lista-servicos-checkbox');
-    modal.classList.add('show');
+    modal.classList.add('show'); // Usa .show para compatibilidade com seu CSS
 
     // Renderiza os checkboxes dos serviços
     listaDiv.innerHTML = todosServicos.map(servico => `
@@ -34,12 +34,16 @@ export function abrirModalServicosFuncionario(funcionario, todosServicos, empres
             listaDiv.querySelectorAll('input[type="checkbox"]:checked')
         ).map(chk => chk.value);
 
-        await updateDoc(
-            doc(db, "empresarios", empresaId, "profissionais", funcionario.id),
-            { servicos: selecionados }
-        );
-        modal.classList.remove('show');
-        if (onSaved) onSaved(selecionados);
-        alert("Vínculo de serviços atualizado!");
+        try {
+            await updateDoc(
+                doc(db, "empresarios", empresaId, "profissionais", funcionario.id),
+                { servicos: selecionados }
+            );
+            modal.classList.remove('show');
+            if (onSaved) onSaved(selecionados);
+            alert("Vínculo de serviços atualizado!");
+        } catch (error) {
+            alert("Erro ao salvar serviços: " + error.message);
+        }
     };
 }
