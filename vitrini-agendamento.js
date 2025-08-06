@@ -1,5 +1,4 @@
-// vitrini-agendamento.js (VERSÃO FINAL - MÚLTIPLOS PROFISSIONAIS)
-
+// vitrini-agendamento.js (VERSÃO FINAL - MÚLTIPLOS PROFISSIONAIS - Firebase v10.x)
 // ==========================================================================
 // RESUMO DAS MUDANÇAS GERAIS NESTE ARQUIVO:
 // 1. As funções agora recebem 'empresaId' em vez de 'profissionalUid'.
@@ -10,7 +9,18 @@
 // 6. [CORREÇÃO] A função 'calcularSlotsDisponiveis' foi implementada corretamente.
 // ==========================================================================
 
-import { db, collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc } from './vitrini-firebase.js';
+// Firebase v10.x imports (sempre valide as versões!)
+import { 
+    collection, 
+    query, 
+    where, 
+    getDocs, 
+    addDoc, 
+    Timestamp, 
+    updateDoc, 
+    doc 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { db } from './vitrini-firebase.js'; // db = getFirestore(app)
 import { showAlert } from './vitrini-utils.js';
 
 /**
@@ -140,8 +150,7 @@ export async function cancelarAgendamento(empresaId, agendamentoId, callback) {
         await updateDoc(agendamentoRef, { status: 'cancelado_pelo_cliente' });
         await showAlert("Sucesso", "Agendamento cancelado com sucesso.");
         if (callback) callback();
-    } catch (error)
-        {
+    } catch (error) {
         console.error("Erro ao cancelar agendamento:", error);
         await showAlert("Erro", "Ocorreu um erro ao cancelar. Tente novamente.");
     }
@@ -212,14 +221,12 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
             }
             
             // Avança para o próximo slot possível.
-            // Se a duração for 30, ele pula de 30 em 30. Se for 60, de 60 em 60.
             slotAtual = new Date(slotAtual.getTime() + duracaoServico * 60000);
         }
     });
 
     return slotsDisponiveis;
 }
-
 
 /**
  * Encontra a primeira data com horários disponíveis para um PROFISSIONAL específico.
@@ -233,6 +240,7 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
         return null;
     }
     
+    // Descobre a menor duração dos serviços do profissional (caso queira oferecer o menor agendamento possível)
     const menorDuracao = Math.min(...profissional.servicos.map(s => s.duracao || 30));
 
     let dataAtual = new Date();
