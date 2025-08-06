@@ -27,4 +27,4 @@ export const db = getFirestore(firebaseApp);
 export const auth = getAuth(firebaseApp);
 export const storage = getStorage(firebaseApp);
 
-console.log("🔥 Firebase inicializado com sucesso e pronto a ser usado!");
+
