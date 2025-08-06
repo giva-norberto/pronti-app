@@ -1,35 +1,100 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Ficha do Cliente</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
-</head>
-<body>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js";
 
-  <aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <div class="sidebar-links">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="index.html">Home</a>
-      <a href="servicos.html">Serviços</a>
-      <a href="agenda.html">Agenda</a>
-      <a href="clientes.html" class="active">Clientes</a> <a href="contato.html">Contato</a>
-    </div>
-  </aside>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-  <main class="main-content">
-    <a href="clientes.html" style="text-decoration: none; color: #555;">&larr; Voltar para a lista de clientes</a>
+const historicoLista = document.getElementById('historico-lista');
 
-    <h1 id="nome-cliente-titulo" style="margin-top: 20px;">Carregando...</h1>
+const urlParams = new URLSearchParams(window.location.search);
+const clienteId = urlParams.get('id');
 
-    <p>Abaixo está o histórico de todos os agendamentos deste cliente.</p>
+function mostrarStatus(msg, isErro = false) {
+    if (typeof Toastify !== "undefined") {
+        Toastify({
+            text: msg,
+            duration: 5000,
+            gravity: "top",
+            position: "right",
+            style: { background: isErro ? "var(--cor-perigo)" : "var(--cor-sucesso)", color: "#fff" }
+        }).showToast();
+    } else {
+        alert(msg);
+    }
+}
 
-    <div id="historico-agendamentos">
-      </div>
-  </main>
+async function getEmpresaIdDoDono(uid) {
+    try {
+        const empresariosCol = collection(db, "empresarios");
+        const q = query(empresariosCol, where("donoId", "==", uid));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            return null;
+        }
+        return snapshot.docs[0].id;
+    } catch (error) {
+        console.error("Erro ao buscar empresaId:", error);
+        return null;
+    }
+}
 
-  <script src="ficha-cliente.js" type="module"></script>
-</body>
-</html>
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+    if (!clienteId) {
+        mostrarStatus("Cliente não encontrado na URL.", true);
+        historicoLista.innerHTML = "<p style='color:red'>Cliente não encontrado na URL.</p>";
+        return;
+    }
+    const empresaId = await getEmpresaIdDoDono(user.uid);
+    if (!empresaId) {
+        mostrarStatus("Empresa não encontrada para este usuário.", true);
+        historicoLista.innerHTML = "<p style='color:red'>Empresa não encontrada para este usuário.</p>";
+        return;
+    }
+    carregarHistorico(empresaId, clienteId);
+});
+
+async function carregarHistorico(empresaId, clienteId) {
+    historicoLista.innerHTML = "<p>Carregando agendamentos...</p>";
+    // Validação extra antes do Firestore!
+    if (!db || !empresaId || !clienteId) {
+        historicoLista.innerHTML = "<p style='color:red'>Dados incompletos para carregar o histórico.</p>";
+        return;
+    }
+    try {
+        const agendamentosCol = collection(db, "empresarios", empresaId, "clientes", clienteId, "agendamentos");
+        const agendamentosQuery = query(agendamentosCol, orderBy("data", "desc"));
+        const agendamentosSnapshot = await getDocs(agendamentosQuery);
+
+        if (agendamentosSnapshot.empty) {
+            historicoLista.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
+            return;
+        }
+
+        historicoLista.innerHTML = "";
+        agendamentosSnapshot.forEach(docSnap => {
+            const ag = docSnap.data();
+            const servico = ag.servico || "Serviço não informado";
+            const data = ag.data && ag.data.seconds
+                ? new Date(ag.data.seconds * 1000).toLocaleString("pt-BR")
+                : "Data não informada";
+            const div = document.createElement("div");
+            div.className = "agendamento-item";
+            div.innerHTML = `
+                <strong>${servico}</strong><br>
+                <span>${data}</span>
+                ${ag.obs ? `<div>Obs: ${ag.obs}</div>` : ""}
+            `;
+            historicoLista.appendChild(div);
+        });
+    } catch (error) {
+        console.error(error);
+        historicoLista.innerHTML = `<p style='color:red'>Erro ao carregar agendamentos: ${error.message}</p>`;
+    }
+}
