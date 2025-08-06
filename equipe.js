@@ -1,5 +1,5 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe (sem debug)
+ * equipe.js - Sistema de gerenciamento de equipe (adaptado para subcoleção de serviços e distinção dono/funcionário)
  */
 
 // Verificar se todos os elementos HTML existem
@@ -97,7 +97,26 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         try {
             const snapshot = await getDocs(q);
             if (!snapshot.empty) {
-                return snapshot.docs[0].id;
+                // Adiciona o dono como profissional se não existir ainda
+                const empresaDoc = snapshot.docs[0];
+                const empresaId = empresaDoc.id;
+                const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+                const profissionaisSnap = await getDocs(profissionaisRef);
+                const donoJaExiste = profissionaisSnap.docs.some(doc => doc.data().ehDono === true);
+
+                if (!donoJaExiste) {
+                    // Busca nome do dono pelo campo nomeFantasia ou similar, ou usa placeholder
+                    let nomeDono = empresaDoc.data().nomeFantasia || empresaDoc.data().nome || "Dono";
+                    let fotoUrl = empresaDoc.data().logoUrl || "";
+                    await addDoc(profissionaisRef, {
+                        nome: nomeDono,
+                        fotoUrl: fotoUrl,
+                        ehDono: true,
+                        horarios: {},
+                        criadoEm: serverTimestamp()
+                    });
+                }
+                return empresaId;
             }
 
             const novaEmpresa = {
@@ -119,7 +138,9 @@ async function inicializarSistemaEquipe(db, auth, storage) {
             const q = query(profissionaisRef);
             
             unsubProfissionais = onSnapshot(q, (snapshot) => {
-                const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Sempre mostra o dono em primeiro na lista
+                let equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                equipe.sort((a, b) => (b.ehDono ? 1 : 0) - (a.ehDono ? 1 : 0));
                 renderizarEquipe(equipe);
             }, () => {
                 // Erro no listener, pode adicionar tratamento se quiser
@@ -216,11 +237,11 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                     }
                 }
 
+                // Novo profissional NÃO possui campo servicos, pois agora será uma subcoleção!
                 const novoProfissional = {
                     nome,
                     fotoUrl: fotoURL,
                     ehDono: false,
-                    servicos: [],
                     horarios: {},
                     criadoEm: serverTimestamp()
                 };
