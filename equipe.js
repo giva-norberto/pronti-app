@@ -1,5 +1,5 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe (corrigido para evitar loop infinito de erro de imagem)
+ * equipe.js - Sistema de gerenciamento de equipe (corrigido para usar placehold.co e evitar qualquer erro de imagem)
  */
 
 function verificarElementosHTML() {
@@ -170,12 +170,12 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         equipe.forEach(profissional => {
             const div = document.createElement("div");
             div.className = "profissional-card";
-            // Corrigido: placeholder de imagem padrão sem emoji e sem loop de erro
+            // Usando placehold.co, que é confiável e não gera erro DNS
             div.innerHTML = `
                 <div class="profissional-foto">
-                    <img src="${profissional.fotoUrl || "https://via.placeholder.com/60x60?text=User"}" 
+                    <img src="${profissional.fotoUrl || "https://placehold.co/60x60?text=User"}" 
                          alt="Foto de ${profissional.nome}"
-                         onerror="this.onerror=null;this.src='https://placehold.co/60x60';">
+                         onerror="this.onerror=null;this.src='https://placehold.co/60x60?text=User';">
                 </div>
                 <div class="profissional-info">
                     <span class="profissional-nome">${profissional.nome}</span>
