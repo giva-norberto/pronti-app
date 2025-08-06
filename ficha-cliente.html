@@ -8,7 +8,6 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 const historicoLista = document.getElementById('historico-lista');
-
 const urlParams = new URLSearchParams(window.location.search);
 const clienteId = urlParams.get('id');
 
@@ -71,12 +70,10 @@ async function carregarHistorico(empresaId, clienteId) {
         const agendamentosCol = collection(db, "empresarios", empresaId, "clientes", clienteId, "agendamentos");
         const agendamentosQuery = query(agendamentosCol, orderBy("data", "desc"));
         const agendamentosSnapshot = await getDocs(agendamentosQuery);
-
         if (agendamentosSnapshot.empty) {
             historicoLista.innerHTML = "<p>Nenhum agendamento encontrado.</p>";
             return;
         }
-
         historicoLista.innerHTML = "";
         agendamentosSnapshot.forEach(docSnap => {
             const ag = docSnap.data();
