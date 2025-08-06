@@ -1,5 +1,5 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe (corrigido para usar placehold.co e evitar qualquer erro de imagem)
+ * equipe.js - Sistema de gerenciamento de equipe (corrigido para usar placehold.co e evitar erro de duplicidade do dono)
  */
 
 function verificarElementosHTML() {
@@ -92,85 +92,79 @@ async function inicializarSistemaEquipe(db, auth, storage) {
     async function getEmpresaIdDoDono(uid, user) {
         const empresariosRef = collection(db, "empresarios");
         const q = query(empresariosRef, where("donoId", "==", uid));
+        const snapshot = await getDocs(q);
 
-        try {
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const empresaDoc = snapshot.docs[0];
-                const empresaId = empresaDoc.id;
-                const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-                const profissionaisSnap = await getDocs(profissionaisRef);
-                const donoDoc = profissionaisSnap.docs.find(doc => doc.data().ehDono === true);
+        if (!snapshot.empty) {
+            // Sempre pega a primeira empresa do dono, nunca cria nova!
+            const empresaDoc = snapshot.docs[0];
+            const empresaId = empresaDoc.id;
+            const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+            const profissionaisSnap = await getDocs(profissionaisRef);
 
-                const nomeDono = (user && user.displayName) ? user.displayName : "Dono";
-                const fotoUrl = (user && user.photoURL) ? user.photoURL : "";
+            // Corrige: só cria dono se não existe dono na subcoleção
+            let donoDoc = profissionaisSnap.docs.find(doc => doc.data().ehDono === true);
 
-                if (!donoDoc) {
-                    await addDoc(profissionaisRef, {
+            const nomeDono = (user && user.displayName) ? user.displayName : "Dono";
+            const fotoUrl = (user && user.photoURL) ? user.photoURL : "";
+
+            if (!donoDoc) {
+                await addDoc(profissionaisRef, {
+                    nome: nomeDono,
+                    fotoUrl: fotoUrl,
+                    ehDono: true,
+                    horarios: {},
+                    criadoEm: serverTimestamp()
+                });
+            } else {
+                // Opcional: atualiza nome/foto do dono se mudou
+                const data = donoDoc.data();
+                if (data.nome !== nomeDono || data.fotoUrl !== fotoUrl) {
+                    const donoRef = docRef(db, "empresarios", empresaId, "profissionais", donoDoc.id);
+                    await updateDoc(donoRef, {
                         nome: nomeDono,
-                        fotoUrl: fotoUrl,
-                        ehDono: true,
-                        horarios: {},
-                        criadoEm: serverTimestamp()
+                        fotoUrl: fotoUrl
                     });
-                } else {
-                    const data = donoDoc.data();
-                    if (data.nome !== nomeDono || data.fotoUrl !== fotoUrl) {
-                        const donoRef = docRef(db, "empresarios", empresaId, "profissionais", donoDoc.id);
-                        await updateDoc(donoRef, {
-                            nome: nomeDono,
-                            fotoUrl: fotoUrl
-                        });
-                    }
                 }
-                return empresaId;
             }
-
-            const novaEmpresa = {
-                donoId: uid,
-                nome: "Minha Empresa",
-                criadaEm: serverTimestamp(),
-            };
-
-            const docSnapshot = await addDoc(empresariosRef, novaEmpresa);
-            return docSnapshot.id;
-        } catch {
-            return null;
+            return empresaId;
         }
+
+        // Nunca cria nova empresa automaticamente!
+        return null;
     }
 
     function iniciarListenerDaEquipe() {
         try {
             const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
             const q = query(profissionaisRef);
-            
             unsubProfissionais = onSnapshot(q, (snapshot) => {
                 let equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Evita duplicidade: só mostra um dono e não repete nome igual do dono como funcionário
+                const nomesDono = equipe.filter(p => p.ehDono).map(p => p.nome);
+                equipe = equipe.filter((p, i, arr) =>
+                    p.ehDono ||
+                    !nomesDono.includes(p.nome) ||
+                    arr.findIndex(o => o.nome === p.nome && o.ehDono) === i
+                );
                 equipe.sort((a, b) => (b.ehDono ? 1 : 0) - (a.ehDono ? 1 : 0));
                 renderizarEquipe(equipe);
-            }, () => {
-                // Erro no listener, pode adicionar tratamento se quiser
-            });
-        } catch {
-            // Erro ao iniciar listener
-        }
+            }, () => { /* erro listener */ });
+        } catch { /* erro ao iniciar listener */ }
     }
 
     function renderizarEquipe(equipe) {
         if (!elementos['lista-profissionais-painel']) return;
-        
         elementos['lista-profissionais-painel'].innerHTML = "";
-        
+
         if (equipe.length === 0) {
-            elementos['lista-profissionais-painel'].innerHTML = 
+            elementos['lista-profissionais-painel'].innerHTML =
                 `<p>Nenhum profissional na equipe ainda. Clique em "Adicionar Profissional" para começar.</p>`;
             return;
         }
-        
+
         equipe.forEach(profissional => {
             const div = document.createElement("div");
             div.className = "profissional-card";
-            // Usando placehold.co, que é confiável e não gera erro DNS
             div.innerHTML = `
                 <div class="profissional-foto">
                     <img src="${profissional.fotoUrl || "https://placehold.co/60x60?text=User"}" 
@@ -193,11 +187,9 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                     alert("Não foi possível identificar a sua empresa. Por favor, recarregue a página.");
                     return;
                 }
-                
                 if (elementos['form-add-profissional']) {
                     elementos['form-add-profissional'].reset();
                 }
-                
                 if (elementos['modal-add-profissional']) {
                     elementos['modal-add-profissional'].style.display = "flex";
                 }
@@ -215,14 +207,14 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         if (elementos['form-add-profissional']) {
             elementos['form-add-profissional'].addEventListener("submit", async (e) => {
                 e.preventDefault();
-                
+
                 const btnSubmit = elementos['form-add-profissional'].querySelector('.btn-submit');
                 btnSubmit.disabled = true;
                 btnSubmit.textContent = "Salvando...";
 
                 const nome = elementos['nome-profissional'].value.trim();
                 const fotoFile = elementos['foto-profissional'].files[0];
-                
+
                 if (!nome) {
                     alert("O nome do profissional é obrigatório.");
                     btnSubmit.disabled = false;
@@ -244,6 +236,20 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                     }
                 }
 
+                // Impede adicionar novo funcionário com mesmo nome do dono
+                const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+                const profissionaisSnap = await getDocs(profissionaisRef);
+                const jaEhDono = profissionaisSnap.docs.find(doc => {
+                    const data = doc.data();
+                    return data.ehDono && data.nome.trim().toLowerCase() === nome.toLowerCase();
+                });
+                if (jaEhDono) {
+                    alert("Já existe um dono com esse nome. Escolha um nome diferente para o funcionário.");
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = "Salvar Profissional";
+                    return;
+                }
+
                 const novoProfissional = {
                     nome,
                     fotoUrl: fotoURL,
@@ -253,9 +259,7 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 };
 
                 try {
-                    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
                     await addDoc(profissionaisRef, novoProfissional);
-                    
                     if (elementos['modal-add-profissional']) {
                         elementos['modal-add-profissional'].style.display = "none";
                     }
@@ -272,14 +276,14 @@ async function inicializarSistemaEquipe(db, auth, storage) {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             empresaId = await getEmpresaIdDoDono(user.uid, user);
-            
+
             if (empresaId) {
                 iniciarListenerDaEquipe();
-                
+
                 if (elementos['btn-add-profissional']) {
                     elementos['btn-add-profissional'].disabled = false;
                 }
-                
+
                 adicionarListenersDeEvento();
             } else {
                 if (elementos['lista-profissionais-painel']) {
@@ -291,7 +295,7 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                         </div>
                     `;
                 }
-                
+
                 if (elementos['btn-add-profissional']) {
                     elementos['btn-add-profissional'].disabled = true;
                 }
