@@ -5,6 +5,34 @@
   <title>Novo Serviço</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    body {
+      background: #f6f8fa;
+      font-family: 'Inter', Arial, sans-serif;
+    }
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+      min-height: 100vh;
+      color: #fff;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 20px;
+    }
+    .sidebar-brand {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fff;
+      text-decoration: none;
+      letter-spacing: 2px;
+      padding: 24px 24px 12px 24px;
+      display: block;
+      margin-bottom: 10px;
+    }
     .sidebar-links a {
       display: block;
       background: #fff;
@@ -30,37 +58,35 @@
       background: #f6f8fa;
       color: #4f46e5;
     }
-    .sidebar {
-      width: 220px;
-      background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-      min-height: 100vh;
-      color: #fff;
-      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-      position: fixed;
-      left: 0; top: 0; bottom: 0;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      padding-top: 20px;
-    }
-    .sidebar-brand {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #fff;
-      text-decoration: none;
-      letter-spacing: 2px;
-      padding: 24px 24px 12px 24px;
-      display: block;
-      margin-bottom: 10px;
-    }
     .main-content {
       margin-left: 240px;
       padding: 36px 40px;
+      min-height: 100vh;
+      background: #f6f8fa;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .form-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px #6366f120;
+      padding: 32px 32px 24px 32px;
+      margin-top: 40px;
+      max-width: 430px;
+      width: 100%;
+    }
+    .form-card h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 30px;
+      text-align: center;
+      color: #22223b;
     }
     @media (max-width: 900px) {
       .sidebar { width: 100vw; min-height: 0; position: relative; }
       .main-content { margin-left: 0; padding: 24px 10px; }
+      .form-card { margin: 24px auto 0 auto; }
     }
   </style>
 </head>
@@ -89,8 +115,8 @@
 
   <!-- Conteúdo principal -->
   <div class="main-content">
-    <h1>Novo Serviço</h1>
     <div class="form-card">
+      <h1>Novo Serviço</h1>
       <form id="form-servico">
         <div class="form-group">
           <label for="nome-servico">Nome do Serviço</label>
