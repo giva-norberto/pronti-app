@@ -309,13 +309,13 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-        }
-        .servico-checkbox-list label {
-            font-weight: 500;
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            /* SCROLL INTERNO SE TIVER MUITOS SERVIÇOS */
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 10px;
+            border: 1px solid #e1e8ed;
+            border-radius: 10px;
+            background: #f9fafb;
         }
 
         /* Tabs para modal de perfil */
@@ -346,9 +346,20 @@
         }
         /* Modal grande para perfil */
         .modal-content.profile-modal {
-            max-width: 700px;
-            width: 95%;
+            max-width: 950px;
+            width: 98%;
             padding: 40px 30px;
+        }
+
+        /* Horários e Intervalos grid */
+        .horarios-grid, .intervalos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .dia-label {
+            font-weight: 500;
         }
 
         @media (max-width: 768px) {
@@ -440,19 +451,6 @@
                     <h3>Carregando equipe...</h3>
                     <p>Por favor, aguarde enquanto carregamos os dados da sua equipe.</p>
                 </div>
-                <!-- Cards dos profissionais vão aparecer aqui via JS.
-                Exemplo de card:
-                <div class="profissional-card">
-                  <div class="profissional-foto">
-                    <img src="https://via.placeholder.com/60x60?text=👤" alt="Foto" />
-                  </div>
-                  <div class="profissional-info">
-                    <span class="profissional-nome">GIVANILDO SILVA</span>
-                    <span class="profissional-status">Dono</span>
-                  </div>
-                  <button class="btn btn-tertiary btn-perfil-profissional" data-id="IDFUNC">👤 Perfil</button>
-                </div>
-                -->
             </div>
         </div>
     </div>
@@ -513,14 +511,97 @@
                 <button class="tab-btn" data-tab="intervalos">Intervalos</button>
                 <button class="tab-btn" data-tab="servicos">Serviços</button>
             </div>
+            <!-- Horários -->
             <div class="tab-content active" id="tab-horarios">
-                <!-- Campos/inputs de horários do profissional (implementar depois) -->
-                <p>Configurações de horários do profissional aqui.</p>
+                <form id="form-horarios-perfil-profissional">
+                  <div class="horarios-grid">
+                    <div>
+                      <span class="dia-label">Segunda</span><br>
+                      <input type="time" name="segunda_inicio" id="segunda_inicio"> até
+                      <input type="time" name="segunda_fim" id="segunda_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Terça</span><br>
+                      <input type="time" name="terca_inicio" id="terca_inicio"> até
+                      <input type="time" name="terca_fim" id="terca_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Quarta</span><br>
+                      <input type="time" name="quarta_inicio" id="quarta_inicio"> até
+                      <input type="time" name="quarta_fim" id="quarta_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Quinta</span><br>
+                      <input type="time" name="quinta_inicio" id="quinta_inicio"> até
+                      <input type="time" name="quinta_fim" id="quinta_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Sexta</span><br>
+                      <input type="time" name="sexta_inicio" id="sexta_inicio"> até
+                      <input type="time" name="sexta_fim" id="sexta_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Sábado</span><br>
+                      <input type="time" name="sabado_inicio" id="sabado_inicio"> até
+                      <input type="time" name="sabado_fim" id="sabado_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Domingo</span><br>
+                      <input type="time" name="domingo_inicio" id="domingo_inicio"> até
+                      <input type="time" name="domingo_fim" id="domingo_fim">
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-success">Salvar Horários</button>
+                  </div>
+                </form>
             </div>
+            <!-- Intervalos -->
             <div class="tab-content" id="tab-intervalos">
-                <!-- Campos/inputs de intervalos do profissional (implementar depois) -->
-                <p>Configurações de intervalos do profissional aqui.</p>
+                <form id="form-intervalos-perfil-profissional">
+                  <div class="intervalos-grid">
+                    <div>
+                      <span class="dia-label">Segunda</span><br>
+                      <input type="time" name="segunda_intervalo_inicio" id="segunda_intervalo_inicio"> até
+                      <input type="time" name="segunda_intervalo_fim" id="segunda_intervalo_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Terça</span><br>
+                      <input type="time" name="terca_intervalo_inicio" id="terca_intervalo_inicio"> até
+                      <input type="time" name="terca_intervalo_fim" id="terca_intervalo_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Quarta</span><br>
+                      <input type="time" name="quarta_intervalo_inicio" id="quarta_intervalo_inicio"> até
+                      <input type="time" name="quarta_intervalo_fim" id="quarta_intervalo_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Quinta</span><br>
+                      <input type="time" name="quinta_intervalo_inicio" id="quinta_intervalo_inicio"> até
+                      <input type="time" name="quinta_intervalo_fim" id="quinta_intervalo_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Sexta</span><br>
+                      <input type="time" name="sexta_intervalo_inicio" id="sexta_intervalo_inicio"> até
+                      <input type="time" name="sexta_intervalo_fim" id="sexta_intervalo_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Sábado</span><br>
+                      <input type="time" name="sabado_intervalo_inicio" id="sabado_intervalo_inicio"> até
+                      <input type="time" name="sabado_intervalo_fim" id="sabado_intervalo_fim">
+                    </div>
+                    <div>
+                      <span class="dia-label">Domingo</span><br>
+                      <input type="time" name="domingo_intervalo_inicio" id="domingo_intervalo_inicio"> até
+                      <input type="time" name="domingo_intervalo_fim" id="domingo_intervalo_fim">
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-success">Salvar Intervalos</button>
+                  </div>
+                </form>
             </div>
+            <!-- Serviços -->
             <div class="tab-content" id="tab-servicos">
                 <form id="form-servicos-perfil-profissional">
                     <div id="lista-servicos-checkbox" class="servico-checkbox-list"></div>
