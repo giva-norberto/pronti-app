@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Agendamento Online</title>
     
-    <!-- Link para o arquivo CSS externo. É aqui que os estilos serão carregados. -->
+    <!-- CSS principal da vitrine -->
     <link rel="stylesheet" href="vitrine.css">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <!-- Loader Inicial -->
     <div id="vitrine-loader">
         <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do negócio...</p>
@@ -22,7 +20,7 @@
     <!-- Conteúdo Principal da Vitrine -->
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
         
-        <!-- Barra Lateral (Sidebar ) -->
+        <!-- Sidebar -->
         <aside class="sidebar-vitrine">
             <div class="header-vitrine">
                 <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
@@ -76,7 +74,7 @@
                         </div>
                         <div class="form-group">
                             <label for="data-agendamento">3. Escolha uma data</label>
-                            <input type="date" id="data-agendamento" required>
+                            <input type="date" id="data-agendamento" required min="">
                         </div>
                         <div class="form-group">
                             <label>4. Escolha um horário</label>
@@ -121,7 +119,7 @@
         </main>
     </div>
 
-    <!-- Modal de Cadastro de Cliente (aparece apenas quando necessário) -->
+    <!-- Modal de Cadastro de Cliente -->
     <div id="cadastro-modal-bg" class="modal-bg" style="display:none;">
       <div class="modal-card">
         <h2>Cadastrar Novo Cliente</h2>
