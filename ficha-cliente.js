@@ -1,6 +1,6 @@
-// IMPORTAÇÕES do Firebase
-import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+// IMPORTAÇÕES do Firebase (corrigidas para a versão 10.7.1)
+import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 // INICIALIZAÇÃO
@@ -30,10 +30,6 @@ async function carregarFichaDoCliente(user) {
     historicoDiv.innerHTML = '<p>Buscando histórico de agendamentos...</p>';
 
     try {
-        // Se quiser restringir ao próprio usuário, valide aqui:
-        // if (user.email !== nomeClienteDecodificado) { ... }
-        // OU se você salva o UID do Firebase no agendamento, filtre também no Firestore.
-
         // 2. Busca o "mapa" de serviços
         const servicosSnapshot = await getDocs(servicosCollection);
         const servicosMap = new Map();
@@ -41,7 +37,7 @@ async function carregarFichaDoCliente(user) {
             servicosMap.set(doc.id, doc.data());
         });
 
-        // 3. Consulta o Firebase
+        // 3. Consulta o Firebase para buscar agendamentos
         const agendamentosQuery = query(
             agendamentosCollection, 
             where("cliente", "==", nomeClienteDecodificado),
