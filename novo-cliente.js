@@ -1,16 +1,16 @@
 /**
- * novo-cliente.js (Painel do Dono - Corrigido para a estrutura 'empresarios')
+ * novo-cliente.js (Painel do Dono - Atualizado para Firebase v10+)
  *
- * Alterações:
- * - Adicionada a função 'getEmpresaIdDoDono' para encontrar a empresa do usuário.
- * - A função 'handleFormSubmit' agora salva o cliente na subcoleção correta:
- * 'empresarios/{empresaId}/clientes'.
+ * - Totalmente compatível com Firestore Modular v10 ou superior.
+ * - Salva clientes em 'empresarios/{empresaId}/clientes'.
+ * - Usa imports via npm (não CDN).
  */
 
-import { getFirestore, collection, addDoc, Timestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { app } from "./firebase-config.js";
 
+// Inicialização do Firestore e Auth
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -21,24 +21,29 @@ const telefoneInput = document.getElementById('telefone-cliente');
 const emailInput = document.getElementById('email-cliente');
 const btnSalvar = form.querySelector('button[type="submit"]');
 
+// Previne múltiplos listeners
+let formListenerAdicionado = false;
+
 onAuthStateChanged(auth, (user) => {
   if (user) {
     const uid = user.uid;
-    form.addEventListener('submit', (event) => handleFormSubmit(event, uid));
+    if (!formListenerAdicionado) {
+      form.addEventListener('submit', (event) => handleFormSubmit(event, uid));
+      formListenerAdicionado = true;
+    }
   } else {
-    console.log("Nenhum utilizador autenticado. A redirecionar para login.html...");
     window.location.href = 'login.html';
   }
 });
 
-
 /**
- * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
- * @param {string} uid - O ID do dono da empresa.
- * @returns {string|null} - O ID da empresa.
+ * Busca o ID da empresa do dono logado.
+ * @param {string} uid
+ * @returns {Promise<string|null>}
  */
 async function getEmpresaIdDoDono(uid) {
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const empresariosCol = collection(db, "empresarios");
+    const q = query(empresariosCol, where("donoId", "==", uid));
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
         console.error("Nenhuma empresa encontrada para o dono com UID:", uid);
@@ -47,11 +52,10 @@ async function getEmpresaIdDoDono(uid) {
     return snapshot.docs[0].id;
 }
 
-
 /**
- * Lida com o envio do formulário, usando o uid do utilizador para salvar o dado no local correto.
- * @param {Event} event - O evento de submit do formulário.
- * @param {string} uid - O ID do utilizador autenticado.
+ * Salva um novo cliente na subcoleção correta.
+ * @param {Event} event
+ * @param {string} uid
  */
 async function handleFormSubmit(event, uid) {
   event.preventDefault();
@@ -75,17 +79,16 @@ async function handleFormSubmit(event, uid) {
   btnSalvar.textContent = 'A salvar...';
 
   try {
-    // --- CORREÇÃO PRINCIPAL ---
-    // 1. Encontrar o ID da empresa do dono logado.
+    // 1. Busca o ID da empresa do dono logado.
     const empresaId = await getEmpresaIdDoDono(uid);
     if (!empresaId) {
         throw new Error("Não foi possível encontrar a empresa associada. Verifique seu perfil.");
     }
 
-    // 2. Apontar para a coleção correta: 'empresarios/{empresaId}/clientes'
+    // 2. Subcoleção correta: 'empresarios/{empresaId}/clientes'
     const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
-    
-    // A lógica de verificação de duplicados permanece, mas agora na coleção correta.
+
+    // 3. Verifica duplicidade por nome
     const q = query(clientesCollection, where("nome", "==", nome));
     const querySnapshot = await getDocs(q);
 
@@ -97,20 +100,18 @@ async function handleFormSubmit(event, uid) {
           position: "right",
           style: { background: "var(--cor-aviso)", color: "white" }
       }).showToast();
-      // Importante: reabilitar o botão aqui também
       btnSalvar.disabled = false;
       btnSalvar.textContent = 'Salvar Cliente';
-      return; 
+      return;
     }
-    
+
     const novoCliente = {
-      nome: nome,
-      telefone: telefone,
-      email: email,
+      nome,
+      telefone,
+      email,
       criadoEm: Timestamp.now()
     };
 
-    // 3. Salvar o documento na coleção correta.
     await addDoc(clientesCollection, novoCliente);
 
     Toastify({
@@ -126,10 +127,15 @@ async function handleFormSubmit(event, uid) {
 
   } catch (error) {
     console.error("Erro ao salvar cliente: ", error);
-    Toastify({ text: `Erro ao salvar o cliente: ${error.message}`, style: { background: "var(--cor-perigo)" } }).showToast();
+    Toastify({
+      text: `Erro ao salvar o cliente: ${error.message}`,
+      duration: 4000,
+      gravity: "top",
+      position: "right",
+      style: { background: "var(--cor-perigo)" }
+    }).showToast();
 
   } finally {
-    // Reabilita o botão em qualquer cenário
     btnSalvar.disabled = false;
     btnSalvar.textContent = 'Salvar Cliente';
   }
