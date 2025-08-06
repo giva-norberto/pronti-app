@@ -7,10 +7,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const formNovoCliente = document.getElementById('form-novo-cliente');
+const formNovoCliente = document.getElementById('form-cliente');
 const inputNome = document.getElementById('nome-cliente');
 const inputTelefone = document.getElementById('telefone-cliente');
-const btnSalvar = document.getElementById('btn-salvar-cliente');
+const inputEmail = document.getElementById('email-cliente');
+const btnSalvar = formNovoCliente ? formNovoCliente.querySelector('.btn-submit') : null;
 
 let empresaId = null;
 
@@ -34,17 +35,15 @@ function inicializarPaginaNovoCliente() {
     return;
   }
 
-  console.log("Listener de submit será adicionado!");
-
   formNovoCliente.addEventListener('submit', async (event) => {
     event.preventDefault();
-    console.log("Formulário enviado!");
     btnSalvar.disabled = true;
     btnSalvar.textContent = "Salvando...";
 
     try {
       const nome = inputNome.value.trim();
       const telefone = inputTelefone ? inputTelefone.value.trim() : "";
+      const email = inputEmail ? inputEmail.value.trim() : "";
 
       if (!nome) {
         mostrarToast("O nome do cliente é obrigatório.", "var(--cor-perigo)");
@@ -60,12 +59,11 @@ function inicializarPaginaNovoCliente() {
         return;
       }
 
-      console.log("empresaId:", empresaId);
-
       const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
       await addDoc(clientesCollection, {
         nome,
         telefone,
+        email,
         criadoEm: new Date()
       });
 
