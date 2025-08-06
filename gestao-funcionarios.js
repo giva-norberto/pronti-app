@@ -1,10 +1,16 @@
-import { db, collection, doc, getDoc, getDocs, setDoc } from "./firebase-config.js"; // ajuste o import conforme seu projeto
-import { getTodosServicosDaEmpresa } from "./vitrini-profissionais.js"; // ajuste se necessário
+import { db, collection, doc, getDoc, getDocs, setDoc } from "./firebase-config.js";
+import { getTodosServicosDaEmpresa } from "./vitrini-profissionais.js";
 
-const empresaId = /* pegue do contexto do seu app */;
+const empresaId = /* coloque aqui seu empresaId, ou traga do contexto do app */;
 let profissionais = [];
+let servicosEmpresa = [];
 
-// Carregar lista de funcionários ao iniciar
+// Carregar tudo ao iniciar
+(async function initPainel() {
+  servicosEmpresa = await getTodosServicosDaEmpresa(empresaId);
+  await carregarProfissionais();
+})();
+
 async function carregarProfissionais() {
   const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
   const snap = await getDocs(profissionaisRef);
@@ -14,114 +20,156 @@ async function carregarProfissionais() {
 
 function renderizarListaProfissionais() {
   const lista = document.getElementById('lista-profissionais-painel');
-  if (!lista) return;
   lista.innerHTML = profissionais.map(prof => `
-    <div class="profissional-card" data-id="${prof.id}">
+    <div class="profissional-card" data-id="${prof.id}" style="border:1px solid #ddd;padding:10px;margin-bottom:10px;border-radius:8px;display:flex;align-items:center;gap:10px;">
       <img src="${prof.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" style="width:40px;height:40px;border-radius:50%;">
       <span>${prof.nome}</span>
-      <button class="btn-editar-funcionario" data-id="${prof.id}">Editar</button>
+      <button class="btn-vincular-servicos" data-id="${prof.id}">Vincular Serviços</button>
     </div>
   `).join('');
 }
 
-// Evento de clique na lista
-document.getElementById('lista-profissionais-painel').addEventListener('click', async (e) => {
-  if (e.target.classList.contains('btn-editar-funcionario')) {
+document.getElementById('lista-profissionais-painel').addEventListener('click', (e) => {
+  if (e.target.classList.contains('btn-vincular-servicos')) {
     const profId = e.target.dataset.id;
     const prof = profissionais.find(p => p.id === profId);
-    if (!prof) return;
-    abrirModalEditarFuncionario(prof);
+    if (prof) mostrarCamposEdicao(prof);
   }
 });
 
-// Função para abrir o modal de edição de funcionário
-async function abrirModalEditarFuncionario(prof) {
-  document.getElementById('func-nome').value = prof.nome || '';
-
-  // Serviços: Carregar todos e marcar os do funcionário
-  const servicosEmpresa = await getTodosServicosDaEmpresa(empresaId);
+function mostrarCamposEdicao(prof) {
+  const container = document.getElementById('edicao-funcionario-container');
+  // Serviços
   const servicosSelecionados = prof.servicosIds || prof.servicos || [];
-  document.getElementById('func-servicos').innerHTML = servicosEmpresa.map(srv => `
-    <label>
+  const servicosHtml = servicosEmpresa.map(srv => `
+    <label style="display:block;margin-bottom:4px;">
       <input type="checkbox" value="${srv.id}" ${servicosSelecionados.includes(srv.id) ? 'checked' : ''}>
       ${srv.nome} (${srv.duracao}min, R$${srv.preco})
     </label>
   `).join('');
+  // Intervalo
+  const intervalo = prof.horarios?.intervalo || 30;
+  // Editor de horários
+  const horariosHtml = renderEditorHorariosFuncionario(prof.horarios);
 
-  // Horários
-  renderEditorHorariosFuncionario(prof.horarios);
-
-  // Abrir modal
-  document.getElementById('modal-editar-funcionario').style.display = 'block';
-
-  // Salvar alterações
-  document.getElementById('form-editar-funcionario').onsubmit = async function(ev) {
-    ev.preventDefault();
-    const nome = document.getElementById('func-nome').value.trim();
-    const servicosIds = Array.from(document.querySelectorAll('#func-servicos input[type=checkbox]:checked')).map(cb => cb.value);
+  container.innerHTML = `
+    <div style="border:1px solid #bcd;padding:16px;border-radius:8px;margin-top:10px;background:#f9f9ff;">
+      <h4>Editar Funcionário: ${prof.nome}</h4>
+      <div>
+        <strong>Serviços:</strong>
+        <div id="func-servicos">${servicosHtml}</div>
+      </div>
+      <div style="margin-top:12px;">
+        <strong>Horários:</strong>
+        <div id="func-horarios">${horariosHtml}</div>
+      </div>
+      <div style="margin-top:12px;">
+        <label>Intervalo entre atendimentos:
+          <select id="func-intervalo">
+            <option value="15" ${intervalo==15?"selected":""}>15 min</option>
+            <option value="30" ${intervalo==30?"selected":""}>30 min</option>
+            <option value="45" ${intervalo==45?"selected":""}>45 min</option>
+            <option value="60" ${intervalo==60?"selected":""}>60 min</option>
+          </select>
+        </label>
+      </div>
+      <button id="btn-salvar-funcionario" style="margin-top:18px;">Salvar</button>
+    </div>
+  `;
+  // Adicionar eventos dinâmicos dos horários
+  addEventosHorarios();
+  // Botão de salvar
+  document.getElementById('btn-salvar-funcionario').onclick = async function() {
+    const servicosIds = Array.from(document.querySelectorAll('#func-servicos input[type=checkbox]:checked')).map(cb=>cb.value);
     const horarios = coletarHorariosEditados();
-
-    // Atualiza no Firestore
+    horarios.intervalo = parseInt(document.getElementById('func-intervalo').value, 10);
     await setDoc(doc(db, "empresarios", empresaId, "profissionais", prof.id), {
-      nome,
       servicosIds,
       horarios
-    }, { merge: true });
+    }, { merge:true });
     alert('Funcionário atualizado!');
-    document.getElementById('modal-editar-funcionario').style.display = 'none';
-    carregarProfissionais(); // atualiza lista
+    await carregarProfissionais();
+    container.innerHTML = '';
   };
 }
 
-// Fecha modal
-document.getElementById('btn-fechar-modal').onclick = function() {
-  document.getElementById('modal-editar-funcionario').style.display = 'none';
-};
-
-// Editor de horários igual perfil
+// Renderiza o editor de horários
 function renderEditorHorariosFuncionario(horarios) {
   const dias = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"];
-  const labels = {seg: "Seg", ter: "Ter", qua: "Qua", qui: "Sex", sex: "Sex", sab: "Sáb", dom: "Dom"};
-  const container = document.getElementById('func-horarios');
-  container.innerHTML = dias.map(dia => {
-    const h = horarios?.[dia] || { ativo: false, blocos: [] };
+  const labels = {seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb",dom:"Dom"};
+  return dias.map(dia=>{
+    const h = horarios?.[dia] || {ativo:false, blocos:[]};
     return `
-      <div>
+      <div style="margin-bottom:6px;">
         <label>
-          <input type="checkbox" data-dia="${dia}" class="dia-ativo" ${h.ativo ? 'checked' : ''}>
-          ${labels[dia]}
+          <input type="checkbox" data-dia="${dia}" class="dia-ativo" ${h.ativo?'checked':''}> ${labels[dia]}
         </label>
-        <span>
-          ${(h.blocos||[]).map((b, i) => `
+        <span class="blocos-dia" data-dia="${dia}" ${h.ativo?'':'style="display:none;"'}>
+          ${h.blocos?.map((b,i)=>`
             <input type="time" value="${b.inicio}" class="hora-inicio" data-dia="${dia}" data-i="${i}">
             até
             <input type="time" value="${b.fim}" class="hora-fim" data-dia="${dia}" data-i="${i}">
-            <button type="button" data-dia="${dia}" data-i="${i}" class="rem-bloco">-</button>
+            <button type="button" class="rem-bloco" data-dia="${dia}" data-i="${i}">-</button>
           `).join('')}
-          <button type="button" data-dia="${dia}" class="add-bloco">+</button>
+          <button type="button" class="add-bloco" data-dia="${dia}">+</button>
         </span>
       </div>
     `;
   }).join('');
-  // Você pode adicionar eventos para +, - aqui se quiser
 }
 
-// Função para coletar horários editados do editor
+// Eventos para horários dinâmicos
+function addEventosHorarios() {
+  // Ativar/desativar dia mostra/esconde blocos
+  document.querySelectorAll('.dia-ativo').forEach(cb=>{
+    cb.onchange = e => {
+      const dia = cb.dataset.dia;
+      const blocos = document.querySelector(`.blocos-dia[data-dia="${dia}"]`);
+      if (blocos) blocos.style.display = cb.checked ? '' : 'none';
+    };
+  });
+  // Adicionar bloco
+  document.querySelectorAll('.add-bloco').forEach(btn=>{
+    btn.onclick = e=>{
+      const dia = btn.dataset.dia;
+      const blocos = btn.parentElement;
+      const i = blocos.querySelectorAll('.hora-inicio').length;
+      const html = `
+        <input type="time" value="09:00" class="hora-inicio" data-dia="${dia}" data-i="${i}">
+        até
+        <input type="time" value="18:00" class="hora-fim" data-dia="${dia}" data-i="${i}">
+        <button type="button" class="rem-bloco" data-dia="${dia}" data-i="${i}">-</button>
+      `;
+      const temp = document.createElement('span');
+      temp.innerHTML = html;
+      // Adiciona antes do botão +
+      blocos.insertBefore(temp, btn);
+      addEventosHorarios();// re-adiciona eventos para novos botões
+    };
+  });
+  // Remover bloco
+  document.querySelectorAll('.rem-bloco').forEach(btn=>{
+    btn.onclick = e=>{
+      btn.parentElement.remove();
+    };
+  });
+}
+
+// Coleta horários editados do editor
 function coletarHorariosEditados() {
-  const dias = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"];
+  const dias = ["seg","ter","qua","qui","sex","sab","dom"];
   const horarios = {};
-  dias.forEach(dia => {
+  dias.forEach(dia=>{
     const ativo = document.querySelector(`input.dia-ativo[data-dia="${dia}"]`)?.checked || false;
     const blocos = [];
-    document.querySelectorAll(`.hora-inicio[data-dia="${dia}"]`).forEach((input, i) => {
-      const inicio = input.value;
-      const fim = document.querySelector(`.hora-fim[data-dia="${dia}"][data-i="${i}"]`)?.value || '';
-      if (inicio && fim) blocos.push({ inicio, fim });
+    document.querySelectorAll(`.blocos-dia[data-dia="${dia}"]`).forEach(container=>{
+      container.querySelectorAll('.hora-inicio').forEach((input,i)=>{
+        const inicio = input.value;
+        const fim = container.querySelector(`.hora-fim[data-dia="${dia}"][data-i="${i}"]`)?.value || '';
+        if (inicio && fim) blocos.push({inicio, fim});
+      });
     });
-    horarios[dia] = { ativo, blocos };
+    horarios[dia] = {ativo, blocos};
   });
   return horarios;
 }
-
-// Inicializa ao carregar
-carregarProfissionais();
