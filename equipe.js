@@ -1,6 +1,9 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe (corrigido para usar placehold.co e evitar erro de duplicidade do dono)
+ * equipe.js - Sistema de gerenciamento de equipe
+ * (agora com vínculo de serviços ao funcionário, clique no card abre modal de serviços)
  */
+
+import { abrirModalServicosFuncionario } from './modal-vincular-servicos.js';
 
 function verificarElementosHTML() {
     const elementos = {
@@ -66,6 +69,7 @@ async function inicializarSistemaEquipe(db, auth, storage) {
 
     let empresaId = null;
     let unsubProfissionais = null;
+    let todosServicos = []; // array de todos os serviços da empresa
 
     const { 
         collection, 
@@ -95,13 +99,11 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
-            // Sempre pega a primeira empresa do dono, nunca cria nova!
             const empresaDoc = snapshot.docs[0];
             const empresaId = empresaDoc.id;
             const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
             const profissionaisSnap = await getDocs(profissionaisRef);
 
-            // Corrige: só cria dono se não existe dono na subcoleção
             let donoDoc = profissionaisSnap.docs.find(doc => doc.data().ehDono === true);
 
             const nomeDono = (user && user.displayName) ? user.displayName : "Dono";
@@ -116,7 +118,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                     criadoEm: serverTimestamp()
                 });
             } else {
-                // Opcional: atualiza nome/foto do dono se mudou
                 const data = donoDoc.data();
                 if (data.nome !== nomeDono || data.fotoUrl !== fotoUrl) {
                     const donoRef = docRef(db, "empresarios", empresaId, "profissionais", donoDoc.id);
@@ -128,9 +129,15 @@ async function inicializarSistemaEquipe(db, auth, storage) {
             }
             return empresaId;
         }
-
-        // Nunca cria nova empresa automaticamente!
         return null;
+    }
+
+    async function carregarTodosServicosDaEmpresa(empresaId) {
+        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+        const snap = await getDocs(servicosRef);
+        // Considera apenas serviços ativos/visíveis
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(s => s.visivelNaVitrine !== false);
     }
 
     function iniciarListenerDaEquipe() {
@@ -139,7 +146,6 @@ async function inicializarSistemaEquipe(db, auth, storage) {
             const q = query(profissionaisRef);
             unsubProfissionais = onSnapshot(q, (snapshot) => {
                 let equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Evita duplicidade: só mostra um dono e não repete nome igual do dono como funcionário
                 const nomesDono = equipe.filter(p => p.ehDono).map(p => p.nome);
                 equipe = equipe.filter((p, i, arr) =>
                     p.ehDono ||
@@ -174,8 +180,19 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 <div class="profissional-info">
                     <span class="profissional-nome">${profissional.nome}</span>
                     <span class="profissional-status">${profissional.ehDono ? 'Dono' : 'Funcionário'}</span>
+                    <button class="btn btn-tertiary btn-servicos" style="margin-top:10px;">Vincular Serviços</button>
                 </div>
             `;
+            // Vincula serviços ao clicar no botão
+            div.querySelector('.btn-servicos').onclick = () => {
+                if (!todosServicos || todosServicos.length === 0) {
+                    alert("Nenhum serviço cadastrado para a empresa.");
+                    return;
+                }
+                abrirModalServicosFuncionario(profissional, todosServicos, empresaId, (servicosAtualizados) => {
+                    // Opcional: recarregar equipe ou atualizar visual, se quiser
+                });
+            };
             elementos['lista-profissionais-painel'].appendChild(div);
         });
     }
@@ -278,6 +295,9 @@ async function inicializarSistemaEquipe(db, auth, storage) {
             empresaId = await getEmpresaIdDoDono(user.uid, user);
 
             if (empresaId) {
+                // Carrega todos os serviços da empresa antes
+                todosServicos = await carregarTodosServicosDaEmpresa(empresaId);
+
                 iniciarListenerDaEquipe();
 
                 if (elementos['btn-add-profissional']) {
