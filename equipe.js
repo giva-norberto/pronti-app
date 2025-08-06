@@ -1,5 +1,5 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe (com distinção dono/funcionário, usando nome e foto do usuário dono)
+ * equipe.js - Sistema de gerenciamento de equipe (com distinção dono/funcionário, usando nome e foto do usuário dono do Google/Firebase Auth)
  */
 
 // Verificar se todos os elementos HTML existem
@@ -77,7 +77,9 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         query, 
         where, 
         getDocs, 
-        serverTimestamp 
+        serverTimestamp, 
+        updateDoc, 
+        doc: docRef 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
     const { 
@@ -90,7 +92,7 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         onAuthStateChanged 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
 
-    // Função atualizada: recebe o user do Auth e usa displayName/photoURL para o dono
+    // Função atualizada: cria ou atualiza o dono com nome/foto do usuário (Google/Firebase Auth)
     async function getEmpresaIdDoDono(uid, user) {
         const empresariosRef = collection(db, "empresarios");
         const q = query(empresariosRef, where("donoId", "==", uid));
@@ -98,17 +100,17 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         try {
             const snapshot = await getDocs(q);
             if (!snapshot.empty) {
-                // Adiciona o dono como profissional se não existir ainda
                 const empresaDoc = snapshot.docs[0];
                 const empresaId = empresaDoc.id;
                 const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
                 const profissionaisSnap = await getDocs(profissionaisRef);
-                const donoJaExiste = profissionaisSnap.docs.some(doc => doc.data().ehDono === true);
+                const donoDoc = profissionaisSnap.docs.find(doc => doc.data().ehDono === true);
 
-                if (!donoJaExiste) {
-                    // Usa nome e foto do usuário logado!
-                    let nomeDono = (user && user.displayName) ? user.displayName : "Dono";
-                    let fotoUrl = (user && user.photoURL) ? user.photoURL : "";
+                const nomeDono = (user && user.displayName) ? user.displayName : "Dono";
+                const fotoUrl = (user && user.photoURL) ? user.photoURL : "";
+
+                if (!donoDoc) {
+                    // Cadastra o dono se não existir
                     await addDoc(profissionaisRef, {
                         nome: nomeDono,
                         fotoUrl: fotoUrl,
@@ -116,6 +118,16 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                         horarios: {},
                         criadoEm: serverTimestamp()
                     });
+                } else {
+                    // Atualiza nome/foto se estiver diferente do Google/Firebase Auth
+                    const data = donoDoc.data();
+                    if (data.nome !== nomeDono || data.fotoUrl !== fotoUrl) {
+                        const donoRef = docRef(db, "empresarios", empresaId, "profissionais", donoDoc.id);
+                        await updateDoc(donoRef, {
+                            nome: nomeDono,
+                            fotoUrl: fotoUrl
+                        });
+                    }
                 }
                 return empresaId;
             }
@@ -126,8 +138,8 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 criadaEm: serverTimestamp(),
             };
 
-            const docRef = await addDoc(empresariosRef, novaEmpresa);
-            return docRef.id;
+            const docSnapshot = await addDoc(empresariosRef, novaEmpresa);
+            return docSnapshot.id;
         } catch {
             return null;
         }
