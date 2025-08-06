@@ -34,9 +34,11 @@ function inicializarPaginaNovoCliente() {
     return;
   }
 
+  console.log("Listener de submit será adicionado!");
+
   formNovoCliente.addEventListener('submit', async (event) => {
     event.preventDefault();
-    console.log("Formulário enviado!"); // Debug
+    console.log("Formulário enviado!");
     btnSalvar.disabled = true;
     btnSalvar.textContent = "Salvando...";
 
@@ -57,6 +59,8 @@ function inicializarPaginaNovoCliente() {
         btnSalvar.textContent = "Salvar Cliente";
         return;
       }
+
+      console.log("empresaId:", empresaId);
 
       const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
       await addDoc(clientesCollection, {
