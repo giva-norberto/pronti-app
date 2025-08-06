@@ -1,95 +1,36 @@
-// IMPORTAÇÕES do Firebase
-import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pronti - Ficha do Cliente</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
 
-// INICIALIZAÇÃO
-const db = getFirestore(app);
-const auth = getAuth(app);
-const agendamentosCollection = collection(db, "agendamentos");
-const servicosCollection = collection(db, "servicos");
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <div class="sidebar-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="index.html">Home</a>
+      <a href="servicos.html">Serviços</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="clientes.html" class="active">Clientes</a>
+      <a href="contato.html">Contato</a>
+    </div>
+  </aside>
 
-// ELEMENTOS DA PÁGINA
-const nomeClienteTitulo = document.getElementById('nome-cliente-titulo');
-const historicoDiv = document.getElementById('historico-agendamentos');
+  <main class="main-content">
+    <a href="clientes.html" style="text-decoration: none; color: #555;">&larr; Voltar para a lista de clientes</a>
 
-// FUNÇÃO PRINCIPAL
-async function carregarFichaDoCliente(user) {
-    // 1. Pega o nome do cliente que foi passado na URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const nomeCliente = urlParams.get('cliente');
+    <h1 id="nome-cliente-titulo" style="margin-top: 20px;">Carregando...</h1>
 
-    if (!nomeCliente) {
-        nomeClienteTitulo.textContent = 'Cliente não encontrado';
-        historicoDiv.innerHTML = '<p>Não foi possível identificar o cliente. Por favor, volte para a lista.</p>';
-        return;
-    }
+    <p>Abaixo está o histórico de todos os agendamentos deste cliente.</p>
 
-    const nomeClienteDecodificado = decodeURIComponent(nomeCliente);
-    nomeClienteTitulo.textContent = `Ficha de: ${nomeClienteDecodificado}`;
-    historicoDiv.innerHTML = '<p>Buscando histórico de agendamentos...</p>';
+    <div id="historico-agendamentos"></div>
+  </main>
 
-    try {
-        // Se quiser restringir ao próprio usuário, valide aqui:
-        // if (user.email !== nomeClienteDecodificado) { ... }
-        // OU se você salva o UID do Firebase no agendamento, filtre também no Firestore.
-
-        // 2. Busca o "mapa" de serviços
-        const servicosSnapshot = await getDocs(servicosCollection);
-        const servicosMap = new Map();
-        servicosSnapshot.forEach(doc => {
-            servicosMap.set(doc.id, doc.data());
-        });
-
-        // 3. Consulta o Firebase
-        const agendamentosQuery = query(
-            agendamentosCollection, 
-            where("cliente", "==", nomeClienteDecodificado),
-            orderBy("horario", "desc")
-        );
-        const agendamentosSnapshot = await getDocs(agendamentosQuery);
-
-        if (agendamentosSnapshot.empty) {
-            historicoDiv.innerHTML = '<p>Nenhum agendamento encontrado para este cliente.</p>';
-            return;
-        }
-
-        historicoDiv.innerHTML = ''; // Limpa a lista
-
-        agendamentosSnapshot.forEach(doc => {
-            const agendamento = doc.data();
-            const servicoInfo = servicosMap.get(agendamento.servicoId);
-            const nomeServico = servicoInfo ? servicoInfo.nome : 'Serviço Inválido';
-
-            const dataHora = new Date(agendamento.horario);
-            const dataFormatada = dataHora.toLocaleDateString('pt-BR');
-            const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-            const agendamentoElemento = document.createElement('div');
-            agendamentoElemento.classList.add('agendamento-item');
-            agendamentoElemento.innerHTML = `
-              <div class="agendamento-info">
-                <h3>${nomeServico}</h3>
-                <p><strong>Data:</strong> ${dataFormatada} às ${horaFormatada}</p>
-              </div>
-            `;
-            historicoDiv.appendChild(agendamentoElemento);
-        });
-
-    } catch (error) {
-        console.error("Erro ao buscar histórico do cliente:", error);
-        historicoDiv.innerHTML = '<p style="color:red;">Ocorreu um erro ao carregar o histórico. Verifique o console.</p>';
-    }
-}
-
-// AUTENTICAÇÃO OBRIGATÓRIA
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        carregarFichaDoCliente(user);
-    } else {
-        // Redirecione para login, ou mostre mensagem
-        historicoDiv.innerHTML = '<p style="color:red;">Você precisa estar autenticado para ver esta página.</p>';
-        nomeClienteTitulo.textContent = "";
-        window.location.href = "login.html"; // ou página de login do seu sistema
-    }
-});
+  <!-- O script JS controla a autenticação e o carregamento da ficha -->
+  <script type="module" src="ficha-cliente.js"></script>
+</body>
+</html>
