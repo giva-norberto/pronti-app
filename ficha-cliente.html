@@ -61,7 +61,12 @@ onAuthStateChanged(auth, async (user) => {
 
 async function carregarHistorico(empresaId, clienteId) {
     historicoLista.innerHTML = "<p>Carregando agendamentos...</p>";
-    // Validação extra antes do Firestore!
+
+    // LOG DE DEPURAÇÃO
+    console.log('db:', db);
+    console.log('empresaId:', empresaId);
+    console.log('clienteId:', clienteId);
+
     if (!db || !empresaId || !clienteId) {
         historicoLista.innerHTML = "<p style='color:red'>Dados incompletos para carregar o histórico.</p>";
         return;
