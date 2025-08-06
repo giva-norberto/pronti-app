@@ -1,9 +1,11 @@
 /**
  * equipe.js - Sistema de gerenciamento de equipe
- * (agora com vínculo de serviços ao funcionário, clique no card abre modal de serviços)
+ * (agora com modal de perfil do profissional, clique no card abre modal de perfil com abas)
  */
 
-import { abrirModalServicosFuncionario } from './modal-vincular-servicos.js';
+// Não importa mais o modal antigo!
+// import { abrirModalServicosFuncionario } from './modal-vincular-servicos.js';
+// O modal de perfil é global via window.abrirModalPerfilProfissional
 
 function verificarElementosHTML() {
     const elementos = {
@@ -180,17 +182,22 @@ async function inicializarSistemaEquipe(db, auth, storage) {
                 <div class="profissional-info">
                     <span class="profissional-nome">${profissional.nome}</span>
                     <span class="profissional-status">${profissional.ehDono ? 'Dono' : 'Funcionário'}</span>
-                    <button class="btn btn-tertiary btn-servicos" style="margin-top:10px;">Vincular Serviços</button>
                 </div>
+                <button class="btn btn-tertiary btn-perfil-profissional" style="margin-left: auto; margin-top: 0.5rem;">👤 Perfil</button>
             `;
-            // Vincula serviços ao clicar no botão
-            div.querySelector('.btn-servicos').onclick = () => {
+            // Novo fluxo: abrir modal de perfil no clique
+            div.querySelector('.btn-perfil-profissional').onclick = () => {
+                if (!window.abrirModalPerfilProfissional) {
+                    alert("Não foi possível abrir o modal de perfil. Verifique se o arquivo modal-perfil-profissional.js está carregado.");
+                    return;
+                }
                 if (!todosServicos || todosServicos.length === 0) {
                     alert("Nenhum serviço cadastrado para a empresa.");
                     return;
                 }
-                abrirModalServicosFuncionario(profissional, todosServicos, empresaId, (servicosAtualizados) => {
-                    // Opcional: recarregar equipe ou atualizar visual, se quiser
+                window.abrirModalPerfilProfissional(profissional, todosServicos, empresaId, (tipo, servicosAtualizados, profissionalAtual) => {
+                    // Salve no Firestore se quiser, por exemplo:
+                    // atualizarServicosDoProfissional(profissionalAtual.id, servicosAtualizados);
                 });
             };
             elementos['lista-profissionais-painel'].appendChild(div);
