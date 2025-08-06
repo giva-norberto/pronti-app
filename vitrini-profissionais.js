@@ -1,4 +1,4 @@
-// vitrini-profissionais.js (VERSÃO ATUALIZADA Firebase v10.x+)
+// vitrini-profissionais.js (VERSÃO ATUALIZADA E CORRIGIDA - Firebase v10+)
 
 import { db } from './vitrini-firebase.js';
 import {
@@ -85,7 +85,6 @@ export async function getDadosProfissional(uid) {
     }
 }
 
-
 // ==========================================================================
 // NOVAS FUNÇÕES (PARA MÚLTIPLOS PROFISSIONAIS VIA EMPRESA)
 // Estas são as novas funções que usaremos para a Vitrine da Empresa.
@@ -121,5 +120,30 @@ export async function getProfissionaisDaEmpresa(empresaId) {
     if (!empresaId) return [];
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
     const snapshot = await getDocs(profissionaisRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+}
+
+/**
+ * Busca os dados completos de um serviço da empresa pelo ID.
+ * @param {string} empresaId - O ID do documento da empresa.
+ * @param {string} servicoId - O ID do serviço.
+ * @returns {Promise<object|null>} Os dados do serviço ou nulo se não encontrado.
+ */
+export async function getServicoById(empresaId, servicoId) {
+    if (!empresaId || !servicoId) return null;
+    const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+    const snap = await getDoc(servicoRef);
+    return snap.exists() ? { id: servicoId, ...snap.data() } : null;
+}
+
+/**
+ * Busca todos os serviços de uma empresa (caso queira listar todos).
+ * @param {string} empresaId - O ID do documento da empresa.
+ * @returns {Promise<Array>} Lista de todos os serviços da empresa.
+ */
+export async function getTodosServicosDaEmpresa(empresaId) {
+    if (!empresaId) return [];
+    const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+    const snapshot = await getDocs(servicosRef);
+    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 }
