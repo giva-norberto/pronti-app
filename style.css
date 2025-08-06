@@ -620,3 +620,17 @@ h1, h2, h3 {
   margin: 0 auto;
   padding: 30px 15px;
 }
+.main-content a {
+  color: #555 !important;
+  text-decoration: none !important;
+  font-weight: normal !important;
+  margin-bottom: 24px;
+  display: inline-block;
+  transition: none;
+  font-size: 1rem;
+}
+
+.main-content a:hover {
+  color: #222 !important;
+  text-decoration: underline !important;
+}
