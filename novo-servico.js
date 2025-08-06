@@ -1,25 +1,36 @@
-// novo-servico.js - Fluxo corrigido para garantir que sempre cria/salva no Firebase
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// novo-servico.js - Catálogo global de serviços. Só dono pode criar/excluir, funcionários podem editar. Botão de excluir visível só para dono.
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
 import { showAlert } from "./vitrini-utils.js";
 
 const form = document.getElementById('form-servico');
-let profissionalRef = null;
+const btnExcluir = document.getElementById('btn-excluir-servico');
+let empresaId = null;
+let servicoId = null;
 let servicoEditando = null;
+let isDono = false;
+let userUid = null;
 
 /**
- * Busca empresa do usuário logado.
+ * Busca a empresa do usuário logado como dono OU na qual ele é profissional.
  */
-async function getEmpresaIdDoDono(uid) {
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    return snapshot.docs[0].id;
+async function getEmpresaDoUsuario(uid) {
+    // Dono
+    let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    let snapshot = await getDocs(q);
+    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+
+    // Profissional
+    q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
+    snapshot = await getDocs(q);
+    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+
+    return null;
 }
 
 /**
- * Pega o id do serviço da URL (se em edição).
+ * Extrai o id do serviço da URL (se em edição)
  */
 function getIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
@@ -27,7 +38,7 @@ function getIdFromUrl() {
 }
 
 /**
- * Preenche formulário com dados do serviço em edição.
+ * Preenche o formulário com dados do serviço
  */
 function preencherFormulario(servico) {
     document.getElementById('nome-servico').value = servico.nome || '';
@@ -37,59 +48,62 @@ function preencherFormulario(servico) {
 }
 
 /**
- * Garante que o campo "servicos" existe no documento do profissional.
+ * Checa se usuário é dono da empresa
  */
-async function garantirCampoServicos() {
-    const docSnap = await getDoc(profissionalRef);
-    if (!docSnap.exists()) {
-        // Cria documento do profissional com array vazio + dados mínimos
-        await setDoc(profissionalRef, { servicos: [] });
-        return [];
-    } else if (!docSnap.data().servicos) {
-        await updateDoc(profissionalRef, { servicos: [] });
-        return [];
-    }
-    return docSnap.data().servicos || [];
+function usuarioEDono(empresa, uid) {
+    return empresa.donoId === uid;
 }
 
-// Fluxo principal: só depois do usuário logado!
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
         return;
     }
-
-    const empresaId = await getEmpresaIdDoDono(user.uid);
-    if (!empresaId) {
-        await showAlert("Atenção", "Empresa não encontrada. Complete seu cadastro na página 'Meu Perfil'.");
+    userUid = user.uid;
+    const empresa = await getEmpresaDoUsuario(user.uid);
+    if (!empresa) {
+        await showAlert("Atenção", "Empresa não encontrada. Complete seu cadastro.");
         form.querySelector('button[type="submit"]').disabled = true;
+        if (btnExcluir) btnExcluir.style.display = 'none';
         return;
     }
+    empresaId = empresa.id;
+    isDono = usuarioEDono(empresa, user.uid);
 
-    profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+    servicoId = getIdFromUrl();
+    if (servicoId) {
+        // Busca serviço na coleção global
+        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+        const servicoSnap = await getDoc(servicoRef);
+        if (servicoSnap.exists()) {
+            servicoEditando = { id: servicoSnap.id, ...servicoSnap.data() };
+            preencherFormulario(servicoEditando);
+        }
+    }
 
-    // Garante que existe campo "servicos"
-    const servicos = await garantirCampoServicos();
+    // Só dono pode criar novo serviço
+    if (!isDono && !servicoId) {
+        await showAlert("Atenção", "Apenas o dono pode criar um novo serviço.");
+        form.querySelector('button[type="submit"]').disabled = true;
+    }
 
-    // Se está em modo edição, preenche o formulário
-    const idServico = getIdFromUrl();
-    if (idServico) {
-        servicoEditando = servicos.find(s => String(s.id) === idServico);
-        if (servicoEditando) preencherFormulario(servicoEditando);
+    // Botão de exclusão só aparece se está editando E usuário é dono
+    if (btnExcluir) {
+        if (servicoEditando && isDono) {
+            btnExcluir.style.display = '';
+            btnExcluir.addEventListener('click', handleServicoExcluir);
+        } else {
+            btnExcluir.style.display = 'none';
+        }
     }
 
     form.addEventListener('submit', handleFormSubmit);
 });
 
-/**
- * Envia (cria ou edita) um serviço para o Firebase.
- */
-async function handleFormSubmit(event) {
-    event.preventDefault();
-    if (!profissionalRef) {
-        await showAlert("Erro", "Referência do profissional não encontrada. Recarregue a página.");
-        return;
-    }
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    // Só permite criar se for dono
+    if (!isDono && !servicoEditando) return;
 
     const nome = document.getElementById('nome-servico').value.trim();
     const descricao = document.getElementById('descricao-servico').value.trim();
@@ -100,47 +114,46 @@ async function handleFormSubmit(event) {
         await showAlert("Atenção", "Preencha todos os campos obrigatórios corretamente.");
         return;
     }
-    
+
     const btnSalvar = form.querySelector('button[type="submit"]');
     btnSalvar.disabled = true;
     btnSalvar.textContent = "Salvando...";
 
     try {
-        // Sempre busca do banco (garante dados atualizados)
-        const docSnap = await getDoc(profissionalRef);
-        let servicosAtuais = (docSnap.exists() && docSnap.data().servicos) ? docSnap.data().servicos : [];
-
-        let novaListaDeServicos;
         if (servicoEditando) {
-            // EDIÇÃO
-            novaListaDeServicos = servicosAtuais.map(s => 
-                String(s.id) === String(servicoEditando.id)
-                ? { ...s, nome, descricao, preco, duracao }
-                : s
-            );
+            // Atualiza serviço global (dono ou profissional)
+            const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+            await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
-            // NOVO
-            const novoServico = { 
-                id: `serv_${Date.now()}`,
-                nome, 
-                descricao, 
-                preco, 
-                duracao,
-                visivelNaVitrine: true
-            };
-            novaListaDeServicos = [...servicosAtuais, novoServico];
+            // Cria novo serviço global (apenas dono)
+            const servicosCol = collection(db, "empresarios", empresaId, "servicos");
+            const novoDoc = doc(servicosCol); // id automático
+            await setDoc(novoDoc, { nome, descricao, preco, duracao, visivelNaVitrine: true });
         }
-
-        await updateDoc(profissionalRef, { servicos: novaListaDeServicos });
 
         await showAlert("Sucesso!", servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
         window.location.href = 'servicos.html';
-
-    } catch (error) {
-        console.error("Erro ao salvar o serviço: ", error);
-        await showAlert("Erro ao Salvar", "Ocorreu um erro ao salvar o serviço. Por favor, tente novamente.");
+    } catch (err) {
+        console.error("Erro ao salvar serviço:", err);
+        await showAlert("Erro", "Ocorreu um erro ao salvar o serviço.");
     } finally {
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Serviço";
+    }
+}
+
+async function handleServicoExcluir(e) {
+    e.preventDefault();
+    if (!isDono || !servicoEditando) return;
+    if (!confirm("Tem certeza que deseja excluir este serviço? Esta ação é permanente.")) return;
+
+    try {
+        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+        await deleteDoc(servicoRef);
+        await showAlert("Serviço excluído", "O serviço foi removido com sucesso.");
+        window.location.href = 'servicos.html';
+    } catch (err) {
+        console.error("Erro ao excluir serviço:", err);
+        await showAlert("Erro", "Ocorreu um erro ao excluir o serviço.");
     }
 }
