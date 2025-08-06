@@ -203,84 +203,62 @@ h1, h2, h3 {
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
 .chart-container.full-width { grid-column: 1 / -1; }
 
-/* --- ESTILOS PARA O MODAL DE CONFIRMAÇÃO --- */
+/* --- MODAL DE CONFIRMAÇÃO (ÚNICO, CORRIGIDO) --- */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none; /* JS muda para 'flex' ao ativar */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
-
-.modal-card {
-  background: var(--cor-branco);
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  width: 90%;
-  max-width: 400px;
-  transform: scale(0.95);
-  transition: transform 0.3s ease;
+.modal-overlay.ativo {
+    display: flex;
+    opacity: 1;
 }
-
-.modal-overlay.visivel {
-  opacity: 1;
-  visibility: visible;
+.modal-box {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    text-align: center;
+    max-width: 440px;
+    width: 96%;
 }
-.modal-overlay.visivel .modal-card {
-  transform: scale(1);
-}
-
-.modal-card h3 {
-  margin-top: 0;
-  color: var(--cor-texto);
-}
-
-.modal-card p {
-  color: var(--cor-texto-leve);
-}
-
 .modal-botoes {
-  margin-top: 25px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
 }
-
 .btn-modal {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 1em;
-  cursor: pointer;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
 }
-
 .btn-modal.btn-confirmar {
-  background-color: var(--cor-perigo);
-  color: var(--cor-branco);
+    background-color: #ef4444;
+    color: white;
 }
-
 .btn-modal.btn-cancelar {
-  background-color: #e5e7eb;
-  color: var(--cor-texto);
+    background-color: #e5e7eb;
+    color: #1f2937;
 }
 
 /* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
-
 @media (max-width: 768px) {
     body {
         flex-direction: column;
     }
-
     .sidebar {
         width: 100%;
         height: auto;
@@ -291,19 +269,16 @@ h1, h2, h3 {
         background: linear-gradient(90deg, #f8faff, var(--cor-primaria-leve));
         padding: 15px 10px;
     }
-
     .sidebar-brand {
         margin-bottom: 15px;
         padding-bottom: 15px;
     }
-
     .sidebar-links {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
         gap: 8px;
     }
-
     .sidebar-links a {
         padding: 10px 15px;
         margin-bottom: 0;
@@ -315,7 +290,6 @@ h1, h2, h3 {
         flex-grow: 1;
         max-width: calc(33% - 16px);
     }
-
     .sidebar-links a.active,
     .sidebar-links a:hover {
         background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
@@ -325,17 +299,14 @@ h1, h2, h3 {
         box-shadow: var(--sombra);
         border-right: none;
     }
-
     .main-content {
         margin-left: 0;
         padding: 20px;
     }
-
     .dashboard-grid {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-
     .servico-item, .agendamento-item, .cliente-item, .form-card, .info-card, .chart-container {
         padding: 20px;
         margin-bottom: 15px;
@@ -348,21 +319,17 @@ h1, h2, h3 {
     .chart-container::before {
         width: 4px;
     }
-
-
     .agendamento-item, .cliente-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 10px;
     }
-
     .item-acoes {
         width: 100%;
         display: flex;
         justify-content: flex-end;
         margin-top: 10px;
     }
-
     .item-acoes button {
         margin-left: 0;
         margin-right: 10px;
@@ -372,7 +339,6 @@ h1, h2, h3 {
     .item-acoes button:last-child {
         margin-right: 0;
     }
-
     .btn-new, .btn-submit, .btn-cancelar, .btn-editar, .btn-excluir, .cliente-item a {
         padding: 12px 15px;
         font-size: 0.95em;
@@ -381,8 +347,7 @@ h1, h2, h3 {
         padding: 15px;
         font-size: 1.2em;
     }
-
-    .modal-card {
+    .modal-box {
         padding: 20px;
         width: 95%;
     }
@@ -395,7 +360,6 @@ h1, h2, h3 {
         padding: 12px;
     }
 }
-
 @media (min-width: 769px) and (max-width: 1024px) {
     .sidebar {
         width: 200px;
@@ -410,29 +374,22 @@ h1, h2, h3 {
     }
 }
 
-
-/* =================================================================== */
 /* --- ESTILOS PARA O RESUMO DIÁRIO INTELIGENTE (ACRESCENTADO) --- */
-/* =================================================================== */
-
 #resumo-diario-container {
     margin-bottom: 2rem;
 }
-
 .resumo-card {
     background-color: var(--cor-branco);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--sombra);
-    border-left: 5px solid var(--cor-primaria); /* Usa a cor primária da sua marca */
+    border-left: 5px solid var(--cor-primaria);
     animation: fadeIn 0.5s ease-in-out;
 }
-
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
 .resumo-card h3 {
     margin-top: 0;
     font-size: 1.25rem;
@@ -440,18 +397,15 @@ h1, h2, h3 {
     display: flex;
     align-items: center;
 }
-
 .resumo-card p {
     color: var(--cor-texto-leve);
     line-height: 1.6;
 }
-
 .resumo-card ul {
     list-style: none;
     padding: 0;
     margin: 1rem 0;
 }
-
 .resumo-card ul li {
     background-color: #f3f4f6;
     padding: 0.75rem 1rem;
@@ -461,14 +415,12 @@ h1, h2, h3 {
     color: var(--cor-texto);
     border: 1px solid #e5e7eb;
 }
-
 .resumo-metricas {
     display: flex;
     gap: 1.5rem;
     margin-top: 1.5rem;
     flex-wrap: wrap;
 }
-
 .metrica {
     flex: 1;
     background-color: #f9fafb;
@@ -478,7 +430,6 @@ h1, h2, h3 {
     min-width: 180px;
     border: 1px solid #e5e7eb;
 }
-
 .metrica span {
     display: block;
     font-size: 0.8rem;
@@ -486,34 +437,27 @@ h1, h2, h3 {
     margin-bottom: 0.5rem;
     font-weight: 500;
 }
-
 .metrica strong {
     font-size: 1.75rem;
-    color: var(--cor-primaria); /* Usa a cor primária da sua marca */
+    color: var(--cor-primaria);
 }
-
 .resumo-footer {
     text-align: center;
     margin-top: 1.5rem;
     font-weight: 500;
     color: var(--cor-texto-leve);
 }
-
 .erro {
-    color: var(--cor-perigo); /* Usa a cor de perigo da sua marca */
+    color: var(--cor-perigo);
     font-weight: 500;
 }
 
-/* =================================================================== */
 /* --- ESTILOS PARA OS NOVOS CARDS DE SERVIÇO NA VITRINE (REVISADO) --- */
-/* =================================================================== */
-
 #lista-servicos {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
-
 .servico-card {
   background: var(--cor-branco);
   border-radius: 12px;
@@ -521,12 +465,10 @@ h1, h2, h3 {
   transition: all 0.2s ease-in-out;
   border: 1px solid #e5e7eb;
 }
-
 .servico-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--sombra);
 }
-
 .btn-servico {
   all: unset;
   box-sizing: border-box;
@@ -539,7 +481,6 @@ h1, h2, h3 {
   padding: 20px;
   width: 100%;
 }
-
 .btn-servico .nome {
   color: var(--cor-primaria);
   font-weight: 700;
@@ -548,26 +489,24 @@ h1, h2, h3 {
   color: var(--cor-texto);
   font-weight: 500;
 }
-
 .btn-servico.selecionado {
   background-color: var(--cor-primaria);
-  border-radius: 12px 12px 0 0; /* Arredonda apenas os cantos de cima */
+  border-radius: 12px 12px 0 0;
 }
 .btn-servico.selecionado .nome,
 .btn-servico.selecionado .preco {
     color: var(--cor-branco);
 }
-
 .detalhes-servico {
   background-color: var(--cor-fundo);
   padding: 15px 25px;
   font-size: 0.9em;
   color: var(--cor-texto-leve);
   border-top: 1px solid #e5e7eb;
-  display: none; /* Começa escondido */
+  display: none;
 }
 .btn-vitrine {
-  background-color: #f44336; /* mesma cor do botão excluir */
+  background-color: #f44336;
   color: white;
   border: none;
   padding: 8px 12px;
@@ -577,29 +516,24 @@ h1, h2, h3 {
   transition: background-color 0.3s ease;
   margin-left: 8px;
 }
-
 .btn-vitrine:hover {
   background-color: #d32f2f;
 }
 /* --- Estilos para Cancelamentos Pendentes --- */
-
 .agendamento-item.cancelamento-pendente {
-  background-color: #fff3e0; /* Tom de laranja claro */
-  border-left: 5px solid #ff9800; /* Borda laranja */
+  background-color: #fff3e0;
+  border-left: 5px solid #ff9800;
 }
-
 .data-cancelamento {
   font-size: 0.9em;
   color: #616161;
   margin-top: 5px;
 }
-
 .botoes-pendentes {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .botoes-pendentes button {
   padding: 8px 12px;
   border: none;
@@ -608,68 +542,24 @@ h1, h2, h3 {
   font-weight: bold;
   transition: opacity 0.2s;
 }
-
 .botoes-pendentes button:hover {
   opacity: 0.8;
 }
-
 .btn-reativar {
-  background-color: #4CAF50; /* Verde */
+  background-color: #4CAF50;
   color: white;
 }
-
 .btn-confirmar-exclusao {
-  background-color: #f44336; /* Vermelho */
+  background-color: #f44336;
   color: white;
 }
-/* ======================================================= */
-/* --- ESTILOS PARA O MODAL (VERSÃO CORRIGIDA) --- */
-/* ======================================================= */
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: none; /* Começa escondido, o JS muda para 'flex' */
-    justify-content: center;
-    align-items: center;
-    z-index: 9999; /* Z-INDEX MAIS ALTO DA APLICAÇÃO */
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.modal-overlay.ativo {
-    opacity: 1;
-}
-
-.modal-box {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
-    text-align: center;
-    max-width: 420px;
-    width: 90%;
-}
-
-.modal-botoes {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-top: 20px;
-}
-/* ======================================================= */
 /* --- CORREÇÃO PARA O TAMANHO DO LOGO NO PERFIL --- */
-/* ======================================================= */
-
 #logo-preview {
     width: 80px;
     height: 80px;
-    object-fit: cover; /* MUITO IMPORTANTE: Garante que a imagem preencha o espaço sem distorcer */
-    border-radius: 50%; /* Deixa a pré-visualização redonda, mais moderno */
+    object-fit: cover;
+    border-radius: 50%;
     border: 2px solid var(--cor-primaria-leve);
     background-color: var(--cor-fundo);
 }
