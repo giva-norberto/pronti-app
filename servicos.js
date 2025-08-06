@@ -101,30 +101,62 @@ async function carregarServicosDoFirebase() {
     }
 }
 
-async function excluirServico(servicoIdParaExcluir) {
-    console.log("Função excluirServico chamada para:", servicoIdParaExcluir); // Diagnóstico
-    if (!isDono) {
-        alert("Apenas o dono pode excluir serviços.");
-        return;
-    }
-    const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
-    if (!confirmado) {
-        console.log("Exclusão cancelada.");
-        return;
-    }
-
+// Função de excluir serviço com debug detalhado
+async function excluirServicoDebug(servicoIdParaExcluir) {
+    console.groupCollapsed("=== DEBUG EXCLUIR SERVIÇO ===");
     try {
+        console.log("Função excluirServico chamada para:", servicoIdParaExcluir);
+        console.log("empresaId atual:", empresaId);
+        console.log("isDono:", isDono);
+
+        // Mostra o usuário logado (modular ou compatível)
+        if (typeof auth !== "undefined" && auth.currentUser) {
+            console.log("UID logado:", auth.currentUser.uid);
+        } else if (typeof firebase !== "undefined" && firebase.auth().currentUser) {
+            console.log("UID logado:", firebase.auth().currentUser.uid);
+        } else {
+            console.warn("Não consegui obter o UID logado!");
+        }
+
+        // Confirmação do modal
+        const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
+        console.log("Modal de confirmação:", confirmado);
+        if (!isDono) {
+            console.warn("Usuário não é dono! Exclusão não permitida.");
+            alert("Apenas o dono pode excluir serviços.");
+            console.groupEnd();
+            return;
+        }
+        if (!confirmado) {
+            console.log("Usuário cancelou a exclusão.");
+            console.groupEnd();
+            return;
+        }
+
+        // Caminho do documento
+        const caminho = `empresarios/${empresaId}/servicos/${servicoIdParaExcluir}`;
+        console.log("Caminho do documento para deleteDoc:", caminho);
+
+        // Cria referência ao documento do serviço
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoIdParaExcluir);
+        console.log("Objeto servicoRef:", servicoRef);
+
+        // Tenta excluir o documento
         await deleteDoc(servicoRef);
+        console.log("deleteDoc executado SEM ERROS!");
+
         alert("Serviço excluído com sucesso!");
+        // Recarrega a lista de serviços
         carregarServicosDoFirebase();
     } catch (error) {
-        console.error("Erro ao excluir serviço:", error);
-        alert("Ocorreu um erro ao excluir o serviço.");
+        // Mostra detalhes do erro
+        console.error("Erro ao excluir serviço:", error.code, error.message, error);
+        alert("Ocorreu um erro ao excluir o serviço: " + error.message);
     }
+    console.groupEnd();
 }
 
-// Diagnóstico: log de clique
+// Diagnóstico: log de clique com debug detalhado
 listaServicosDiv.addEventListener('click', function(e) {
     const target = e.target.closest('.btn-acao');
     if (!target) return;
@@ -138,7 +170,7 @@ listaServicosDiv.addEventListener('click', function(e) {
 
     if (target.classList.contains('btn-excluir')) {
         console.log("Botão excluir clicado, id:", id); // Diagnóstico
-        excluirServico(id);
+        excluirServicoDebug(id);
     }
 });
 
