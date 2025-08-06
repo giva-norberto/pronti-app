@@ -165,10 +165,9 @@ h1, h2, h3 {
 
 .btn-new {
   background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
-  color: var(--cor-branco);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  border: none;
-  margin-bottom: 20px;
+  color: #fff !important;
+  text-shadow: 0 2px 8px rgba(44,44,44,0.15);
+  ...
 }
 .btn-new:hover {
   transform: translateY(-3px);
