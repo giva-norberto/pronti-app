@@ -1,43 +1,23 @@
-/**
- * ficha-cliente.js (VERSÃO CORRIGIDA E ALINHADA COM A ESTRUTURA 'empresarios')
- *
- * Lógica Principal:
- * 1. Confirma qual utilizador (dono) está logado.
- * 2. Descobre o ID da empresa ('empresaId') daquele dono.
- * 3. Busca os agendamentos do cliente especificado na URL, mas APENAS dentro da subcoleção daquela empresa.
- * 4. Busca os serviços do profissional (dono) para exibir os nomes corretos.
- */
-
-// IMPORTAÇÕES
-import { getFirestore, collection, getDocs, query, where, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+// IMPORTAÇÕES do Firebase
+import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 // INICIALIZAÇÃO
 const db = getFirestore(app);
 const auth = getAuth(app);
+const agendamentosCollection = collection(db, "agendamentos");
+const servicosCollection = collection(db, "servicos");
 
 // ELEMENTOS DA PÁGINA
 const nomeClienteTitulo = document.getElementById('nome-cliente-titulo');
 const historicoDiv = document.getElementById('historico-agendamentos');
 
-/**
- * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
- */
-async function getEmpresaIdDoDono(uid) {
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    return snapshot.docs[0].id;
-}
-
-/**
- * Função principal que é chamada após a autenticação do utilizador.
- */
-async function carregarFichaDoCliente(uid, empresaId) {
+// FUNÇÃO PRINCIPAL
+async function carregarFichaDoCliente(user) {
     // 1. Pega o nome do cliente que foi passado na URL
     const urlParams = new URLSearchParams(window.location.search);
-    const nomeCliente = urlParams.get('cliente'); // O nome vem da URL
+    const nomeCliente = urlParams.get('cliente');
 
     if (!nomeCliente) {
         nomeClienteTitulo.textContent = 'Cliente não encontrado';
@@ -50,21 +30,21 @@ async function carregarFichaDoCliente(uid, empresaId) {
     historicoDiv.innerHTML = '<p>Buscando histórico de agendamentos...</p>';
 
     try {
-        // 2. Busca o "mapa" de serviços do profissional (dono)
-        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-        const profissionalSnap = await getDoc(profissionalRef);
-        const servicosMap = new Map();
-        if (profissionalSnap.exists() && profissionalSnap.data().servicos) {
-            profissionalSnap.data().servicos.forEach(servico => {
-                servicosMap.set(String(servico.id), servico);
-            });
-        }
+        // Se quiser restringir ao próprio usuário, valide aqui:
+        // if (user.email !== nomeClienteDecodificado) { ... }
+        // OU se você salva o UID do Firebase no agendamento, filtre também no Firestore.
 
-        // 3. Consulta os agendamentos DENTRO DA SUBCOLEÇÃO DA EMPRESA
-        const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
+        // 2. Busca o "mapa" de serviços
+        const servicosSnapshot = await getDocs(servicosCollection);
+        const servicosMap = new Map();
+        servicosSnapshot.forEach(doc => {
+            servicosMap.set(doc.id, doc.data());
+        });
+
+        // 3. Consulta o Firebase
         const agendamentosQuery = query(
             agendamentosCollection, 
-            where("clienteNome", "==", nomeClienteDecodificado), // Campo correto é 'clienteNome'
+            where("cliente", "==", nomeClienteDecodificado),
             orderBy("horario", "desc")
         );
         const agendamentosSnapshot = await getDocs(agendamentosQuery);
@@ -78,10 +58,10 @@ async function carregarFichaDoCliente(uid, empresaId) {
 
         agendamentosSnapshot.forEach(doc => {
             const agendamento = doc.data();
-            const servicoInfo = servicosMap.get(String(agendamento.servicoId));
+            const servicoInfo = servicosMap.get(agendamento.servicoId);
             const nomeServico = servicoInfo ? servicoInfo.nome : 'Serviço Inválido';
 
-            const dataHora = agendamento.horario.toDate(); // Converte Timestamp para Date
+            const dataHora = new Date(agendamento.horario);
             const dataFormatada = dataHora.toLocaleDateString('pt-BR');
             const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -98,20 +78,18 @@ async function carregarFichaDoCliente(uid, empresaId) {
 
     } catch (error) {
         console.error("Erro ao buscar histórico do cliente:", error);
-        historicoDiv.innerHTML = '<p style="color:red;">Ocorreu um erro ao carregar o histórico. Verifique o console e as regras de segurança.</p>';
+        historicoDiv.innerHTML = '<p style="color:red;">Ocorreu um erro ao carregar o histórico. Verifique o console.</p>';
     }
 }
 
-// Ponto de partida: verifica o login antes de executar qualquer coisa.
-onAuthStateChanged(auth, async (user) => {
+// AUTENTICAÇÃO OBRIGATÓRIA
+onAuthStateChanged(auth, (user) => {
     if (user) {
-        const empresaId = await getEmpresaIdDoDono(user.uid);
-        if (empresaId) {
-            carregarFichaDoCliente(user.uid, empresaId);
-        } else {
-            historicoDiv.innerHTML = "<p>Empresa não encontrada para este utilizador.</p>";
-        }
+        carregarFichaDoCliente(user);
     } else {
-        window.location.href = 'login.html';
+        // Redirecione para login, ou mostre mensagem
+        historicoDiv.innerHTML = '<p style="color:red;">Você precisa estar autenticado para ver esta página.</p>';
+        nomeClienteTitulo.textContent = "";
+        window.location.href = "login.html"; // ou página de login do seu sistema
     }
 });
