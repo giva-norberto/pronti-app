@@ -1,16 +1,17 @@
 /**
- * novo-cliente.js (Painel do Dono - Atualizado para Firebase v10+)
- *
- * - Totalmente compatível com Firestore Modular v10 ou superior.
+ * novo-cliente.js (Painel do Dono - Firebase v10+ via CDN)
+ * Atualizado para uso direto no navegador com a CDN oficial do Firebase v10+.
  * - Salva clientes em 'empresarios/{empresaId}/clientes'.
- * - Usa imports via npm (não CDN).
+ * - Exibe mensagens Toastify se disponível, senão usa alert.
  */
 
-import { getFirestore, collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { app } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js"; // Seu firebase-config.js deve exportar firebaseConfig
 
-// Inicialização do Firestore e Auth
+// Inicialização do Firebase
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -42,14 +43,14 @@ onAuthStateChanged(auth, (user) => {
  * @returns {Promise<string|null>}
  */
 async function getEmpresaIdDoDono(uid) {
-    const empresariosCol = collection(db, "empresarios");
-    const q = query(empresariosCol, where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        console.error("Nenhuma empresa encontrada para o dono com UID:", uid);
-        return null;
-    }
-    return snapshot.docs[0].id;
+  const empresariosCol = collection(db, "empresarios");
+  const q = query(empresariosCol, where("donoId", "==", uid));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) {
+    console.error("Nenhuma empresa encontrada para o dono com UID:", uid);
+    return null;
+  }
+  return snapshot.docs[0].id;
 }
 
 /**
@@ -65,13 +66,7 @@ async function handleFormSubmit(event, uid) {
   const email = emailInput.value.trim();
 
   if (!nome) {
-    Toastify({
-        text: "O campo 'Nome Completo' é obrigatório.",
-        duration: 3000,
-        gravity: "top",
-        position: "right",
-        style: { background: "var(--cor-aviso)", color: "white" }
-    }).showToast();
+    mostrarToast("O campo 'Nome Completo' é obrigatório.", "var(--cor-aviso)");
     return;
   }
 
@@ -82,7 +77,7 @@ async function handleFormSubmit(event, uid) {
     // 1. Busca o ID da empresa do dono logado.
     const empresaId = await getEmpresaIdDoDono(uid);
     if (!empresaId) {
-        throw new Error("Não foi possível encontrar a empresa associada. Verifique seu perfil.");
+      throw new Error("Não foi possível encontrar a empresa associada. Verifique seu perfil.");
     }
 
     // 2. Subcoleção correta: 'empresarios/{empresaId}/clientes'
@@ -93,13 +88,7 @@ async function handleFormSubmit(event, uid) {
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      Toastify({
-          text: `Um cliente com o nome "${nome}" já existe.`,
-          duration: 4000,
-          gravity: "top",
-          position: "right",
-          style: { background: "var(--cor-aviso)", color: "white" }
-      }).showToast();
+      mostrarToast(`Um cliente com o nome "${nome}" já existe.`, "var(--cor-aviso)");
       btnSalvar.disabled = false;
       btnSalvar.textContent = 'Salvar Cliente';
       return;
@@ -114,29 +103,35 @@ async function handleFormSubmit(event, uid) {
 
     await addDoc(clientesCollection, novoCliente);
 
-    Toastify({
-      text: `Cliente "${nome}" salvo com sucesso!`,
-      duration: 3000,
-      gravity: "top",
-      position: "right",
-      style: { background: "var(--cor-sucesso)" }
-    }).showToast();
+    mostrarToast(`Cliente "${nome}" salvo com sucesso!`, "var(--cor-sucesso)");
 
     form.reset();
     setTimeout(() => { window.location.href = 'clientes.html'; }, 2000);
 
   } catch (error) {
     console.error("Erro ao salvar cliente: ", error);
-    Toastify({
-      text: `Erro ao salvar o cliente: ${error.message}`,
-      duration: 4000,
-      gravity: "top",
-      position: "right",
-      style: { background: "var(--cor-perigo)" }
-    }).showToast();
-
+    mostrarToast(`Erro ao salvar o cliente: ${error.message}`, "var(--cor-perigo)");
   } finally {
     btnSalvar.disabled = false;
     btnSalvar.textContent = 'Salvar Cliente';
+  }
+}
+
+/**
+ * Função para mostrar Toast (usando Toastify ou fallback simples)
+ * @param {string} texto
+ * @param {string} cor
+ */
+function mostrarToast(texto, cor) {
+  if (typeof Toastify !== "undefined") {
+    Toastify({
+      text: texto,
+      duration: 4000,
+      gravity: "top",
+      position: "right",
+      style: { background: cor, color: "white" }
+    }).showToast();
+  } else {
+    alert(texto);
   }
 }
