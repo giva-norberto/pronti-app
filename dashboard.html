@@ -248,15 +248,23 @@
     </div>
  </main>
 
+ <!-- Firebase e módulos do projeto -->
  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
  <script src="https://unpkg.com/lucide@latest"></script>
  <script>
     lucide.createIcons();
  </script>
+ <!-- Firebase config deve exportar só o objeto de configuração -->
  <script src="firebase-config.js" type="module"></script>
+ <!-- Cada menu JS deve importar Firebase via CDN, igual ao dashboard.js, e usar o mesmo firebaseConfig -->
  <script src="inteligencia.js" type="module"></script>
  <script src="dashboard.js" type="module"></script>
+ <script src="servicos.js" type="module"></script>
+ <script src="agenda.js" type="module"></script>
+ <script src="clientes.js" type="module"></script>
+ <script src="equipe.js" type="module"></script>
+ <script src="perfil.js" type="module"></script>
  <script src="link-fixer.js" type="module"></script>
 
 </body>
