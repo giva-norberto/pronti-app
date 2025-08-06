@@ -634,3 +634,24 @@ h1, h2, h3 {
   color: #222 !important;
   text-decoration: underline !important;
 }
+/* Botão grande com gradiente, padrão do sistema */
+.btn-gradient {
+  display: inline-block;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff !important;
+  background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+  border: none;
+  border-radius: 8px;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px rgba(60,60,60,0.10);
+  transition: background 0.3s, box-shadow 0.2s;
+  margin-bottom: 32px;
+}
+.btn-gradient:hover, .btn-gradient:focus {
+  background: linear-gradient(90deg, var(--cor-secundaria), var(--cor-primaria));
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(60,60,60,0.15);
+  text-decoration: none;
+}
