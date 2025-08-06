@@ -1,4 +1,5 @@
-import { db, doc, updateDoc } from './firebase-config.js';
+import { db } from './firebase-config.js';
+import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /**
  * Abre o modal para vincular/desvincular serviços a um funcionário
