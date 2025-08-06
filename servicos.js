@@ -1,5 +1,4 @@
 // servicos.js - Catálogo global de serviços (Firebase v10+)
-
 // --------------------- IMPORTS ---------------------
 import { collection, doc, getDoc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -7,7 +6,7 @@ import { db, auth } from "./firebase-config.js";
 
 // --------------------- ELEMENTOS DA TELA ---------------------
 const listaServicosDiv = document.getElementById('lista-servicos');
-const btnAddServico = document.getElementById('btn-add-servico'); // Opcional, para adicionar novo serviço
+const btnAddServico = document.querySelector('.btn-new'); // botão "Adicionar Novo Serviço", se quiser esconder para não-dono
 
 let empresaId = null;
 let isDono = false;
@@ -145,6 +144,7 @@ onAuthStateChanged(auth, async (user) => {
             empresaId = empresa.id;
             isDono = empresa.donoId === user.uid;
             carregarServicosDoFirebase();
+            // Opcional: esconder botão adicionar para não-dono
             if (btnAddServico) btnAddServico.style.display = isDono ? '' : 'none';
         } else {
             listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
