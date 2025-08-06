@@ -1,5 +1,7 @@
 /**
- * equipe.js - Sistema de gerenciamento de equipe (com distinção dono/funcionário, usando nome e foto do usuário dono do Google/Firebase Auth)
+ * equipe.js - Sistema de gerenciamento de equipe
+ * Corrigido: placeholder de foto não usa emoji para evitar erros de carregamento em branco.
+ * Também mantém a lógica para dono e funcionários.
  */
 
 // Verificar se todos os elementos HTML existem
@@ -92,7 +94,7 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         onAuthStateChanged 
     } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
 
-    // Função atualizada: cria ou atualiza o dono com nome/foto do usuário (Google/Firebase Auth)
+    // Função: cria ou atualiza o dono com nome/foto do usuário (Google/Firebase Auth)
     async function getEmpresaIdDoDono(uid, user) {
         const empresariosRef = collection(db, "empresarios");
         const q = query(empresariosRef, where("donoId", "==", uid));
@@ -177,11 +179,12 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         equipe.forEach(profissional => {
             const div = document.createElement("div");
             div.className = "profissional-card";
+            // Corrigido: placeholder de imagem padrão sem emoji
             div.innerHTML = `
                 <div class="profissional-foto">
-                    <img src="${profissional.fotoUrl || "https://via.placeholder.com/60x60?text=👤"}" 
+                    <img src="${profissional.fotoUrl || "https://via.placeholder.com/60x60?text=User"}" 
                          alt="Foto de ${profissional.nome}"
-                         onerror="this.src='https://via.placeholder.com/60x60?text=👤'">
+                         onerror="this.src='https://via.placeholder.com/60x60?text=User'">
                 </div>
                 <div class="profissional-info">
                     <span class="profissional-nome">${profissional.nome}</span>
@@ -276,7 +279,7 @@ async function inicializarSistemaEquipe(db, auth, storage) {
         }
     }
 
-    // Chamada atualizada: passa o user do Auth para usar displayName/photoURL do dono
+    // Chamada: passa o user do Auth para usar displayName/photoURL do dono
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             empresaId = await getEmpresaIdDoDono(user.uid, user);
