@@ -7,40 +7,42 @@ const btnAddServico = document.querySelector('.btn-new');
 let empresaId = null;
 let isDono = false;
 
-// Modal customizado de confirmação
+// Modal customizado de confirmação CORRIGIDO
 function showCustomConfirm(title, message) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-confirm-modal');
-        const modalTitle = document.getElementById('modal-titulo');
-        const modalMessage = document.getElementById('modal-mensagem');
-        const btnConfirmar = document.getElementById('modal-btn-confirmar');
-        const btnCancelar = document.getElementById('modal-btn-cancelar');
+  return new Promise((resolve) => {
+    const modal = document.getElementById('custom-confirm-modal');
+    const modalTitle = document.getElementById('modal-titulo');
+    const modalMessage = document.getElementById('modal-mensagem');
+    const btnConfirmar = document.getElementById('modal-btn-confirmar');
+    const btnCancelar = document.getElementById('modal-btn-cancelar');
 
-        if (!modal || !modalTitle || !modalMessage || !btnConfirmar || !btnCancelar) {
-            console.warn("Modal customizado não encontrado, usando confirm padrão.");
-            resolve(confirm(message));
-            return;
-        }
+    if (!modal || !modalTitle || !modalMessage || !btnConfirmar || !btnCancelar) {
+      console.warn("Modal customizado não encontrado, usando confirm padrão.");
+      resolve(confirm(message));
+      return;
+    }
 
-        modalTitle.textContent = title;
-        modalMessage.textContent = message;
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
 
-        // Remove event listeners antigos
-        const newBtnConfirmar = btnConfirmar.cloneNode(true);
-        const newBtnCancelar = btnCancelar.cloneNode(true);
-        btnConfirmar.parentNode.replaceChild(newBtnConfirmar, btnConfirmar);
-        btnCancelar.parentNode.replaceChild(newBtnCancelar, btnCancelar);
+    // Remove event listeners antigos (importante para evitar duplicidade)
+    const newBtnConfirmar = btnConfirmar.cloneNode(true);
+    const newBtnCancelar = btnCancelar.cloneNode(true);
+    btnConfirmar.parentNode.replaceChild(newBtnConfirmar, btnConfirmar);
+    btnCancelar.parentNode.replaceChild(newBtnCancelar, btnCancelar);
 
-        const close = (value) => {
-            modal.classList.remove('ativo');
-            resolve(value);
-        };
+    const close = (value) => {
+      modal.classList.remove('ativo');
+      modal.style.display = 'none';
+      resolve(value);
+    };
 
-        newBtnConfirmar.addEventListener('click', () => close(true));
-        newBtnCancelar.addEventListener('click', () => close(false));
+    newBtnConfirmar.addEventListener('click', () => close(true));
+    newBtnCancelar.addEventListener('click', () => close(false));
 
-        modal.classList.add('ativo');
-    });
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('ativo'), 10);
+  });
 }
 
 function formatarPreco(preco) {
