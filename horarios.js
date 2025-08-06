@@ -12,10 +12,11 @@ const diasDaSemana = [
   { id: 'dom', nome: 'Domingo' }
 ];
 
-let profissionalRef = null;
 let empresaId = null;
+let profissionalRef = null;
 let currentUser = null;
 
+// Inicia o fluxo ao carregar a página
 window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -28,13 +29,15 @@ window.addEventListener('DOMContentLoaded', () => {
       profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
       gerarEstruturaDosDias();
       await carregarHorarios();
-      document.getElementById('form-horarios').addEventListener('submit', handleFormSubmit);
+      const form = document.getElementById('form-horarios');
+      if (form) form.addEventListener('submit', handleFormSubmit);
     } else {
       window.location.href = 'login.html';
     }
   });
 });
 
+// Busca empresaId pelo dono
 async function getEmpresaIdDoDono(uid) {
   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
   const snapshot = await getDocs(q);
@@ -42,12 +45,14 @@ async function getEmpresaIdDoDono(uid) {
   return snapshot.docs[0].id;
 }
 
+// Carrega horários e intervalo salvos
 async function carregarHorarios() {
   if (!profissionalRef) return;
   const snap = await getDoc(profissionalRef);
   if (!snap.exists()) return;
   const { horarios = {}, intervalo = 30 } = snap.data();
-  document.getElementById("intervalo-atendimento").value = horarios.intervalo || intervalo || 30;
+  const intervaloInput = document.getElementById("intervalo-atendimento");
+  if (intervaloInput) intervaloInput.value = horarios.intervalo || intervalo || 30;
   diasDaSemana.forEach(dia => {
     const diaData = horarios[dia.id] || {};
     const ativoInput = document.getElementById(`${dia.id}-ativo`);
@@ -62,11 +67,12 @@ async function carregarHorarios() {
           adicionarBlocoDeHorario(dia.id);
         }
       }
-      ativoInput.dispatchEvent(new Event('change')); // Atualiza visual
+      ativoInput.dispatchEvent(new Event('change'));
     }
   });
 }
 
+// Renderiza estrutura dos dias da semana
 function gerarEstruturaDosDias() {
   const diasContainer = document.getElementById("dias-container");
   if (!diasContainer) return;
@@ -92,7 +98,7 @@ function gerarEstruturaDosDias() {
     `;
     diasContainer.appendChild(divDia);
 
-    // Listener para ativar/desativar dia
+    // Listener do toggle ativo
     const ativoInput = divDia.querySelector(`#${dia.id}-ativo`);
     if (ativoInput) {
       ativoInput.addEventListener('change', (e) => {
@@ -117,6 +123,7 @@ function gerarEstruturaDosDias() {
   });
 }
 
+// Adiciona um bloco de horário no dia
 function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
   const container = document.getElementById(`blocos-${diaId}`);
   if (!container) return;
@@ -141,12 +148,16 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
   }
 }
 
+// Salva horários e intervalo
 async function handleFormSubmit(event) {
   event.preventDefault();
   const btnSalvar = document.querySelector('button[type="submit"]');
-  btnSalvar.disabled = true;
-  btnSalvar.textContent = "Salvando...";
-  const horariosData = { intervalo: parseInt(document.getElementById("intervalo-atendimento").value, 10) || 30 };
+  if (btnSalvar) {
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = "Salvando...";
+  }
+  const intervaloInput = document.getElementById("intervalo-atendimento");
+  const horariosData = { intervalo: intervaloInput ? parseInt(intervaloInput.value, 10) : 30 };
   diasDaSemana.forEach(dia => {
     const ativoInput = document.getElementById(`${dia.id}-ativo`);
     const estaAtivo = ativoInput ? ativoInput.checked : false;
@@ -166,7 +177,9 @@ async function handleFormSubmit(event) {
   } catch (err) {
     alert("Erro ao salvar: " + err.message);
   } finally {
-    btnSalvar.disabled = false;
-    btnSalvar.textContent = "Salvar Horários";
+    if (btnSalvar) {
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = "Salvar Horários";
+    }
   }
 }
