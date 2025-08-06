@@ -1,17 +1,11 @@
-// servicos.js - Catálogo global de serviços (Firebase v10+)
-// --------------------- IMPORTS ---------------------
-import { collection, doc, getDoc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
 
-// --------------------- ELEMENTOS DA TELA ---------------------
 const listaServicosDiv = document.getElementById('lista-servicos');
-const btnAddServico = document.querySelector('.btn-new'); // botão "Adicionar Novo Serviço", se quiser esconder para não-dono
-
+const btnAddServico = document.querySelector('.btn-new');
 let empresaId = null;
 let isDono = false;
-
-// --------------------- UTILITÁRIOS ---------------------
 
 // Modal customizado de confirmação
 function showCustomConfirm(title, message) {
@@ -23,7 +17,7 @@ function showCustomConfirm(title, message) {
         const btnCancelar = document.getElementById('modal-btn-cancelar');
 
         if (!modal || !modalTitle || !modalMessage || !btnConfirmar || !btnCancelar) {
-            // Fallback se modal não existir
+            console.warn("Modal customizado não encontrado, usando confirm padrão.");
             resolve(confirm(message));
             return;
         }
@@ -49,12 +43,10 @@ function showCustomConfirm(title, message) {
     });
 }
 
-// Formatação de preço
 function formatarPreco(preco) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco);
 }
 
-// Renderização dos cards de serviço
 function renderizarServicos(servicos) {
     if (!servicos || servicos.length === 0) {
         listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>`;
@@ -81,24 +73,17 @@ function renderizarServicos(servicos) {
     `).join('');
 }
 
-// --------------------- LÓGICA PRINCIPAL ---------------------
-
 // Busca a empresa do usuário (dono ou profissional)
 async function getEmpresaDoUsuario(uid) {
-    // Dono
     let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     let snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-
-    // Profissional
     q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
     snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-
     return null;
 }
 
-// Carrega lista de serviços do catálogo global
 async function carregarServicosDoFirebase() {
     if (!empresaId) {
         listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
@@ -106,8 +91,6 @@ async function carregarServicosDoFirebase() {
     }
     listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
     try {
-        // Filtra só os serviços visíveis na vitrine se quiser:
-        // const servicosCol = query(collection(db, "empresarios", empresaId, "servicos"), where("visivelNaVitrine", "==", true));
         const servicosCol = collection(db, "empresarios", empresaId, "servicos");
         const snap = await getDocs(servicosCol);
         const servicos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -118,11 +101,17 @@ async function carregarServicosDoFirebase() {
     }
 }
 
-// Exclusão de serviço (só dono)
 async function excluirServico(servicoIdParaExcluir) {
-    if (!isDono) return;
+    console.log("Função excluirServico chamada para:", servicoIdParaExcluir); // Diagnóstico
+    if (!isDono) {
+        alert("Apenas o dono pode excluir serviços.");
+        return;
+    }
     const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
-    if (!confirmado) return;
+    if (!confirmado) {
+        console.log("Exclusão cancelada.");
+        return;
+    }
 
     try {
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoIdParaExcluir);
@@ -135,25 +124,7 @@ async function excluirServico(servicoIdParaExcluir) {
     }
 }
 
-// --------------------- EVENTOS E INICIALIZAÇÃO ---------------------
-
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const empresa = await getEmpresaDoUsuario(user.uid);
-        if (empresa) {
-            empresaId = empresa.id;
-            isDono = empresa.donoId === user.uid;
-            carregarServicosDoFirebase();
-            // Opcional: esconder botão adicionar para não-dono
-            if (btnAddServico) btnAddServico.style.display = isDono ? '' : 'none';
-        } else {
-            listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
-        }
-    } else {
-        window.location.href = 'login.html';
-    }
-});
-
+// Diagnóstico: log de clique
 listaServicosDiv.addEventListener('click', function(e) {
     const target = e.target.closest('.btn-acao');
     if (!target) return;
@@ -166,7 +137,24 @@ listaServicosDiv.addEventListener('click', function(e) {
     }
 
     if (target.classList.contains('btn-excluir')) {
+        console.log("Botão excluir clicado, id:", id); // Diagnóstico
         excluirServico(id);
+    }
+});
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const empresa = await getEmpresaDoUsuario(user.uid);
+        if (empresa) {
+            empresaId = empresa.id;
+            isDono = empresa.donoId === user.uid;
+            carregarServicosDoFirebase();
+            if (btnAddServico) btnAddServico.style.display = isDono ? '' : 'none';
+        } else {
+            listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
+        }
+    } else {
+        window.location.href = 'login.html';
     }
 });
 
