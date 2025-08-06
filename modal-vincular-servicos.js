@@ -1,14 +1,44 @@
-<!-- Modal para vincular serviços ao funcionário -->
-<div id="modal-servicos-funcionario" class="modal-bg" style="display: none;">
-  <div class="modal-card" style="max-width: 420px;">
-    <h2>Serviços do Funcionário</h2>
-    <p>Selecione os serviços que este funcionário realiza:</p>
-    <form id="form-servicos-funcionario">
-      <div id="lista-servicos-checkbox"></div>
-      <div style="display:flex;gap:10px; margin-top:18px;">
-        <button type="button" class="btn-confirmar" id="btn-salvar-servicos">Salvar</button>
-        <button type="button" class="btn-secondary" id="btn-cancelar-servicos">Cancelar</button>
-      </div>
-    </form>
-  </div>
-</div>
+import { db, doc, updateDoc } from './firebase-config.js';
+
+/**
+ * Abre o modal para vincular/desvincular serviços a um funcionário
+ * @param {Object} funcionario - objeto do funcionário (deve ter id, nome, servicos[])
+ * @param {Array} todosServicos - array de todos os serviços disponíveis [{id, nome, ...}]
+ * @param {string} empresaId - ID da empresa
+ * @param {Function} onSaved - callback chamado ao salvar (opcional)
+ */
+export function abrirModalServicosFuncionario(funcionario, todosServicos, empresaId, onSaved) {
+    const modal = document.getElementById('modal-servicos-funcionario');
+    const listaDiv = document.getElementById('lista-servicos-checkbox');
+    modal.classList.add('show');
+
+    // Renderiza os checkboxes dos serviços
+    listaDiv.innerHTML = todosServicos.map(servico => `
+        <label>
+            <input type="checkbox" name="servico" value="${servico.id}"
+                ${Array.isArray(funcionario.servicos) && funcionario.servicos.includes(servico.id) ? 'checked' : ''}>
+            ${servico.nome}
+        </label>
+    `).join('');
+
+    // Botão Cancelar
+    document.getElementById('btn-cancelar-servicos').onclick = () => {
+        modal.classList.remove('show');
+    };
+
+    // Botão Salvar
+    document.getElementById('form-servicos-funcionario').onsubmit = async (e) => {
+        e.preventDefault();
+        const selecionados = Array.from(
+            listaDiv.querySelectorAll('input[type="checkbox"]:checked')
+        ).map(chk => chk.value);
+
+        await updateDoc(
+            doc(db, "empresarios", empresaId, "profissionais", funcionario.id),
+            { servicos: selecionados }
+        );
+        modal.classList.remove('show');
+        if (onSaved) onSaved(selecionados);
+        alert("Vínculo de serviços atualizado!");
+    };
+}
