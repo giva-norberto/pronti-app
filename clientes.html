@@ -8,32 +8,31 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
+    <!-- Apenas UM bloco sidebar -->
     <aside class="sidebar">
         <a href="index.html" class="sidebar-brand">Pronti</a>
         <hr />
         <div class="sidebar-links">
-            <a href="dashboard.html"><svg width="20" height="20" ...></svg> Dashboard</a>
-            <a href="servicos.html"><svg width="20" height="20" ...></svg> Serviços</a>
-            <a href="agenda.html"><svg width="20" height="20" ...></svg> Agenda</a>
-            <a href="clientes.html" class="active"><svg width="20" height="20" ...></svg> Clientes</a>
-            <a href="equipe.html"><svg width="20" height="20" ...></svg> Equipe</a>
-            <a href="perfil.html"><svg width="20" height="20" ...></svg> Meu Perfil</a>
+            <a href="dashboard.html"><span>🏠</span> Dashboard</a>
+            <a href="servicos.html"><span>🛠️</span> Serviços</a>
+            <a href="agenda.html"><span>📅</span> Agenda</a>
+            <a href="clientes.html" class="active"><span>👤</span> Clientes</a>
+            <a href="equipe.html"><span>👥</span> Equipe</a>
+            <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
         </div>
         <div class="sidebar-footer">
-            <button id="btn-logout" class="btn-logout">
-                <svg width="20" height="20" ...></svg>
-                Sair
-            </button>
+            <button id="btn-logout" class="btn-logout">Sair</button>
         </div>
     </aside>
 
     <main class="main-content">
         <h1>Meus Clientes</h1>
         <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
+        <!-- Container de clientes -->
         <div id="lista-clientes" style="margin-top: 20px;"></div>
     </main>
 
-    <!-- Modal de confirmação customizado -->
+    <!-- Modal de confirmação -->
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-box">
             <h3 id="modal-titulo">Confirmar Exclusão</h3>
@@ -47,7 +46,7 @@
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Script principal da página -->
+    <!-- Script principal DA PÁGINA, sempre no final -->
     <script src="clientes.js" type="module"></script>
 </body>
 </html>
