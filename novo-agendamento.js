@@ -1,11 +1,15 @@
 /**
  * novo-agendamento.js (Painel do Dono - Corrigido para a estrutura 'empresarios')
+ * Firestore Modular v10+ (corrigido!)
  */
 
-import { getFirestore, collection, getDocs, addDoc, query, where, doc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, query, where, doc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js";
 
+// Inicialização Firebase
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -44,8 +48,8 @@ let empresaId = null; // Guardará o ID da empresa para ser usado nas funções
  * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
  */
 async function getEmpresaIdDoDono(uid) {
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
+    const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(empresQ);
     if (snapshot.empty) return null;
     return snapshot.docs[0].id;
 }
@@ -84,7 +88,7 @@ async function inicializarPaginaDeAgendamento(uid, elements) {
 async function carregarServicosDoFirebase(uid, servicoSelect) {
     servicoSelect.innerHTML = '<option value="">Selecione um serviço</option>';
     try {
-        // CORREÇÃO: Busca os serviços do documento do profissional, dentro da empresa correta
+        // Busca os serviços do documento do profissional, dentro da empresa correta
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const docSnap = await getDoc(profissionalRef);
         
@@ -120,7 +124,7 @@ async function gerarEExibirHorarios(uid, elements) {
         const inicioDoDia = new Date(`${diaSelecionado}T00:00:00.000Z`);
         const fimDoDia = new Date(`${diaSelecionado}T23:59:59.999Z`);
         
-        // CORREÇÃO: Busca agendamentos da subcoleção da empresa
+        // Busca agendamentos da subcoleção da empresa
         const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
         const agendamentosQuery = query(agendamentosCollection, 
             where("horario", ">=", Timestamp.fromDate(inicioDoDia)), 
@@ -188,7 +192,7 @@ async function handleFormSubmit(event, uid, elements) {
     };
 
     try {
-        // CORREÇÃO: Salva o agendamento na subcoleção da empresa
+        // Salva o agendamento na subcoleção da empresa
         const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
         await addDoc(agendamentosCollection, novoAgendamento);
         alert("Agendamento salvo com sucesso!");
