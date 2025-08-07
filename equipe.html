@@ -6,7 +6,6 @@
     <title>Gerenciamento de Equipe</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -14,7 +13,6 @@
             padding: 20px;
             display: flex;
         }
-
         nav.sidebar {
             width: 250px;
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -26,13 +24,11 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             font-weight: 600;
         }
-
         nav.sidebar h2 {
             margin-bottom: 30px;
             font-weight: 700;
             font-size: 1.6rem;
         }
-
         nav.sidebar a {
             color: white;
             text-decoration: none;
@@ -42,11 +38,9 @@
             transition: background-color 0.3s ease;
             display: block;
         }
-
         nav.sidebar a:hover, nav.sidebar a.active {
             background-color: rgba(255,255,255,0.2);
         }
-
         .container {
             flex: 1;
             max-width: 1200px;
@@ -58,31 +52,26 @@
             display: flex;
             flex-direction: column;
         }
-
         .header {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
             padding: 30px;
             text-align: center;
         }
-
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
             font-weight: 300;
         }
-
         .header p {
             opacity: 0.9;
             font-size: 1.1rem;
         }
-
         .content {
             padding: 40px;
             flex: 1;
             overflow-y: auto;
         }
-
         .actions {
             display: flex;
             justify-content: space-between;
@@ -91,7 +80,6 @@
             flex-wrap: wrap;
             gap: 15px;
         }
-
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -107,30 +95,24 @@
             align-items: center;
             gap: 8px;
         }
-
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
-
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-
         .btn-success {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
-
         .btn-danger {
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
         }
-
         .btn-secondary {
             background: linear-gradient(135deg, #a8a8a8 0%, #7f8c8d 100%);
         }
-
         .btn-tertiary {
             background: #f9fafb;
             color: #374151;
@@ -144,14 +126,12 @@
             transition: background .2s;
         }
         .btn-tertiary:hover { background: #e5e7eb; }
-
         .equipe-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
-
         .profissional-card {
             background: white;
             border: 1px solid #e1e8ed;
@@ -163,12 +143,10 @@
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
-
         .profissional-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 30px rgba(0,0,0,0.15);
         }
-
         .profissional-foto {
             width: 60px;
             height: 60px;
@@ -177,17 +155,14 @@
             flex-shrink: 0;
             border: 3px solid #4facfe;
         }
-
         .profissional-foto img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
         .profissional-info {
             flex: 1;
         }
-
         .profissional-nome {
             display: block;
             font-weight: 600;
@@ -195,7 +170,6 @@
             color: #2c3e50;
             margin-bottom: 5px;
         }
-
         .profissional-status {
             display: inline-block;
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -205,7 +179,6 @@
             font-size: 0.8rem;
             font-weight: 500;
         }
-
         .modal {
             display: none;
             position: fixed;
@@ -219,11 +192,9 @@
             justify-content: center;
             backdrop-filter: blur(5px);
         }
-
         .modal.show {
             display: flex !important;
         }
-
         .modal-content {
             background: white;
             border-radius: 20px;
@@ -236,35 +207,29 @@
             transform: scale(0.9);
             animation: modalShow 0.3s ease forwards;
         }
-
         @keyframes modalShow {
             to {
                 transform: scale(1);
             }
         }
-
         .modal-header {
             text-align: center;
             margin-bottom: 30px;
         }
-
         .modal-header h2 {
             color: #2c3e50;
             font-size: 1.8rem;
             margin-bottom: 10px;
         }
-
         .form-group {
             margin-bottom: 25px;
         }
-
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #2c3e50;
         }
-
         .form-control {
             width: 100%;
             padding: 12px 15px;
@@ -273,43 +238,36 @@
             font-size: 1rem;
             transition: all 0.3s ease;
         }
-
         .form-control:focus {
             outline: none;
             border-color: #4facfe;
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
-
         .form-actions {
             display: flex;
             gap: 15px;
             justify-content: flex-end;
             margin-top: 30px;
         }
-
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: #7f8c8d;
         }
-
         .empty-state h3 {
             font-size: 1.5rem;
             margin-bottom: 15px;
             color: #2c3e50;
         }
-
         .empty-state p {
             font-size: 1.1rem;
             line-height: 1.6;
         }
-
         .servico-checkbox-list {
             margin: 12px 0 16px 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            /* SCROLL INTERNO SE TIVER MUITOS SERVIÇOS */
             max-height: 350px;
             overflow-y: auto;
             padding-right: 10px;
@@ -317,7 +275,6 @@
             border-radius: 10px;
             background: #f9fafb;
         }
-
         /* Tabs para modal de perfil */
         .tabs {
             display: flex;
@@ -344,14 +301,11 @@
         .tab-content.active {
             display: block;
         }
-        /* Modal grande para perfil */
         .modal-content.profile-modal {
             max-width: 950px;
             width: 98%;
             padding: 40px 30px;
         }
-
-        /* Horários e Intervalos grid */
         .horarios-grid, .intervalos-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -361,13 +315,11 @@
         .dia-label {
             font-weight: 500;
         }
-
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
                 padding: 10px;
             }
-
             nav.sidebar {
                 width: 100%;
                 flex-direction: row;
@@ -376,46 +328,37 @@
                 border-radius: 10px;
                 margin-bottom: 15px;
             }
-
             nav.sidebar h2 {
                 display: none;
             }
-
             nav.sidebar a {
                 margin-bottom: 0;
                 padding: 10px 15px;
                 white-space: nowrap;
             }
-
             .container {
                 margin-left: 0;
                 max-width: 100%;
                 border-radius: 10px;
                 padding: 20px;
             }
-
             .content {
                 padding: 20px;
             }
-
             .header {
                 padding: 20px;
             }
-
             .header h1 {
                 font-size: 2rem;
             }
-
             .equipe-grid {
                 grid-template-columns: 1fr;
             }
-
             .modal-content, .modal-content.profile-modal {
                 padding: 30px 10px;
                 margin: 20px;
                 max-width: 98vw;
             }
-
             .form-actions {
                 flex-direction: column;
             }
