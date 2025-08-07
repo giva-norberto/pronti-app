@@ -11,14 +11,14 @@
     <aside class="sidebar">
         <a href="index.html" class="sidebar-brand">Pronti</a>
         <hr />
-        <div class="sidebar-links">
+        <nav class="sidebar-links">
             <a href="dashboard.html"><span>🏠</span> Dashboard</a>
             <a href="servicos.html"><span>🛠️</span> Serviços</a>
             <a href="agenda.html"><span>📅</span> Agenda</a>
             <a href="clientes.html" class="active"><span>👤</span> Clientes</a>
             <a href="equipe.html"><span>👥</span> Equipe</a>
             <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-        </div>
+        </nav>
         <div class="sidebar-footer">
             <button id="btn-logout" class="btn-logout">Sair</button>
         </div>
@@ -44,193 +44,6 @@
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Script principal DA PÁGINA, sempre no final -->
-    <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { firebaseConfig } from "./firebase-config.js";
-
-    // Inicialização Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    // Elementos DOM
-    const listaClientesDiv = document.getElementById("lista-clientes");
-    const modal = document.getElementById("modal-confirmacao");
-    const modalMensagem = document.getElementById("modal-mensagem");
-    const btnModalConfirmar = document.getElementById("btn-modal-confirmar");
-    const btnModalCancelar = document.getElementById("btn-modal-cancelar");
-
-    let empresaId = null;
-
-    // Proteção extra para DOM
-    function safeAddClientesListener() {
-      if (!listaClientesDiv) {
-        console.error("Elemento #lista-clientes não encontrado no DOM.");
-        return;
-      }
-      listaClientesDiv.addEventListener("click", async (event) => {
-        if (event.target && event.target.classList.contains("btn-excluir")) {
-          event.preventDefault();
-          event.stopPropagation();
-
-          const clienteId = event.target.dataset.id;
-          const nomeCliente = event.target.closest(".cliente-item").querySelector("h3").textContent;
-
-          const confirmado = await mostrarConfirmacao(`Tem a certeza de que deseja excluir "${nomeCliente}"? Esta ação é permanente.`);
-
-          if (confirmado) {
-            await excluirCliente(clienteId);
-          }
-        }
-      });
-    }
-
-    // Validação de login e obtenção da empresa
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        empresaId = await getEmpresaIdDoDono(user.uid);
-        if (empresaId) {
-          inicializarPaginaClientes();
-        } else if (listaClientesDiv) {
-          listaClientesDiv.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
-        }
-      } else {
-        window.location.href = "login.html";
-      }
-    });
-
-    async function getEmpresaIdDoDono(uid) {
-      const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
-      const snapshot = await getDocs(empresQ);
-      if (snapshot.empty) return null;
-      return snapshot.docs[0].id;
-    }
-
-    function inicializarPaginaClientes() {
-      function mostrarConfirmacao(mensagem) {
-        btnModalConfirmar && (btnModalConfirmar.onclick = null);
-        btnModalCancelar && (btnModalCancelar.onclick = null);
-
-        if (modalMensagem) modalMensagem.textContent = mensagem;
-        if (modal) {
-          modal.style.display = "flex";
-          modal.classList.add("ativo");
-        }
-
-        return new Promise((resolve) => {
-          const handleConfirm = () => {
-            if (modal) {
-              modal.classList.remove("ativo");
-              modal.style.display = "none";
-            }
-            resolve(true);
-          };
-
-          const handleCancel = () => {
-            if (modal) {
-              modal.classList.remove("ativo");
-              modal.style.display = "none";
-            }
-            resolve(false);
-          };
-
-          btnModalConfirmar && (btnModalConfirmar.onclick = handleConfirm);
-          btnModalCancelar && (btnModalCancelar.onclick = handleCancel);
-
-          const handleEsc = (e) => {
-            if (e.key === "Escape") {
-              handleCancel();
-              document.removeEventListener("keydown", handleEsc);
-            }
-          };
-          document.addEventListener("keydown", handleEsc);
-
-          if (modal) {
-            modal.onclick = (e) => {
-              if (e.target === modal) {
-                handleCancel();
-              }
-            };
-          }
-        });
-      }
-
-      async function carregarClientesDoFirebase() {
-        if (!listaClientesDiv) return;
-        listaClientesDiv.innerHTML = "<p>A carregar clientes...</p>";
-        try {
-          const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
-          const clientesQuery = query(clientesCollection, orderBy("nome"));
-          const clientesSnapshot = await getDocs(clientesQuery);
-
-          if (clientesSnapshot.empty) {
-            listaClientesDiv.innerHTML = "<p>Nenhum cliente cadastrado.</p>";
-            return;
-          }
-
-          listaClientesDiv.innerHTML = "";
-          clientesSnapshot.forEach(docItem => {
-            const cliente = docItem.data();
-            const clienteId = docItem.id;
-            if (cliente.nome) {
-              const el = document.createElement("div");
-              el.classList.add("cliente-item");
-              el.dataset.id = clienteId;
-              el.innerHTML = `
-                <div class="item-info">
-                  <h3>${cliente.nome}</h3>
-                  <p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ""}</p>
-                </div>
-                <div class="item-acoes">
-                  <a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a>
-                  <button class="btn-excluir" data-id="${clienteId}">Excluir</button>
-                </div>
-              `;
-              listaClientesDiv.appendChild(el);
-            }
-          });
-        } catch (error) {
-          console.error("Erro ao buscar clientes:", error);
-          mostrarToast("Erro ao buscar clientes.", "var(--cor-perigo)");
-        }
-      }
-
-      async function excluirCliente(id) {
-        try {
-          await deleteDoc(doc(db, "empresarios", empresaId, "clientes", id));
-          mostrarToast("Cliente excluído com sucesso!", "var(--cor-perigo)");
-          const itemRemovido = document.querySelector(`.cliente-item[data-id="${id}"]`);
-          if (itemRemovido) {
-            itemRemovido.style.transition = "opacity 0.3s ease";
-            itemRemovido.style.opacity = "0";
-            setTimeout(() => itemRemovido.remove(), 300);
-          }
-        } catch (error) {
-          console.error("Erro ao excluir cliente:", error);
-          mostrarToast("Erro ao excluir o cliente.", "var(--cor-perigo)");
-        }
-      }
-
-      safeAddClientesListener();
-      carregarClientesDoFirebase();
-    }
-
-    function mostrarToast(texto, cor) {
-      if (typeof Toastify !== "undefined") {
-        Toastify({
-          text: texto,
-          duration: 4000,
-          gravity: "top",
-          position: "right",
-          style: { background: cor, color: "white" }
-        }).showToast();
-      } else {
-        alert(texto);
-      }
-    }
-    </script>
+    <script type="module" src="clientes.js"></script>
 </body>
 </html>
