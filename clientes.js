@@ -31,7 +31,7 @@ onAuthStateChanged(auth, async (user) => {
     if (empresaId) {
         inicializarPaginaClientes();
     } else {
-        listaClientesDiv.innerHTML = "<p style=\'color:red;\'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
+        listaClientesDiv.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
     }
   } else {
     window.location.href = "login.html";
@@ -56,34 +56,45 @@ async function getEmpresaIdDoDono(uid) {
 function inicializarPaginaClientes() {
 
     function mostrarConfirmacao(mensagem) {
+      // Limpar qualquer listener anterior
+      btnModalConfirmar.onclick = null;
+      btnModalCancelar.onclick = null;
+      
       modalMensagem.textContent = mensagem;
       modal.style.display = "flex";
-      // Pequeno atraso para garantir que o display:flex seja aplicado antes da transição
-      setTimeout(() => modal.classList.add("ativo"), 10);
+      modal.classList.add("ativo");
 
       return new Promise((resolve) => {
         const handleConfirm = () => {
           modal.classList.remove("ativo");
-          // Espera a transição terminar antes de ocultar completamente
-          modal.addEventListener("transitionend", function handler() {
-            modal.style.display = "none";
-            modal.removeEventListener("transitionend", handler);
-            resolve(true);
-          }, { once: true });
+          modal.style.display = "none";
+          resolve(true);
         };
 
         const handleCancel = () => {
           modal.classList.remove("ativo");
-          // Espera a transição terminar antes de ocultar completamente
-          modal.addEventListener("transitionend", function handler() {
-            modal.style.display = "none";
-            modal.removeEventListener("transitionend", handler);
-            resolve(false);
-          }, { once: true });
+          modal.style.display = "none";
+          resolve(false);
         };
 
         btnModalConfirmar.onclick = handleConfirm;
         btnModalCancelar.onclick = handleCancel;
+        
+        // Adicionar listener para fechar com ESC
+        const handleEsc = (e) => {
+          if (e.key === "Escape") {
+            handleCancel();
+            document.removeEventListener("keydown", handleEsc);
+          }
+        };
+        document.addEventListener("keydown", handleEsc);
+        
+        // Fechar ao clicar fora do modal
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            handleCancel();
+          }
+        };
       });
     }
 
@@ -96,17 +107,27 @@ function inicializarPaginaClientes() {
             const clientesSnapshot = await getDocs(clientesQuery);
 
             if (clientesSnapshot.empty) {
-                listaClientesDiv.innerHTML = "<p>Nenhum cliente cadastrado.</p>"; return;
+                listaClientesDiv.innerHTML = "<p>Nenhum cliente cadastrado.</p>"; 
+                return;
             }
+            
             listaClientesDiv.innerHTML = "";
             clientesSnapshot.forEach(docItem => {
-                const cliente = docItem.data(); const clienteId = docItem.id;
+                const cliente = docItem.data(); 
+                const clienteId = docItem.id;
                 if (cliente.nome) { 
                     const el = document.createElement("div");
-                    el.classList.add("cliente-item"); el.dataset.id = clienteId;
+                    el.classList.add("cliente-item"); 
+                    el.dataset.id = clienteId;
                     el.innerHTML = `
-                        <div class="item-info"><h3>${cliente.nome}</h3><p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ""}</p></div>
-                        <div class="item-acoes"><a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a><button class="btn-excluir" data-id="${clienteId}">Excluir</button></div>
+                        <div class="item-info">
+                            <h3>${cliente.nome}</h3>
+                            <p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ""}</p>
+                        </div>
+                        <div class="item-acoes">
+                            <a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a>
+                            <button class="btn-excluir" data-id="${clienteId}">Excluir</button>
+                        </div>
                     `;
                     listaClientesDiv.appendChild(el);
                 }
@@ -122,7 +143,11 @@ function inicializarPaginaClientes() {
             await deleteDoc(doc(db, "empresarios", empresaId, "clientes", id));
             mostrarToast("Cliente excluído com sucesso!", "var(--cor-perigo)");
             const itemRemovido = document.querySelector(`.cliente-item[data-id="${id}"]`);
-            if (itemRemovido) itemRemovido.remove();
+            if (itemRemovido) {
+                itemRemovido.style.transition = "opacity 0.3s ease";
+                itemRemovido.style.opacity = "0";
+                setTimeout(() => itemRemovido.remove(), 300);
+            }
         } catch (error) {
             console.error("Erro ao excluir cliente:", error);
             mostrarToast("Erro ao excluir o cliente.", "var(--cor-perigo)");
@@ -131,11 +156,16 @@ function inicializarPaginaClientes() {
 
     listaClientesDiv.addEventListener("click", async (event) => {
         if (event.target && event.target.classList.contains("btn-excluir")) {
+            event.preventDefault();
+            event.stopPropagation();
+            
             const clienteId = event.target.dataset.id;
             const nomeCliente = event.target.closest(".cliente-item").querySelector("h3").textContent;
+            
             const confirmado = await mostrarConfirmacao(`Tem a certeza de que deseja excluir "${nomeCliente}"? Esta ação é permanente.`);
+            
             if (confirmado) {
-                excluirCliente(clienteId);
+                await excluirCliente(clienteId);
             }
         }
     });
