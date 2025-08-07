@@ -101,6 +101,8 @@ body {
     flex-wrap: wrap;
     gap: 15px;
 }
+
+/* BOTÕES DO SISTEMA - PADRÃO PRONTI */
 .btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -110,26 +112,92 @@ body {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 500;
-    transition: box-shadow 0.3s, transform 0.2s;
+    transition: box-shadow 0.3s, transform 0.2s, background 0.2s;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    box-shadow: 0 2px 8px #d6d2f8;
 }
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
 }
-.btn:disabled {
+
+
+/* BOTÃO NOVO - AZUL PRONTI */
+.btn-novo, .equipe-btn-novo {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #22223b;
+}
+.btn-novo:hover, .equipe-btn-novo:hover {
+    background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+    color: #22223b;
+}
+
+/* BOTÃO EDITAR - AMARELO GRADIENTE */
+.btn-editar {
+    background: linear-gradient(135deg, #ffd600 0%, #ffae00 100%);
+    color: #22223b;
+}
+.btn-editar:hover {
+    background: linear-gradient(135deg, #ffe57f 0%, #ffd600 100%);
+    color: #22223b;
+}
+
+/* BOTÃO EXCLUIR - VERMELHO GRADIENTE */
+.btn-excluir, .equipe-btn-excluir {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: #fff;
+}
+.btn-excluir:hover, .equipe-btn-excluir:hover {
+    background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
+    color: #fff;
+}
+
+/* BOTÃO SUBMIT - FORMULÁRIOS */
+.btn-submit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 14px 0;
+    font-weight: bold;
+    font-size: 1.15rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #d6d2f8;
+    width: 100%;
+    margin-top: 18px;
+    transition: background 0.2s, box-shadow 0.2s;
+    display: block;
+}
+.btn-submit:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* BOTÃO PERFIL PROFISSIONAL */
+.btn-perfil-profissional {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #fff;
+    border-radius: 25px;
+    border: none;
+    padding: 11px 22px;
+    font-weight: 500;
+    box-shadow: 0 3px 15px #4facfe44;
+    transition: box-shadow 0.2s, transform 0.18s, background 0.2s;
+}
+.btn-perfil-profissional:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 12px 30px #4facfe33;
+    background: linear-gradient(135deg, #4facfe 0%, #5ee7df 100%);
+}
+
+/* BOTÃO DESABILITADO */
+.btn:disabled, .btn-novo:disabled, .btn-editar:disabled, .btn-excluir:disabled, .btn-submit:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-}
-.equipe-btn-novo {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-.equipe-btn-excluir {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    box-shadow: none;
 }
 
 /* GRID DE PROFISSIONAIS */
@@ -188,20 +256,6 @@ body {
     font-size: 0.86rem;
     font-weight: 500;
     margin-top: 3px;
-}
-.btn-perfil-profissional {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: #fff;
-    border-radius: 25px;
-    border: none;
-    padding: 11px 22px;
-    font-weight: 500;
-    box-shadow: 0 3px 15px #4facfe44;
-    transition: box-shadow 0.2s, transform 0.18s;
-}
-.btn-perfil-profissional:hover {
-    transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 12px 30px #4facfe33;
 }
 
 /* MODAL PERFIL PROFISSIONAL */
