@@ -1,76 +1,105 @@
-// modal-perfil-profissional.js
+import { db } from './firebase-config.js';
+import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Alternância de abas no modal de perfil
-function alternarAbaPerfil(tab) {
-    document.querySelectorAll('#modal-perfil-profissional .tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
-    document.querySelectorAll('#modal-perfil-profissional .tab-content').forEach(tc => {
-        tc.classList.toggle('active', tc.id === 'tab-' + tab);
-    });
-}
+// Dias da semana padrão
+const diasSemana = [
+  { key: 'seg', label: 'Segunda' },
+  { key: 'ter', label: 'Terça' },
+  { key: 'qua', label: 'Quarta' },
+  { key: 'qui', label: 'Quinta' },
+  { key: 'sex', label: 'Sexta' },
+  { key: 'sab', label: 'Sábado' },
+  { key: 'dom', label: 'Domingo' },
+];
 
-// Função para abrir o modal de perfil e preencher os dados
-export function abrirModalPerfilProfissional(profissional, todosServicos, empresaId, callback) {
-    const modal = document.getElementById('modal-perfil-profissional');
-    if (!modal) return;
+let profissionalAtual = null;
+let empresaIdGlobal = null;
 
-    modal.classList.add('show');
+// Função para abrir o modal de perfil do profissional
+export function abrirModalPerfilProfissional(profissional, empresaId) {
+    profissionalAtual = profissional;
+    empresaIdGlobal = empresaId;
+
+    // Preenche nome
     document.getElementById('perfil-profissional-nome').textContent = profissional.nome || '';
 
-    // Ativa a aba "Horários" por padrão
-    alternarAbaPerfil('horarios');
+    // Renderiza horários
+    renderizarHorarios(profissional.horarios || {});
 
-    // Preencher checkboxes de serviços
-    const listaServicos = document.getElementById('lista-servicos-checkbox');
-    listaServicos.innerHTML = '';
-    if (Array.isArray(todosServicos)) {
-        todosServicos.forEach(servico => {
-            const isChecked = profissional.servicos && profissional.servicos.includes(servico.id);
-            const label = document.createElement('label');
-            label.innerHTML = `
-                <input type="checkbox" value="${servico.id}" ${isChecked ? 'checked' : ''}>
-                ${servico.nome}
-            `;
-            listaServicos.appendChild(label);
-        });
-    }
+    // TODO: renderizar intervalos e serviços...
 
-    // Handler do formulário de serviços
-    const formServicos = document.getElementById('form-servicos-perfil-profissional');
-    formServicos.onsubmit = function (e) {
-        e.preventDefault();
-        const selecionados = Array.from(listaServicos.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-        if (typeof callback === 'function') {
-            callback('servicos', selecionados, profissional); // Você pode personalizar essa chamada
-        }
-        modal.classList.remove('show');
-    };
+    // Abre modal
+    const modal = document.getElementById('modal-perfil-profissional');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+
+    // Deixa a aba de horários ativa por padrão
+    trocarAba('horarios');
 }
 
-// Setup das abas e botões do modal (roda uma vez só)
-document.addEventListener('DOMContentLoaded', () => {
-    // Alternância de abas
-    document.querySelectorAll('#modal-perfil-profissional .tab-btn').forEach(btn => {
-        btn.onclick = () => alternarAbaPerfil(btn.dataset.tab);
+// Troca de abas
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     });
-
-    // Botão cancelar na aba serviços
-    const btnCancelar = document.getElementById('btn-cancelar-servicos-perfil');
-    if (btnCancelar) {
-        btnCancelar.onclick = () => {
-            document.getElementById('modal-perfil-profissional').classList.remove('show');
-        };
-    }
-
-    // Fechar modal ao clicar fora do conteúdo
-    const modal = document.getElementById('modal-perfil-profissional');
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('show');
-        });
-    }
 });
 
-// Disponibiliza globalmente para uso no equipe.js
-window.abrirModalPerfilProfissional = abrirModalPerfilProfissional;
+// Renderiza tabela de horários
+function renderizarHorarios(horarios) {
+    const tbody = document.querySelector('#form-horarios-profissional tbody');
+    tbody.innerHTML = diasSemana.map(dia => {
+        const inicio = horarios[dia.key]?.inicio || '';
+        const fim = horarios[dia.key]?.fim || '';
+        return `
+            <tr>
+                <td>${dia.label}</td>
+                <td>
+                    <input type="time" name="inicio-${dia.key}" value="${inicio}" />
+                </td>
+                <td>
+                    <input type="time" name="fim-${dia.key}" value="${fim}" />
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Salvar horários
+document.getElementById('form-horarios-profissional').onsubmit = async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const novosHorarios = {};
+    diasSemana.forEach(dia => {
+        const inicio = form[`inicio-${dia.key}`].value;
+        const fim = form[`fim-${dia.key}`].value;
+        novosHorarios[dia.key] = { inicio, fim };
+    });
+    try {
+        await updateDoc(
+            doc(db, "empresarios", empresaIdGlobal, "profissionais", profissionalAtual.id),
+            { horarios: novosHorarios }
+        );
+        alert('Horários salvos!');
+        // Atualiza no modal
+        renderizarHorarios(novosHorarios);
+    } catch (err) {
+        alert('Erro ao salvar horários: ' + err.message);
+    }
+};
+
+// Cancelar horários
+document.getElementById('btn-cancelar-horarios').onclick = () => {
+    document.getElementById('modal-perfil-profissional').style.display = 'none';
+    document.getElementById('modal-perfil-profissional').classList.remove('show');
+};
+
+// Fechar modal ao clicar fora
+document.getElementById('modal-perfil-profissional').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+        this.classList.remove('show');
+    }
+});
