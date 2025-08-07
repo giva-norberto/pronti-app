@@ -2,6 +2,10 @@ import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, d
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
+function renderizarCabecalhoProfissional() {
+  console.log("Renderizando cabeçalho...", profissionalData);
+  // resto do código...
+}
 const db = getFirestore(app);
 const auth = getAuth(app);
 
