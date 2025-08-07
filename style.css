@@ -2,16 +2,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 :root {
-  --cor-primaria: #6366f1;         /* Indigo-Violeta mais vibrante */
-  --cor-primaria-leve: #e0e7ff;    /* Adicionado para uso em gradientes e hovers */
-  --cor-secundaria: #ec4899;        /* Rosa vibrante */
-  --cor-sucesso: #22c55e;           /* Verde forte */
-  --cor-perigo: #ef4444;           /* Vermelho claro */
-  --cor-aviso: #f59e0b;             /* Laranja vivo */
-  --cor-fundo: #f3f4f6;             /* Cinza claro (para o gradiente do body) */
+  --cor-primaria: #6366f1;
+  --cor-primaria-leve: #e0e7ff;
+  --cor-secundaria: #ec4899;
+  --cor-sucesso: #22c55e;
+  --cor-perigo: #ef4444;
+  --cor-aviso: #f59e0b;
+  --cor-fundo: #f3f4f6;
   --cor-branco: #ffffff;
-  --cor-texto: #1f2937;             /* Cinza escuro */
-  --cor-texto-leve: #6b7280;       /* Cinza médio */
+  --cor-texto: #1f2937;
+  --cor-texto-leve: #6b7280;
   --sombra: 0 6px 12px rgba(0, 0, 0, 0.15);
   --sombra-elevada: 0 15px 30px rgba(0, 0, 0, 0.25);
 }
@@ -100,7 +100,12 @@ h1, h2, h3 {
   font-weight: 600;
 }
 
-.servico-item, .agendamento-item, .cliente-item, .form-card, .info-card, .chart-container {
+.servico-item,
+.agendamento-item,
+.cliente-item,
+.form-card,
+.info-card,
+.chart-container {
   background-color: var(--cor-branco);
   border-radius: 12px;
   padding: 25px;
@@ -137,7 +142,10 @@ h1, h2, h3 {
 }
 .agendamento-item h3 { margin-top: 0; color: var(--cor-sucesso); }
 
-.servico-item:hover, .agendamento-item:hover, .cliente-item:hover, .info-card:hover {
+.servico-item:hover,
+.agendamento-item:hover,
+.cliente-item:hover,
+.info-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--sombra-elevada);
 }
@@ -147,7 +155,12 @@ h1, h2, h3 {
 .info-card h3 { margin-top: 0; }
 
 /* --- BOTÕES --- */
-.btn-new, .btn-submit, .btn-cancelar, .btn-editar, .btn-excluir, .cliente-item a {
+.btn-new,
+.btn-submit,
+.btn-cancelar,
+.btn-editar,
+.btn-excluir,
+.cliente-item a {
   display: inline-block;
   padding: 10px 20px;
   font-size: 1em;
@@ -158,7 +171,11 @@ h1, h2, h3 {
   border-radius: 8px;
   transition: all 0.2s ease-in-out;
 }
-.btn-new:hover, .btn-submit:hover, .btn-cancelar:hover, .btn-editar:hover, .btn-excluir:hover {
+.btn-new:hover,
+.btn-submit:hover,
+.btn-cancelar:hover,
+.btn-editar:hover,
+.btn-excluir:hover {
   transform: translateY(-2px);
   box-shadow: var(--sombra);
 }
@@ -167,37 +184,113 @@ h1, h2, h3 {
   background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
   color: #fff !important;
   text-shadow: 0 2px 8px rgba(44,44,44,0.15);
-  ...
 }
 .btn-new:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
 
-.btn-submit { background-color: var(--cor-sucesso); color: var(--cor-branco); width: 100%; padding: 12px; font-size: 1.1em; }
-.btn-cancelar, .btn-excluir { background-color: var(--cor-perigo); color: var(--cor-branco); padding: 8px 12px; }
-.btn-editar { background-color: var(--cor-aviso); color: #333; padding: 8px 12px; }
-.cliente-item a { color: var(--cor-primaria); padding: 8px 12px; }
-.cliente-item a:hover { background-color: var(--cor-primaria-leve); }
+.btn-submit {
+  background-color: var(--cor-sucesso);
+  color: var(--cor-branco);
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1em;
+}
+.btn-cancelar,
+.btn-excluir {
+  background-color: var(--cor-perigo);
+  color: var(--cor-branco);
+  padding: 8px 12px;
+}
+.btn-editar {
+  background-color: var(--cor-aviso);
+  color: #333;
+  padding: 8px 12px;
+}
+.cliente-item a {
+  color: var(--cor-primaria);
+  padding: 8px 12px;
+}
+.cliente-item a:hover {
+  background-color: var(--cor-primaria-leve);
+}
 .item-acoes button { margin-left: 10px; }
 
 /* --- FORMULÁRIOS E FILTROS --- */
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--cor-texto-leve); }
-.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1em; box-sizing: border-box; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--cor-primaria); box-shadow: 0 0 0 3px var(--cor-primaria-leve); }
-.filtro-data { background-color: #e9ecef; padding: 15px; border-radius: 8px; margin: 20px 0; }
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1em;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px var(--cor-primaria-leve);
+}
+.filtro-data {
+  background-color: #e9ecef;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
 
 /* --- GRADE DE HORÁRIOS --- */
-#grade-horarios { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
-.aviso-horarios { color: var(--cor-texto-leve); font-style: italic; width: 100%; }
-.slot-horario { padding: 10px 15px; border: 1px solid var(--cor-primaria); color: var(--cor-primaria); background-color: var(--cor-branco); border-radius: 8px; cursor: pointer; font-weight: 600; }
-.slot-horario:hover, .slot-horario.selecionado { background-color: var(--cor-primaria); color: var(--cor-branco); }
-.slot-horario.desabilitado { border-color: #ccc; color: #ccc; cursor: not-allowed; background-color: var(--cor-fundo); text-decoration: line-through; }
+#grade-horarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+.aviso-horarios {
+  color: var(--cor-texto-leve);
+  font-style: italic;
+  width: 100%;
+}
+.slot-horario {
+  padding: 10px 15px;
+  border: 1px solid var(--cor-primaria);
+  color: var(--cor-primaria);
+  background-color: var(--cor-branco);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.slot-horario:hover,
+.slot-horario.selecionado {
+  background-color: var(--cor-primaria);
+  color: var(--cor-branco);
+}
+.slot-horario.desabilitado {
+  border-color: #ccc;
+  color: #ccc;
+  cursor: not-allowed;
+  background-color: var(--cor-fundo);
+  text-decoration: line-through;
+}
 
 /* --- DASHBOARD --- */
-.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
-.chart-container.full-width { grid-column: 1 / -1; }
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 30px;
+}
+.chart-container.full-width {
+  grid-column: 1 / -1;
+}
 
 /* --- MODAL DE CONFIRMAÇÃO --- */
 .modal-overlay {
@@ -298,7 +391,12 @@ h1, h2, h3 {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  .servico-item, .agendamento-item, .cliente-item, .form-card, .info-card, .chart-container {
+  .servico-item,
+  .agendamento-item,
+  .cliente-item,
+  .form-card,
+  .info-card,
+  .chart-container {
     padding: 20px;
     margin-bottom: 15px;
   }
@@ -310,7 +408,8 @@ h1, h2, h3 {
   .chart-container::before {
     width: 4px;
   }
-  .agendamento-item, .cliente-item {
+  .agendamento-item,
+  .cliente-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
@@ -330,7 +429,12 @@ h1, h2, h3 {
   .item-acoes button:last-child {
     margin-right: 0;
   }
-  .btn-new, .btn-submit, .btn-cancelar, .btn-editar, .btn-excluir, .cliente-item a {
+  .btn-new,
+  .btn-submit,
+  .btn-cancelar,
+  .btn-editar,
+  .btn-excluir,
+  .cliente-item a {
     padding: 12px 15px;
     font-size: 0.95em;
   }
