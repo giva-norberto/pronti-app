@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teste Modal</title>
+</head>
+<body>
+<button id="btnPerfil">Abrir Modal Perfil</button>
+<div id="modal-perfil-profissional" style="display:none;position:fixed;top:30px;left:30px;background:white;padding:40px;z-index:999;">
+  <h2 id="perfil-profissional-nome"></h2>
+  <button onclick="document.getElementById('modal-perfil-profissional').style.display='none'">Fechar</button>
+</div>
+<script type="module" src="modal-perfil-profissional.js"></script>
+<script type="module">
+  import { abrirModalPerfilProfissional } from './modal-perfil-profissional.js';
+  document.getElementById('btnPerfil').onclick = () => abrirModalPerfilProfissional({nome:'Teste'}, null, []);
+</script>
+</body>
+</html>
