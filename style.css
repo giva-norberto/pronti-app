@@ -7,8 +7,8 @@ body {
     color: #22223b;
 }
 
-/* SIDEBAR */
-.sidebar {
+/* SIDEBAR - MENU LATERAL */
+.sidebar, .menu-lateral, .navegacao, .nav-sidebar {
     width: 250px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: white;
@@ -22,19 +22,19 @@ body {
     z-index: 100;
     min-height: 100vh;
 }
-.sidebar-brand {
+.sidebar-brand, .menu-brand, .nav-brand {
     font-size: 1.85rem;
     font-weight: 700;
     margin-bottom: 26px;
     letter-spacing: 0.5px;
 }
-.sidebar-links {
+.sidebar-links, .menu-links, .nav-links {
     display: flex;
     flex-direction: column;
     gap: 4px;
     flex: 1;
 }
-.sidebar-links a {
+.sidebar-links a, .menu-links a, .nav-links a {
     color: #fff;
     text-decoration: none;
     padding: 13px 18px 13px 13px;
@@ -49,26 +49,34 @@ body {
     gap: 10px;
 }
 .sidebar-links a.active,
-.sidebar-links a:hover {
+.sidebar-links a:hover,
+.menu-links a.active,
+.menu-links a:hover,
+.nav-links a.active,
+.nav-links a:hover {
     background: rgba(255,255,255,0.22);
     color: #22223b;
 }
-.sidebar-links a.active {
+.sidebar-links a.active,
+.menu-links a.active,
+.nav-links a.active {
     font-weight: 700;
     box-shadow: 0 2px 8px #00f2fe44;
 }
 
-/* MAIN CONTAINER */
-.container {
-    max-width: 1200px;
+/* MAIN CONTAINER - CENTRALIZA E AFASTA DA SIDEBAR */
+.container, .main-content {
+    max-width: 1000px;
     margin: 40px auto 0 auto;
     background: white;
     border-radius: 15px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     overflow: hidden;
     margin-left: 270px;
+    padding: 40px;
 }
 
+/* HEADER */
 .header {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: white;
@@ -84,34 +92,19 @@ body {
     opacity: 0.9;
     font-size: 1.1rem;
 }
-.content {
-    padding: 40px;
-}
-.main-content {
-    max-width: 1000px;
-    margin: 0 auto;
-}
 
-/* ACTIONS */
-.actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-/* BOTÕES DO SISTEMA - PADRÃO PRONTI (TODAS AS VARIANTES) */
+/* BOTÕES DO SISTEMA - PADRÃO PRONTI E VARIANTES */
 .btn,
 .btn-novo, .btn-new, .equipe-btn-novo,
 .btn-editar, .btn-edit,
 .btn-excluir, .btn-delete, .btn-logout, .equipe-btn-excluir,
 .btn-confirmar, .btn-confirm,
-.btn-submit, .btn-primary {
+.btn-submit, .btn-primary,
+.btn-menu, .sidebar-btn, .menu-btn, .nav-btn,
+.btn-modal-confirmar, .btn-modal-cancelar {
     border: none;
-    padding: 12px 24px;
     border-radius: 25px;
+    padding: 12px 24px;
     cursor: pointer;
     font-size: 1rem;
     font-weight: 500;
@@ -125,12 +118,16 @@ body {
 
 /* BOTÃO AZUL PADRÃO PRONTI */
 .btn,
-.btn-novo, .btn-new, .equipe-btn-novo {
+.btn-novo, .btn-new, .equipe-btn-novo,
+.btn-menu, .sidebar-btn, .menu-btn, .nav-btn,
+.btn-modal-cancelar {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: #22223b;
 }
 .btn:hover,
-.btn-novo:hover, .btn-new:hover, .equipe-btn-novo:hover {
+.btn-novo:hover, .btn-new:hover, .equipe-btn-novo:hover,
+.btn-menu:hover, .sidebar-btn:hover, .menu-btn:hover, .nav-btn:hover,
+.btn-modal-cancelar:hover {
     background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
     color: #22223b;
     box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
@@ -147,22 +144,26 @@ body {
     color: #22223b;
 }
 
-/* BOTÃO VERMELHO - EXCLUIR/SAIR */
-.btn-excluir, .btn-delete, .btn-logout, .equipe-btn-excluir {
+/* BOTÃO VERMELHO - EXCLUIR/SAIR/CONFIRMAR MODAL */
+.btn-excluir, .btn-delete, .btn-logout, .equipe-btn-excluir,
+.btn-confirmar, .btn-confirm,
+.btn-modal-confirmar {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     color: #fff;
 }
-.btn-excluir:hover, .btn-delete:hover, .btn-logout:hover, .equipe-btn-excluir:hover {
+.btn-excluir:hover, .btn-delete:hover, .btn-logout:hover, .equipe-btn-excluir:hover,
+.btn-confirmar:hover, .btn-confirm:hover,
+.btn-modal-confirmar:hover {
     background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
     color: #fff;
 }
 
-/* BOTÃO VERDE - CONFIRMAR */
-.btn-confirmar, .btn-confirm {
+/* BOTÃO VERDE - OUTROS (opcional) */
+.btn-success {
     background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
     color: #fff;
 }
-.btn-confirmar:hover, .btn-confirm:hover {
+.btn-success:hover {
     background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%);
     color: #fff;
 }
@@ -186,11 +187,50 @@ body {
 
 /* BOTÃO DESABILITADO */
 .btn:disabled, .btn-novo:disabled, .btn-new:disabled, .btn-editar:disabled, .btn-edit:disabled,
-.btn-excluir:disabled, .btn-delete:disabled, .btn-logout:disabled, .btn-confirmar:disabled, .btn-submit:disabled, .btn-primary:disabled {
+.btn-excluir:disabled, .btn-delete:disabled, .btn-logout:disabled, .btn-confirmar:disabled,
+.btn-submit:disabled, .btn-primary:disabled,
+.btn-menu:disabled, .sidebar-btn:disabled, .menu-btn:disabled, .nav-btn:disabled,
+.btn-modal-confirmar:disabled, .btn-modal-cancelar:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+}
+
+/* MODAL DE CONFIRMAÇÃO PADRÃO PRONTI */
+.modal-confirmacao, .modal-overlay {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(60, 57, 80, 0.35);
+    align-items: center;
+    justify-content: center;
+}
+.modal-confirmacao.ativo, .modal-overlay.show {
+    display: flex !important;
+}
+.modal-content, .modal-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px #d6d2f8;
+    padding: 32px 32px 24px 32px;
+    max-width: 350px;
+    width: 98vw;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.modal-content p, .modal-card p {
+    font-size: 1.15rem;
+    color: #22223b;
+    margin-bottom: 18px;
+}
+.modal-btns, .modal-botoes {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
 }
 
 /* GRID DE PROFISSIONAIS */
@@ -249,54 +289,6 @@ body {
     font-size: 0.86rem;
     font-weight: 500;
     margin-top: 3px;
-}
-
-/* MODAL PERFIL PROFISSIONAL */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.7);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(5px);
-}
-.modal.show {
-    display: flex !important;
-}
-.modal-content {
-    background: white;
-    border-radius: 20px;
-    padding: 40px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-    transform: scale(0.95);
-    animation: modalShow 0.3s ease forwards;
-}
-@keyframes modalShow {
-    to { transform: scale(1); }
-}
-.profile-modal { max-width: 600px; }
-.modal-header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-.modal-header h2 {
-    color: #22223b;
-    font-size: 1.3rem;
-    font-weight: 700;
-    margin-bottom: 10px;
-    letter-spacing: 0.2px;
-}
-.modal-header p {
-    font-size: 1.05rem;
-    margin-bottom: 6px;
-    color: #8a8a8a;
 }
 
 /* TABS DO MODAL */
@@ -383,15 +375,15 @@ body {
 
 /* RESPONSIVO */
 @media (max-width: 900px) {
-    .container { margin-left: 0; }
-    .sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;}
+    .container, .main-content { margin-left: 0; }
+    .sidebar, .menu-lateral, .navegacao, .nav-sidebar {
+        position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;
+    }
 }
 @media (max-width: 768px) {
-    .container {
+    .container, .main-content {
         margin: 10px;
         border-radius: 10px;
-    }
-    .content {
         padding: 20px;
     }
     .header {
@@ -403,12 +395,12 @@ body {
     .equipe-grid {
         grid-template-columns: 1fr;
     }
-    .modal-content {
+    .modal-content, .modal-card {
         padding: 30px 20px;
         margin: 20px;
     }
     .form-actions {
         flex-direction: column;
     }
-    .sidebar-links a { font-size: 1rem; padding: 12px 10px; }
+    .sidebar-links a, .menu-links a, .nav-links a { font-size: 1rem; padding: 12px 10px; }
 }
