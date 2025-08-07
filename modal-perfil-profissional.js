@@ -15,9 +15,20 @@ const diasDaSemana = [
 let empresaId = null;
 let profissionalRef = null;
 
-// Função principal do modal
 export async function abrirModalPerfilProfissional(profissionalId) {
+  // Adiciona log para debug
   console.log("[ModalPerfil] profissionalId recebido:", profissionalId);
+
+  // Proteção: garantir que seja string
+  if (typeof profissionalId === "object" && profissionalId !== null && profissionalId.id) {
+    profissionalId = profissionalId.id;
+    console.log("[ModalPerfil] Corrigido profissionalId para:", profissionalId);
+  }
+
+  if (!profissionalId || typeof profissionalId !== "string") {
+    alert("ID de profissional inválido! Valor recebido: " + JSON.stringify(profissionalId));
+    return;
+  }
 
   const modal = document.getElementById('modal-perfil-profissional');
   if (!modal) {
@@ -53,15 +64,8 @@ export async function abrirModalPerfilProfissional(profissionalId) {
         modal.style.display = 'none';
         return;
       }
-      // Proteção extra nos IDs
       if (!empresaId || typeof empresaId !== "string") {
         alert("ID de empresa inválido!");
-        modal.style.display = 'none';
-        return;
-      }
-      if (!profissionalId || typeof profissionalId !== "string" || profissionalId.trim() === "") {
-        // Dica para debug
-        alert("ID de profissional inválido! Valor recebido: " + JSON.stringify(profissionalId));
         modal.style.display = 'none';
         return;
       }
