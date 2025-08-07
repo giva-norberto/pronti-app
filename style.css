@@ -1,4 +1,4 @@
-/* RESET */
+/* Reset */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -8,7 +8,7 @@ body {
     min-height: 100vh;
 }
 
-/* SIDEBAR (MENUS) */
+/* Sidebar */
 .sidebar {
     width: 250px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -17,54 +17,37 @@ body {
     top: 0; left: 0; bottom: 0;
     display: flex;
     flex-direction: column;
-    padding: 32px 20px 22px 20px;
-    border-radius: 0 18px 18px 0;
-    box-shadow: 0 16px 32px rgba(0,0,0,0.08);
-    z-index: 100;
-    min-height: 100vh;
+    padding: 30px 20px;
+    border-radius: 0 15px 15px 0;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    z-index: 10;
 }
-
 .sidebar-brand {
-    font-size: 1.85rem;
+    margin-bottom: 30px;
     font-weight: 700;
-    margin-bottom: 26px;
-    letter-spacing: 0.5px;
+    font-size: 1.6rem;
 }
-
 .sidebar-links {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    flex: 1;
 }
-
 .sidebar-links a {
-    color: #fff;
+    color: white;
     text-decoration: none;
-    padding: 13px 18px 13px 13px;
+    padding: 15px 10px;
     border-radius: 10px;
-    transition: background 0.2s, color 0.2s;
+    margin-bottom: 10px;
+    transition: background-color 0.3s;
+    display: block;
     font-weight: 500;
-    font-size: 1.08rem;
-    margin-bottom: 4px;
-    letter-spacing: 0.2px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
 }
-
 .sidebar-links a.active,
 .sidebar-links a:hover {
-    background: rgba(255,255,255,0.22);
-    color: #22223b;
+    background-color: rgba(255,255,255,0.20);
 }
 
-.sidebar-links a.active {
-    font-weight: 700;
-    box-shadow: 0 2px 8px #00f2fe44;
-}
-
-/* MAIN CONTAINER */
+/* Container principal */
 .container {
     max-width: 1200px;
     margin: 40px auto 0 auto;
@@ -102,7 +85,6 @@ body {
     margin: 0 auto;
 }
 
-/* ACTIONS */
 .actions {
     display: flex;
     justify-content: space-between;
@@ -111,6 +93,7 @@ body {
     flex-wrap: wrap;
     gap: 15px;
 }
+
 .btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -126,15 +109,18 @@ body {
     align-items: center;
     gap: 8px;
 }
+
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
 }
+
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
 }
+
 .equipe-btn-novo {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
@@ -142,7 +128,7 @@ body {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
 }
 
-/* GRID DE PROFISSIONAIS */
+/* Grid de profissionais */
 .equipe-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -150,7 +136,7 @@ body {
     margin-top: 20px;
 }
 
-/* CARD DE PROFISSIONAL */
+/* Card de profissional */
 .profissional-card {
     background: white;
     border: 1px solid #e1e8ed;
@@ -162,10 +148,12 @@ body {
     transition: box-shadow 0.3s, transform 0.2s;
     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
 }
+
 .profissional-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 30px rgba(0,0,0,0.15);
 }
+
 .profissional-foto {
     width: 60px;
     height: 60px;
@@ -174,14 +162,17 @@ body {
     flex-shrink: 0;
     border: 3px solid #4facfe;
 }
+
 .profissional-foto img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
+
 .profissional-info {
     flex: 1;
 }
+
 .profissional-nome {
     font-weight: 600;
     font-size: 1.13rem;
@@ -189,6 +180,7 @@ body {
     margin-bottom: 7px;
     display: block;
 }
+
 .profissional-status {
     display: inline-block;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -199,6 +191,7 @@ body {
     font-weight: 500;
     margin-top: 3px;
 }
+
 .btn-perfil-profissional {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: #fff;
@@ -209,12 +202,13 @@ body {
     box-shadow: 0 3px 15px #4facfe44;
     transition: box-shadow 0.2s, transform 0.18s;
 }
+
 .btn-perfil-profissional:hover {
     transform: translateY(-2px) scale(1.03);
     box-shadow: 0 12px 30px #4facfe33;
 }
 
-/* MODAL PERFIL PROFISSIONAL */
+/* Modal padrão */
 .modal {
     display: none;
     position: fixed;
@@ -244,61 +238,17 @@ body {
 @keyframes modalShow {
     to { transform: scale(1); }
 }
-.profile-modal { max-width: 600px; }
 .modal-header {
     text-align: center;
     margin-bottom: 30px;
 }
 .modal-header h2 {
-    color: #22223b;
-    font-size: 1.3rem;
-    font-weight: 700;
+    color: #2c3e50;
+    font-size: 1.4rem;
     margin-bottom: 10px;
-    letter-spacing: 0.2px;
-}
-.modal-header p {
-    font-size: 1.05rem;
-    margin-bottom: 6px;
-    color: #8a8a8a;
 }
 
-/* TABS DO MODAL */
-.tabs {
-    display: flex;
-    gap: 18px;
-    margin-bottom: 20px;
-    justify-content: center;
-}
-.tab-btn {
-    background: #f3f3fa;
-    color: #22223b;
-    border: none;
-    padding: 13px 32px;
-    border-radius: 12px 12px 0 0;
-    font-size: 1.09rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    box-shadow: 0 2px 6px #4facfe17;
-    margin-bottom: -1px;
-}
-.tab-btn.active,
-.tab-btn:hover {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: #fff;
-    box-shadow: 0 6px 16px #00f2fe33;
-}
-
-/* TAB CONTENT */
-.tab-content {
-    display: none;
-    padding: 20px 0 0 0;
-}
-.tab-content.active {
-    display: block;
-}
-
-/* FORMULÁRIO */
+/* Formulário */
 .form-group {
     margin-bottom: 25px;
 }
@@ -319,7 +269,7 @@ body {
 .form-control:focus {
     outline: none;
     border-color: #4facfe;
-    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.13);
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
 }
 .form-actions {
     display: flex;
@@ -328,7 +278,7 @@ body {
     margin-top: 30px;
 }
 
-/* EMPTY STATE */
+/* Empty State */
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -344,7 +294,22 @@ body {
     line-height: 1.6;
 }
 
-/* RESPONSIVO */
+/* Debug Info */
+.debug-info {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+.debug-info h4 {
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+/* Responsivo */
 @media (max-width: 900px) {
     .container { margin-left: 0; }
     .sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;}
@@ -374,5 +339,4 @@ body {
     .form-actions {
         flex-direction: column;
     }
-    .sidebar-links a { font-size: 1rem; padding: 12px 10px; }
 }
