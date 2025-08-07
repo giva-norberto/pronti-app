@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciamento de Equipe</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Sidebar moderna -->
     <nav class="sidebar" aria-label="Menu lateral principal">
         <h2 class="sidebar-brand">Pronti</h2>
         <div class="sidebar-links">
@@ -18,49 +19,83 @@
             <a href="logout.html">🚪 Sair</a>
         </div>
     </nav>
-    <main class="main-content">
+
+    <div class="container">
         <div class="header">
             <h1>👥 Gerenciamento de Equipe</h1>
             <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
         </div>
-        <div class="actions">
-            <h2>Minha Equipe</h2>
-            <button id="btn-add-profissional" class="btn equipe-btn-novo">
-                ➕ Adicionar Profissional
-            </button>
-        </div>
-        <div id="lista-profissionais-painel" class="equipe-lista">
-            <div class="profissional-card">
-                <div class="profissional-foto">
-                    <img src="https://placehold.co/60x60?text=G" alt="Foto de Givanildo Silva" />
-                </div>
-                <div class="profissional-info">
-                    <span class="profissional-nome">GIVANILDO SILVA</span>
-                    <span class="profissional-status">Dono</span>
-                </div>
-                <button class="btn equipe-btn-novo btn-perfil-profissional">👤 Perfil</button>
+
+        <div class="content main-content">
+            <div class="debug-info">
+                <h4>🔍 Status do Sistema:</h4>
+                <div id="debug-status">Carregando...</div>
             </div>
-            <div class="profissional-card">
-                <div class="profissional-foto">
-                    <img src="https://placehold.co/60x60?text=User" alt="Foto de Givanildo Funcionário" />
-                </div>
-                <div class="profissional-info">
-                    <span class="profissional-nome">Givanildo</span>
-                    <span class="profissional-status">Funcionário</span>
-                </div>
-                <button class="btn equipe-btn-novo btn-perfil-profissional">👤 Perfil</button>
+
+            <div class="actions">
+                <h2>Minha Equipe</h2>
+                <button id="btn-add-profissional" class="btn equipe-btn-novo" disabled>
+                    ➕ Adicionar Profissional
+                </button>
             </div>
-            <div class="profissional-card">
-                <div class="profissional-foto">
-                    <img src="https://placehold.co/60x60?text=User" alt="Foto de Gilmar Borberto" />
+
+            <div id="lista-profissionais-painel" class="equipe-grid">
+                <div class="empty-state">
+                    <h3>Carregando equipe...</h3>
+                    <p>Por favor, aguarde enquanto carregamos os dados da sua equipe.</p>
                 </div>
-                <div class="profissional-info">
-                    <span class="profissional-nome">GILMAR BORBERTO</span>
-                    <span class="profissional-status">Funcionário</span>
-                </div>
-                <button class="btn equipe-btn-novo btn-perfil-profissional">👤 Perfil</button>
             </div>
         </div>
-    </main>
+    </div>
+
+    <!-- Modal Adicionar Profissional -->
+    <div id="modal-add-profissional" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">➕ Adicionar Novo Profissional</h2>
+                <p>Preencha os dados do novo membro da equipe</p>
+            </div>
+            <form id="form-add-profissional">
+                <div class="form-group">
+                    <label for="nome-profissional">Nome Completo *</label>
+                    <input 
+                        type="text" 
+                        id="nome-profissional" 
+                        name="nome" 
+                        class="form-control" 
+                        placeholder="Digite o nome completo do profissional"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="foto-profissional">Foto do Profissional</label>
+                    <input 
+                        type="file" 
+                        id="foto-profissional" 
+                        name="foto" 
+                        class="form-control"
+                        accept="image/*"
+                    >
+                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
+                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
+                    </small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="btn-cancelar-profissional" class="btn equipe-btn-excluir">
+                        ❌ Cancelar
+                    </button>
+                    <button type="submit" class="btn equipe-btn-novo btn-submit">
+                        💾 Salvar Profissional
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="equipe-debug.js"></script>
 </body>
 </html>
