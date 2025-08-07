@@ -1,119 +1,83 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Gerenciamento de Equipe</title>
-    <link href="equipe.css" rel="stylesheet" type="text/css" />
-</head>
-<body>
-    <!-- Sidebar equipe -->
-    <nav class="equipe-sidebar" aria-label="Menu lateral principal">
-        <h2>Pronti</h2>
-        <a href="dashboard.html">🏠 Dashboard</a>
-        <a href="perfil.html">🏢 Perfil</a>
-        <a href="equipe.html" class="active">👥 Equipe</a>
-        <a href="agenda.html">📅 Agenda</a>
-        <a href="configuracoes.html">⚙️ Configurações</a>
-        <a href="logout.html">🚪 Sair</a>
-    </nav>
+// Exemplo de integração básica (adapte para seu Firebase!)
+// Preenche cards, ativa modal de adicionar e perfil, sem debug.
 
-    <div class="equipe-container">
-        <div class="equipe-header">
-            <h1>👥 Gerenciamento de Equipe</h1>
-            <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
-        </div>
+document.addEventListener("DOMContentLoaded", () => {
+    // Ativa botão após inicialização do sistema
+    document.getElementById('equipe-btn-add-profissional').disabled = false;
 
-        <div class="equipe-main-content">
-            <div class="equipe-actions">
-                <h2>Minha Equipe</h2>
-                <button id="btn-add-profissional" class="equipe-btn equipe-btn-novo" disabled>
-                    ➕ Adicionar Profissional
-                </button>
-            </div>
+    // Exemplo estático. Substitua por dados vindos do Firebase!
+    const profissionais = [
+        {
+            id: "1",
+            nome: "Givanildo Silva",
+            fotoUrl: "",
+            ehDono: true,
+            horarios: {},
+            status: "Dono"
+        },
+        {
+            id: "2",
+            nome: "Givanildo Funcionário",
+            fotoUrl: "",
+            ehDono: false,
+            horarios: {},
+            status: "Funcionário"
+        }
+    ];
 
-            <div id="lista-profissionais-painel" class="equipe-lista">
-                <div class="equipe-empty-state">
-                    <h3>Carregando equipe...</h3>
-                    <p>Por favor, aguarde enquanto carregamos os dados da sua equipe.</p>
-                </div>
+    const painel = document.getElementById('equipe-lista-profissionais-painel');
+    painel.innerHTML = "";
+    profissionais.forEach(profissional => {
+        const div = document.createElement("div");
+        div.className = "equipe-profissional-card";
+        div.innerHTML = `
+            <div class="equipe-profissional-foto">
+                <img src="${profissional.fotoUrl || 'https://placehold.co/60x60?text=User'}" alt="Foto de ${profissional.nome}" />
             </div>
-        </div>
-    </div>
+            <div class="equipe-profissional-info">
+                <span class="equipe-profissional-nome">${profissional.nome}</span>
+                <span class="equipe-profissional-status">${profissional.status}</span>
+            </div>
+            <button class="equipe-btn equipe-btn-perfil-profissional" data-id="${profissional.id}">👤 Perfil</button>
+        `;
+        painel.appendChild(div);
+    });
 
-    <!-- Modal Adicionar Profissional -->
-    <div id="modal-add-profissional" class="equipe-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="equipe-modal-content">
-            <div class="equipe-modal-header">
-                <h2 id="modal-title">➕ Adicionar Novo Profissional</h2>
-                <p>Preencha os dados do novo membro da equipe</p>
-            </div>
-            <form id="form-add-profissional">
-                <div class="form-group">
-                    <label for="nome-profissional">Nome Completo *</label>
-                    <input 
-                        type="text" 
-                        id="nome-profissional" 
-                        name="nome" 
-                        class="form-control" 
-                        placeholder="Digite o nome completo do profissional"
-                        required
-                    >
-                </div>
+    // Abrir modal de adicionar profissional
+    document.getElementById('equipe-btn-add-profissional').onclick = () => {
+        document.getElementById('equipe-form-add-profissional').reset();
+        document.getElementById('equipe-modal-add-profissional').classList.add('show');
+    };
+    document.getElementById('equipe-btn-cancelar-profissional').onclick = () => {
+        document.getElementById('equipe-modal-add-profissional').classList.remove('show');
+    };
 
-                <div class="form-group">
-                    <label for="foto-profissional">Foto do Profissional</label>
-                    <input 
-                        type="file" 
-                        id="foto-profissional" 
-                        name="foto" 
-                        class="form-control"
-                        accept="image/*"
-                    >
-                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
-                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
-                    </small>
-                </div>
+    // Abrir modal de perfil profissional
+    document.querySelectorAll('.equipe-btn-perfil-profissional').forEach(btn => {
+        btn.onclick = () => {
+            const card = btn.closest('.equipe-profissional-card');
+            document.getElementById('equipe-perfil-profissional-nome').textContent = card.querySelector('.equipe-profissional-nome').textContent;
+            document.getElementById('equipe-modal-perfil-profissional').classList.add('show');
+        };
+    });
 
-                <div class="form-actions">
-                    <button type="button" id="btn-cancelar-profissional" class="equipe-btn equipe-btn-excluir">
-                        ❌ Cancelar
-                    </button>
-                    <button type="submit" class="equipe-btn equipe-btn-novo equipe-btn-submit">
-                        💾 Salvar Profissional
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    // Fechar modal ao clicar fora
+    document.querySelectorAll('.equipe-modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+    });
 
-    <!-- Modal Perfil Profissional com tabs -->
-    <div id="modal-perfil-profissional" class="equipe-modal" role="dialog" aria-modal="true" aria-labelledby="modal-perfil-title">
-        <div class="equipe-modal-content equipe-profile-modal">
-            <div class="equipe-modal-header">
-                <h2 id="modal-perfil-title">👤 Perfil do Profissional</h2>
-                <p id="perfil-profissional-nome"></p>
-            </div>
-            <div class="equipe-tabs">
-                <button class="equipe-tab-btn active" data-tab="horarios">Horários</button>
-                <button class="equipe-tab-btn" data-tab="intervalos">Intervalos</button>
-                <button class="equipe-tab-btn" data-tab="servicos">Serviços</button>
-            </div>
-            <div class="equipe-tab-content active" id="tab-horarios">
-                <!-- Horários preenchidos via JS/Firebase -->
-            </div>
-            <div class="equipe-tab-content" id="tab-intervalos">
-                <!-- Intervalos preenchidos via JS/Firebase -->
-            </div>
-            <div class="equipe-tab-content" id="tab-servicos">
-                <!-- Serviços preenchidos via JS/Firebase -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="equipe.js"></script>
-    <script type="module" src="modal-perfil-profissional.js"></script>
-</body>
-</html>
+    // Tabs do modal perfil
+    document.querySelectorAll('.equipe-tab-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.equipe-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const tab = btn.getAttribute('data-tab');
+            document.querySelectorAll('.equipe-tab-content').forEach(tc => tc.classList.remove('active'));
+            document.getElementById('equipe-tab-' + tab).classList.add('active');
+        };
+    });
+});
