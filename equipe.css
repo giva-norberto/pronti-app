@@ -17,78 +17,83 @@ body {
     top: 0; left: 0; bottom: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    padding: 30px 24px;
+    padding: 32px 20px;
     border-radius: 0 15px 15px 0;
     box-shadow: 0 20px 40px rgba(0,0,0,0.08);
     z-index: 10;
-    font-size: 1rem;
 }
-.equipe-sidebar h2 {
-    margin-bottom: 32px;
+.equipe-sidebar-brand {
+    margin-bottom: 30px;
     font-weight: 700;
-    font-size: 1.65rem;
-    letter-spacing: 0.5px;
+    font-size: 1.6rem;
 }
-.equipe-sidebar a {
+.equipe-sidebar-links {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.equipe-sidebar-links a {
     color: white;
     text-decoration: none;
-    padding: 14px 10px;
+    padding: 15px 10px;
     border-radius: 10px;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
     transition: background-color 0.3s;
     display: block;
     font-weight: 500;
 }
-.equipe-sidebar a.active,
-.equipe-sidebar a:hover {
+.equipe-sidebar-links a.active,
+.equipe-sidebar-links a:hover {
     background-color: rgba(255,255,255,0.20);
 }
 
-/* Main container da equipe */
+/* Container principal da equipe */
 .equipe-container {
-    margin-left: 260px;
-    padding: 40px 42px;
-    min-height: 100vh;
-    background: #f6f8fa;
-    transition: margin-left 0.2s;
+    max-width: 1200px;
+    margin: 40px auto 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-left: 270px;
 }
 
-/* Main content */
-.equipe-main-content {
-    margin: 0 auto;
-    max-width: 900px;
+.equipe-header {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 34px 30px;
+    text-align: center;
 }
 
-/* Header */
 .equipe-header h1 {
-    font-size: 2.2rem;
-    font-weight: bold;
-    margin-bottom: 12px;
-}
-.equipe-header p {
-    font-size: 1.08rem;
-    color: #4a4e69;
-    opacity: 0.88;
-    margin-bottom: 18px;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    font-weight: 600;
 }
 
-/* Actions */
+.equipe-header p {
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.equipe-content {
+    padding: 40px;
+}
+
+.equipe-main-content {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
 .equipe-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 28px;
-    gap: 16px;
+    margin-bottom: 30px;
     flex-wrap: wrap;
-}
-.equipe-actions h2 {
-    font-size: 1.22rem;
-    font-weight: 600;
-    color: #2d3250;
+    gap: 15px;
 }
 
-/* Botões */
 .equipe-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -96,62 +101,114 @@ body {
     padding: 12px 24px;
     border-radius: 25px;
     cursor: pointer;
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 500;
-    box-shadow: 0 2px 8px #d6d2f8;
     transition: box-shadow 0.3s, transform 0.2s;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 8px;
 }
+
 .equipe-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102,126,234,0.2);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
 }
+
+.equipe-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .equipe-btn-novo {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-}
-.equipe-btn-novo:hover {
-    background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
 }
 .equipe-btn-excluir {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
 }
-.equipe-btn-excluir:hover {
-    background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
-}
-.equipe-btn-submit {
-    font-weight: bold;
+
+/* Grid de profissionais */
+.equipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 20px;
 }
 
-/* Lista de Equipe */
-.equipe-lista {
+/* Card de profissional */
+.equipe-profissional-card {
+    background: white;
+    border: 1px solid #e1e8ed;
+    border-radius: 15px;
+    padding: 24px 22px;
     display: flex;
-    flex-direction: column;
-    gap: 27px;
-    max-width: 700px;
-    margin: 0 auto;
-    margin-bottom: 40px;
+    align-items: center;
+    gap: 18px;
+    transition: box-shadow 0.3s, transform 0.2s;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
 }
 
-/* Empty State */
-.equipe-empty-state {
-    text-align: center;
-    padding: 54px 20px;
-    color: #7f8c8d;
+.equipe-profissional-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
 }
-.equipe-empty-state h3 {
-    font-size: 1.4rem;
-    margin-bottom: 14px;
+
+.equipe-profissional-foto {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 3px solid #4facfe;
+}
+
+.equipe-profissional-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.equipe-profissional-info {
+    flex: 1;
+}
+
+.equipe-profissional-nome {
+    font-weight: 600;
+    font-size: 1.13rem;
     color: #2c3e50;
-}
-.equipe-empty-state p {
-    font-size: 1.07rem;
-    line-height: 1.58;
+    margin-bottom: 7px;
+    display: block;
 }
 
-/* Modal */
+.equipe-profissional-status {
+    display: inline-block;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    padding: 4px 13px;
+    border-radius: 15px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+.equipe-btn-perfil-profissional {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #fff;
+    border-radius: 25px;
+    border: none;
+    padding: 11px 22px;
+    font-weight: 500;
+    box-shadow: 0 3px 15px #4facfe44;
+    transition: box-shadow 0.2s, transform 0.18s;
+}
+
+.equipe-btn-perfil-profissional:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 12px 30px #4facfe33;
+}
+
+/* Modal padrão da equipe */
 .equipe-modal {
     display: none;
     position: fixed;
@@ -167,35 +224,32 @@ body {
     display: flex !important;
 }
 .equipe-modal-content {
-    background: #fff;
+    background: white;
     border-radius: 20px;
-    padding: 36px 30px;
-    width: 94vw;
+    padding: 40px;
+    width: 90%;
     max-width: 500px;
-    max-height: 92vh;
+    max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.23);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    transform: scale(0.95);
     animation: equipeModalShow 0.3s ease forwards;
 }
 @keyframes equipeModalShow {
-    from { transform: scale(0.95); opacity: 0.85;}
-    to { transform: scale(1); opacity: 1;}
+    to { transform: scale(1); }
 }
 .equipe-profile-modal { max-width: 600px; }
-
-/* Modal Header */
+.equipe-modal-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
 .equipe-modal-header h2 {
-    font-size: 1.45rem;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-.equipe-modal-header p {
-    font-size: 1.02rem;
-    color: #4a4e69;
-    margin-bottom: 18px;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    margin-bottom: 10px;
 }
 
-/* Tabs */
+/* Tabs da equipe */
 .equipe-tabs {
     display: flex;
     gap: 18px;
@@ -218,7 +272,7 @@ body {
     color: #fff;
 }
 
-/* Tab content */
+/* Tab Content da equipe */
 .equipe-tab-content {
     display: none;
     padding: 18px 0 0 0;
@@ -227,13 +281,80 @@ body {
     display: block;
 }
 
+/* Formulário da equipe */
+.equipe-form-group {
+    margin-bottom: 25px;
+}
+.equipe-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+.equipe-form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+.equipe-form-control:focus {
+    outline: none;
+    border-color: #4facfe;
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+}
+.equipe-form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    margin-top: 30px;
+}
+
+/* Empty State da equipe */
+.equipe-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #7f8c8d;
+}
+.equipe-empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+.equipe-empty-state p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
 /* Responsivo */
 @media (max-width: 900px) {
-    .equipe-container { margin-left: 0; padding: 18px 6px; }
-    .equipe-main-content { max-width: 99vw; }
+    .equipe-container { margin-left: 0; }
     .equipe-sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;}
 }
-@media (max-width: 600px) {
-    .equipe-modal-content, .equipe-profile-modal { padding: 18px 5px; max-width: 99vw; }
-    .equipe-container { padding: 8px 2vw; }
+
+@media (max-width: 768px) {
+    .equipe-container {
+        margin: 10px;
+        border-radius: 10px;
+    }
+    .equipe-content {
+        padding: 20px;
+    }
+    .equipe-header {
+        padding: 20px;
+    }
+    .equipe-header h1 {
+        font-size: 2rem;
+    }
+    .equipe-grid {
+        grid-template-columns: 1fr;
+    }
+    .equipe-modal-content {
+        padding: 30px 20px;
+        margin: 20px;
+    }
+    .equipe-form-actions {
+        flex-direction: column;
+    }
 }
