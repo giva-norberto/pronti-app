@@ -14,13 +14,11 @@ const diasDaSemana = [
 
 let empresaId = null;
 let profissionalRef = null;
-let currentUser = null;
 
-// Inicia o fluxo ao carregar a página
+// Inicia ao carregar a página
 window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      currentUser = user;
       empresaId = await getEmpresaIdDoDono(user.uid);
       if (!empresaId) {
         alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
