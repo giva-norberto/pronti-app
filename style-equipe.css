@@ -1,302 +1,56 @@
-/* === TEMA E FONTES === */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-
-:root {
-  --cor-primaria: #6366f1;
-  --cor-primaria-leve: #e0e7ff;
-  --cor-secundaria: #ec4899;
-  --cor-sucesso: #22c55e;
-  --cor-perigo: #ef4444;
-  --cor-aviso: #f59e0b;
-  --cor-fundo: #f3f4f6;
-  --cor-branco: #ffffff;
-  --cor-texto: #1f2937;
-  --cor-texto-leve: #6b7280;
-  --sombra: 0 6px 12px rgba(0, 0, 0, 0.15);
-  --sombra-elevada: 0 15px 30px rgba(0, 0, 0, 0.25);
-}
-
-/* === ESTRUTURA GERAL === */
-body {
-  font-family: 'Poppins', sans-serif;
-  margin: 0;
-  color: var(--cor-texto);
-  background: linear-gradient(135deg, var(--cor-fundo), #e0e7ff);
-  background-attachment: fixed;
-}
-
-/* === CARDS DE PROFISSIONAIS === */
-.profissional-card {
-  display: flex;
-  align-items: center;
-  padding: 15px;
-  margin-bottom: 10px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 1px 3px #0001;
-}
-
-.profissional-card:hover {
-  background: #e9ecef;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.profissional-foto {
-  margin-right: 15px;
-}
-
-.profissional-foto img {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #dee2e6;
-  background: #eef2ff;
-}
-
-.profissional-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.profissional-nome {
-  font-weight: 600;
-  font-size: 16px;
-  color: #212529;
-  margin-bottom: 4px;
-}
-
-.profissional-status {
-  font-size: 14px;
-  color: #6c757d;
-  background: #e9ecef;
-  padding: 2px 8px;
-  border-radius: 12px;
-  display: inline-block;
-  width: fit-content;
-}
-
-/* === BOTÕES === */
-.btn-secondary,
-.btn-submit,
-.btn-new {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 600;
-  transition: background-color 0.3s;
-  margin-left: 8px;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-}
-.btn-secondary:hover {
-  background: #5a6268;
-}
-
-.btn-submit {
-  background: #007bff;
-  color: white;
-}
-.btn-submit:hover {
-  background: #0056b3;
-}
-.btn-submit:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-.btn-new {
-  background: #28a745;
-  color: white;
-}
-.btn-new:hover {
-  background: #218838;
-}
-.btn-new:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-}
-
-/* === MODAL === */
-.modal-overlay {
+.modal {
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: none; /* CORREÇÃO: começa invisível, JS coloca display:flex */
-  justify-content: center;
-  align-items: center;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.45);
   z-index: 9999;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-.modal-overlay.ativo,
-.modal-overlay.show,
-.modal-overlay[style*="display: flex"] { /* Use .ativo, .show ou display:flex para exibir */
-  display: flex !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-.modal-box {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  text-align: center;
-}
-.modal-box h2 {
-  margin-bottom: 20px;
-  color: #212529;
-}
-
-/* === FORMULÁRIO DO MODAL === */
-.form-group {
-  margin-bottom: 20px;
-}
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #495057;
-}
-.form-group input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  font-size: 16px;
-  transition: border-color 0.3s ease;
-}
-.form-group input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
-}
-
-.form-actions {
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 30px;
+  align-items: center;
+  justify-content: center;
 }
-.form-actions button {
-  flex: 1;
-}
-
-/* === GARANTIR VISIBILIDADE E INTERATIVIDADE DO BOTÃO VOLTAR === */
-#btn-voltar-modal-perfil {
-  display: inline-block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  z-index: 10000;
-}
-
-/* === RESPONSIVIDADE === */
-@media (max-width: 768px) {
-  .profissional-card {
-    padding: 12px;
-  }
-  .profissional-foto img {
-    width: 50px;
-    height: 50px;
-  }
-  .modal-box {
-    margin: 20px;
-    padding: 20px;
-    max-width: 97vw;
-  }
-  .form-actions {
-    flex-direction: column;
-  }
-  .form-actions button {
-    width: 100%;
-    margin-left: 0;
-    margin-bottom: 8px;
-  }
-}
-
-/* === GARANTIR VISIBILIDADE DO MODAL === */
-.modal-overlay[style*="display: flex"] {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* === AJUSTES FINAIS === */
-#lista-profissionais-painel {
-  max-width: 500px;
-  margin: 0 auto 20px auto;
-}
-#edicao-funcionario-container {
-  margin: 24px auto 0 auto;
-  max-width: 520px;
-}
-#edicao-funcionario-container > div {
-  background: #f9f9ff;
-  border: 1px solid #dbeafe;
-  padding: 20px;
+.modal > * {
+  background: #fff;
+  padding: 24px;
   border-radius: 10px;
-  box-shadow: 0 1px 4px #0001;
+  position: relative;
+  min-width: 340px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 4px 32px #0002;
 }
-#edicao-funcionario-container h4 {
-  margin-top: 0;
-}
-#func-servicos label {
-  display: block;
-  margin-bottom: 4px;
-  font-weight: 400;
-}
-#func-horarios > div {
-  margin-bottom: 10px;
-}
-#func-horarios label {
-  font-weight: 500;
-  margin-right: 8px;
-}
-#func-horarios input[type="time"] {
-  margin: 0 3px;
-  border: 1px solid #c7d2fe;
-  border-radius: 3px;
-  padding: 2px 4px;
-}
-#func-horarios button {
-  background: #fca5a5;
-  color: #991b1b;
+.btn-fechar-modal {
+  position: absolute;
+  top: 16px; right: 18px;
+  background: none;
   border: none;
-  padding: 2px 7px;
-  border-radius: 3px;
-  margin-left: 4px;
-  font-size: 15px;
+  font-size: 2rem;
   cursor: pointer;
+  color: #444;
+  z-index: 10;
 }
-#func-horarios .add-bloco {
-  background: #bbf7d0;
-  color: #166534;
-  margin-left: 8px;
+.perfil-header { display: flex; gap: 18px; margin-bottom: 18px; }
+.perfil-foto-container { position: relative; }
+.perfil-foto { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.btn-editar-foto, .btn-editar-nome, .btn-editar-servicos {
+  background: none; border: none; cursor: pointer; font-size: 1.2em; margin-left: 6px;
 }
-#btn-salvar-funcionario {
-  background: #10b981;
-  color: #fff;
-  border: none;
-  font-weight: bold;
-  border-radius: 5px;
-  padding: 8px 20px;
-  margin-top: 18px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s;
+.perfil-nome { margin: 0; }
+.status-profissional { margin: 8px 0; font-weight: bold; }
+.status-profissional.ativo { color: green; }
+.status-profissional.inativo { color: #d00; }
+.servico-tag { background: #eee; border-radius: 6px; padding: 2px 8px; margin-right: 4px; }
+.btn-toggle-status, .btn-excluir-profissional, .btn-sincronizar-calendario {
+  margin-top: 6px; margin-right: 4px;
 }
-#btn-salvar-funcionario:hover {
-  background: #047857;
-}
+.form-group { margin-bottom: 16px; }
+.dia-semana { margin-bottom: 14px; }
+.dia-info { display: flex; align-items: center; justify-content: space-between; }
+.toggle-container { display: flex; align-items: center; }
+.toggle-label { margin-left: 8px; }
+.horarios-container { flex-direction: column; gap: 4px; }
+.bloco-horario { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.btn-remove-slot { background: none; border: none; color: #d00; cursor: pointer; }
+.btn-add-slot { background: #eee; border: none; border-radius: 6px; cursor: pointer; padding: 2px 10px; margin-top: 4px; }
+.btn-submit { margin-top: 18px; background: #007bff; color: #fff; border: none; border-radius: 6px; padding: 8px 20px; cursor: pointer; }
+.erro { background: #ffeaea !important; }
+.erro-sobreposicao { color: #d00; font-size: 13px; margin-left: 4px; }
