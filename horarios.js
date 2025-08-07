@@ -5,17 +5,20 @@ import { app } from "./firebase-config.js";
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// Use nomes completos para garantir compatibilidade com o backend!
 const diasDaSemana = [
-  { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
-  { id: 'qua', nome: 'Quarta-feira' }, { id: 'qui', nome: 'Quinta-feira' },
-  { id: 'sex', nome: 'Sexta-feira' }, { id: 'sab', nome: 'Sábado' },
-  { id: 'dom', nome: 'Domingo' }
+  { id: 'segunda', nome: 'Segunda-feira' },
+  { id: 'terca', nome: 'Terça-feira' },
+  { id: 'quarta', nome: 'Quarta-feira' },
+  { id: 'quinta', nome: 'Quinta-feira' },
+  { id: 'sexta', nome: 'Sexta-feira' },
+  { id: 'sabado', nome: 'Sábado' },
+  { id: 'domingo', nome: 'Domingo' }
 ];
 
 let empresaId = null;
 let profissionalRef = null;
 
-// Inicia ao carregar a página
 window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -29,13 +32,22 @@ window.addEventListener('DOMContentLoaded', () => {
       await carregarHorarios();
       const form = document.getElementById('form-horarios');
       if (form) form.addEventListener('submit', handleFormSubmit);
+
+      // Botão voltar fecha modal (caso exista modal, ajuste para sua lógica)
+      const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
+      if (btnVoltar) {
+        btnVoltar.onclick = () => {
+          // Coloque aqui a lógica para fechar o modal
+          // Exemplo: document.getElementById('modal-perfil-profissional').style.display = "none";
+          window.history.back();
+        }
+      }
     } else {
       window.location.href = 'login.html';
     }
   });
 });
 
-// Busca empresaId pelo dono
 async function getEmpresaIdDoDono(uid) {
   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
   const snapshot = await getDocs(q);
@@ -43,14 +55,16 @@ async function getEmpresaIdDoDono(uid) {
   return snapshot.docs[0].id;
 }
 
-// Carrega horários e intervalo salvos
 async function carregarHorarios() {
-  if (!profissionalRef) return;
+  if (!profissionalRef) { console.warn("profissionalRef não existe"); return; }
   const snap = await getDoc(profissionalRef);
-  if (!snap.exists()) return;
+  if (!snap.exists()) { console.warn("Snap não existe"); return; }
   const { horarios = {}, intervalo = 30 } = snap.data();
+  console.log("Horários carregados:", horarios);
+
   const intervaloInput = document.getElementById("intervalo-atendimento");
   if (intervaloInput) intervaloInput.value = horarios.intervalo || intervalo || 30;
+
   diasDaSemana.forEach(dia => {
     const diaData = horarios[dia.id] || {};
     const ativoInput = document.getElementById(`${dia.id}-ativo`);
@@ -70,7 +84,6 @@ async function carregarHorarios() {
   });
 }
 
-// Renderiza estrutura dos dias da semana
 function gerarEstruturaDosDias() {
   const diasContainer = document.getElementById("dias-container");
   if (!diasContainer) return;
@@ -121,7 +134,6 @@ function gerarEstruturaDosDias() {
   });
 }
 
-// Adiciona um bloco de horário no dia
 function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
   const container = document.getElementById(`blocos-${diaId}`);
   if (!container) return;
@@ -146,7 +158,6 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
   }
 }
 
-// Salva horários e intervalo
 async function handleFormSubmit(event) {
   event.preventDefault();
   const btnSalvar = document.querySelector('button[type="submit"]');
@@ -169,10 +180,12 @@ async function handleFormSubmit(event) {
     horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
   });
 
+  console.log("Dados a salvar:", horariosData);
   try {
     await setDoc(profissionalRef, { horarios: horariosData }, { merge: true });
     alert("Horários salvos com sucesso!");
   } catch (err) {
+    console.error("Erro ao salvar:", err);
     alert("Erro ao salvar: " + err.message);
   } finally {
     if (btnSalvar) {
