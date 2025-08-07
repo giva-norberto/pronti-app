@@ -1,21 +1,23 @@
 /**
  * agenda.js (VERSÃO FINAL - GERENCIAMENTO DE EMPRESA)
- *
- * Lógica Principal:
- * 1. Ao carregar, descobre qual é a 'empresaId' do usuário logado (o dono).
- * 2. Busca e exibe os agendamentos de TODOS os profissionais da empresa para o dia selecionado.
- * 3. Cada card de agendamento agora exibe o nome do profissional.
- * 4. As notificações foram padronizadas para usar os 'Cards de Alerta/Pergunta'.
+ * Corrigido para Firestore modular v10+!
+ * - Descobre empresaId do usuário logado (dono)
+ * - Busca e exibe agendamentos e cancelamentos da subcoleção correta
+ * - Renderização dos cards com nome do profissional
+ * - Notificações via showAlert/showCustomConfirm
  */
 
-import { getFirestore, collection, query, where, getDocs, doc, deleteDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
-import { app } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs, doc, deleteDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js";
 // [MODIFICADO] Importamos as novas funções de modal
 import { showAlert, showCustomConfirm } from "./vitrini-utils.js"; 
 
 document.addEventListener("DOMContentLoaded", () => {
   
+  // Modular Firebase inicialização
+  const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
 
@@ -30,17 +32,25 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentEmpresaId = null; // [NOVO] Guardará o ID da empresa do dono
 
   // --- Funções Utilitárias (Mantidas) ---
-  function formatarHorario(timestamp) { /* ...código original mantido... */ }
-  function formatarDataCompleta(timestamp) { /* ...código original mantido... */ }
+  function formatarHorario(timestamp) {
+    if (!timestamp) return "-";
+    const data = timestamp.toDate();
+    return `${String(data.getHours()).padStart(2, "0")}:${String(data.getMinutes()).padStart(2, "0")}`;
+  }
+  function formatarDataCompleta(timestamp) {
+    if (!timestamp) return "-";
+    const data = timestamp.toDate();
+    return `${data.toLocaleDateString()} ${String(data.getHours()).padStart(2, "0")}:${String(data.getMinutes()).padStart(2, "0")}`;
+  }
 
   /**
    * [NOVO] Busca o ID da empresa com base no ID do dono.
    * @param {string} uid - O UID do usuário logado.
-   * @returns {string|null} O ID da empresa ou nulo.
+   * @returns {Promise<string|null>} O ID da empresa ou nulo.
    */
   async function getEmpresaIdDoDono(uid) {
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
+    const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(empresQ);
     if (snapshot.empty) {
         console.error("Nenhuma empresa encontrada para este dono.");
         return null;
@@ -53,19 +63,21 @@ document.addEventListener("DOMContentLoaded", () => {
    * @param {string} empresaId - O ID da empresa.
    */
   async function carregarAgendamentos(empresaId) {
-    if (!empresaId) return;
-    if (!listaAgendamentos) return;
+    if (!empresaId || !listaAgendamentos) return;
     listaAgendamentos.innerHTML = "<p>Carregando...</p>";
 
     const dataSelecionada = inputData.value;
-    // ... (lógica de data mantida) ...
+    if (!dataSelecionada) {
+      listaAgendamentos.innerHTML = "<p>Selecione uma data para visualizar os agendamentos.</p>";
+      return;
+    }
 
     try {
-        const inicioDoDia = new Date(dataSelecionada + "T00:00:00.000Z");
-        const fimDoDia = new Date(dataSelecionada + "T23:59:59.999Z");
+        const inicioDoDia = new Date(`${dataSelecionada}T00:00:00.000Z`);
+        const fimDoDia = new Date(`${dataSelecionada}T23:59:59.999Z`);
         
         // [MODIFICADO] A busca agora é na subcoleção da empresa
-        const colecao = collection(db, `empresarios/${empresaId}/agendamentos`);
+        const colecao = collection(db, "empresarios", empresaId, "agendamentos");
         const q = query(colecao,
             where("status", "==", "agendado"),
             where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
@@ -86,13 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
    * @param {string} empresaId - O ID da empresa.
    */
   async function carregarCancelamentosPendentes(empresaId) {
-    if (!empresaId) return;
-    if (!listaCancelamentosPendentes) return;
+    if (!empresaId || !listaCancelamentosPendentes) return;
     listaCancelamentosPendentes.innerHTML = "<p>Verificando solicitações...</p>";
 
     try {
         // [MODIFICADO] A busca agora é na subcoleção da empresa
-        const colecao = collection(db, `empresarios/${empresaId}/agendamentos`);
+        const colecao = collection(db, "empresarios", empresaId, "agendamentos");
         const q = query(colecao, where("status", "==", "cancelado_pelo_cliente")); // Ajustado o status
         const snapshot = await getDocs(q);
         const cancelamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -135,7 +146,11 @@ document.addEventListener("DOMContentLoaded", () => {
    */
   function renderizarCancelamentosPendentes(cancelamentos) {
     if (!listaCancelamentosPendentes) return;
-    // ... (código original mantido, mas o HTML interno foi modificado) ...
+    listaCancelamentosPendentes.innerHTML = "";
+    if (cancelamentos.length === 0) {
+      listaCancelamentosPendentes.innerHTML = "<p>Nenhuma solicitação de cancelamento pendente.</p>";
+      return;
+    }
     cancelamentos.forEach(ag => {
         const div = document.createElement("div");
         div.className = "agendamento-item cancelamento-pendente";
@@ -164,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function excluirAgendamentoDefinitivamente(agendamentoId, empresaId) {
       try {
           // [MODIFICADO] Caminho do documento
-          const agendamentoRef = doc(db, `empresarios/${empresaId}/agendamentos`, agendamentoId);
+          const agendamentoRef = doc(db, "empresarios", empresaId, "agendamentos", agendamentoId);
           await deleteDoc(agendamentoRef);
           await showAlert("Sucesso", "Registro removido com sucesso!");
           carregarCancelamentosPendentes(empresaId);
@@ -182,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function reativarAgendamento(agendamentoId, empresaId) {
       try {
           // [MODIFICADO] Caminho do documento
-          const agendamentoRef = doc(db, `empresarios/${empresaId}/agendamentos`, agendamentoId);
+          const agendamentoRef = doc(db, "empresarios", empresaId, "agendamentos", agendamentoId);
           await updateDoc(agendamentoRef, { status: 'agendado' });
           await showAlert("Sucesso", "Agendamento reativado com sucesso!");
           carregarAgendamentos(empresaId);
@@ -229,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             
             carregarAgendamentos(currentEmpresaId);
+            carregarCancelamentosPendentes(currentEmpresaId);
 
             if (inputData) {
                 inputData.addEventListener("change", () => carregarAgendamentos(currentEmpresaId));
