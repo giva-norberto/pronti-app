@@ -14,7 +14,7 @@ const diasSemana = [
 let profissionalAtual = null;
 let empresaIdGlobal = null;
 
-// Função para abrir o modal de perfil do profissional
+// EXPORT: Função para abrir o modal de perfil do profissional
 export function abrirModalPerfilProfissional(profissional, empresaId = null, servicosDisponiveis = []) {
     profissionalAtual = profissional;
     empresaIdGlobal = empresaId;
@@ -109,8 +109,6 @@ document.getElementById('form-horarios-perfil-profissional').onsubmit = async fu
         };
     });
 
-    // Aqui você pode integrar com Firebase, por exemplo:
-    // updateDoc(doc(db, "empresarios", empresaIdGlobal, "profissionais", profissionalAtual.id), { horarios });
     profissionalAtual.horarios = horarios; // Local update
 
     alert('Horários salvos!');
@@ -130,7 +128,6 @@ document.getElementById('form-intervalos-perfil-profissional').onsubmit = async 
         };
     });
 
-    // Firebase: updateDoc(...)
     profissionalAtual.intervalos = intervalos;
 
     alert('Intervalos salvos!');
@@ -145,7 +142,6 @@ document.getElementById('form-servicos-perfil-profissional').onsubmit = async fu
     const checked = Array.from(document.querySelectorAll('#lista-servicos-checkbox input[type=checkbox]:checked')).map(cb => cb.value);
     profissionalAtual.servicos = checked;
 
-    // Firebase: updateDoc(...)
     alert('Serviços salvos!');
     fecharModalPerfil();
 };
