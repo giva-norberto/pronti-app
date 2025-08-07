@@ -105,7 +105,7 @@ function renderizarCabecalhoProfissional() {
   if (!cabecalho || !profissionalData) return;
 
   const nome = profissionalData.nome || 'Profissional';
-  const foto = profissionalData.foto || 'https://via.placeholder.com/80x80?text=Foto';
+  const foto = profissionalData.foto || profissionalData.fotoUrl || 'https://via.placeholder.com/80x80?text=Foto';
   const servicos = profissionalData.servicos || [];
   const ativo = profissionalData.ativo !== false;
 
@@ -388,7 +388,7 @@ window.editarNomeProfissional = async function() {
 };
 
 window.editarFotoProfissional = async function() {
-  const novaFoto = prompt('Digite a URL da nova foto:', profissionalData?.foto || '');
+  const novaFoto = prompt('Digite a URL da nova foto:', profissionalData?.foto || profissionalData.fotoUrl || '');
   if (novaFoto && novaFoto.trim()) {
     try {
       await updateDoc(profissionalRef, { foto: novaFoto.trim() });
@@ -444,7 +444,6 @@ window.excluirProfissional = async function() {
         await deleteDoc(profissionalRef);
         alert('Profissional excluído com sucesso!');
         document.getElementById('modal-perfil-profissional').style.display = 'none';
-        // Recarrega a lista de profissionais se existir
         if (window.carregarProfissionais) {
           window.carregarProfissionais();
         }
@@ -456,7 +455,6 @@ window.excluirProfissional = async function() {
 };
 
 window.sincronizarCalendario = async function() {
-  // Implementação básica - pode ser expandida conforme necessidade
   const opcoes = [
     'Google Calendar',
     'Outlook',
@@ -475,7 +473,6 @@ window.sincronizarCalendario = async function() {
     const calendarioEscolhido = opcoes[selecao - 1];
     
     try {
-      // Salva a configuração de sincronização
       await updateDoc(profissionalRef, { 
         sincronizacaoCalendario: {
           tipo: calendarioEscolhido,
@@ -499,5 +496,4 @@ Entre em contato com o suporte para finalizar a configuração.`);
   }
 };
 
-// Torna global para integração com equipe.js
 window.abrirModalPerfilProfissional = abrirModalPerfilProfissional;
