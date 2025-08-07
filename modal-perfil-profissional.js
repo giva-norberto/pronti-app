@@ -18,36 +18,23 @@ let profissionalData = null;
 
 // Função principal do modal
 export async function abrirModalPerfilProfissional(profissionalId) {
-  console.log("[ModalPerfil] profissionalId recebido:", profissionalId);
-
   // Corrige se vier o objeto inteiro
   if (typeof profissionalId === "object" && profissionalId !== null && profissionalId.id) {
     profissionalId = profissionalId.id;
-    console.log("[ModalPerfil] Corrigido profissionalId para:", profissionalId);
   }
-
-  // Proteção: garantir que seja string
-  if (!profissionalId || typeof profissionalId !== "string") {
-    alert("ID de profissional inválido! Valor recebido: " + JSON.stringify(profissionalId));
-    return;
-  }
+  if (!profissionalId || typeof profissionalId !== "string") return;
 
   const modal = document.getElementById('modal-perfil-profissional');
-  if (!modal) {
-    alert('Modal do perfil profissional não encontrado no DOM.');
-    return;
-  }
+  if (!modal) return;
   modal.style.display = 'block';
 
-  // Usando requestAnimationFrame para garantir que o botão Voltar está disponível após renderização
+  // Botão "X" para fechar modal
   requestAnimationFrame(() => {
-    const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
-    if (btnVoltar) {
-      btnVoltar.onclick = () => {
+    const btnFechar = document.getElementById('btn-fechar-modal-perfil');
+    if (btnFechar) {
+      btnFechar.onclick = () => {
         modal.style.display = 'none';
       };
-    } else {
-      console.warn('Botão Voltar não encontrado dentro do modal!');
     }
   });
 
@@ -57,35 +44,19 @@ export async function abrirModalPerfilProfissional(profissionalId) {
   const diasContainer = document.getElementById('dias-container');
   if (diasContainer) diasContainer.innerHTML = '';
 
-  // Autenticacao e empresa
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       empresaId = await getEmpresaIdDoDono(user.uid);
-      console.log("[ModalPerfil] empresaId recebido:", empresaId);
-
       if (!empresaId) {
         alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
-        modal.style.display = 'none';
-        return;
-      }
-      if (!empresaId || typeof empresaId !== "string") {
-        alert("ID de empresa inválido!");
-        modal.style.display = 'none';
-        return;
+        modal.style.display = 'none'; return;
       }
       profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
-      
-      // Carrega dados do profissional
       await carregarDadosProfissional();
-      
-      // Renderiza interface
       renderizarCabecalhoProfissional();
       gerarEstruturaDosDias();
       await carregarHorarios();
-      
-      if (formHorarios) {
-        formHorarios.onsubmit = handleFormSubmit;
-      }
+      if (formHorarios) formHorarios.onsubmit = handleFormSubmit;
     } else {
       window.location.href = 'login.html';
     }
@@ -96,21 +67,17 @@ export async function abrirModalPerfilProfissional(profissionalId) {
 async function carregarDadosProfissional() {
   if (!profissionalRef) return;
   const snap = await getDoc(profissionalRef);
-  if (snap.exists()) {
-    profissionalData = snap.data();
-  }
+  if (snap.exists()) profissionalData = snap.data();
 }
 
 // Renderiza cabeçalho com foto e nome do profissional
 function renderizarCabecalhoProfissional() {
   const cabecalho = document.getElementById('cabecalho-profissional');
   if (!cabecalho || !profissionalData) return;
-
   const nome = profissionalData.nome || 'Profissional';
   const foto = profissionalData.foto || profissionalData.fotoUrl || 'https://via.placeholder.com/80x80?text=Foto';
   const servicos = profissionalData.servicos || [];
   const ativo = profissionalData.ativo !== false;
-
   cabecalho.innerHTML = `
     <div class="perfil-header">
       <div class="perfil-foto-container">
@@ -147,7 +114,6 @@ function renderizarCabecalhoProfissional() {
   `;
 }
 
-// Busca empresaId pelo dono
 async function getEmpresaIdDoDono(uid) {
   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
   const snapshot = await getDocs(q);
@@ -269,7 +235,6 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
     });
   }
   
-  // Valida após adicionar
   setTimeout(() => validarSobreposicao(diaId), 100);
 }
 
@@ -278,36 +243,25 @@ function validarSobreposicao(diaId) {
   const blocos = document.querySelectorAll(`#blocos-${diaId} .bloco-horario`);
   const horarios = [];
   let temSobreposicao = false;
-  
-  // Coleta todos os horários
   blocos.forEach((bloco, index) => {
     const inicio = bloco.querySelector('.horario-inicio').value;
     const fim = bloco.querySelector('.horario-fim').value;
     const erroDiv = bloco.querySelector('.erro-sobreposicao');
-    
-    erroDiv.style.display = 'none';
-    bloco.classList.remove('erro');
-    
+    erroDiv.style.display = 'none'; bloco.classList.remove('erro');
     if (inicio && fim) {
       if (inicio >= fim) {
         erroDiv.textContent = '⚠️ Horário de início deve ser menor que o fim!';
-        erroDiv.style.display = 'block';
-        bloco.classList.add('erro');
+        erroDiv.style.display = 'block'; bloco.classList.add('erro');
         temSobreposicao = true;
         return;
       }
-      
       horarios.push({ inicio, fim, elemento: bloco, erroDiv, index });
     }
   });
-  
-  // Verifica sobreposições
   for (let i = 0; i < horarios.length; i++) {
     for (let j = i + 1; j < horarios.length; j++) {
       const h1 = horarios[i];
       const h2 = horarios[j];
-      
-      // Verifica se há sobreposição
       if ((h1.inicio < h2.fim && h1.fim > h2.inicio)) {
         h1.erroDiv.style.display = 'block';
         h2.erroDiv.style.display = 'block';
@@ -317,15 +271,12 @@ function validarSobreposicao(diaId) {
       }
     }
   }
-  
   return !temSobreposicao;
 }
 
 // Salva horários e intervalo com validação
 async function handleFormSubmit(event) {
   event.preventDefault();
-  
-  // Valida todos os dias antes de salvar
   let temErros = false;
   diasDaSemana.forEach(dia => {
     const ativoInput = document.getElementById(`${dia.id}-ativo`);
@@ -335,12 +286,10 @@ async function handleFormSubmit(event) {
       }
     }
   });
-  
   if (temErros) {
     alert('Corrija os horários com sobreposição antes de salvar!');
     return;
   }
-  
   const btnSalvar = document.querySelector('#form-horarios .btn-submit');
   if (btnSalvar) {
     btnSalvar.disabled = true;
@@ -374,7 +323,7 @@ async function handleFormSubmit(event) {
   }
 }
 
-// Funções para edição do profissional
+// Funções para edição do profissional (window para onclick inline)
 window.editarNomeProfissional = async function() {
   const novoNome = prompt('Digite o novo nome:', profissionalData?.nome || '');
   if (novoNome && novoNome.trim()) {
@@ -407,7 +356,6 @@ window.editarServicosProfissional = async function() {
   const servicosAtuais = profissionalData?.servicos || [];
   const servicosTexto = servicosAtuais.join(', ');
   const novosServicos = prompt('Digite os serviços separados por vírgula:', servicosTexto);
-  
   if (novosServicos !== null) {
     const servicosArray = novosServicos.split(',').map(s => s.trim()).filter(s => s);
     try {
@@ -425,7 +373,6 @@ window.toggleStatusProfissional = async function() {
   const ativo = profissionalData?.ativo !== false;
   const novoStatus = !ativo;
   const acao = novoStatus ? 'ativar' : 'desativar';
-  
   if (confirm(`Tem certeza que deseja ${acao} este profissional?`)) {
     try {
       await updateDoc(profissionalRef, { ativo: novoStatus });
@@ -446,9 +393,7 @@ window.excluirProfissional = async function() {
         await deleteDoc(profissionalRef);
         alert('Profissional excluído com sucesso!');
         document.getElementById('modal-perfil-profissional').style.display = 'none';
-        if (window.carregarProfissionais) {
-          window.carregarProfissionais();
-        }
+        if (window.carregarProfissionais) window.carregarProfissionais();
       } catch (error) {
         alert('Erro ao excluir profissional: ' + error.message);
       }
@@ -463,17 +408,13 @@ window.sincronizarCalendario = async function() {
     'Apple Calendar',
     'Calendário Personalizado'
   ];
-  
   let escolha = '';
   opcoes.forEach((opcao, index) => {
     escolha += `${index + 1}. ${opcao}\n`;
   });
-  
   const selecao = prompt(`Escolha o calendário para sincronizar:\n${escolha}\nDigite o número:`);
-  
   if (selecao && selecao >= 1 && selecao <= opcoes.length) {
     const calendarioEscolhido = opcoes[selecao - 1];
-    
     try {
       await updateDoc(profissionalRef, { 
         sincronizacaoCalendario: {
@@ -482,16 +423,11 @@ window.sincronizarCalendario = async function() {
           dataConfiguracao: new Date().toISOString()
         }
       });
-      
       alert(`Sincronização com ${calendarioEscolhido} configurada! 
-      
-Próximos passos:
 1. Configure as credenciais de acesso
 2. Defina a frequência de sincronização
 3. Teste a conexão
-
 Entre em contato com o suporte para finalizar a configuração.`);
-      
     } catch (error) {
       alert('Erro ao configurar sincronização: ' + error.message);
     }
