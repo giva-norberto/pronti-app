@@ -7,6 +7,146 @@
   <link href="style.css" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <style>
+    body {
+      background: #f6f7fb;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #22223b;
+    }
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+      min-height: 100vh;
+      color: #fff;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 20px;
+    }
+    .sidebar-brand {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fff;
+      text-decoration: none;
+      letter-spacing: 2px;
+      padding: 24px 24px 12px 24px;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .sidebar-links a {
+      display: block;
+      background: #fff;
+      color: #22223b;
+      font-weight: 500;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: none;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      padding: 14px 0;
+      text-align: center;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+    }
+    .sidebar-links a.active {
+      background: #6366f1;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 2px 4px 0 0 #ff3e7f;
+      border-radius: 12px;
+    }
+    .sidebar-links a:hover:not(.active) {
+      background: #f6f8fa;
+      color: #4f46e5;
+    }
+    .main-content {
+      margin-left: 240px;
+      padding: 36px 40px;
+      min-height: 100vh;
+      background: #f6f8fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .main-content h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    .main-content p {
+      font-size: 1.08rem;
+      margin-bottom: 22px;
+    }
+    .form-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px #6366f120;
+      padding: 32px 32px 24px 32px;
+      margin-top: 10px;
+      max-width: 430px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .form-group {
+      margin-bottom: 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 1.08rem;
+      font-weight: 500;
+      margin-bottom: 7px;
+    }
+    .form-group input {
+      font-size: 1.05rem;
+      padding: 12px 14px;
+      border: 1.5px solid #d7d6e0;
+      border-radius: 7px;
+      background: #f8f8fa;
+      transition: border 0.2s;
+      outline: none;
+      width: 100%;
+      margin-bottom: 0;
+    }
+    .form-group input:focus {
+      border-color: #6366f1;
+      background: #f6f3ff;
+    }
+    .btn-submit {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 0;
+      font-weight: bold;
+      font-size: 1.15rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #d6d2f8;
+      width: 100%;
+      margin-top: 18px;
+      transition: background 0.2s;
+      display: block;
+    }
+    .btn-submit:hover {
+      background: #4f46e5;
+    }
+    @media (max-width: 900px) {
+      .sidebar { width: 100vw; min-height: 0; position: relative; }
+      .main-content { margin-left: 0; padding: 24px 10px; }
+      .form-card { margin: 24px auto 0 auto; }
+    }
+    @media (max-width: 600px) {
+      .form-card { padding: 16px 8vw; }
+      .main-content { padding: 8px; }
+    }
+  </style>
 </head>
 <body>
   <aside class="sidebar">
@@ -23,18 +163,18 @@
   <main class="main-content">
     <h1>Cadastrar Novo Cliente</h1>
     <p>Preencha os dados do novo cliente.</p>
-    <form id="form-cliente" class="form-card">
+    <form id="form-cliente" class="form-card" autocomplete="off">
       <div class="form-group">
         <label for="nome-cliente">Nome Completo:</label>
-        <input type="text" id="nome-cliente" required>
+        <input type="text" id="nome-cliente" name="nome-cliente" required>
       </div>
       <div class="form-group">
         <label for="telefone-cliente">Telefone:</label>
-        <input type="tel" id="telefone-cliente" placeholder="(XX) XXXXX-XXXX">
+        <input type="tel" id="telefone-cliente" name="telefone-cliente" placeholder="(XX) XXXXX-XXXX">
       </div>
       <div class="form-group">
         <label for="email-cliente">Email:</label>
-        <input type="email" id="email-cliente">
+        <input type="email" id="email-cliente" name="email-cliente">
       </div>
       <button type="submit" class="btn-submit">Salvar Cliente</button>
     </form>
