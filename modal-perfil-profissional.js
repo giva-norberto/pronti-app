@@ -1,40 +1,58 @@
-import { db } from './firebase-config.js';
-import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// modal-perfil-profissional.js
 
-// Dias da semana padrão
+// Dias da semana
 const diasSemana = [
-  { key: 'seg', label: 'Segunda' },
-  { key: 'ter', label: 'Terça' },
-  { key: 'qua', label: 'Quarta' },
-  { key: 'qui', label: 'Quinta' },
-  { key: 'sex', label: 'Sexta' },
-  { key: 'sab', label: 'Sábado' },
-  { key: 'dom', label: 'Domingo' },
+  { key: 'segunda', label: 'Segunda' },
+  { key: 'terca', label: 'Terça' },
+  { key: 'quarta', label: 'Quarta' },
+  { key: 'quinta', label: 'Quinta' },
+  { key: 'sexta', label: 'Sexta' },
+  { key: 'sabado', label: 'Sábado' },
+  { key: 'domingo', label: 'Domingo' },
 ];
 
 let profissionalAtual = null;
 let empresaIdGlobal = null;
 
 // Função para abrir o modal de perfil do profissional
-export function abrirModalPerfilProfissional(profissional, empresaId) {
+export function abrirModalPerfilProfissional(profissional, empresaId = null, servicosDisponiveis = []) {
     profissionalAtual = profissional;
     empresaIdGlobal = empresaId;
 
     // Preenche nome
     document.getElementById('perfil-profissional-nome').textContent = profissional.nome || '';
 
-    // Renderiza horários
-    renderizarHorarios(profissional.horarios || {});
+    // Preenche horários
+    preencherHorarios(profissional.horarios || {});
 
-    // TODO: renderizar intervalos e serviços...
+    // Preenche intervalos
+    preencherIntervalos(profissional.intervalos || {});
+
+    // Preenche serviços
+    preencherServicos(profissional.servicos || [], servicosDisponiveis);
 
     // Abre modal
     const modal = document.getElementById('modal-perfil-profissional');
     modal.style.display = 'flex';
     modal.classList.add('show');
 
-    // Deixa a aba de horários ativa por padrão
-    trocarAba('horarios');
+    // Aba padrão: horários
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelector('.tab-btn[data-tab="horarios"]').classList.add('active');
+    document.getElementById('tab-horarios').classList.add('active');
+}
+
+// Fecha modal ao clicar fora
+document.getElementById('modal-perfil-profissional').addEventListener('click', function(e) {
+    if (e.target === this) {
+        fecharModalPerfil();
+    }
+});
+function fecharModalPerfil() {
+    const modal = document.getElementById('modal-perfil-profissional');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
 }
 
 // Troca de abas
@@ -47,59 +65,90 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// Renderiza tabela de horários
-function renderizarHorarios(horarios) {
-    const tbody = document.querySelector('#form-horarios-profissional tbody');
-    tbody.innerHTML = diasSemana.map(dia => {
-        const inicio = horarios[dia.key]?.inicio || '';
-        const fim = horarios[dia.key]?.fim || '';
-        return `
-            <tr>
-                <td>${dia.label}</td>
-                <td>
-                    <input type="time" name="inicio-${dia.key}" value="${inicio}" />
-                </td>
-                <td>
-                    <input type="time" name="fim-${dia.key}" value="${fim}" />
-                </td>
-            </tr>
-        `;
-    }).join('');
+// Preencher horários
+function preencherHorarios(horarios) {
+    diasSemana.forEach(dia => {
+        document.getElementById(`${dia.key}_inicio`).value = horarios[dia.key]?.inicio || '';
+        document.getElementById(`${dia.key}_fim`).value = horarios[dia.key]?.fim || '';
+    });
 }
 
-// Salvar horários
-document.getElementById('form-horarios-profissional').onsubmit = async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const novosHorarios = {};
+// Preencher intervalos
+function preencherIntervalos(intervalos) {
     diasSemana.forEach(dia => {
-        const inicio = form[`inicio-${dia.key}`].value;
-        const fim = form[`fim-${dia.key}`].value;
-        novosHorarios[dia.key] = { inicio, fim };
+        document.getElementById(`${dia.key}_intervalo_inicio`).value = intervalos[dia.key]?.inicio || '';
+        document.getElementById(`${dia.key}_intervalo_fim`).value = intervalos[dia.key]?.fim || '';
     });
-    try {
-        await updateDoc(
-            doc(db, "empresarios", empresaIdGlobal, "profissionais", profissionalAtual.id),
-            { horarios: novosHorarios }
-        );
-        alert('Horários salvos!');
-        // Atualiza no modal
-        renderizarHorarios(novosHorarios);
-    } catch (err) {
-        alert('Erro ao salvar horários: ' + err.message);
-    }
+}
+
+// Preencher serviços
+function preencherServicos(servicosSelecionados, servicosDisponiveis) {
+    const lista = document.getElementById('lista-servicos-checkbox');
+    lista.innerHTML = '';
+    servicosDisponiveis.forEach(servico => {
+        const checked = servicosSelecionados.includes(servico.id) ? 'checked' : '';
+        lista.innerHTML += `
+          <label>
+            <input type="checkbox" value="${servico.id}" ${checked}>
+            ${servico.nome}
+          </label>
+        `;
+    });
+}
+
+// --------- Salvar Horários -----------
+document.getElementById('form-horarios-perfil-profissional').onsubmit = async function(e) {
+    e.preventDefault();
+    if(!profissionalAtual) return;
+
+    const horarios = {};
+    diasSemana.forEach(dia => {
+        horarios[dia.key] = {
+            inicio: document.getElementById(`${dia.key}_inicio`).value,
+            fim: document.getElementById(`${dia.key}_fim`).value,
+        };
+    });
+
+    // Aqui você pode integrar com Firebase, por exemplo:
+    // updateDoc(doc(db, "empresarios", empresaIdGlobal, "profissionais", profissionalAtual.id), { horarios });
+    profissionalAtual.horarios = horarios; // Local update
+
+    alert('Horários salvos!');
+    fecharModalPerfil();
 };
 
-// Cancelar horários
-document.getElementById('btn-cancelar-horarios').onclick = () => {
-    document.getElementById('modal-perfil-profissional').style.display = 'none';
-    document.getElementById('modal-perfil-profissional').classList.remove('show');
+// --------- Salvar Intervalos -----------
+document.getElementById('form-intervalos-perfil-profissional').onsubmit = async function(e) {
+    e.preventDefault();
+    if(!profissionalAtual) return;
+
+    const intervalos = {};
+    diasSemana.forEach(dia => {
+        intervalos[dia.key] = {
+            inicio: document.getElementById(`${dia.key}_intervalo_inicio`).value,
+            fim: document.getElementById(`${dia.key}_intervalo_fim`).value,
+        };
+    });
+
+    // Firebase: updateDoc(...)
+    profissionalAtual.intervalos = intervalos;
+
+    alert('Intervalos salvos!');
+    fecharModalPerfil();
 };
 
-// Fechar modal ao clicar fora
-document.getElementById('modal-perfil-profissional').addEventListener('click', function(e) {
-    if (e.target === this) {
-        this.style.display = 'none';
-        this.classList.remove('show');
-    }
-});
+// --------- Salvar Serviços -----------
+document.getElementById('form-servicos-perfil-profissional').onsubmit = async function(e) {
+    e.preventDefault();
+    if(!profissionalAtual) return;
+
+    const checked = Array.from(document.querySelectorAll('#lista-servicos-checkbox input[type=checkbox]:checked')).map(cb => cb.value);
+    profissionalAtual.servicos = checked;
+
+    // Firebase: updateDoc(...)
+    alert('Serviços salvos!');
+    fecharModalPerfil();
+};
+
+// Botão cancelar serviços fecha modal
+document.getElementById('btn-cancelar-servicos-perfil').onclick = fecharModalPerfil;
