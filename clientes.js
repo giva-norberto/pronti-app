@@ -16,11 +16,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const listaClientesDiv = document.getElementById('lista-clientes');
-const modal = document.getElementById('modal-confirmacao');
-const modalMensagem = document.getElementById('modal-mensagem');
-const btnModalConfirmar = document.getElementById('btn-modal-confirmar');
-const btnModalCancelar = document.getElementById('btn-modal-cancelar');
+const listaClientesDiv = document.getElementById("lista-clientes");
+const modal = document.getElementById("modal-confirmacao");
+const modalMensagem = document.getElementById("modal-mensagem");
+const btnModalConfirmar = document.getElementById("btn-modal-confirmar");
+const btnModalCancelar = document.getElementById("btn-modal-cancelar");
 
 let empresaId = null; // Variável global para guardar o ID da empresa
 
@@ -31,10 +31,10 @@ onAuthStateChanged(auth, async (user) => {
     if (empresaId) {
         inicializarPaginaClientes();
     } else {
-        listaClientesDiv.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
+        listaClientesDiv.innerHTML = "<p style=\'color:red;\'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
     }
   } else {
-    window.location.href = 'login.html';
+    window.location.href = "login.html";
   }
 });
 
@@ -57,20 +57,33 @@ function inicializarPaginaClientes() {
 
     function mostrarConfirmacao(mensagem) {
       modalMensagem.textContent = mensagem;
-      modal.style.display = 'flex';
-      setTimeout(() => modal.classList.add('visivel'), 10);
+      modal.style.display = "flex";
+      // Pequeno atraso para garantir que o display:flex seja aplicado antes da transição
+      setTimeout(() => modal.classList.add("ativo"), 10);
 
       return new Promise((resolve) => {
-        btnModalConfirmar.onclick = () => {
-          modal.classList.remove('visivel');
-          setTimeout(() => modal.style.display = 'none', 300);
-          resolve(true);
+        const handleConfirm = () => {
+          modal.classList.remove("ativo");
+          // Espera a transição terminar antes de ocultar completamente
+          modal.addEventListener("transitionend", function handler() {
+            modal.style.display = "none";
+            modal.removeEventListener("transitionend", handler);
+            resolve(true);
+          }, { once: true });
         };
-        btnModalCancelar.onclick = () => {
-          modal.classList.remove('visivel');
-          setTimeout(() => modal.style.display = 'none', 300);
-          resolve(false);
+
+        const handleCancel = () => {
+          modal.classList.remove("ativo");
+          // Espera a transição terminar antes de ocultar completamente
+          modal.addEventListener("transitionend", function handler() {
+            modal.style.display = "none";
+            modal.removeEventListener("transitionend", handler);
+            resolve(false);
+          }, { once: true });
         };
+
+        btnModalConfirmar.onclick = handleConfirm;
+        btnModalCancelar.onclick = handleCancel;
       });
     }
 
@@ -83,16 +96,16 @@ function inicializarPaginaClientes() {
             const clientesSnapshot = await getDocs(clientesQuery);
 
             if (clientesSnapshot.empty) {
-                listaClientesDiv.innerHTML = '<p>Nenhum cliente cadastrado.</p>'; return;
+                listaClientesDiv.innerHTML = "<p>Nenhum cliente cadastrado.</p>"; return;
             }
-            listaClientesDiv.innerHTML = '';
+            listaClientesDiv.innerHTML = "";
             clientesSnapshot.forEach(docItem => {
                 const cliente = docItem.data(); const clienteId = docItem.id;
                 if (cliente.nome) { 
-                    const el = document.createElement('div');
-                    el.classList.add('cliente-item'); el.dataset.id = clienteId;
+                    const el = document.createElement("div");
+                    el.classList.add("cliente-item"); el.dataset.id = clienteId;
                     el.innerHTML = `
-                        <div class="item-info"><h3>${cliente.nome}</h3><p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ''}</p></div>
+                        <div class="item-info"><h3>${cliente.nome}</h3><p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ""}</p></div>
                         <div class="item-acoes"><a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a><button class="btn-excluir" data-id="${clienteId}">Excluir</button></div>
                     `;
                     listaClientesDiv.appendChild(el);
@@ -116,10 +129,10 @@ function inicializarPaginaClientes() {
         }
     }
 
-    listaClientesDiv.addEventListener('click', async (event) => {
-        if (event.target && event.target.classList.contains('btn-excluir')) {
+    listaClientesDiv.addEventListener("click", async (event) => {
+        if (event.target && event.target.classList.contains("btn-excluir")) {
             const clienteId = event.target.dataset.id;
-            const nomeCliente = event.target.closest('.cliente-item').querySelector('h3').textContent;
+            const nomeCliente = event.target.closest(".cliente-item").querySelector("h3").textContent;
             const confirmado = await mostrarConfirmacao(`Tem a certeza de que deseja excluir "${nomeCliente}"? Esta ação é permanente.`);
             if (confirmado) {
                 excluirCliente(clienteId);
