@@ -7,6 +7,184 @@
   <link href="style.css" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <style>
+    body {
+      background: #f6f7fb;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #22223b;
+    }
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+      min-height: 100vh;
+      color: #fff;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 20px;
+    }
+    .sidebar-brand {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fff;
+      text-decoration: none;
+      letter-spacing: 2px;
+      padding: 24px 24px 12px 24px;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .sidebar-links a {
+      display: block;
+      background: #fff;
+      color: #22223b;
+      font-weight: 500;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: none;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      padding: 14px 0;
+      text-align: center;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+    }
+    .sidebar-links a.active {
+      background: #6366f1;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 2px 4px 0 0 #ff3e7f;
+      border-radius: 12px;
+    }
+    .sidebar-links a:hover:not(.active) {
+      background: #f6f8fa;
+      color: #4f46e5;
+    }
+    .main-content {
+      margin-left: 240px;
+      padding: 36px 40px;
+      min-height: 100vh;
+      background: #f6f8fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .main-content h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    .main-content p {
+      font-size: 1.08rem;
+      margin-bottom: 22px;
+    }
+    .form-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px #6366f120;
+      padding: 32px 32px 24px 32px;
+      margin-top: 10px;
+      max-width: 430px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .form-group {
+      margin-bottom: 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 1.08rem;
+      font-weight: 500;
+      margin-bottom: 7px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      font-size: 1.05rem;
+      padding: 12px 14px;
+      border: 1.5px solid #d7d6e0;
+      border-radius: 7px;
+      background: #f8f8fa;
+      transition: border 0.2s;
+      outline: none;
+      width: 100%;
+      resize: none;
+      margin-bottom: 0;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #6366f1;
+      background: #f6f3ff;
+    }
+    .form-group #grade-horarios {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+      min-height: 34px;
+    }
+    .slot-horario {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-weight: 500;
+      font-size: 1.05rem;
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: background 0.2s;
+    }
+    .slot-horario.selecionado {
+      background: #ff3e7f;
+    }
+    .slot-horario.desabilitado {
+      background: #ddd;
+      color: #888;
+      cursor: not-allowed;
+    }
+    .btn-submit {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 0;
+      font-weight: bold;
+      font-size: 1.15rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #d6d2f8;
+      width: 100%;
+      margin-top: 18px;
+      transition: background 0.2s;
+      display: block;
+    }
+    .btn-submit:hover {
+      background: #4f46e5;
+    }
+    .aviso-horarios {
+      color: #888;
+      font-size: 0.97rem;
+      margin-top: 3px;
+      margin-bottom: 3px;
+    }
+    @media (max-width: 900px) {
+      .sidebar { width: 100vw; min-height: 0; position: relative; }
+      .main-content { margin-left: 0; padding: 24px 10px; }
+      .form-card { margin: 24px auto 0 auto; }
+    }
+    @media (max-width: 600px) {
+      .form-card { padding: 16px 8vw; }
+      .main-content { padding: 8px; }
+    }
+  </style>
 </head>
 <body>
 
@@ -23,13 +201,13 @@
       <a href="horarios.html">Meus Horários</a>
       <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
     </div>
-    </aside>
+  </aside>
 
   <main class="main-content">
     <h1>Novo Agendamento</h1>
     <p>Preencha os dados abaixo para criar um novo agendamento.</p>
 
-    <form id="form-agendamento" class="form-card">
+    <form id="form-agendamento" class="form-card" autocomplete="off">
       <div class="form-group">
         <label for="cliente">Nome do Cliente:</label>
         <input type="text" id="cliente" name="cliente" required>
