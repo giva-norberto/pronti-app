@@ -133,7 +133,118 @@
     gap: 18px;
 }
 
-/* Responsivo */
+/* ============================ */
+/* MODAL DE ADICIONAR PROFISSIONAL */
+/* ============================ */
+.equipe-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(60, 57, 80, 0.25);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+}
+.equipe-modal-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.11);
+    padding: 38px 38px 28px 38px;
+    max-width: 480px;
+    width: 98vw;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* Título do modal */
+.equipe-modal-card h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: #22223b;
+}
+
+/* Formulário dentro do modal */
+.equipe-modal-card .form-group {
+    margin-bottom: 20px;
+}
+.equipe-modal-card label {
+    display: block;
+    font-weight: 600;
+    font-size: 1.09rem;
+    color: #374151;
+    margin-bottom: 8px;
+}
+.equipe-modal-card input,
+.equipe-modal-card textarea,
+.equipe-modal-card select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border 0.3s, box-shadow 0.2s;
+    margin-bottom: 4px;
+    background: #f6f7fb;
+}
+.equipe-modal-card input:focus,
+.equipe-modal-card textarea:focus,
+.equipe-modal-card select:focus {
+    outline: none;
+    border-color: #4facfe;
+    box-shadow: 0 0 0 2px rgba(79, 172, 254, 0.13);
+}
+
+.equipe-modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    justify-content: flex-end;
+}
+
+/* Botão salvar no modal */
+.equipe-modal-card .btn-salvar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 1.08rem;
+    padding: 13px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+    box-shadow: 0 2px 8px #d6d2f8;
+    transition: background 0.2s, box-shadow 0.2s;
+    display: block;
+}
+.equipe-modal-card .btn-salvar:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Botão secundário no modal */
+.equipe-modal-card .btn-cancelar {
+    background: #e5e7eb;
+    color: #4B5563;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 12px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    box-shadow: 0 2px 8px #d6d2f8;
+    transition: background 0.2s;
+    display: block;
+    margin-top: 4px;
+}
+.equipe-modal-card .btn-cancelar:hover {
+    background: #d1d5db;
+}
+
+/* ============================ */
+/* RESPONSIVO                   */
+/* ============================ */
 @media (max-width: 900px) {
     .equipe-main { margin-left: 0; }
 }
@@ -141,4 +252,5 @@
     .equipe-main { margin: 10px; border-radius: 10px; padding: 18px; }
     .equipe-header { padding: 18px 8px; }
     .equipe-card { padding: 12px 8px; gap: 10px; }
+    .equipe-modal-card { padding: 12px 8px; }
 }
