@@ -8,6 +8,7 @@
     body {
       background: #f6f8fa;
       font-family: 'Inter', Arial, sans-serif;
+      color: #22223b;
     }
     .sidebar {
       width: 240px;
@@ -83,10 +84,61 @@
       text-align: center;
       color: #22223b;
     }
+    .form-group {
+      margin-bottom: 18px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 1.08rem;
+      font-weight: 500;
+      margin-bottom: 7px;
+    }
+    .form-group input,
+    .form-group textarea {
+      font-size: 1.05rem;
+      padding: 12px 14px;
+      border: 1.5px solid #d7d6e0;
+      border-radius: 7px;
+      background: #f8f8fa;
+      transition: border 0.2s;
+      outline: none;
+      width: 100%;
+      resize: none;
+      margin-bottom: 0;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: #6366f1;
+      background: #f6f3ff;
+    }
+    .btn-submit {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 0;
+      font-weight: bold;
+      font-size: 1.15rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #d6d2f8;
+      width: 100%;
+      margin-top: 18px;
+      transition: background 0.2s;
+      display: block;
+    }
+    .btn-submit:hover {
+      background: #4f46e5;
+    }
     @media (max-width: 900px) {
       .sidebar { width: 100vw; min-height: 0; position: relative; }
       .main-content { margin-left: 0; padding: 24px 10px; }
       .form-card { margin: 24px auto 0 auto; }
+    }
+    @media (max-width: 600px) {
+      .form-card { padding: 16px 8vw; }
+      .main-content { padding: 8px; }
     }
   </style>
 </head>
@@ -95,21 +147,11 @@
   <aside class="sidebar">
     <a href="dashboard.html" class="sidebar-brand">Jetio</a>
     <nav class="sidebar-links">
-      <a href="dashboard.html">
-        Dashboard
-      </a>
-      <a href="servicos.html" class="active">
-        Serviços
-      </a>
-      <a href="clientes.html">
-        Clientes
-      </a>
-      <a href="equipe.html">
-        Equipe
-      </a>
-      <a href="perfil.html">
-        Meu Perfil
-      </a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="servicos.html" class="active">Serviços</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="equipe.html">Equipe</a>
+      <a href="perfil.html">Meu Perfil</a>
     </nav>
   </aside>
 
@@ -124,7 +166,7 @@
         </div>
         <div class="form-group">
           <label for="descricao-servico">Descrição</label>
-          <textarea id="descricao-servico" name="descricao-servico" required></textarea>
+          <textarea id="descricao-servico" name="descricao-servico" rows="2" required></textarea>
         </div>
         <div class="form-group">
           <label for="preco-servico">Preço</label>
