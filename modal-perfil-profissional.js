@@ -15,19 +15,29 @@ const diasDaSemana = [
 let empresaId = null;
 let profissionalRef = null;
 
-// Função para abrir o modal e carregar dados
 export async function abrirModalPerfilProfissional(profissionalId) {
   const modal = document.getElementById('modal-perfil-profissional');
+  if (!modal) {
+    alert('Modal do perfil profissional não encontrado no DOM.');
+    return;
+  }
   modal.style.display = 'block';
 
   // Botão Voltar/Fechar
-  document.getElementById('btn-voltar-modal-perfil').onclick = () => {
-    modal.style.display = 'none';
-  };
+  const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
+  if (btnVoltar) {
+    btnVoltar.onclick = () => {
+      modal.style.display = 'none';
+    };
+  } else {
+    console.warn('Botão Voltar não encontrado dentro do modal!');
+  }
 
   // Limpa campos
-  document.getElementById('form-horarios').reset();
-  document.getElementById('dias-container').innerHTML = '';
+  const formHorarios = document.getElementById('form-horarios');
+  if (formHorarios) formHorarios.reset();
+  const diasContainer = document.getElementById('dias-container');
+  if (diasContainer) diasContainer.innerHTML = '';
 
   // Autenticacao e empresa
   onAuthStateChanged(auth, async (user) => {
@@ -41,9 +51,8 @@ export async function abrirModalPerfilProfissional(profissionalId) {
       profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
       gerarEstruturaDosDias();
       await carregarHorarios();
-      const form = document.getElementById('form-horarios');
-      if (form) {
-        form.onsubmit = handleFormSubmit;
+      if (formHorarios) {
+        formHorarios.onsubmit = handleFormSubmit;
       }
     } else {
       window.location.href = 'login.html';
