@@ -1,0 +1,18 @@
+// Exibe e permite editar o nome do profissional no modal de perfil
+
+export function renderizarNomeProfissional(nomeAtual, onNomeAlterado) {
+    const nomeDiv = document.getElementById('perfil-profissional-nome');
+    if (!nomeDiv) return;
+
+    nomeDiv.innerHTML = `
+        <input type="text" id="input-nome-profissional" value="${nomeAtual || ''}" 
+            placeholder="Nome do profissional" style="font-size:1.2em; width:80%; padding:6px;">
+    `;
+
+    const inputNome = document.getElementById('input-nome-profissional');
+    inputNome.onchange = (e) => {
+        if (onNomeAlterado) {
+            onNomeAlterado(e.target.value);
+        }
+    };
+}
