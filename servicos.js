@@ -51,28 +51,32 @@ function formatarPreco(preco) {
 
 function renderizarServicos(servicos) {
     if (!servicos || servicos.length === 0) {
-        listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>`;
+        if (listaServicosDiv) {
+            listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>`;
+        }
         return;
     }
     servicos.sort((a, b) => a.nome.localeCompare(b.nome));
-    listaServicosDiv.innerHTML = servicos.map(servico => `
-        <div class="servico-card">
-            <div class="servico-header">
-                <h3 class="servico-titulo">${servico.nome}</h3>
-            </div>
-            <p class="servico-descricao">${servico.descricao || ''}</p>
-            <div class="servico-footer">
-                <div>
-                    <span class="servico-preco">${formatarPreco(servico.preco)}</span>
-                    <span class="servico-duracao"> • ${servico.duracao} min</span>
+    if (listaServicosDiv) {
+        listaServicosDiv.innerHTML = servicos.map(servico => `
+            <div class="servico-card">
+                <div class="servico-header">
+                    <h3 class="servico-titulo">${servico.nome}</h3>
                 </div>
-                <div class="servico-acoes">
-                    <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
-                    ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
+                <p class="servico-descricao">${servico.descricao || ''}</p>
+                <div class="servico-footer">
+                    <div>
+                        <span class="servico-preco">${formatarPreco(servico.preco)}</span>
+                        <span class="servico-duracao"> • ${servico.duracao} min</span>
+                    </div>
+                    <div class="servico-acoes">
+                        <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
+                        ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    }
 }
 
 // Busca a empresa do usuário (dono ou profissional)
@@ -88,10 +92,14 @@ async function getEmpresaDoUsuario(uid) {
 
 async function carregarServicosDoFirebase() {
     if (!empresaId) {
-        listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
+        if (listaServicosDiv) {
+            listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
+        }
         return;
     }
-    listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
+    if (listaServicosDiv) {
+        listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
+    }
     try {
         const servicosCol = collection(db, "empresarios", empresaId, "servicos");
         const snap = await getDocs(servicosCol);
@@ -99,7 +107,9 @@ async function carregarServicosDoFirebase() {
         renderizarServicos(servicos);
     } catch (error) {
         console.error("Erro ao carregar serviços:", error);
-        listaServicosDiv.innerHTML = '<p style="color:red;">Erro ao carregar os serviços.</p>';
+        if (listaServicosDiv) {
+            listaServicosDiv.innerHTML = '<p style="color:red;">Erro ao carregar os serviços.</p>';
+        }
     }
 }
 
@@ -159,22 +169,24 @@ async function excluirServicoDebug(servicoIdParaExcluir) {
 }
 
 // Diagnóstico: log de clique com debug detalhado
-listaServicosDiv.addEventListener('click', function(e) {
-    const target = e.target.closest('.btn-acao');
-    if (!target) return;
+if (listaServicosDiv) {
+    listaServicosDiv.addEventListener('click', function(e) {
+        const target = e.target.closest('.btn-acao');
+        if (!target) return;
 
-    const id = target.dataset.id;
-    if (!id) return;
+        const id = target.dataset.id;
+        if (!id) return;
 
-    if (target.classList.contains('btn-editar')) {
-        window.location.href = `novo-servico.html?id=${id}`;
-    }
+        if (target.classList.contains('btn-editar')) {
+            window.location.href = `novo-servico.html?id=${id}`;
+        }
 
-    if (target.classList.contains('btn-excluir')) {
-        console.log("Botão excluir clicado, id:", id); // Diagnóstico
-        excluirServicoDebug(id);
-    }
-});
+        if (target.classList.contains('btn-excluir')) {
+            console.log("Botão excluir clicado, id:", id); // Diagnóstico
+            excluirServicoDebug(id);
+        }
+    });
+}
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -185,7 +197,9 @@ onAuthStateChanged(auth, async (user) => {
             carregarServicosDoFirebase();
             if (btnAddServico) btnAddServico.style.display = isDono ? '' : 'none';
         } else {
-            listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
+            if (listaServicosDiv) {
+                listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
+            }
         }
     } else {
         window.location.href = 'login.html';
