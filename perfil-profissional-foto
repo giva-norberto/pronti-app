@@ -1,0 +1,36 @@
+// Componente/função para exibir e alterar foto do profissional no modal de perfil
+
+export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
+    const fotoContainer = document.getElementById('perfil-profissional-foto-container');
+    if (!fotoContainer) return;
+
+    fotoContainer.innerHTML = `
+        <img id="perfil-profissional-foto" 
+             src="${fotoUrl || 'https://placehold.co/80x80?text=User'}" 
+             alt="Foto do profissional"
+             style="width:80px;border-radius:50%;margin-bottom:10px;">
+        <br>
+        <input type="file" id="input-foto-profissional" accept="image/*" style="display:none;">
+        <button type="button" id="btn-trocar-foto-profissional">Trocar foto</button>
+    `;
+
+    const btnTrocar = document.getElementById('btn-trocar-foto-profissional');
+    const inputFoto = document.getElementById('input-foto-profissional');
+
+    btnTrocar.onclick = () => inputFoto.click();
+
+    inputFoto.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file && onTrocarFoto) {
+            onTrocarFoto(file); // Delega para função de upload/salvar
+        }
+        // Visualiza localmente (opcional)
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('perfil-profissional-foto').src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+}
