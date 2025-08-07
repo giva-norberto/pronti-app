@@ -48,6 +48,17 @@ export async function abrirModalPerfilProfissional(profissionalId) {
         modal.style.display = 'none';
         return;
       }
+      // Proteção extra nos IDs
+      if (!empresaId || typeof empresaId !== "string") {
+        alert("ID de empresa inválido!");
+        modal.style.display = 'none';
+        return;
+      }
+      if (!profissionalId || typeof profissionalId !== "string") {
+        alert("ID de profissional inválido!");
+        modal.style.display = 'none';
+        return;
+      }
       profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
       gerarEstruturaDosDias();
       await carregarHorarios();
