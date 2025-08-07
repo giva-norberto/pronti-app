@@ -39,15 +39,17 @@ export async function abrirModalPerfilProfissional(profissionalId) {
   }
   modal.style.display = 'block';
 
-  // Botão Voltar/Fechar
-  const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
-  if (btnVoltar) {
-    btnVoltar.onclick = () => {
-      modal.style.display = 'none';
-    };
-  } else {
-    console.warn('Botão Voltar não encontrado dentro do modal!');
-  }
+  // Usando requestAnimationFrame para garantir que o botão Voltar está disponível após renderização
+  requestAnimationFrame(() => {
+    const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
+    if (btnVoltar) {
+      btnVoltar.onclick = () => {
+        modal.style.display = 'none';
+      };
+    } else {
+      console.warn('Botão Voltar não encontrado dentro do modal!');
+    }
+  });
 
   // Limpa campos
   const formHorarios = document.getElementById('form-horarios');
