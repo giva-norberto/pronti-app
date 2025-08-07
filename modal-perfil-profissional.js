@@ -1,7 +1,7 @@
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { app } from "./firebase-config.js";
-
+console.log("modal-perfil-profissional.js carregado!");
 const db = getFirestore(app);
 const auth = getAuth(app);
 
