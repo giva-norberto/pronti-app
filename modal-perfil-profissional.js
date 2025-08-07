@@ -15,7 +15,10 @@ const diasDaSemana = [
 let empresaId = null;
 let profissionalRef = null;
 
+// Função principal do modal
 export async function abrirModalPerfilProfissional(profissionalId) {
+  console.log("[ModalPerfil] profissionalId recebido:", profissionalId);
+
   const modal = document.getElementById('modal-perfil-profissional');
   if (!modal) {
     alert('Modal do perfil profissional não encontrado no DOM.');
@@ -43,6 +46,8 @@ export async function abrirModalPerfilProfissional(profissionalId) {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       empresaId = await getEmpresaIdDoDono(user.uid);
+      console.log("[ModalPerfil] empresaId recebido:", empresaId);
+
       if (!empresaId) {
         alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
         modal.style.display = 'none';
@@ -54,8 +59,9 @@ export async function abrirModalPerfilProfissional(profissionalId) {
         modal.style.display = 'none';
         return;
       }
-      if (!profissionalId || typeof profissionalId !== "string") {
-        alert("ID de profissional inválido!");
+      if (!profissionalId || typeof profissionalId !== "string" || profissionalId.trim() === "") {
+        // Dica para debug
+        alert("ID de profissional inválido! Valor recebido: " + JSON.stringify(profissionalId));
         modal.style.display = 'none';
         return;
       }
