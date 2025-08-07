@@ -15,6 +15,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// Elementos DOM
 const listaClientesDiv = document.getElementById("lista-clientes");
 const modal = document.getElementById("modal-confirmacao");
 const modalMensagem = document.getElementById("modal-mensagem");
@@ -79,28 +80,34 @@ function inicializarPaginaClientes() {
 
   function mostrarConfirmacao(mensagem) {
     // Limpar qualquer listener anterior
-    btnModalConfirmar.onclick = null;
-    btnModalCancelar.onclick = null;
+    btnModalConfirmar && (btnModalConfirmar.onclick = null);
+    btnModalCancelar && (btnModalCancelar.onclick = null);
 
-    modalMensagem.textContent = mensagem;
-    modal.style.display = "flex";
-    modal.classList.add("ativo");
+    if (modalMensagem) modalMensagem.textContent = mensagem;
+    if (modal) {
+      modal.style.display = "flex";
+      modal.classList.add("ativo");
+    }
 
     return new Promise((resolve) => {
       const handleConfirm = () => {
-        modal.classList.remove("ativo");
-        modal.style.display = "none";
+        if (modal) {
+          modal.classList.remove("ativo");
+          modal.style.display = "none";
+        }
         resolve(true);
       };
 
       const handleCancel = () => {
-        modal.classList.remove("ativo");
-        modal.style.display = "none";
+        if (modal) {
+          modal.classList.remove("ativo");
+          modal.style.display = "none";
+        }
         resolve(false);
       };
 
-      btnModalConfirmar.onclick = handleConfirm;
-      btnModalCancelar.onclick = handleCancel;
+      btnModalConfirmar && (btnModalConfirmar.onclick = handleConfirm);
+      btnModalCancelar && (btnModalCancelar.onclick = handleCancel);
 
       // Adicionar listener para fechar com ESC
       const handleEsc = (e) => {
@@ -112,11 +119,13 @@ function inicializarPaginaClientes() {
       document.addEventListener("keydown", handleEsc);
 
       // Fechar ao clicar fora do modal
-      modal.onclick = (e) => {
-        if (e.target === modal) {
-          handleCancel();
-        }
-      };
+      if (modal) {
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            handleCancel();
+          }
+        };
+      }
     });
   }
 
