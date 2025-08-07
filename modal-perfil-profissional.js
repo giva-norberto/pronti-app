@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -14,6 +14,7 @@ const diasDaSemana = [
 
 let empresaId = null;
 let profissionalRef = null;
+let profissionalData = null;
 
 // Função principal do modal
 export async function abrirModalPerfilProfissional(profissionalId) {
@@ -71,8 +72,15 @@ export async function abrirModalPerfilProfissional(profissionalId) {
         return;
       }
       profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+      
+      // Carrega dados do profissional
+      await carregarDadosProfissional();
+      
+      // Renderiza interface
+      renderizarCabecalhoProfissional();
       gerarEstruturaDosDias();
       await carregarHorarios();
+      
       if (formHorarios) {
         formHorarios.onsubmit = handleFormSubmit;
       }
@@ -80,6 +88,61 @@ export async function abrirModalPerfilProfissional(profissionalId) {
       window.location.href = 'login.html';
     }
   });
+}
+
+// Carrega dados completos do profissional
+async function carregarDadosProfissional() {
+  if (!profissionalRef) return;
+  const snap = await getDoc(profissionalRef);
+  if (snap.exists()) {
+    profissionalData = snap.data();
+  }
+}
+
+// Renderiza cabeçalho com foto e nome do profissional
+function renderizarCabecalhoProfissional() {
+  const cabecalho = document.getElementById('cabecalho-profissional');
+  if (!cabecalho || !profissionalData) return;
+
+  const nome = profissionalData.nome || 'Profissional';
+  const foto = profissionalData.foto || 'https://via.placeholder.com/80x80?text=Foto';
+  const servicos = profissionalData.servicos || [];
+  const ativo = profissionalData.ativo !== false;
+
+  cabecalho.innerHTML = `
+    <div class="perfil-header">
+      <div class="perfil-foto-container">
+        <img src="${foto}" alt="${nome}" class="perfil-foto" onerror="this.src='https://via.placeholder.com/80x80?text=Foto'">
+        <button type="button" class="btn-editar-foto" onclick="editarFotoProfissional()">📷</button>
+      </div>
+      <div class="perfil-info">
+        <div class="perfil-nome-container">
+          <h3 class="perfil-nome">${nome}</h3>
+          <button type="button" class="btn-editar-nome" onclick="editarNomeProfissional()">✏️</button>
+        </div>
+        <div class="status-profissional ${ativo ? 'ativo' : 'inativo'}">
+          ${ativo ? '🟢 Ativo' : '🔴 Inativo'}
+        </div>
+        <div class="servicos-profissional">
+          <h4>Serviços:</h4>
+          <div class="lista-servicos">
+            ${servicos.length > 0 ? 
+              servicos.map(servico => `<span class="servico-tag">${servico}</span>`).join('') : 
+              '<span class="sem-servicos">Nenhum serviço cadastrado</span>'
+            }
+          </div>
+          <button type="button" class="btn-editar-servicos" onclick="editarServicosProfissional()">Editar Serviços</button>
+        </div>
+      </div>
+      <div class="acoes-profissional">
+        <button type="button" class="btn-toggle-status ${ativo ? 'desativar' : 'ativar'}" onclick="toggleStatusProfissional()">
+          ${ativo ? '❌ Desativar' : '✅ Ativar'}
+        </button>
+        <button type="button" class="btn-excluir-profissional" onclick="excluirProfissional()">🗑️ Excluir</button>
+        <button type="button" class="btn-sincronizar-calendario" onclick="sincronizarCalendario()">📅 Sincronizar Agenda</button>
+      </div>
+    </div>
+  `;
 }
 
 // Busca empresaId pelo dono
@@ -168,34 +231,114 @@ function gerarEstruturaDosDias() {
   });
 }
 
-// Adiciona um bloco de horário no dia
+// Adiciona um bloco de horário no dia com validação de sobreposição
 function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
   const container = document.getElementById(`blocos-${diaId}`);
   if (!container) return;
+  
   const divBloco = document.createElement('div');
   divBloco.className = 'slot-horario bloco-horario';
   divBloco.innerHTML = `
-    <input type="time" value="${inicio}">
+    <input type="time" value="${inicio}" class="horario-inicio">
     <span class="ate">até</span>
-    <input type="time" value="${fim}">
+    <input type="time" value="${fim}" class="horario-fim">
     <button type="button" class="btn-remove-slot">Remover</button>
+    <div class="erro-sobreposicao" style="display: none; color: red; font-size: 12px;">⚠️ Horário sobreposto!</div>
   `;
   container.appendChild(divBloco);
+  
+  // Adiciona validação de sobreposição
+  const inputInicio = divBloco.querySelector('.horario-inicio');
+  const inputFim = divBloco.querySelector('.horario-fim');
+  
+  [inputInicio, inputFim].forEach(input => {
+    input.addEventListener('change', () => validarSobreposicao(diaId));
+  });
+  
   const btnRemove = divBloco.querySelector('.btn-remove-slot');
   if (btnRemove) {
     btnRemove.addEventListener('click', (e) => {
       if (container.childElementCount > 1) {
         e.target.closest('.slot-horario').remove();
+        validarSobreposicao(diaId);
       } else {
         alert("Para não atender neste dia, desative o botão na parte superior.");
       }
     });
   }
+  
+  // Valida após adicionar
+  setTimeout(() => validarSobreposicao(diaId), 100);
 }
 
-// Salva horários e intervalo
+// Valida sobreposição de horários
+function validarSobreposicao(diaId) {
+  const blocos = document.querySelectorAll(`#blocos-${diaId} .bloco-horario`);
+  const horarios = [];
+  let temSobreposicao = false;
+  
+  // Coleta todos os horários
+  blocos.forEach((bloco, index) => {
+    const inicio = bloco.querySelector('.horario-inicio').value;
+    const fim = bloco.querySelector('.horario-fim').value;
+    const erroDiv = bloco.querySelector('.erro-sobreposicao');
+    
+    erroDiv.style.display = 'none';
+    bloco.classList.remove('erro');
+    
+    if (inicio && fim) {
+      if (inicio >= fim) {
+        erroDiv.textContent = '⚠️ Horário de início deve ser menor que o fim!';
+        erroDiv.style.display = 'block';
+        bloco.classList.add('erro');
+        temSobreposicao = true;
+        return;
+      }
+      
+      horarios.push({ inicio, fim, elemento: bloco, erroDiv, index });
+    }
+  });
+  
+  // Verifica sobreposições
+  for (let i = 0; i < horarios.length; i++) {
+    for (let j = i + 1; j < horarios.length; j++) {
+      const h1 = horarios[i];
+      const h2 = horarios[j];
+      
+      // Verifica se há sobreposição
+      if ((h1.inicio < h2.fim && h1.fim > h2.inicio)) {
+        h1.erroDiv.style.display = 'block';
+        h2.erroDiv.style.display = 'block';
+        h1.elemento.classList.add('erro');
+        h2.elemento.classList.add('erro');
+        temSobreposicao = true;
+      }
+    }
+  }
+  
+  return !temSobreposicao;
+}
+
+// Salva horários e intervalo com validação
 async function handleFormSubmit(event) {
   event.preventDefault();
+  
+  // Valida todos os dias antes de salvar
+  let temErros = false;
+  diasDaSemana.forEach(dia => {
+    const ativoInput = document.getElementById(`${dia.id}-ativo`);
+    if (ativoInput && ativoInput.checked) {
+      if (!validarSobreposicao(dia.id)) {
+        temErros = true;
+      }
+    }
+  });
+  
+  if (temErros) {
+    alert('Corrija os horários com sobreposição antes de salvar!');
+    return;
+  }
+  
   const btnSalvar = document.querySelector('#form-horarios .btn-submit');
   if (btnSalvar) {
     btnSalvar.disabled = true;
@@ -228,6 +371,133 @@ async function handleFormSubmit(event) {
     }
   }
 }
+
+// Funções para edição do profissional
+window.editarNomeProfissional = async function() {
+  const novoNome = prompt('Digite o novo nome:', profissionalData?.nome || '');
+  if (novoNome && novoNome.trim()) {
+    try {
+      await updateDoc(profissionalRef, { nome: novoNome.trim() });
+      profissionalData.nome = novoNome.trim();
+      renderizarCabecalhoProfissional();
+      alert('Nome atualizado com sucesso!');
+    } catch (error) {
+      alert('Erro ao atualizar nome: ' + error.message);
+    }
+  }
+};
+
+window.editarFotoProfissional = async function() {
+  const novaFoto = prompt('Digite a URL da nova foto:', profissionalData?.foto || '');
+  if (novaFoto && novaFoto.trim()) {
+    try {
+      await updateDoc(profissionalRef, { foto: novaFoto.trim() });
+      profissionalData.foto = novaFoto.trim();
+      renderizarCabecalhoProfissional();
+      alert('Foto atualizada com sucesso!');
+    } catch (error) {
+      alert('Erro ao atualizar foto: ' + error.message);
+    }
+  }
+};
+
+window.editarServicosProfissional = async function() {
+  const servicosAtuais = profissionalData?.servicos || [];
+  const servicosTexto = servicosAtuais.join(', ');
+  const novosServicos = prompt('Digite os serviços separados por vírgula:', servicosTexto);
+  
+  if (novosServicos !== null) {
+    const servicosArray = novosServicos.split(',').map(s => s.trim()).filter(s => s);
+    try {
+      await updateDoc(profissionalRef, { servicos: servicosArray });
+      profissionalData.servicos = servicosArray;
+      renderizarCabecalhoProfissional();
+      alert('Serviços atualizados com sucesso!');
+    } catch (error) {
+      alert('Erro ao atualizar serviços: ' + error.message);
+    }
+  }
+};
+
+window.toggleStatusProfissional = async function() {
+  const ativo = profissionalData?.ativo !== false;
+  const novoStatus = !ativo;
+  const acao = novoStatus ? 'ativar' : 'desativar';
+  
+  if (confirm(`Tem certeza que deseja ${acao} este profissional?`)) {
+    try {
+      await updateDoc(profissionalRef, { ativo: novoStatus });
+      profissionalData.ativo = novoStatus;
+      renderizarCabecalhoProfissional();
+      alert(`Profissional ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`);
+    } catch (error) {
+      alert('Erro ao alterar status: ' + error.message);
+    }
+  }
+};
+
+window.excluirProfissional = async function() {
+  const nome = profissionalData?.nome || 'este profissional';
+  if (confirm(`Tem certeza que deseja EXCLUIR ${nome}? Esta ação não pode ser desfeita!`)) {
+    if (confirm('CONFIRMAÇÃO FINAL: Todos os dados serão perdidos permanentemente!')) {
+      try {
+        await deleteDoc(profissionalRef);
+        alert('Profissional excluído com sucesso!');
+        document.getElementById('modal-perfil-profissional').style.display = 'none';
+        // Recarrega a lista de profissionais se existir
+        if (window.carregarProfissionais) {
+          window.carregarProfissionais();
+        }
+      } catch (error) {
+        alert('Erro ao excluir profissional: ' + error.message);
+      }
+    }
+  }
+};
+
+window.sincronizarCalendario = async function() {
+  // Implementação básica - pode ser expandida conforme necessidade
+  const opcoes = [
+    'Google Calendar',
+    'Outlook',
+    'Apple Calendar',
+    'Calendário Personalizado'
+  ];
+  
+  let escolha = '';
+  opcoes.forEach((opcao, index) => {
+    escolha += `${index + 1}. ${opcao}\n`;
+  });
+  
+  const selecao = prompt(`Escolha o calendário para sincronizar:\n${escolha}\nDigite o número:`);
+  
+  if (selecao && selecao >= 1 && selecao <= opcoes.length) {
+    const calendarioEscolhido = opcoes[selecao - 1];
+    
+    try {
+      // Salva a configuração de sincronização
+      await updateDoc(profissionalRef, { 
+        sincronizacaoCalendario: {
+          tipo: calendarioEscolhido,
+          ativo: true,
+          dataConfiguracao: new Date().toISOString()
+        }
+      });
+      
+      alert(`Sincronização com ${calendarioEscolhido} configurada! 
+      
+Próximos passos:
+1. Configure as credenciais de acesso
+2. Defina a frequência de sincronização
+3. Teste a conexão
+
+Entre em contato com o suporte para finalizar a configuração.`);
+      
+    } catch (error) {
+      alert('Erro ao configurar sincronização: ' + error.message);
+    }
+  }
+};
 
 // Torna global para integração com equipe.js
 window.abrirModalPerfilProfissional = abrirModalPerfilProfissional;
