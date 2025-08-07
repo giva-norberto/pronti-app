@@ -15,16 +15,17 @@ const diasDaSemana = [
 let empresaId = null;
 let profissionalRef = null;
 
+// Função principal do modal
 export async function abrirModalPerfilProfissional(profissionalId) {
-  // Adiciona log para debug
   console.log("[ModalPerfil] profissionalId recebido:", profissionalId);
 
-  // Proteção: garantir que seja string
+  // Corrige se vier o objeto inteiro
   if (typeof profissionalId === "object" && profissionalId !== null && profissionalId.id) {
     profissionalId = profissionalId.id;
     console.log("[ModalPerfil] Corrigido profissionalId para:", profissionalId);
   }
 
+  // Proteção: garantir que seja string
   if (!profissionalId || typeof profissionalId !== "string") {
     alert("ID de profissional inválido! Valor recebido: " + JSON.stringify(profissionalId));
     return;
