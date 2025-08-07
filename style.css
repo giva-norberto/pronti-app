@@ -1,206 +1,275 @@
+/* CSS geral do Pronti revisado e completo para a tela de equipe */
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #f6f7fb;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #22223b;
+    min-height: 100vh;
+}
+
 /* Sidebar */
 .sidebar {
-  width: 260px;
-  background: #fff;
-  box-shadow: 2px 0 10px #eee;
-  position: fixed;
-  height: 100vh;
-  padding: 40px 0 0 0;
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-  font-size: 1.12rem; /* Maior fonte */
+    width: 250px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 30px 20px;
+    border-radius: 0 15px 15px 0;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    z-index: 10;
 }
+
 .sidebar-brand {
-  color: #7b4cff;
-  font-size: 2.2rem;
-  font-weight: bold;
-  text-decoration: none;
-  margin-left: 32px;
-  margin-bottom: 8px;
-  display: block;
+    margin-bottom: 30px;
+    font-weight: 700;
+    font-size: 1.6rem;
 }
+
 .sidebar-links {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-top: 32px;
-  padding: 0 32px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
+
 .sidebar-links a {
-  background: #f8f8fa;
-  border-radius: 10px;
-  padding: 18px 26px;
-  color: #222;
-  text-decoration: none;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-  font-size: 1.1em;
-  letter-spacing: 0.02em;
-  border: none;
-  box-shadow: none;
+    color: white;
+    text-decoration: none;
+    padding: 15px 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: background-color 0.3s;
+    display: block;
+    font-weight: 500;
 }
+
 .sidebar-links a.active,
 .sidebar-links a:hover {
-  background: #7b4cff;
-  color: #fff;
-  box-shadow: 0 2px 8px #d6d2f8;
+    background-color: rgba(255,255,255,0.20);
 }
 
-/* Footer */
-.sidebar-footer {
-  margin-top: auto;
-  padding: 32px;
-  border-top: 1px solid #eee;
-}
-.btn-logout {
-  background: #fff0f0;
-  color: #d32b2b;
-  border: none;
-  border-radius: 10px;
-  padding: 16px 28px;
-  font-weight: bold;
-  font-size: 1.08em;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-logout:hover {
-  background: #ffd6d6;
-}
-
-/* Main content */
+/* Conteúdo Principal */
 .main-content {
-  margin-left: 280px; /* para compensar sidebar maior */
-  padding: 48px 32px;
-  min-height: 100vh;
-  background: #f6f7fb;
-  font-size: 1.12rem;
+    margin-left: 270px;
+    padding: 36px 40px;
+    min-height: 100vh;
+    background: #f6f8fa;
+    transition: margin-left 0.2s;
 }
 
-h1 {
-  font-size: 2rem;
-  margin-bottom: 20px;
+.header h1 {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
-/* Card de cliente */
-.cliente-item {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 16px #eee;
-  padding: 24px;
-  margin-bottom: 22px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.12rem;
-}
-.item-info h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-.item-acoes {
-  display: flex;
-  gap: 18px;
-}
-.btn-excluir {
-  background: #f54b4b;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 22px;
-  font-weight: bold;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-excluir:hover {
-  background: #d32b2b;
-}
-.btn-ver-historico {
-  background: #7b4cff;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 22px;
-  font-weight: bold;
-  font-size: 1em;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-ver-historico:hover {
-  background: #5229bc;
+.header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.25);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  font-size: 1.12rem;
-}
-.modal-overlay.ativo {
-  display: flex;
-}
-.modal-box {
-  background: #fff;
-  border-radius: 12px;
-  padding: 40px 36px;
-  box-shadow: 0 4px 24px #aaa9;
-  min-width: 340px;
-  max-width: 95vw;
-  font-size: 1.1rem;
-}
-.modal-botoes {
-  margin-top: 22px;
-  display: flex;
-  gap: 18px;
-  justify-content: flex-end;
-}
-.btn-modal {
-  padding: 14px 24px;
-  border-radius: 8px;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 1.1em;
-}
-.btn-confirmar {
-  background: #f54b4b;
-  color: #fff;
-}
-.btn-cancelar {
-  background: #eee;
-  color: #222;
-}
-.btn-confirmar:hover {
-  background: #d32b2b;
-}
-.btn-cancelar:hover {
-  background: #ccc;
+.actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
-/* Botão novo cliente */
-.btn-new {
-  display: inline-block;
-  background: #7b4cff;
-  color: #fff;
-  border-radius: 10px;
-  padding: 16px 32px;
-  font-weight: bold;
-  font-size: 1.12rem;
-  text-decoration: none;
-  margin-bottom: 24px;
-  transition: background 0.2s;
+/* Botões */
+.btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: box-shadow 0.3s, transform 0.2s;
+    box-shadow: 0 2px 8px #d6d2f8;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
-.btn-new:hover {
-  background: #5229bc;
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+}
+
+.equipe-btn-novo {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.equipe-btn-excluir {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+
+.btn-perfil-profissional {
+    margin-left: auto;
+    margin-top: 0.5rem;
+}
+
+/* Lista de Equipe */
+.equipe-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 700px;
+    margin: 0 auto;
+    margin-bottom: 40px;
+}
+
+/* Card do Profissional */
+.profissional-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: box-shadow 0.3s, transform 0.2s;
+}
+
+.profissional-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.profissional-foto img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid #4facfe;
+    object-fit: cover;
+    background: #f6f8fa;
+}
+
+.profissional-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.profissional-nome {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #2c3e50;
+}
+
+.profissional-status {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 4px 14px;
+    font-size: 0.92rem;
+    font-weight: 500;
+    margin-top: 6px;
+    display: inline-block;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #7f8c8d;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+/* Modal padrão */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+.modal.show {
+    display: flex !important;
+}
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    transform: scale(0.95);
+    animation: modalShow 0.3s ease forwards;
+}
+@keyframes modalShow {
+    to { transform: scale(1); }
+}
+
+/* Responsivo */
+@media (max-width: 900px) {
+    .main-content { margin-left: 0; padding: 24px 10px; }
+    .equipe-lista { max-width: 98vw; }
+    .sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;}
+}
+
+@media (max-width: 600px) {
+    .profissional-card { padding: 14px 5vw; flex-direction: column; align-items: flex-start; }
+    .main-content { padding: 12px 2vw; }
+    .modal-content { padding: 30px 10px; margin: 20px; max-width: 98vw; }
+}
+
+/* Estilos extras para formulário, se necessário */
+.form-group {
+    margin-bottom: 25px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+.form-control:focus {
+    outline: none;
+    border-color: #4facfe;
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+}
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    margin-top: 30px;
 }
