@@ -1,41 +1,39 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gerenciamento de Equipe</title>
-    <link rel="stylesheet" href="style.css">
+    <link href="equipe.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <!-- Sidebar moderna -->
-    <nav class="sidebar" aria-label="Menu lateral principal">
-        <h2 class="sidebar-brand">Pronti</h2>
-        <div class="sidebar-links">
-            <a href="dashboard.html" class="active">🏠 Dashboard</a>
-            <a href="perfil.html">🏢 Perfil</a>
-            <a href="equipe.html">👥 Equipe</a>
-            <a href="agenda.html">📅 Agenda</a>
-            <a href="configuracoes.html">⚙️ Configurações</a>
-            <a href="logout.html">🚪 Sair</a>
-        </div>
+    <!-- Sidebar equipe -->
+    <nav class="equipe-sidebar" aria-label="Menu lateral principal">
+        <h2>Pronti</h2>
+        <a href="dashboard.html">🏠 Dashboard</a>
+        <a href="perfil.html">🏢 Perfil</a>
+        <a href="equipe.html" class="active">👥 Equipe</a>
+        <a href="agenda.html">📅 Agenda</a>
+        <a href="configuracoes.html">⚙️ Configurações</a>
+        <a href="logout.html">🚪 Sair</a>
     </nav>
 
-    <div class="container">
-        <div class="header">
+    <div class="equipe-container">
+        <div class="equipe-header">
             <h1>👥 Gerenciamento de Equipe</h1>
             <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
         </div>
 
-        <div class="content main-content">
-            <div class="actions">
+        <div class="equipe-main-content">
+            <div class="equipe-actions">
                 <h2>Minha Equipe</h2>
-                <button id="btn-add-profissional" class="btn equipe-btn-novo" disabled>
+                <button id="btn-add-profissional" class="equipe-btn equipe-btn-novo" disabled>
                     ➕ Adicionar Profissional
                 </button>
             </div>
 
-            <div id="lista-profissionais-painel" class="equipe-grid">
-                <div class="empty-state">
+            <div id="lista-profissionais-painel" class="equipe-lista">
+                <div class="equipe-empty-state">
                     <h3>Carregando equipe...</h3>
                     <p>Por favor, aguarde enquanto carregamos os dados da sua equipe.</p>
                 </div>
@@ -44,9 +42,9 @@
     </div>
 
     <!-- Modal Adicionar Profissional -->
-    <div id="modal-add-profissional" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="modal-add-profissional" class="equipe-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="equipe-modal-content">
+            <div class="equipe-modal-header">
                 <h2 id="modal-title">➕ Adicionar Novo Profissional</h2>
                 <p>Preencha os dados do novo membro da equipe</p>
             </div>
@@ -78,10 +76,10 @@
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" id="btn-cancelar-profissional" class="btn equipe-btn-excluir">
+                    <button type="button" id="btn-cancelar-profissional" class="equipe-btn equipe-btn-excluir">
                         ❌ Cancelar
                     </button>
-                    <button type="submit" class="btn equipe-btn-novo btn-submit">
+                    <button type="submit" class="equipe-btn equipe-btn-novo equipe-btn-submit">
                         💾 Salvar Profissional
                     </button>
                 </div>
@@ -89,25 +87,25 @@
         </div>
     </div>
 
-    <!-- Modal Perfil Profissional (com tabs e melhorias do usuário) -->
-    <div id="modal-perfil-profissional" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-perfil-title">
-        <div class="modal-content profile-modal">
-            <div class="modal-header">
+    <!-- Modal Perfil Profissional com tabs -->
+    <div id="modal-perfil-profissional" class="equipe-modal" role="dialog" aria-modal="true" aria-labelledby="modal-perfil-title">
+        <div class="equipe-modal-content equipe-profile-modal">
+            <div class="equipe-modal-header">
                 <h2 id="modal-perfil-title">👤 Perfil do Profissional</h2>
                 <p id="perfil-profissional-nome"></p>
             </div>
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="horarios">Horários</button>
-                <button class="tab-btn" data-tab="intervalos">Intervalos</button>
-                <button class="tab-btn" data-tab="servicos">Serviços</button>
+            <div class="equipe-tabs">
+                <button class="equipe-tab-btn active" data-tab="horarios">Horários</button>
+                <button class="equipe-tab-btn" data-tab="intervalos">Intervalos</button>
+                <button class="equipe-tab-btn" data-tab="servicos">Serviços</button>
             </div>
-            <div class="tab-content active" id="tab-horarios">
+            <div class="equipe-tab-content active" id="tab-horarios">
                 <!-- Horários preenchidos via JS/Firebase -->
             </div>
-            <div class="tab-content" id="tab-intervalos">
+            <div class="equipe-tab-content" id="tab-intervalos">
                 <!-- Intervalos preenchidos via JS/Firebase -->
             </div>
-            <div class="tab-content" id="tab-servicos">
+            <div class="equipe-tab-content" id="tab-servicos">
                 <!-- Serviços preenchidos via JS/Firebase -->
             </div>
         </div>
