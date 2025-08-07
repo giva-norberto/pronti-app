@@ -1,12 +1,11 @@
-/* CSS geral do Pronti revisado e completo para a tela de equipe */
-
-/* Reset básico */
+/* RESET */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* BODY */
 body {
     background: #f6f7fb;
     font-family: 'Segoe UI', Arial, sans-serif;
@@ -14,109 +13,134 @@ body {
     min-height: 100vh;
 }
 
-/* Sidebar */
+/* SIDEBAR */
 .sidebar {
     width: 250px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
+    color: #fff;
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
     display: flex;
     flex-direction: column;
-    padding: 30px 20px;
-    border-radius: 0 15px 15px 0;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-    z-index: 10;
+    padding: 32px 22px 22px 22px;
+    border-radius: 0 18px 18px 0;
+    box-shadow: 0 16px 32px rgba(0,0,0,0.08);
+    z-index: 100;
 }
 
 .sidebar-brand {
-    margin-bottom: 30px;
+    font-size: 1.85rem;
     font-weight: 700;
-    font-size: 1.6rem;
+    margin-bottom: 26px;
+    letter-spacing: 0.5px;
 }
 
 .sidebar-links {
-    flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 4px;
+    flex: 1;
 }
 
 .sidebar-links a {
-    color: white;
+    color: #fff;
     text-decoration: none;
-    padding: 15px 10px;
+    padding: 13px 12px;
     border-radius: 10px;
-    margin-bottom: 10px;
-    transition: background-color 0.3s;
-    display: block;
+    transition: background 0.2s;
     font-weight: 500;
+    font-size: 1.04rem;
+    margin-bottom: 4px;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .sidebar-links a.active,
 .sidebar-links a:hover {
-    background-color: rgba(255,255,255,0.20);
+    background: rgba(255,255,255,0.22);
 }
 
-/* Conteúdo Principal */
+/* MAIN CONTENT */
 .main-content {
     margin-left: 270px;
-    padding: 36px 40px;
-    min-height: 100vh;
+    padding: 44px 48px 30px 48px;
     background: #f6f8fa;
+    min-height: 100vh;
     transition: margin-left 0.2s;
 }
 
+.header {
+    margin-bottom: 18px;
+}
+
 .header h1 {
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     font-weight: bold;
-    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+    color: #2d3250;
 }
 
 .header p {
-    font-size: 1.1rem;
-    opacity: 0.9;
+    font-size: 1.16rem;
+    opacity: 0.88;
+    color: #4a4e69;
 }
 
 .actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    gap: 15px;
+    margin-bottom: 28px;
+    gap: 14px;
     flex-wrap: wrap;
 }
 
-/* Botões */
+.actions h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3250;
+}
+
+/* BUTTONS */
 .btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    color: #fff;
     border: none;
-    padding: 12px 24px;
+    padding: 13px 28px;
     border-radius: 25px;
     cursor: pointer;
-    font-size: 1rem;
     font-weight: 500;
-    transition: box-shadow 0.3s, transform 0.2s;
+    font-size: 1.08rem;
     box-shadow: 0 2px 8px #d6d2f8;
-    text-decoration: none;
+    transition: box-shadow 0.3s, transform 0.2s, background 0.18s;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
+    outline: none;
 }
 
 .btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 12px 30px rgba(102,126,234,0.16);
+    background: linear-gradient(135deg, #6e8efb 0%, #a777e3 100%);
 }
 
 .equipe-btn-novo {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
 }
+.equipe-btn-novo:hover {
+    background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+}
 
 .equipe-btn-excluir {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+.equipe-btn-excluir:hover {
+    background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
 }
 
 .btn-perfil-profissional {
@@ -124,36 +148,36 @@ body {
     margin-top: 0.5rem;
 }
 
-/* Lista de Equipe */
+/* EQUIPE LISTA */
 .equipe-lista {
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    max-width: 700px;
+    gap: 29px;
+    max-width: 650px;
     margin: 0 auto;
-    margin-bottom: 40px;
+    margin-bottom: 42px;
 }
 
-/* Card do Profissional */
+/* PROFISSIONAL CARD */
 .profissional-card {
     background: #fff;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-    padding: 24px 32px;
+    border-radius: 16px;
+    box-shadow: 0 5px 18px #6366f120;
+    padding: 26px 34px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 22px;
     transition: box-shadow 0.3s, transform 0.2s;
 }
 
 .profissional-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 15px 36px rgba(102,126,234,0.17), 0 5px 18px #6366f120;
 }
 
 .profissional-foto img {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     border: 3px solid #4facfe;
     object-fit: cover;
@@ -168,21 +192,23 @@ body {
 
 .profissional-nome {
     font-weight: 700;
-    font-size: 1.15rem;
+    font-size: 1.17rem;
     color: #2c3e50;
+    margin-bottom: 3px;
 }
 
 .profissional-status {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
+    color: #fff;
     border-radius: 10px;
     padding: 4px 14px;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-weight: 500;
     margin-top: 6px;
     display: inline-block;
 }
 
+/* EMPTY STATE */
 .empty-state {
     text-align: center;
     padding: 60px 20px;
@@ -200,7 +226,7 @@ body {
     line-height: 1.6;
 }
 
-/* Modal padrão */
+/* MODAL */
 .modal {
     display: none;
     position: fixed;
@@ -216,60 +242,69 @@ body {
     display: flex !important;
 }
 .modal-content {
-    background: white;
+    background: #fff;
     border-radius: 20px;
     padding: 40px;
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-    transform: scale(0.95);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.23);
     animation: modalShow 0.3s ease forwards;
 }
 @keyframes modalShow {
-    to { transform: scale(1); }
+    from { transform: scale(0.95); opacity: 0.8;}
+    to { transform: scale(1); opacity: 1;}
 }
 
-/* Responsivo */
-@media (max-width: 900px) {
-    .main-content { margin-left: 0; padding: 24px 10px; }
-    .equipe-lista { max-width: 98vw; }
-    .sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;}
-}
-
-@media (max-width: 600px) {
-    .profissional-card { padding: 14px 5vw; flex-direction: column; align-items: flex-start; }
-    .main-content { padding: 12px 2vw; }
-    .modal-content { padding: 30px 10px; margin: 20px; max-width: 98vw; }
-}
-
-/* Estilos extras para formulário, se necessário */
+/* FORMULÁRIO */
 .form-group {
     margin-bottom: 25px;
 }
+
 .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
     color: #2c3e50;
 }
+
 .form-control {
     width: 100%;
     padding: 12px 15px;
     border: 2px solid #e1e8ed;
     border-radius: 10px;
     font-size: 1rem;
-    transition: all 0.3s ease;
-}
-.form-control:focus {
     outline: none;
-    border-color: #4facfe;
-    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+    transition: all 0.3s ease;
+    background: #f6f8fa;
 }
+
+.form-control:focus {
+    border-color: #4facfe;
+    box-shadow: 0 0 0 3px rgba(79,172,254,0.13);
+}
+
 .form-actions {
     display: flex;
     gap: 15px;
     justify-content: flex-end;
     margin-top: 30px;
+}
+
+/* RESPONSIVO */
+@media (max-width: 900px) {
+    .main-content { margin-left: 0; padding: 22px 8px; }
+    .equipe-lista { max-width: 98vw; }
+    .sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 18px 8px;}
+}
+
+@media (max-width: 600px) {
+    .profissional-card {
+        padding: 12px 2vw;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .main-content { padding: 10px 1vw; }
+    .modal-content { padding: 24px 6px; margin: 10px; max-width: 98vw; }
 }
