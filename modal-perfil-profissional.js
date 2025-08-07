@@ -20,8 +20,8 @@ export async function abrirModalPerfilProfissional(profissionalId) {
   const modal = document.getElementById('modal-perfil-profissional');
   modal.style.display = 'block';
 
-  // Fecha modal
-  document.getElementById('btn-fechar-modal-perfil').onclick = () => {
+  // Botão Voltar/Fechar
+  document.getElementById('btn-voltar-modal-perfil').onclick = () => {
     modal.style.display = 'none';
   };
 
