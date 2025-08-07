@@ -1,6 +1,6 @@
 /**
  * equipe.js - Sistema de gerenciamento de equipe
- * Utiliza o CSS geral do Pronti (classes como equipe-lista, equipe-btn-novo, profissional-card etc)
+ * Usa o CSS geral do Pronti (equipe-lista, equipe-btn-novo, profissional-card etc)
  * Modal de perfil do profissional, clique no card abre modal de perfil com abas
  */
 
