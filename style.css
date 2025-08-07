@@ -102,10 +102,13 @@ body {
     gap: 15px;
 }
 
-/* BOTÕES DO SISTEMA - PADRÃO PRONTI */
-.btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+/* BOTÕES DO SISTEMA - PADRÃO PRONTI (TODAS AS VARIANTES) */
+.btn,
+.btn-novo, .btn-new, .equipe-btn-novo,
+.btn-editar, .btn-edit,
+.btn-excluir, .btn-delete, .btn-logout, .equipe-btn-excluir,
+.btn-confirmar, .btn-confirm,
+.btn-submit, .btn-primary {
     border: none;
     padding: 12px 24px;
     border-radius: 25px;
@@ -119,81 +122,71 @@ body {
     gap: 8px;
     box-shadow: 0 2px 8px #d6d2f8;
 }
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
-}
 
-
-/* BOTÃO NOVO - AZUL PRONTI */
-.btn-novo, .equipe-btn-novo {
+/* BOTÃO AZUL PADRÃO PRONTI */
+.btn,
+.btn-novo, .btn-new, .equipe-btn-novo {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: #22223b;
 }
-.btn-novo:hover, .equipe-btn-novo:hover {
+.btn:hover,
+.btn-novo:hover, .btn-new:hover, .equipe-btn-novo:hover {
     background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
     color: #22223b;
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
 }
 
-/* BOTÃO EDITAR - AMARELO GRADIENTE */
-.btn-editar {
+/* BOTÃO AMARELO - EDITAR */
+.btn-editar, .btn-edit {
     background: linear-gradient(135deg, #ffd600 0%, #ffae00 100%);
     color: #22223b;
 }
-.btn-editar:hover {
+.btn-editar:hover, .btn-edit:hover {
     background: linear-gradient(135deg, #ffe57f 0%, #ffd600 100%);
     color: #22223b;
 }
 
-/* BOTÃO EXCLUIR - VERMELHO GRADIENTE */
-.btn-excluir, .equipe-btn-excluir {
+/* BOTÃO VERMELHO - EXCLUIR/SAIR */
+.btn-excluir, .btn-delete, .btn-logout, .equipe-btn-excluir {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     color: #fff;
 }
-.btn-excluir:hover, .equipe-btn-excluir:hover {
+.btn-excluir:hover, .btn-delete:hover, .btn-logout:hover, .equipe-btn-excluir:hover {
     background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
     color: #fff;
 }
 
-/* BOTÃO SUBMIT - FORMULÁRIOS */
-.btn-submit {
+/* BOTÃO VERDE - CONFIRMAR */
+.btn-confirmar, .btn-confirm {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: #fff;
+}
+.btn-confirmar:hover, .btn-confirm:hover {
+    background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%);
+    color: #fff;
+}
+
+/* BOTÃO SUBMIT/PRINCIPAL */
+.btn-submit, .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border: none;
     border-radius: 25px;
     padding: 14px 0;
     font-weight: bold;
     font-size: 1.15rem;
-    cursor: pointer;
-    box-shadow: 0 2px 8px #d6d2f8;
     width: 100%;
     margin-top: 18px;
     transition: background 0.2s, box-shadow 0.2s;
     display: block;
 }
-.btn-submit:hover {
+.btn-submit:hover, .btn-primary:hover {
     background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
-/* BOTÃO PERFIL PROFISSIONAL */
-.btn-perfil-profissional {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: #fff;
-    border-radius: 25px;
-    border: none;
-    padding: 11px 22px;
-    font-weight: 500;
-    box-shadow: 0 3px 15px #4facfe44;
-    transition: box-shadow 0.2s, transform 0.18s, background 0.2s;
-}
-.btn-perfil-profissional:hover {
-    transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 12px 30px #4facfe33;
-    background: linear-gradient(135deg, #4facfe 0%, #5ee7df 100%);
-}
-
 /* BOTÃO DESABILITADO */
-.btn:disabled, .btn-novo:disabled, .btn-editar:disabled, .btn-excluir:disabled, .btn-submit:disabled {
+.btn:disabled, .btn-novo:disabled, .btn-new:disabled, .btn-editar:disabled, .btn-edit:disabled,
+.btn-excluir:disabled, .btn-delete:disabled, .btn-logout:disabled, .btn-confirmar:disabled, .btn-submit:disabled, .btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
