@@ -285,3 +285,112 @@ function gerarGraficoFaturamento(servicosMap, agendamentos) {
     }
   });
 }
+// dashboard-completo.js
+// ============================================================
+// 🔹 Inicialização do Firebase (v10.7.1 via CDN)
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+// 🔹 Configuração do seu projeto Firebase
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY",
+  authDomain: "SUA_AUTH_DOMAIN",
+  projectId: "SUA_PROJECT_ID",
+  storageBucket: "SUA_STORAGE_BUCKET",
+  messagingSenderId: "SUA_MESSAGING_SENDER_ID",
+  appId: "SUA_APP_ID"
+};
+
+// Inicializa Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// ============================================================
+// 🔹 Inteligência - Resumo Diário
+// ============================================================
+function gerarResumoDiarioInteligente(agendamentos) {
+  if (!agendamentos || agendamentos.length === 0) {
+    return "Nenhum agendamento para hoje.";
+  }
+
+  const total = agendamentos.length;
+  const servicos = {};
+  let totalFaturamento = 0;
+
+  agendamentos.forEach(a => {
+    servicos[a.servico] = (servicos[a.servico] || 0) + 1;
+    totalFaturamento += a.preco || 0;
+  });
+
+  const servicoMaisAgendado = Object.entries(servicos)
+    .sort((a, b) => b[1] - a[1])[0][0];
+
+  return `Hoje você tem ${total} agendamentos. O serviço mais procurado é "${servicoMaisAgendado}". Faturamento previsto: R$ ${totalFaturamento.toFixed(2)}.`;
+}
+
+// ============================================================
+// 🔹 Dashboard - Carregamento e Filtros
+// ============================================================
+
+// Seletores
+const resumoContainer = document.getElementById("resumo-diario-container");
+const filtroMesInicio = document.getElementById("filtro-mes-inicio");
+const filtroAnoInicio = document.getElementById("filtro-ano-inicio");
+const filtroMesFim = document.getElementById("filtro-mes-fim");
+const filtroAnoFim = document.getElementById("filtro-ano-fim");
+
+// Preencher filtros de ano dinamicamente
+function preencherAnos() {
+  const anoAtual = new Date().getFullYear();
+  for (let ano = anoAtual; ano >= anoAtual - 5; ano--) {
+    const optInicio = document.createElement("option");
+    optInicio.value = ano;
+    optInicio.textContent = ano;
+    filtroAnoInicio.appendChild(optInicio);
+
+    const optFim = document.createElement("option");
+    optFim.value = ano;
+    optFim.textContent = ano;
+    filtroAnoFim.appendChild(optFim);
+  }
+}
+preencherAnos();
+
+// Função para buscar agendamentos do dia
+async function carregarResumoDoDia(uidEmpresa) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const amanha = new Date(hoje);
+  amanha.setDate(amanha.getDate() + 1);
+
+  const q = query(
+    collection(db, "agendamentos"),
+    where("empresaId", "==", uidEmpresa),
+    where("data", ">=", Timestamp.fromDate(hoje)),
+    where("data", "<", Timestamp.fromDate(amanha)),
+    orderBy("data", "asc")
+  );
+
+  const snap = await getDocs(q);
+  const agendamentos = snap.docs.map(doc => doc.data());
+  resumoContainer.textContent = gerarResumoDiarioInteligente(agendamentos);
+}
+
+// ============================================================
+// 🔹 Autenticação e Inicialização
+// ============================================================
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    resumoContainer.textContent = "Faça login para ver seus dados.";
+    return;
+  }
+
+  await carregarResumoDoDia(user.uid);
+  // Aqui você pode chamar funções para carregar gráficos
+});
