@@ -90,6 +90,11 @@ body {
     background: linear-gradient(135deg, #a8a8a8 0%, #7f8c8d 100%);
 }
 
+.btn-edit {
+    background: linear-gradient(135deg, #ffb74d 0%, #ffa726 100%);
+    color: #2c3e50;
+}
+
 .equipe-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -305,10 +310,14 @@ body {
     padding: 8px 16px;
     font-size: 0.9rem;
 }
+.btn-edit {
+    margin-left: 8px;
+}
 .profissional-actions {
     display: flex;
     justify-content: flex-end;
     margin-top: 10px;
+    gap: 8px;
 }
 @media (max-width: 768px) {
     .container {
