@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-// Se você tem o arquivo firebase-config.js, mantenha. Senão, defina aqui:
+
+// --- Firebase Config --- (coloque seus dados reais aqui)
 const firebaseConfig = {
   apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -29,12 +30,10 @@ async function carregarDashboard(uid) {
   try {
     const servicosCollection = collection(db, "users", uid, "servicos");
     const agendamentosCollection = collection(db, "users", uid, "agendamentos");
-
     const [servicosSnapshot, agendamentosSnapshot] = await Promise.all([
       getDocs(servicosCollection),
       getDocs(agendamentosCollection)
     ]);
-
     const agendamentos = agendamentosSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
     const servicosMap = new Map();
     servicosSnapshot.forEach(doc => {
@@ -46,7 +45,6 @@ async function carregarDashboard(uid) {
     if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
     if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
     if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
-
   } catch (error) {
     console.error("Erro ao carregar dados do dashboard:", error);
     const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content');
@@ -56,7 +54,7 @@ async function carregarDashboard(uid) {
   }
 }
 
-// Resumo IA
+// ========= IA Resumo =========
 function processarResumoIA(todosAgendamentos, servicosMap) {
   const container = document.getElementById('resumo-diario-container');
   if (!container) return;
@@ -68,9 +66,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
   const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
 
   const agendamentosDeHoje = todosAgendamentos.filter(ag => {
-    if (!ag.horario || typeof ag.horario.toDate !== 'function') {
-      return false;
-    }
+    if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
     const dataAgendamento = ag.horario.toDate();
     return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
   });
@@ -93,7 +89,6 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
   container.innerHTML = criarHTMLDoResumo(resumo);
 }
 
-// Função IA
 function gerarResumoDiarioInteligente(agendamentos) {
   if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
     return { totalAtendimentos: 0, mensagem: "Nenhum agendamento para hoje." };
@@ -162,7 +157,7 @@ function criarHTMLDoResumo(resumo) {
   return html;
 }
 
-// GRÁFICOS
+// ========= GRÁFICOS =========
 let graficoMensalInstance = null;
 function gerarGraficoMensal(agendamentos) {
   const filtroMesInicio = document.getElementById('filtro-mes-inicio');
@@ -225,9 +220,7 @@ function gerarGraficoMensal(agendamentos) {
 
     const dados = labelsOrdenados.map(label => contagemMensal[label]);
 
-    if (graficoMensalInstance) {
-      graficoMensalInstance.destroy();
-    }
+    if (graficoMensalInstance) graficoMensalInstance.destroy();
     const ctx = document.getElementById('graficoMensal').getContext('2d');
     graficoMensalInstance = new window.Chart(ctx, {
       type: 'bar',
