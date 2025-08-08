@@ -1,4 +1,4 @@
-import { db, collection, getDocs } from './vitrini-firebase.js';
+import { db, collection, getDocs, query, where } from './vitrini-firebase.js';
 
 const listaServicosDiv = document.getElementById('lista-servicos');
 const detalhesServicoDiv = document.getElementById('detalhes-servico');
@@ -59,21 +59,35 @@ function renderizarDetalhesServicoVitrine(servico) {
 }
 
 /**
- * Busca e carrega os serviços do Firebase para a vitrini
- * Troque o caminho da collection se for por profissional!
+ * Busca e carrega os serviços do Firebase para a vitrine.
+ * Filtra apenas os serviços visíveis na vitrine.
+ * Se profissionalId for fornecido, busca por profissional. Caso contrário, pela empresa.
  */
 export async function carregarServicosVitrine(empresaId, profissionalId = null) {
-    let servicosCol;
-    if (profissionalId) {
-        servicosCol = collection(db, "empresarios", empresaId, "profissionais", profissionalId, "servicos");
-    } else {
-        servicosCol = collection(db, "empresarios", empresaId, "servicos");
+    try {
+        let servicosCol;
+        if (profissionalId) {
+            servicosCol = collection(db, "empresarios", empresaId, "profissionais", profissionalId, "servicos");
+        } else {
+            servicosCol = collection(db, "empresarios", empresaId, "servicos");
+        }
+
+        // Filtra apenas serviços visíveis na vitrine
+        const servicosQuery = query(servicosCol, where("visivelNaVitrine", "==", true));
+        const snap = await getDocs(servicosQuery);
+        const servicos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // LOG para validação!
+        console.log("SERVIÇOS VITRINE:", servicos);
+
+        renderizarServicosVitrine(servicos);
+    } catch (error) {
+        console.error("Erro ao buscar serviços da vitrine:", error);
+        if (listaServicosDiv) {
+            listaServicosDiv.innerHTML = `<p>Erro ao carregar serviços. Tente novamente mais tarde.</p>`;
+        }
+        if (detalhesServicoDiv) {
+            detalhesServicoDiv.innerHTML = '';
+        }
     }
-    const snap = await getDocs(servicosCol);
-    const servicos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // LOG para validação!
-    console.log("SERVIÇOS VITRINE:", servicos);
-
-    renderizarServicosVitrine(servicos);
 }
