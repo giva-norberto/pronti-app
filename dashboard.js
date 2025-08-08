@@ -1,75 +1,39 @@
-// dashboard-completo.js
-// Tudo em um: Firebase v10.7.1 + IA (resumo) + gráficos (Chart.js)
-// ---------------------------------------------------------------
-// Substitua as credenciais em firebaseConfig abaixo antes de publicar.
-// ---------------------------------------------------------------
+// Import Firebase Modular v10+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  Timestamp
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
-// -----------------------------
-// CONFIGURAÇÃO FIREBASE (ATUALIZE)
+// Firebase config - preenchido!
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_AUTH_DOMAIN",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_STORAGE_BUCKET",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
+  authDomain: "pronti-app-37c6e.firebaseapp.com",
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.firebasestorage.app",
+  messagingSenderId: "736700619274",
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
-// -----------------------------
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
-// ---------- Helpers de formatação ----------
+// Funções utilitárias de formatação
 function pad2(n){ return String(n).padStart(2,'0'); }
-function formatHora(date){
-  if(!(date instanceof Date)) return '';
-  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
-}
-function formatDateTime(date){
-  if(!(date instanceof Date)) return '';
-  return `${pad2(date.getDate())}/${pad2(date.getMonth()+1)}/${date.getFullYear()} ${formatHora(date)}`;
-}
+function formatHora(date){ return date instanceof Date ? `${pad2(date.getHours())}:${pad2(date.getMinutes())}` : ''; }
 
-// ======================
-// === IA: Resumo Diário
-// ======================
-/**
- * Recebe uma lista de agendamentos enriquecidos:
- * cada item: { id, cliente: { nome }, servico: { nome, preco }, inicio: Date, fim: Date }
- * Retorna objeto com { totalAtendimentos, mensagem, primeiro, ultimo, faturamentoEstimado, maiorIntervalo }
- */
+// IA: Resumo Diário Inteligente
 function gerarResumoDiarioInteligente(agendamentosEnriquecidos){
   if(!Array.isArray(agendamentosEnriquecidos) || agendamentosEnriquecidos.length === 0){
     return { totalAtendimentos: 0, mensagem: "Nenhum agendamento para hoje." };
   }
-
-  // Ordena por início
   const ord = [...agendamentosEnriquecidos].sort((a,b)=>a.inicio - b.inicio);
-
   const total = ord.length;
   let faturamentoEstimado = 0;
-  const contagemServicos = {};
-
   ord.forEach(a=>{
     const preco = Number(a.servico.preco) || 0;
     faturamentoEstimado += preco;
-    const nomeServ = a.servico.nome || 'Serviço';
-    contagemServicos[nomeServ] = (contagemServicos[nomeServ]||0) + 1;
   });
 
-  // Primeiro e último
   const primeiro = {
     horario: formatHora(ord[0].inicio),
     servico: ord[0].servico.nome || 'Serviço',
@@ -81,7 +45,6 @@ function gerarResumoDiarioInteligente(agendamentosEnriquecidos){
     cliente: ord[ord.length-1].cliente.nome || 'Cliente'
   };
 
-  // Maior intervalo entre agendamentos (considera intervalo entre fim de um e início do próximo)
   let maiorIntervalo = null;
   for(let i=0;i<ord.length-1;i++){
     const fimAtual = ord[i].fim;
@@ -91,8 +54,6 @@ function gerarResumoDiarioInteligente(agendamentosEnriquecidos){
     if(durMin > 0){
       if(!maiorIntervalo || durMin > maiorIntervalo.duracaoMinutos){
         maiorIntervalo = {
-          indexInicio: i,
-          indexFim: i+1,
           duracaoMinutos: durMin,
           inicio: formatHora(fimAtual),
           fim: formatHora(inicioProx)
@@ -113,14 +74,6 @@ function gerarResumoDiarioInteligente(agendamentosEnriquecidos){
   };
 }
 
-// ======================
-// === Funções do DOM & Gráficos
-// ======================
-let graficoMensalInstance = null;
-let graficoServicosInstance = null;
-let graficoFaturamentoInstance = null;
-
-// Cria HTML do resumo (compatível com o seu layout)
 function criarHTMLDoResumo(resumo){
   if(!resumo) return '';
   if (resumo.totalAtendimentos === 0) {
@@ -149,7 +102,11 @@ function criarHTMLDoResumo(resumo){
   return html;
 }
 
-// ---------- Gerar gráfico mensal com filtros ----------
+// Gráficos
+let graficoMensalInstance = null;
+let graficoServicosInstance = null;
+let graficoFaturamentoInstance = null;
+
 function gerarGraficoMensal(agendamentos){
   const filtroMesInicio = document.getElementById('filtro-mes-inicio');
   const filtroAnoInicio = document.getElementById('filtro-ano-inicio');
@@ -158,7 +115,6 @@ function gerarGraficoMensal(agendamentos){
   const canvas = document.getElementById('graficoMensal');
   if(!canvas) return;
 
-  // popula anos se selects existirem e vazios
   const anos = [...new Set(
     agendamentos
       .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
@@ -172,7 +128,6 @@ function gerarGraficoMensal(agendamentos){
       const o1 = document.createElement('option'); o1.value = ano; o1.textContent = ano; filtroAnoInicio.appendChild(o1);
       const o2 = document.createElement('option'); o2.value = ano; o2.textContent = ano; filtroAnoFim.appendChild(o2);
     });
-    // valores padrão modernos: caso o array esteja vazio, usa ano atual
     if(!anos.length){
       const anoAtual = new Date().getFullYear();
       const opt1 = document.createElement('option'); opt1.value = anoAtual; opt1.textContent = anoAtual; filtroAnoInicio.appendChild(opt1);
@@ -180,7 +135,6 @@ function gerarGraficoMensal(agendamentos){
     }
   }
 
-  // define padrões (se existirem)
   if(filtroMesInicio) filtroMesInicio.value = filtroMesInicio.value || '0';
   if(filtroMesFim) filtroMesFim.value = filtroMesFim.value || '11';
   if(filtroAnoInicio) filtroAnoInicio.value = filtroAnoInicio.value || (anos[0] || new Date().getFullYear());
@@ -195,7 +149,7 @@ function gerarGraficoMensal(agendamentos){
     const dataInicio = new Date(inicioAno, inicioMes, 1, 0, 0, 0, 0);
     const dataFim = new Date(fimAno, fimMes, 1);
     dataFim.setMonth(dataFim.getMonth()+1);
-    dataFim.setDate(0); // último dia do mês
+    dataFim.setDate(0);
     dataFim.setHours(23,59,59,999);
 
     const filtrados = agendamentos.filter(ag => ag.horario && typeof ag.horario.toDate === 'function' && (() => {
@@ -210,7 +164,6 @@ function gerarGraficoMensal(agendamentos){
       contagem[mesAno] = (contagem[mesAno] || 0) + 1;
     });
 
-    // ordena por data real
     const labels = Object.keys(contagem).sort((a,b)=>{
       const [mesAStr, anoA] = a.split(' ');
       const [mesBStr, anoB] = b.split(' ');
@@ -223,7 +176,7 @@ function gerarGraficoMensal(agendamentos){
 
     if(graficoMensalInstance) graficoMensalInstance.destroy();
     const ctx = canvas.getContext('2d');
-    graficoMensalInstance = new Chart(ctx, {
+    graficoMensalInstance = new window.Chart(ctx, {
       type: 'bar',
       data: {
         labels,
@@ -235,7 +188,7 @@ function gerarGraficoMensal(agendamentos){
           borderWidth: 1
         }]
       },
-      plugins: (typeof ChartDataLabels !== 'undefined') ? [ChartDataLabels] : [],
+      plugins: (typeof window.ChartDataLabels !== 'undefined') ? [window.ChartDataLabels] : [],
       options: {
         scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
         plugins: {
@@ -247,15 +200,12 @@ function gerarGraficoMensal(agendamentos){
     });
   };
 
-  // listeners
   [filtroMesInicio, filtroAnoInicio, filtroMesFim, filtroAnoFim].forEach(el=>{
     if(el) el.addEventListener('change', atualizarGrafico);
   });
-
   atualizarGrafico();
 }
 
-// ---------- Gerar gráfico de serviços ----------
 function gerarGraficoServicos(servicosMap, agendamentos){
   const canvas = document.getElementById('graficoServicos');
   if(!canvas) return;
@@ -271,7 +221,7 @@ function gerarGraficoServicos(servicosMap, agendamentos){
 
   if(graficoServicosInstance) graficoServicosInstance.destroy();
   const ctx = canvas.getContext('2d');
-  graficoServicosInstance = new Chart(ctx, {
+  graficoServicosInstance = new window.Chart(ctx, {
     type: 'bar',
     data: {
       labels,
@@ -291,7 +241,6 @@ function gerarGraficoServicos(servicosMap, agendamentos){
   });
 }
 
-// ---------- Gerar gráfico de faturamento ----------
 function gerarGraficoFaturamento(servicosMap, agendamentos){
   const canvas = document.getElementById('graficoFaturamento');
   if(!canvas) return;
@@ -310,14 +259,20 @@ function gerarGraficoFaturamento(servicosMap, agendamentos){
 
   if(graficoFaturamentoInstance) graficoFaturamentoInstance.destroy();
   const ctx = canvas.getContext('2d');
-  graficoFaturamentoInstance = new Chart(ctx, {
+  graficoFaturamentoInstance = new window.Chart(ctx, {
     type: 'bar',
     data: {
       labels,
       datasets: [{
         label: 'Faturamento (R$)',
         data,
-        backgroundColor: ['rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)'],
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(75, 192, 192, 0.7)',
+          'rgba(153, 102, 255, 0.7)'
+        ]
       }]
     },
     options: {
@@ -329,12 +284,9 @@ function gerarGraficoFaturamento(servicosMap, agendamentos){
   });
 }
 
-// ======================
-// === Carregar Dashboard
-// ======================
+// Carregar Dashboard
 async function carregarDashboard(uid){
   try{
-    // Coleções dentro do usuário (mesmo padrão que você tinha)
     const servicosCollection = collection(db, "users", uid, "servicos");
     const agendamentosCollection = collection(db, "users", uid, "agendamentos");
 
@@ -347,10 +299,7 @@ async function carregarDashboard(uid){
     const servicosMap = new Map();
     servicosSnapshot.forEach(doc => servicosMap.set(doc.id, doc.data()));
 
-    // processar resumo IA (enriquecer agendamentos com datas e duracao)
     processarResumoIA(agendamentos, servicosMap);
-
-    // gráficos
     if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
     if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
     if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
@@ -372,13 +321,11 @@ function processarResumoIA(todosAgendamentos, servicosMap){
   const inicioDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0,0,0,0);
   const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23,59,59,999);
 
-  // filtra apenas os agendamentos com campo 'horario' (Timestamp)
   const agendamentosDeHoje = todosAgendamentos.filter(ag => ag.horario && typeof ag.horario.toDate === 'function').filter(ag=>{
     const d = ag.horario.toDate();
     return d >= inicioDoDia && d <= fimDoDia;
   });
 
-  // enriquece com inicio/fim e informações do serviço/cliente
   const agendamentosEnriquecidos = agendamentosDeHoje.map(ag=>{
     const servico = servicosMap.get(ag.servicoId);
     if(!servico) return null;
@@ -398,17 +345,12 @@ function processarResumoIA(todosAgendamentos, servicosMap){
   container.innerHTML = criarHTMLDoResumo(resumo);
 }
 
-// ======================
-// === Inicialização (autenticação)
-// ======================
+// Inicialização (autenticação)
 document.addEventListener('DOMContentLoaded', () => {
-  // Garante que Chart (global) esteja pronto — você deve incluir Chart.js antes deste módulo no HTML
   onAuthStateChanged(auth, (user) => {
     if(user){
       carregarDashboard(user.uid);
     } else {
-      // Se não está logado, redireciona (mesmo comportamento do seu original)
-      // Evita redirecionamento automático se estiver em ambiente de dev local sem login:
       try {
         window.location.href = 'login.html';
       } catch(e){
