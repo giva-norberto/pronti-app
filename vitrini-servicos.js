@@ -29,7 +29,6 @@ function renderizarServicosVitrine(servicos) {
         if (detalhesServicoDiv) detalhesServicoDiv.innerHTML = '';
         return;
     }
-
     listaServicosDiv.innerHTML = servicos.map((servico, idx) => `
         <div class="servico-card" data-idx="${idx}">
             <h3>${servico.nome ? servico.nome : '<span style="color:red">Sem nome</span>'}</h3>
