@@ -11,9 +11,9 @@
     <nav class="sidebar" aria-label="Menu lateral principal">
         <h2 class="sidebar-brand">Pronti</h2>
         <div class="sidebar-links">
-            <a href="dashboard.html" class="active">🏠 Dashboard</a>
+            <a href="dashboard.html">🏠 Dashboard</a>
             <a href="perfil.html">🏢 Perfil</a>
-            <a href="equipe.html">👥 Equipe</a>
+            <a href="equipe.html" class="active">👥 Equipe</a>
             <a href="agenda.html">📅 Agenda</a>
             <a href="configuracoes.html">⚙️ Configurações</a>
             <a href="logout.html">🚪 Sair</a>
@@ -27,58 +27,61 @@
         </div>
 
         <div class="content main-content">
-            <div class="actions">
-                <h2>Minha Equipe</h2>
-                <button id="btn-add-profissional" class="btn equipe-btn-novo" disabled>
+            <div class="equipe-card" style="margin: 0 auto; max-width: 450px;">
+                <h2 style="margin-bottom:16px;">Minha Equipe</h2>
+                <button id="btn-add-profissional" class="btn equipe-btn-novo" style="width: 100%; margin-bottom: 22px;">
                     ➕ Adicionar Profissional
                 </button>
-            </div>
-
-            <div id="lista-profissionais-painel" class="equipe-grid">
-                <div class="empty-state">
-                    <h3>Carregando equipe...</h3>
-                    <p>Por favor, aguarde enquanto carregamos os dados da sua equipe.</p>
+                <div id="lista-profissionais-painel">
+                    <!-- Exemplo de profissionais (pode ser gerado por JS) -->
+                    <div class="profissional-card">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <div class="profissional-foto"><img src="https://placehold.co/60x60" alt="Foto"></div>
+                            <div>
+                                <div class="profissional-nome">Givanildo Silva</div>
+                                <span class="profissional-status">Dono</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-perfil-profissional" onclick="openModal('modal-perfil-profissional')">
+                            👤 Perfil
+                        </button>
+                    </div>
+                    <div class="profissional-card">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <div class="profissional-foto"><img src="https://placehold.co/60x60" alt="Foto"></div>
+                            <div>
+                                <div class="profissional-nome">Givanildo Funcionário</div>
+                                <span class="profissional-status">Funcionário</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-perfil-profissional" onclick="openModal('modal-perfil-profissional')">
+                            👤 Perfil
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Adicionar Profissional -->
-    <div id="modal-add-profissional" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <!-- Modal Adicionar Profissional (NUNCA aparece fora!) -->
+    <div id="modal-add-profissional" class="modal" style="display:none;">
         <div class="modal-content">
+            <button onclick="closeModal('modal-add-profissional')" class="btn-fechar-modal" aria-label="Fechar">&times;</button>
             <div class="modal-header">
-                <h2 id="modal-title">➕ Adicionar Novo Profissional</h2>
+                <h2>➕ Adicionar Novo Profissional</h2>
                 <p>Preencha os dados do novo membro da equipe</p>
             </div>
             <form id="form-add-profissional">
                 <div class="form-group">
                     <label for="nome-profissional">Nome Completo *</label>
-                    <input 
-                        type="text" 
-                        id="nome-profissional" 
-                        name="nome" 
-                        class="form-control" 
-                        placeholder="Digite o nome completo do profissional"
-                        required
-                    >
+                    <input type="text" id="nome-profissional" name="nome" class="form-control" required>
                 </div>
-
                 <div class="form-group">
                     <label for="foto-profissional">Foto do Profissional</label>
-                    <input 
-                        type="file" 
-                        id="foto-profissional" 
-                        name="foto" 
-                        class="form-control"
-                        accept="image/*"
-                    >
-                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
-                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
-                    </small>
+                    <input type="file" id="foto-profissional" name="foto" class="form-control" accept="image/*">
                 </div>
-
                 <div class="form-actions">
-                    <button type="button" id="btn-cancelar-profissional" class="btn equipe-btn-excluir">
+                    <button type="button" onclick="closeModal('modal-add-profissional')" class="btn equipe-btn-excluir">
                         ❌ Cancelar
                     </button>
                     <button type="submit" class="btn equipe-btn-novo btn-submit">
@@ -89,33 +92,66 @@
         </div>
     </div>
 
-    <!-- Modal Perfil Profissional (com tabs e melhorias do usuário) -->
-    <div id="modal-perfil-profissional" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-perfil-title">
-        <div class="modal-content profile-modal">
-            <div class="modal-header">
-                <h2 id="modal-perfil-title">👤 Perfil do Profissional</h2>
-                <p id="perfil-profissional-nome"></p>
-            </div>
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="horarios">Horários</button>
-                <button class="tab-btn" data-tab="intervalos">Intervalos</button>
-                <button class="tab-btn" data-tab="servicos">Serviços</button>
-            </div>
-            <div class="tab-content active" id="tab-horarios">
-                <!-- Horários preenchidos via JS/Firebase -->
-            </div>
-            <div class="tab-content" id="tab-intervalos">
-                <!-- Intervalos preenchidos via JS/Firebase -->
-            </div>
-            <div class="tab-content" id="tab-servicos">
-                <!-- Serviços preenchidos via JS/Firebase -->
-            </div>
+    <!-- Modal Perfil Profissional (com horários de atendimento, do jeito que você pediu!) -->
+    <div id="modal-perfil-profissional" class="modal profile-modal" style="display:none;">
+        <button onclick="closeModal('modal-perfil-profissional')" class="btn-fechar-modal" aria-label="Fechar">&times;</button>
+        <div class="modal-header">
+            <h2>👤 Perfil do Profissional</h2>
+            <p id="perfil-profissional-nome"></p>
         </div>
+        <form id="form-horarios-profissional" class="form-card">
+            <div class="form-section">
+                <h3>Meus Horários de Atendimento</h3>
+                <div class="form-group">
+                    <label for="intervalo-atendimento">Intervalo Padrão na Agenda (em minutos)</label>
+                    <input type="number" id="intervalo-atendimento" min="5" step="5" value="30" required class="form-control">
+                </div>
+                <div class="horarios-card" style="background: #f6f7fb; border-radius: 10px; padding: 18px; margin-bottom: 16px;">
+                    <h4 style="margin-bottom:12px;">Horários por Dia da Semana</h4>
+                    <div id="dias-container">
+                        <!-- Preenchido via JS -->
+                        <!-- Exemplo estático para Segunda-feira: -->
+                        <!--
+                        <div class="dia-semana">
+                          <label>
+                            <input type="checkbox" checked> Aberto
+                          </label>
+                          <input type="time" value="09:00"> até <input type="time" value="18:00">
+                          <button type="button" class="btn btn-small">Remover</button>
+                          <button type="button" class="btn btn-small">Adicionar Horário</button>
+                        </div>
+                        -->
+                    </div>
+                </div>
+            </div>
+            <div class="form-actions" style="justify-content:center;">
+                <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 1.05rem; padding: 12px 32px; border-radius: 25px;">
+                    Salvar Todas as Configurações
+                </button>
+            </div>
+        </form>
     </div>
 
-    <!-- Scripts -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="equipe.js"></script>
-    <script type="module" src="modal-perfil-profissional.js"></script>
+    <!-- JS para abrir/fechar modais corretamente -->
+    <script>
+        function openModal(id) {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            document.getElementById(id).style.display = 'flex';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+        document.getElementById('btn-add-profissional').onclick = function() {
+            openModal('modal-add-profissional');
+        };
+        // Exemplo para preencher nome no modal de perfil
+        document.querySelectorAll('.btn-perfil-profissional').forEach((btn, idx) => {
+            btn.onclick = function() {
+                document.getElementById('perfil-profissional-nome').textContent = idx === 0 ? 'Givanildo Silva' : 'Givanildo Funcionário';
+                openModal('modal-perfil-profissional');
+            };
+        });
+        // Botão de fechar modal perfil já está no HTML
+    </script>
 </body>
 </html>
