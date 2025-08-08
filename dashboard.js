@@ -2,7 +2,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// --- Firebase Config --- (coloque seus dados reais aqui)
+// Coloque o config direto aqui ou garanta que o arquivo firebase-config.js existe e está correto!
+// Se usar arquivo, mantenha: import { firebaseConfig } from "./firebase-config.js";
+// Caso não queira arquivo extra, use abaixo:
 const firebaseConfig = {
   apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -30,10 +32,12 @@ async function carregarDashboard(uid) {
   try {
     const servicosCollection = collection(db, "users", uid, "servicos");
     const agendamentosCollection = collection(db, "users", uid, "agendamentos");
+
     const [servicosSnapshot, agendamentosSnapshot] = await Promise.all([
       getDocs(servicosCollection),
       getDocs(agendamentosCollection)
     ]);
+
     const agendamentos = agendamentosSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
     const servicosMap = new Map();
     servicosSnapshot.forEach(doc => {
@@ -45,6 +49,7 @@ async function carregarDashboard(uid) {
     if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
     if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
     if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
+
   } catch (error) {
     console.error("Erro ao carregar dados do dashboard:", error);
     const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content');
@@ -54,7 +59,6 @@ async function carregarDashboard(uid) {
   }
 }
 
-// ========= IA Resumo =========
 function processarResumoIA(todosAgendamentos, servicosMap) {
   const container = document.getElementById('resumo-diario-container');
   if (!container) return;
@@ -66,7 +70,9 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
   const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
 
   const agendamentosDeHoje = todosAgendamentos.filter(ag => {
-    if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
+    if (!ag.horario || typeof ag.horario.toDate !== 'function') {
+      return false;
+    }
     const dataAgendamento = ag.horario.toDate();
     return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
   });
@@ -89,14 +95,15 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
   container.innerHTML = criarHTMLDoResumo(resumo);
 }
 
+// Função IA
 function gerarResumoDiarioInteligente(agendamentos) {
   if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
     return { totalAtendimentos: 0, mensagem: "Nenhum agendamento para hoje." };
   }
   const ord = [...agendamentos].sort((a, b) => a.inicio - b.inicio);
   const total = ord.length;
-  let faturamento = 0;
-  ord.forEach(a => faturamento += Number(a.servico.preco) || 0);
+  let faturamentoEstimado = 0;
+  ord.forEach(a => faturamentoEstimado += Number(a.servico.preco) || 0);
 
   const primeiro = {
     horario: formatHora(ord[0].inicio),
@@ -123,8 +130,8 @@ function gerarResumoDiarioInteligente(agendamentos) {
   }
   return {
     totalAtendimentos: total,
-    mensagem: `Você tem ${total} atendimentos hoje. Faturamento estimado: R$ ${faturamento.toFixed(2).replace('.',',')}.`,
-    primeiro, ultimo, faturamentoEstimado: faturamento, maiorIntervalo
+    mensagem: `Você tem ${total} atendimentos hoje. Faturamento estimado: R$ ${faturamentoEstimado.toFixed(2).replace('.',',')}.`,
+    primeiro, ultimo, faturamentoEstimado, maiorIntervalo
   };
 }
 function formatHora(date) {
@@ -157,14 +164,19 @@ function criarHTMLDoResumo(resumo) {
   return html;
 }
 
-// ========= GRÁFICOS =========
+// =======================================================
+// SEÇÃO DOS GRÁFICOS
+// =======================================================
 let graficoMensalInstance = null;
+
 function gerarGraficoMensal(agendamentos) {
   const filtroMesInicio = document.getElementById('filtro-mes-inicio');
   const filtroAnoInicio = document.getElementById('filtro-ano-inicio');
   const filtroMesFim = document.getElementById('filtro-mes-fim');
   const filtroAnoFim = document.getElementById('filtro-ano-fim');
+
   if (!filtroMesInicio || !filtroAnoInicio || !filtroMesFim || !filtroAnoFim) return;
+
   const anos = [...new Set(
     agendamentos
       .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
@@ -221,6 +233,7 @@ function gerarGraficoMensal(agendamentos) {
     const dados = labelsOrdenados.map(label => contagemMensal[label]);
 
     if (graficoMensalInstance) graficoMensalInstance.destroy();
+
     const ctx = document.getElementById('graficoMensal').getContext('2d');
     graficoMensalInstance = new window.Chart(ctx, {
       type: 'bar',
@@ -236,7 +249,9 @@ function gerarGraficoMensal(agendamentos) {
       },
       plugins: (typeof window.ChartDataLabels !== "undefined") ? [window.ChartDataLabels] : [],
       options: {
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        scales: { 
+          y: { beginAtZero: true, ticks: { stepSize: 1 } } 
+        },
         plugins: {
           legend: { display: false },
           datalabels: {
@@ -249,10 +264,12 @@ function gerarGraficoMensal(agendamentos) {
       }
     });
   };
+
   filtroMesInicio.addEventListener('change', atualizarGrafico);
   filtroAnoInicio.addEventListener('change', atualizarGrafico);
   filtroMesFim.addEventListener('change', atualizarGrafico);
   filtroAnoFim.addEventListener('change', atualizarGrafico);
+
   atualizarGrafico();
 }
 
@@ -277,7 +294,7 @@ function gerarGraficoServicos(servicosMap, agendamentos) {
         borderWidth: 1
       }]
     },
-    options: {
+    options: { 
       scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
       responsive: true,
       plugins: { legend: { display: false } }
