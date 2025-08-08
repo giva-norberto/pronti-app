@@ -1,7 +1,4 @@
-/**
- * perfil.js (VERSÃO FINAL COM ARQUITETURA MODULAR E CHECAGEM DE ELEMENTOS)
- */
-
+// perfil.js (VERSÃO SEM HORÁRIOS/INTERVALOS)
 // Importa tudo que o Firebase precisa
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
@@ -9,9 +6,8 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
-// 3. Lógica da Página
+// Lógica da Página
 window.addEventListener('DOMContentLoaded', () => {
-
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
@@ -24,10 +20,7 @@ window.addEventListener('DOMContentLoaded', () => {
         btnCopiarLink: document.getElementById('btn-copiar-link'),
         containerLinkVitrine: document.getElementById('container-link-vitrine'),
         urlVitrineEl: document.getElementById('url-vitrine-display'),
-        intervaloSelect: document.getElementById('intervalo-atendimento'),
-        diasContainer: document.getElementById('dias-container'),
         btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
-        btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
         linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
         btnLogout: document.getElementById('btn-logout'),
         listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
@@ -37,13 +30,6 @@ window.addEventListener('DOMContentLoaded', () => {
         btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
     };
 
-    const diasDaSemana = [
-        { id: 'seg', nome: 'Segunda-feira' }, { id: 'ter', nome: 'Terça-feira' },
-        { id: 'qua', nome: 'Quarta-feira' }, { id: 'qui', nome: 'Quinta-feira' },
-        { id: 'sex', nome: 'Sexta-feira' }, { id: 'sab', nome: 'Sábado' },
-        { id: 'dom', nome: 'Domingo' }
-    ];
-
     let currentUser;
     let empresaId = null;
     let unsubProfissionais = null;
@@ -51,7 +37,6 @@ window.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
-            gerarEstruturaDosDias();
             verificarEcarregarDados(user.uid);
             adicionarListenersDeEvento();
         } else {
@@ -130,34 +115,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.logoPreview && dadosEmpresa.logoUrl)
             elements.logoPreview.src = dadosEmpresa.logoUrl;
 
-        const horarios = dadosProfissional.horarios || {};
-        if (elements.intervaloSelect)
-            elements.intervaloSelect.value = horarios.intervalo || '30';
-        diasDaSemana.forEach(dia => {
-            const diaData = horarios[dia.id];
-            const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
-            if (toggleAtivo) {
-                toggleAtivo.checked = !!(diaData && diaData.ativo);
-                const containerBlocos = document.getElementById(`blocos-${dia.id}`);
-                if (containerBlocos) {
-                    containerBlocos.innerHTML = '';
-                    if (diaData?.ativo && diaData.blocos?.length > 0) {
-                        diaData.blocos.forEach(bloco => adicionarBlocoDeHorario(dia.id, bloco.inicio, bloco.fim));
-                    } else if (diaData?.ativo) {
-                        adicionarBlocoDeHorario(dia.id);
-                    }
-                }
-                toggleAtivo.dispatchEvent(new Event('change'));
-            }
-        });
-
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) {
             elements.btnAbrirVitrine.href = urlCompleta;
             elements.btnAbrirVitrine.style.display = 'inline-flex';
         }
-        if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
         if (elements.linkVitrineMenu) {
             elements.linkVitrineMenu.href = urlCompleta;
             elements.linkVitrineMenu.classList.remove('disabled');
@@ -185,8 +148,7 @@ window.addEventListener('DOMContentLoaded', () => {
             };
             const dadosProfissional = {
                 nome: currentUser.displayName || nomeNegocio,
-                fotoUrl: currentUser.photoURL || '',
-                horarios: coletarDadosDeHorarios()
+                fotoUrl: currentUser.photoURL || ''
             };
 
             const logoFile = elements.logoInput && elements.logoInput.files[0];
@@ -247,7 +209,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 fotoUrl = await uploadFile(firebaseDependencies, fotoFile, storagePath);
             }
 
-            const novoProfissional = { nome, fotoUrl, servicos: [], horarios: {}, ehDono: false };
+            const novoProfissional = { nome, fotoUrl, servicos: [], ehDono: false };
             await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
 
             alert("Profissional adicionado com sucesso!");
@@ -259,23 +221,6 @@ window.addEventListener('DOMContentLoaded', () => {
             btnSubmit.disabled = false;
             btnSubmit.textContent = 'Salvar Profissional';
         }
-    }
-
-    function coletarDadosDeHorarios() {
-        const horariosData = { intervalo: elements.intervaloSelect ? parseInt(elements.intervaloSelect.value, 10) : 30 };
-        diasDaSemana.forEach(dia => {
-            const ativoInput = document.getElementById(`${dia.id}-ativo`);
-            const estaAtivo = ativoInput ? ativoInput.checked : false;
-            const blocos = [];
-            if (estaAtivo) {
-                document.querySelectorAll(`#blocos-${dia.id} .bloco-horario`).forEach(blocoEl => {
-                    const inputs = blocoEl.querySelectorAll('input[type="time"]');
-                    if (inputs[0]?.value && inputs[1]?.value) blocos.push({ inicio: inputs[0].value, fim: inputs[1].value });
-                });
-            }
-            horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
-        });
-        return horariosData;
     }
 
     function adicionarListenersDeEvento() {
@@ -327,73 +272,5 @@ window.addEventListener('DOMContentLoaded', () => {
         }, () => {
             alert("Falha ao copiar o link.");
         });
-    }
-
-    function gerarEstruturaDosDias() {
-        if (!elements.diasContainer) return;
-        elements.diasContainer.innerHTML = '';
-        diasDaSemana.forEach(dia => {
-            const divDia = document.createElement('div');
-            divDia.className = 'dia-semana';
-            divDia.innerHTML = `
-                <div class="dia-info">
-                    <span class="dia-nome">${dia.nome}</span>
-                    <div class="toggle-container">
-                        <label class="switch">
-                            <input type="checkbox" id="${dia.id}-ativo">
-                            <span class="slider"></span>
-                        </label>
-                        <span class="toggle-label">Fechado</span>
-                    </div>
-                </div>
-                <div class="horarios-container" style="display: none;" id="container-${dia.id}">
-                    <div class="horarios-blocos" id="blocos-${dia.id}"></div>
-                    <button type="button" class="btn-add-slot" data-dia="${dia.id}">+ Adicionar Horário</button>
-                </div>`;
-            elements.diasContainer.appendChild(divDia);
-
-            const toggleAtivo = document.getElementById(`${dia.id}-ativo`);
-            if (toggleAtivo) {
-                toggleAtivo.addEventListener('change', (e) => {
-                    const container = document.getElementById(`container-${dia.id}`);
-                    const label = e.target.closest('.toggle-container').querySelector('.toggle-label');
-                    if (container && label) {
-                        container.style.display = e.target.checked ? 'flex' : 'none';
-                        label.textContent = e.target.checked ? 'Aberto' : 'Fechado';
-                        if (e.target.checked && container.querySelector('.horarios-blocos').childElementCount === 0) {
-                            adicionarBlocoDeHorario(dia.id);
-                        }
-                    }
-                });
-            }
-        });
-        elements.diasContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-add-slot')) {
-                adicionarBlocoDeHorario(e.target.dataset.dia);
-            }
-        });
-    }
-
-    function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
-        const container = document.getElementById(`blocos-${diaId}`);
-        if (!container) return;
-        const divBloco = document.createElement('div');
-        divBloco.className = 'slot-horario';
-        divBloco.innerHTML = `
-            <input type="time" value="${inicio}">
-            <span class="ate">até</span>
-            <input type="time" value="${fim}">
-            <button type="button" class="btn-remove-slot">Remover</button>`;
-        container.appendChild(divBloco);
-        const btnRemove = divBloco.querySelector('.btn-remove-slot');
-        if (btnRemove) {
-            btnRemove.addEventListener('click', (e) => {
-                if (container.childElementCount > 1) {
-                    e.target.closest('.slot-horario').remove();
-                } else {
-                    alert("Para não atender neste dia, desative o botão na parte superior.");
-                }
-            });
-        }
     }
 });
