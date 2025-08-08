@@ -3,16 +3,18 @@ let db, auth, storage;
 let empresaId = null;
 let profissionalAtual = null;
 let servicosDisponiveis = [];
-let horariosBase = {
-    segunda: { ativo: false, inicio: '09:00', fim: '18:00' },
-    terca: { ativo: false, inicio: '09:00', fim: '18:00' },
-    quarta: { ativo: false, inicio: '09:00', fim: '18:00' },
-    quinta: { ativo: false, inicio: '09:00', fim: '18:00' },
-    sexta: { ativo: false, inicio: '09:00', fim: '18:00' },
-    sabado: { ativo: false, inicio: '09:00', fim: '18:00' },
-    domingo: { ativo: false, inicio: '09:00', fim: '18:00' }
-};
 let editandoProfissionalId = null;
+
+// Novo: Horários base com múltiplos intervalos por dia (default: um intervalo por dia)
+let horariosBase = {
+    segunda: [{ inicio: '09:00', fim: '18:00' }],
+    terca: [{ inicio: '09:00', fim: '18:00' }],
+    quarta: [{ inicio: '09:00', fim: '18:00' }],
+    quinta: [{ inicio: '09:00', fim: '18:00' }],
+    sexta: [{ inicio: '09:00', fim: '18:00' }],
+    sabado: [{ inicio: '09:00', fim: '18:00' }],
+    domingo: [{ inicio: '09:00', fim: '18:00' }]
+};
 
 // Elementos DOM
 const elementos = {
@@ -33,6 +35,30 @@ const elementos = {
     btnCancelarPerfil: document.getElementById('btn-cancelar-perfil'),
     btnSalvarPerfil: document.getElementById('btn-salvar-perfil')
 };
+
+// TABS do perfil
+function setupPerfilTabs() {
+    const tabServicos = document.getElementById('tab-servicos');
+    const tabHorarios = document.getElementById('tab-horarios');
+    const contentServicos = document.getElementById('tab-content-servicos');
+    const contentHorarios = document.getElementById('tab-content-horarios');
+
+    if (!tabServicos || !tabHorarios) return;
+
+    tabServicos.onclick = () => {
+        tabServicos.classList.add('active');
+        tabHorarios.classList.remove('active');
+        contentServicos.classList.add('active');
+        contentHorarios.classList.remove('active');
+    };
+    tabHorarios.onclick = () => {
+        tabHorarios.classList.add('active');
+        tabServicos.classList.remove('active');
+        contentHorarios.classList.add('active');
+        contentServicos.classList.remove('active');
+    };
+}
+window.addEventListener('DOMContentLoaded', setupPerfilTabs);
 
 // Inicialização
 async function inicializar() {
@@ -131,7 +157,7 @@ function iniciarListenerDaEquipe() {
     });
 }
 
-// Renderizar equipe
+// Renderizar equipe (card com botão excluir alinhado)
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
 
@@ -199,28 +225,16 @@ async function carregarDadosProfissional(profissionalId) {
 
             // Atualizar serviços selecionados
             if (dados.servicos) {
-                dados.servicos.forEach(servicoId => {
-                    const elemento = elementos.servicosLista.querySelector(`[data-servico-id="${servicoId}"]`);
-                    if (elemento) {
-                        elemento.classList.add('selected');
-                    }
-                });
+                renderizarServicos(dados.servicos);
+            } else {
+                renderizarServicos([]);
             }
 
-            // Atualizar horários
+            // Atualizar horários: múltiplos intervalos por dia
             if (dados.horarios) {
-                Object.keys(dados.horarios).forEach(dia => {
-                    const horario = dados.horarios[dia];
-                    const diaDiv = elementos.horariosLista.querySelector(`[data-dia="${dia}"]`);
-                    if (diaDiv) {
-                        const checkbox = diaDiv.querySelector('input[type="checkbox"]');
-                        const inicio = diaDiv.querySelector('input[name="inicio"]');
-                        const fim = diaDiv.querySelector('input[name="fim"]');
-                        if (checkbox) checkbox.checked = horario.ativo;
-                        if (inicio) inicio.value = horario.inicio;
-                        if (fim) fim.value = horario.fim;
-                    }
-                });
+                renderizarHorarios(dados.horarios);
+            } else {
+                renderizarHorarios(horariosBase);
             }
         }
     } catch (error) {
@@ -228,7 +242,7 @@ async function carregarDadosProfissional(profissionalId) {
     }
 }
 
-// Renderizar serviços
+// Renderizar serviços com seleção didática
 function renderizarServicos(servicosSelecionados = []) {
     elementos.servicosLista.innerHTML = "";
 
@@ -263,10 +277,10 @@ function renderizarServicos(servicosSelecionados = []) {
     });
 }
 
-// Renderizar horários
-function renderizarHorarios(horarios = horariosBase) {
-    elementos.horariosLista.innerHTML = "";
-
+// Renderizar horários com inclusão/remover intervalos
+function renderizarHorarios(horarios = {}) {
+    const horariosLista = elementos.horariosLista;
+    horariosLista.innerHTML = '';
     const diasSemana = [
         { key: 'segunda', nome: 'Segunda-feira' },
         { key: 'terca', nome: 'Terça-feira' },
@@ -276,53 +290,98 @@ function renderizarHorarios(horarios = horariosBase) {
         { key: 'sabado', nome: 'Sábado' },
         { key: 'domingo', nome: 'Domingo' }
     ];
-
     diasSemana.forEach(dia => {
-        const div = document.createElement("div");
-        div.className = "dia-horario";
+        const div = document.createElement('div');
+        div.className = 'dia-horario';
         div.setAttribute('data-dia', dia.key);
+
+        // Se não houver horários, inicia com um intervalo padrão
+        const intervalos = horarios[dia.key] && Array.isArray(horarios[dia.key])
+            ? horarios[dia.key]
+            : [{ inicio: '09:00', fim: '18:00' }];
+
         div.innerHTML = `
             <div class="dia-nome">
-                <label>
-                    <input type="checkbox" ${horarios[dia.key].ativo ? 'checked' : ''}>
-                    ${dia.nome}
-                </label>
+                <label>${dia.nome}</label>
             </div>
-            <div class="horario-inputs">
-                <input type="time" name="inicio" value="${horarios[dia.key].inicio}">
-                <span>até</span>
-                <input type="time" name="fim" value="${horarios[dia.key].fim}">
+            <div class="horario-intervalos">
+                ${intervalos.map((intervalo, idx) => `
+                    <div class="horario-inputs" data-intervalo="${idx}">
+                        <input type="time" name="inicio" value="${intervalo.inicio}">
+                        <span>até</span>
+                        <input type="time" name="fim" value="${intervalo.fim}">
+                        <button class="btn-remover-intervalo" title="Remover intervalo" ${intervalos.length === 1 ? 'disabled' : ''}>✖</button>
+                    </div>
+                `).join('')}
             </div>
+            <button class="btn-incluir-intervalo">+ Incluir horário</button>
         `;
-        elementos.horariosLista.appendChild(div);
+        horariosLista.appendChild(div);
+    });
+
+    // Botão "Incluir horário"
+    document.querySelectorAll('.btn-incluir-intervalo').forEach(btn => {
+        btn.onclick = function () {
+            const diaDiv = this.closest('.dia-horario');
+            const horarioIntervalos = diaDiv.querySelector('.horario-intervalos');
+            const novoIdx = horarioIntervalos.children.length;
+            const novoDiv = document.createElement('div');
+            novoDiv.className = 'horario-inputs';
+            novoDiv.setAttribute('data-intervalo', novoIdx);
+            novoDiv.innerHTML = `
+                <input type="time" name="inicio" value="09:00">
+                <span>até</span>
+                <input type="time" name="fim" value="18:00">
+                <button class="btn-remover-intervalo" title="Remover intervalo">✖</button>
+            `;
+            horarioIntervalos.appendChild(novoDiv);
+            setupRemoverIntervalo();
+        };
+    });
+    setupRemoverIntervalo();
+}
+
+// Função para remover intervalos
+function setupRemoverIntervalo() {
+    document.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
+        btn.onclick = function () {
+            const horarioInputs = this.closest('.horario-inputs');
+            const horarioIntervalos = this.closest('.horario-intervalos');
+            if (horarioIntervalos.children.length > 1) {
+                horarioInputs.remove();
+            }
+        };
     });
 }
 
-// Salvar perfil do profissional
+// Coleta e salva os horários/intervalos
+function coletarHorarios() {
+    const horarios = {};
+    document.querySelectorAll('.dia-horario').forEach(diaDiv => {
+        const dia = diaDiv.getAttribute('data-dia');
+        horarios[dia] = [];
+        diaDiv.querySelectorAll('.horario-inputs').forEach(inputDiv => {
+            const inicio = inputDiv.querySelector('input[name="inicio"]').value;
+            const fim = inputDiv.querySelector('input[name="fim"]').value;
+            horarios[dia].push({ inicio, fim });
+        });
+    });
+    return horarios;
+}
+
+// Salvar perfil do profissional (serviços e horários)
 async function salvarPerfilProfissional() {
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
     try {
         // Coletar serviços selecionados
         const servicosSelecionados = [];
-        elementos.servicosLista.querySelectorAll('.servico-item.selected').forEach(item => {
+        document.querySelectorAll('.servico-item.selected').forEach(item => {
             servicosSelecionados.push(item.getAttribute('data-servico-id'));
         });
 
-        // Coletar horários
-        const horarios = {};
-        elementos.horariosLista.querySelectorAll('.dia-horario').forEach(diaElement => {
-            const dia = diaElement.getAttribute('data-dia');
-            const checkbox = diaElement.querySelector('input[type="checkbox"]');
-            const inicio = diaElement.querySelector('input[name="inicio"]');
-            const fim = diaElement.querySelector('input[name="fim"]');
-
-            horarios[dia] = {
-                ativo: checkbox.checked,
-                inicio: inicio.value,
-                fim: fim.value
-            };
-        });
+        // Coletar horários/intervalos
+        const horarios = coletarHorarios();
 
         // Atualizar no Firebase
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
@@ -333,7 +392,6 @@ async function salvarPerfilProfissional() {
 
         // Fechar modal
         elementos.modalPerfilProfissional.classList.remove('show');
-
         alert("✅ Perfil atualizado com sucesso!");
 
     } catch (error) {
