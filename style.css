@@ -378,10 +378,102 @@ body {
     justify-content: center;
 }
 
-/* RESPONSIVO */
+/* ============== CARD PADRÃO PRONTI (GRANDE, COMPLETO, ESPAÇOSO) ============== */
+.servico-item,
+.agendamento-item,
+.cliente-item {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.11);
+    border: 1.5px solid #e1e8ed;
+    padding: 48px 40px;         /* Espaço interno generoso */
+    margin-bottom: 38px;        /* Distância entre cards */
+    position: relative;
+    transition: box-shadow 0.3s, transform 0.2s;
+    overflow: hidden;
+    width: 100%;                /* Ocupa toda largura do container */
+    max-width: 900px;           /* Limite visual centralizado */
+    margin-left: auto;
+    margin-right: auto;
+}
+.servico-item:hover,
+.agendamento-item:hover,
+.cliente-item:hover {
+    box-shadow: 0 22px 48px rgba(0,0,0,0.17);
+    transform: translateY(-6px);
+}
+.servico-item h3,
+.agendamento-item h3,
+.cliente-item h3 {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: #22223b;
+    margin-bottom: 14px;
+    letter-spacing: 0.7px;
+}
+.servico-item p,
+.agendamento-item p,
+.cliente-item p {
+    color: #565676;
+    font-size: 1.19rem;
+    margin-bottom: 0;
+    line-height: 1.7;
+}
+.item-acoes {
+    margin-top: 36px;
+    display: flex;
+    gap: 18px;
+}
+.btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #22223b;
+    border-radius: 32px;
+    font-weight: 600;
+    padding: 16px 42px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px #d6d2f8;
+    transition: box-shadow 0.3s, transform 0.2s, background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-size: 1.16rem;
+}
+.btn:hover {
+    background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+    color: #22223b;
+    box-shadow: 0 14px 28px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+.btn-excluir {
+    background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%) !important;
+    color: #fff !important;
+    font-weight: 700;
+}
 @media (max-width: 900px) {
     .main-content, .container { margin-left: 0; }
     .sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;}
+    .servico-item,
+    .agendamento-item,
+    .cliente-item {
+        padding: 28px 16px;
+        max-width: 99vw;
+    }
+    .servico-item h3,
+    .agendamento-item h3,
+    .cliente-item h3 {
+        font-size: 1.28rem;
+    }
+    .item-acoes {
+        flex-direction: column;
+        gap: 12px;
+    }
+    .btn {
+        width: 100%;
+        padding: 14px 0;
+        font-size: 1rem;
+    }
 }
 @media (max-width: 768px) {
     .container, .main-content {
