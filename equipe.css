@@ -129,15 +129,25 @@ body {
     border-radius: 15px;
     padding: 20px;
     display: flex;
-    align-items: center;
-    gap: 15px;
+    flex-direction: column;
+    gap: 10px;
     transition: all 0.3s ease;
     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    position: relative;
+    min-width: 0;
 }
 
 .profissional-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.profissional-card .profissional-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 .profissional-foto {
@@ -147,6 +157,7 @@ body {
     overflow: hidden;
     flex-shrink: 0;
     border: 3px solid #4facfe;
+    align-self: flex-start;
 }
 
 .profissional-foto img {
@@ -157,10 +168,13 @@ body {
 
 .profissional-info {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
 }
 
 .profissional-nome {
-    display: block;
     font-weight: 600;
     font-size: 1.1rem;
     color: #2c3e50;
@@ -175,13 +189,6 @@ body {
     border-radius: 15px;
     font-size: 0.8rem;
     font-weight: 500;
-}
-
-.profissional-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
-    gap: 8px;
 }
 
 /* MODAL CENTRALIZADO */
@@ -295,21 +302,23 @@ body {
 }
 
 .servico-item {
-    background: #f8f9fa;
+    background: #e9ecef;
     border: 2px solid #e1e8ed;
     border-radius: 10px;
     padding: 11px;
     cursor: pointer;
     transition: all 0.3s ease;
     margin-bottom: 2px;
+    color: #333;
 }
 .servico-item.selected {
-    border-color: #4facfe;
+    border-color: #2196f3;
     background: #e3f2fd;
+    color: #1565c0;
 }
 .servico-nome {
     font-weight: 600;
-    color: #2c3e50;
+    color: inherit;
 }
 .servico-preco {
     color: #28a745;
