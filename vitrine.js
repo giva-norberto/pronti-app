@@ -1,5 +1,4 @@
-// vitrine.js (VERSÃO FINAL E COMPLETA - CORREÇÃO DO BOTÃO CANCELAR)
-
+// vitrine.js (VISÃO CLIENTE - FLUXO DIDÁTICO E FUNCIONAL, MELHORADO!)
 // ==========================================================================
 // IMPORTS DOS MÓDULOS
 // ==========================================================================
@@ -123,33 +122,42 @@ function renderizarProfissionais(profissionais) {
     });
 }
 
+// ================= FLUXO MELHORADO ==========================
 async function selecionarProfissional(profissional) {
     if (!profissional) return;
     profissionalSelecionado = profissional;
     agendamentoState.profissional = { id: profissional.id, nome: profissional.nome };
-    
+
+    // Visual feedback
     document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
     document.querySelector(`.card-profissional[data-id="${profissional.id}"]`).classList.add('selecionado');
 
+    // Libera etapa de seleção de serviço
     document.getElementById('agendamento-form-container').style.display = 'block';
-    
     renderizarServicos(profissionalSelecionado.servicos, selecionarServico);
-    
-    const primeiraData = await encontrarPrimeiraDataComSlots(empresaId, profissionalSelecionado);
-    const dataInput = document.getElementById('data-agendamento');
-    if (dataInput) {
-        dataInput.value = primeiraData || '';
-        dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        dataInput.dispatchEvent(new Event('change'));
-    }
-    
-    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
+
+    // Bloqueia campos até serviço ser selecionado
+    agendamentoState.servico = null;
+    agendamentoState.data = null;
+    agendamentoState.horario = null;
+    document.getElementById('data-agendamento').value = '';
+    document.getElementById('data-agendamento').disabled = true;
+    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço para prosseguir.</p>';
+    updateConfirmButtonState();
 }
 
 function selecionarServico(servico) {
     agendamentoState.servico = servico;
     agendamentoState.horario = null;
-    document.getElementById('data-agendamento').dispatchEvent(new Event('change'));
+    agendamentoState.data = null;
+
+    // Libera campo de data
+    const dataInput = document.getElementById('data-agendamento');
+    dataInput.value = '';
+    dataInput.disabled = false;
+    dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione uma data para ver os horários disponíveis.</p>';
     updateConfirmButtonState();
 }
 
@@ -192,6 +200,7 @@ function configurarEventosGerais() {
         horariosContainer.innerHTML = '';
         updateConfirmButtonState();
 
+        // Só libera se profissional, serviço e data selecionados
         if (!profissionalSelecionado || !agendamentoState.servico || !agendamentoState.data) {
             horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione serviço e data.</p>';
             return;
@@ -200,11 +209,38 @@ function configurarEventosGerais() {
         horariosContainer.innerHTML = '<p>Verificando horários...</p>';
         const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, agendamentoState.data);
         const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissionalSelecionado.id);
-        const slotsDisponiveis = calcularSlotsDisponiveis(agendamentoState.data, agendamentosDoProfissional, profissionalSelecionado.horarios, agendamentoState.servico.duracao);
-        
-        horariosContainer.innerHTML = slotsDisponiveis.length > 0
-            ? slotsDisponiveis.map(horario => `<button class="btn-horario">${horario}</button>`).join('')
-            : '<p>Nenhum horário disponível para esta data.</p>';
+
+        // Calcula horários pelo tempo do serviço
+        const slotsDisponiveis = calcularSlotsDisponiveis(
+            agendamentoState.data,
+            agendamentosDoProfissional,
+            profissionalSelecionado.horarios,
+            agendamentoState.servico.duracao
+        );
+
+        if (slotsDisponiveis.length > 0) {
+            horariosContainer.innerHTML = slotsDisponiveis.map(horario =>
+                `<button class="btn-horario">${horario}</button>`
+            ).join('');
+        } else {
+            // Buscar próximo dia com vagas
+            const proximaDataDisponivel = await encontrarPrimeiraDataComSlots(
+                empresaId,
+                profissionalSelecionado,
+                agendamentoState.servico.duracao
+            );
+            if (proximaDataDisponivel) {
+                document.getElementById('data-agendamento').value = proximaDataDisponivel;
+                agendamentoState.data = proximaDataDisponivel;
+                horariosContainer.innerHTML = `<p>Não há horários disponíveis para este dia.<br>Veja o próximo dia disponível: <strong>${new Date(proximaDataDisponivel).toLocaleDateString()}</strong></p>`;
+                // Dispara novo evento change para mostrar horários do próximo dia
+                setTimeout(() => {
+                    document.getElementById('data-agendamento').dispatchEvent(new Event('change'));
+                }, 500);
+            } else {
+                horariosContainer.innerHTML = `<p>Não há horários disponíveis nos próximos dias.</p>`;
+            }
+        }
     });
 
     // Evento de clique na grade de horários (Delegação de Eventos)
@@ -225,7 +261,10 @@ function configurarEventosGerais() {
         }
         const btn = document.getElementById('btn-confirmar-agendamento');
         btn.disabled = true;
-        const confirmado = await showCustomConfirm("Confirmar Agendamento", `Deseja agendar "${agendamentoState.servico.nome}" com ${agendamentoState.profissional.nome} para ${new Date(agendamentoState.data + 'T00:00:00').toLocaleDateString()} às ${agendamentoState.horario}?`);
+        const confirmado = await showCustomConfirm(
+            "Confirmar Agendamento",
+            `Deseja agendar "${agendamentoState.servico.nome}" com ${agendamentoState.profissional.nome} para ${new Date(agendamentoState.data + 'T00:00:00').toLocaleDateString()} às ${agendamentoState.horario}?`
+        );
         if (confirmado) {
             await salvarAgendamento(empresaId, currentUser, agendamentoState);
         } else {
@@ -248,8 +287,10 @@ function configurarEventosGerais() {
     document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', async (e) => {
         if (e.target.classList.contains('btn-cancelar')) {
             const agendamentoId = e.target.dataset.id;
-            const confirmado = await showCustomConfirm("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
-            
+            const confirmado = await showCustomConfirm(
+                "Cancelar Agendamento",
+                "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita."
+            );
             if (confirmado) {
                 await cancelarAgendamento(empresaId, agendamentoId, () => {
                     // Após cancelar, recarrega a lista de agendamentos ativos
