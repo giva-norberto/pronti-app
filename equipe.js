@@ -20,6 +20,7 @@ let agendaEspecial = []; // [{tipo, mes, inicio, fim}]
 // Elementos DOM
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
+    btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
     modalAddProfissional: document.getElementById('modal-add-profissional'),
     formAddProfissional: document.getElementById('form-add-profissional'),
     btnCancelarProfissional: document.getElementById('btn-cancelar-profissional'),
@@ -128,6 +129,12 @@ async function inicializar() {
         console.error("Erro na inicialização:", error);
         mostrarErro("Erro ao inicializar o sistema.");
     }
+}
+
+// Botão para cancelar e voltar ao menu lateral
+function voltarMenuLateral() {
+    // Adapte para sua lógica (ex: window.location.href = "index.html";)
+    window.location.href = "index.html";
 }
 
 // Buscar ou criar empresa
@@ -502,6 +509,11 @@ function adicionarEventListeners() {
             await adicionarProfissional();
         };
     });
+
+    // Botão cancelar equipe (voltar menu lateral)
+    if (elementos.btnCancelarEquipe) {
+        elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
+    }
 
     // Botão cancelar adicionar/editar
     elementos.btnCancelarProfissional.addEventListener("click", () => {
