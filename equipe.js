@@ -1,83 +1,447 @@
-// Exemplo de integração básica (adapte para seu Firebase!)
-// Preenche cards, ativa modal de adicionar e perfil, sem debug.
+// Variáveis globais
+let db, auth, storage;
+let empresaId = null;
+let profissionalAtual = null;
+let servicosDisponiveis = [];
+let horariosBase = {
+    segunda: { ativo: false, inicio: '09:00', fim: '18:00' },
+    terca: { ativo: false, inicio: '09:00', fim: '18:00' },
+    quarta: { ativo: false, inicio: '09:00', fim: '18:00' },
+    quinta: { ativo: false, inicio: '09:00', fim: '18:00' },
+    sexta: { ativo: false, inicio: '09:00', fim: '18:00' },
+    sabado: { ativo: false, inicio: '09:00', fim: '18:00' },
+    domingo: { ativo: false, inicio: '09:00', fim: '18:00' }
+};
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Ativa botão após inicialização do sistema
-    document.getElementById('btn-add-profissional').disabled = false;
+// Elementos DOM
+const elementos = {
+    btnAddProfissional: document.getElementById('btn-add-profissional'),
+    modalAddProfissional: document.getElementById('modal-add-profissional'),
+    formAddProfissional: document.getElementById('form-add-profissional'),
+    btnCancelarProfissional: document.getElementById('btn-cancelar-profissional'),
+    listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
+    nomeProfissional: document.getElementById('nome-profissional'),
+    fotoProfissional: document.getElementById('foto-profissional'),
 
-    // Exemplo estático. Substitua por dados vindos do Firebase!
-    const profissionais = [
-        {
-            id: "1",
-            nome: "Givanildo Silva",
-            fotoUrl: "",
-            ehDono: true,
-            horarios: {},
-            status: "Dono"
-        },
-        {
-            id: "2",
-            nome: "Givanildo Funcionário",
-            fotoUrl: "",
-            ehDono: false,
-            horarios: {},
-            status: "Funcionário"
+    // Modal de perfil
+    modalPerfilProfissional: document.getElementById('modal-perfil-profissional'),
+    perfilNomeProfissional: document.getElementById('perfil-nome-profissional'),
+    servicosLista: document.getElementById('servicos-lista'),
+    horariosLista: document.getElementById('horarios-lista'),
+    btnCancelarPerfil: document.getElementById('btn-cancelar-perfil'),
+    btnSalvarPerfil: document.getElementById('btn-salvar-perfil')
+};
+
+// Inicialização
+async function inicializar() {
+    try {
+        // Importar Firebase
+        const firebaseConfig = await import('./firebase-config.js');
+        db = firebaseConfig.db;
+        auth = firebaseConfig.auth;
+        storage = firebaseConfig.storage;
+
+        // Importar funções do Firestore
+        const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+
+        // Monitorar autenticação
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                empresaId = await getEmpresaIdDoDono(user.uid);
+                if (empresaId) {
+                    await carregarServicos();
+                    iniciarListenerDaEquipe();
+                    adicionarEventListeners();
+                } else {
+                    mostrarErro("Não foi possível identificar a sua empresa.");
+                }
+            } else {
+                // Para teste, não redirecionar
+                // window.location.href = "login.html";
+            }
+        });
+
+    } catch (error) {
+        console.error("Erro na inicialização:", error);
+        mostrarErro("Erro ao inicializar o sistema.");
+    }
+}
+
+// Buscar ou criar empresa
+async function getEmpresaIdDoDono(uid) {
+    const { collection, query, where, getDocs, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+    const empresariosRef = collection(db, "empresarios");
+    const q = query(empresariosRef, where("donoId", "==", uid));
+
+    try {
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            return snapshot.docs[0].id;
         }
-    ];
 
-    const painel = document.getElementById('lista-profissionais-painel');
-    painel.innerHTML = "";
-    profissionais.forEach(profissional => {
+        // Criar nova empresa
+        const novaEmpresa = {
+            donoId: uid,
+            nome: "Minha Empresa",
+            criadaEm: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(empresariosRef, novaEmpresa);
+        return docRef.id;
+    } catch (error) {
+        console.error("Erro ao buscar empresa:", error);
+        return null;
+    }
+}
+
+// Carregar serviços da empresa
+async function carregarServicos() {
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+    try {
+        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+        const snapshot = await getDocs(servicosRef);
+
+        servicosDisponiveis = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error("Erro ao carregar serviços:", error);
+        servicosDisponiveis = [];
+    }
+}
+
+// Iniciar listener da equipe
+function iniciarListenerDaEquipe() {
+    import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+    .then(({ collection, onSnapshot, query }) => {
+        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+        const q = query(profissionaisRef);
+
+        onSnapshot(q, (snapshot) => {
+            const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderizarEquipe(equipe);
+        }, (error) => {
+            console.error("Erro no listener da equipe:", error);
+        });
+    });
+}
+
+// Renderizar equipe
+function renderizarEquipe(equipe) {
+    elementos.listaProfissionaisPainel.innerHTML = "";
+
+    if (equipe.length === 0) {
+        elementos.listaProfissionaisPainel.innerHTML = `
+            <div class="empty-state">
+                <h3>👥 Equipe Vazia</h3>
+                <p>Nenhum profissional na equipe ainda.<br>Clique em "Adicionar Profissional" para começar.</p>
+            </div>
+        `;
+        return;
+    }
+
+    equipe.forEach(profissional => {
         const div = document.createElement("div");
         div.className = "profissional-card";
         div.innerHTML = `
             <div class="profissional-foto">
-                <img src="${profissional.fotoUrl || 'https://placehold.co/60x60?text=User'}" alt="Foto de ${profissional.nome}" />
+                <img src="${profissional.fotoUrl || "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"}"
+                     alt="Foto de ${profissional.nome}"
+                     onerror="this.src='https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'">
             </div>
             <div class="profissional-info">
                 <span class="profissional-nome">${profissional.nome}</span>
-                <span class="profissional-status">${profissional.status}</span>
+                <span class="profissional-status">${profissional.ehDono ? 'Dono' : 'Funcionário'}</span>
             </div>
-            <button class="btn btn-perfil-profissional" data-id="${profissional.id}">👤 Perfil</button>
+            <div class="profissional-actions">
+                <button class="btn btn-profile" onclick="abrirPerfilProfissional('${profissional.id}', '${profissional.nome}')">
+                    👤 Perfil
+                </button>
+            </div>
         `;
-        painel.appendChild(div);
+        elementos.listaProfissionaisPainel.appendChild(div);
+    });
+}
+
+// Abrir modal de perfil
+async function abrirPerfilProfissional(profissionalId, nomeProfissional) {
+    profissionalAtual = profissionalId;
+    elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${nomeProfissional}`;
+    renderizarServicos([]);
+    renderizarHorarios(horariosBase);
+    await carregarDadosProfissional(profissionalId);
+    elementos.modalPerfilProfissional.classList.add('show');
+}
+
+// Carregar dados do profissional
+async function carregarDadosProfissional(profissionalId) {
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+    try {
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        const profissionalDoc = await getDoc(profissionalRef);
+
+        if (profissionalDoc.exists()) {
+            const dados = profissionalDoc.data();
+
+            // Atualizar serviços selecionados
+            if (dados.servicos) {
+                dados.servicos.forEach(servicoId => {
+                    const elemento = elementos.servicosLista.querySelector(`[data-servico-id="${servicoId}"]`);
+                    if (elemento) {
+                        elemento.classList.add('selected');
+                    }
+                });
+            }
+
+            // Atualizar horários
+            if (dados.horarios) {
+                Object.keys(dados.horarios).forEach(dia => {
+                    const horario = dados.horarios[dia];
+                    const diaDiv = elementos.horariosLista.querySelector(`[data-dia="${dia}"]`);
+                    if (diaDiv) {
+                        const checkbox = diaDiv.querySelector('input[type="checkbox"]');
+                        const inicio = diaDiv.querySelector('input[name="inicio"]');
+                        const fim = diaDiv.querySelector('input[name="fim"]');
+                        if (checkbox) checkbox.checked = horario.ativo;
+                        if (inicio) inicio.value = horario.inicio;
+                        if (fim) fim.value = horario.fim;
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao carregar dados do profissional:", error);
+    }
+}
+
+// Renderizar serviços
+function renderizarServicos(servicosSelecionados = []) {
+    elementos.servicosLista.innerHTML = "";
+
+    if (servicosDisponiveis.length === 0) {
+        elementos.servicosLista.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #6c757d;">
+                <p>Nenhum serviço cadastrado ainda.</p>
+                <p>Vá para a página de serviços para adicionar serviços.</p>
+            </div>
+        `;
+        return;
+    }
+
+    servicosDisponiveis.forEach(servico => {
+        const div = document.createElement("div");
+        div.className = "servico-item";
+        div.setAttribute('data-servico-id', servico.id);
+        div.innerHTML = `
+            <div class="servico-nome">${servico.nome}</div>
+            <div class="servico-preco">R$ ${servico.preco.toFixed(2)}</div>
+        `;
+
+        if (servicosSelecionados.includes(servico.id)) {
+            div.classList.add('selected');
+        }
+
+        div.addEventListener('click', () => {
+            div.classList.toggle('selected');
+        });
+
+        elementos.servicosLista.appendChild(div);
+    });
+}
+
+// Renderizar horários
+function renderizarHorarios(horarios = horariosBase) {
+    elementos.horariosLista.innerHTML = "";
+
+    const diasSemana = [
+        { key: 'segunda', nome: 'Segunda-feira' },
+        { key: 'terca', nome: 'Terça-feira' },
+        { key: 'quarta', nome: 'Quarta-feira' },
+        { key: 'quinta', nome: 'Quinta-feira' },
+        { key: 'sexta', nome: 'Sexta-feira' },
+        { key: 'sabado', nome: 'Sábado' },
+        { key: 'domingo', nome: 'Domingo' }
+    ];
+
+    diasSemana.forEach(dia => {
+        const div = document.createElement("div");
+        div.className = "dia-horario";
+        div.setAttribute('data-dia', dia.key);
+        div.innerHTML = `
+            <div class="dia-nome">
+                <label>
+                    <input type="checkbox" ${horarios[dia.key].ativo ? 'checked' : ''}>
+                    ${dia.nome}
+                </label>
+            </div>
+            <div class="horario-inputs">
+                <input type="time" name="inicio" value="${horarios[dia.key].inicio}">
+                <span>até</span>
+                <input type="time" name="fim" value="${horarios[dia.key].fim}">
+            </div>
+        `;
+        elementos.horariosLista.appendChild(div);
+    });
+}
+
+// Salvar perfil do profissional
+async function salvarPerfilProfissional() {
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+    try {
+        // Coletar serviços selecionados
+        const servicosSelecionados = [];
+        elementos.servicosLista.querySelectorAll('.servico-item.selected').forEach(item => {
+            servicosSelecionados.push(item.getAttribute('data-servico-id'));
+        });
+
+        // Coletar horários
+        const horarios = {};
+        elementos.horariosLista.querySelectorAll('.dia-horario').forEach(diaElement => {
+            const dia = diaElement.getAttribute('data-dia');
+            const checkbox = diaElement.querySelector('input[type="checkbox"]');
+            const inicio = diaElement.querySelector('input[name="inicio"]');
+            const fim = diaElement.querySelector('input[name="fim"]');
+
+            horarios[dia] = {
+                ativo: checkbox.checked,
+                inicio: inicio.value,
+                fim: fim.value
+            };
+        });
+
+        // Atualizar no Firebase
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
+        await updateDoc(profissionalRef, {
+            servicos: servicosSelecionados,
+            horarios: horarios
+        });
+
+        // Fechar modal
+        elementos.modalPerfilProfissional.classList.remove('show');
+
+        alert("✅ Perfil atualizado com sucesso!");
+
+    } catch (error) {
+        console.error("Erro ao salvar perfil:", error);
+        alert("❌ Erro ao salvar perfil: " + error.message);
+    }
+}
+
+// Event listeners
+function adicionarEventListeners() {
+    // Botão adicionar profissional
+    elementos.btnAddProfissional.addEventListener("click", () => {
+        elementos.formAddProfissional.reset();
+        elementos.modalAddProfissional.classList.add('show');
     });
 
-    // Abrir modal de adicionar profissional
-    document.getElementById('btn-add-profissional').onclick = () => {
-        document.getElementById('form-add-profissional').reset();
-        document.getElementById('modal-add-profissional').classList.add('show');
-    };
-    document.getElementById('btn-cancelar-profissional').onclick = () => {
-        document.getElementById('modal-add-profissional').classList.remove('show');
-    };
-
-    // Abrir modal de perfil profissional
-    document.querySelectorAll('.btn-perfil-profissional').forEach(btn => {
-        btn.onclick = () => {
-            const card = btn.closest('.profissional-card');
-            document.getElementById('perfil-profissional-nome').textContent = card.querySelector('.profissional-nome').textContent;
-            document.getElementById('modal-perfil-profissional').classList.add('show');
-        };
+    // Botão cancelar adicionar
+    elementos.btnCancelarProfissional.addEventListener("click", () => {
+        elementos.modalAddProfissional.classList.remove('show');
     });
 
-    // Fechar modal ao clicar fora
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
+    // Formulário adicionar profissional
+    elementos.formAddProfissional.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await adicionarProfissional();
+    });
+
+    // Botão cancelar perfil
+    elementos.btnCancelarPerfil.addEventListener("click", () => {
+        elementos.modalPerfilProfissional.classList.remove('show');
+    });
+
+    // Botão salvar perfil
+    elementos.btnSalvarPerfil.addEventListener("click", () => {
+        salvarPerfilProfissional();
+    });
+
+    // Fechar modais clicando fora
+    [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
+        modal.addEventListener("click", (e) => {
             if (e.target === modal) {
                 modal.classList.remove('show');
             }
         });
     });
+}
 
-    // Tabs do modal perfil
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const tab = btn.getAttribute('data-tab');
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-        };
-    });
-});
+// Adicionar profissional
+async function adicionarProfissional() {
+    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js");
+
+    const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Salvando...";
+
+    const nome = elementos.nomeProfissional.value.trim();
+    const fotoFile = elementos.fotoProfissional.files[0];
+
+    if (!nome) {
+        alert("O nome do profissional é obrigatório.");
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "💾 Salvar Profissional";
+        return;
+    }
+
+    let fotoURL = "";
+    if (fotoFile) {
+        try {
+            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+            await uploadBytes(storageRef, fotoFile);
+            fotoURL = await getDownloadURL(storageRef);
+        } catch (error) {
+            console.error("Erro no upload da foto:", error);
+            alert("Erro ao enviar a imagem: " + error.message);
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = "💾 Salvar Profissional";
+            return;
+        }
+    }
+
+    const novoProfissional = {
+        nome,
+        fotoUrl: fotoURL,
+        ehDono: false,
+        servicos: [],
+        horarios: horariosBase,
+        criadoEm: serverTimestamp()
+    };
+
+    try {
+        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+        await addDoc(profissionaisRef, novoProfissional);
+
+        elementos.modalAddProfissional.classList.remove('show');
+        alert("✅ Profissional adicionado com sucesso!");
+
+    } catch (error) {
+        console.error("Erro ao adicionar profissional:", error);
+        alert("Erro ao adicionar profissional: " + error.message);
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = "💾 Salvar Profissional";
+    }
+}
+
+// Mostrar erro
+function mostrarErro(mensagem) {
+    elementos.listaProfissionaisPainel.innerHTML = `
+        <div style="color: red; padding: 20px; border: 1px solid red; border-radius: 5px; grid-column: 1 / -1;">
+            <h4>❌ Erro</h4>
+            <p>${mensagem}</p>
+        </div>
+    `;
+}
+
+// Tornar função global para uso no HTML
+window.abrirPerfilProfissional = abrirPerfilProfissional;
+
+// Inicializar quando o DOM estiver carregado
+window.addEventListener("DOMContentLoaded", inicializar);
