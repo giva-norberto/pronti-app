@@ -15,6 +15,7 @@ let horariosBase = {
     sabado: [{ inicio: '09:00', fim: '18:00' }],
     domingo: [{ inicio: '09:00', fim: '18:00' }]
 };
+let agendaEspecial = []; // [{tipo, mes, inicio, fim}]
 
 // Elementos DOM
 const elementos = {
@@ -26,36 +27,70 @@ const elementos = {
     nomeProfissional: document.getElementById('nome-profissional'),
     fotoProfissional: document.getElementById('foto-profissional'),
     tituloModalProfissional: document.getElementById('titulo-modal-profissional'),
-
-    // Modal de perfil
     modalPerfilProfissional: document.getElementById('modal-perfil-profissional'),
     perfilNomeProfissional: document.getElementById('perfil-nome-profissional'),
     servicosLista: document.getElementById('servicos-lista'),
     horariosLista: document.getElementById('horarios-lista'),
     btnCancelarPerfil: document.getElementById('btn-cancelar-perfil'),
-    btnSalvarPerfil: document.getElementById('btn-salvar-perfil')
+    btnSalvarPerfil: document.getElementById('btn-salvar-perfil'),
+    // Agenda especial
+    tabAgendaEspecial: document.getElementById('tab-agenda-especial'),
+    tabContentAgendaEspecial: document.getElementById('tab-content-agenda-especial'),
+    agendaTipo: document.getElementById('agenda-tipo'),
+    agendaMesArea: document.getElementById('agenda-mes-area'),
+    agendaIntervaloArea: document.getElementById('agenda-intervalo-area'),
+    agendaMes: document.getElementById('agenda-mes'),
+    agendaInicio: document.getElementById('agenda-inicio'),
+    agendaFim: document.getElementById('agenda-fim'),
+    btnAgendaEspecial: document.getElementById('btn-agenda-especial'),
+    agendaEspecialLista: document.getElementById('agenda-especial-lista')
 };
 
 // TABS do perfil
 function setupPerfilTabs() {
     const tabServicos = document.getElementById('tab-servicos');
     const tabHorarios = document.getElementById('tab-horarios');
+    const tabAgendaEspecial = document.getElementById('tab-agenda-especial');
     const contentServicos = document.getElementById('tab-content-servicos');
     const contentHorarios = document.getElementById('tab-content-horarios');
+    const contentAgendaEspecial = document.getElementById('tab-content-agenda-especial');
 
-    if (!tabServicos || !tabHorarios) return;
+    if (!tabServicos || !tabHorarios || !tabAgendaEspecial) return;
 
     tabServicos.onclick = () => {
         tabServicos.classList.add('active');
         tabHorarios.classList.remove('active');
+        tabAgendaEspecial.classList.remove('active');
         contentServicos.classList.add('active');
         contentHorarios.classList.remove('active');
+        contentAgendaEspecial.classList.remove('active');
     };
     tabHorarios.onclick = () => {
         tabHorarios.classList.add('active');
         tabServicos.classList.remove('active');
+        tabAgendaEspecial.classList.remove('active');
         contentHorarios.classList.add('active');
         contentServicos.classList.remove('active');
+        contentAgendaEspecial.classList.remove('active');
+    };
+    tabAgendaEspecial.onclick = () => {
+        tabAgendaEspecial.classList.add('active');
+        tabServicos.classList.remove('active');
+        tabHorarios.classList.remove('active');
+        contentAgendaEspecial.classList.add('active');
+        contentServicos.classList.remove('active');
+        contentHorarios.classList.remove('active');
+    };
+
+    // Agenda especial - alternância entre mês/intervalo
+    elementos.agendaTipo.onchange = function () {
+        if (this.value === "mes") {
+            elementos.agendaMesArea.style.display = "block";
+            elementos.agendaIntervaloArea.style.display = "none";
+        } else {
+            elementos.agendaMesArea.style.display = "none";
+            elementos.agendaIntervaloArea.style.display = "block";
+        }
     };
 }
 window.addEventListener('DOMContentLoaded', setupPerfilTabs);
@@ -208,8 +243,10 @@ async function abrirPerfilProfissional(profissionalId, nomeProfissional) {
     elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${nomeProfissional}`;
     renderizarServicos([]);
     renderizarHorarios(horariosBase);
+    agendaEspecial = [];
     await carregarDadosProfissional(profissionalId);
     elementos.modalPerfilProfissional.classList.add('show');
+    renderizarAgendaEspecial();
 }
 
 // Carregar dados do profissional
@@ -223,19 +260,17 @@ async function carregarDadosProfissional(profissionalId) {
         if (profissionalDoc.exists()) {
             const dados = profissionalDoc.data();
 
-            // Atualizar serviços selecionados
-            if (dados.servicos) {
-                renderizarServicos(dados.servicos);
-            } else {
-                renderizarServicos([]);
-            }
+            // Serviços
+            if (dados.servicos) renderizarServicos(dados.servicos);
+            else renderizarServicos([]);
 
-            // Atualizar horários: múltiplos intervalos por dia
-            if (dados.horarios) {
-                renderizarHorarios(dados.horarios);
-            } else {
-                renderizarHorarios(horariosBase);
-            }
+            // Horários: múltiplos intervalos/dia
+            if (dados.horarios) renderizarHorarios(dados.horarios);
+            else renderizarHorarios(horariosBase);
+
+            // Agenda especial
+            agendaEspecial = dados.agendaEspecial || [];
+            renderizarAgendaEspecial();
         }
     } catch (error) {
         console.error("Erro ao carregar dados do profissional:", error);
@@ -369,25 +404,79 @@ function coletarHorarios() {
     return horarios;
 }
 
-// Salvar perfil do profissional (serviços e horários)
+// Agenda especial
+function renderizarAgendaEspecial() {
+    const lista = elementos.agendaEspecialLista;
+    lista.innerHTML = '';
+    if (!agendaEspecial || agendaEspecial.length === 0) {
+        lista.innerHTML = '<div style="color:#888;">Nenhuma agenda especial cadastrada.</div>';
+        return;
+    }
+    agendaEspecial.forEach((item, idx) => {
+        let desc = '';
+        if (item.tipo === 'mes') {
+            desc = `Mês: <b>${item.mes}</b>`;
+        } else {
+            desc = `De <b>${item.inicio}</b> até <b>${item.fim}</b>`;
+        }
+        const div = document.createElement('div');
+        div.className = 'agenda-especial-item';
+        div.innerHTML = `
+            <span>${desc}</span>
+            <button class="btn btn-danger" data-agenda-idx="${idx}">Excluir</button>
+        `;
+        lista.appendChild(div);
+    });
+    // Remover agenda especial
+    lista.querySelectorAll('.btn-danger').forEach(btn => {
+        btn.onclick = function () {
+            const idx = parseInt(btn.getAttribute('data-agenda-idx'), 10);
+            agendaEspecial.splice(idx, 1);
+            renderizarAgendaEspecial();
+        };
+    });
+}
+
+// Adicionar agenda especial
+function adicionarAgendaEspecial() {
+    const tipo = elementos.agendaTipo.value;
+    if (tipo === 'mes') {
+        const mes = elementos.agendaMes.value;
+        if (!mes) return alert('Selecione o mês.');
+        agendaEspecial.push({ tipo: 'mes', mes });
+    } else {
+        const inicio = elementos.agendaInicio.value;
+        const fim = elementos.agendaFim.value;
+        if (!inicio || !fim) return alert('Informe o intervalo.');
+        agendaEspecial.push({ tipo: 'intervalo', inicio, fim });
+    }
+    renderizarAgendaEspecial();
+    elementos.formAgendaEspecial.reset();
+    elementos.agendaMesArea.style.display = "block";
+    elementos.agendaIntervaloArea.style.display = "none";
+}
+
+// Salvar perfil do profissional (serviços, horários, agenda especial)
 async function salvarPerfilProfissional() {
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
     try {
-        // Coletar serviços selecionados
+        // Serviços
         const servicosSelecionados = [];
         document.querySelectorAll('.servico-item.selected').forEach(item => {
             servicosSelecionados.push(item.getAttribute('data-servico-id'));
         });
 
-        // Coletar horários/intervalos
+        // Horários/intervalos
         const horarios = coletarHorarios();
 
-        // Atualizar no Firebase
+        // Agenda especial
+        // (pode salvar junto no documento do profissional)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
         await updateDoc(profissionalRef, {
             servicos: servicosSelecionados,
-            horarios: horarios
+            horarios: horarios,
+            agendaEspecial: agendaEspecial
         });
 
         // Fechar modal
@@ -429,6 +518,11 @@ function adicionarEventListeners() {
     elementos.btnSalvarPerfil.addEventListener("click", () => {
         salvarPerfilProfissional();
     });
+
+    // Agenda especial - adicionar
+    if (elementos.btnAgendaEspecial) {
+        elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
+    }
 
     // Fechar modais clicando fora
     [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
@@ -481,7 +575,8 @@ async function adicionarProfissional() {
         ehDono: false,
         servicos: [],
         horarios: horariosBase,
-        criadoEm: serverTimestamp()
+        criadoEm: serverTimestamp(),
+        agendaEspecial: []
     };
 
     try {
