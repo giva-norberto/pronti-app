@@ -1,7 +1,3 @@
-/**
- * dashboard.js - Firebase Modular v10+ revisado para DOM, gráficos e IA
- */
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -116,9 +112,6 @@ function criarHTMLDoResumo(resumo) {
     return html;
 }
 
-// =======================================================
-// SEÇÃO DOS GRÁFICOS
-// =======================================================
 let graficoMensalInstance = null;
 
 function gerarGraficoMensal(agendamentos) {
@@ -129,7 +122,6 @@ function gerarGraficoMensal(agendamentos) {
 
     if (!filtroMesInicio || !filtroAnoInicio || !filtroMesFim || !filtroAnoFim) return;
 
-    // 1. Popula os filtros de ano dinamicamente
     const anos = [...new Set(
         agendamentos
             .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
@@ -151,13 +143,11 @@ function gerarGraficoMensal(agendamentos) {
         filtroAnoFim.appendChild(option2);
     });
 
-    // 2. Define os valores padrão do filtro para o ano mais recente
-    filtroMesInicio.value = '0'; // Janeiro
+    filtroMesInicio.value = '0';
     filtroAnoInicio.value = anos[0] || new Date().getFullYear();
-    filtroMesFim.value = '11'; // Dezembro
+    filtroMesFim.value = '11';
     filtroAnoFim.value = anos[0] || new Date().getFullYear();
 
-    // 3. Função principal para renderizar/atualizar o gráfico
     const atualizarGrafico = () => {
         const dataInicio = new Date(filtroAnoInicio.value, filtroMesInicio.value, 1);
         const dataFim = new Date(filtroAnoFim.value, parseInt(filtroMesFim.value) + 1, 0);
@@ -222,13 +212,11 @@ function gerarGraficoMensal(agendamentos) {
         });
     };
 
-    // Adiciona os listeners para os filtros
     filtroMesInicio.addEventListener('change', atualizarGrafico);
     filtroAnoInicio.addEventListener('change', atualizarGrafico);
     filtroMesFim.addEventListener('change', atualizarGrafico);
     filtroAnoFim.addEventListener('change', atualizarGrafico);
 
-    // Renderiza o gráfico pela primeira vez com os valores padrão
     atualizarGrafico();
 }
 
