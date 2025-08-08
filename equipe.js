@@ -165,9 +165,11 @@ function renderizarEquipe(equipe) {
                 <button class="btn btn-edit" onclick="editarProfissional('${profissional.id}')">
                     ✏️ Editar
                 </button>
-                <button class="btn btn-danger" onclick="excluirProfissional('${profissional.id}')" ${profissional.ehDono ? "style='display:none'" : ""}>
+                ${!profissional.ehDono ? `
+                <button class="btn btn-danger" onclick="excluirProfissional('${profissional.id}')">
                     🗑️ Excluir
                 </button>
+                ` : ""}
             </div>
         `;
         elementos.listaProfissionaisPainel.appendChild(div);
