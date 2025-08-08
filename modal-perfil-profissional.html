@@ -1,40 +1,34 @@
-<div id="modal-perfil-profissional" class="modal profile-modal">
-  <div class="modal-content">
-    <button class="btn-fechar-modal" onclick="closeModal('modal-perfil-profissional')" aria-label="Fechar">&times;</button>
-    <div class="modal-header">
-      <h2>👤 Perfil do Profissional</h2>
-      <p id="perfil-profissional-nome"></p>
-    </div>
-    <!-- Painel de horários (integrado com horarios.js) -->
-    <form id="form-horarios">
-      <div class="form-group">
-        <label for="intervalo-atendimento">Intervalo dos agendamentos (minutos)</label>
-        <input type="number" id="intervalo-atendimento" min="5" step="5" value="30" required>
-      </div>
-      <div id="dias-container"></div>
-      <div class="form-actions">
-        <button type="submit" class="btn-submit">Salvar Horários</button>
-        <button type="button" id="btn-voltar-modal-perfil" class="btn-secondary">Voltar</button>
-      </div>
-    </form>
-    <!-- Painel de serviços vinculados -->
-    <div class="form-section">
-      <h3>Serviços Vinculados</h3>
-      <div id="servicos-container">
-        <!-- Preenchido via JS/Firebase -->
-        <!-- Exemplo estático:
-        <div class="servico-item">
-          <span>Barba</span>
-          <button type="button" class="btn-servico-vincular ativo">Ativo</button>
+<div id="modal-perfil-profissional" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
+            <p>Configure os serviços e horários de atendimento</p>
         </div>
-        <div class="servico-item">
-          <span>Corte</span>
-          <button type="button" class="btn-servico-vincular">Inativo</button>
+        <div class="perfil-section">
+            <h3>🛠️ Serviços Disponíveis</h3>
+            <p style="color: #7f8c8d; margin-bottom: 15px;">
+                Selecione os serviços que este profissional pode realizar:
+            </p>
+            <div id="servicos-lista" class="servicos-grid">
+                <!-- Serviços serão carregados via JS -->
+            </div>
         </div>
-        -->
-      </div>
+        <div class="perfil-section">
+            <h3>🕐 Horários de Atendimento</h3>
+            <p style="color: #7f8c8d; margin-bottom: 15px;">
+                Configure os horários de trabalho para cada dia da semana:
+            </p>
+            <div id="horarios-lista" class="horarios-grid">
+                <!-- Horários serão carregados via JS -->
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" id="btn-cancelar-perfil" class="btn btn-secondary">
+                ❌ Cancelar
+            </button>
+            <button type="button" id="btn-salvar-perfil" class="btn btn-success">
+                💾 Salvar Configurações
+            </button>
+        </div>
     </div>
-  </div>
 </div>
-<script src="horarios.js" type="module"></script>
-<script src="servicos.js" type="module"></script>
