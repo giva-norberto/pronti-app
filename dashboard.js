@@ -1,10 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
+/**
+ * dashboard.js - Versão Final com Filtro de Intervalo e Melhorias Visuais
+ */
+
+import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.7/firebase-auth.js";
+import { app } from "./firebase-config.js";
 import { gerarResumoDiarioInteligente } from './inteligencia.js';
 
-const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -43,22 +45,20 @@ async function carregarDashboard(uid) {
   } catch (error) {
     console.error("Erro ao carregar dados do dashboard:", error);
     const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content');
-    if (container) {
-      container.innerHTML = '<p style="color:red;">Não foi possível carregar os dados do dashboard.</p>';
-    }
+    container.innerHTML = '<p style="color:red;">Não foi possível carregar os dados do dashboard.</p>';
   }
 }
 
 function processarResumoIA(todosAgendamentos, servicosMap) {
     const container = document.getElementById('resumo-diario-container');
     if (!container) return;
-
+  
     container.innerHTML = '<p>🧠 Analisando seu dia...</p>';
-
+  
     const hoje = new Date();
-    const inicioDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0, 0);
-    const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
-
+    const inicioDoDia = new Date(hoje.setHours(0, 0, 0, 0));
+    const fimDoDia = new Date(hoje.setHours(23, 59, 59, 999));
+  
     const agendamentosDeHoje = todosAgendamentos.filter(ag => {
         if (!ag.horario || typeof ag.horario.toDate !== 'function') {
           return false;
@@ -66,7 +66,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
         const dataAgendamento = ag.horario.toDate();
         return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
     });
-
+  
     const agendamentosEnriquecidos = agendamentosDeHoje.map(ag => {
         const servico = servicosMap.get(ag.servicoId);
         if (!servico) return null;
@@ -80,7 +80,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
             fim
         };
     }).filter(Boolean);
-
+  
     const resumo = gerarResumoDiarioInteligente(agendamentosEnriquecidos);
     container.innerHTML = criarHTMLDoResumo(resumo);
 }
@@ -112,6 +112,9 @@ function criarHTMLDoResumo(resumo) {
     return html;
 }
 
+// =======================================================
+// SEÇÃO DOS GRÁFICOS
+// =======================================================
 let graficoMensalInstance = null;
 
 function gerarGraficoMensal(agendamentos) {
@@ -120,15 +123,14 @@ function gerarGraficoMensal(agendamentos) {
     const filtroMesFim = document.getElementById('filtro-mes-fim');
     const filtroAnoFim = document.getElementById('filtro-ano-fim');
 
-    if (!filtroMesInicio || !filtroAnoInicio || !filtroMesFim || !filtroAnoFim) return;
-
+    // 1. Popula os filtros de ano dinamicamente
     const anos = [...new Set(
         agendamentos
             .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
             .map(ag => ag.horario.toDate().getFullYear())
     )];
     anos.sort((a, b) => b - a);
-
+    
     filtroAnoInicio.innerHTML = '';
     filtroAnoFim.innerHTML = '';
     anos.forEach(ano => {
@@ -143,11 +145,13 @@ function gerarGraficoMensal(agendamentos) {
         filtroAnoFim.appendChild(option2);
     });
 
-    filtroMesInicio.value = '0';
-    filtroAnoInicio.value = anos[0] || new Date().getFullYear();
-    filtroMesFim.value = '11';
-    filtroAnoFim.value = anos[0] || new Date().getFullYear();
+    // 2. Define os valores padrão do filtro para 2025
+    filtroMesInicio.value = '0'; // Janeiro
+    filtroAnoInicio.value = '2025';
+    filtroMesFim.value = '11'; // Dezembro
+    filtroAnoFim.value = '2025';
 
+    // 3. Função principal para renderizar/atualizar o gráfico
     const atualizarGrafico = () => {
         const dataInicio = new Date(filtroAnoInicio.value, filtroMesInicio.value, 1);
         const dataFim = new Date(filtroAnoFim.value, parseInt(filtroMesFim.value) + 1, 0);
@@ -182,7 +186,7 @@ function gerarGraficoMensal(agendamentos) {
         }
 
         const ctx = document.getElementById('graficoMensal').getContext('2d');
-        graficoMensalInstance = new window.Chart(ctx, {
+        graficoMensalInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labelsOrdenados,
@@ -194,10 +198,10 @@ function gerarGraficoMensal(agendamentos) {
                     borderWidth: 1
                 }]
             },
-            plugins: [window.ChartDataLabels],
+            plugins: [ChartDataLabels],
             options: {
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                scales: { 
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } } 
                 },
                 plugins: {
                     legend: { display: false },
@@ -212,11 +216,13 @@ function gerarGraficoMensal(agendamentos) {
         });
     };
 
+    // Adiciona os listeners para os filtros
     filtroMesInicio.addEventListener('change', atualizarGrafico);
     filtroAnoInicio.addEventListener('change', atualizarGrafico);
     filtroMesFim.addEventListener('change', atualizarGrafico);
     filtroAnoFim.addEventListener('change', atualizarGrafico);
 
+    // Renderiza o gráfico pela primeira vez com os valores padrão
     atualizarGrafico();
 }
 
@@ -229,7 +235,7 @@ function gerarGraficoServicos(servicosMap, agendamentos) {
   const labels = Object.keys(contagemServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
   const dados = Object.values(contagemServicos);
   const ctx = document.getElementById('graficoServicos').getContext('2d');
-  new window.Chart(ctx, {
+  new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels,
@@ -241,7 +247,7 @@ function gerarGraficoServicos(servicosMap, agendamentos) {
         borderWidth: 1
       }]
     },
-    options: {
+    options: { 
       scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
       responsive: true,
       plugins: { legend: { display: false } }
@@ -261,20 +267,14 @@ function gerarGraficoFaturamento(servicosMap, agendamentos) {
   const labels = Object.keys(faturamentoServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
   const dados = Object.values(faturamentoServicos);
   const ctx = document.getElementById('graficoFaturamento').getContext('2d');
-  new window.Chart(ctx, {
+  new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels,
       datasets: [{
         label: 'Faturamento (R$)',
         data: dados,
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(255, 206, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)'
-        ],
+        backgroundColor: ['rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)'],
       }]
     },
     options: {
