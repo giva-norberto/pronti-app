@@ -5,81 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard Pronti</title>
   <style>
-    :root {
-      --azul: #0d6efd;
-      --claro: #f5f9ff;
-      --cinza: #666;
-      --branco: #fff;
-    }
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      margin: 0;
-      background: var(--claro);
+      background: #f5f9ff;
       color: #222;
-    }
-    header {
-      background: var(--azul);
-      color: var(--branco);
-      padding: 0.5rem 1rem;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 48px;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 220px;
+      background: #0d6efd;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 100vh;
       box-shadow: 0 2px 6px rgb(0 0 0 / 0.08);
+      position: sticky;
+      left: 0;
+      top: 0;
     }
-    header h1 {
-      font-size: 1.2rem;
-      margin: 0;
+    .sidebar-brand {
+      display: block;
+      font-size: 1.3rem;
       font-weight: bold;
-      letter-spacing: 0.5px;
-    }
-    nav {
-      display: flex;
-      gap: 1rem;
-    }
-    nav a {
-      color: var(--branco);
+      padding: 1rem;
+      color: #fff;
       text-decoration: none;
-      font-size: 1rem;
-      font-weight: 500;
-      padding: 0.25rem 0.7rem;
-      border-radius: 4px;
-      transition: background 0.2s;
+      letter-spacing: 1px;
+      text-align: center;
+      background: #0b5ed7;
     }
-    nav a:hover {
-      background: rgba(255,255,255,0.1);
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 2rem auto 1.5rem;
+    .sidebar-links {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin: 1rem 0;
       padding: 0 1rem;
     }
+    .sidebar-links a {
+      color: #fff;
+      text-decoration: none;
+      padding: 0.7rem 0.8rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s;
+    }
+    .sidebar-links a.active,
+    .sidebar-links a:hover {
+      background: #1561e2;
+      font-weight: bold;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 1rem;
+      text-align: center;
+    }
+    .btn-logout {
+      background: #fff;
+      color: #0d6efd;
+      border: none;
+      border-radius: 4px;
+      padding: 0.6rem 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-logout:hover {
+      background: #e9f0ff;
+      color: #1561e2;
+    }
+    main {
+      flex: 1;
+      padding: 2.5rem 2rem 2rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
     h2 {
+      color: #0d6efd;
       margin-top: 2rem;
-      color: var(--azul);
-      font-size: 1.1rem;
+      font-size: 1.12rem;
       font-weight: 600;
     }
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-top: 1rem;
-    }
     .resumo-card {
-      background: var(--branco);
+      background: #fff;
       padding: 1rem;
       border-radius: 6px;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.07);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
       max-width: 500px;
       margin-bottom: 1.5rem;
-    }
-    .resumo-card h3 {
-      margin-top: 0;
-      font-size: 1.05rem;
-      color: var(--azul);
-      font-weight: bold;
     }
     .resumo-metricas {
       display: flex;
@@ -97,11 +115,11 @@
     .resumo-footer {
       margin-top: 1rem;
       font-style: italic;
-      color: var(--cinza);
+      color: #666;
     }
     canvas, img, video {
       overflow: hidden !important;
-      background: var(--branco);
+      background: #fff;
       border-radius: 6px;
       box-shadow: 0 2px 6px rgb(0 0 0 / 0.07);
       max-width: 100%;
@@ -144,42 +162,52 @@
     .loading {
       text-align: center;
       padding: 1.5rem;
-      color: var(--cinza);
+      color: #666;
     }
     @media (max-width: 900px) {
-      main { max-width: 100%; }
-      .dashboard-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+      main { max-width: 100%; padding: 1rem; }
       canvas { height: 220px; }
+      .sidebar { width: 70px; }
+      .sidebar-brand { font-size: 1rem; padding: 0.7rem; }
+      .sidebar-links a span { font-size: 1.25rem; }
+      .sidebar-links a { font-size: 0; justify-content: center; padding: 0.7rem 0.3rem; }
+      .sidebar-links a span { font-size: 1.25rem; }
+      .sidebar-links a.active,
+      .sidebar-links a:hover { background: #1561e2; }
     }
     @media (max-width: 600px) {
-      header { flex-direction: column; align-items: flex-start; }
-      nav { margin-top: 0.5rem; }
-      main { padding: 0.5rem; }
-      .filtros { flex-direction: column; gap: 0.5rem; }
-      .dashboard-grid { gap: 1rem; }
-      .resumo-card { padding: 0.6rem; }
-      canvas { height: 150px; }
+      body { flex-direction: column; }
+      .sidebar { flex-direction: row; width: 100vw; min-height: 0; height: 56px; position: fixed; top: 0; left: 0; z-index: 10; }
+      .sidebar-brand { display: none; }
+      .sidebar-links { flex-direction: row; gap: 2px; padding: 0; margin: 0; }
+      .sidebar-links a { font-size: 0; padding: 0.7rem 0.4rem; }
+      .sidebar-links a span { font-size: 1.32rem; }
+      .sidebar-footer { display: none; }
+      main { margin-top: 56px; padding: 0.7rem; }
     }
   </style>
 </head>
 <body>
-
-  <header>
-    <h1>Dashboard Pronti</h1>
-    <nav>
-      <a href="/">Início</a>
-      <a href="/dashboard.html" aria-current="page">Dashboard</a>
-      <a href="/agenda.html">Agenda</a>
-      <a href="/configuracoes.html">Configurações</a>
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <nav class="sidebar-links">
+      <a href="dashboard.html" class="active"><span>🏠</span> Dashboard</a>
+      <a href="servicos.html"><span>🛠️</span> Serviços</a>
+      <a href="agenda.html"><span>📅</span> Agenda</a>
+      <a href="clientes.html"><span>👤</span> Clientes</a>
+      <a href="equipe.html"><span>👥</span> Equipe</a>
+      <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
     </nav>
-  </header>
-
+    <div class="sidebar-footer">
+      <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
+  </aside>
   <main>
     <h2>Resumo do Dia</h2>
     <section id="resumo-diario-container" class="resumo-card">
       <div class="loading">🔄 Carregando dados...</div>
     </section>
-
     <h2>Gráfico de Serviços</h2>
     <canvas id="graficoServicos" aria-label="Gráfico de número de agendamentos por serviço" role="img"></canvas>
     <h2>Gráfico de Faturamento</h2>
@@ -207,15 +235,10 @@
     </div>
     <canvas id="graficoMensal" aria-label="Gráfico mensal de agendamentos" role="img"></canvas>
   </main>
-
   <!-- Bibliotecas globais -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-
-  <!-- Firebase SDK e lógica do dashboard -->
-  <script type="module">
-    // ... (todo o JS que você já usa, igual ao seu atual)
-    // Pode colar exatamente o bloco JS do seu código anterior aqui.
-  </script>
+  <!-- Firebase SDK e lógica do dashboard, se quiser usar -->
+  <!-- ... JS aqui ... -->
 </body>
 </html>
