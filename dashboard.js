@@ -1,7 +1,5 @@
 /**
- * dashboard.js - Versão Final com Filtro de Intervalo e Melhorias Visuais
- * Atualizado para Firebase Modular v10+
- * Revisado para evitar erros de DOM e garantir renderização correta
+ * dashboard.js - Firebase Modular v10+ revisado para DOM, gráficos e IA
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -10,7 +8,6 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { firebaseConfig } from "./firebase-config.js";
 import { gerarResumoDiarioInteligente } from './inteligencia.js';
 
-// Inicialização Firebase Modular v10+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -59,13 +56,13 @@ async function carregarDashboard(uid) {
 function processarResumoIA(todosAgendamentos, servicosMap) {
     const container = document.getElementById('resumo-diario-container');
     if (!container) return;
-  
+
     container.innerHTML = '<p>🧠 Analisando seu dia...</p>';
-  
+
     const hoje = new Date();
     const inicioDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0, 0);
     const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
-  
+
     const agendamentosDeHoje = todosAgendamentos.filter(ag => {
         if (!ag.horario || typeof ag.horario.toDate !== 'function') {
           return false;
@@ -73,7 +70,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
         const dataAgendamento = ag.horario.toDate();
         return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
     });
-  
+
     const agendamentosEnriquecidos = agendamentosDeHoje.map(ag => {
         const servico = servicosMap.get(ag.servicoId);
         if (!servico) return null;
@@ -87,7 +84,7 @@ function processarResumoIA(todosAgendamentos, servicosMap) {
             fim
         };
     }).filter(Boolean);
-  
+
     const resumo = gerarResumoDiarioInteligente(agendamentosEnriquecidos);
     container.innerHTML = criarHTMLDoResumo(resumo);
 }
@@ -139,7 +136,7 @@ function gerarGraficoMensal(agendamentos) {
             .map(ag => ag.horario.toDate().getFullYear())
     )];
     anos.sort((a, b) => b - a);
-    
+
     filtroAnoInicio.innerHTML = '';
     filtroAnoFim.innerHTML = '';
     anos.forEach(ano => {
@@ -209,8 +206,8 @@ function gerarGraficoMensal(agendamentos) {
             },
             plugins: [window.ChartDataLabels],
             options: {
-                scales: { 
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } } 
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
                 },
                 plugins: {
                     legend: { display: false },
@@ -256,7 +253,7 @@ function gerarGraficoServicos(servicosMap, agendamentos) {
         borderWidth: 1
       }]
     },
-    options: { 
+    options: {
       scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
       responsive: true,
       plugins: { legend: { display: false } }
