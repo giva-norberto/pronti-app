@@ -134,6 +134,7 @@ input[type="date"] {
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
+    background: #fff;
 }
 
 .card-profissional:hover {
@@ -355,14 +356,13 @@ input[type="date"] {
 
 #info-servicos {
     display: grid;
-    /* Cria um grid responsivo para os cards */
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 15px;
 }
 
 .servico-info-card {
-    background-color: #F9FAFB; /* Um cinza bem claro, quase branco */
-    border: 1px solid #E5E7EB; /* Borda sutil */
+    background-color: #F9FAFB;
+    border: 1px solid #E5E7EB;
     border-radius: 8px;
     padding: 20px;
     text-align: center;
@@ -379,11 +379,74 @@ input[type="date"] {
     margin: 0 0 8px 0;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #4F46E5; /* Cor primária para o título */
+    color: #4F46E5;
 }
 
 .servico-info-card p {
     margin: 4px 0;
-    color: #6B7280; /* Cor de texto mais suave */
+    color: #6B7280;
     font-size: 0.9rem;
+}
+
+/* =============================================== */
+/* [NOVOS] CARDS DE SERVIÇOS (PADRÃO PRONTI/SELEÇÃO) */
+/* =============================================== */
+.service-item-card {
+    background: linear-gradient(95deg, #eef2ff 60%, #f3f4f6 100%);
+    border: 2px solid #e0e7ff;
+    border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.07);
+    padding: 18px 16px;
+    margin: 0 0 12px 0;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    display: flex;
+    flex-direction: column;
+}
+.service-item-card:hover:not(.selecionado) {
+    border-color: #4f46e5;
+    box-shadow: 0 6px 12px rgba(79, 70, 229, 0.13);
+    transform: translateY(-2px) scale(1.02);
+}
+.service-item-card.selecionado {
+    border-color: #8b5cf6;
+    background: linear-gradient(95deg, #ec4899 20%, #8b5cf6 100%);
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.12);
+    transform: scale(1.03);
+}
+.service-card-header {
+    display: flex; align-items: center; gap: 8px;
+}
+.service-card-header h4 {
+    margin: 0; font-size: 1.12rem; font-weight: 600;
+}
+.service-icon {
+    font-size: 1.4rem;
+}
+.service-desc {
+    margin: 7px 0 10px 0;
+    font-size: 0.98rem;
+    color: #6b7280;
+}
+.service-item-card.selecionado .service-desc,
+.service-item-card.selecionado .service-duracao,
+.service-item-card.selecionado .service-preco {
+    color: #fff;
+}
+.service-card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.97rem;
+}
+.service-duracao, .service-preco {
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 7px;
+    background: #eef2ff;
+    color: #4f46e5;
+}
+.service-item-card.selecionado .service-duracao,
+.service-item-card.selecionado .service-preco {
+    background: rgba(255,255,255,0.19);
+    color: #fff;
 }
