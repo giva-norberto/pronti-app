@@ -142,14 +142,6 @@ body {
     box-shadow: 0 15px 30px rgba(0,0,0,0.15);
 }
 
-.profissional-card .profissional-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-}
-
 .profissional-foto {
     width: 60px;
     height: 60px;
@@ -189,6 +181,14 @@ body {
     border-radius: 15px;
     font-size: 0.8rem;
     font-weight: 500;
+}
+
+.profissional-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
 }
 
 /* MODAL CENTRALIZADO */
@@ -383,6 +383,30 @@ body {
 .btn-incluir-intervalo:hover {
     background: #00f2fe;
 }
+
+/* Agenda Especial */
+.agenda-especial-area {
+    padding: 10px 0;
+}
+#agenda-especial-lista {
+    font-size: 0.97rem;
+}
+.agenda-especial-item {
+    background: #f3f6fa;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 6px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.agenda-especial-item .btn-danger {
+    padding: 2px 9px;
+    font-size: 0.87rem;
+}
+
 @media (max-width: 768px) {
     .container {
         margin: 10px;
