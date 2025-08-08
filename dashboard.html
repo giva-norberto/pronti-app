@@ -5,134 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard Completo</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 1rem;
-      background: #f5f9ff;
-      color: #222;
-    }
-    h2 {
-      margin-top: 2rem;
-      color: #0d6efd;
-    }
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-top: 1rem;
-    }
-    .resumo-card {
-      background: white;
-      padding: 1rem;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-      max-width: 500px;
-    }
-    .resumo-metricas {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .metrica {
-      flex: 1;
-      background: #e9f0ff;
-      padding: 0.5rem;
-      border-radius: 4px;
-      text-align: center;
-    }
-    .resumo-footer {
-      margin-top: 1rem;
-      font-style: italic;
-      color: #666;
-    }
-    canvas {
-      background: white;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-      max-width: 100%;
-      height: 320px;
-    }
-    .filtros {
-      margin-bottom: 1rem;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .filtros label {
-      font-weight: bold;
-      margin-right: 0.25rem;
-    }
-    select {
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-    .error-message {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 1rem;
-      border-radius: 6px;
-      margin: 1rem 0;
-    }
-    .loading {
-      text-align: center;
-      padding: 2rem;
-      color: #666;
-    }
+    body { font-family: Arial, sans-serif; margin: 1rem; background: #f5f9ff; color: #222; }
+    h2 { margin-top: 2rem; color: #0d6efd; }
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem; }
+    .resumo-card { background: white; padding: 1rem; border-radius: 6px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.1); max-width: 500px; }
+    .resumo-metricas { display: flex; gap: 1rem; margin-top: 1rem; }
+    .metrica { flex: 1; background: #e9f0ff; padding: 0.5rem; border-radius: 4px; text-align: center; }
+    .resumo-footer { margin-top: 1rem; font-style: italic; color: #666; }
+    canvas { background: white; border-radius: 6px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.1); max-width: 100%; height: 320px; }
+    .filtros { margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .filtros label { font-weight: bold; margin-right: 0.25rem; }
+    select { padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #ccc; }
+    .error-message { background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 6px; margin: 1rem 0; }
+    .loading { text-align: center; padding: 2rem; color: #666; }
   </style>
 </head>
 <body>
 
   <h1>Dashboard Completo</h1>
-
   <section id="resumo-diario-container" class="resumo-card">
     <div class="loading">🔄 Carregando dados...</div>
   </section>
 
   <h2>Gráfico de Serviços</h2>
   <canvas id="graficoServicos" aria-label="Gráfico de número de agendamentos por serviço" role="img"></canvas>
-
   <h2>Gráfico de Faturamento</h2>
   <canvas id="graficoFaturamento" aria-label="Gráfico de faturamento por serviço" role="img"></canvas>
-
   <h2>Gráfico Mensal</h2>
   <div class="filtros">
     <label for="filtro-mes-inicio">Mês Início:</label>
     <select id="filtro-mes-inicio" aria-label="Mês de início do filtro">
-      <option value="0">Jan</option>
-      <option value="1">Fev</option>
-      <option value="2">Mar</option>
-      <option value="3">Abr</option>
-      <option value="4">Mai</option>
-      <option value="5">Jun</option>
-      <option value="6">Jul</option>
-      <option value="7">Ago</option>
-      <option value="8">Set</option>
-      <option value="9">Out</option>
-      <option value="10">Nov</option>
-      <option value="11">Dez</option>
+      <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
+      <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
+      <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
+      <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
     </select>
-
     <label for="filtro-ano-inicio">Ano Início:</label>
     <select id="filtro-ano-inicio" aria-label="Ano de início do filtro"></select>
-
     <label for="filtro-mes-fim">Mês Fim:</label>
     <select id="filtro-mes-fim" aria-label="Mês de fim do filtro">
-      <option value="0">Jan</option>
-      <option value="1">Fev</option>
-      <option value="2">Mar</option>
-      <option value="3">Abr</option>
-      <option value="4">Mai</option>
-      <option value="5">Jun</option>
-      <option value="6">Jul</option>
-      <option value="7">Ago</option>
-      <option value="8">Set</option>
-      <option value="9">Out</option>
-      <option value="10">Nov</option>
-      <option value="11">Dez</option>
+      <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
+      <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
+      <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
+      <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
     </select>
-
     <label for="filtro-ano-fim">Ano Fim:</label>
     <select id="filtro-ano-fim" aria-label="Ano de fim do filtro"></select>
   </div>
@@ -142,14 +58,12 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK e lógica do dashboard -->
   <script type="module">
-    // Importações do Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    // Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
       authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -159,28 +73,22 @@
       appId: "1:736700619274:web:557aa247905e56fa7e5df3"
     };
 
-    // Inicialização do Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // Variável global para o gráfico mensal
     let graficoMensalInstance = null;
 
-    // Função principal de inicialização
     document.addEventListener('DOMContentLoaded', () => {
       onAuthStateChanged(auth, (user) => {
         if (user) {
           carregarDashboard(user.uid);
         } else {
-          // Para teste, vamos simular dados em vez de redirecionar
-          console.log('Usuário não autenticado, carregando dados de teste...');
           carregarDadosTeste();
         }
       });
     });
 
-    // Função para carregar dados reais do Firebase
     async function carregarDashboard(uid) {
       try {
         const servicosCollection = collection(db, "users", uid, "servicos");
@@ -193,69 +101,55 @@
 
         const agendamentos = agendamentosSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
         const servicosMap = new Map();
-        servicosSnapshot.forEach(doc => {
-          servicosMap.set(doc.id, doc.data());
-        });
+        servicosSnapshot.forEach(doc => servicosMap.set(doc.id, doc.data()));
 
         processarResumoIA(agendamentos, servicosMap);
-
-        if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
-        if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
-        if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
+        gerarGraficoServicos(servicosMap, agendamentos);
+        gerarGraficoFaturamento(servicosMap, agendamentos);
+        gerarGraficoMensal(agendamentos);
 
       } catch (error) {
-        console.error("Erro ao carregar dados do dashboard:", error);
         mostrarErro("Não foi possível carregar os dados do dashboard. Verifique sua conexão com o Firebase.");
       }
     }
 
-    // Função para carregar dados de teste (para demonstração)
     function carregarDadosTeste() {
-      console.log('Carregando dados de teste...');
-      
-      // Dados de teste
       const servicosMap = new Map([
         ['1', { nome: 'Corte de Cabelo', preco: 30, duracao: 30 }],
         ['2', { nome: 'Barba', preco: 20, duracao: 20 }],
         ['3', { nome: 'Corte + Barba', preco: 45, duracao: 50 }]
       ]);
-
+      const agora = new Date();
       const agendamentos = [
-        { id: '1', servicoId: '1', clienteNome: 'João Silva', horario: { toDate: () => new Date() } },
-        { id: '2', servicoId: '2', clienteNome: 'Maria Santos', horario: { toDate: () => new Date(Date.now() + 3600000) } },
-        { id: '3', servicoId: '3', clienteNome: 'Pedro Costa', horario: { toDate: () => new Date(Date.now() + 7200000) } }
+        { id: '1', servicoId: '1', clienteNome: 'João Silva', horario: { toDate: () => agora } },
+        { id: '2', servicoId: '2', clienteNome: 'Maria Santos', horario: { toDate: () => new Date(agora.getTime() + 3600000) } },
+        { id: '3', servicoId: '3', clienteNome: 'Pedro Costa', horario: { toDate: () => new Date(agora.getTime() + 7200000) } }
       ];
-
       processarResumoIA(agendamentos, servicosMap);
       gerarGraficoServicos(servicosMap, agendamentos);
       gerarGraficoFaturamento(servicosMap, agendamentos);
       gerarGraficoMensal(agendamentos);
     }
 
-    // Função para mostrar erro
     function mostrarErro(mensagem) {
-      const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content') || document.body;
+      const container = document.body;
       const errorDiv = document.createElement('div');
       errorDiv.className = 'error-message';
       errorDiv.innerHTML = `<strong>Erro:</strong> ${mensagem}`;
       container.appendChild(errorDiv);
     }
 
-    // Função para processar resumo IA
     function processarResumoIA(todosAgendamentos, servicosMap) {
       const container = document.getElementById('resumo-diario-container');
       if (!container) return;
 
       container.innerHTML = '<p>🧠 Analisando seu dia...</p>';
-
       const hoje = new Date();
       const inicioDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0, 0);
       const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
 
       const agendamentosDeHoje = todosAgendamentos.filter(ag => {
-        if (!ag.horario || typeof ag.horario.toDate !== 'function') {
-          return false;
-        }
+        if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
         const dataAgendamento = ag.horario.toDate();
         return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
       });
@@ -278,7 +172,6 @@
       container.innerHTML = criarHTMLDoResumo(resumo);
     }
 
-    // Função IA para gerar resumo
     function gerarResumoDiarioInteligente(agendamentos) {
       if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
         return { totalAtendimentos: 0, mensagem: "Nenhum agendamento para hoje." };
@@ -349,13 +242,11 @@
       return html;
     }
 
-    // Função para gerar gráfico mensal
     function gerarGraficoMensal(agendamentos) {
       const filtroMesInicio = document.getElementById('filtro-mes-inicio');
       const filtroAnoInicio = document.getElementById('filtro-ano-inicio');
       const filtroMesFim = document.getElementById('filtro-mes-fim');
       const filtroAnoFim = document.getElementById('filtro-ano-fim');
-
       if (!filtroMesInicio || !filtroAnoInicio || !filtroMesFim || !filtroAnoFim) return;
 
       const anos = [...new Set(
@@ -364,11 +255,7 @@
           .map(ag => ag.horario.toDate().getFullYear())
       )];
       anos.sort((a, b) => b - a);
-
-      // Se não há anos nos dados, usar o ano atual
-      if (anos.length === 0) {
-        anos.push(new Date().getFullYear());
-      }
+      if (anos.length === 0) anos.push(new Date().getFullYear());
 
       filtroAnoInicio.innerHTML = '';
       filtroAnoFim.innerHTML = '';
@@ -385,9 +272,9 @@
       });
 
       filtroMesInicio.value = '0';
-      filtroAnoInicio.value = anos[0] || new Date().getFullYear();
+      filtroAnoInicio.value = anos[0];
       filtroMesFim.value = '11';
-      filtroAnoFim.value = anos[0] || new Date().getFullYear();
+      filtroAnoFim.value = anos[0];
 
       const atualizarGrafico = () => {
         const dataInicio = new Date(filtroAnoInicio.value, filtroMesInicio.value, 1);
@@ -435,9 +322,7 @@
           },
           plugins: (typeof window.ChartDataLabels !== "undefined") ? [window.ChartDataLabels] : [],
           options: {
-            scales: { 
-              y: { beginAtZero: true, ticks: { stepSize: 1 } } 
-            },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
             plugins: {
               legend: { display: false },
               datalabels: {
@@ -508,10 +393,8 @@
             label: 'Faturamento (R$)',
             data: dados,
             backgroundColor: [
-              'rgba(255, 99, 132, 0.7)',
-              'rgba(54, 162, 235, 0.7)',
-              'rgba(255, 206, 86, 0.7)',
-              'rgba(75, 192, 192, 0.7)',
+              'rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)',
+              'rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)',
               'rgba(153, 102, 255, 0.7)'
             ],
           }]
@@ -524,14 +407,7 @@
         }
       });
     }
-
-    // Tornar as funções globais para debug
-    window.carregarDadosTeste = carregarDadosTeste;
-    window.carregarDashboard = carregarDashboard;
   </script>
 
 </body>
 </html>
-
-
-
