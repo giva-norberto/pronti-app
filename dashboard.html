@@ -1,106 +1,137 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pronti - Dashboard</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Completo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 1rem;
+      background: #f5f9ff;
+      color: #222;
+    }
+    h2 {
+      margin-top: 2rem;
+      color: #0d6efd;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+    .resumo-card {
+      background: white;
+      padding: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      max-width: 500px;
+    }
+    .resumo-metricas {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .metrica {
+      flex: 1;
+      background: #e9f0ff;
+      padding: 0.5rem;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .resumo-footer {
+      margin-top: 1rem;
+      font-style: italic;
+      color: #666;
+    }
+    canvas {
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      max-width: 100%;
+      height: 320px;
+    }
+    .filtros {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filtros label {
+      font-weight: bold;
+      margin-right: 0.25rem;
+    }
+    select {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Sidebar padrão -->
-  <aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <div class="sidebar-links">
-      <a href="dashboard.html" class="active">Dashboard</a>
-      <a href="index.html">Home</a>
-      <a href="servicos.html">Serviços</a>
-      <a href="agenda.html">Agenda</a>
-      <a href="clientes.html">Clientes</a>
-      <a href="perfil.html">Meu Perfil</a>
-      <a id="link-minha-vitrine" href="#">Minha Vitrine</a>
-    </div>
-  </aside>
+  <h1>Dashboard Completo</h1>
 
-  <!-- Conteúdo principal -->
-  <main class="main-content">
-    <h1>Dashboard</h1>
-    <p>Métricas e insights sobre o seu negócio.</p>
+  <section id="resumo-diario-container" class="resumo-card">
+    <!-- Resumo diário inteligente aparecerá aqui -->
+  </section>
 
-    <!-- Resumo diário -->
-    <div id="resumo-diario-container"></div>
+  <h2>Gráfico de Serviços</h2>
+  <canvas id="graficoServicos" aria-label="Gráfico de número de agendamentos por serviço" role="img"></canvas>
 
-    <!-- Gráficos -->
-    <div class="dashboard-grid">
-      <div class="chart-container">
-        <h2>Serviços Mais Agendados</h2>
-        <canvas id="graficoServicos"></canvas>
-      </div>
+  <h2>Gráfico de Faturamento</h2>
+  <canvas id="graficoFaturamento" aria-label="Gráfico de faturamento por serviço" role="img"></canvas>
 
-      <div class="chart-container">
-        <h2>Faturamento por Serviço</h2>
-        <canvas id="graficoFaturamento"></canvas>
-      </div>
+  <h2>Gráfico Mensal</h2>
+  <div class="filtros">
+    <label for="filtro-mes-inicio">Mês Início:</label>
+    <select id="filtro-mes-inicio" aria-label="Mês de início do filtro">
+      <option value="0">Jan</option>
+      <option value="1">Fev</option>
+      <option value="2">Mar</option>
+      <option value="3">Abr</option>
+      <option value="4">Mai</option>
+      <option value="5">Jun</option>
+      <option value="6">Jul</option>
+      <option value="7">Ago</option>
+      <option value="8">Set</option>
+      <option value="9">Out</option>
+      <option value="10">Nov</option>
+      <option value="11">Dez</option>
+    </select>
 
-      <div class="chart-container full-width">
-        <h2>Agendamentos por Mês</h2>
+    <label for="filtro-ano-inicio">Ano Início:</label>
+    <select id="filtro-ano-inicio" aria-label="Ano de início do filtro"></select>
 
-        <!-- Filtros -->
-        <div class="filtro-grafico" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <span>De:</span>
-          <select id="filtro-mes-inicio">
-            <option value="0">Janeiro</option>
-            <option value="1">Fevereiro</option>
-            <option value="2">Março</option>
-            <option value="3">Abril</option>
-            <option value="4">Maio</option>
-            <option value="5">Junho</option>
-            <option value="6">Julho</option>
-            <option value="7">Agosto</option>
-            <option value="8">Setembro</option>
-            <option value="9">Outubro</option>
-            <option value="10">Novembro</option>
-            <option value="11">Dezembro</option>
-          </select>
-          <select id="filtro-ano-inicio"></select>
+    <label for="filtro-mes-fim">Mês Fim:</label>
+    <select id="filtro-mes-fim" aria-label="Mês de fim do filtro">
+      <option value="0">Jan</option>
+      <option value="1">Fev</option>
+      <option value="2">Mar</option>
+      <option value="3">Abr</option>
+      <option value="4">Mai</option>
+      <option value="5">Jun</option>
+      <option value="6">Jul</option>
+      <option value="7">Ago</option>
+      <option value="8">Set</option>
+      <option value="9">Out</option>
+      <option value="10">Nov</option>
+      <option value="11">Dez</option>
+    </select>
 
-          <span style="margin-left: 10px;">Até:</span>
-          <select id="filtro-mes-fim">
-            <option value="0">Janeiro</option>
-            <option value="1">Fevereiro</option>
-            <option value="2">Março</option>
-            <option value="3">Abril</option>
-            <option value="4">Maio</option>
-            <option value="5">Junho</option>
-            <option value="6">Julho</option>
-            <option value="7">Agosto</option>
-            <option value="8">Setembro</option>
-            <option value="9">Outubro</option>
-            <option value="10">Novembro</option>
-            <option value="11">Dezembro</option>
-          </select>
-          <select id="filtro-ano-fim"></select>
-        </div>
+    <label for="filtro-ano-fim">Ano Fim:</label>
+    <select id="filtro-ano-fim" aria-label="Ano de fim do filtro"></select>
+  </div>
+  <canvas id="graficoMensal" aria-label="Gráfico mensal de agendamentos" role="img"></canvas>
 
-        <canvas id="graficoMensal"></canvas>
-      </div>
-    </div>
-  </main>
-
-  <!-- Dependências globais -->
+  <!-- Bibliotecas globais -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script>
-    lucide.createIcons();
-  </script>
 
-  <!-- Script principal do dashboard -->
-  <script type="module" src="dashboard.js"></script>
-
-  <!-- Ajuste de links da vitrine -->
-  <script type="module" src="link-fixer.js"></script>
+  <!-- Script do dashboard (módulo ES) -->
+  <script type="module" src="./dashboard-completo.js"></script>
 
 </body>
 </html>
