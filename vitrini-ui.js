@@ -2,126 +2,46 @@ import { cancelarAgendamento, buscarEExibirAgendamentos } from './vitrini-agenda
 import { currentUser } from './vitrini-auth.js';
 
 /**
- * Renderiza toda a página de "Informações", incluindo dados da empresa,
- * serviços e contato.
- * @param {object} empresa - Dados do documento da empresa.
- * @param {Array} profissionais - Lista de profissionais da empresa.
+ * Renderiza a barra de menu no topo.
+ * @param {string} ativo - Nome do menu ativo.
  */
-export function renderizarPaginaInformacoes(empresa, profissionais) {
-    if (!empresa) return;
-
-    // Preenche o topo (nome e logo)
-    document.title = empresa.nomeFantasia || "Agendamento Online";
-    document.getElementById('nome-negocio-publico').textContent = empresa.nomeFantasia || "Nome do Negócio";
-    if (empresa.logoUrl) {
-        document.getElementById('logo-publico').src = empresa.logoUrl;
-    }
-
-    // Preenche o card "Sobre o Negócio"
-    const infoNegocioDiv = document.getElementById('info-negocio');
-    if (infoNegocioDiv) {
-        infoNegocioDiv.innerHTML = `<p>${empresa.descricao || 'Nenhuma descrição fornecida.'}</p>`;
-    }
-
-    // Preenche o card "Contato"
-    const dono = profissionais.find(p => p.id === empresa.donoId);
-    const containerContato = document.getElementById('info-contato');
-    if (containerContato) {
-        if (dono) {
-            containerContato.innerHTML = `
-                ${dono.telefone ? `<p><strong>Telefone:</strong> ${dono.telefone}</p>` : ''}
-                ${dono.email ? `<p><strong>Email:</strong> ${dono.email}</p>` : ''}
-                ${dono.endereco ? `<p><strong>Endereço:</strong> ${dono.endereco}</p>` : ''}
-            `;
-        } else {
-            containerContato.innerHTML = "<p>Informações de contato não disponíveis.</p>";
-        }
-    }
-
-    // Preenche o card "Serviços Oferecidos"
-    const todosOsServicos = new Map();
-    profissionais.forEach(prof => {
-        if (prof.servicos && prof.visivelNaVitrine !== false) {
-            prof.servicos.forEach(servico => {
-                if (servico.visivelNaVitrine !== false) {
-                    todosOsServicos.set(servico.id, servico);
-                }
-            });
-        }
-    });
-
-    const containerServicos = document.getElementById('info-servicos');
-    if (containerServicos) {
-        if (todosOsServicos.size > 0) {
-            containerServicos.innerHTML = [...todosOsServicos.values()]
-                .sort((a, b) => {
-                    // Se não tiver nome, ordena pelo id
-                    if (!a.nome || !b.nome) return (a.id || '').localeCompare(b.id || '');
-                    return a.nome.localeCompare(b.nome);
-                })
-                .map(s => `
-                    <div class="service-item-card">
-                        <div class="service-card-header">
-                            ${s.icone ? `<span class="service-icon">${s.icone}</span>` : ""}
-                            <h4>${s.nome ? s.nome : '<span style="color:#ef4444">Sem nome</span>'}</h4>
-                        </div>
-                        <p class="service-desc">${(typeof s.descricao === 'string' && s.descricao.trim()) ? s.descricao : "Sem descrição."}</p>
-                        <div class="service-card-footer">
-                            <span class="service-duracao">${s.duracao ? s.duracao + ' min' : 'Duração não informada'}</span>
-                            <span class="service-preco">
-                                ${typeof s.preco === "number" ? 'R$ ' + parseFloat(s.preco).toFixed(2).replace('.', ',') : 'Preço não informado'}
-                            </span>
-                        </div>
-                    </div>
-                `).join('');
-        } else {
-            containerServicos.innerHTML = "<p>Nenhum serviço oferecido no momento.</p>";
-        }
-    }
-}
-
-/**
- * Renderiza os cards de todos os profissionais disponíveis para seleção na aba "Agendar".
- * @param {Array} profissionais - Lista de profissionais da empresa.
- * @param {Function} onSelectProfissional - Callback a ser chamado quando um profissional é selecionado.
- */
-export function renderizarProfissionais(profissionais, onSelectProfissional) {
-    const container = document.getElementById('lista-profissionais');
-    if (!container) return;
-
-    container.innerHTML = profissionais.map(prof => `
-        <div class="card-profissional" data-id="${prof.id}">
-            <img src="${prof.fotoUrl || 'https://placehold.co/100x100/e0e7ff/6366f1?text=Foto'}" alt="Foto de ${prof.nome}">
-            <h3>${prof.nome || '<span style="color:#ef4444">Sem nome</span>'}</h3>
-        </div>
+export function renderizarMenuTopo(ativo = 'informacoes') {
+    const menus = [
+        { id: 'informacoes', label: 'Informações' },
+        { id: 'agendar', label: 'Agendar' },
+        { id: 'meus-agendamentos', label: 'Meus Agendamentos' },
+        { id: 'perfil', label: 'Perfil' }
+    ];
+    const nav = document.getElementById('menu-topo');
+    if (!nav) return;
+    nav.innerHTML = menus.map(m => `
+        <button class="menu-topo-btn${ativo === m.id ? ' ativo' : ''}" data-menu="${m.id}">${m.label}</button>
     `).join('');
-
-    document.querySelectorAll('.card-profissional').forEach(card => {
-        card.addEventListener('click', () => {
-            const id = card.dataset.id;
-            const profissional = profissionais.find(p => p.id === id);
-            if (profissional) {
-                onSelectProfissional(profissional);
-            }
-        });
+    nav.querySelectorAll('.menu-topo-btn').forEach(btn => {
+        btn.onclick = () => {
+            renderizarMenuTopo(btn.dataset.menu);
+            // Aqui você pode disparar navegação/troca de tela
+            document.querySelectorAll('.main-content').forEach(el => {
+                el.style.display = el.id === `conteudo-${btn.dataset.menu}` ? 'block' : 'none';
+            });
+        };
     });
 }
 
 /**
- * Renderiza os cards de serviços do profissional selecionado na aba "Agendar".
- * Validação completa dos dados do serviço vindos do Firebase.
- * @param {Array} servicos - Lista de serviços.
- * @param {Function} onServiceSelect - Função chamada ao selecionar serviço.
+ * Renderiza serviços da empresa/profissionais (dados do Firebase, tratamento total).
+ * @param {Array} servicos - Array de serviços vindos do Firebase
+ * @param {HTMLElement} container - Container onde serão exibidos os cards
+ * @param {Function} [onClick] - Função chamada ao clicar em um card (opcional)
  */
-export function renderizarServicos(servicos, onServiceSelect) {
-    const container = document.getElementById('lista-servicos');
+export function renderizarServicos(servicos, container, onClick) {
     if (!container) return;
-    if (!servicos || servicos.length === 0) {
-        container.innerHTML = '<p>Este profissional não oferece serviços no momento.</p>';
+    if (!Array.isArray(servicos) || servicos.length === 0) {
+        container.innerHTML = '<p style="color:#f87171;">Nenhum serviço cadastrado.</p>';
         return;
     }
     container.innerHTML = servicos
-        .filter(s => s.visivelNaVitrine !== false)
+        .filter(s => s && s.visivelNaVitrine !== false)
         .map((s, idx) => `
             <div class="service-item-card" data-idx="${idx}">
                 <div class="service-card-header">
@@ -138,18 +58,40 @@ export function renderizarServicos(servicos, onServiceSelect) {
             </div>
         `).join('');
     container.querySelectorAll('.service-item-card').forEach(card => {
-        card.addEventListener('click', () => {
+        card.onclick = () => {
             container.querySelectorAll('.service-item-card.selecionado').forEach(c => c.classList.remove('selecionado'));
             card.classList.add('selecionado');
-            onServiceSelect(servicos[parseInt(card.dataset.idx)]);
-        });
+            if (onClick) onClick(servicos[parseInt(card.dataset.idx)]);
+        };
     });
 }
 
 /**
- * Atualiza a interface do usuário com base no status de autenticação.
- * @param {object|null} user - O objeto do usuário do Firebase ou null.
- * @param {string} empresaId - O ID da empresa para buscar agendamentos.
+ * Renderiza profissionais (cards bonitos).
+ */
+export function renderizarProfissionais(profissionais, container, onClick) {
+    if (!container) return;
+    if (!Array.isArray(profissionais) || profissionais.length === 0) {
+        container.innerHTML = '<p style="color:#f87171;">Nenhum profissional cadastrado.</p>';
+        return;
+    }
+    container.innerHTML = profissionais.map((prof, idx) => `
+        <div class="card-profissional" data-idx="${idx}">
+            <img src="${prof.fotoUrl || 'https://placehold.co/100x100/e0e7ff/6366f1?text=Foto'}" alt="Foto de ${prof.nome}">
+            <h3>${prof.nome || '<span style="color:#ef4444">Sem nome</span>'}</h3>
+        </div>
+    `).join('');
+    container.querySelectorAll('.card-profissional').forEach(card => {
+        card.onclick = () => {
+            container.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
+            card.classList.add('selecionado');
+            if (onClick) onClick(profissionais[parseInt(card.dataset.idx)]);
+        };
+    });
+}
+
+/**
+ * Atualiza interface conforme login/logout.
  */
 export function updateUIOnAuthChange(user, empresaId) {
     const userInfo = document.getElementById('user-info');
@@ -157,7 +99,6 @@ export function updateUIOnAuthChange(user, empresaId) {
     const agendamentosPrompt = document.getElementById('agendamentos-login-prompt');
     const agendamentosBotoes = document.getElementById('botoes-agendamento');
     const agendamentosLista = document.getElementById('lista-agendamentos-visualizacao');
-
     if (user) {
         if (userInfo) {
             userInfo.style.display = 'flex';
