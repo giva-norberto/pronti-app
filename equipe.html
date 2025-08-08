@@ -69,23 +69,27 @@
         </div>
     </div>
 
-    <!-- Modal Perfil do Profissional -->
+    <!-- Modal Perfil do Profissional (com abas) -->
     <div id="modal-perfil-profissional" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
                 <p>Configure os serviços e horários de atendimento</p>
             </div>
-            <div class="perfil-section">
+            <div class="tabs">
+                <button id="tab-servicos" class="tab-btn active">Serviços</button>
+                <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
+            </div>
+            <div id="tab-content-servicos" class="tab-content active">
                 <h3>🛠️ Serviços Disponíveis</h3>
                 <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
                 <div id="servicos-lista" class="servicos-grid">
                     <!-- Serviços serão carregados aqui -->
                 </div>
             </div>
-            <div class="perfil-section">
+            <div id="tab-content-horarios" class="tab-content">
                 <h3>🕐 Horários de Atendimento</h3>
-                <p style="color: #7f8c8d; margin-bottom: 15px;">Configure os horários de trabalho para cada dia da semana:</p>
+                <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos de trabalho para cada dia da semana:</p>
                 <div id="horarios-lista" class="horarios-grid">
                     <!-- Horários serão carregados aqui -->
                 </div>
