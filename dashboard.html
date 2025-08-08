@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pronti - Dashboard</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 
+  <!-- Sidebar padrão -->
   <aside class="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -22,23 +23,30 @@
     </div>
   </aside>
 
+  <!-- Conteúdo principal -->
   <main class="main-content">
     <h1>Dashboard</h1>
     <p>Métricas e insights sobre o seu negócio.</p>
 
+    <!-- Resumo diário -->
     <div id="resumo-diario-container"></div>
 
+    <!-- Gráficos -->
     <div class="dashboard-grid">
       <div class="chart-container">
         <h2>Serviços Mais Agendados</h2>
         <canvas id="graficoServicos"></canvas>
       </div>
+
       <div class="chart-container">
         <h2>Faturamento por Serviço</h2>
         <canvas id="graficoFaturamento"></canvas>
       </div>
+
       <div class="chart-container full-width">
         <h2>Agendamentos por Mês</h2>
+
+        <!-- Filtros -->
         <div class="filtro-grafico" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span>De:</span>
           <select id="filtro-mes-inicio">
@@ -56,6 +64,7 @@
             <option value="11">Dezembro</option>
           </select>
           <select id="filtro-ano-inicio"></select>
+
           <span style="margin-left: 10px;">Até:</span>
           <select id="filtro-mes-fim">
             <option value="0">Janeiro</option>
@@ -73,23 +82,25 @@
           </select>
           <select id="filtro-ano-fim"></select>
         </div>
+
         <canvas id="graficoMensal"></canvas>
       </div>
     </div>
   </main>
 
+  <!-- Dependências globais -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     lucide.createIcons();
   </script>
- 
-  <script src="firebase-config.js" type="module"></script>
-  <script src="inteligencia.js" type="module"></script>
-  <script src="dashboard.js" type="module"></script>
-  
-  <script src="link-fixer.js" type="module"></script>
+
+  <!-- Script principal do dashboard -->
+  <script type="module" src="dashboard.js"></script>
+
+  <!-- Ajuste de links da vitrine -->
+  <script type="module" src="link-fixer.js"></script>
 
 </body>
 </html>
