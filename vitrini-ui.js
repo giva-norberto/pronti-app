@@ -1,10 +1,7 @@
-// vitrini-ui.js (VERSÃO COMPLETA E CORRIGIDA)
-
 import { cancelarAgendamento, buscarEExibirAgendamentos } from './vitrini-agendamento.js';
 import { currentUser } from './vitrini-auth.js';
 
 /**
- * [NOVA FUNÇÃO PRINCIPAL]
  * Renderiza toda a página de "Informações", incluindo dados da empresa,
  * serviços e contato.
  * @param {object} empresa - Dados do documento da empresa.
@@ -41,7 +38,7 @@ export function renderizarPaginaInformacoes(empresa, profissionais) {
         }
     }
 
-    // Preenche o card "Serviços Oferecidos"
+    // Preenche o card "Serviços Oferecidos" (cards bonitos)
     const todosOsServicos = new Map();
     profissionais.forEach(prof => {
         if (prof.servicos && prof.visivelNaVitrine !== false) {
@@ -59,9 +56,16 @@ export function renderizarPaginaInformacoes(empresa, profissionais) {
             containerServicos.innerHTML = [...todosOsServicos.values()]
                 .sort((a, b) => a.nome.localeCompare(b.nome))
                 .map(s => `
-                    <div class="servico-info-item">
-                        <strong>${s.nome}</strong>
-                        <span>R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</span>
+                    <div class="service-item-card">
+                        <div class="service-card-header">
+                            ${s.icone ? `<span class="service-icon">${s.icone}</span>` : ""}
+                            <h4>${s.nome}</h4>
+                        </div>
+                        <p class="service-desc">${s.descricao || "Sem descrição."}</p>
+                        <div class="service-card-footer">
+                            <span class="service-duracao">${s.duracao ? s.duracao + ' min' : ''}</span>
+                            <span class="service-preco">R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</span>
+                        </div>
                     </div>
                 `).join('');
         } else {
@@ -98,9 +102,9 @@ export function renderizarProfissionais(profissionais, onSelectProfissional) {
 }
 
 /**
- * Renderiza a lista de serviços de um profissional selecionado na aba "Agendar".
- * @param {Array} servicos - A lista de serviços.
- * @param {Function} onServiceSelect - A função a ser chamada quando um serviço é selecionado.
+ * Renderiza os cards de serviços do profissional selecionado na aba "Agendar".
+ * @param {Array} servicos - Lista de serviços.
+ * @param {Function} onServiceSelect - Função chamada ao selecionar serviço.
  */
 export function renderizarServicos(servicos, onServiceSelect) {
     const container = document.getElementById('lista-servicos');
@@ -111,16 +115,24 @@ export function renderizarServicos(servicos, onServiceSelect) {
     }
     container.innerHTML = servicos
         .filter(s => s.visivelNaVitrine !== false)
-        .map(s => `<button class="service-item" data-id="${s.id}">${s.nome} - R$ ${s.preco}</button>`)
-        .join('');
-    container.querySelectorAll('.service-item').forEach(btn => {
-        btn.addEventListener('click', () => {
-            container.querySelectorAll('.service-item.selecionado').forEach(b => b.classList.remove('selecionado'));
-            btn.classList.add('selecionado');
-            const servicoSelecionado = servicos.find(s => String(s.id) === btn.dataset.id);
-            if(servicoSelecionado) {
-                onServiceSelect(servicoSelecionado);
-            }
+        .map((s, idx) => `
+            <div class="service-item-card" data-idx="${idx}">
+                <div class="service-card-header">
+                    ${s.icone ? `<span class="service-icon">${s.icone}</span>` : ""}
+                    <h4>${s.nome}</h4>
+                </div>
+                <p class="service-desc">${s.descricao || "Sem descrição."}</p>
+                <div class="service-card-footer">
+                    <span class="service-duracao">${s.duracao ? s.duracao + ' min' : ''}</span>
+                    <span class="service-preco">R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</span>
+                </div>
+            </div>
+        `).join('');
+    container.querySelectorAll('.service-item-card').forEach(card => {
+        card.addEventListener('click', () => {
+            container.querySelectorAll('.service-item-card.selecionado').forEach(c => c.classList.remove('selecionado'));
+            card.classList.add('selecionado');
+            onServiceSelect(servicos[parseInt(card.dataset.idx)]);
         });
     });
 }
