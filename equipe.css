@@ -416,3 +416,23 @@ body {
         flex-direction: column;
     }
 }
+.servico-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 12px;
+}
+.btn-servico-vincular {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: none;
+    background: #e1e8ed;
+    color: #22223b;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-servico-vincular.ativo {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #fff;
+}
