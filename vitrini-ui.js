@@ -23,7 +23,7 @@ export function renderizarPaginaInformacoes(empresa, profissionais) {
         infoNegocioDiv.innerHTML = `<p>${empresa.descricao || 'Nenhuma descrição fornecida.'}</p>`;
     }
 
-    // Preenche o card "Contato" (pegando os dados do profissional que é o dono)
+    // Preenche o card "Contato"
     const dono = profissionais.find(p => p.id === empresa.donoId);
     const containerContato = document.getElementById('info-contato');
     if (containerContato) {
@@ -38,33 +38,39 @@ export function renderizarPaginaInformacoes(empresa, profissionais) {
         }
     }
 
-    // Preenche o card "Serviços Oferecidos" (cards bonitos)
+    // Preenche o card "Serviços Oferecidos"
     const todosOsServicos = new Map();
     profissionais.forEach(prof => {
         if (prof.servicos && prof.visivelNaVitrine !== false) {
             prof.servicos.forEach(servico => {
                 if (servico.visivelNaVitrine !== false) {
-                    todosOsServicos.set(servico.nome, servico);
+                    todosOsServicos.set(servico.id, servico);
                 }
             });
         }
     });
-    
+
     const containerServicos = document.getElementById('info-servicos');
     if (containerServicos) {
         if (todosOsServicos.size > 0) {
             containerServicos.innerHTML = [...todosOsServicos.values()]
-                .sort((a, b) => a.nome.localeCompare(b.nome))
+                .sort((a, b) => {
+                    // Se não tiver nome, ordena pelo id
+                    if (!a.nome || !b.nome) return (a.id || '').localeCompare(b.id || '');
+                    return a.nome.localeCompare(b.nome);
+                })
                 .map(s => `
                     <div class="service-item-card">
                         <div class="service-card-header">
                             ${s.icone ? `<span class="service-icon">${s.icone}</span>` : ""}
-                            <h4>${s.nome}</h4>
+                            <h4>${s.nome ? s.nome : '<span style="color:#ef4444">Sem nome</span>'}</h4>
                         </div>
-                        <p class="service-desc">${s.descricao || "Sem descrição."}</p>
+                        <p class="service-desc">${(typeof s.descricao === 'string' && s.descricao.trim()) ? s.descricao : "Sem descrição."}</p>
                         <div class="service-card-footer">
-                            <span class="service-duracao">${s.duracao ? s.duracao + ' min' : ''}</span>
-                            <span class="service-preco">R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</span>
+                            <span class="service-duracao">${s.duracao ? s.duracao + ' min' : 'Duração não informada'}</span>
+                            <span class="service-preco">
+                                ${typeof s.preco === "number" ? 'R$ ' + parseFloat(s.preco).toFixed(2).replace('.', ',') : 'Preço não informado'}
+                            </span>
                         </div>
                     </div>
                 `).join('');
@@ -86,7 +92,7 @@ export function renderizarProfissionais(profissionais, onSelectProfissional) {
     container.innerHTML = profissionais.map(prof => `
         <div class="card-profissional" data-id="${prof.id}">
             <img src="${prof.fotoUrl || 'https://placehold.co/100x100/e0e7ff/6366f1?text=Foto'}" alt="Foto de ${prof.nome}">
-            <h3>${prof.nome}</h3>
+            <h3>${prof.nome || '<span style="color:#ef4444">Sem nome</span>'}</h3>
         </div>
     `).join('');
 
@@ -103,6 +109,7 @@ export function renderizarProfissionais(profissionais, onSelectProfissional) {
 
 /**
  * Renderiza os cards de serviços do profissional selecionado na aba "Agendar".
+ * Validação completa dos dados do serviço vindos do Firebase.
  * @param {Array} servicos - Lista de serviços.
  * @param {Function} onServiceSelect - Função chamada ao selecionar serviço.
  */
@@ -119,12 +126,14 @@ export function renderizarServicos(servicos, onServiceSelect) {
             <div class="service-item-card" data-idx="${idx}">
                 <div class="service-card-header">
                     ${s.icone ? `<span class="service-icon">${s.icone}</span>` : ""}
-                    <h4>${s.nome}</h4>
+                    <h4>${s.nome ? s.nome : '<span style="color:#ef4444">Sem nome</span>'}</h4>
                 </div>
-                <p class="service-desc">${s.descricao || "Sem descrição."}</p>
+                <p class="service-desc">${(typeof s.descricao === 'string' && s.descricao.trim()) ? s.descricao : "Sem descrição."}</p>
                 <div class="service-card-footer">
-                    <span class="service-duracao">${s.duracao ? s.duracao + ' min' : ''}</span>
-                    <span class="service-preco">R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</span>
+                    <span class="service-duracao">${s.duracao ? s.duracao + ' min' : 'Duração não informada'}</span>
+                    <span class="service-preco">
+                        ${typeof s.preco === "number" ? 'R$ ' + parseFloat(s.preco).toFixed(2).replace('.', ',') : 'Preço não informado'}
+                    </span>
                 </div>
             </div>
         `).join('');
@@ -152,8 +161,8 @@ export function updateUIOnAuthChange(user, empresaId) {
     if (user) {
         if (userInfo) {
             userInfo.style.display = 'flex';
-            document.getElementById('user-name').textContent = user.displayName;
-            document.getElementById('user-photo').src = user.photoURL;
+            document.getElementById('user-name').textContent = user.displayName || user.email || 'Usuário';
+            document.getElementById('user-photo').src = user.photoURL || 'https://placehold.co/80x80/e0e7ff/6366f1?text=Usuário';
         }
         if (btnLogin) btnLogin.style.display = 'none';
         if (agendamentosPrompt) agendamentosPrompt.style.display = 'none';
