@@ -85,6 +85,7 @@ body {
     margin: 0 auto;
 }
 
+/* Botões e ações */
 .actions {
     display: flex;
     justify-content: space-between;
@@ -249,6 +250,19 @@ body {
     margin-bottom: 10px;
 }
 
+/* Botão fechar modal */
+.btn-fechar-modal {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    color: #4facfe;
+    cursor: pointer;
+    z-index: 1100;
+}
+
 /* Tabs */
 .tabs {
     display: flex;
@@ -311,6 +325,49 @@ body {
     margin-top: 30px;
 }
 
+/* Card para horários no modal perfil */
+.horarios-card {
+    background: #f6f7fb;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+}
+.dia-semana {
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.dia-semana label {
+    margin-right: 10px;
+    font-weight: 500;
+    color: #22223b;
+}
+.dia-semana input[type="checkbox"] {
+    accent-color: #4facfe;
+}
+.dia-semana input[type="time"] {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #e1e8ed;
+    font-size: 1rem;
+}
+.dia-semana .btn-small {
+    padding: 6px 16px;
+    font-size: 0.95rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    margin-left: 2px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.dia-semana .btn-small:hover {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;
@@ -350,9 +407,10 @@ body {
     .equipe-grid {
         grid-template-columns: 1fr;
     }
-    .modal-content {
+    .modal-content, .profile-modal {
         padding: 30px 20px;
         margin: 20px;
+        max-width: 95vw;
     }
     .form-actions {
         flex-direction: column;
