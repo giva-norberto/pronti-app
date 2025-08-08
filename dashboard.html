@@ -101,79 +101,31 @@
     .main-content {
         margin-left: 240px;
         padding: 36px 40px;
+        max-width: 1200px;
     }
     .dashboard-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
+        margin-bottom: 18px;
     }
     .dashboard-header h1 {
-        font-size: 2.2rem;
+        font-size: 2.1rem;
         font-weight: 700;
-        color: #292074;
         margin-bottom: 2px;
+        color: #292074;
     }
-    .dashboard-header .btn-ia {
-        background: linear-gradient(90deg, #4f46e5 0%, #818cf8 100%);
-        color: #fff;
-        font-weight: 600;
-        border: none;
-        border-radius: 25px;
-        padding: 12px 22px;
-        font-size: 1.08rem;
-        box-shadow: 0 2px 8px #818cf844;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-    }
-    .dashboard-header .btn-ia svg {
-        color: #fff;
-    }
-    .dashboard-header .btn-ia:hover {
-        background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
-        color: #fff;
-        box-shadow: 0 8px 24px #818cf888;
-    }
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(2,1fr);
-        gap: 32px;
-        margin-top: 32px;
-    }
-    .chart-container {
-        background: #fff;
-        border-radius: 14px;
-        box-shadow: 0 2px 16px rgba(99,102,241,0.04);
-        padding: 24px;
-        min-height: 300px;
-    }
-    .chart-container.full-width {
-        grid-column: span 2;
-    }
-    .chart-container h2 {
-        color: #4f46e5;
-        margin-bottom: 16px;
-        font-size: 1.2rem;
-    }
-    .insights-card {
-        margin-top: 16px;
+    .insights-ia {
         background: #eef2ff;
         border-radius: 12px;
-        padding: 20px 26px;
-        box-shadow: 0 2px 12px #a5b4fc22;
+        padding: 22px 28px;
+        box-shadow: 0 2px 14px #a5b4fc22;
         color: #22223b;
-        font-size: 1.06rem;
+        font-size: 1.08rem;
         font-weight: 500;
         display: flex;
-        gap: 12px;
-        align-items: flex-start;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
     }
-    .insights-card .ia-icon {
+    .insights-ia .ia-icon {
         width: 38px;
         height: 38px;
         border-radius: 19px;
@@ -186,13 +138,43 @@
         margin-right: 12px;
         flex-shrink: 0;
     }
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        margin-top: 8px;
+    }
+    .chart-container {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 16px rgba(99,102,241,0.04);
+        padding: 24px;
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .chart-container h2 {
+        color: #4f46e5;
+        margin-bottom: 16px;
+        font-size: 1.15rem;
+        font-weight: 600;
+    }
+    .chart-container.full-width {
+        grid-column: span 3;
+    }
+    .filtro-grafico {
+        margin-bottom: 1rem; 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+        flex-wrap: wrap;
+    }
     /* Mobile */
-    @media (max-width: 900px) {
-        .sidebar { width: 100vw; min-height: 0; position: relative; }
+    @media (max-width: 1000px) {
         .main-content { margin-left: 0; padding: 24px 10px; }
         .dashboard-grid { grid-template-columns: 1fr; gap: 20px; }
         .chart-container.full-width { grid-column: span 1; }
-        .dashboard-header { flex-direction: column; gap: 12px; margin-bottom: 22px; }
     }
     </style>
 </head>
@@ -260,24 +242,21 @@
 
  <main class="main-content">
     <div class="dashboard-header">
-        <div>
-            <h1>Dashboard</h1>
-            <p>Métricas e insights sobre o seu negócio.</p>
-        </div>
-        <button class="btn-ia" id="btn-avaliacao-ia">
-            <span>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M15 9v6"></path>
-                    <path d="M9 9v6"></path>
-                </svg>
-            </span>
-            Avaliação Inteligente
-        </button>
+        <h1>Dashboard</h1>
+        <p>Métricas e insights sobre o seu negócio.</p>
     </div>
-    <div id="resumo-diario-container"></div>
 
-    <div id="insights-card-container"></div>
+    <!-- Mensagem/insight IA -->
+    <div class="insights-ia" id="insights-ia">
+        <span class="ia-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M15 9v6"></path>
+                <path d="M9 9v6"></path>
+            </svg>
+        </span>
+        <span id="ia-mensagem">Análise inteligente dos seus agendamentos aparecerá aqui.</span>
+    </div>
 
     <div class="dashboard-grid">
       <div class="chart-container">
@@ -288,9 +267,9 @@
         <h2>Faturamento por Serviço</h2>
         <canvas id="graficoFaturamento"></canvas>
       </div>
-      <div class="chart-container full-width">
+      <div class="chart-container">
         <h2>Agendamentos por Mês</h2>
-        <div class="filtro-grafico" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div class="filtro-grafico">
           <span>De:</span>
           <select id="filtro-mes-inicio">
             <option value="0">Janeiro</option>
@@ -336,12 +315,10 @@
  <script>
     lucide.createIcons();
  </script>
- <!-- Firebase config deve exportar só o objeto de configuração -->
  <script src="firebase-config.js" type="module"></script>
- <!-- Apenas os scripts necessários para o dashboard e a IA -->
+ <!-- Só carregue o JS do dashboard e IA! -->
  <script src="inteligencia.js" type="module"></script>
  <script src="dashboard.js" type="module"></script>
- <!-- Não carregar JS de servicos, agenda, clientes, equipe, perfil, link-fixer no dashboard! -->
 
 </body>
 </html>
