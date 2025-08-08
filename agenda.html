@@ -15,7 +15,7 @@
     <div class="sidebar-links">
         <a href="dashboard.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard</a>
         <a href="servicos.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path></svg> Serviços</a>
-        <a href="agenda.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Agenda</a>
+        <a href="agenda.html" class="active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Agenda</a>
         <a href="clientes.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Clientes</a>
         <a href="equipe.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Equipe</a>
         <a href="perfil.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Meu Perfil</a>
@@ -29,45 +29,30 @@
 </aside>
 
   <main class="main-content">
-    <div class="agenda-header">
-        <h1>Agenda de Compromissos</h1>
-      <a href="novo-agendamento.html" class="btn-new">Novo Agendamento</a>
-    </div>
-
-    <div class="filtro-data">
-        <label for="data-agenda">Filtrar por data:</label>
-        <input type="date" id="data-agenda">
-    </div>
-
-    <div id="lista-agendamentos">
-        <p>Selecione uma data para ver os agendamentos.</p>
-    </div>
-
-    <div class="cancelamentos-pendentes">
-        <h2>Cancelamentos Pendentes de Confirmação</h2>
-        <div id="lista-cancelamentos-pendentes">
-            <p>Nenhuma solicitação de cancelamento encontrada.</p>
+    <div class="agenda-header" style="display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:40px;">
+        <div>
+            <h1 style="font-size:2.1rem;font-weight:700;margin-bottom:8px;">Agenda de Compromissos</h1>
         </div>
+        <a href="novo-agendamento.html" class="btn-new">+ Novo Agendamento</a>
     </div>
+
+    <div class="filtro-data" style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
+        <label for="data-agenda" style="font-weight:500;color:#22223b;">Filtrar por data:</label>
+        <input type="date" id="data-agenda" style="padding:10px 14px;border-radius:10px;border:2px solid #e1e8ed;font-size:1rem;">
+    </div>
+
+    <section id="lista-agendamentos">
+        <div class="card-info" style="padding:30px 22px;text-align:center;border-radius:15px;background:#eef2ff;color:#22223b;box-shadow:0 4px 24px #d6d2f8;margin-bottom:32px;">
+            <p>Selecione uma data para ver os agendamentos.</p>
+        </div>
+    </section>
   </main>
-
-  <div id="modal-confirmacao" class="modal-overlay">
-    <div class="modal-card">
-        <span class="fechar-modal">&times;</span>
-        <h3>Confirmar Exclusão</h3>
-        <p>Este agendamento foi cancelado pelo cliente. Deseja remover este registro permanentemente?</p>
-        <div class="modal-botoes">
-            <button id="btn-modal-confirmar" class="btn-confirmar">Sim, Remover</button>
-        </div>
-    </div>
-  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     lucide.createIcons();
   </script>
-
   <script src="firebase-config.js" type="module"></script>
   <script src="agenda.js" type="module"></script>
 
