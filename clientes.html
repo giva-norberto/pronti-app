@@ -6,9 +6,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <style>
+        /* Responsividade básica para sidebar e conteúdo */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -220px; top: 0;
+                width: 200px;
+                height: 100vh;
+                background: #4facfe;
+                color: #fff;
+                z-index: 998;
+                transition: left 0.3s;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                padding: 12px;
+            }
+            .btn-new, .btn-logout, .btn-modal {
+                width: 100%;
+                min-width: 0;
+                font-size: 1.1rem;
+            }
+            .modal-box {
+                max-width: 98vw !important;
+                padding: 16px !important;
+            }
+            .modal-overlay {
+                align-items: flex-end !important;
+            }
+        }
+        /* Modal overlay centralizado */
+        .modal-overlay {
+            position: fixed;
+            left: 0; top: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 10px;
+            padding: 28px;
+            max-width: 400px;
+            width: 90vw;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+        }
+        .btn-modal {
+            margin: 6px 0;
+            padding: 10px 24px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-cancelar { background: #eee; color: #333;}
+        .btn-confirmar { background: #ff6b6b; color: #fff;}
+    </style>
 </head>
 <body>
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <a href="index.html" class="sidebar-brand">Pronti</a>
         <hr />
         <nav class="sidebar-links">
@@ -23,8 +87,12 @@
             <button id="btn-logout" class="btn-logout">Sair</button>
         </div>
     </aside>
+    <!-- Botão menu hamburguer para mobile -->
+    <button id="btn-menu" style="position:fixed;top:14px;left:12px;z-index:999;display:none;background:#4facfe;color:#fff;border:none;padding:8px 14px;border-radius:7px;">
+        ☰ Menu
+    </button>
 
-    <main class="main-content">
+    <main class="main-content" style="margin-left:220px;padding:32px;">
         <h1>Meus Clientes</h1>
         <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
         <div id="lista-clientes" style="margin-top: 20px;"></div>
@@ -45,5 +113,30 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="clientes.js"></script>
+    <script>
+        // Sidebar responsiva para mobile
+        function checkMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const btnMenu = document.getElementById('btn-menu');
+            if(window.innerWidth <= 768) {
+                sidebar.classList.remove('open');
+                btnMenu.style.display = "block";
+                document.querySelector('.main-content').style.marginLeft = "0";
+            } else {
+                sidebar.classList.remove('open');
+                btnMenu.style.display = "none";
+                document.querySelector('.main-content').style.marginLeft = "220px";
+            }
+        }
+        window.addEventListener('resize', checkMobileSidebar);
+        window.addEventListener('DOMContentLoaded', checkMobileSidebar);
+        document.getElementById('btn-menu').onclick = function() {
+            document.getElementById('sidebar').classList.toggle('open');
+        };
+        // Fecha modal ao clicar fora da caixa
+        document.getElementById('modal-confirmacao').addEventListener('click', function(e) {
+            if(e.target === this) this.classList.remove('show');
+        });
+    </script>
 </body>
 </html>
