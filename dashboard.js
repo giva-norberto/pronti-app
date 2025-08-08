@@ -1,9 +1,7 @@
-// Firebase Modular v10.12.2 e Chart.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-// Seu config real
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// Se você tem o arquivo firebase-config.js, mantenha. Senão, defina aqui:
 const firebaseConfig = {
   apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -14,37 +12,113 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-function pad2(n){ return String(n).padStart(2,'0'); }
-function formatHora(date){ return date instanceof Date ? `${pad2(date.getHours())}:${pad2(date.getMinutes())}` : ''; }
+document.addEventListener('DOMContentLoaded', () => {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      carregarDashboard(user.uid);
+    } else {
+      window.location.href = 'login.html';
+    }
+  });
+});
 
-function gerarResumoDiarioInteligente(agendamentos){
-  if(!Array.isArray(agendamentos) || agendamentos.length===0){
+async function carregarDashboard(uid) {
+  try {
+    const servicosCollection = collection(db, "users", uid, "servicos");
+    const agendamentosCollection = collection(db, "users", uid, "agendamentos");
+
+    const [servicosSnapshot, agendamentosSnapshot] = await Promise.all([
+      getDocs(servicosCollection),
+      getDocs(agendamentosCollection)
+    ]);
+
+    const agendamentos = agendamentosSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+    const servicosMap = new Map();
+    servicosSnapshot.forEach(doc => {
+      servicosMap.set(doc.id, doc.data());
+    });
+
+    processarResumoIA(agendamentos, servicosMap);
+
+    if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap, agendamentos);
+    if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap, agendamentos);
+    if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
+
+  } catch (error) {
+    console.error("Erro ao carregar dados do dashboard:", error);
+    const container = document.querySelector('.dashboard-grid') || document.querySelector('.main-content');
+    if (container) {
+      container.innerHTML = '<p style="color:red;">Não foi possível carregar os dados do dashboard.</p>';
+    }
+  }
+}
+
+// Resumo IA
+function processarResumoIA(todosAgendamentos, servicosMap) {
+  const container = document.getElementById('resumo-diario-container');
+  if (!container) return;
+
+  container.innerHTML = '<p>🧠 Analisando seu dia...</p>';
+
+  const hoje = new Date();
+  const inicioDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0, 0);
+  const fimDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
+
+  const agendamentosDeHoje = todosAgendamentos.filter(ag => {
+    if (!ag.horario || typeof ag.horario.toDate !== 'function') {
+      return false;
+    }
+    const dataAgendamento = ag.horario.toDate();
+    return dataAgendamento >= inicioDoDia && dataAgendamento <= fimDoDia;
+  });
+
+  const agendamentosEnriquecidos = agendamentosDeHoje.map(ag => {
+    const servico = servicosMap.get(ag.servicoId);
+    if (!servico) return null;
+    const inicio = ag.horario.toDate();
+    const fim = new Date(inicio.getTime() + (servico.duracao || 30) * 60000);
+    return {
+      id: ag.id,
+      cliente: { nome: ag.clienteNome || 'Cliente' },
+      servico: { nome: servico.nome || 'Serviço', preco: servico.preco || 0 },
+      inicio,
+      fim
+    };
+  }).filter(Boolean);
+
+  const resumo = gerarResumoDiarioInteligente(agendamentosEnriquecidos);
+  container.innerHTML = criarHTMLDoResumo(resumo);
+}
+
+// Função IA
+function gerarResumoDiarioInteligente(agendamentos) {
+  if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
     return { totalAtendimentos: 0, mensagem: "Nenhum agendamento para hoje." };
   }
-  const ord = [...agendamentos].sort((a,b)=>a.inicio-b.inicio);
+  const ord = [...agendamentos].sort((a, b) => a.inicio - b.inicio);
   const total = ord.length;
   let faturamento = 0;
-  ord.forEach(a=>faturamento += Number(a.servico.preco)||0);
+  ord.forEach(a => faturamento += Number(a.servico.preco) || 0);
 
   const primeiro = {
     horario: formatHora(ord[0].inicio),
-    servico: ord[0].servico.nome||'Serviço',
-    cliente: ord[0].cliente.nome||'Cliente'
+    servico: ord[0].servico.nome,
+    cliente: ord[0].cliente.nome
   };
   const ultimo = {
-    horario: formatHora(ord[ord.length-1].inicio),
-    servico: ord[ord.length-1].servico.nome||'Serviço',
-    cliente: ord[ord.length-1].cliente.nome||'Cliente'
+    horario: formatHora(ord[ord.length - 1].inicio),
+    servico: ord[ord.length - 1].servico.nome,
+    cliente: ord[ord.length - 1].cliente.nome
   };
 
   let maiorIntervalo = null;
-  for(let i=0;i<ord.length-1;i++){
-    const fimAtual = ord[i].fim, inicioProx = ord[i+1].inicio;
-    const durMin = Math.round((inicioProx-fimAtual)/60000);
-    if(durMin>0 && (!maiorIntervalo || durMin>maiorIntervalo.duracaoMinutos)){
+  for (let i = 0; i < ord.length - 1; i++) {
+    const fimAtual = ord[i].fim, inicioProx = ord[i + 1].inicio;
+    const durMin = Math.round((inicioProx - fimAtual) / 60000);
+    if (durMin > 0 && (!maiorIntervalo || durMin > maiorIntervalo.duracaoMinutos)) {
       maiorIntervalo = {
         duracaoMinutos: durMin,
         inicio: formatHora(fimAtual),
@@ -58,10 +132,11 @@ function gerarResumoDiarioInteligente(agendamentos){
     primeiro, ultimo, faturamentoEstimado: faturamento, maiorIntervalo
   };
 }
-
-function criarHTMLDoResumo(resumo){
-  if(!resumo) return '';
-  if(resumo.totalAtendimentos===0){
+function formatHora(date) {
+  return date instanceof Date ? String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0') : '';
+}
+function criarHTMLDoResumo(resumo) {
+  if (resumo.totalAtendimentos === 0) {
     return `<div class="resumo-card"><h3>Resumo do Dia</h3><p>${resumo.mensagem}</p></div>`;
   }
   let html = `
@@ -75,9 +150,9 @@ function criarHTMLDoResumo(resumo){
       <div class="resumo-metricas">
         <div class="metrica">
           <span>💰 Faturamento Estimado</span>
-          <strong>R$ ${resumo.faturamentoEstimado.toFixed(2).replace('.',',')}</strong>
+          <strong>R$ ${resumo.faturamentoEstimado.toFixed(2).replace('.', ',')}</strong>
         </div>`;
-  if(resumo.maiorIntervalo){
+  if (resumo.maiorIntervalo) {
     html += `<div class="metrica">
       <span>🕓 Maior Intervalo</span>
       <strong>${resumo.maiorIntervalo.inicio} - ${resumo.maiorIntervalo.fim} (${resumo.maiorIntervalo.duracaoMinutos} min)</strong>
@@ -87,248 +162,169 @@ function criarHTMLDoResumo(resumo){
   return html;
 }
 
-let graficoMensalInstance = null, graficoServicosInstance = null, graficoFaturamentoInstance = null;
-
-function gerarGraficoMensal(agendamentos){
+// GRÁFICOS
+let graficoMensalInstance = null;
+function gerarGraficoMensal(agendamentos) {
   const filtroMesInicio = document.getElementById('filtro-mes-inicio');
   const filtroAnoInicio = document.getElementById('filtro-ano-inicio');
   const filtroMesFim = document.getElementById('filtro-mes-fim');
   const filtroAnoFim = document.getElementById('filtro-ano-fim');
-  const canvas = document.getElementById('graficoMensal');
-  if(!canvas) return;
-
+  if (!filtroMesInicio || !filtroAnoInicio || !filtroMesFim || !filtroAnoFim) return;
   const anos = [...new Set(
     agendamentos
-      .filter(ag=>ag.horario&&typeof ag.horario.toDate==='function')
-      .map(ag=>ag.horario.toDate().getFullYear())
-  )].sort((a,b)=>b-a);
+      .filter(ag => ag.horario && typeof ag.horario.toDate === 'function')
+      .map(ag => ag.horario.toDate().getFullYear())
+  )];
+  anos.sort((a, b) => b - a);
 
-  if(filtroAnoInicio&&filtroAnoFim){
-    filtroAnoInicio.innerHTML = '';
-    filtroAnoFim.innerHTML = '';
-    anos.forEach(ano=>{
-      const o1=document.createElement('option'); o1.value=ano; o1.textContent=ano; filtroAnoInicio.appendChild(o1);
-      const o2=document.createElement('option'); o2.value=ano; o2.textContent=ano; filtroAnoFim.appendChild(o2);
-    });
-    if(!anos.length){
-      const anoAtual = new Date().getFullYear();
-      const opt1=document.createElement('option'); opt1.value=anoAtual; opt1.textContent=anoAtual; filtroAnoInicio.appendChild(opt1);
-      const opt2=document.createElement('option'); opt2.value=anoAtual; opt2.textContent=anoAtual; filtroAnoFim.appendChild(opt2);
-    }
-  }
+  filtroAnoInicio.innerHTML = '';
+  filtroAnoFim.innerHTML = '';
+  anos.forEach(ano => {
+    const option1 = document.createElement('option');
+    option1.value = ano;
+    option1.textContent = ano;
+    filtroAnoInicio.appendChild(option1);
 
-  if(filtroMesInicio) filtroMesInicio.value = filtroMesInicio.value || '0';
-  if(filtroMesFim) filtroMesFim.value = filtroMesFim.value || '11';
-  if(filtroAnoInicio) filtroAnoInicio.value = filtroAnoInicio.value || (anos[0]||new Date().getFullYear());
-  if(filtroAnoFim) filtroAnoFim.value = filtroAnoFim.value || (anos[0]||new Date().getFullYear());
+    const option2 = document.createElement('option');
+    option2.value = ano;
+    option2.textContent = ano;
+    filtroAnoFim.appendChild(option2);
+  });
+
+  filtroMesInicio.value = '0';
+  filtroAnoInicio.value = anos[0] || new Date().getFullYear();
+  filtroMesFim.value = '11';
+  filtroAnoFim.value = anos[0] || new Date().getFullYear();
 
   const atualizarGrafico = () => {
-    const inicioAno = Number(filtroAnoInicio?.value||new Date().getFullYear());
-    const inicioMes = Number(filtroMesInicio?.value||0);
-    const fimAno = Number(filtroAnoFim?.value||new Date().getFullYear());
-    const fimMes = Number(filtroMesFim?.value||11);
+    const dataInicio = new Date(filtroAnoInicio.value, filtroMesInicio.value, 1);
+    const dataFim = new Date(filtroAnoFim.value, parseInt(filtroMesFim.value) + 1, 0);
+    dataFim.setHours(23, 59, 59, 999);
 
-    const dataInicio = new Date(inicioAno, inicioMes, 1, 0,0,0,0);
-    const dataFim = new Date(fimAno, fimMes+1, 0, 23,59,59,999);
-
-    const filtrados = agendamentos.filter(ag=>ag.horario&&typeof ag.horario.toDate==='function'&&(() => {
-      const d=ag.horario.toDate();
-      return d>=dataInicio&&d<=dataFim;
-    })());
-
-    const contagem = {};
-    filtrados.forEach(ag=>{
-      const d=ag.horario.toDate();
-      const mesAno=d.toLocaleDateString('pt-BR',{month:'short',year:'numeric'});
-      contagem[mesAno]=(contagem[mesAno]||0)+1;
+    const agendamentosFiltrados = agendamentos.filter(ag => {
+      if (!ag.horario || typeof ag.horario.toDate !== 'function') return false;
+      const dataAgendamento = ag.horario.toDate();
+      return dataAgendamento >= dataInicio && dataAgendamento <= dataFim;
     });
 
-    const labels = Object.keys(contagem).sort((a,b)=>{
-      const [mesAStr,anoA]=a.split(' ');
-      const [mesBStr,anoB]=b.split(' ');
-      const meses={jan:0,fev:1,mar:2,abr:3,mai:4,jun:5,jul:6,ago:7,set:8,out:9,nov:10,dez:11};
-      const mA=meses[mesAStr.replace('.','').toLowerCase()]??0;
-      const mB=meses[mesBStr.replace('.','').toLowerCase()]??0;
-      return new Date(Number(anoA),mA)-new Date(Number(anoB),mB);
+    const contagemMensal = {};
+    agendamentosFiltrados.forEach(ag => {
+      const data = ag.horario.toDate();
+      const mesAno = data.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      contagemMensal[mesAno] = (contagemMensal[mesAno] || 0) + 1;
     });
-    const data = labels.map(l=>contagem[l]);
 
-    if(graficoMensalInstance) graficoMensalInstance.destroy();
-    const ctx=canvas.getContext('2d');
+    const labelsOrdenados = Object.keys(contagemMensal).sort((a, b) => {
+      const meses = { 'jan.':0, 'fev.':1, 'mar.':2, 'abr.':3, 'mai.':4, 'jun.':5, 'jul.':6, 'ago.':7, 'set.':8, 'out.':9, 'nov.':10, 'dez.':11 };
+      const [mesAStr, , anoA] = a.split(' ');
+      const [mesBStr, , anoB] = b.split(' ');
+      const dataA = new Date(anoA, meses[mesAStr.toLowerCase().replace('.', '')]);
+      const dataB = new Date(anoB, meses[mesBStr.toLowerCase().replace('.', '')]);
+      return dataA - dataB;
+    });
+
+    const dados = labelsOrdenados.map(label => contagemMensal[label]);
+
+    if (graficoMensalInstance) {
+      graficoMensalInstance.destroy();
+    }
+    const ctx = document.getElementById('graficoMensal').getContext('2d');
     graficoMensalInstance = new window.Chart(ctx, {
-      type:'bar',
-      data:{
-        labels,
-        datasets:[{
-          label:'Total de Agendamentos',
-          data,
-          backgroundColor:'rgba(75,192,192,0.5)',
-          borderColor:'rgb(75,192,192)',
-          borderWidth:1
+      type: 'bar',
+      data: {
+        labels: labelsOrdenados,
+        datasets: [{
+          label: 'Total de Agendamentos',
+          data: dados,
+          backgroundColor: 'rgba(75, 192, 192, 0.5)',
+          borderColor: 'rgb(75, 192, 192)',
+          borderWidth: 1
         }]
       },
-      plugins: (typeof window.ChartDataLabels!=='undefined')?[window.ChartDataLabels]:[],
-      options:{
-        scales:{y:{beginAtZero:true,ticks:{stepSize:1}}},
-        plugins:{
-          legend:{display:false},
-          datalabels:{anchor:'end',align:'top',formatter:Math.round,font:{weight:'bold'}}
-        },
-        responsive:true
+      plugins: (typeof window.ChartDataLabels !== "undefined") ? [window.ChartDataLabels] : [],
+      options: {
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            formatter: Math.round,
+            font: { weight: 'bold' }
+          }
+        }
       }
     });
   };
-
-  [filtroMesInicio,filtroAnoInicio,filtroMesFim,filtroAnoFim].forEach(el=>{
-    if(el) el.addEventListener('change', atualizarGrafico);
-  });
+  filtroMesInicio.addEventListener('change', atualizarGrafico);
+  filtroAnoInicio.addEventListener('change', atualizarGrafico);
+  filtroMesFim.addEventListener('change', atualizarGrafico);
+  filtroAnoFim.addEventListener('change', atualizarGrafico);
   atualizarGrafico();
 }
 
-function gerarGraficoServicos(servicosMap, agendamentos){
-  const canvas=document.getElementById('graficoServicos');
-  if(!canvas) return;
-
-  const contagem={};
-  agendamentos.forEach(ag=>{
-    const id=ag.servicoId;
-    contagem[id]=(contagem[id]||0)+1;
+function gerarGraficoServicos(servicosMap, agendamentos) {
+  const contagemServicos = {};
+  agendamentos.forEach(ag => {
+    const servicoId = ag.servicoId;
+    contagemServicos[servicoId] = (contagemServicos[servicoId] || 0) + 1;
   });
-
-  const labels=Object.keys(contagem).map(id=>servicosMap.get(id)?.nome||'Desconhecido');
-  const data=Object.values(contagem);
-
-  if(graficoServicosInstance) graficoServicosInstance.destroy();
-  const ctx=canvas.getContext('2d');
-  graficoServicosInstance = new window.Chart(ctx, {
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Nº de Agendamentos',
-        data,
-        backgroundColor:'rgba(13,110,253,0.5)',
-        borderColor:'rgba(13,110,253,1)',
-        borderWidth:1
+  const labels = Object.keys(contagemServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
+  const dados = Object.values(contagemServicos);
+  const ctx = document.getElementById('graficoServicos').getContext('2d');
+  new window.Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Nº de Agendamentos',
+        data: dados,
+        backgroundColor: 'rgba(13, 110, 253, 0.5)',
+        borderColor: 'rgba(13, 110, 253, 1)',
+        borderWidth: 1
       }]
     },
-    options:{
-      scales:{y:{beginAtZero:true,ticks:{stepSize:1}}},
-      responsive:true,
-      plugins:{legend:{display:false}}
+    options: {
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+      responsive: true,
+      plugins: { legend: { display: false } }
     }
   });
 }
 
-function gerarGraficoFaturamento(servicosMap, agendamentos){
-  const canvas=document.getElementById('graficoFaturamento');
-  if(!canvas) return;
-
-  const fatur={};
-  agendamentos.forEach(ag=>{
-    const s=servicosMap.get(ag.servicoId);
-    if(s&&s.preco!==undefined){
-      const p=parseFloat(s.preco)||0;
-      fatur[ag.servicoId]=(fatur[ag.servicoId]||0)+p;
+function gerarGraficoFaturamento(servicosMap, agendamentos) {
+  const faturamentoServicos = {};
+  agendamentos.forEach(ag => {
+    const servico = servicosMap.get(ag.servicoId);
+    if (servico && servico.preco !== undefined) {
+      const precoNum = parseFloat(servico.preco);
+      faturamentoServicos[ag.servicoId] = (faturamentoServicos[ag.servicoId] || 0) + precoNum;
     }
   });
-
-  const labels=Object.keys(fatur).map(id=>servicosMap.get(id)?.nome||'Desconhecido');
-  const data=Object.values(fatur);
-
-  if(graficoFaturamentoInstance) graficoFaturamentoInstance.destroy();
-  const ctx=canvas.getContext('2d');
-  graficoFaturamentoInstance = new window.Chart(ctx, {
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Faturamento (R$)',
-        data,
-        backgroundColor:[
-          'rgba(255,99,132,0.7)',
-          'rgba(54,162,235,0.7)',
-          'rgba(255,206,86,0.7)',
-          'rgba(75,192,192,0.7)',
-          'rgba(153,102,255,0.7)'
-        ]
+  const labels = Object.keys(faturamentoServicos).map(id => servicosMap.get(id)?.nome || 'Desconhecido');
+  const dados = Object.values(faturamentoServicos);
+  const ctx = document.getElementById('graficoFaturamento').getContext('2d');
+  new window.Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Faturamento (R$)',
+        data: dados,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(75, 192, 192, 0.7)',
+          'rgba(153, 102, 255, 0.7)'
+        ],
       }]
     },
-    options:{
-      indexAxis:'y',
-      scales:{x:{beginAtZero:true,title:{display:true,text:'Faturamento (R$)'}}},
-      responsive:true,
-      plugins:{legend:{display:false}}
+    options: {
+      indexAxis: 'y',
+      scales: { x: { beginAtZero: true, title: { display: true, text: 'Faturamento (R$)' } } },
+      responsive: true,
+      plugins: { legend: { display: false } }
     }
   });
 }
-
-async function carregarDashboard(uid){
-  try{
-    const servicosCollection=collection(db,"users",uid,"servicos");
-    const agendamentosCollection=collection(db,"users",uid,"agendamentos");
-
-    const [servicosSnapshot,agendamentosSnapshot]=await Promise.all([
-      getDocs(servicosCollection),
-      getDocs(agendamentosCollection)
-    ]);
-
-    const agendamentos=agendamentosSnapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
-    const servicosMap=new Map();
-    servicosSnapshot.forEach(doc=>servicosMap.set(doc.id,doc.data()));
-
-    processarResumoIA(agendamentos,servicosMap);
-    if(document.getElementById('graficoServicos')) gerarGraficoServicos(servicosMap,agendamentos);
-    if(document.getElementById('graficoFaturamento')) gerarGraficoFaturamento(servicosMap,agendamentos);
-    if(document.getElementById('graficoMensal')) gerarGraficoMensal(agendamentos);
-  }catch(err){
-    console.error("Erro ao carregar dados do dashboard:",err);
-    const container=document.querySelector('.dashboard-grid')||document.querySelector('.main-content');
-    if(container) container.innerHTML='<p style="color:red;">Não foi possível carregar os dados do dashboard.</p>';
-  }
-}
-
-function processarResumoIA(todosAgendamentos,servicosMap){
-  const container=document.getElementById('resumo-diario-container');
-  if(!container) return;
-
-  container.innerHTML='<p>🧠 Analisando seu dia...</p>';
-
-  const hoje=new Date();
-  const inicioDoDia=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate(),0,0,0,0);
-  const fimDoDia=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate(),23,59,59,999);
-
-  const agendamentosDeHoje=todosAgendamentos.filter(ag=>ag.horario&&typeof ag.horario.toDate==='function').filter(ag=>{
-    const d=ag.horario.toDate();
-    return d>=inicioDoDia&&d<=fimDoDia;
-  });
-
-  const agendamentosEnriquecidos=agendamentosDeHoje.map(ag=>{
-    const servico=servicosMap.get(ag.servicoId);
-    if(!servico) return null;
-    const inicio=ag.horario.toDate();
-    const durMin=Number(servico.duracao)||30;
-    const fim=new Date(inicio.getTime()+durMin*60000);
-    return {
-      id:ag.id,
-      cliente:{nome:ag.clienteNome||ag.cliente?.nome||'Cliente'},
-      servico:{nome:servico.nome||'Serviço',preco:servico.preco||0,duracao:durMin},
-      inicio,
-      fim
-    };
-  }).filter(Boolean);
-
-  const resumo=gerarResumoDiarioInteligente(agendamentosEnriquecidos);
-  container.innerHTML=criarHTMLDoResumo(resumo);
-}
-
-document.addEventListener('DOMContentLoaded',()=>{
-  onAuthStateChanged(auth,(user)=>{
-    if(user){
-      carregarDashboard(user.uid);
-    }else{
-      try{window.location.href='login.html';}
-      catch(e){console.warn('Redirecionamento falhou:',e);}
-    }
-  });
-});
