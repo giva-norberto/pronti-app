@@ -1,5 +1,6 @@
 <div id="modal-perfil-profissional" class="modal-overlay" style="display:none;">
   <div class="modal-box">
+    <button type="button" class="btn-fechar-modal" onclick="closeModalPerfil()">&times;</button>
     <h2 id="perfil-profissional-nome">Perfil do Profissional</h2>
     <form id="form-horarios">
       <div class="form-group">
@@ -9,6 +10,7 @@
       <div id="dias-container"></div>
       <button type="submit" class="btn-submit">Salvar Horários</button>
     </form>
-    <button type="button" id="btn-voltar-modal-perfil" class="btn-secondary">Voltar</button>
+    <button type="button" id="btn-vincular-servicos" class="btn-secondary" onclick="openModalVincularServicos()">Vincular Serviços</button>
+    <button type="button" id="btn-voltar-modal-perfil" class="btn-secondary" onclick="closeModalPerfil()">Voltar</button>
   </div>
 </div>
