@@ -5,7 +5,7 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-s
 
 // EXPORTAÇÃO DIRETA DO OBJETO DE CONFIGURAÇÃO
 export const firebaseConfig = {
-  apiKey: "AIzaSyCnGK3j90_UpBdRpu5nhSs-nY84I_e0cAk",
+  apiKey: "AIzaSyARYJ9kkEm1OHmoYhPByr2Ra3ZQcL3Ecbs",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
