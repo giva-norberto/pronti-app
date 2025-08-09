@@ -41,4 +41,3 @@ btnLoginGoogle.addEventListener('click', () => {
       btnLoginGoogle.disabled = false; // Reabilita o botão
     });
 });
-
