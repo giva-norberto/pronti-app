@@ -3,14 +3,14 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// EXPORTAÇÃO DIRETA DO OBJETO DE CONFIGURAÇÃO
+// EXPORTAÇÃO DIRETA DO OBJETO DE CONFIGURAÇÃO USANDO VARIÁVEIS DE AMBIENTE
 export const firebaseConfig = {
-  apiKey: "AIzaSyARYJ9kkEm1OHmoYhPByr2Ra3ZQcL3Ecbs",
-  authDomain: "pronti-app-37c6e.firebaseapp.com",
-  projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com",
-  messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // --- LÓGICA ANTI-DUPLICAÇÃO ---
