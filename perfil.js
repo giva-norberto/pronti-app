@@ -1,13 +1,34 @@
-// perfil.js (VERSÃO SEM HORÁRIOS/INTERVALOS)
-// Importa tudo que o Firebase precisa
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// perfil.js (VERSÃO REVISADA - SEM HORÁRIOS/INTERVALOS)
+// Importa dependências Firebase
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    addDoc,
+    collection,
+    query,
+    where,
+    getDocs,
+    onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+    getStorage,
+    ref,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import {
+    getAuth,
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
-// Lógica da Página
+// Lógica de inicialização
 window.addEventListener('DOMContentLoaded', () => {
+    // Elementos DOM
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
@@ -34,6 +55,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let empresaId = null;
     let unsubProfissionais = null;
 
+    // Autenticação
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
@@ -44,45 +66,57 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Busca dados da empresa e do profissional
     async function verificarEcarregarDados(uid) {
-        const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-        const snapshot = await getDocs(q);
-        const secaoEquipe = elements.btnAddProfissional?.closest?.('.form-section');
+        try {
+            const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+            const snapshot = await getDocs(q);
+            const secaoEquipe = elements.btnAddProfissional?.closest?.('.form-section');
 
-        if (snapshot.empty) {
-            if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
-            if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
-            if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
-            if (secaoEquipe) secaoEquipe.style.display = 'none';
-            if (elements.linkVitrineMenu) {
-                elements.linkVitrineMenu.classList.add('disabled');
-                elements.linkVitrineMenu.style.pointerEvents = 'none';
-                elements.linkVitrineMenu.style.opacity = '0.5';
-                elements.linkVitrineMenu.href = '#';
-            }
-        } else {
-            const empresaDoc = snapshot.docs[0];
-            empresaId = empresaDoc.id;
-            const dadosEmpresa = empresaDoc.data();
-            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-            const profissionalSnap = await getDoc(profissionalRef);
-            let dadosProfissional = {};
-            let ehDono = false;
-            if (profissionalSnap.exists()) {
-                dadosProfissional = profissionalSnap.data();
-                ehDono = dadosProfissional.ehDono === true;
-            }
-            preencherFormulario(dadosEmpresa, dadosProfissional);
-
-            if (ehDono) {
-                if (secaoEquipe) secaoEquipe.style.display = 'block';
-                iniciarListenerDeProfissionais(empresaId);
-            } else {
+            if (snapshot.empty) {
+                // Usuário ainda não criou o negócio
+                if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
+                if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
+                if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
                 if (secaoEquipe) secaoEquipe.style.display = 'none';
+                if (elements.linkVitrineMenu) {
+                    elements.linkVitrineMenu.classList.add('disabled');
+                    elements.linkVitrineMenu.style.pointerEvents = 'none';
+                    elements.linkVitrineMenu.style.opacity = '0.5';
+                    elements.linkVitrineMenu.href = '#';
+                }
+            } else {
+                // Empresa existe
+                const empresaDoc = snapshot.docs[0];
+                empresaId = empresaDoc.id;
+                const dadosEmpresa = empresaDoc.data();
+
+                // Busca dados do profissional
+                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+                const profissionalSnap = await getDoc(profissionalRef);
+                let dadosProfissional = {};
+                let ehDono = false;
+                if (profissionalSnap.exists()) {
+                    dadosProfissional = profissionalSnap.data();
+                    ehDono = dadosProfissional.ehDono === true;
+                }
+                preencherFormulario(dadosEmpresa, dadosProfissional);
+
+                // Se for proprietário, mostra equipe e escuta profissionais
+                if (ehDono) {
+                    if (secaoEquipe) secaoEquipe.style.display = 'block';
+                    iniciarListenerDeProfissionais(empresaId);
+                } else {
+                    if (secaoEquipe) secaoEquipe.style.display = 'none';
+                }
             }
+        } catch (error) {
+            console.error("Erro ao carregar dados:", error);
+            alert("Erro ao carregar dados do perfil.");
         }
     }
 
+    // Real-time para profissionais
     function iniciarListenerDeProfissionais(idDaEmpresa) {
         if (!elements.listaProfissionaisPainel) return;
         if (unsubProfissionais) unsubProfissionais();
@@ -93,6 +127,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Renderiza equipe
     function renderizarListaProfissionais(profissionais) {
         if (!elements.listaProfissionaisPainel) return;
         if (profissionais.length === 0) {
@@ -107,6 +142,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
+    // Preenche formulário e links
     function preencherFormulario(dadosEmpresa, dadosProfissional) {
         if (elements.nomeNegocioInput)
             elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
@@ -130,6 +166,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
     }
 
+    // Salva perfil de negócio
     async function handleFormSubmit(event) {
         event.preventDefault();
         if (elements.btnSalvar) {
@@ -190,6 +227,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Adiciona profissional à equipe
     async function handleAdicionarProfissional(event) {
         event.preventDefault();
         const btnSubmit = event.target.querySelector('button[type="submit"]');
@@ -223,6 +261,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Adiciona listeners
     function adicionarListenersDeEvento() {
         if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
@@ -261,6 +300,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Copia link da vitrine
     function copiarLink() {
         if (!empresaId) {
             alert("Salve seu perfil para gerar o link.");
