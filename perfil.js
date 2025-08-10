@@ -2,19 +2,20 @@
 import {
   getFirestore, doc, getDoc, setDoc, addDoc, collection,
   query, where, getDocs, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getStorage, ref, uploadBytes, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import {
   getAuth, onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
 // Segurança extra: verificar inicialização
 if (!app || !db || !auth || !storage) {
   console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
+  throw new Error("Firebase não inicializado. Verifique firebase-config.js");
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -315,3 +316,4 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
