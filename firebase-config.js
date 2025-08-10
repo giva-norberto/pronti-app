@@ -1,8 +1,11 @@
+// firebase-config.js - Corrigido para Firebase v10.12.2 CDN ES Modules
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
+// Configuração do seu projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -12,9 +15,13 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
+// Inicializa o Firebase App
 const app = initializeApp(firebaseConfig);
+
+// Instâncias dos serviços
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
+// Exporta tudo o que será usado nos outros arquivos
 export { app, db, auth, storage };
