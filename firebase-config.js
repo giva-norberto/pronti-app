@@ -1,29 +1,33 @@
-// Importação dos módulos do Firebase via CDN (ES Modules)
-// firebase-config.js - Revisado e pronto para Firebase v10 CDN ES Modules
+// firebase-config.js - Corrigido com as informações do painel e práticas de segurança
 
+// Importação dos módulos do Firebase via CDN (ES Modules)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-// Configuração pública do seu projeto Firebase
-// Configuração do seu projeto Firebase
+// ======================================================================
+//      CONFIGURAÇÃO CORRIGIDA - Valores do seu painel Firebase
+// ======================================================================
 export const firebaseConfig = {
-  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
+  // PRÁTICA DE SEGURANÇA: Para não enviar a chave ao GitHub,
+  // o ideal é usar Variáveis de Ambiente.
+  // Ex: apiKey: import.meta.env.VITE_FIREBASE_API_KEY
+  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // <-- Chave de API da Web CORRETA
+
+  // O ID do projeto estava com 'tt' em vez de 't'. Este é o valor correto.
   authDomain: "pronti-app-37c6e.firebaseapp.com",
-@@ -14,10 +15,10 @@ export const firebaseConfig = {
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.appspot.com",
+  
+  messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Inicialização do Firebase App
 // Inicializa o Firebase App
 export const app = initializeApp(firebaseConfig);
 
-// Instâncias dos serviços
+// Exporta instâncias dos serviços para uso em outros arquivos
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
-// Exporta instâncias dos serviços - ESSENCIAL para uso correto nos outros arquivos!
-export const db = getFirestore(app);      // Firestore precisa do app como argumento!
-export const auth = getAuth(app);         // Auth precisa do app como argumento!
-export const storage = getStorage(app);   // Storage precisa do app como argumento!
