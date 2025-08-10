@@ -1,5 +1,3 @@
-// perfil.js - Revisado, seguro e sem travamentos
-
 import {
   getFirestore, doc, getDoc, setDoc, addDoc, collection,
   query, where, getDocs, onSnapshot
@@ -44,6 +42,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Inicia autenticação
   onAuthStateChanged(auth, (user) => {
+    console.log("onAuthStateChanged disparou. Usuário:", user);
     if (user) {
       currentUser = user;
       carregarDadosPerfil(user.uid);
@@ -59,10 +58,20 @@ window.addEventListener('DOMContentLoaded', () => {
   // Carrega dados do perfil/empresa
   async function carregarDadosPerfil(uid) {
     try {
+      if (!uid) throw new Error("Usuário não autenticado (uid vazio)");
+      if (!db) throw new Error("Firestore não inicializado (db vazio)");
+
       console.log('Buscando empresa para UID:', uid);
-      const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+
+      // Checa se a coleção existe (consulta Firestore)
+      const empresariosRef = collection(db, "empresarios");
+      if (!empresariosRef) throw new Error("Não foi possível obter referência da coleção 'empresarios'");
+
+      const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
-      console.log('Snapshot:', snapshot);
+
+      console.log('Snapshot resultado:', snapshot);
+      console.log('Snapshot empty?', snapshot.empty);
 
       const secaoEquipe = el.btnAddProfissional?.closest?.('.form-section');
 
@@ -72,6 +81,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
+
+        console.log("Empresa encontrada:", empresaId, dadosEmpresa);
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
@@ -92,7 +103,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (error) {
-      console.error("Erro ao carregar dados:", error.code, error.message, error.stack);
+      console.error("Erro ao carregar dados: ", error.code, error.message, error.stack || error);
       alert("Erro ao carregar dados do perfil: " + error.message);
     }
   }
@@ -111,7 +122,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Listener realtime para equipe
   function iniciarListenerProfissionais(idDaEmpresa) {
     if (!el.listaProfissionaisPainel) return;
     if (unsubProfissionais) unsubProfissionais();
@@ -122,7 +132,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Renderiza lista de profissionais
   function renderizarListaProfissionais(profissionais) {
     if (!el.listaProfissionaisPainel) return;
     if (profissionais.length === 0) {
@@ -137,7 +146,6 @@ window.addEventListener('DOMContentLoaded', () => {
     )).join('');
   }
 
-  // Preenche campos do formulário
   function preencherFormulario(dadosEmpresa) {
     if (el.nomeNegocioInput) el.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
     if (el.descricaoInput) el.descricaoInput.value = dadosEmpresa.descricao || '';
@@ -158,7 +166,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (el.containerLinkVitrine) el.containerLinkVitrine.style.display = 'block';
   }
 
-  // Submit do formulário principal
   async function handleFormSubmit(event) {
     event.preventDefault();
     if (el.btnSalvar) {
@@ -196,7 +203,7 @@ window.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
       }
     } catch (error) {
-      console.error("Erro ao salvar perfil:", error.code, error.message, error.stack);
+      console.error("Erro ao salvar perfil:", error.code, error.message, error.stack || error);
       alert("Ocorreu um erro ao salvar: " + error.message);
     } finally {
       if (el.btnSalvar) {
@@ -206,7 +213,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Adiciona profissional
   async function handleAdicionarProfissional(event) {
     event.preventDefault();
     const btnSubmit = event.target.querySelector('button[type="submit"]');
@@ -232,7 +238,7 @@ window.addEventListener('DOMContentLoaded', () => {
       alert("Profissional adicionado com sucesso!");
       if (el.modalAddProfissional) el.modalAddProfissional.style.display = 'none';
     } catch (error) {
-      console.error("Erro ao adicionar profissional:", error.code, error.message, error.stack);
+      console.error("Erro ao adicionar profissional:", error.code, error.message, error.stack || error);
       alert("Erro ao adicionar profissional: " + error.message);
     } finally {
       btnSubmit.disabled = false;
@@ -240,7 +246,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Adiciona listeners de eventos (1 vez só)
   function adicionarListenersDeEvento() {
     if (el.form) el.form.addEventListener('submit', handleFormSubmit);
     if (el.btnCopiarLink) el.btnCopiarLink.addEventListener('click', copiarLink);
@@ -254,7 +259,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     if (el.btnLogout) el.btnLogout.addEventListener('click', async () => {
       try { await signOut(auth); window.location.href = 'login.html'; }
-      catch (error) { console.error("Erro no logout:", error.code, error.message, error.stack); alert("Ocorreu um erro ao sair."); }
+      catch (error) { console.error("Erro no logout:", error.code, error.message, error.stack || error); alert("Ocorreu um erro ao sair."); }
     });
 
     if (el.btnAddProfissional) {
@@ -278,7 +283,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Copia link da vitrine
   function copiarLink() {
     if (!empresaId) {
       alert("Salve seu perfil para gerar o link.");
