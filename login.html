@@ -5,9 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Pronti IA</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
-  <!-- Não precisa incluir firebase-config.js aqui -->
   <style>
-    /* ... seus estilos ... */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: var(--cor-fundo);
+    }
+    .login-container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+    .login-card {
+      background-color: var(--cor-branco);
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: var(--sombra-elevada);
+      text-align: center;
+    }
+    .login-card h1 {
+      font-size: 2em;
+      color: var(--cor-primaria);
+      margin-bottom: 10px;
+    }
+    .login-card p {
+      color: var(--cor-texto-leve);
+      margin-bottom: 30px;
+    }
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      font-weight: 600;
+      color: #333;
+      background-color: var(--cor-branco);
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .btn-google:hover {
+      background-color: #f8f8f8;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-google img {
+      width: 20px;
+      height: 20px;
+    }
+    #login-status {
+      margin: 20px 0 0 0;
+      color: #d00;
+      font-size: 1em;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -19,6 +75,7 @@
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Ícone do Google">
         <span>Entrar com Google</span>
       </button>
+      <div id="login-status"></div>
     </div>
   </div>
   <script type="module" src="login.js"></script>
