@@ -1,4 +1,4 @@
-// firebase-config.js - Revisado e pronto para Firebase v10 CDN ES Modules
+// firebase-config.js - Revisado e pronto para Firebase v10+ CDN ES Modules
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -15,7 +15,7 @@ export const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Inicializa o Firebase App
+// Inicializa o Firebase App apenas uma vez!
 export const app = initializeApp(firebaseConfig);
 
 // Exporta instâncias dos serviços - ESSENCIAL para uso correto nos outros arquivos!
