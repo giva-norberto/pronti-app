@@ -1,30 +1,23 @@
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+// Importação dos módulos do Firebase via CDN (ES Modules)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-// EXPORTAÇÃO DIRETA DO OBJETO DE CONFIGURAÇÃO USANDO VARIÁVEIS DE AMBIENTE/
+// Configuração pública do seu projeto Firebase
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
+  authDomain: "pronti-app-37c6e.firebaseapp.com",
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.appspot.com",
+  messagingSenderId: "736700619274",
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// --- LÓGICA ANTI-DUPLICAÇÃO ---
-let firebaseApp;
-if (!getApps().length) {
-  firebaseApp = initializeApp(firebaseConfig);
-} else {
-  firebaseApp = getApps()[0];
-}
-// --- FIM DA LÓGICA ---
+// Inicialização do Firebase App
+export const app = initializeApp(firebaseConfig);
 
-export const app = firebaseApp;
-export const db = getFirestore(firebaseApp);
-export const auth = getAuth(firebaseApp);
-export const storage = getStorage(firebaseApp);
-
-
+// Instâncias dos serviços
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const storage = getStorage(app);
