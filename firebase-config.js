@@ -25,3 +25,4 @@ const storage = getStorage(app);
 
 // Exporta tudo o que será usado
 export { app, db, auth, storage };
+
