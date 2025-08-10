@@ -1,15 +1,17 @@
+// perfil.js - Revisado e seguro para Firestore/Firebase v10+
+
 import {
-  getFirestore, doc, getDoc, setDoc, addDoc, collection,
+  doc, getDoc, setDoc, addDoc, collection,
   query, where, getDocs, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
-  getStorage, ref, uploadBytes, getDownloadURL
+  ref, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import {
-  getAuth, onAuthStateChanged, signOut
+  onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
-import { app, db, auth, storage } from "./firebase-config.js";
+import { db, auth, storage } from "./firebase-config.js";
 
 window.addEventListener('DOMContentLoaded', () => {
   // Elementos DOM
@@ -40,9 +42,8 @@ window.addEventListener('DOMContentLoaded', () => {
   let unsubProfissionais = null;
   let listenersAdicionados = false;
 
-  // Inicia autenticação
+  // Autenticação
   onAuthStateChanged(auth, (user) => {
-    console.log("onAuthStateChanged disparou. Usuário:", user);
     if (user) {
       currentUser = user;
       carregarDadosPerfil(user.uid);
@@ -61,17 +62,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!uid) throw new Error("Usuário não autenticado (uid vazio)");
       if (!db) throw new Error("Firestore não inicializado (db vazio)");
 
-      console.log('Buscando empresa para UID:', uid);
-
-      // Checa se a coleção existe (consulta Firestore)
+      // CORRETO: sempre passe "db" como primeiro argumento
       const empresariosRef = collection(db, "empresarios");
-      if (!empresariosRef) throw new Error("Não foi possível obter referência da coleção 'empresarios'");
 
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
-
-      console.log('Snapshot resultado:', snapshot);
-      console.log('Snapshot empty?', snapshot.empty);
 
       const secaoEquipe = el.btnAddProfissional?.closest?.('.form-section');
 
@@ -81,8 +76,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
-
-        console.log("Empresa encontrada:", empresaId, dadosEmpresa);
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
@@ -108,7 +101,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Atualiza tela para novo perfil
   function atualizarTelaParaNovoPerfil(secaoEquipe) {
     if (el.h1Titulo) el.h1Titulo.textContent = "Crie seu Perfil de Negócio";
     if (el.containerLinkVitrine) el.containerLinkVitrine.style.display = 'none';
