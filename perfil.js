@@ -1,20 +1,20 @@
+// Importa tudo que o Firebase precisa
 import {
-  collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { db, auth, storage } from "./firebase-config.js";
+  getFirestore, doc, getDoc, setDoc, addDoc, collection,
+  query, where, getDocs, onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import {
+  getAuth, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { uploadFile } from './uploadService.js';
+import { app, db, auth, storage } from "./firebase-config.js";
 
-// Função para upload de arquivos
-async function uploadFile(file, storagePath) {
-  const fileRef = ref(storage, storagePath);
-  await uploadBytes(fileRef, file);
-  return await getDownloadURL(fileRef);
-}
-
+// Lógica da Página
 window.addEventListener('DOMContentLoaded', () => {
-  // Elementos DOM
-  const el = {
+  const elements = {
     h1Titulo: document.getElementById('main-title'),
     form: document.getElementById('form-perfil'),
     nomeNegocioInput: document.getElementById('nomeNegocio'),
@@ -27,6 +27,7 @@ window.addEventListener('DOMContentLoaded', () => {
     containerLinkVitrine: document.getElementById('container-link-vitrine'),
     urlVitrineEl: document.getElementById('url-vitrine-display'),
     btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
+    btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
     linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
     btnLogout: document.getElementById('btn-logout'),
     listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
@@ -36,33 +37,28 @@ window.addEventListener('DOMContentLoaded', () => {
     btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
   };
 
-  let currentUser = null;
+  let currentUser;
   let empresaId = null;
   let unsubProfissionais = null;
-  let listenersAdicionados = false;
 
   onAuthStateChanged(auth, (user) => {
-    console.log("onAuthStateChanged disparou. Usuário:", user);
     if (user) {
       currentUser = user;
-      carregarDadosPerfil(user.uid);
-      if (!listenersAdicionados) {
-        adicionarListenersDeEvento();
-        listenersAdicionados = true;
-      }
+      verificarEcarregarDados(user.uid);
+      adicionarListenersDeEvento();
     } else {
       window.location.href = 'login.html';
     }
   });
 
-  async function carregarDadosPerfil(uid) {
+  async function verificarEcarregarDados(uid) {
     try {
-      // O PRIMEIRO ARGUMENTO DE COLLECTION DEVE SER db!
+      // O erro relatado só acontece se db não for passado aqui!
       const empresariosRef = collection(db, "empresarios");
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
 
-      const secaoEquipe = el.btnAddProfissional?.closest?.('.form-section');
+      const secaoEquipe = elements.btnAddProfissional?.closest?.('.form-section');
 
       if (snapshot.empty) {
         atualizarTelaParaNovoPerfil(secaoEquipe);
@@ -71,6 +67,7 @@ window.addEventListener('DOMContentLoaded', () => {
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
 
+        // Profissional do usuário
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
 
@@ -80,6 +77,7 @@ window.addEventListener('DOMContentLoaded', () => {
           dadosProfissional = profissionalSnap.data();
           ehDono = dadosProfissional.ehDono === true;
         }
+
         preencherFormulario(dadosEmpresa);
 
         if (ehDono) {
@@ -90,26 +88,26 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (error) {
-      console.error("Erro ao carregar dados: ", error.code, error.message, error.stack || error);
+      console.error("Erro ao carregar dados: ", error);
       alert("Erro ao carregar dados do perfil: " + error.message);
     }
   }
 
   function atualizarTelaParaNovoPerfil(secaoEquipe) {
-    if (el.h1Titulo) el.h1Titulo.textContent = "Crie seu Perfil de Negócio";
-    if (el.containerLinkVitrine) el.containerLinkVitrine.style.display = 'none';
-    if (el.btnAbrirVitrine) el.btnAbrirVitrine.style.display = 'none';
+    if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
+    if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
+    if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
     if (secaoEquipe) secaoEquipe.style.display = 'none';
-    if (el.linkVitrineMenu) {
-      el.linkVitrineMenu.classList.add('disabled');
-      el.linkVitrineMenu.style.pointerEvents = 'none';
-      el.linkVitrineMenu.style.opacity = '0.5';
-      el.linkVitrineMenu.href = '#';
+    if (elements.linkVitrineMenu) {
+      elements.linkVitrineMenu.classList.add('disabled');
+      elements.linkVitrineMenu.style.pointerEvents = 'none';
+      elements.linkVitrineMenu.style.opacity = '0.5';
+      elements.linkVitrineMenu.href = '#';
     }
   }
 
   function iniciarListenerProfissionais(idDaEmpresa) {
-    if (!el.listaProfissionaisPainel) return;
+    if (!elements.listaProfissionaisPainel) return;
     if (unsubProfissionais) unsubProfissionais();
     const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
     unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
@@ -119,12 +117,12 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderizarListaProfissionais(profissionais) {
-    if (!el.listaProfissionaisPainel) return;
+    if (!elements.listaProfissionaisPainel) return;
     if (profissionais.length === 0) {
-      el.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+      elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
       return;
     }
-    el.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => (
+    elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => (
       `<div class="profissional-card" style="border:1px solid #e5e7eb;padding:10px;border-radius:8px;display:flex;align-items:center;gap:10px;background:white;margin-bottom:8px;">
         <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
         <span class="profissional-nome" style="font-weight:500;">${profissional.nome}</span>
@@ -133,67 +131,77 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function preencherFormulario(dadosEmpresa) {
-    if (el.nomeNegocioInput) el.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
-    if (el.descricaoInput) el.descricaoInput.value = dadosEmpresa.descricao || '';
-    if (el.logoPreview && dadosEmpresa.logoUrl) el.logoPreview.src = dadosEmpresa.logoUrl;
+    if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+    if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
+    if (elements.logoPreview && dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
 
     const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-    if (el.urlVitrineEl) el.urlVitrineEl.textContent = urlCompleta;
-    if (el.btnAbrirVitrine) {
-      el.btnAbrirVitrine.href = urlCompleta;
-      el.btnAbrirVitrine.style.display = 'inline-flex';
+    if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+    if (elements.btnAbrirVitrine) {
+      elements.btnAbrirVitrine.href = urlCompleta;
+      elements.btnAbrirVitrine.style.display = 'inline-flex';
     }
-    if (el.linkVitrineMenu) {
-      el.linkVitrineMenu.href = urlCompleta;
-      el.linkVitrineMenu.classList.remove('disabled');
-      el.linkVitrineMenu.style.pointerEvents = 'auto';
-      el.linkVitrineMenu.style.opacity = '1';
+    if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+    if (elements.linkVitrineMenu) {
+      elements.linkVitrineMenu.href = urlCompleta;
+      elements.linkVitrineMenu.classList.remove('disabled');
+      elements.linkVitrineMenu.style.pointerEvents = 'auto';
+      elements.linkVitrineMenu.style.opacity = '1';
     }
-    if (el.containerLinkVitrine) el.containerLinkVitrine.style.display = 'block';
+    if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
   }
 
   async function handleFormSubmit(event) {
     event.preventDefault();
-    if (el.btnSalvar) {
-      el.btnSalvar.disabled = true;
-      el.btnSalvar.textContent = 'Salvando...';
+    if (elements.btnSalvar) {
+      elements.btnSalvar.disabled = true;
+      elements.btnSalvar.textContent = 'Salvando...';
     }
     try {
       const uid = currentUser.uid;
-      const nomeNegocio = el.nomeNegocioInput ? el.nomeNegocioInput.value.trim() : '';
+      const nomeNegocio = elements.nomeNegocioInput ? elements.nomeNegocioInput.value.trim() : '';
       if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
       const dadosEmpresa = {
         nomeFantasia: nomeNegocio,
-        descricao: el.descricaoInput ? el.descricaoInput.value.trim() : '',
+        descricao: elements.descricaoInput ? elements.descricaoInput.value.trim() : '',
         donoId: uid
       };
 
-      const logoFile = el.logoInput && el.logoInput.files[0];
+      const dadosProfissional = {
+        nome: currentUser.displayName || nomeNegocio,
+        fotoUrl: currentUser.photoURL || ''
+      };
+
+      const logoFile = elements.logoInput && elements.logoInput.files[0];
       if (logoFile) {
         const storagePath = `logos/${uid}/logo`;
-        dadosEmpresa.logoUrl = await uploadFile(logoFile, storagePath);
+        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+        dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
       } else if (empresaId) {
         const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
         if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
       }
 
+      let novaEmpresaRef;
       if (empresaId) {
         await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Perfil atualizado com sucesso!");
       } else {
-        const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+        novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
         empresaId = novaEmpresaRef.id;
+        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Seu negócio foi cadastrado com sucesso!");
         window.location.reload();
       }
     } catch (error) {
-      console.error("Erro ao salvar perfil:", error.code, error.message, error.stack || error);
+      console.error("Erro ao salvar perfil:", error);
       alert("Ocorreu um erro ao salvar: " + error.message);
     } finally {
-      if (el.btnSalvar) {
-        el.btnSalvar.disabled = false;
-        el.btnSalvar.textContent = 'Salvar Todas as Configurações';
+      if (elements.btnSalvar) {
+        elements.btnSalvar.disabled = false;
+        elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
       }
     }
   }
@@ -213,16 +221,17 @@ window.addEventListener('DOMContentLoaded', () => {
       let fotoUrl = '';
       if (fotoFile) {
         const storagePath = `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`;
-        fotoUrl = await uploadFile(fotoFile, storagePath);
+        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+        fotoUrl = await uploadFile(firebaseDependencies, fotoFile, storagePath);
       }
 
       const novoProfissional = { nome, fotoUrl, servicos: [], ehDono: false };
       await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
 
       alert("Profissional adicionado com sucesso!");
-      if (el.modalAddProfissional) el.modalAddProfissional.style.display = 'none';
+      if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
     } catch (error) {
-      console.error("Erro ao adicionar profissional:", error.code, error.message, error.stack || error);
+      console.error("Erro ao adicionar profissional:", error);
       alert("Erro ao adicionar profissional: " + error.message);
     } finally {
       btnSubmit.disabled = false;
@@ -231,39 +240,39 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function adicionarListenersDeEvento() {
-    if (el.form) el.form.addEventListener('submit', handleFormSubmit);
-    if (el.btnCopiarLink) el.btnCopiarLink.addEventListener('click', copiarLink);
-    if (el.btnUploadLogo) el.btnUploadLogo.addEventListener('click', () => el.logoInput && el.logoInput.click());
-    if (el.logoInput) el.logoInput.addEventListener('change', () => {
-      if (el.logoInput.files[0]) {
+    if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
+    if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
+    if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput && elements.logoInput.click());
+    if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
+      if (elements.logoInput.files[0]) {
         const reader = new FileReader();
-        reader.onload = (e) => { if (el.logoPreview) el.logoPreview.src = e.target.result; };
-        reader.readAsDataURL(el.logoInput.files[0]);
+        reader.onload = (e) => { if (elements.logoPreview) elements.logoPreview.src = e.target.result; };
+        reader.readAsDataURL(elements.logoInput.files[0]);
       }
     });
-    if (el.btnLogout) el.btnLogout.addEventListener('click', async () => {
+    if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
       try { await signOut(auth); window.location.href = 'login.html'; }
-      catch (error) { console.error("Erro no logout:", error.code, error.message, error.stack || error); alert("Ocorreu um erro ao sair."); }
+      catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
     });
 
-    if (el.btnAddProfissional) {
-      el.btnAddProfissional.addEventListener('click', () => {
+    if (elements.btnAddProfissional) {
+      elements.btnAddProfissional.addEventListener('click', () => {
         if (!empresaId) {
           alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
           return;
         }
-        if (el.formAddProfissional) el.formAddProfissional.reset();
-        if (el.modalAddProfissional) el.modalAddProfissional.style.display = 'flex';
+        if (elements.formAddProfissional) elements.formAddProfissional.reset();
+        if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
       });
     }
 
-    if (el.btnCancelarProfissional) {
-      el.btnCancelarProfissional.addEventListener('click', () => {
-        if (el.modalAddProfissional) el.modalAddProfissional.style.display = 'none';
+    if (elements.btnCancelarProfissional) {
+      elements.btnCancelarProfissional.addEventListener('click', () => {
+        if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
       });
     }
-    if (el.formAddProfissional) {
-      el.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
+    if (elements.formAddProfissional) {
+      elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
     }
   }
 
