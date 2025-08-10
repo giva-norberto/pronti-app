@@ -1,316 +1,294 @@
-// perfil.js (VERSÃO REVISADA - SEM HORÁRIOS/INTERVALOS)
-// Importa dependências Firebase
+// perfil.js - Revisado, seguro e sem travamentos
+
 import {
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc,
-    addDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-    onSnapshot
+  getFirestore, doc, getDoc, setDoc, addDoc, collection,
+  query, where, getDocs, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
-    getStorage,
-    ref,
-    uploadBytes,
-    getDownloadURL
+  getStorage, ref, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import {
-    getAuth,
-    onAuthStateChanged,
-    signOut
+  getAuth, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
-// Lógica de inicialização
 window.addEventListener('DOMContentLoaded', () => {
-    // Elementos DOM
-    const elements = {
-        h1Titulo: document.getElementById('main-title'),
-        form: document.getElementById('form-perfil'),
-        nomeNegocioInput: document.getElementById('nomeNegocio'),
-        descricaoInput: document.getElementById('descricao'),
-        logoInput: document.getElementById('logoNegocio'),
-        logoPreview: document.getElementById('logo-preview'),
-        btnUploadLogo: document.getElementById('btn-upload-logo'),
-        btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
-        btnCopiarLink: document.getElementById('btn-copiar-link'),
-        containerLinkVitrine: document.getElementById('container-link-vitrine'),
-        urlVitrineEl: document.getElementById('url-vitrine-display'),
-        btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
-        linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
-        btnLogout: document.getElementById('btn-logout'),
-        listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
-        btnAddProfissional: document.getElementById('btn-add-profissional'),
-        modalAddProfissional: document.getElementById('modal-add-profissional'),
-        formAddProfissional: document.getElementById('form-add-profissional'),
-        btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
-    };
+  // Elementos DOM
+  const el = {
+    h1Titulo: document.getElementById('main-title'),
+    form: document.getElementById('form-perfil'),
+    nomeNegocioInput: document.getElementById('nomeNegocio'),
+    descricaoInput: document.getElementById('descricao'),
+    logoInput: document.getElementById('logoNegocio'),
+    logoPreview: document.getElementById('logo-preview'),
+    btnUploadLogo: document.getElementById('btn-upload-logo'),
+    btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
+    btnCopiarLink: document.getElementById('btn-copiar-link'),
+    containerLinkVitrine: document.getElementById('container-link-vitrine'),
+    urlVitrineEl: document.getElementById('url-vitrine-display'),
+    btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
+    linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
+    btnLogout: document.getElementById('btn-logout'),
+    listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
+    btnAddProfissional: document.getElementById('btn-add-profissional'),
+    modalAddProfissional: document.getElementById('modal-add-profissional'),
+    formAddProfissional: document.getElementById('form-add-profissional'),
+    btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
+  };
 
-    let currentUser;
-    let empresaId = null;
-    let unsubProfissionais = null;
+  let currentUser = null;
+  let empresaId = null;
+  let unsubProfissionais = null;
+  let listenersAdicionados = false;
 
-    // Autenticação
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUser = user;
-            verificarEcarregarDados(user.uid);
-            adicionarListenersDeEvento();
-        } else {
-            window.location.href = 'login.html';
+  // Inicia autenticação
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUser = user;
+      carregarDadosPerfil(user.uid);
+      if (!listenersAdicionados) {
+        adicionarListenersDeEvento();
+        listenersAdicionados = true;
+      }
+    } else {
+      window.location.href = 'login.html';
+    }
+  });
+
+  // Carrega dados do perfil/empresa
+  async function carregarDadosPerfil(uid) {
+    try {
+      console.log('Buscando empresa para UID:', uid);
+      const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+      const snapshot = await getDocs(q);
+      console.log('Snapshot:', snapshot);
+
+      const secaoEquipe = el.btnAddProfissional?.closest?.('.form-section');
+
+      if (snapshot.empty) {
+        atualizarTelaParaNovoPerfil(secaoEquipe);
+      } else {
+        const empresaDoc = snapshot.docs[0];
+        empresaId = empresaDoc.id;
+        const dadosEmpresa = empresaDoc.data();
+
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
+        const profissionalSnap = await getDoc(profissionalRef);
+
+        let dadosProfissional = {};
+        let ehDono = false;
+        if (profissionalSnap.exists()) {
+          dadosProfissional = profissionalSnap.data();
+          ehDono = dadosProfissional.ehDono === true;
         }
+        preencherFormulario(dadosEmpresa);
+
+        if (ehDono) {
+          if (secaoEquipe) secaoEquipe.style.display = 'block';
+          iniciarListenerProfissionais(empresaId);
+        } else {
+          if (secaoEquipe) secaoEquipe.style.display = 'none';
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error.code, error.message, error.stack);
+      alert("Erro ao carregar dados do perfil: " + error.message);
+    }
+  }
+
+  // Atualiza tela para novo perfil
+  function atualizarTelaParaNovoPerfil(secaoEquipe) {
+    if (el.h1Titulo) el.h1Titulo.textContent = "Crie seu Perfil de Negócio";
+    if (el.containerLinkVitrine) el.containerLinkVitrine.style.display = 'none';
+    if (el.btnAbrirVitrine) el.btnAbrirVitrine.style.display = 'none';
+    if (secaoEquipe) secaoEquipe.style.display = 'none';
+    if (el.linkVitrineMenu) {
+      el.linkVitrineMenu.classList.add('disabled');
+      el.linkVitrineMenu.style.pointerEvents = 'none';
+      el.linkVitrineMenu.style.opacity = '0.5';
+      el.linkVitrineMenu.href = '#';
+    }
+  }
+
+  // Listener realtime para equipe
+  function iniciarListenerProfissionais(idDaEmpresa) {
+    if (!el.listaProfissionaisPainel) return;
+    if (unsubProfissionais) unsubProfissionais();
+    const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
+    unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
+      const profissionais = snapshot.docs.map(doc => doc.data());
+      renderizarListaProfissionais(profissionais);
+    });
+  }
+
+  // Renderiza lista de profissionais
+  function renderizarListaProfissionais(profissionais) {
+    if (!el.listaProfissionaisPainel) return;
+    if (profissionais.length === 0) {
+      el.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
+      return;
+    }
+    el.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => (
+      `<div class="profissional-card" style="border:1px solid #e5e7eb;padding:10px;border-radius:8px;display:flex;align-items:center;gap:10px;background:white;margin-bottom:8px;">
+        <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+        <span class="profissional-nome" style="font-weight:500;">${profissional.nome}</span>
+      </div>`
+    )).join('');
+  }
+
+  // Preenche campos do formulário
+  function preencherFormulario(dadosEmpresa) {
+    if (el.nomeNegocioInput) el.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+    if (el.descricaoInput) el.descricaoInput.value = dadosEmpresa.descricao || '';
+    if (el.logoPreview && dadosEmpresa.logoUrl) el.logoPreview.src = dadosEmpresa.logoUrl;
+
+    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+    if (el.urlVitrineEl) el.urlVitrineEl.textContent = urlCompleta;
+    if (el.btnAbrirVitrine) {
+      el.btnAbrirVitrine.href = urlCompleta;
+      el.btnAbrirVitrine.style.display = 'inline-flex';
+    }
+    if (el.linkVitrineMenu) {
+      el.linkVitrineMenu.href = urlCompleta;
+      el.linkVitrineMenu.classList.remove('disabled');
+      el.linkVitrineMenu.style.pointerEvents = 'auto';
+      el.linkVitrineMenu.style.opacity = '1';
+    }
+    if (el.containerLinkVitrine) el.containerLinkVitrine.style.display = 'block';
+  }
+
+  // Submit do formulário principal
+  async function handleFormSubmit(event) {
+    event.preventDefault();
+    if (el.btnSalvar) {
+      el.btnSalvar.disabled = true;
+      el.btnSalvar.textContent = 'Salvando...';
+    }
+    try {
+      const uid = currentUser.uid;
+      const nomeNegocio = el.nomeNegocioInput ? el.nomeNegocioInput.value.trim() : '';
+      if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
+
+      const dadosEmpresa = {
+        nomeFantasia: nomeNegocio,
+        descricao: el.descricaoInput ? el.descricaoInput.value.trim() : '',
+        donoId: uid
+      };
+
+      const logoFile = el.logoInput && el.logoInput.files[0];
+      if (logoFile) {
+        const storagePath = `logos/${uid}/logo`;
+        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+        dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
+      } else if (empresaId) {
+        const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
+        if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
+      }
+
+      if (empresaId) {
+        await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+        alert("Perfil atualizado com sucesso!");
+      } else {
+        const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+        empresaId = novaEmpresaRef.id;
+        alert("Seu negócio foi cadastrado com sucesso!");
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Erro ao salvar perfil:", error.code, error.message, error.stack);
+      alert("Ocorreu um erro ao salvar: " + error.message);
+    } finally {
+      if (el.btnSalvar) {
+        el.btnSalvar.disabled = false;
+        el.btnSalvar.textContent = 'Salvar Todas as Configurações';
+      }
+    }
+  }
+
+  // Adiciona profissional
+  async function handleAdicionarProfissional(event) {
+    event.preventDefault();
+    const btnSubmit = event.target.querySelector('button[type="submit"]');
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Salvando...';
+    try {
+      const nomeInput = document.getElementById('nome-profissional');
+      const fotoInput = document.getElementById('foto-profissional');
+      const nome = nomeInput ? nomeInput.value.trim() : '';
+      const fotoFile = fotoInput ? fotoInput.files[0] : undefined;
+      if (!nome) throw new Error("O nome do profissional é obrigatório.");
+
+      let fotoUrl = '';
+      if (fotoFile) {
+        const storagePath = `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`;
+        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+        fotoUrl = await uploadFile(firebaseDependencies, fotoFile, storagePath);
+      }
+
+      const novoProfissional = { nome, fotoUrl, servicos: [], ehDono: false };
+      await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
+
+      alert("Profissional adicionado com sucesso!");
+      if (el.modalAddProfissional) el.modalAddProfissional.style.display = 'none';
+    } catch (error) {
+      console.error("Erro ao adicionar profissional:", error.code, error.message, error.stack);
+      alert("Erro ao adicionar profissional: " + error.message);
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Salvar Profissional';
+    }
+  }
+
+  // Adiciona listeners de eventos (1 vez só)
+  function adicionarListenersDeEvento() {
+    if (el.form) el.form.addEventListener('submit', handleFormSubmit);
+    if (el.btnCopiarLink) el.btnCopiarLink.addEventListener('click', copiarLink);
+    if (el.btnUploadLogo) el.btnUploadLogo.addEventListener('click', () => el.logoInput && el.logoInput.click());
+    if (el.logoInput) el.logoInput.addEventListener('change', () => {
+      if (el.logoInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => { if (el.logoPreview) el.logoPreview.src = e.target.result; };
+        reader.readAsDataURL(el.logoInput.files[0]);
+      }
+    });
+    if (el.btnLogout) el.btnLogout.addEventListener('click', async () => {
+      try { await signOut(auth); window.location.href = 'login.html'; }
+      catch (error) { console.error("Erro no logout:", error.code, error.message, error.stack); alert("Ocorreu um erro ao sair."); }
     });
 
-    // Busca dados da empresa e do profissional
-    async function verificarEcarregarDados(uid) {
-        try {
-            const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-            const snapshot = await getDocs(q);
-            const secaoEquipe = elements.btnAddProfissional?.closest?.('.form-section');
-
-            if (snapshot.empty) {
-                // Usuário ainda não criou o negócio
-                if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
-                if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
-                if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
-                if (secaoEquipe) secaoEquipe.style.display = 'none';
-                if (elements.linkVitrineMenu) {
-                    elements.linkVitrineMenu.classList.add('disabled');
-                    elements.linkVitrineMenu.style.pointerEvents = 'none';
-                    elements.linkVitrineMenu.style.opacity = '0.5';
-                    elements.linkVitrineMenu.href = '#';
-                }
-            } else {
-                // Empresa existe
-                const empresaDoc = snapshot.docs[0];
-                empresaId = empresaDoc.id;
-                const dadosEmpresa = empresaDoc.data();
-
-                // Busca dados do profissional
-                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-                const profissionalSnap = await getDoc(profissionalRef);
-                let dadosProfissional = {};
-                let ehDono = false;
-                if (profissionalSnap.exists()) {
-                    dadosProfissional = profissionalSnap.data();
-                    ehDono = dadosProfissional.ehDono === true;
-                }
-                preencherFormulario(dadosEmpresa, dadosProfissional);
-
-                // Se for proprietário, mostra equipe e escuta profissionais
-                if (ehDono) {
-                    if (secaoEquipe) secaoEquipe.style.display = 'block';
-                    iniciarListenerDeProfissionais(empresaId);
-                } else {
-                    if (secaoEquipe) secaoEquipe.style.display = 'none';
-                }
-            }
-        } catch (error) {
-            console.error("Erro ao carregar dados:", error);
-            alert("Erro ao carregar dados do perfil.");
-        }
-    }
-
-    // Real-time para profissionais
-    function iniciarListenerDeProfissionais(idDaEmpresa) {
-        if (!elements.listaProfissionaisPainel) return;
-        if (unsubProfissionais) unsubProfissionais();
-        const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
-        unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
-            const profissionais = snapshot.docs.map(doc => doc.data());
-            renderizarListaProfissionais(profissionais);
-        });
-    }
-
-    // Renderiza equipe
-    function renderizarListaProfissionais(profissionais) {
-        if (!elements.listaProfissionaisPainel) return;
-        if (profissionais.length === 0) {
-            elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
-            return;
-        }
-        elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => {
-            return `<div class="profissional-card" style="border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; background-color: white; margin-bottom: 8px;">
-                        <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                        <span class="profissional-nome" style="font-weight: 500;">${profissional.nome}</span>
-                    </div>`;
-        }).join('');
-    }
-
-    // Preenche formulário e links
-    function preencherFormulario(dadosEmpresa, dadosProfissional) {
-        if (elements.nomeNegocioInput)
-            elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
-        if (elements.descricaoInput)
-            elements.descricaoInput.value = dadosEmpresa.descricao || '';
-        if (elements.logoPreview && dadosEmpresa.logoUrl)
-            elements.logoPreview.src = dadosEmpresa.logoUrl;
-
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-        if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
-        if (elements.btnAbrirVitrine) {
-            elements.btnAbrirVitrine.href = urlCompleta;
-            elements.btnAbrirVitrine.style.display = 'inline-flex';
-        }
-        if (elements.linkVitrineMenu) {
-            elements.linkVitrineMenu.href = urlCompleta;
-            elements.linkVitrineMenu.classList.remove('disabled');
-            elements.linkVitrineMenu.style.pointerEvents = 'auto';
-            elements.linkVitrineMenu.style.opacity = '1';
-        }
-        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
-    }
-
-    // Salva perfil de negócio
-    async function handleFormSubmit(event) {
-        event.preventDefault();
-        if (elements.btnSalvar) {
-            elements.btnSalvar.disabled = true;
-            elements.btnSalvar.textContent = 'Salvando...';
-        }
-        try {
-            const uid = currentUser.uid;
-            const nomeNegocio = elements.nomeNegocioInput ? elements.nomeNegocioInput.value.trim() : '';
-            if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
-
-            const dadosEmpresa = {
-                nomeFantasia: nomeNegocio,
-                descricao: elements.descricaoInput ? elements.descricaoInput.value.trim() : '',
-                donoId: uid
-            };
-            const dadosProfissional = {
-                nome: currentUser.displayName || nomeNegocio,
-                fotoUrl: currentUser.photoURL || ''
-            };
-
-            const logoFile = elements.logoInput && elements.logoInput.files[0];
-            if (logoFile) {
-                const storagePath = `logos/${uid}/logo`;
-                const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-                dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
-            } else if (empresaId) {
-                const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
-                if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
-            }
-
-            if (empresaId) {
-                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
-                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-                const docOriginal = await getDoc(profissionalRef);
-                dadosProfissional.servicos = docOriginal.exists() ? docOriginal.data().servicos || [] : [];
-                dadosProfissional.ehDono = (docOriginal.exists() && docOriginal.data().ehDono === true);
-
-                await setDoc(profissionalRef, dadosProfissional, { merge: true });
-                alert("Perfil atualizado com sucesso!");
-            } else {
-                dadosProfissional.servicos = [];
-                dadosProfissional.ehDono = true;
-                const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-                empresaId = novaEmpresaRef.id;
-                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
-                alert("Seu negócio foi cadastrado com sucesso!");
-                window.location.reload();
-            }
-        } catch (error) {
-            console.error("Erro ao salvar perfil:", error);
-            alert("Ocorreu um erro ao salvar: " + error.message);
-        } finally {
-            if (elements.btnSalvar) {
-                elements.btnSalvar.disabled = false;
-                elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
-            }
-        }
-    }
-
-    // Adiciona profissional à equipe
-    async function handleAdicionarProfissional(event) {
-        event.preventDefault();
-        const btnSubmit = event.target.querySelector('button[type="submit"]');
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = 'Salvando...';
-        try {
-            const nomeInput = document.getElementById('nome-profissional');
-            const fotoInput = document.getElementById('foto-profissional');
-            const nome = nomeInput ? nomeInput.value.trim() : '';
-            const fotoFile = fotoInput ? fotoInput.files[0] : undefined;
-            if (!nome) throw new Error("O nome do profissional é obrigatório.");
-
-            let fotoUrl = '';
-            if (fotoFile) {
-                const storagePath = `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`;
-                const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-                fotoUrl = await uploadFile(firebaseDependencies, fotoFile, storagePath);
-            }
-
-            const novoProfissional = { nome, fotoUrl, servicos: [], ehDono: false };
-            await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
-
-            alert("Profissional adicionado com sucesso!");
-            if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-        } catch (error) {
-            console.error("Erro ao adicionar profissional:", error);
-            alert("Erro ao adicionar profissional: " + error.message);
-        } finally {
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = 'Salvar Profissional';
-        }
-    }
-
-    // Adiciona listeners
-    function adicionarListenersDeEvento() {
-        if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
-        if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
-        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput && elements.logoInput.click());
-        if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
-            if (elements.logoInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (e) => { if (elements.logoPreview) elements.logoPreview.src = e.target.result; };
-                reader.readAsDataURL(elements.logoInput.files[0]);
-            }
-        });
-        if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
-            try { await signOut(auth); window.location.href = 'login.html'; }
-            catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
-        });
-
-        if (elements.btnAddProfissional) {
-            elements.btnAddProfissional.addEventListener('click', () => {
-                if (!empresaId) {
-                    alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
-                    return;
-                }
-                if (elements.formAddProfissional) elements.formAddProfissional.reset();
-                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
-            });
-        }
-
-        if (elements.btnCancelarProfissional) {
-            elements.btnCancelarProfissional.addEventListener('click', () => {
-                if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-            });
-        }
-
-        if (elements.formAddProfissional) {
-            elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
-        }
-    }
-
-    // Copia link da vitrine
-    function copiarLink() {
+    if (el.btnAddProfissional) {
+      el.btnAddProfissional.addEventListener('click', () => {
         if (!empresaId) {
-            alert("Salve seu perfil para gerar o link.");
-            return;
+          alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
+          return;
         }
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-        navigator.clipboard.writeText(urlCompleta).then(() => {
-            alert("Link da vitrine copiado!");
-        }, () => {
-            alert("Falha ao copiar o link.");
-        });
+        if (el.formAddProfissional) el.formAddProfissional.reset();
+        if (el.modalAddProfissional) el.modalAddProfissional.style.display = 'flex';
+      });
     }
+
+    if (el.btnCancelarProfissional) {
+      el.btnCancelarProfissional.addEventListener('click', () => {
+        if (el.modalAddProfissional) el.modalAddProfissional.style.display = 'none';
+      });
+    }
+    if (el.formAddProfissional) {
+      el.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
+    }
+  }
+
+  // Copia link da vitrine
+  function copiarLink() {
+    if (!empresaId) {
+      alert("Salve seu perfil para gerar o link.");
+      return;
+    }
+    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+    navigator.clipboard.writeText(urlCompleta).then(() => {
+      alert("Link da vitrine copiado!");
+    }, () => {
+      alert("Falha ao copiar o link.");
+    });
+  }
 });
