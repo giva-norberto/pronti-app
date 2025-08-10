@@ -1,3 +1,4 @@
+// firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -12,13 +13,9 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
-
-// Inicializa os serviços
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Exporta tudo
 export { app, db, auth, storage };
