@@ -12,7 +12,11 @@ import {
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
-// Lógica da Página
+// Segurança extra: verificar inicialização
+if (!app || !db || !auth || !storage) {
+  console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   const elements = {
     h1Titulo: document.getElementById('main-title'),
@@ -44,16 +48,17 @@ window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, (user) => {
     if (user) {
       currentUser = user;
-      verificarEcarregarDados(user.uid);
+      verificarOuCriarEmpresa(user.uid);
       adicionarListenersDeEvento();
     } else {
       window.location.href = 'login.html';
     }
   });
 
-  async function verificarEcarregarDados(uid) {
+  async function verificarOuCriarEmpresa(uid) {
     try {
-      // O erro relatado só acontece se db não for passado aqui!
+      console.log("[DEBUG] Buscando empresa do dono:", uid);
+
       const empresariosRef = collection(db, "empresarios");
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
@@ -61,13 +66,29 @@ window.addEventListener('DOMContentLoaded', () => {
       const secaoEquipe = elements.btnAddProfissional?.closest?.('.form-section');
 
       if (snapshot.empty) {
+        console.warn("[DEBUG] Nenhuma empresa encontrada. Criando nova empresa...");
+        empresaId = (await addDoc(collection(db, "empresarios"), {
+          nomeFantasia: "",
+          descricao: "",
+          donoId: uid,
+          logoUrl: ""
+        })).id;
+
+        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), {
+          nome: currentUser.displayName || "Proprietário",
+          fotoUrl: currentUser.photoURL || "",
+          ehDono: true
+        });
+
         atualizarTelaParaNovoPerfil(secaoEquipe);
       } else {
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
 
-        // Profissional do usuário
+        console.log("[DEBUG] Empresa encontrada:", empresaId, dadosEmpresa);
+
+        // Buscar dados do profissional
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
 
@@ -88,7 +109,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (error) {
-      console.error("Erro ao carregar dados: ", error);
+      console.error("Erro ao carregar dados:", error);
+      console.error("Tipo do erro:", error.name);
+      console.error("Mensagem do erro:", error.message);
+      console.error("Stack:", error.stack);
       alert("Erro ao carregar dados do perfil: " + error.message);
     }
   }
@@ -158,7 +182,9 @@ window.addEventListener('DOMContentLoaded', () => {
       elements.btnSalvar.textContent = 'Salvando...';
     }
     try {
-      const uid = currentUser.uid;
+      const uid = currentUser?.uid;
+      if (!uid) throw new Error("Usuário não autenticado.");
+
       const nomeNegocio = elements.nomeNegocioInput ? elements.nomeNegocioInput.value.trim() : '';
       if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
@@ -170,7 +196,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const dadosProfissional = {
         nome: currentUser.displayName || nomeNegocio,
-        fotoUrl: currentUser.photoURL || ''
+        fotoUrl: currentUser.photoURL || "",
+        ehDono: true
       };
 
       const logoFile = elements.logoInput && elements.logoInput.files[0];
@@ -183,13 +210,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
       }
 
-      let novaEmpresaRef;
       if (empresaId) {
         await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Perfil atualizado com sucesso!");
       } else {
-        novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+        const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
         empresaId = novaEmpresaRef.id;
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Seu negócio foi cadastrado com sucesso!");
