@@ -6,7 +6,6 @@
   <title>Login - Pronti IA</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
-    /* Estilos específicos para centralizar a página de login */
     body {
       display: flex;
       justify-content: center;
@@ -67,18 +66,15 @@
     <div class="login-card">
       <h1>Pronti</h1>
       <p>Acesse seu painel de profissional.</p>
-      
       <button id="btn-login-google" class="btn-google">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Ícone do Google">
         <span>Entrar com Google</span>
       </button>
-
     </div>
   </div>
 
-  <!-- Scripts do Firebase -->
-  <script src="firebase-config.js" type="module"></script>
-  <script src="login.js" type="module"></script>
+  <!-- Scripts devem ser carregados DEPOIS do botão -->
+  <script type="module" src="login.js"></script>
 
 </body>
 </html>
