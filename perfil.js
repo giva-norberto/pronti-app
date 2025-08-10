@@ -1,16 +1,12 @@
-// perfil.js - Revisado e seguro para Firestore/Firebase v10+
+// perfil.js - Revisado, seguro e funcional para Firebase v10+
 
 import {
-  doc, getDoc, setDoc, addDoc, collection,
-  query, where, getDocs, onSnapshot
+  collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {
-  ref, uploadBytes, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import {
-  onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
+// IMPORTANTE: db, auth, storage devem vir do firebase-config.js (que deve exportar corretamente!)
 import { db, auth, storage } from "./firebase-config.js";
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -42,8 +38,8 @@ window.addEventListener('DOMContentLoaded', () => {
   let unsubProfissionais = null;
   let listenersAdicionados = false;
 
-  // Autenticação
   onAuthStateChanged(auth, (user) => {
+    console.log("onAuthStateChanged disparou. Usuário:", user);
     if (user) {
       currentUser = user;
       carregarDadosPerfil(user.uid);
@@ -56,15 +52,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Carrega dados do perfil/empresa
   async function carregarDadosPerfil(uid) {
     try {
-      if (!uid) throw new Error("Usuário não autenticado (uid vazio)");
-      if (!db) throw new Error("Firestore não inicializado (db vazio)");
-
-      // CORRETO: sempre passe "db" como primeiro argumento
+      // O PRIMEIRO ARGUMENTO DE COLLECTION DEVE SER db!
       const empresariosRef = collection(db, "empresarios");
-
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
 
