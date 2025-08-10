@@ -1,13 +1,16 @@
-// perfil.js - Revisado, seguro e funcional para Firebase v10+
-
 import {
   collection, query, where, getDocs, doc, getDoc, setDoc, addDoc, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { uploadFile } from './uploadService.js';
-// IMPORTANTE: db, auth, storage devem vir do firebase-config.js (que deve exportar corretamente!)
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth, storage } from "./firebase-config.js";
+
+// Função para upload de arquivos
+async function uploadFile(file, storagePath) {
+  const fileRef = ref(storage, storagePath);
+  await uploadBytes(fileRef, file);
+  return await getDownloadURL(fileRef);
+}
 
 window.addEventListener('DOMContentLoaded', () => {
   // Elementos DOM
@@ -169,8 +172,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const logoFile = el.logoInput && el.logoInput.files[0];
       if (logoFile) {
         const storagePath = `logos/${uid}/logo`;
-        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-        dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
+        dadosEmpresa.logoUrl = await uploadFile(logoFile, storagePath);
       } else if (empresaId) {
         const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
         if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
@@ -211,8 +213,7 @@ window.addEventListener('DOMContentLoaded', () => {
       let fotoUrl = '';
       if (fotoFile) {
         const storagePath = `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`;
-        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-        fotoUrl = await uploadFile(firebaseDependencies, fotoFile, storagePath);
+        fotoUrl = await uploadFile(fotoFile, storagePath);
       }
 
       const novoProfissional = { nome, fotoUrl, servicos: [], ehDono: false };
