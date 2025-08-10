@@ -3,7 +3,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// EXPORTAÇÃO DIRETA DO OBJETO DE CONFIGURAÇÃO USANDO VARIÁVEIS DE AMBIENTE
+// EXPORTAÇÃO DIRETA DO OBJETO DE CONFIGURAÇÃO USANDO VARIÁVEIS DE AMBIENTE/
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
