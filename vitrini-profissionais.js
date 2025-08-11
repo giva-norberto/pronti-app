@@ -1,4 +1,4 @@
-// vitrine-profissionais.js - Corrigido para Firebase CDN, sem import/export!
+// vitrine-profissionais.js - Firebase CDN, sem import/export!
 // Carregue SEMPRE depois do Firebase CDN e da inicialização do Firebase no HTML:
 // <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
 // <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
@@ -6,7 +6,7 @@
 //   const firebaseConfig = { ... };
 //   firebase.initializeApp(firebaseConfig);
 // </script>
-// <script src="vitrini-profissionais.js"></script>
+// <script src="vitrine-profissionais.js"></script>
 
 // ===============================
 // FUNÇÕES PARA PERFIL PROFISSIONAL (via SLUG)
