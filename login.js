@@ -13,6 +13,8 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     if (loginStatus) loginStatus.textContent = "Login realizado! Redirecionando...";
     window.location.href = 'dashboard.html';
+  } else {
+    if (loginStatus) loginStatus.textContent = "Faça login com Google.";
   }
 });
 
@@ -23,16 +25,14 @@ if (btnLoginGoogle) {
     if (loginStatus) loginStatus.textContent = "Iniciando login com Google...";
     try {
       const result = await signInWithPopup(auth, provider);
-      // O usuário será redirecionado pelo onAuthStateChanged, mas pode deixar aqui também
-      if (loginStatus) loginStatus.textContent = "Login realizado! Redirecionando...";
-      window.location.href = 'dashboard.html';
+      // Se deu certo, vai redirecionar pelo onAuthStateChanged
     } catch (error) {
       console.error("Erro no login com Google:", error);
       if (loginStatus) {
         if (error.code === "auth/popup-closed-by-user") {
           loginStatus.textContent = "Você fechou a janela de login antes de concluir. Tente novamente.";
         } else if (error.code === "auth/unauthorized-domain") {
-          loginStatus.textContent = "Domínio não autorizado no Firebase. Cadastre o domínio no painel de Authentication > Authorized domains.";
+          loginStatus.textContent = "Domínio não autorizado no Firebase. Cadastre o domínio em Authentication > Authorized domains.";
         } else {
           loginStatus.textContent = `Erro ao fazer login: ${error.message}`;
         }
