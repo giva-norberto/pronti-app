@@ -6,6 +6,26 @@ body {
   color: #fff;
   min-height: 100vh;
 }
+.btn-voltar {
+  position: fixed;
+  top: 22px;
+  left: 22px;
+  z-index: 99;
+  background: linear-gradient(135deg, #284399 80%, #202b5c 100%);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-weight: 600;
+  padding: 13px 22px;
+  font-size: 1.08rem;
+  box-shadow: 0 2px 12px rgba(32,49,120,0.13);
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+.btn-voltar:hover {
+  background: #54aaff;
+  color: #202b5c;
+}
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(230px, 1fr));
@@ -171,5 +191,11 @@ body {
   .card {
     padding: 20px 10px;
     font-size: 1.06rem;
+  }
+  .btn-voltar {
+    top: 8px;
+    left: 8px;
+    font-size: 1em;
+    padding: 10px 16px;
   }
 }
