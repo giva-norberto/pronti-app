@@ -1,11 +1,8 @@
-// firebase-config.js - Usando variáveis de ambiente para configuração segura do Firebase
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/latest/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/latest/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/latest/firebase-auth.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/latest/firebase-storage.js";
-
-// Configuração via variáveis de ambiente
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
