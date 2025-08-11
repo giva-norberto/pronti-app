@@ -1,5 +1,10 @@
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { 
+    doc, getDoc, setDoc, updateDoc, deleteDoc, 
+    collection, query, where, getDocs, addDoc 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 import { db, auth } from "./firebase-config.js";
 import { showAlert } from "./vitrini-utils.js";
 
@@ -101,15 +106,33 @@ onAuthStateChanged(auth, async (user) => {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
+
+    console.clear();
+    console.log("=== DEBUG SALVAR SERVIÇO ===");
+
+    // Garantir que empresaId está definido
+    if (!empresaId) {
+        console.error("ERRO: empresaId está vazio! Não é possível salvar o serviço.");
+        await showAlert("Erro", "Empresa não identificada. Tente recarregar a página.");
+        return;
+    }
+
     // Só permite criar se for dono
-    if (!isDono && !servicoEditando) return;
+    if (!isDono && !servicoEditando) {
+        console.warn("Bloqueado: usuário não é dono e está tentando criar novo serviço.");
+        await showAlert("Atenção", "Apenas o dono pode criar um novo serviço.");
+        return;
+    }
 
     const nome = document.getElementById('nome-servico').value.trim();
     const descricao = document.getElementById('descricao-servico').value.trim();
     const preco = parseFloat(document.getElementById('preco-servico').value);
     const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
 
+    console.log("Dados capturados:", { nome, descricao, preco, duracao, empresaId, isDono, servicoEditando });
+
     if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
+        console.error("ERRO: Validação de campos falhou.");
         await showAlert("Atenção", "Preencha todos os campos obrigatórios corretamente.");
         return;
     }
@@ -120,20 +143,27 @@ async function handleFormSubmit(e) {
 
     try {
         if (servicoEditando) {
-            // Atualiza serviço global (dono ou profissional)
+            console.log("Atualizando serviço existente...");
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
-            // Cria novo serviço global (apenas dono) — CORREÇÃO AQUI:
+            console.log("Criando novo serviço...");
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-            await addDoc(servicosCol, { nome, descricao, preco, duracao, visivelNaVitrine: true });
+            await addDoc(servicosCol, { 
+                nome, 
+                descricao, 
+                preco, 
+                duracao, 
+                visivelNaVitrine: true 
+            });
         }
 
+        console.log("✅ Operação concluída com sucesso.");
         await showAlert("Sucesso!", servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
         window.location.href = 'servicos.html';
     } catch (err) {
-        console.error("Erro ao salvar serviço:", err);
-        await showAlert("Erro", "Ocorreu um erro ao salvar o serviço.");
+        console.error("❌ Erro ao salvar serviço:", err);
+        await showAlert("Erro", `Ocorreu um erro ao salvar o serviço: ${err.code || err.message}`);
     } finally {
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Serviço";
@@ -152,6 +182,6 @@ async function handleServicoExcluir(e) {
         window.location.href = 'servicos.html';
     } catch (err) {
         console.error("Erro ao excluir serviço:", err);
-        await showAlert("Erro", "Ocorreu um erro ao excluir o serviço.");
+        await showAlert("Erro", `Ocorreu um erro ao excluir o serviço: ${err.code || err.message}`);
     }
 }
