@@ -90,9 +90,9 @@ async function inicializarSistemaEquipe(db, auth, storage) {
 
     const { 
         collection, addDoc, onSnapshot, query, where, getDocs, serverTimestamp 
-    } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js");
-    const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+    } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+    const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
 
     async function getEmpresaIdDoDono(uid) {
         debugLog("🔍 Buscando empresa para o usuário:", uid);
