@@ -94,6 +94,21 @@
             <div id="tab-content-horarios" class="tab-content">
                 <h3>🕐 Horários de Atendimento</h3>
                 <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos de trabalho para cada dia da semana:</p>
+                <!-- Campo de intervalo de atendimento incluído -->
+                <div class="form-group">
+                    <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
+                    <input 
+                        type="number" 
+                        id="intervalo-atendimento" 
+                        name="intervalo-atendimento"
+                        class="form-control"
+                        min="5" 
+                        max="180" 
+                        step="5" 
+                        value="30"
+                        style="width:100px; margin-bottom:12px;"
+                    >
+                </div>
                 <div id="horarios-lista" class="horarios-grid">
                     <!-- Horários serão carregados aqui -->
                 </div>
