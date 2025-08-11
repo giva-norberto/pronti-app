@@ -3,6 +3,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebas
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
+// Configuração do Firebase do seu projeto
 export const firebaseConfig = {
   apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -12,7 +13,8 @@ export const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
+// Inicialização dos serviços do Firebase
 export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+export const db = getFirestore(app);      // Firestore (banco de dados)
+export const auth = getAuth(app);         // Autenticação
+export const storage = getStorage(app);   // Storage (arquivos)
