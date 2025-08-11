@@ -1,3 +1,6 @@
+// Versão revisada para comunicação correta com Firebase 10.12.2
+// Alterações SELADAS: versão dos imports, inicialização garantida
+
 // Variáveis globais
 let db, auth, storage;
 let empresaId = null;
@@ -105,8 +108,8 @@ async function inicializar() {
         auth = firebaseConfig.auth;
         storage = firebaseConfig.storage;
 
-        // Importar funções do Firestore
-        const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+        // Importar funções do Firestore (VERSÃO ATUALIZADA: 10.12.2)
+        const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
 
         // Monitorar autenticação
         onAuthStateChanged(auth, async (user) => {
@@ -139,7 +142,7 @@ function voltarMenuLateral() {
 
 // Buscar ou criar empresa
 async function getEmpresaIdDoDono(uid) {
-    const { collection, query, where, getDocs, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { collection, query, where, getDocs, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
     const empresariosRef = collection(db, "empresarios");
     const q = query(empresariosRef, where("donoId", "==", uid));
@@ -167,7 +170,7 @@ async function getEmpresaIdDoDono(uid) {
 
 // Carregar serviços da empresa
 async function carregarServicos() {
-    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
     try {
         const servicosRef = collection(db, "empresarios", empresaId, "servicos");
@@ -185,7 +188,7 @@ async function carregarServicos() {
 
 // Iniciar listener da equipe
 function iniciarListenerDaEquipe() {
-    import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js")
+    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
     .then(({ collection, onSnapshot, query }) => {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
         const q = query(profissionaisRef);
@@ -258,7 +261,7 @@ async function abrirPerfilProfissional(profissionalId, nomeProfissional) {
 
 // Carregar dados do profissional
 async function carregarDadosProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
@@ -465,7 +468,7 @@ function adicionarAgendaEspecial() {
 
 // Salvar perfil do profissional (serviços, horários, agenda especial)
 async function salvarPerfilProfissional() {
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
     try {
         // Serviços
@@ -549,8 +552,8 @@ function adicionarEventListeners() {
 
 // Adicionar profissional
 async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js");
+    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
     const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
     btnSubmit.disabled = true;
@@ -609,7 +612,7 @@ async function adicionarProfissional() {
 
 // Função para editar profissional
 async function editarProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
@@ -632,8 +635,8 @@ async function editarProfissional(profissionalId) {
 
 // Função para salvar edição
 async function salvarEdicaoProfissional(profissionalId) {
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
     const nome = elementos.nomeProfissional.value.trim();
     const fotoFile = elementos.fotoProfissional.files[0];
 
@@ -672,7 +675,7 @@ async function salvarEdicaoProfissional(profissionalId) {
 // Função para excluir profissional
 async function excluirProfissional(profissionalId) {
     if (!confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.")) return;
-    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await deleteDoc(profissionalRef);
