@@ -1,17 +1,15 @@
-// Importação dos módulos Firebase via CDN para navegador puro
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-auth.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-storage.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Configuração do seu projeto Firebase
 export const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_AUTH_DOMAIN",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_STORAGE_BUCKET",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
+  authDomain: "pronti-app-37c6e.firebaseapp.com",
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.appspot.com", // CORRIGIDO!
+  messagingSenderId: "736700619274",
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
 export const app = initializeApp(firebaseConfig);
