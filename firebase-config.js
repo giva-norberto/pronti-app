@@ -1,18 +1,18 @@
-// firebase-config.js - Sempre usando a última versão do Firebase
+// firebase-config.js - Usando variáveis de ambiente para configuração segura do Firebase
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/latest/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/latest/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/latest/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/latest/firebase-storage.js";
 
-// Configuração direta para teste
+// Configuração via variáveis de ambiente
 export const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_AUTH_DOMAIN",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_STORAGE_BUCKET",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SEU_APP_ID"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 export const app = initializeApp(firebaseConfig);
