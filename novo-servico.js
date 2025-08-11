@@ -1,4 +1,3 @@
-// novo-servico.js - Catálogo global de serviços. Só dono pode criar/excluir, funcionários podem editar. Botão de excluir visível só para dono.
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
@@ -12,16 +11,11 @@ let servicoEditando = null;
 let isDono = false;
 let userUid = null;
 
-/**
- * Busca a empresa do usuário logado como dono OU na qual ele é profissional.
- */
 async function getEmpresaDoUsuario(uid) {
-    // Dono
     let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     let snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
 
-    // Profissional
     q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
     snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
@@ -29,17 +23,11 @@ async function getEmpresaDoUsuario(uid) {
     return null;
 }
 
-/**
- * Extrai o id do serviço da URL (se em edição)
- */
 function getIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
 }
 
-/**
- * Preenche o formulário com dados do serviço
- */
 function preencherFormulario(servico) {
     document.getElementById('nome-servico').value = servico.nome || '';
     document.getElementById('descricao-servico').value = servico.descricao || '';
@@ -47,9 +35,6 @@ function preencherFormulario(servico) {
     document.getElementById('duracao-servico').value = servico.duracao || '';
 }
 
-/**
- * Checa se usuário é dono da empresa
- */
 function usuarioEDono(empresa, uid) {
     return empresa.donoId === uid;
 }
@@ -72,7 +57,6 @@ onAuthStateChanged(auth, async (user) => {
 
     servicoId = getIdFromUrl();
     if (servicoId) {
-        // Busca serviço na coleção global
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         const servicoSnap = await getDoc(servicoRef);
         if (servicoSnap.exists()) {
@@ -81,13 +65,11 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 
-    // Só dono pode criar novo serviço
     if (!isDono && !servicoId) {
         await showAlert("Atenção", "Apenas o dono pode criar um novo serviço.");
         form.querySelector('button[type="submit"]').disabled = true;
     }
 
-    // Botão de exclusão só aparece se está editando E usuário é dono
     if (btnExcluir) {
         if (servicoEditando && isDono) {
             btnExcluir.style.display = '';
@@ -102,7 +84,6 @@ onAuthStateChanged(auth, async (user) => {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
-    // Só permite criar se for dono
     if (!isDono && !servicoEditando) return;
 
     const nome = document.getElementById('nome-servico').value.trim();
@@ -121,11 +102,9 @@ async function handleFormSubmit(e) {
 
     try {
         if (servicoEditando) {
-            // Atualiza serviço global (dono ou profissional)
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
-            // Cria novo serviço global (apenas dono) - CORRIGIDO
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
             await addDoc(servicosCol, { nome, descricao, preco, duracao, visivelNaVitrine: true });
         }
