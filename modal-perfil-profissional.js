@@ -1,145 +1,197 @@
-// Elementos do modal de perfil profissional
-const modalPerfilProfissional = document.getElementById('modal-perfil-profissional');
-const perfilNomeProfissional = document.getElementById('perfil-nome-profissional');
-const servicosLista = document.getElementById('servicos-lista');
-const horariosLista = document.getElementById('horarios-lista');
-const btnCancelarPerfil = document.getElementById('btn-cancelar-perfil');
-const btnSalvarPerfil = document.getElementById('btn-salvar-perfil');
+// modal-perfil-profissional.js
+// Módulo para gerenciar o modal de edição do perfil de um profissional (serviços e horários).
 
-let profissionalAtual = null;
-let servicosDisponiveis = [];
-let horariosBase = {
-    segunda: { ativo: false, inicio: '09:00', fim: '18:00' },
-    terca: { ativo: false, inicio: '09:00', fim: '18:00' },
-    quarta: { ativo: false, inicio: '09:00', fim: '18:00' },
-    quinta: { ativo: false, inicio: '09:00', fim: '18:00' },
-    sexta: { ativo: false, inicio: '09:00', fim: '18:00' },
-    sabado: { ativo: false, inicio: '09:00', fim: '18:00' },
-    domingo: { ativo: false, inicio: '09:00', fim: '18:00' }
+import { doc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// --- ELEMENTOS DO DOM ---
+const modalEl = document.getElementById('modal-perfil-profissional');
+const nomeEl = document.getElementById('perfil-nome-profissional');
+const servicosContainerEl = document.getElementById('servicos-lista');
+const horariosContainerEl = document.getElementById('horarios-lista');
+const btnCancelar = document.getElementById('btn-cancelar-perfil');
+const btnSalvar = document.getElementById('btn-salvar-perfil');
+
+// --- ESTADO INTERNO DO MÓDULO ---
+let estado = {
+    db: null,
+    empresaId: null,
+    profissionalAtual: null,
+    todosOsServicos: [],
 };
 
-function abrirModalPerfilProfissional(profissionalId, nomeProfissional, servicos, horarios) {
-    profissionalAtual = profissionalId;
-    perfilNomeProfissional.textContent = `👤 Perfil de ${nomeProfissional}`;
-    renderizarServicos(servicos);
-    renderizarHorarios(horarios || horariosBase);
-    modalPerfilProfissional.classList.add('show');
-}
+// --- FUNÇÕES PRIVADAS (Renderização) ---
 
-function fecharModalPerfilProfissional() {
-    modalPerfilProfissional.classList.remove('show');
-}
-
-// Renderiza os serviços disponíveis e selecionados
-function renderizarServicos(servicosSelecionados = []) {
-    servicosLista.innerHTML = '';
-    if (servicosDisponiveis.length === 0) {
-        servicosLista.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #6c757d;">
-            <p>Nenhum serviço cadastrado ainda.</p>
-            <p>Vá para a página de serviços para adicionar serviços.</p>
-        </div>`;
+/** Renderiza a lista de todos os serviços, marcando os que o profissional já possui. */
+function _renderizarServicos() {
+    servicosContainerEl.innerHTML = '';
+    if (estado.todosOsServicos.length === 0) {
+        servicosContainerEl.innerHTML = `<div class="aviso-modal">Nenhum serviço cadastrado na empresa.</div>`;
         return;
     }
-    servicosDisponiveis.forEach(servico => {
+
+    // Pega os IDs dos serviços que o profissional já tem
+    const servicosSelecionadosIds = new Set(estado.profissionalAtual.servicos.map(s => s.id || s)); // Suporta objeto ou string
+
+    estado.todosOsServicos.forEach(servico => {
         const div = document.createElement("div");
         div.className = "servico-item";
-        div.setAttribute('data-servico-id', servico.id);
+        div.dataset.servicoId = servico.id;
         div.innerHTML = `
             <div class="servico-nome">${servico.nome}</div>
-            <div class="servico-preco">R$ ${servico.preco.toFixed(2)}</div>
+            <div class="servico-preco">R$ ${parseFloat(servico.preco || 0).toFixed(2)}</div>
         `;
-        if (servicosSelecionados.includes(servico.id)) {
+        
+        if (servicosSelecionadosIds.has(servico.id)) {
             div.classList.add('selected');
         }
-        div.addEventListener('click', () => {
-            div.classList.toggle('selected');
-        });
-        servicosLista.appendChild(div);
+
+        div.addEventListener('click', () => div.classList.toggle('selected'));
+        servicosContainerEl.appendChild(div);
     });
 }
 
-// Renderiza os horários por dia da semana
-function renderizarHorarios(horarios = horariosBase) {
-    horariosLista.innerHTML = '';
+/** Renderiza os inputs de horário para cada dia da semana. */
+function _renderizarHorarios() {
+    horariosContainerEl.innerHTML = '';
     const diasSemana = [
-        { key: 'segunda', nome: 'Segunda-feira' },
-        { key: 'terca', nome: 'Terça-feira' },
-        { key: 'quarta', nome: 'Quarta-feira' },
-        { key: 'quinta', nome: 'Quinta-feira' },
-        { key: 'sexta', nome: 'Sexta-feira' },
-        { key: 'sabado', nome: 'Sábado' },
+        { key: 'segunda', nome: 'Segunda' }, { key: 'terca', nome: 'Terça' },
+        { key: 'quarta', nome: 'Quarta' }, { key: 'quinta', nome: 'Quinta' },
+        { key: 'sexta', nome: 'Sexta' }, { key: 'sabado', nome: 'Sábado' },
         { key: 'domingo', nome: 'Domingo' }
     ];
+
+    const horariosBase = { inicio: '09:00', fim: '18:00', ativo: false };
+    const horariosAtuais = estado.profissionalAtual.horarios || {};
+
     diasSemana.forEach(dia => {
+        const configDia = horariosAtuais[dia.key] || horariosBase;
         const div = document.createElement("div");
         div.className = "dia-horario";
-        div.setAttribute('data-dia', dia.key);
+        div.dataset.dia = dia.key;
         div.innerHTML = `
             <div class="dia-nome">
                 <label>
-                    <input type="checkbox" ${horarios[dia.key].ativo ? 'checked' : ''}>
+                    <input type="checkbox" ${configDia.ativo ? 'checked' : ''}>
                     ${dia.nome}
                 </label>
             </div>
             <div class="horario-inputs">
-                <input type="time" name="inicio" value="${horarios[dia.key].inicio}">
-                <span>até</span>
-                <input type="time" name="fim" value="${horarios[dia.key].fim}">
+                <input type="time" name="inicio" value="${configDia.inicio}">
+                <span>às</span>
+                <input type="time" name="fim" value="${configDia.fim}">
             </div>
         `;
-        horariosLista.appendChild(div);
+        horariosContainerEl.appendChild(div);
     });
 }
 
-// Salva perfil do profissional (serviços e horários)
-async function salvarPerfilProfissionalFirebase(db, empresaId) {
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+// --- FUNÇÕES PÚBLICAS (Controle do Modal) ---
+
+/** Fecha o modal e limpa o estado. */
+function fecharModal() {
+    if (modalEl) modalEl.classList.remove('show');
+    estado.profissionalAtual = null; // Limpa o estado para a próxima abertura
+}
+
+/** Salva as alterações de serviços e horários no Firebase. */
+async function salvarPerfil() {
+    if (!estado.db || !estado.empresaId || !estado.profissionalAtual) {
+        alert("❌ Erro: Dados insuficientes para salvar.");
+        return;
+    }
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'A guardar...';
+
     try {
-        // Coletar serviços selecionados
-        const servicosSelecionados = [];
-        servicosLista.querySelectorAll('.servico-item.selected').forEach(item => {
-            servicosSelecionados.push(item.getAttribute('data-servico-id'));
-        });
-        // Coletar horários
+        // Coleta os IDs dos serviços selecionados
+        const servicosSelecionados = Array.from(servicosContainerEl.querySelectorAll('.servico-item.selected'))
+            .map(item => item.dataset.servicoId);
+        
+        // Coleta os horários configurados
         const horarios = {};
-        horariosLista.querySelectorAll('.dia-horario').forEach(diaElement => {
-            const dia = diaElement.getAttribute('data-dia');
-            const checkbox = diaElement.querySelector('input[type="checkbox"]');
-            const inicio = diaElement.querySelector('input[name="inicio"]');
-            const fim = diaElement.querySelector('input[name="fim"]');
+        horariosContainerEl.querySelectorAll('.dia-horario').forEach(el => {
+            const dia = el.dataset.dia;
             horarios[dia] = {
-                ativo: checkbox.checked,
-                inicio: inicio.value,
-                fim: fim.value
+                ativo: el.querySelector('input[type="checkbox"]').checked,
+                inicio: el.querySelector('input[name="inicio"]').value,
+                fim: el.querySelector('input[name="fim"]').value
             };
         });
-        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
-        await updateDoc(profissionalRef, { servicos: servicosSelecionados, horarios });
-        fecharModalPerfilProfissional();
+        
+        const profissionalRef = doc(estado.db, "empresarios", estado.empresaId, "profissionais", estado.profissionalAtual.id);
+        await updateDoc(profissionalRef, { 
+            servicos: servicosSelecionados, // Salva um array de IDs de serviços
+            horarios 
+        });
+
         alert("✅ Perfil atualizado com sucesso!");
+        fecharModal();
+        // Opcional: Chamar uma função de callback para atualizar a lista na tela principal
+        // if(estado.onSaveCallback) estado.onSaveCallback();
+
     } catch (error) {
+        console.error("Erro ao salvar perfil:", error);
         alert("❌ Erro ao salvar perfil: " + error.message);
+    } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Guardar Alterações';
     }
 }
 
-// Event listeners do modal
-btnCancelarPerfil.addEventListener("click", fecharModalPerfilProfissional);
-btnSalvarPerfil.addEventListener("click", async () => {
-    // db e empresaId devem ser passados do contexto principal
-    if (window.db && window.empresaId) {
-        await salvarPerfilProfissionalFirebase(window.db, window.empresaId);
-    } else {
-        alert("Erro: banco de dados não inicializado.");
-    }
-});
+/**
+ * Abre o modal de perfil para um profissional específico.
+ * @param {object} profissional - O objeto completo do profissional a ser editado.
+ * @param {Array} todosOsServicos - A lista de todos os serviços disponíveis na empresa.
+ * @param {object} db - A instância do Firestore.
+ * @param {string} empresaId - O ID da empresa.
+ */
+export function abrirModalPerfilProfissional(profissional, todosOsServicos, db, empresaId) {
+    if (!modalEl || !profissional) return;
 
-// Fechar modal ao clicar fora da caixa
-modalPerfilProfissional.addEventListener("click", (e) => {
-    if (e.target === modalPerfilProfissional) {
-        fecharModalPerfilProfissional();
-    }
-});
+    // Configura o estado interno do módulo com os dados recebidos
+    estado.profissionalAtual = profissional;
+    estado.todosOsServicos = todosOsServicos;
+    estado.db = db;
+    estado.empresaId = empresaId;
 
-// Exporta função global para abrir o modal
-window.abrirModalPerfilProfissional = abrirModalPerfilProfissional;
-window.servicosDisponiveis = servicosDisponiveis; // Se quiser atualizar de fora
+    // Preenche o modal
+    nomeEl.textContent = `👤 Perfil de ${profissional.nome}`;
+    _renderizarServicos();
+    _renderizarHorarios();
+
+    // Exibe o modal
+    modalEl.classList.add('show');
+}
+
+
+// --- INICIALIZAÇÃO DO MÓDULO ---
+
+/** Busca todos os serviços cadastrados na empresa. */
+export async function buscarTodosServicosDaEmpresa(db, empresaId) {
+    if (!db || !empresaId) return [];
+    try {
+        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+        const snapshot = await getDocs(servicosRef);
+        const servicos = [];
+        snapshot.forEach(doc => servicos.push({ id: doc.id, ...doc.data() }));
+        return servicos;
+    } catch (error) {
+        console.error("Erro ao buscar todos os serviços:", error);
+        return [];
+    }
+}
+
+
+/** Configura os eventos estáticos do modal (botões, clique fora). */
+export function inicializarModalPerfil() {
+    if (!modalEl) return;
+    btnCancelar.addEventListener("click", fecharModal);
+    btnSalvar.addEventListener("click", salvarPerfil);
+    modalEl.addEventListener("click", (e) => {
+        if (e.target === modalEl) { // Fecha apenas se clicar no fundo cinza
+            fecharModal();
+        }
+    });
+}
