@@ -1,12 +1,11 @@
-// vitrine.js (VISÃO CLIENTE - FLUXO DIDÁTICO E FUNCIONAL, MELHORADO!)
+// vitrine.js (VISÃO CLIENTE - FLUXO DIDÁTICO E FUNCIONAL, MELHORADO - COMPLETO)
 // ==========================================================================
 // IMPORTS DOS MÓDULOS
 // ==========================================================================
-// Certifique-se que todos os arquivos de dependências (vitrini-auth.js, vitrini-profissionais.js, etc) também usam a versão 10.12.2 do Firebase nos seus imports internos!
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
-import { renderizarServicos, updateUIOnAuthChange } from './vitrini-ui.js';
+import { renderizarServicos, renderizarProfissionais, updateUIOnAuthChange } from './vitrini-ui.js';
 import { showAlert, showCustomConfirm } from './vitrini-utils.js';
 
 // ==========================================================================
@@ -26,7 +25,7 @@ async function init() {
         document.getElementById('agendamento-form-container').style.display = 'none';
 
         initializeAuth((user) => {
-            updateUIOnAuthChange(user, profissionalSelecionado?.id);
+            updateUIOnAuthChange(user, empresaId);
             // Se o usuário estiver na aba de agendamentos, recarrega a lista
             if (user && document.querySelector('.menu-btn[data-menu="visualizacao"]')?.classList.contains('ativo')) {
                 buscarEExibirAgendamentos(empresaId, user, 'ativos');
@@ -40,16 +39,19 @@ async function init() {
         if (!dadosEmpresa) throw new Error("Empresa não encontrada.");
 
         renderizarDadosEmpresa(dadosEmpresa);
+
         listaProfissionais = await getProfissionaisDaEmpresa(empresaId);
         renderizarInformacoesDaEmpresa(dadosEmpresa, listaProfissionais);
-        
+
+        const containerProfissionais = document.getElementById('lista-profissionais');
         if (listaProfissionais.length === 0) {
-            document.getElementById('lista-profissionais').innerHTML = "<p>Nenhum profissional cadastrado no momento.</p>";
+            containerProfissionais.innerHTML = "<p>Nenhum profissional cadastrado no momento.</p>";
         } else {
-            renderizarProfissionais(listaProfissionais);
+            // Usa função correta de UI para renderizar profissionais
+            renderizarProfissionais(listaProfissionais, containerProfissionais, selecionarProfissional);
         }
-        
-        configurarEventosGerais(); 
+
+        configurarEventosGerais();
 
         document.getElementById("vitrine-loader").style.display = 'none';
         document.getElementById("vitrine-content").style.display = 'flex';
@@ -64,7 +66,6 @@ async function init() {
 // ==========================================================================
 // FUNÇÕES DE RENDERIZAÇÃO E SELEÇÃO
 // ==========================================================================
-
 function renderizarDadosEmpresa(empresa) {
     document.title = empresa.nomeFantasia || "Agendamento Online";
     document.getElementById('nome-negocio-publico').textContent = empresa.nomeFantasia || "Nome do Negócio";
@@ -107,35 +108,26 @@ function renderizarInformacoesDaEmpresa(empresa, profissionais) {
     }
 }
 
-function renderizarProfissionais(profissionais) {
-    const container = document.getElementById('lista-profissionais');
-    container.innerHTML = profissionais.map(prof => `
-        <div class="card-profissional" data-id="${prof.id}">
-            <img src="${prof.fotoUrl || 'https://placehold.co/100x100/e0e7ff/6366f1?text=Foto'}" alt="Foto de ${prof.nome}">
-            <h3>${prof.nome}</h3>
-        </div>
-    ` ).join('');
-
-    document.querySelectorAll('.card-profissional').forEach(card => {
-        card.addEventListener('click', () => {
-            selecionarProfissional(listaProfissionais.find(p => p.id === card.dataset.id));
-        });
-    });
-}
-
 // ================= FLUXO MELHORADO ==========================
 async function selecionarProfissional(profissional) {
     if (!profissional) return;
     profissionalSelecionado = profissional;
     agendamentoState.profissional = { id: profissional.id, nome: profissional.nome };
 
-    // Visual feedback
+    // Feedback visual
     document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
-    document.querySelector(`.card-profissional[data-id="${profissional.id}"]`).classList.add('selecionado');
+    const cardSel = document.querySelector(`.card-profissional[data-id="${profissional.id}"]`);
+    if (cardSel) cardSel.classList.add('selecionado');
 
     // Libera etapa de seleção de serviço
     document.getElementById('agendamento-form-container').style.display = 'block';
-    renderizarServicos(profissionalSelecionado.servicos, selecionarServico);
+
+    // Renderiza serviços do profissional selecionado no container correto
+    renderizarServicos(
+        profissionalSelecionado.servicos || [],
+        document.getElementById('servicos-container'),
+        selecionarServico
+    );
 
     // Bloqueia campos até serviço ser selecionado
     agendamentoState.servico = null;
@@ -179,7 +171,7 @@ function configurarEventosGerais() {
             document.querySelectorAll('.sidebar-menu .menu-btn.ativo, .main-content-vitrine .menu-content.ativo').forEach(el => el.classList.remove('ativo'));
             button.classList.add('ativo');
             document.getElementById(`menu-${button.dataset.menu}`).classList.add('ativo');
-            
+
             if (button.dataset.menu === 'visualizacao' && currentUser) {
                 const modoAtivo = document.querySelector('.btn-toggle.ativo')?.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
                 buscarEExibirAgendamentos(empresaId, currentUser, modoAtivo);
@@ -227,8 +219,7 @@ function configurarEventosGerais() {
             // Buscar próximo dia com vagas
             const proximaDataDisponivel = await encontrarPrimeiraDataComSlots(
                 empresaId,
-                profissionalSelecionado,
-                agendamentoState.servico.duracao
+                profissionalSelecionado
             );
             if (proximaDataDisponivel) {
                 document.getElementById('data-agendamento').value = proximaDataDisponivel;
@@ -273,8 +264,7 @@ function configurarEventosGerais() {
         }
     });
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // Evento para os botões de "Ver Ativos" e "Ver Histórico"
+    // Botões de "Ver Ativos" e "Ver Histórico"
     document.getElementById('botoes-agendamento')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-toggle') && currentUser) {
             document.querySelector('.btn-toggle.ativo').classList.remove('ativo');
@@ -284,7 +274,7 @@ function configurarEventosGerais() {
         }
     });
 
-    // Evento para o botão CANCELAR (Delegação de Eventos)
+    // Botão CANCELAR (Delegação de Eventos)
     document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', async (e) => {
         if (e.target.classList.contains('btn-cancelar')) {
             const agendamentoId = e.target.dataset.id;
@@ -294,7 +284,6 @@ function configurarEventosGerais() {
             );
             if (confirmado) {
                 await cancelarAgendamento(empresaId, agendamentoId, () => {
-                    // Após cancelar, recarrega a lista de agendamentos ativos
                     buscarEExibirAgendamentos(empresaId, currentUser, 'ativos');
                     document.querySelector('#btn-ver-historico').classList.remove('ativo');
                     document.querySelector('#btn-ver-ativos').classList.add('ativo');
@@ -302,7 +291,6 @@ function configurarEventosGerais() {
             }
         }
     });
-    // --- FIM DA CORREÇÃO ---
 }
 
 // Inicia a aplicação quando o HTML estiver pronto
