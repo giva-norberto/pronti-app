@@ -1,245 +1,49 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Pronti</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f9ff;
-      color: #222;
-      display: flex;
-      min-height: 100vh;
-    }
-    .sidebar {
-      width: 220px;
-      background: #0d6efd;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      min-height: 100vh;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.08);
-      position: sticky;
-      left: 0;
-      top: 0;
-    }
-    .sidebar-brand {
-      display: block;
-      font-size: 1.3rem;
-      font-weight: bold;
-      padding: 1rem;
-      color: #fff;
-      text-decoration: none;
-      letter-spacing: 1px;
-      text-align: center;
-      background: #0b5ed7;
-    }
-    .sidebar-links {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      margin: 1rem 0;
-      padding: 0 1rem;
-    }
-    .sidebar-links a {
-      color: #fff;
-      text-decoration: none;
-      padding: 0.7rem 0.8rem;
-      border-radius: 4px;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: background 0.15s;
-    }
-    .sidebar-links a.active,
-    .sidebar-links a:hover {
-      background: #1561e2;
-      font-weight: bold;
-    }
-    .sidebar-footer {
-      margin-top: auto;
-      padding: 1rem;
-      text-align: center;
-    }
-    .btn-logout {
-      background: #fff;
-      color: #0d6efd;
-      border: none;
-      border-radius: 4px;
-      padding: 0.6rem 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-    .btn-logout:hover {
-      background: #e9f0ff;
-      color: #1561e2;
-    }
-    main {
-      flex: 1;
-      padding: 2.5rem 2rem 2rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h2 {
-      color: #0d6efd;
-      margin-top: 2rem;
-      font-size: 1.12rem;
-      font-weight: 600;
-    }
-    .resumo-card {
-      background: #fff;
-      padding: 1rem;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
-      max-width: 500px;
-      margin-bottom: 1.5rem;
-    }
-    .resumo-metricas {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .metrica {
-      flex: 1;
-      background: #e9f0ff;
-      padding: 0.5rem;
-      border-radius: 4px;
-      text-align: center;
-      min-width: 120px;
-    }
-    .resumo-footer {
-      margin-top: 1rem;
-      font-style: italic;
-      color: #666;
-    }
-    canvas, img, video {
-      overflow: hidden !important;
-      background: #fff;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.07);
-      max-width: 100%;
-      min-height: 220px;
-      height: 320px;
-      margin-bottom: 1.5rem;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .filtros {
-      margin-bottom: 1rem;
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      align-items: center;
-      background: #e9f0ff;
-      padding: 0.75rem 1rem;
-      border-radius: 6px;
-    }
-    .filtros label {
-      font-weight: bold;
-      margin-right: 0.25rem;
-      font-size: 0.97rem;
-    }
-    select {
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-    }
-    .error-message {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 1rem;
-      border-radius: 6px;
-      margin: 1rem 0;
-      text-align: center;
-    }
-    .loading {
-      text-align: center;
-      padding: 1.5rem;
-      color: #666;
-    }
-    @media (max-width: 900px) {
-      main { max-width: 100%; padding: 1rem; }
-      canvas { height: 220px; }
-      .sidebar { width: 70px; }
-      .sidebar-brand { font-size: 1rem; padding: 0.7rem; }
-      .sidebar-links a span { font-size: 1.25rem; }
-      .sidebar-links a { font-size: 0; justify-content: center; padding: 0.7rem 0.3rem; }
-      .sidebar-links a span { font-size: 1.25rem; }
-      .sidebar-links a.active,
-      .sidebar-links a:hover { background: #1561e2; }
-    }
-    @media (max-width: 600px) {
-      body { flex-direction: column; }
-      .sidebar { flex-direction: row; width: 100vw; min-height: 0; height: 56px; position: fixed; top: 0; left: 0; z-index: 10; }
-      .sidebar-brand { display: none; }
-      .sidebar-links { flex-direction: row; gap: 2px; padding: 0; margin: 0; }
-      .sidebar-links a { font-size: 0; padding: 0.7rem 0.4rem; }
-      .sidebar-links a span { font-size: 1.32rem; }
-      .sidebar-footer { display: none; }
-      main { margin-top: 56px; padding: 0.7rem; }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Painel Inteligente - Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
 <body>
-  <aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <nav class="sidebar-links">
-      <a href="dashboard.html" class="active"><span>🏠</span> Dashboard</a>
-      <a href="servicos.html"><span>🛠️</span> Serviços</a>
-      <a href="agenda.html"><span>📅</span> Agenda</a>
-      <a href="clientes.html"><span>👤</span> Clientes</a>
-      <a href="equipe.html"><span>👥</span> Equipe</a>
-      <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-    </nav>
-    <div class="sidebar-footer">
-      <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-  </aside>
   <main>
-    <h2>Resumo do Dia</h2>
-    <section id="resumo-diario-container" class="resumo-card">
-      <div class="loading">🔄 Carregando dados...</div>
-    </section>
-    <h2>Gráfico de Serviços</h2>
-    <canvas id="graficoServicos" aria-label="Gráfico de número de agendamentos por serviço" role="img"></canvas>
-    <h2>Gráfico de Faturamento</h2>
-    <canvas id="graficoFaturamento" aria-label="Gráfico de faturamento por serviço" role="img"></canvas>
-    <h2>Gráfico Mensal</h2>
-    <div class="filtros">
-      <label for="filtro-mes-inicio">Mês Início:</label>
-      <select id="filtro-mes-inicio" aria-label="Mês de início do filtro">
-        <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
-        <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
-        <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
-        <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
-      </select>
-      <label for="filtro-ano-inicio">Ano Início:</label>
-      <select id="filtro-ano-inicio" aria-label="Ano de início do filtro"></select>
-      <label for="filtro-mes-fim">Mês Fim:</label>
-      <select id="filtro-mes-fim" aria-label="Mês de fim do filtro">
-        <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option>
-        <option value="3">Abr</option><option value="4">Mai</option><option value="5">Jun</option>
-        <option value="6">Jul</option><option value="7">Ago</option><option value="8">Set</option>
-        <option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
-      </select>
-      <label for="filtro-ano-fim">Ano Fim:</label>
-      <select id="filtro-ano-fim" aria-label="Ano de fim do filtro"></select>
+    <div class="dashboard-cards">
+      <div class="card servico">
+        <span class="icon">💇‍♂️✂️</span>
+        <span class="titulo">Seu serviço mais procurado hoje:</span>
+        <span class="descricao" id="servico-destaque">...</span>
+      </div>
+      <div class="card prof">
+        <span class="icon">🏆</span>
+        <img id="avatar-prof" class="avatar" src="" alt="Profissional destaque" />
+        <span class="titulo" id="prof-destaque-nome">...</span>
+        <span class="descricao" id="prof-destaque-qtd">...</span>
+      </div>
+      <div class="card ocupacao">
+        <div class="ocupacao-circular" id="ocupacao-circular"></div>
+        <span class="descricao" id="ocupacao-texto">...</span>
+      </div>
+      <div class="card comparativo">
+        <span class="percent" id="comparativo-percent">...</span>
+        <span class="descricao" id="comparativo-texto">...</span>
+      </div>
+      <div class="card alerta" id="card-alerta" style="display:none;">
+        <span class="icon">⚡</span>
+        <span id="alerta-msg">...</span>
+      </div>
+      <div class="card ia">
+        <span class="icon">💡</span>
+        <span class="titulo">Sugestão da IA:</span>
+        <span class="descricao" id="ia-sugestao">...</span>
+        <button class="btn-promocao" id="btn-promocao" style="display:none;">Criar promoção agora</button>
+      </div>
     </div>
-    <canvas id="graficoMensal" aria-label="Gráfico mensal de agendamentos" role="img"></canvas>
+    <div class="exportar">
+      <span class="icon">✈️</span>
+      <button id="btn-exportar">Exportar resumo do dia</button>
+    </div>
   </main>
-  <!-- Bibliotecas globais -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-
-  <!-- ATENÇÃO: Faltava o SCRIPT que inicializa o dashboard! -->
   <script type="module" src="dashboard.js"></script>
 </body>
 </html>
