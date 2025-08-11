@@ -21,6 +21,7 @@ function getSlugFromURL() {
         return null;
     }
 }
+window.getSlugFromURL = getSlugFromURL;
 
 function getEmpresaIdFromURL() {
     try {
@@ -31,6 +32,7 @@ function getEmpresaIdFromURL() {
         return null;
     }
 }
+window.getEmpresaIdFromURL = getEmpresaIdFromURL;
 
 // ------------------------
 // FUNÇÕES PARA PERFIL DO PROFISSIONAL (via slug)
@@ -59,6 +61,7 @@ async function getProfissionalUidBySlug(slug) {
         return null;
     }
 }
+window.getProfissionalUidBySlug = getProfissionalUidBySlug;
 
 async function getDadosProfissional(uid) {
     if (!uid) {
@@ -96,6 +99,7 @@ async function getDadosProfissional(uid) {
         return null;
     }
 }
+window.getDadosProfissional = getDadosProfissional;
 
 // ------------------------
 // FUNÇÕES PARA EMPRESA (vitrine)
@@ -119,6 +123,7 @@ async function getDadosEmpresa(empresaId) {
         return null;
     }
 }
+window.getDadosEmpresa = getDadosEmpresa;
 
 async function getProfissionaisDaEmpresa(empresaId) {
     if (!empresaId) {
@@ -136,6 +141,7 @@ async function getProfissionaisDaEmpresa(empresaId) {
         return [];
     }
 }
+window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
 
 async function getServicoById(empresaId, servicoId) {
     if (!empresaId || !servicoId) {
@@ -155,6 +161,7 @@ async function getServicoById(empresaId, servicoId) {
         return null;
     }
 }
+window.getServicoById = getServicoById;
 
 async function getTodosServicosDaEmpresa(empresaId) {
     if (!empresaId) {
@@ -172,9 +179,10 @@ async function getTodosServicosDaEmpresa(empresaId) {
         return [];
     }
 }
+window.getTodosServicosDaEmpresa = getTodosServicosDaEmpresa;
 
 // ------------------------
-// FUNÇÕES ADICIONAIS: Serviços e horários por profissional (com base na estrutura de Firestore padrão)
+// FUNÇÕES ADICIONAIS: Serviços e horários por profissional
 // ------------------------
 
 async function getServicosDoProfissional(empresaId, profissionalId) {
@@ -218,24 +226,8 @@ async function getHorariosDoProfissional(empresaId, profissionalId) {
 window.getHorariosDoProfissional = getHorariosDoProfissional;
 
 // ------------------------
-// EXPOSTOS PARA window
-// ------------------------
-
-window.getSlugFromURL = getSlugFromURL;
-window.getProfissionalUidBySlug = getProfissionalUidBySlug;
-window.getDadosProfissional = getDadosProfissional;
-
-window.getEmpresaIdFromURL = getEmpresaIdFromURL;
-window.getDadosEmpresa = getDadosEmpresa;
-window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
-window.getServicoById = getServicoById;
-window.getTodosServicosDaEmpresa = getTodosServicosDaEmpresa;
-
-// ------------------------
 // FUNÇÃO TESTE SIMPLES PARA RODAR NO CONSOLE DO NAVEGADOR
 // ------------------------
-// Uso: copiar e colar no console para testar seu Firebase + dados
-// Ou executar no seu script depois do carregamento do Firebase e do script
 
 window.testVitrineProfissionais = async function() {
     console.log("### TESTE DE VITRINE-PROFISSIONAIS ###");
@@ -277,7 +269,6 @@ window.testVitrineProfissionais = async function() {
     const profs = await getProfissionaisDaEmpresa(empresaId);
     console.log(`Profissionais da empresa (${empresaId}):`, profs);
 
-    // Testando serviços e horários por profissional
     for (const prof of profs) {
         const servicos = await getServicosDoProfissional(empresaId, prof.id);
         console.log(`Serviços do profissional ${prof.nome} (${prof.id}):`, servicos);
