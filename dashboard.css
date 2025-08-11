@@ -1,0 +1,199 @@
+/* Painel inteligente de cards coloridos */
+/* Reset básico */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: linear-gradient(135deg, #3b7fff 0%, #1e2a78 100%);
+  color: #fff;
+  min-height: 100vh;
+}
+
+/* Grid de cards principal */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(230px, 1fr));
+  grid-template-rows: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 650px;
+  margin: 48px auto 0 auto;
+}
+
+/* Card padrão */
+.card {
+  border-radius: 22px;
+  padding: 28px 22px;
+  box-shadow: 0 4px 18px rgba(32,49,120,0.11);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1.18rem;
+  position: relative;
+  transition: transform 0.13s, box-shadow 0.13s;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(1.5px);
+}
+.card:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 8px 32px rgba(32,49,120,0.18);
+}
+
+/* Cores dos cards */
+.card.servico   { background: linear-gradient(135deg, #7c5cff 80%, #5f4dcf 100%); }
+.card.prof      { background: linear-gradient(135deg, #54aaff 80%, #2b71e2 100%); }
+.card.ocupacao  { background: linear-gradient(135deg, #54aaff 80%, #2b71e2 100%); }
+.card.comparativo { background: linear-gradient(135deg, #202b5c 80%, #284399 100%); }
+.card.alerta    { background: linear-gradient(135deg, #f85a7a 80%, #f93e55 100%); }
+.card.ia        { background: linear-gradient(135deg, #202b5c 80%, #284399 100%); }
+
+/* Ícone grande no topo */
+.card .icon {
+  font-size: 2.5rem;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+
+/* Card do profissional destaque */
+.card.prof {
+  align-items: flex-start;
+}
+.card.prof .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-bottom: 8px;
+  object-fit: cover;
+  background: #fff2;
+  box-shadow: 0 2px 10px rgba(32,49,120,0.09);
+}
+.card.prof .titulo {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-top: 6px;
+}
+
+/* Card ocupação com círculo animado */
+.card.ocupacao {
+  align-items: center;
+}
+.ocupacao-circular {
+  width: 74px;
+  height: 74px;
+  position: relative;
+  margin: 0 auto 8px auto;
+}
+.ocupacao-circular svg {
+  width: 74px;
+  height: 74px;
+  display: block;
+}
+.ocupacao-circular .percent {
+  position: absolute;
+  top: 0; left: 0;
+  width: 74px; height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 8px #0002;
+}
+
+/* Card comparativo */
+.card.comparativo .percent {
+  font-size: 2.1rem;
+  font-weight: bold;
+  color: #3cec6c;
+  margin-bottom: 5px;
+  display: block;
+}
+.card.comparativo .percent.down {
+  color: #f85a7a;
+}
+.card.comparativo .descricao {
+  font-size: 1.06rem;
+}
+
+/* Card alerta */
+.card.alerta .icon {
+  color: #fff43d;
+  margin-right: 6px;
+}
+.card.alerta {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+/* Card IA */
+.card.ia .icon {
+  color: #ffe46d;
+}
+.card.ia .titulo {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.card.ia .descricao {
+  font-size: 1.03rem;
+}
+.card.ia .btn-promocao {
+  margin-top: 14px;
+  background: #fff2;
+  color: #ffe46d;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.14s, color 0.14s;
+}
+.card.ia .btn-promocao:hover {
+  background: #ffe46d;
+  color: #202b5c;
+}
+
+/* Botão exportar */
+.exportar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 24px;
+  gap: 8px;
+}
+.exportar .icon {
+  font-size: 1.25rem;
+}
+.exportar button {
+  background: linear-gradient(135deg, #202b5c 80%, #284399 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  padding: 11px 18px;
+  font-size: 1.06rem;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: background 0.14s, color 0.14s;
+}
+.exportar button:hover {
+  background: #54aaff;
+  color: #202b5c;
+}
+
+/* Responsividade */
+@media (max-width: 700px) {
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    gap: 18px;
+    max-width: 98vw;
+    margin: 30px auto 0 auto;
+  }
+  .card {
+    padding: 20px 10px;
+    font-size: 1.06rem;
+  }
+}
