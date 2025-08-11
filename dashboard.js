@@ -2,30 +2,30 @@ import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Função para obter empresaId da URL, localStorage ou Firestore
+// Botão voltar para o menu principal
+document.getElementById("btn-voltar").addEventListener("click", () => {
+  window.location.href = "/menu.html"; // ajuste para o caminho do seu menu
+});
+
+// Busca empresaId de URL, localStorage ou Firestore
 async function getEmpresaId(user) {
-  // 1. URL
   const params = new URLSearchParams(window.location.search);
   let empresaId = params.get('empresaId');
-  // 2. localStorage
   if (!empresaId) empresaId = localStorage.getItem('empresaId');
-  // 3. Firestore: se o usuário for dono de uma empresa
   if (!empresaId && user) {
-    // Busca uma empresa onde o donoId é o user.uid
     const empresariosRef = collection(db, "empresarios");
     const q = query(empresariosRef, where("donoId", "==", user.uid));
     const snap = await getDocs(q);
     if (!snap.empty) {
       empresaId = snap.docs[0].id;
-      localStorage.setItem('empresaId', empresaId); // Salva para próximas vezes
+      localStorage.setItem('empresaId', empresaId);
     }
   }
-  // Salva no localStorage se achou
   if (empresaId) localStorage.setItem('empresaId', empresaId);
   return empresaId;
 }
 
-// Função para desenhar o círculo de ocupação
+// Desenha o círculo de ocupação
 function desenharOcupacao(percent) {
   const svg = `
     <svg>
@@ -40,7 +40,7 @@ function desenharOcupacao(percent) {
   document.getElementById("ocupacao-circular").innerHTML = svg;
 }
 
-// Função principal para preencher o dashboard
+// Preenche o dashboard
 async function preencherDashboard(user) {
   const empresaId = await getEmpresaId(user);
   if (!empresaId) {
@@ -55,7 +55,7 @@ async function preencherDashboard(user) {
   const donoId = empresaRef.data().donoId;
   const isDono = user.uid === donoId;
 
-  // Busca agendamentos do dia
+  // Agendamentos do dia
   const hoje = new Date();
   hoje.setHours(0,0,0,0);
   const amanha = new Date(hoje);
@@ -110,7 +110,7 @@ async function preencherDashboard(user) {
   }
 
   // Ocupação (percentual)
-  const totalSlots = empresaRef.data().slotsDia || 10; // slotsDia pode ser configurado na empresa
+  const totalSlots = empresaRef.data().slotsDia || 10;
   const ocupacaoPercent = Math.round((ags.length / totalSlots) * 100);
   desenharOcupacao(ocupacaoPercent);
   document.getElementById("ocupacao-texto").textContent = `Sua agenda está ${ocupacaoPercent}% ocupada hoje`;
@@ -171,7 +171,7 @@ onAuthStateChanged(auth, user => {
 
 // Exportar resumo do dia
 document.getElementById("btn-exportar").addEventListener("click", () => {
-  window.print(); // simples, pode ser substituído por html2canvas/pdf depois
+  window.print();
 });
 
 // Botão promoção
