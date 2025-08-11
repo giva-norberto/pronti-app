@@ -1,9 +1,7 @@
-// vitrine-profissionais.js - PARA USO COM FIREBASE CDN! NÃO use import/export!
+// vitrine-profissionais.js - Para Firebase CDN, sem import/export!
 
 /**
- * Busca os dados da empresa pelo ID.
- * @param {string} empresaId
- * @returns {Promise<object|null>}
+ * Busca dados da empresa
  */
 async function getDadosEmpresa(empresaId) {
     const empresaRef = firebase.firestore().collection("empresarios").doc(empresaId);
@@ -12,9 +10,7 @@ async function getDadosEmpresa(empresaId) {
 }
 
 /**
- * Busca todos os serviços da empresa.
- * @param {string} empresaId
- * @returns {Promise<Array>}
+ * Busca todos os serviços da empresa
  */
 async function getServicosDaEmpresa(empresaId) {
     const servicosSnap = await firebase.firestore()
@@ -28,9 +24,7 @@ async function getServicosDaEmpresa(empresaId) {
 }
 
 /**
- * Busca todos os profissionais da empresa e inclui os dados completos dos serviços.
- * @param {string} empresaId
- * @returns {Promise<Array>}
+ * Busca todos os profissionais da empresa e inclui serviços completos
  */
 async function getProfissionaisDaEmpresa(empresaId) {
     const profSnap = await firebase.firestore()
@@ -57,10 +51,7 @@ async function getProfissionaisDaEmpresa(empresaId) {
 }
 
 /**
- * Busca serviço por ID.
- * @param {string} empresaId
- * @param {string} servicoId
- * @returns {Promise<object|null>}
+ * Busca serviço por ID
  */
 async function getServicoPorId(empresaId, servicoId) {
     const servicoRef = firebase.firestore()
@@ -73,9 +64,7 @@ async function getServicoPorId(empresaId, servicoId) {
 }
 
 /**
- * Busca todos os profissionais (simples, sem serviços completos).
- * @param {string} empresaId
- * @returns {Promise<Array>}
+ * Busca profissionais simples
  */
 async function getProfissionaisSimples(empresaId) {
     const profSnap = await firebase.firestore()
@@ -89,9 +78,7 @@ async function getProfissionaisSimples(empresaId) {
 }
 
 /**
- * Busca todos os serviços (simples).
- * @param {string} empresaId
- * @returns {Promise<Array>}
+ * Busca serviços simples
  */
 async function getServicosSimples(empresaId) {
     const servicosSnap = await firebase.firestore()
@@ -105,9 +92,7 @@ async function getServicosSimples(empresaId) {
 }
 
 /**
- * Exporta todos os dados de profissionais e seus serviços (para debug/admin).
- * @param {string} empresaId
- * @returns {Promise<Array>}
+ * Exporta todos os dados de profissionais e seus serviços
  */
 async function exportProfissionaisComServicos(empresaId) {
     const profissionais = await getProfissionaisDaEmpresa(empresaId);
@@ -126,7 +111,7 @@ async function exportProfissionaisComServicos(empresaId) {
     }));
 }
 
-// Exponha as funções no window para uso em outros scripts do site
+// Expõe no window para uso global
 window.getDadosEmpresa = getDadosEmpresa;
 window.getServicosDaEmpresa = getServicosDaEmpresa;
 window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
