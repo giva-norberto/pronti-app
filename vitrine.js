@@ -2,6 +2,7 @@
 // ==========================================================================
 // IMPORTS DOS MÓDULOS
 // ==========================================================================
+// Certifique-se que todos os arquivos de dependências (vitrini-auth.js, vitrini-profissionais.js, etc) também usam a versão 10.12.2 do Firebase nos seus imports internos!
 import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa } from './vitrini-profissionais.js';
 import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
