@@ -4,7 +4,13 @@ import {
     collection,
     getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+    getAuth,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signInWithPopup,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // CONFIGURAÇÃO: Em produção, use variáveis de ambiente Vite/webpack.
 // Para testes locais, pode deixar hardcoded temporariamente!
@@ -21,6 +27,11 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const provider = new GoogleAuthProvider();
+
+// **AQUI ESTÁ A CORREÇÃO PARA SEU ERRO DE IMPORT** //
+// Exporta explicitamente as funções necessárias para autenticação
+export { onAuthStateChanged, signInWithPopup, signOut };
 
 /**
  * Carrega os serviços visíveis na vitrine de uma empresa.
