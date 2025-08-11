@@ -7,7 +7,7 @@ const btnAddServico = document.querySelector('.btn-new');
 let empresaId = null;
 let isDono = false;
 
-// Modal customizado de confirmação CORRIGIDO
+// Modal customizado de confirmação
 function showCustomConfirm(title, message) {
   return new Promise((resolve) => {
     const modal = document.getElementById('custom-confirm-modal');
@@ -25,7 +25,7 @@ function showCustomConfirm(title, message) {
     modalTitle.textContent = title;
     modalMessage.textContent = message;
 
-    // Remove event listeners antigos (importante para evitar duplicidade)
+    // Remove event listeners antigos para evitar duplicidade
     const newBtnConfirmar = btnConfirmar.cloneNode(true);
     const newBtnCancelar = btnCancelar.cloneNode(true);
     btnConfirmar.parentNode.replaceChild(newBtnConfirmar, btnConfirmar);
@@ -113,10 +113,9 @@ async function carregarServicosDoFirebase() {
     }
 }
 
-// Função de excluir serviço com debug detalhado
+// Função de excluir serviço
 async function excluirServicoDebug(servicoIdParaExcluir) {
     try {
-        // Confirmação do modal
         const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
         if (!isDono) {
             alert("Apenas o dono pode excluir serviços.");
@@ -125,22 +124,17 @@ async function excluirServicoDebug(servicoIdParaExcluir) {
         if (!confirmado) {
             return;
         }
-
-        // Cria referência ao documento do serviço
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoIdParaExcluir);
-
-        // Tenta excluir o documento
         await deleteDoc(servicoRef);
 
         alert("Serviço excluído com sucesso!");
-        // Recarrega a lista de serviços
         carregarServicosDoFirebase();
     } catch (error) {
         alert("Ocorreu um erro ao excluir o serviço: " + error.message);
     }
 }
 
-// Diagnóstico: log de clique com debug detalhado
+// Diagnóstico: log de clique
 if (listaServicosDiv) {
     listaServicosDiv.addEventListener('click', function(e) {
         const target = e.target.closest('.btn-acao');
@@ -177,7 +171,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Botão de adicionar novo serviço (opcional, só para dono)
+// Botão de adicionar novo serviço
 if (btnAddServico) {
     btnAddServico.addEventListener('click', () => {
         window.location.href = 'novo-servico.html';
