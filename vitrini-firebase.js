@@ -12,7 +12,7 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Configuração real do Firebase do seu projeto
+// Configuração do Firebase do projeto
 const firebaseConfig = {
     apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
     authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -28,7 +28,7 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
 
-// Exporta explicitamente funções para login/logout
+// Exporta explicitamente funções de autenticação
 export { onAuthStateChanged, signInWithPopup, signOut };
 
 /**
@@ -38,11 +38,9 @@ export { onAuthStateChanged, signInWithPopup, signOut };
  */
 export async function carregarServicosVitrine(empresaId) {
     try {
-        if (!empresaId) {
-            throw new Error("empresaId não informado!");
-        }
+        if (!empresaId) throw new Error("empresaId não informado!");
 
-        // A coleção aninhada: empresarios/{empresaId}/profissionais
+        // Coleção de profissionais
         const profissionaisCol = collection(db, "empresarios", empresaId, "profissionais");
         const profissionaisSnap = await getDocs(profissionaisCol);
 
@@ -52,6 +50,7 @@ export async function carregarServicosVitrine(empresaId) {
             const dados = profDoc.data();
             if (Array.isArray(dados.servicos)) {
                 dados.servicos.forEach(servico => {
+                    // Mostra serviço se 'visivelNaVitrine' não for false ou undefined
                     if (servico.visivelNaVitrine !== false) {
                         servicosVitrine.push({
                             ...servico,
