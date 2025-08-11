@@ -1,7 +1,21 @@
-// vitrine-profissionais.js - Para Firebase CDN, sem import/export!
+// vitrine-profissionais.js - Resolvido para Firebase CDN, sem import/export!
+//
+// Use SEMPRE junto com:
+// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+// <script>
+//   const firebaseConfig = { ... };
+//   firebase.initializeApp(firebaseConfig);
+// </script>
+// <script src="vitrini-profissionais.js"></script>
+//
+// Todas as funções ficam globais (window).
+// NÃO USE import/export neste arquivo!
 
 /**
- * Busca dados da empresa
+ * Busca os dados da empresa pelo ID.
+ * @param {string} empresaId
+ * @returns {Promise<object|null>}
  */
 async function getDadosEmpresa(empresaId) {
     const empresaRef = firebase.firestore().collection("empresarios").doc(empresaId);
@@ -10,7 +24,9 @@ async function getDadosEmpresa(empresaId) {
 }
 
 /**
- * Busca todos os serviços da empresa
+ * Busca todos os serviços da empresa.
+ * @param {string} empresaId
+ * @returns {Promise<Array>}
  */
 async function getServicosDaEmpresa(empresaId) {
     const servicosSnap = await firebase.firestore()
@@ -24,7 +40,9 @@ async function getServicosDaEmpresa(empresaId) {
 }
 
 /**
- * Busca todos os profissionais da empresa e inclui serviços completos
+ * Busca todos os profissionais da empresa e inclui os dados completos dos serviços.
+ * @param {string} empresaId
+ * @returns {Promise<Array>}
  */
 async function getProfissionaisDaEmpresa(empresaId) {
     const profSnap = await firebase.firestore()
@@ -37,6 +55,7 @@ async function getProfissionaisDaEmpresa(empresaId) {
     const profissionais = [];
     profSnap.forEach(doc => {
         const prof = { id: doc.id, ...doc.data() };
+        // Se prof.servicos é array de IDs, converte para array de objetos completos
         if (Array.isArray(prof.servicos)) {
             if (prof.servicos.length && typeof prof.servicos[0] === 'string') {
                 prof.servicos = servicos.filter(svc => prof.servicos.includes(svc.id));
@@ -51,7 +70,10 @@ async function getProfissionaisDaEmpresa(empresaId) {
 }
 
 /**
- * Busca serviço por ID
+ * Busca serviço por ID.
+ * @param {string} empresaId
+ * @param {string} servicoId
+ * @returns {Promise<object|null>}
  */
 async function getServicoPorId(empresaId, servicoId) {
     const servicoRef = firebase.firestore()
@@ -64,7 +86,9 @@ async function getServicoPorId(empresaId, servicoId) {
 }
 
 /**
- * Busca profissionais simples
+ * Busca todos os profissionais (simples, sem serviços completos).
+ * @param {string} empresaId
+ * @returns {Promise<Array>}
  */
 async function getProfissionaisSimples(empresaId) {
     const profSnap = await firebase.firestore()
@@ -78,7 +102,9 @@ async function getProfissionaisSimples(empresaId) {
 }
 
 /**
- * Busca serviços simples
+ * Busca todos os serviços (simples).
+ * @param {string} empresaId
+ * @returns {Promise<Array>}
  */
 async function getServicosSimples(empresaId) {
     const servicosSnap = await firebase.firestore()
@@ -92,7 +118,9 @@ async function getServicosSimples(empresaId) {
 }
 
 /**
- * Exporta todos os dados de profissionais e seus serviços
+ * Exporta todos os dados de profissionais e seus serviços (para debug/admin).
+ * @param {string} empresaId
+ * @returns {Promise<Array>}
  */
 async function exportProfissionaisComServicos(empresaId) {
     const profissionais = await getProfissionaisDaEmpresa(empresaId);
@@ -111,7 +139,7 @@ async function exportProfissionaisComServicos(empresaId) {
     }));
 }
 
-// Expõe no window para uso global
+// Expondo as funções globais para uso em outros scripts
 window.getDadosEmpresa = getDadosEmpresa;
 window.getServicosDaEmpresa = getServicosDaEmpresa;
 window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
