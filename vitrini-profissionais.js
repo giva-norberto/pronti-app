@@ -1,12 +1,5 @@
 // vitrine-profissionais.js - Firebase CDN, sem import/export!
-// Carregue SEMPRE depois do Firebase CDN e da inicialização do Firebase no HTML:
-// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-// <script>
-//   const firebaseConfig = { ... };
-//   firebase.initializeApp(firebaseConfig);
-// </script>
-// <script src="vitrine-profissionais.js"></script>
+// Deve ser carregado após Firebase CDN e inicialização Firebase no HTML
 
 // ===============================
 // FUNÇÕES PARA PERFIL PROFISSIONAL (via SLUG)
@@ -22,7 +15,11 @@ async function getProfissionalUidBySlug(slug) {
     try {
         const slugDocRef = firebase.firestore().collection("slugs").doc(slug);
         const slugDocSnap = await slugDocRef.get();
-        return slugDocSnap.exists ? slugDocSnap.data().uid : null;
+        if (!slugDocSnap.exists) {
+            console.warn(`Slug "${slug}" não encontrado na coleção 'slugs'.`);
+            return null;
+        }
+        return slugDocSnap.data().uid || null;
     } catch (error) {
         console.error("Erro ao buscar UID pelo slug:", error);
         return null;
@@ -32,9 +29,17 @@ async function getProfissionalUidBySlug(slug) {
 async function getDadosProfissional(uid) {
     if (!uid) return null;
     try {
-        const perfilRef = firebase.firestore().collection("users").doc(uid).collection("publicProfile").doc("profile");
-        const servicosRef = firebase.firestore().collection("users").doc(uid).collection("servicos");
-        const horariosRef = firebase.firestore().collection("users").doc(uid).collection("configuracoes").doc("horarios");
+        const perfilRef = firebase.firestore()
+            .collection("users").doc(uid)
+            .collection("publicProfile").doc("profile");
+
+        const servicosRef = firebase.firestore()
+            .collection("users").doc(uid)
+            .collection("servicos");
+
+        const horariosRef = firebase.firestore()
+            .collection("users").doc(uid)
+            .collection("configuracoes").doc("horarios");
 
         const [perfilSnap, servicosSnap, horariosSnap] = await Promise.all([
             perfilRef.get(),
@@ -43,7 +48,7 @@ async function getDadosProfissional(uid) {
         ]);
 
         if (!perfilSnap.exists) {
-            console.warn("Perfil público não encontrado para o UID:", uid);
+            console.warn(`Perfil público não encontrado para o UID: ${uid}`);
             return null;
         }
 
@@ -56,7 +61,7 @@ async function getDadosProfissional(uid) {
 
     } catch (error) {
         console.error("Erro ao carregar dados do profissional:", error);
-        throw new Error("Falha ao carregar dados do profissional.");
+        return null; // Troquei throw por return null para evitar quebra inesperada
     }
 }
 
@@ -71,34 +76,64 @@ function getEmpresaIdFromURL() {
 
 async function getDadosEmpresa(empresaId) {
     if (!empresaId) return null;
-    const empresaRef = firebase.firestore().collection("empresarios").doc(empresaId);
-    const docSnap = await empresaRef.get();
-    return docSnap.exists ? { id: docSnap.id, ...docSnap.data() } : null;
+    try {
+        const empresaRef = firebase.firestore().collection("empresarios").doc(empresaId);
+        const docSnap = await empresaRef.get();
+        if (!docSnap.exists) {
+            console.warn(`Empresa com ID ${empresaId} não encontrada.`);
+            return null;
+        }
+        return { id: docSnap.id, ...docSnap.data() };
+    } catch (error) {
+        console.error("Erro ao buscar dados da empresa:", error);
+        return null;
+    }
 }
 
 async function getProfissionaisDaEmpresa(empresaId) {
     if (!empresaId) return [];
-    const profissionaisRef = firebase.firestore().collection("empresarios").doc(empresaId).collection("profissionais");
-    const snapshot = await profissionaisRef.get();
-    const profissionais = [];
-    snapshot.forEach(docSnap => profissionais.push({ id: docSnap.id, ...docSnap.data() }));
-    return profissionais;
+    try {
+        const profissionaisRef = firebase.firestore()
+            .collection("empresarios").doc(empresaId)
+            .collection("profissionais");
+        const snapshot = await profissionaisRef.get();
+        const profissionais = [];
+        snapshot.forEach(docSnap => profissionais.push({ id: docSnap.id, ...docSnap.data() }));
+        return profissionais;
+    } catch (error) {
+        console.error("Erro ao buscar profissionais da empresa:", error);
+        return [];
+    }
 }
 
 async function getServicoById(empresaId, servicoId) {
     if (!empresaId || !servicoId) return null;
-    const servicoRef = firebase.firestore().collection("empresarios").doc(empresaId).collection("servicos").doc(servicoId);
-    const snap = await servicoRef.get();
-    return snap.exists ? { id: servicoId, ...snap.data() } : null;
+    try {
+        const servicoRef = firebase.firestore()
+            .collection("empresarios").doc(empresaId)
+            .collection("servicos").doc(servicoId);
+        const snap = await servicoRef.get();
+        return snap.exists ? { id: servicoId, ...snap.data() } : null;
+    } catch (error) {
+        console.error(`Erro ao buscar serviço ${servicoId} da empresa ${empresaId}:`, error);
+        return null;
+    }
 }
 
 async function getTodosServicosDaEmpresa(empresaId) {
     if (!empresaId) return [];
-    const servicosRef = firebase.firestore().collection("empresarios").doc(empresaId).collection("servicos");
-    const snapshot = await servicosRef.get();
-    const servicos = [];
-    snapshot.forEach(docSnap => servicos.push({ id: docSnap.id, ...docSnap.data() }));
-    return servicos;
+    try {
+        const servicosRef = firebase.firestore()
+            .collection("empresarios").doc(empresaId)
+            .collection("servicos");
+        const snapshot = await servicosRef.get();
+        const servicos = [];
+        snapshot.forEach(docSnap => servicos.push({ id: docSnap.id, ...docSnap.data() }));
+        return servicos;
+    } catch (error) {
+        console.error("Erro ao buscar todos os serviços da empresa:", error);
+        return [];
+    }
 }
 
 // ===============================
