@@ -125,7 +125,7 @@ async function handleFormSubmit(e) {
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
-            // Cria novo serviço global (apenas dono)
+            // Cria novo serviço global (apenas dono) - CORRIGIDO
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
             await addDoc(servicosCol, { nome, descricao, preco, duracao, visivelNaVitrine: true });
         }
