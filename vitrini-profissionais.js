@@ -1,45 +1,56 @@
-// vitrini-profissionais.js - Revisado para trazer serviços completos para cada profissional
-
+// vitrine-profissionais.js - Completo e revisado
 import { db } from './vitrini-firebase.js';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 
 /**
  * Busca os dados da empresa pelo ID.
+ * Retorna objeto: { id, nomeFantasia, descricao, logoUrl, ... }
  */
 export async function getDadosEmpresa(empresaId) {
-    const doc = await getDocs(collection(db, "empresarios"));
-    const empresaDoc = doc.docs.find(d => d.id === empresaId);
-    return empresaDoc ? { id: empresaDoc.id, ...empresaDoc.data() } : null;
+    // Busca documento específico da empresa
+    const empresaRef = doc(db, "empresarios", empresaId);
+    const empresaSnap = await getDoc(empresaRef);
+    return empresaSnap.exists() ? { id: empresaId, ...empresaSnap.data() } : null;
 }
 
 /**
  * Busca todos os serviços da empresa.
+ * Retorna array de objetos: [{ id, nome, descricao, duracao, preco, ... }]
  */
 export async function getServicosDaEmpresa(empresaId) {
-    const snapshot = await getDocs(collection(db, "empresarios", empresaId, "servicos"));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snap = await getDocs(collection(db, "empresarios", empresaId, "servicos"));
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
  * Busca todos os profissionais da empresa e inclui os dados completos dos serviços.
+ * Se os serviços do profissional forem apenas IDs, converte para array de objetos completos.
+ * Retorna array de profissionais: [{ id, nome, fotoUrl, servicos: [obj], horarios, ... }]
  */
 export async function getProfissionaisDaEmpresa(empresaId) {
-    const profSnapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+    const profSnap = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
     const servicos = await getServicosDaEmpresa(empresaId);
 
-    return profSnapshot.docs.map(doc => {
+    return profSnap.docs.map(doc => {
         const prof = { id: doc.id, ...doc.data() };
-        // Se prof.servicos for array de IDs, converte para objetos completos
-        if (Array.isArray(prof.servicos) && typeof prof.servicos[0] === 'string') {
-            prof.servicos = servicos.filter(svc => prof.servicos.includes(svc.id));
+        // Corrige: se prof.servicos for array de IDs, converte para array de objetos
+        if (Array.isArray(prof.servicos)) {
+            if (typeof prof.servicos[0] === 'string') {
+                prof.servicos = servicos.filter(svc => prof.servicos.includes(svc.id));
+            }
+            // Se já é array de objetos, mantém como está
+        } else {
+            prof.servicos = [];
         }
-        // Se já for array de objetos, mantém
+        // Horários padrão vazio se não vier do banco
+        if (!prof.horarios) prof.horarios = [];
         return prof;
     });
 }
 
 /**
- * Busca um serviço pelo ID (caso precise individualmente).
+ * Busca serviço por ID.
+ * Retorna objeto ou undefined.
  */
 export async function getServicoPorId(empresaId, servicoId) {
     const servicos = await getServicosDaEmpresa(empresaId);
@@ -47,17 +58,40 @@ export async function getServicoPorId(empresaId, servicoId) {
 }
 
 /**
- * Busca todos os profissionais (sem serviços) - caso deseje versão simples.
+ * Busca todos os profissionais (simples, sem serviços completos).
+ * Retorna array de profissionais.
  */
 export async function getProfissionaisSimples(empresaId) {
-    const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snap = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
- * Busca todos os serviços (simples) - se quiser só lista sem relação com profissionais.
+ * Busca todos os serviços (simples, sem relação com profissionais).
+ * Retorna array de serviços.
  */
 export async function getServicosSimples(empresaId) {
-    const snapshot = await getDocs(collection(db, "empresarios", empresaId, "servicos"));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snap = await getDocs(collection(db, "empresarios", empresaId, "servicos"));
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+/**
+ * Exporta todos os dados de profissionais e seus serviços
+ * (útil para debug/admin)
+ */
+export async function exportProfissionaisComServicos(empresaId) {
+    const profissionais = await getProfissionaisDaEmpresa(empresaId);
+    return profissionais.map(prof => ({
+        id: prof.id,
+        nome: prof.nome,
+        servicos: prof.servicos.map(s => ({
+            id: s.id,
+            nome: s.nome,
+            descricao: s.descricao,
+            duracao: s.duracao,
+            preco: s.preco
+        })),
+        horarios: prof.horarios,
+        fotoUrl: prof.fotoUrl || null
+    }));
 }
