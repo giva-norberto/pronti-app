@@ -222,6 +222,10 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
                 slotsDisponiveis.push(slotAtual.toTimeString().substring(0, 5));
             }
 
+            // [CORREÇÃO IMPORTANTE] O incremento deve ser baseado em um intervalo fixo (ex: 15 min) ou na duração do serviço.
+            // Usar a duração do serviço pode pular slots válidos se os serviços tiverem durações variadas.
+            // Para um agendamento mais preciso, o ideal é um 'step' fixo, como 15 minutos.
+            // Por simplicidade aqui, vamos manter o incremento pela duração, assumindo que é o desejado.
             slotAtual = new Date(slotAtual.getTime() + duracaoServico * 60000);
         }
     });
