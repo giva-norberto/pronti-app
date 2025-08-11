@@ -1,18 +1,13 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-    getFirestore,
-    collection,
-    getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-    getAuth,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    signInWithPopup,
-    signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// vitrini-firebase.js
+// RESPONSABILIDADE ÚNICA: Inicializar e exportar as instâncias centrais do Firebase.
 
-// Configuração do Firebase do projeto
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// --- ATENÇÃO ---
+// A CAUSA DO ERRO DE LOGIN ESTÁ AQUI OU NO SEU PAINEL DO FIREBASE.
+// GARANTA QUE ESTES VALORES SÃO UMA CÓPIA EXATA DO SEU PROJETO.
 const firebaseConfig = {
     apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
     authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -22,78 +17,8 @@ const firebaseConfig = {
     appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Inicializa Firebase
-export const app = initializeApp(firebaseConfig);
+// Inicializa e exporta as instâncias principais
+const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
-
-// Exporta explicitamente funções de autenticação
-export { onAuthStateChanged, signInWithPopup, signOut };
-
-/**
- * Carrega os serviços visíveis na vitrine de uma empresa.
- * @param {string} empresaId - ID da empresa no Firestore.
- * @returns {Promise<Array>} - Array de serviços visíveis.
- */
-export async function carregarServicosVitrine(empresaId) {
-    try {
-        if (!empresaId) throw new Error("empresaId não informado!");
-
-        // Coleção de profissionais
-        const profissionaisCol = collection(db, "empresarios", empresaId, "profissionais");
-        const profissionaisSnap = await getDocs(profissionaisCol);
-
-        const servicosVitrine = [];
-
-        profissionaisSnap.forEach((profDoc) => {
-            const dados = profDoc.data();
-            if (Array.isArray(dados.servicos)) {
-                dados.servicos.forEach(servico => {
-                    // Mostra serviço se 'visivelNaVitrine' não for false ou undefined
-                    if (servico.visivelNaVitrine !== false) {
-                        servicosVitrine.push({
-                            ...servico,
-                            profissional: dados.nome || dados.displayName || "Profissional"
-                        });
-                    }
-                });
-            }
-        });
-
-        return servicosVitrine;
-    } catch (error) {
-        console.error("Erro ao carregar serviços da vitrine:", error);
-        return [];
-    }
-}
-
-/**
- * Renderiza os serviços na vitrine.
- * @param {Array} servicos - Array de serviços.
- * @param {Element} container - Elemento DOM onde mostrar os serviços.
- */
-export function renderizarServicosNaVitrine(servicos, container) {
-    if (!container) return;
-
-    container.innerHTML = ""; // Limpa o container
-
-    if (!servicos.length) {
-        container.innerHTML = "<p>Nenhum serviço disponível na vitrine.</p>";
-        return;
-    }
-
-    servicos.forEach(servico => {
-        const item = document.createElement("div");
-        item.className = "servico-vitrine";
-        item.style.cssText = "border:1px solid #eee; padding:12px; margin-bottom:10px; border-radius:8px;";
-
-        item.innerHTML = `
-            <h3>${servico.nome}</h3>
-            <p>Profissional: ${servico.profissional}</p>
-            <p>Preço: R$ ${parseFloat(servico.preco || 0).toFixed(2)}</p>
-            <p>${servico.descricao || ""}</p>
-        `;
-        container.appendChild(item);
-    });
-}
