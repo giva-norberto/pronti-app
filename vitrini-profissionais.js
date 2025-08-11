@@ -1,56 +1,41 @@
-// vitrine-profissionais.js - COMPLETO para uso com Firebase via CDN (NÃO use import/export!)
-// Inclua firebase no seu HTML:
-// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-// <script src="vitrini-profissionais.js"></script>
+// vitrine-profissionais.js - Revisado e COMPLETO para uso com import/export (ESM/módulo)
+// Use este arquivo se você está usando import/export com Firebase instalado via npm/yarn.
 
-// Inicialize Firebase no seu app principal (NÃO neste arquivo!)
-// const firebaseConfig = { /* ... */ };
-// firebase.initializeApp(firebaseConfig);
-// const db = firebase.firestore();
+// IMPORTS - ajuste o caminho do seu arquivo de configuração de Firebase!
+import { db } from './vitrini-firebase.js';
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 
 /**
  * Busca os dados da empresa pelo ID.
  * @param {string} empresaId
- * @returns {Promise<object|null>} Objeto da empresa ou null
+ * @returns {Promise<object|null>}
  */
-async function getDadosEmpresa(empresaId) {
-    const empresaRef = firebase.firestore().collection("empresarios").doc(empresaId);
-    const empresaSnap = await empresaRef.get();
-    return empresaSnap.exists ? { id: empresaId, ...empresaSnap.data() } : null;
+export async function getDadosEmpresa(empresaId) {
+    const empresaRef = doc(db, "empresarios", empresaId);
+    const empresaSnap = await getDoc(empresaRef);
+    return empresaSnap.exists() ? { id: empresaId, ...empresaSnap.data() } : null;
 }
 
 /**
  * Busca todos os serviços da empresa.
  * @param {string} empresaId
- * @returns {Promise<Array>} Array de objetos de serviços
+ * @returns {Promise<Array>}
  */
-async function getServicosDaEmpresa(empresaId) {
-    const servicosSnap = await firebase.firestore()
-        .collection("empresarios")
-        .doc(empresaId)
-        .collection("servicos")
-        .get();
-    const servicos = [];
-    servicosSnap.forEach(doc => servicos.push({ id: doc.id, ...doc.data() }));
-    return servicos;
+export async function getServicosDaEmpresa(empresaId) {
+    const snap = await getDocs(collection(db, "empresarios", empresaId, "servicos"));
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
  * Busca todos os profissionais da empresa e inclui os dados completos dos serviços.
  * @param {string} empresaId
- * @returns {Promise<Array>} Array de profissionais, cada um com servicos completos
+ * @returns {Promise<Array>}
  */
-async function getProfissionaisDaEmpresa(empresaId) {
-    const profSnap = await firebase.firestore()
-        .collection("empresarios")
-        .doc(empresaId)
-        .collection("profissionais")
-        .get();
+export async function getProfissionaisDaEmpresa(empresaId) {
+    const profSnap = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
     const servicos = await getServicosDaEmpresa(empresaId);
 
-    const profissionais = [];
-    profSnap.forEach(doc => {
+    return profSnap.docs.map(doc => {
         const prof = { id: doc.id, ...doc.data() };
         // Se prof.servicos for array de IDs, converte para array de objetos completos
         if (Array.isArray(prof.servicos)) {
@@ -62,65 +47,48 @@ async function getProfissionaisDaEmpresa(empresaId) {
         }
         // Horários: garante array vazio se não existir
         prof.horarios = Array.isArray(prof.horarios) ? prof.horarios : [];
-        profissionais.push(prof);
+        return prof;
     });
-    return profissionais;
 }
 
 /**
  * Busca serviço por ID.
  * @param {string} empresaId
  * @param {string} servicoId
- * @returns {Promise<object|null>} Serviço encontrado ou null
+ * @returns {Promise<object|null>}
  */
-async function getServicoPorId(empresaId, servicoId) {
-    const servicoRef = firebase.firestore()
-        .collection("empresarios")
-        .doc(empresaId)
-        .collection("servicos")
-        .doc(servicoId);
-    const servicoSnap = await servicoRef.get();
-    return servicoSnap.exists ? { id: servicoId, ...servicoSnap.data() } : null;
+export async function getServicoPorId(empresaId, servicoId) {
+    const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+    const servicoSnap = await getDoc(servicoRef);
+    return servicoSnap.exists() ? { id: servicoId, ...servicoSnap.data() } : null;
 }
 
 /**
  * Busca todos os profissionais (simples, sem serviços completos).
  * @param {string} empresaId
- * @returns {Promise<Array>} Array de profissionais
+ * @returns {Promise<Array>}
  */
-async function getProfissionaisSimples(empresaId) {
-    const profSnap = await firebase.firestore()
-        .collection("empresarios")
-        .doc(empresaId)
-        .collection("profissionais")
-        .get();
-    const profissionais = [];
-    profSnap.forEach(doc => profissionais.push({ id: doc.id, ...doc.data() }));
-    return profissionais;
+export async function getProfissionaisSimples(empresaId) {
+    const profSnap = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+    return profSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
  * Busca todos os serviços (simples).
  * @param {string} empresaId
- * @returns {Promise<Array>} Array de serviços
+ * @returns {Promise<Array>}
  */
-async function getServicosSimples(empresaId) {
-    const servicosSnap = await firebase.firestore()
-        .collection("empresarios")
-        .doc(empresaId)
-        .collection("servicos")
-        .get();
-    const servicos = [];
-    servicosSnap.forEach(doc => servicos.push({ id: doc.id, ...doc.data() }));
-    return servicos;
+export async function getServicosSimples(empresaId) {
+    const servicosSnap = await getDocs(collection(db, "empresarios", empresaId, "servicos"));
+    return servicosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 /**
  * Exporta todos os dados de profissionais e seus serviços (para debug/admin).
  * @param {string} empresaId
- * @returns {Promise<Array>} Array de profissionais com dados detalhados
+ * @returns {Promise<Array>}
  */
-async function exportProfissionaisComServicos(empresaId) {
+export async function exportProfissionaisComServicos(empresaId) {
     const profissionais = await getProfissionaisDaEmpresa(empresaId);
     return profissionais.map(prof => ({
         id: prof.id,
@@ -136,12 +104,3 @@ async function exportProfissionaisComServicos(empresaId) {
         fotoUrl: prof.fotoUrl || null
     }));
 }
-
-// Exponha as funções no window para usar em outros scripts
-window.getDadosEmpresa = getDadosEmpresa;
-window.getServicosDaEmpresa = getServicosDaEmpresa;
-window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
-window.getServicoPorId = getServicoPorId;
-window.getProfissionaisSimples = getProfissionaisSimples;
-window.getServicosSimples = getServicosSimples;
-window.exportProfissionaisComServicos = exportProfissionaisComServicos;
