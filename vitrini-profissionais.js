@@ -1,66 +1,55 @@
-import { db } from './vitrini-firebase.js';
-import {
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  query
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// vitrine-profissionais.js - PARA USO COM FIREBASE CDN, sem import/export!
+//
+// Carregue antes:
+// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+// <script>
+//   const firebaseConfig = { ... };
+//   firebase.initializeApp(firebaseConfig);
+// </script>
+// <script src="vitrini-profissionais.js"></script>
 
-// ==========================================================================
-// FUNÇÕES ORIGINAIS (PARA UM ÚNICO PROFISSIONAL VIA SLUG)
-// ==========================================================================
-
-export function getSlugFromURL() {
+function getSlugFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('slug');
 }
 
-export async function getProfissionalUidBySlug(slug) {
+async function getProfissionalUidBySlug(slug) {
     if (!slug) return null;
     try {
-        const slugDocRef = doc(db, "slugs", slug);
-        const slugDocSnap = await getDoc(slugDocRef);
-        if (slugDocSnap.exists()) {
-            return slugDocSnap.data().uid;
-        } else {
-            console.warn("Slug não encontrado:", slug);
-            return null;
-        }
+        const slugDocRef = firebase.firestore().doc("slugs/" + slug);
+        const slugDocSnap = await slugDocRef.get();
+        return slugDocSnap.exists ? slugDocSnap.data().uid : null;
     } catch (error) {
         console.error("Erro ao buscar UID pelo slug:", error);
         return null;
     }
 }
 
-export async function getDadosProfissional(uid) {
+async function getDadosProfissional(uid) {
     if (!uid) return null;
     try {
-        const perfilRef = doc(db, "users", uid, "publicProfile", "profile");
-        const servicosRef = collection(db, "users", uid, "servicos");
-        const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
+        const perfilRef = firebase.firestore().doc("users/" + uid + "/publicProfile/profile");
+        const servicosRef = firebase.firestore().collection("users/" + uid + "/servicos");
+        const horariosRef = firebase.firestore().doc("users/" + uid + "/configuracoes/horarios");
 
         const [perfilSnap, servicosSnap, horariosSnap] = await Promise.all([
-            getDoc(perfilRef),
-            getDocs(query(servicosRef)),
-            getDoc(horariosRef)
+            perfilRef.get(),
+            servicosRef.get(),
+            horariosRef.get()
         ]);
 
-        if (!perfilSnap.exists()) {
+        if (!perfilSnap.exists) {
             console.warn("Perfil público não encontrado para o UID:", uid);
             return null;
         }
 
         const perfil = perfilSnap.data();
-        const horarios = horariosSnap.exists() ? horariosSnap.data() : {};
-        const servicos = servicosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const horarios = horariosSnap.exists ? horariosSnap.data() : {};
+        const servicos = [];
+        servicosSnap.forEach(d => servicos.push({ id: d.id, ...d.data() }));
 
-        return {
-            uid,
-            perfil,
-            servicos,
-            horarios
-        };
+        return { uid, perfil, servicos, horarios };
 
     } catch (error) {
         console.error("Erro ao carregar dados do profissional:", error);
@@ -68,39 +57,49 @@ export async function getDadosProfissional(uid) {
     }
 }
 
-// ==========================================================================
-// NOVAS FUNÇÕES (PARA MÚLTIPLOS PROFISSIONAIS VIA EMPRESA)
-// ==========================================================================
-
-export function getEmpresaIdFromURL() {
+function getEmpresaIdFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('empresa');
 }
 
-export async function getDadosEmpresa(empresaId) {
+async function getDadosEmpresa(empresaId) {
     if (!empresaId) return null;
-    const empresaRef = doc(db, "empresarios", empresaId);
-    const docSnap = await getDoc(empresaRef);
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+    const empresaRef = firebase.firestore().collection("empresarios").doc(empresaId);
+    const docSnap = await empresaRef.get();
+    return docSnap.exists ? { id: docSnap.id, ...docSnap.data() } : null;
 }
 
-export async function getProfissionaisDaEmpresa(empresaId) {
+async function getProfissionaisDaEmpresa(empresaId) {
     if (!empresaId) return [];
-    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-    const snapshot = await getDocs(profissionaisRef);
-    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    const profissionaisRef = firebase.firestore().collection("empresarios").doc(empresaId).collection("profissionais");
+    const snapshot = await profissionaisRef.get();
+    const profissionais = [];
+    snapshot.forEach(docSnap => profissionais.push({ id: docSnap.id, ...docSnap.data() }));
+    return profissionais;
 }
 
-export async function getServicoById(empresaId, servicoId) {
+async function getServicoById(empresaId, servicoId) {
     if (!empresaId || !servicoId) return null;
-    const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
-    const snap = await getDoc(servicoRef);
-    return snap.exists() ? { id: servicoId, ...snap.data() } : null;
+    const servicoRef = firebase.firestore().collection("empresarios").doc(empresaId).collection("servicos").doc(servicoId);
+    const snap = await servicoRef.get();
+    return snap.exists ? { id: servicoId, ...snap.data() } : null;
 }
 
-export async function getTodosServicosDaEmpresa(empresaId) {
+async function getTodosServicosDaEmpresa(empresaId) {
     if (!empresaId) return [];
-    const servicosRef = collection(db, "empresarios", empresaId, "servicos");
-    const snapshot = await getDocs(servicosRef);
-    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    const servicosRef = firebase.firestore().collection("empresarios").doc(empresaId).collection("servicos");
+    const snapshot = await servicosRef.get();
+    const servicos = [];
+    snapshot.forEach(docSnap => servicos.push({ id: docSnap.id, ...docSnap.data() }));
+    return servicos;
 }
+
+// Expondo no window para uso global
+window.getSlugFromURL = getSlugFromURL;
+window.getProfissionalUidBySlug = getProfissionalUidBySlug;
+window.getDadosProfissional = getDadosProfissional;
+window.getEmpresaIdFromURL = getEmpresaIdFromURL;
+window.getDadosEmpresa = getDadosEmpresa;
+window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
+window.getServicoById = getServicoById;
+window.getTodosServicosDaEmpresa = getTodosServicosDaEmpresa;
