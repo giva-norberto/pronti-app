@@ -174,6 +174,50 @@ async function getTodosServicosDaEmpresa(empresaId) {
 }
 
 // ------------------------
+// FUNÇÕES ADICIONAIS: Serviços e horários por profissional (com base na estrutura de Firestore padrão)
+// ------------------------
+
+async function getServicosDoProfissional(empresaId, profissionalId) {
+    if (!empresaId || !profissionalId) {
+        console.warn("Parâmetros inválidos para buscar serviços do profissional.");
+        return [];
+    }
+    try {
+        const servicosRef = firebase.firestore()
+            .collection("empresarios").doc(empresaId)
+            .collection("profissionais").doc(profissionalId)
+            .collection("servicos");
+        const snapshot = await servicosRef.get();
+        const servicos = [];
+        snapshot.forEach(docSnap => servicos.push({ id: docSnap.id, ...docSnap.data() }));
+        return servicos;
+    } catch (error) {
+        console.error("Erro ao buscar serviços do profissional:", error);
+        return [];
+    }
+}
+window.getServicosDoProfissional = getServicosDoProfissional;
+
+async function getHorariosDoProfissional(empresaId, profissionalId) {
+    if (!empresaId || !profissionalId) {
+        console.warn("Parâmetros inválidos para buscar horários do profissional.");
+        return {};
+    }
+    try {
+        const horariosRef = firebase.firestore()
+            .collection("empresarios").doc(empresaId)
+            .collection("profissionais").doc(profissionalId)
+            .collection("configuracoes").doc("horarios");
+        const horariosSnap = await horariosRef.get();
+        return horariosSnap.exists ? horariosSnap.data() : {};
+    } catch (error) {
+        console.error("Erro ao buscar horários do profissional:", error);
+        return {};
+    }
+}
+window.getHorariosDoProfissional = getHorariosDoProfissional;
+
+// ------------------------
 // EXPOSTOS PARA window
 // ------------------------
 
@@ -186,7 +230,6 @@ window.getDadosEmpresa = getDadosEmpresa;
 window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
 window.getServicoById = getServicoById;
 window.getTodosServicosDaEmpresa = getTodosServicosDaEmpresa;
-
 
 // ------------------------
 // FUNÇÃO TESTE SIMPLES PARA RODAR NO CONSOLE DO NAVEGADOR
@@ -234,6 +277,14 @@ window.testVitrineProfissionais = async function() {
     const profs = await getProfissionaisDaEmpresa(empresaId);
     console.log(`Profissionais da empresa (${empresaId}):`, profs);
 
-    const servicos = await getTodosServicosDaEmpresa(empresaId);
-    console.log(`Serviços da empresa (${empresaId}):`, servicos);
+    // Testando serviços e horários por profissional
+    for (const prof of profs) {
+        const servicos = await getServicosDoProfissional(empresaId, prof.id);
+        console.log(`Serviços do profissional ${prof.nome} (${prof.id}):`, servicos);
+        const horarios = await getHorariosDoProfissional(empresaId, prof.id);
+        console.log(`Horários do profissional ${prof.nome} (${prof.id}):`, horarios);
+    }
+
+    const servicosEmpresa = await getTodosServicosDaEmpresa(empresaId);
+    console.log(`Serviços da empresa (${empresaId}):`, servicosEmpresa);
 };
