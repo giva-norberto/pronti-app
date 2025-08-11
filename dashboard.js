@@ -1,17 +1,27 @@
+import { getAuth } from "firebase/auth";
 import { db } from './firebase-config.js';
-import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { collection, query, where, getDocs } from "firebase/firestore";
 
-async function carregarResumoDiario() {
-  const container = document.getElementById('resumo-diario-container');
-  try {
-    const snap = await getDocs(collection(db, 'agendamentos'));
-    const totalAgendamentos = snap.size;
-    container.innerHTML = `<div class="resumo-metricas">
-      <div class="metrica"><b>${totalAgendamentos}</b><br>Agendamentos</div>
-    </div>`;
-  } catch (e) {
-    container.innerHTML = `<div class="error-message">Erro ao carregar dados: ${e.message}</div>`;
+const auth = getAuth();
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    // Suponha que você já tem empresaId do contexto do dashboard
+    // Busca agendamentos onde o user é dono da empresa OU cliente
+    const empresaRef = await getDoc(doc(db, "empresarios", empresaId));
+    const donoId = empresaRef.data().donoId;
+    let q;
+    if (user.uid === donoId) {
+      q = query(collection(db, "empresarios", empresaId, "agendamentos"));
+    } else {
+      q = query(
+        collection(db, "empresarios", empresaId, "agendamentos"),
+        where("clienteUid", "==", user.uid)
+      );
+    }
+    const snap = await getDocs(q);
+    // Renderize os cards do dashboard normalmente
+  } else {
+    // Usuário não autenticado
+    alert("Faça login para acessar o dashboard!");
   }
-}
-
-window.addEventListener('DOMContentLoaded', carregarResumoDiario);
+});
