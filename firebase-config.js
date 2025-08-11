@@ -7,7 +7,7 @@ export const firebaseConfig = {
   apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // CORRIGIDO!
+  storageBucket: "pronti-app-37c6e.appspot.com",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
