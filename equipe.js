@@ -20,6 +20,9 @@ let horariosBase = {
 };
 let agendaEspecial = []; // [{tipo, mes, inicio, fim}]
 
+// Novo: intervalo padrão em minutos
+let intervaloBase = 30;
+
 // Elementos DOM
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
@@ -47,7 +50,9 @@ const elementos = {
     agendaInicio: document.getElementById('agenda-inicio'),
     agendaFim: document.getElementById('agenda-fim'),
     btnAgendaEspecial: document.getElementById('btn-agenda-especial'),
-    agendaEspecialLista: document.getElementById('agenda-especial-lista')
+    agendaEspecialLista: document.getElementById('agenda-especial-lista'),
+    // Novo: campo intervalo de atendimento
+    inputIntervalo: document.getElementById('intervalo-atendimento')
 };
 
 // TABS do perfil
@@ -252,7 +257,7 @@ async function abrirPerfilProfissional(profissionalId, nomeProfissional) {
     profissionalAtual = profissionalId;
     elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${nomeProfissional}`;
     renderizarServicos([]);
-    renderizarHorarios(horariosBase);
+    renderizarHorarios(horariosBase, intervaloBase); // inclui intervaloBase
     agendaEspecial = [];
     await carregarDadosProfissional(profissionalId);
     elementos.modalPerfilProfissional.classList.add('show');
@@ -274,9 +279,16 @@ async function carregarDadosProfissional(profissionalId) {
             if (dados.servicos) renderizarServicos(dados.servicos);
             else renderizarServicos([]);
 
-            // Horários: múltiplos intervalos/dia
-            if (dados.horarios) renderizarHorarios(dados.horarios);
-            else renderizarHorarios(horariosBase);
+            // Horários: múltiplos intervalos/dia + intervalo
+            let intervaloMin = dados.horarios?.intervalo ?? intervaloBase;
+            let horariosData = { ...dados.horarios };
+            delete horariosData.intervalo;
+            renderizarHorarios(horariosData, intervaloMin);
+
+            // Set campo intervalo
+            if (elementos.inputIntervalo) {
+                elementos.inputIntervalo.value = intervaloMin;
+            }
 
             // Agenda especial
             agendaEspecial = dados.agendaEspecial || [];
@@ -323,7 +335,7 @@ function renderizarServicos(servicosSelecionados = []) {
 }
 
 // Renderizar horários com inclusão/remover intervalos
-function renderizarHorarios(horarios = {}) {
+function renderizarHorarios(horarios = {}, intervaloMin = intervaloBase) {
     const horariosLista = elementos.horariosLista;
     horariosLista.innerHTML = '';
     const diasSemana = [
@@ -335,6 +347,12 @@ function renderizarHorarios(horarios = {}) {
         { key: 'sabado', nome: 'Sábado' },
         { key: 'domingo', nome: 'Domingo' }
     ];
+
+    // Campo intervalo de atendimento (em minutos)
+    if (elementos.inputIntervalo) {
+        elementos.inputIntervalo.value = intervaloMin;
+    }
+
     diasSemana.forEach(dia => {
         const div = document.createElement('div');
         div.className = 'dia-horario';
@@ -399,7 +417,7 @@ function setupRemoverIntervalo() {
     });
 }
 
-// Coleta e salva os horários/intervalos
+// Coleta e salva os horários/intervalos + campo intervalo atendimento
 function coletarHorarios() {
     const horarios = {};
     document.querySelectorAll('.dia-horario').forEach(diaDiv => {
@@ -411,6 +429,12 @@ function coletarHorarios() {
             horarios[dia].push({ inicio, fim });
         });
     });
+    // Adiciona intervalo de atendimento
+    if (elementos.inputIntervalo) {
+        horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
+    } else {
+        horarios.intervalo = intervaloBase;
+    }
     return horarios;
 }
 
@@ -466,7 +490,7 @@ function adicionarAgendaEspecial() {
     elementos.agendaIntervaloArea.style.display = "none";
 }
 
-// Salvar perfil do profissional (serviços, horários, agenda especial)
+// Salvar perfil do profissional (serviços, horários, agenda especial, intervalo)
 async function salvarPerfilProfissional() {
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
@@ -477,11 +501,10 @@ async function salvarPerfilProfissional() {
             servicosSelecionados.push(item.getAttribute('data-servico-id'));
         });
 
-        // Horários/intervalos
+        // Horários/intervalos + intervalo atendimento
         const horarios = coletarHorarios();
 
         // Agenda especial
-        // (pode salvar junto no documento do profissional)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
         await updateDoc(profissionalRef, {
             servicos: servicosSelecionados,
@@ -589,7 +612,7 @@ async function adicionarProfissional() {
         fotoUrl: fotoURL,
         ehDono: false,
         servicos: [],
-        horarios: horariosBase,
+        horarios: { ...horariosBase, intervalo: intervaloBase },
         criadoEm: serverTimestamp(),
         agendaEspecial: []
     };
