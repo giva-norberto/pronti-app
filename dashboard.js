@@ -3,8 +3,13 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Botão voltar para o menu principal
-document.getElementById("btn-voltar").addEventListener("click", () => {
-  window.location.href = "/menu.html"; // ajuste para o caminho do seu menu
+window.addEventListener("DOMContentLoaded", () => {
+  const btnVoltar = document.getElementById("btn-voltar");
+  if (btnVoltar) {
+    btnVoltar.addEventListener("click", () => {
+      window.location.href = "/menu.html"; // ajuste para o caminho do seu menu
+    });
+  }
 });
 
 // Busca empresaId de URL, localStorage ou Firestore
@@ -170,11 +175,17 @@ onAuthStateChanged(auth, user => {
 });
 
 // Exportar resumo do dia
-document.getElementById("btn-exportar").addEventListener("click", () => {
-  window.print();
-});
-
-// Botão promoção
-document.getElementById("btn-promocao").addEventListener("click", () => {
-  alert("Função de criar promoção em desenvolvimento!");
+window.addEventListener("DOMContentLoaded", () => {
+  const btnExportar = document.getElementById("btn-exportar");
+  if (btnExportar) {
+    btnExportar.addEventListener("click", () => {
+      window.print();
+    });
+  }
+  const btnPromocao = document.getElementById("btn-promocao");
+  if (btnPromocao) {
+    btnPromocao.addEventListener("click", () => {
+      alert("Função de criar promoção em desenvolvimento!");
+    });
+  }
 });
