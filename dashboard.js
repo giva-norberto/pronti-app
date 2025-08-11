@@ -2,11 +2,25 @@ import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Função para obter empresaId da URL ou localStorage
-function getEmpresaId() {
+// Função para obter empresaId da URL, localStorage ou Firestore
+async function getEmpresaId(user) {
+  // 1. URL
   const params = new URLSearchParams(window.location.search);
   let empresaId = params.get('empresaId');
+  // 2. localStorage
   if (!empresaId) empresaId = localStorage.getItem('empresaId');
+  // 3. Firestore: se o usuário for dono de uma empresa
+  if (!empresaId && user) {
+    // Busca uma empresa onde o donoId é o user.uid
+    const empresariosRef = collection(db, "empresarios");
+    const q = query(empresariosRef, where("donoId", "==", user.uid));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      empresaId = snap.docs[0].id;
+      localStorage.setItem('empresaId', empresaId); // Salva para próximas vezes
+    }
+  }
+  // Salva no localStorage se achou
   if (empresaId) localStorage.setItem('empresaId', empresaId);
   return empresaId;
 }
@@ -28,9 +42,9 @@ function desenharOcupacao(percent) {
 
 // Função principal para preencher o dashboard
 async function preencherDashboard(user) {
-  const empresaId = getEmpresaId();
+  const empresaId = await getEmpresaId(user);
   if (!empresaId) {
-    alert("Empresa não definida.");
+    alert("Empresa não definida. Selecione ou cadastre uma empresa.");
     return;
   }
   const empresaRef = await getDoc(doc(db, "empresarios", empresaId));
