@@ -1,12 +1,7 @@
 // vitrine.js (VISÃO CLIENTE - FLUXO DIDÁTICO E FUNCIONAL, REVISADO)
 // ==========================================================================
-// IMPORTS DOS MÓDULOS
+// NÃO USE import/export! Use funções globais expostas no window.
 // ==========================================================================
-import { currentUser, initializeAuth, fazerLogin as login, fazerLogout as logout } from './vitrini-auth.js';
-import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa } from './vitrini-profissionais.js';
-import { buscarEExibirAgendamentos, salvarAgendamento, cancelarAgendamento, buscarAgendamentosDoDia, calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
-import { renderizarServicos, renderizarProfissionais, updateUIOnAuthChange } from './vitrini-ui.js';
-import { showAlert, showCustomConfirm } from './vitrini-utils.js';
 
 // ==========================================================================
 // ESTADO DA APLICAÇÃO
@@ -24,13 +19,19 @@ async function init() {
     try {
         document.getElementById('agendamento-form-container').style.display = 'none';
 
-        initializeAuth((user) => {
-            updateUIOnAuthChange(user, empresaId);
-            // Se o usuário estiver na aba de agendamentos, recarrega a lista
-            if (user && document.querySelector('.menu-btn[data-menu="visualizacao"]')?.classList.contains('ativo')) {
-                buscarEExibirAgendamentos(empresaId, user, 'ativos');
-            }
-        });
+        // initializeAuth vem do vitrini-auth.js global
+        if (typeof initializeAuth === "function") {
+            initializeAuth((user) => {
+                if (typeof updateUIOnAuthChange === "function") {
+                    updateUIOnAuthChange(user, empresaId);
+                }
+                if (user && document.querySelector('.menu-btn[data-menu="visualizacao"]')?.classList.contains('ativo')) {
+                    if (typeof buscarEExibirAgendamentos === "function") {
+                        buscarEExibirAgendamentos(empresaId, user, 'ativos');
+                    }
+                }
+            });
+        }
 
         empresaId = getEmpresaIdFromURL();
         if (!empresaId) throw new Error("URL inválida: ID da empresa não encontrado.");
@@ -42,7 +43,6 @@ async function init() {
 
         listaProfissionais = await getProfissionaisDaEmpresa(empresaId);
 
-        // DEBUG: Verifique se está vindo algum profissional e seus serviços
         console.log("Profissionais carregados:", listaProfissionais);
 
         renderizarInformacoesDaEmpresa(dadosEmpresa, listaProfissionais);
@@ -51,8 +51,9 @@ async function init() {
         if (listaProfissionais.length === 0) {
             containerProfissionais.innerHTML = "<p>Nenhum profissional cadastrado no momento.</p>";
         } else {
-            // Usa função correta de UI para renderizar profissionais
-            renderizarProfissionais(listaProfissionais, containerProfissionais, selecionarProfissional);
+            if (typeof renderizarProfissionais === "function") {
+                renderizarProfissionais(listaProfissionais, containerProfissionais, selecionarProfissional);
+            }
         }
 
         configurarEventosGerais();
@@ -62,7 +63,7 @@ async function init() {
 
     } catch (error) {
         console.error("Erro na inicialização:", error);
-        showAlert("Erro", error.message);
+        if (typeof showAlert === "function") showAlert("Erro", error.message);
         document.getElementById("vitrine-loader").innerHTML = `<p style="color:red; text-align: center;">${error.message}</p>`;
     }
 }
@@ -112,31 +113,27 @@ function renderizarInformacoesDaEmpresa(empresa, profissionais) {
     }
 }
 
-// ================= FLUXO MELHORADO ==========================
 async function selecionarProfissional(profissional) {
     if (!profissional) return;
     profissionalSelecionado = profissional;
     agendamentoState.profissional = { id: profissional.id, nome: profissional.nome };
 
-    // Feedback visual
     document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
     const cardSel = document.querySelector(`.card-profissional[data-id="${profissional.id}"]`);
     if (cardSel) cardSel.classList.add('selecionado');
 
-    // Libera etapa de seleção de serviço
     document.getElementById('agendamento-form-container').style.display = 'block';
 
-    // DEBUG: Veja se os serviços estão vindo para o profissional
     console.log("Serviços do profissional selecionado:", profissionalSelecionado.servicos);
 
-    // Renderiza serviços do profissional selecionado no container correto
-    renderizarServicos(
-        profissionalSelecionado.servicos || [],
-        document.getElementById('lista-servicos'),
-        selecionarServico
-    );
+    if (typeof renderizarServicos === "function") {
+        renderizarServicos(
+            profissionalSelecionado.servicos || [],
+            document.getElementById('lista-servicos'),
+            selecionarServico
+        );
+    }
 
-    // Bloqueia campos até serviço ser selecionado
     agendamentoState.servico = null;
     agendamentoState.data = null;
     agendamentoState.horario = null;
@@ -151,7 +148,6 @@ function selecionarServico(servico) {
     agendamentoState.horario = null;
     agendamentoState.data = null;
 
-    // Libera campo de data
     const dataInput = document.getElementById('data-agendamento');
     dataInput.value = '';
     dataInput.disabled = false;
@@ -164,35 +160,31 @@ function selecionarServico(servico) {
 function updateConfirmButtonState() {
     const btn = document.getElementById('btn-confirmar-agendamento');
     if (!btn) return;
-    const isReady = currentUser && agendamentoState.profissional && agendamentoState.servico && agendamentoState.data && agendamentoState.horario;
+    const isReady = typeof currentUser !== "undefined" && currentUser && agendamentoState.profissional && agendamentoState.servico && agendamentoState.data && agendamentoState.horario;
     btn.disabled = !isReady;
 }
 
-/**
- * Configura todos os eventos da página.
- */
 function configurarEventosGerais() {
-    // Eventos do menu lateral
     document.querySelectorAll('.sidebar-menu .menu-btn').forEach(button => {
         button.addEventListener('click', () => {
             document.querySelectorAll('.sidebar-menu .menu-btn.ativo, .main-content-vitrine .menu-content.ativo').forEach(el => el.classList.remove('ativo'));
             button.classList.add('ativo');
             document.getElementById(`menu-${button.dataset.menu}`).classList.add('ativo');
 
-            if (button.dataset.menu === 'visualizacao' && currentUser) {
+            if (button.dataset.menu === 'visualizacao' && typeof currentUser !== "undefined" && currentUser) {
                 const modoAtivo = document.querySelector('.btn-toggle.ativo')?.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
-                buscarEExibirAgendamentos(empresaId, currentUser, modoAtivo);
+                if (typeof buscarEExibirAgendamentos === "function") {
+                    buscarEExibirAgendamentos(empresaId, currentUser, modoAtivo);
+                }
             }
         });
     });
 
-    // Eventos de login/logout
-    document.getElementById('btn-login')?.addEventListener('click', login);
-    document.getElementById('login-link-agendamento')?.addEventListener('click', (e) => { e.preventDefault(); login(); });
-    document.getElementById('login-link-visualizacao')?.addEventListener('click', (e) => { e.preventDefault(); login(); });
-    document.getElementById('btn-logout')?.addEventListener('click', logout);
+    document.getElementById('btn-login')?.addEventListener('click', () => { if (typeof login === "function") login(); });
+    document.getElementById('login-link-agendamento')?.addEventListener('click', (e) => { e.preventDefault(); if (typeof login === "function") login(); });
+    document.getElementById('login-link-visualizacao')?.addEventListener('click', (e) => { e.preventDefault(); if (typeof login === "function") login(); });
+    document.getElementById('btn-logout')?.addEventListener('click', () => { if (typeof logout === "function") logout(); });
 
-    // Evento do seletor de data
     document.getElementById('data-agendamento')?.addEventListener('change', async (e) => {
         agendamentoState.data = e.target.value;
         agendamentoState.horario = null;
@@ -200,39 +192,44 @@ function configurarEventosGerais() {
         horariosContainer.innerHTML = '';
         updateConfirmButtonState();
 
-        // Só libera se profissional, serviço e data selecionados
         if (!profissionalSelecionado || !agendamentoState.servico || !agendamentoState.data) {
             horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione serviço e data.</p>';
             return;
         }
 
         horariosContainer.innerHTML = '<p>Verificando horários...</p>';
-        const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, agendamentoState.data);
+        let agendamentosDoDia = [];
+        if (typeof buscarAgendamentosDoDia === "function") {
+            agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, agendamentoState.data);
+        }
         const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissionalSelecionado.id);
 
-        // Calcula horários pelo tempo do serviço
-        const slotsDisponiveis = calcularSlotsDisponiveis(
-            agendamentoState.data,
-            agendamentosDoProfissional,
-            profissionalSelecionado.horarios,
-            agendamentoState.servico.duracao
-        );
+        let slotsDisponiveis = [];
+        if (typeof calcularSlotsDisponiveis === "function") {
+            slotsDisponiveis = calcularSlotsDisponiveis(
+                agendamentoState.data,
+                agendamentosDoProfissional,
+                profissionalSelecionado.horarios,
+                agendamentoState.servico.duracao
+            );
+        }
 
         if (slotsDisponiveis.length > 0) {
             horariosContainer.innerHTML = slotsDisponiveis.map(horario =>
                 `<button class="btn-horario">${horario}</button>`
             ).join('');
         } else {
-            // Buscar próximo dia com vagas
-            const proximaDataDisponivel = await encontrarPrimeiraDataComSlots(
-                empresaId,
-                profissionalSelecionado
-            );
+            let proximaDataDisponivel = null;
+            if (typeof encontrarPrimeiraDataComSlots === "function") {
+                proximaDataDisponivel = await encontrarPrimeiraDataComSlots(
+                    empresaId,
+                    profissionalSelecionado
+                );
+            }
             if (proximaDataDisponivel) {
                 document.getElementById('data-agendamento').value = proximaDataDisponivel;
                 agendamentoState.data = proximaDataDisponivel;
                 horariosContainer.innerHTML = `<p>Não há horários disponíveis para este dia.<br>Veja o próximo dia disponível: <strong>${new Date(proximaDataDisponivel).toLocaleDateString()}</strong></p>`;
-                // Dispara novo evento change para mostrar horários do próximo dia
                 setTimeout(() => {
                     document.getElementById('data-agendamento').dispatchEvent(new Event('change'));
                 }, 500);
@@ -242,7 +239,6 @@ function configurarEventosGerais() {
         }
     });
 
-    // Evento de clique na grade de horários (Delegação de Eventos)
     document.getElementById('grade-horarios')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-horario')) {
             document.querySelectorAll('.btn-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
@@ -252,46 +248,53 @@ function configurarEventosGerais() {
         }
     });
 
-    // Evento para confirmar o agendamento
     document.getElementById('btn-confirmar-agendamento')?.addEventListener('click', async () => {
-        if (!currentUser) {
-            showAlert("Atenção", "Você precisa fazer login para agendar.");
+        if (typeof currentUser === "undefined" || !currentUser) {
+            if (typeof showAlert === "function") showAlert("Atenção", "Você precisa fazer login para agendar.");
             return;
         }
         const btn = document.getElementById('btn-confirmar-agendamento');
         btn.disabled = true;
-        const confirmado = await showCustomConfirm(
-            "Confirmar Agendamento",
-            `Deseja agendar "${agendamentoState.servico.nome}" com ${agendamentoState.profissional.nome} para ${new Date(agendamentoState.data + 'T00:00:00').toLocaleDateString()} às ${agendamentoState.horario}?`
-        );
-        if (confirmado) {
+        let confirmado = false;
+        if (typeof showCustomConfirm === "function") {
+            confirmado = await showCustomConfirm(
+                "Confirmar Agendamento",
+                `Deseja agendar "${agendamentoState.servico.nome}" com ${agendamentoState.profissional.nome} para ${new Date(agendamentoState.data + 'T00:00:00').toLocaleDateString()} às ${agendamentoState.horario}?`
+            );
+        }
+        if (confirmado && typeof salvarAgendamento === "function") {
             await salvarAgendamento(empresaId, currentUser, agendamentoState);
         } else {
             btn.disabled = false;
         }
     });
 
-    // Botões de "Ver Ativos" e "Ver Histórico"
     document.getElementById('botoes-agendamento')?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-toggle') && currentUser) {
+        if (e.target.classList.contains('btn-toggle') && typeof currentUser !== "undefined" && currentUser) {
             document.querySelector('.btn-toggle.ativo').classList.remove('ativo');
             e.target.classList.add('ativo');
             const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
-            buscarEExibirAgendamentos(empresaId, currentUser, modo);
+            if (typeof buscarEExibirAgendamentos === "function") {
+                buscarEExibirAgendamentos(empresaId, currentUser, modo);
+            }
         }
     });
 
-    // Botão CANCELAR (Delegação de Eventos)
     document.getElementById('lista-agendamentos-visualizacao')?.addEventListener('click', async (e) => {
         if (e.target.classList.contains('btn-cancelar')) {
             const agendamentoId = e.target.dataset.id;
-            const confirmado = await showCustomConfirm(
-                "Cancelar Agendamento",
-                "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita."
-            );
-            if (confirmado) {
+            let confirmado = false;
+            if (typeof showCustomConfirm === "function") {
+                confirmado = await showCustomConfirm(
+                    "Cancelar Agendamento",
+                    "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita."
+                );
+            }
+            if (confirmado && typeof cancelarAgendamento === "function") {
                 await cancelarAgendamento(empresaId, agendamentoId, () => {
-                    buscarEExibirAgendamentos(empresaId, currentUser, 'ativos');
+                    if (typeof buscarEExibirAgendamentos === "function") {
+                        buscarEExibirAgendamentos(empresaId, currentUser, 'ativos');
+                    }
                     document.querySelector('#btn-ver-historico').classList.remove('ativo');
                     document.querySelector('#btn-ver-ativos').classList.add('ativo');
                 });
