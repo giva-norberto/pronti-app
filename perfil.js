@@ -3,7 +3,6 @@
 //      Gerencia o perfil do negócio, os dados da empresa e a equipe.
 // ======================================================================
 
-// Importa as funções e serviços necessários do Firebase e de outros módulos.
 import {
   getFirestore, doc, getDoc, setDoc, addDoc, collection,
   query, where, getDocs, onSnapshot
@@ -18,15 +17,12 @@ import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
 // Medida de segurança: Verifica se os serviços do Firebase foram inicializados corretamente.
-// Se algum deles não carregar, um erro é lançado para interromper a execução.
 if (!app || !db || !auth || !storage) {
   console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
   throw new Error("Firebase não inicializado. Verifique firebase-config.js");
 }
 
-// O script principal só roda após o carregamento completo do HTML.
 window.addEventListener('DOMContentLoaded', () => {
-  // Mapeia todos os elementos do HTML para variáveis para fácil acesso.
   const elements = {
     h1Titulo: document.getElementById('main-title'),
     form: document.getElementById('form-perfil'),
@@ -50,30 +46,24 @@ window.addEventListener('DOMContentLoaded', () => {
     btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
   };
 
-  // Variáveis para guardar o estado atual do usuário e da empresa.
   let currentUser;
   let empresaId = null;
-  let unsubProfissionais = null; // Para cancelar o listener de profissionais e evitar memory leaks.
+  let unsubProfissionais = null;
 
-  // Observador principal: Fica atento a mudanças no estado de autenticação (login/logout).
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // Se o usuário está logado:
       currentUser = user;
-      verificarOuCriarEmpresa(user.uid); // Verifica se ele já tem uma empresa ou cria uma nova.
-      adicionarListenersDeEvento(); // Ativa todos os botões e formulários da página.
+      verificarOuCriarEmpresa(user.uid);
+      adicionarListenersDeEvento();
     } else {
-      // Se não há usuário logado, redireciona para a página de login.
       window.location.href = 'login.html';
     }
   });
 
-  // Função central: Carrega os dados da empresa do usuário ou cria uma nova se não existir.
   async function verificarOuCriarEmpresa(uid) {
     try {
       console.log("[DEBUG] Buscando empresa do dono:", uid);
 
-      // Prepara a consulta para encontrar uma empresa cujo donoId seja o UID do usuário atual.
       const empresariosRef = collection(db, "empresarios");
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
@@ -81,10 +71,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const secaoEquipe = elements.btnAddProfissional?.closest?.('.form-section');
 
       if (snapshot.empty) {
-        // Se a consulta não retornar nada, o usuário é novo.
         console.warn("[DEBUG] Nenhuma empresa encontrada. Criando nova empresa...");
-        
-        // Cria um novo documento para a empresa com dados iniciais vazios.
         empresaId = (await addDoc(collection(db, "empresarios"), {
           nomeFantasia: "",
           descricao: "",
@@ -92,24 +79,20 @@ window.addEventListener('DOMContentLoaded', () => {
           logoUrl: ""
         })).id;
 
-        // Cria o primeiro profissional (o próprio dono) na subcoleção "profissionais".
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), {
           nome: currentUser.displayName || "Proprietário",
           fotoUrl: currentUser.photoURL || "",
           ehDono: true
         });
 
-        // Atualiza a interface para um perfil novo, escondendo opções avançadas.
         atualizarTelaParaNovoPerfil(secaoEquipe);
       } else {
-        // Se a empresa já existe:
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
 
         console.log("[DEBUG] Empresa encontrada:", empresaId, dadosEmpresa);
 
-        // Busca os dados do usuário atual como profissional na empresa.
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
         const profissionalSnap = await getDoc(profissionalRef);
 
@@ -118,10 +101,8 @@ window.addEventListener('DOMContentLoaded', () => {
           ehDono = profissionalSnap.data().ehDono === true;
         }
 
-        // Preenche o formulário com os dados da empresa.
         preencherFormulario(dadosEmpresa);
 
-        // Se o usuário for o dono, mostra a seção de equipe e carrega a lista de profissionais.
         if (ehDono) {
           if (secaoEquipe) secaoEquipe.style.display = 'block';
           iniciarListenerProfissionais(empresaId);
@@ -130,7 +111,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       }
     } catch (error) {
-      // Captura e exibe qualquer erro que ocorra durante o processo.
       console.error("Erro ao carregar dados:", error);
       console.error("Tipo do erro:", error.name);
       console.error("Mensagem do erro:", error.message);
@@ -139,7 +119,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Ajusta a interface para um usuário que está criando o perfil pela primeira vez.
   function atualizarTelaParaNovoPerfil(secaoEquipe) {
     if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
     if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
@@ -153,18 +132,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Inicia o listener em tempo real (onSnapshot) para a lista de profissionais.
   function iniciarListenerProfissionais(idDaEmpresa) {
-    if (!elements.listaProfissionaisPainel) return;
-    if (unsubProfissionais) unsubProfissionais(); // Cancela o listener anterior se existir.
+    if (!elements.listaProfissionaisPainel || !idDaEmpresa) return;
+    if (unsubProfissionais) unsubProfissionais();
     const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
     unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
       const profissionais = snapshot.docs.map(doc => doc.data());
-      renderizarListaProfissionais(profissionais); // Atualiza a lista na tela.
+      renderizarListaProfissionais(profissionais);
     });
   }
 
-  // Desenha a lista de profissionais na tela.
   function renderizarListaProfissionais(profissionais) {
     if (!elements.listaProfissionaisPainel) return;
     if (profissionais.length === 0) {
@@ -179,7 +156,6 @@ window.addEventListener('DOMContentLoaded', () => {
     )).join('');
   }
 
-  // Preenche os campos do formulário com os dados vindos do Firestore.
   function preencherFormulario(dadosEmpresa) {
     if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
     if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
@@ -201,7 +177,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
   }
 
-  // Lida com o envio do formulário principal de perfil.
   async function handleFormSubmit(event) {
     event.preventDefault();
     if (elements.btnSalvar) {
@@ -229,23 +204,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const logoFile = elements.logoInput && elements.logoInput.files[0];
       if (logoFile) {
-        // Se um novo logo foi enviado, faz o upload.
         const storagePath = `logos/${uid}/logo`;
         const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
         dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
       } else if (empresaId) {
-        // Se não, mantém o logo antigo.
         const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
         if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
       }
 
-      // Salva os dados no Firestore.
       if (empresaId) {
         await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Perfil atualizado com sucesso!");
       } else {
-        // Lógica de fallback caso a empresa não tenha sido criada antes.
         const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
         empresaId = novaEmpresaRef.id;
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
@@ -256,7 +227,6 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error("Erro ao salvar perfil:", error);
       alert("Ocorreu um erro ao salvar: " + error.message);
     } finally {
-      // Reativa o botão de salvar, independentemente do resultado.
       if (elements.btnSalvar) {
         elements.btnSalvar.disabled = false;
         elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
@@ -264,7 +234,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Lida com a adição de um novo profissional no modal.
   async function handleAdicionarProfissional(event) {
     event.preventDefault();
     const btnSubmit = event.target.querySelector('button[type="submit"]');
@@ -298,7 +267,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Centraliza a adição de todos os listeners de eventos da página.
   function adicionarListenersDeEvento() {
     if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
     if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
@@ -315,7 +283,6 @@ window.addEventListener('DOMContentLoaded', () => {
       catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
     });
 
-    // Listeners para o modal de adicionar profissional.
     if (elements.btnAddProfissional) {
       elements.btnAddProfissional.addEventListener('click', () => {
         if (!empresaId) {
@@ -337,7 +304,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Função para copiar o link da vitrine para a área de transferência.
   function copiarLink() {
     if (!empresaId) {
       alert("Salve seu perfil para gerar o link.");
