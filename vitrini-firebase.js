@@ -12,15 +12,14 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// CONFIGURAÇÃO: Em produção, use variáveis de ambiente Vite/webpack.
-// Para testes locais, pode deixar hardcoded temporariamente!
+// Configuração real do Firebase do seu projeto
 const firebaseConfig = {
-    apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || "SUA_API_KEY_PUBLICA",
-    authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || "SEU_AUTH_DOMAIN",
-    projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || "SEU_PROJECT_ID",
-    storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || "SEU_STORAGE_BUCKET",
-    messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "SEU_MESSAGING_ID",
-    appId: import.meta.env?.VITE_FIREBASE_APP_ID || "SEU_APP_ID"
+    apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
+    authDomain: "pronti-app-37c6e.firebaseapp.com",
+    projectId: "pronti-app-37c6e",
+    storageBucket: "pronti-app-37c6e.appspot.com",
+    messagingSenderId: "736700619274",
+    appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
 // Inicializa Firebase
@@ -29,8 +28,7 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
 
-// **AQUI ESTÁ A CORREÇÃO PARA SEU ERRO DE IMPORT** //
-// Exporta explicitamente as funções necessárias para autenticação
+// Exporta explicitamente funções para login/logout
 export { onAuthStateChanged, signInWithPopup, signOut };
 
 /**
@@ -40,7 +38,6 @@ export { onAuthStateChanged, signInWithPopup, signOut };
  */
 export async function carregarServicosVitrine(empresaId) {
     try {
-        // Certifique-se que empresaId existe!
         if (!empresaId) {
             throw new Error("empresaId não informado!");
         }
@@ -101,8 +98,3 @@ export function renderizarServicosNaVitrine(servicos, container) {
         container.appendChild(item);
     });
 }
-
-// EXEMPLO DE USO (em vitrini.html ou outro script):
-// const empresaId = new URLSearchParams(window.location.search).get("empresa");
-// const container = document.getElementById("vitrine-servicos");
-// carregarServicosVitrine(empresaId).then(servicos => renderizarServicosNaVitrine(servicos, container));
