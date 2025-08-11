@@ -5,7 +5,7 @@ import {
     getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// CONFIGURAÇÃO: Use variáveis de ambiente Vite/webpack em produção.
+// CONFIGURAÇÃO: Em produção, use variáveis de ambiente Vite/webpack.
 // Para testes locais, pode deixar hardcoded temporariamente!
 const firebaseConfig = {
     apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || "SUA_API_KEY_PUBLICA",
@@ -17,8 +17,8 @@ const firebaseConfig = {
 };
 
 // Inicializa Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+export const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
 
 /**
  * Carrega os serviços visíveis na vitrine de uma empresa.
@@ -27,10 +27,16 @@ const db = getFirestore(app);
  */
 export async function carregarServicosVitrine(empresaId) {
     try {
+        // Certifique-se que empresaId existe!
+        if (!empresaId) {
+            throw new Error("empresaId não informado!");
+        }
+
+        // A coleção aninhada: empresarios/{empresaId}/profissionais
         const profissionaisCol = collection(db, "empresarios", empresaId, "profissionais");
         const profissionaisSnap = await getDocs(profissionaisCol);
 
-        let servicosVitrine = [];
+        const servicosVitrine = [];
 
         profissionaisSnap.forEach((profDoc) => {
             const dados = profDoc.data();
@@ -59,6 +65,8 @@ export async function carregarServicosVitrine(empresaId) {
  * @param {Element} container - Elemento DOM onde mostrar os serviços.
  */
 export function renderizarServicosNaVitrine(servicos, container) {
+    if (!container) return;
+
     container.innerHTML = ""; // Limpa o container
 
     if (!servicos.length) {
