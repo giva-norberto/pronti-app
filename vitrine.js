@@ -1,4 +1,4 @@
-// vitrine.js (VISÃO CLIENTE - FLUXO DIDÁTICO E FUNCIONAL, MELHORADO - COMPLETO)
+// vitrine.js (VISÃO CLIENTE - FLUXO DIDÁTICO E FUNCIONAL, REVISADO)
 // ==========================================================================
 // IMPORTS DOS MÓDULOS
 // ==========================================================================
@@ -41,6 +41,10 @@ async function init() {
         renderizarDadosEmpresa(dadosEmpresa);
 
         listaProfissionais = await getProfissionaisDaEmpresa(empresaId);
+
+        // DEBUG: Verifique se está vindo algum profissional e seus serviços
+        console.log("Profissionais carregados:", listaProfissionais);
+
         renderizarInformacoesDaEmpresa(dadosEmpresa, listaProfissionais);
 
         const containerProfissionais = document.getElementById('lista-profissionais');
@@ -122,10 +126,13 @@ async function selecionarProfissional(profissional) {
     // Libera etapa de seleção de serviço
     document.getElementById('agendamento-form-container').style.display = 'block';
 
+    // DEBUG: Veja se os serviços estão vindo para o profissional
+    console.log("Serviços do profissional selecionado:", profissionalSelecionado.servicos);
+
     // Renderiza serviços do profissional selecionado no container correto
     renderizarServicos(
         profissionalSelecionado.servicos || [],
-        document.getElementById('servicos-container'),
+        document.getElementById('lista-servicos'),
         selecionarServico
     );
 
