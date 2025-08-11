@@ -5,7 +5,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// A sua configuração do Firebase. Verifique se está 100% correta.
+// A sua configuração do Firebase.
+// VERIFIQUE SE ESTES VALORES ESTÃO 100% CORRETOS, POIS ELES ERAM A CAUSA DO ERRO DE LOGIN ANTERIOR.
 const firebaseConfig = {
     apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
     authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -16,8 +17,9 @@ const firebaseConfig = {
 };
 
 // Inicializa e exporta as instâncias principais
-export const app = initializeApp(firebaseConfig); // <-- A CORREÇÃO É ADICIONAR O 'export' AQUI
+export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const provider = new GoogleAuthProvider();
+
+// A variável 'provider' é declarada e exportada AQUI e SOMENTE AQUI.
 export const provider = new GoogleAuthProvider();
