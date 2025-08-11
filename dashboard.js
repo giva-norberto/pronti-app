@@ -1,6 +1,15 @@
 import { db, auth } from "./firebase-config.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// Função para obter empresaId da URL ou localStorage
+function getEmpresaId() {
+  const params = new URLSearchParams(window.location.search);
+  let empresaId = params.get('empresaId');
+  if (!empresaId) empresaId = localStorage.getItem('empresaId');
+  if (empresaId) localStorage.setItem('empresaId', empresaId);
+  return empresaId;
+}
 
 // Função para desenhar o círculo de ocupação
 function desenharOcupacao(percent) {
@@ -19,36 +28,36 @@ function desenharOcupacao(percent) {
 
 // Função principal para preencher o dashboard
 async function preencherDashboard(user) {
-  // Pegue o empresaId do contexto do app (exemplo: do perfil do usuário ou da URL)
-  const empresaId = window.empresaId || localStorage.getItem("empresaId");
+  const empresaId = getEmpresaId();
   if (!empresaId) {
     alert("Empresa não definida.");
     return;
   }
-  // Busca dados da empresa para pegar donoId
-  const empresaRef = await db.collection("empresarios").doc(empresaId).get();
-  if (!empresaRef.exists) {
+  const empresaRef = await getDoc(doc(db, "empresarios", empresaId));
+  if (!empresaRef.exists()) {
     alert("Empresa não encontrada.");
     return;
   }
   const donoId = empresaRef.data().donoId;
   const isDono = user.uid === donoId;
 
-  // Busca agendamentos do dia (apenas se dono ou cliente permitido)
+  // Busca agendamentos do dia
   const hoje = new Date();
   hoje.setHours(0,0,0,0);
   const amanha = new Date(hoje);
   amanha.setDate(hoje.getDate() + 1);
+
   let agQuery;
+  const agCollection = collection(db, "empresarios", empresaId, "agendamentos");
   if (isDono) {
     agQuery = query(
-      collection(db, "empresarios", empresaId, "agendamentos"),
+      agCollection,
       where("data", ">=", hoje),
       where("data", "<", amanha)
     );
   } else {
     agQuery = query(
-      collection(db, "empresarios", empresaId, "agendamentos"),
+      agCollection,
       where("data", ">=", hoje),
       where("data", "<", amanha),
       where("clienteUid", "==", user.uid)
@@ -57,7 +66,6 @@ async function preencherDashboard(user) {
   const agSnap = await getDocs(agQuery);
   const ags = agSnap.docs.map(doc => doc.data());
 
-  // Preencher cards
   // Serviço destaque
   const servicos = {};
   ags.forEach(ag => {
@@ -77,8 +85,10 @@ async function preencherDashboard(user) {
   if (profDestaque) {
     document.getElementById("prof-destaque-nome").textContent = profDestaque[0];
     document.getElementById("prof-destaque-qtd").textContent = `${profDestaque[1]} agendamentos`;
-    // Opcional: buscar foto do profissional
-    document.getElementById("avatar-prof").src = ""; // Preencha com URL real se disponível
+    // Buscar foto do profissional, se existir na coleção de profissionais
+    const profDocRef = doc(db, "empresarios", empresaId, "profissionais", profDestaque[0]);
+    const profDoc = await getDoc(profDocRef);
+    document.getElementById("avatar-prof").src = profDoc.exists() && profDoc.data().fotoUrl ? profDoc.data().fotoUrl : "";
   } else {
     document.getElementById("prof-destaque-nome").textContent = "Nenhum profissional";
     document.getElementById("prof-destaque-qtd").textContent = "";
@@ -86,27 +96,26 @@ async function preencherDashboard(user) {
   }
 
   // Ocupação (percentual)
-  const totalSlots = 10; // ajuste para sua lógica de slots diários
+  const totalSlots = empresaRef.data().slotsDia || 10; // slotsDia pode ser configurado na empresa
   const ocupacaoPercent = Math.round((ags.length / totalSlots) * 100);
   desenharOcupacao(ocupacaoPercent);
   document.getElementById("ocupacao-texto").textContent = `Sua agenda está ${ocupacaoPercent}% ocupada hoje`;
 
   // Comparativo com ontem
   const ontem = new Date(hoje); ontem.setDate(hoje.getDate()-1);
-  const agOntemSnap = await getDocs(
-    query(
-      collection(db, "empresarios", empresaId, "agendamentos"),
-      where("data", ">=", ontem),
-      where("data", "<", hoje)
-    )
+  const agOntemQuery = query(
+    agCollection,
+    where("data", ">=", ontem),
+    where("data", "<", hoje)
   );
+  const agOntemSnap = await getDocs(agOntemQuery);
   const agOntemQtd = agOntemSnap.size;
   const diff = ags.length - agOntemQtd;
   const diffPercent = agOntemQtd ? Math.round((diff / agOntemQtd) * 100) : 0;
   document.getElementById("comparativo-percent").textContent = (diffPercent >= 0 ? "+" : "") + diffPercent + "%";
   document.getElementById("comparativo-texto").textContent = `Você tem ${Math.abs(diffPercent)}% ${diffPercent >= 0 ? "mais" : "menos"} agendamentos que ontem`;
 
-  // Alerta de horários próximos (opcional e seguro)
+  // Alerta de horários próximos
   let alerta = false;
   ags.sort((a,b)=>new Date(a.horario)-new Date(b.horario));
   for (let i=1; i<ags.length; i++) {
@@ -146,12 +155,12 @@ onAuthStateChanged(auth, user => {
   });
 });
 
-// Exportar resumo do dia (opcional, sem dependências externas)
+// Exportar resumo do dia
 document.getElementById("btn-exportar").addEventListener("click", () => {
   window.print(); // simples, pode ser substituído por html2canvas/pdf depois
 });
 
-// Botão promoção (exemplo)
+// Botão promoção
 document.getElementById("btn-promocao").addEventListener("click", () => {
   alert("Função de criar promoção em desenvolvimento!");
 });
