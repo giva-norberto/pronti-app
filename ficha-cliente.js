@@ -1,6 +1,6 @@
-// IMPORTAÇÕES do Firebase (corrigidas para a versão 10.7.1)
-import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// IMPORTAÇÕES do Firebase (corrigidas para a versão 10.12.2)
+import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 // INICIALIZAÇÃO
