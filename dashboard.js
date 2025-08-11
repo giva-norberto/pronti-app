@@ -2,12 +2,12 @@ import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Botão voltar para o menu principal
+// Botão voltar para o menu principal (igual ao da equipe/vitrine, mantendo o formato visual do dashboard)
 window.addEventListener("DOMContentLoaded", () => {
-  const btnVoltar = document.getElementById("btn-voltar");
+  const btnVoltar = document.querySelector('.btn-voltar');
   if (btnVoltar) {
-    btnVoltar.addEventListener("click", () => {
-      window.location.href = "/menu.html"; // ajuste para o caminho do seu menu
+    btnVoltar.addEventListener('click', () => {
+      window.history.back(); // Mantém a navegação de voltar igual ao da equipe/vitrine
     });
   }
 });
