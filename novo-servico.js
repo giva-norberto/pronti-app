@@ -1,5 +1,4 @@
-// novo-servico.js - Catálogo global de serviços. Só dono pode criar/excluir, funcionários podem editar. Botão de excluir visível só para dono.
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
 import { showAlert } from "./vitrini-utils.js";
@@ -125,10 +124,9 @@ async function handleFormSubmit(e) {
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
-            // Cria novo serviço global (apenas dono)
+            // Cria novo serviço global (apenas dono) — CORREÇÃO AQUI:
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-            const novoDoc = doc(servicosCol); // id automático
-            await setDoc(novoDoc, { nome, descricao, preco, duracao, visivelNaVitrine: true });
+            await addDoc(servicosCol, { nome, descricao, preco, duracao, visivelNaVitrine: true });
         }
 
         await showAlert("Sucesso!", servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
