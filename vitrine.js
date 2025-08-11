@@ -3,13 +3,29 @@
 // NÃO USE import/export! Use funções globais expostas no window.
 // ==========================================================================
 
-// Implementação local caso getEmpresaIdFromURL não venha de outro arquivo
+// Garantir a existência das funções globais essenciais:
 if (typeof getEmpresaIdFromURL !== "function") {
     function getEmpresaIdFromURL() {
         const params = new URLSearchParams(window.location.search);
         return params.get('empresa');
     }
     window.getEmpresaIdFromURL = getEmpresaIdFromURL;
+}
+if (typeof getDadosEmpresa !== "function") {
+    async function getDadosEmpresa(empresaId) {
+        // Implementação dummy para evitar erro fatal. Troque por a real!
+        return Promise.resolve({ nomeFantasia: "Empresa Teste", descricao: "Descrição padrão." });
+    }
+    window.getDadosEmpresa = getDadosEmpresa;
+}
+if (typeof getProfissionaisDaEmpresa !== "function") {
+    async function getProfissionaisDaEmpresa(empresaId) {
+        // Implementação dummy para evitar erro fatal. Troque por a real!
+        return Promise.resolve([
+            { id: "1", nome: "Profissional Exemplo", servicos: [{ nome: "Serviço Exemplo", duracao: 30, preco: 50 }] }
+        ]);
+    }
+    window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
 }
 
 // ==========================================================================
@@ -61,6 +77,11 @@ async function init() {
         } else {
             if (typeof renderizarProfissionais === "function") {
                 renderizarProfissionais(listaProfissionais, containerProfissionais, selecionarProfissional);
+            } else {
+                // Renderização básica caso função não exista
+                containerProfissionais.innerHTML = listaProfissionais.map(prof =>
+                    `<div class="card-profissional" data-id="${prof.id}">${prof.nome}</div>`
+                ).join('');
             }
         }
 
