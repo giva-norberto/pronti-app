@@ -4,6 +4,7 @@ import {
     collection,
     getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // CONFIGURAÇÃO: Em produção, use variáveis de ambiente Vite/webpack.
 // Para testes locais, pode deixar hardcoded temporariamente!
@@ -19,6 +20,7 @@ const firebaseConfig = {
 // Inicializa Firebase
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 
 /**
  * Carrega os serviços visíveis na vitrine de uma empresa.
