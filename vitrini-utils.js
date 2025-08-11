@@ -1,4 +1,5 @@
-// vitrini-utils.js (VERSÃO FINAL E DEFINITIVA)
+// vitrini-utils.js
+// RESPONSABILIDADE: Funções de utilidade geral, como modais e alertas.
 
 /**
  * Função principal que controla o modal, tornando-o visível e configurando seus botões.
@@ -7,9 +8,8 @@
  * @param {Array<object>} buttons - Array com a configuração dos botões.
  * @returns {Promise<any>} - Retorna o valor associado ao botão clicado.
  */
-function showModal(title, message, buttons) {
+export function showModal(title, message, buttons) { // CORREÇÃO: Adicionado 'export'
     return new Promise(resolve => {
-        // Usa os IDs do seu HTML original
         const overlay = document.getElementById('custom-confirm-modal');
         const titleEl = document.getElementById('modal-titulo');
         const messageEl = document.getElementById('modal-mensagem');
@@ -22,18 +22,16 @@ function showModal(title, message, buttons) {
 
         titleEl.textContent = title;
         messageEl.textContent = message;
-        buttonsContainer.innerHTML = ''; // Limpa botões antigos para evitar duplicatas
+        buttonsContainer.innerHTML = ''; // Limpa botões antigos
 
-        // Função para fechar o modal e resolver a Promise
         const close = (value) => {
-            overlay.classList.remove('ativo');
+            overlay.classList.remove('ativo'); // Garanta que seu CSS usa .ativo para mostrar/esconder
             resolve(value);
         };
 
-        // Cria os botões dinamicamente
         buttons.forEach(buttonInfo => {
             const button = document.createElement('button');
-            button.id = buttonInfo.id; // Usa os IDs do seu CSS
+            button.id = buttonInfo.id;
             button.textContent = buttonInfo.text;
             button.addEventListener('click', () => close(buttonInfo.value));
             buttonsContainer.appendChild(button);
@@ -50,7 +48,7 @@ function showModal(title, message, buttons) {
  */
 export function showAlert(title, message) {
     const buttons = [
-        { text: 'OK', id: 'modal-btn-confirmar', value: true } // Reutiliza o estilo do botão de confirmar
+        { text: 'OK', id: 'modal-btn-confirmar', value: true }
     ];
     return showModal(title, message, buttons);
 }
