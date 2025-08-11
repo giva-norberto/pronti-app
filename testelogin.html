@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste de Login Firebase</title>
+</head>
+<body>
+
+    <h1>Teste de Login Isolado</h1>
+    <p>Este teste usa apenas a sua configuração do Firebase, sem nenhum outro script do seu site.</p>
+    <button id="btn-teste-login" style="padding: 10px 20px; font-size: 16px;">Fazer Login com Google</button>
+    <p id="resultado" style="font-family: monospace;"></p>
+
+    <script type="module">
+        // Passo 1: Importe as funções necessárias do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        // --- PASSO 2: VÁ AO SEU PAINEL DO FIREBASE E COPIE/COLE A 'firebaseConfig' AQUI ---
+        // Garanta que esta é a cópia mais recente e 100% precisa.
+        const firebaseConfig = {
+            apiKey: "AIzaSy...", // COLE AQUI
+            authDomain: "pronti-app-37c6e.firebaseapp.com", // COLE AQUI
+            projectId: "pronti-app-37c6e", // COLE AQUI
+            storageBucket: "pronti-app-37c6e.appspot.com", // COLE AQUI
+            messagingSenderId: "...", // COLE AQUI
+            appId: "..." // COLE AQUI
+        };
+        // --------------------------------------------------------------------------------
+
+        // Passo 3: Inicialize o Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        
+        // Passo 4: Adicione o evento ao botão
+        const btnLogin = document.getElementById('btn-teste-login');
+        const resultadoEl = document.getElementById('resultado');
+
+        btnLogin.addEventListener('click', async () => {
+            resultadoEl.textContent = 'Abrindo pop-up...';
+            try {
+                const result = await signInWithPopup(auth, provider);
+                resultadoEl.textContent = `Login bem-sucedido! Olá, ${result.user.displayName}!`;
+                resultadoEl.style.color = 'green';
+                console.log(result.user);
+            } catch (error) {
+                resultadoEl.textContent = `Falha no login: ${error.message}`;
+                resultadoEl.style.color = 'red';
+                console.error("Erro detalhado:", error);
+            }
+        });
+    </script>
+</body>
+</html>
