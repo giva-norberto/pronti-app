@@ -31,11 +31,15 @@ export function renderizarMenuTopo(ativo = 'informacoes') {
 /**
  * Renderiza serviços da empresa/profissionais (dados do Firebase, tratamento total).
  * @param {Array} servicos - Array de serviços vindos do Firebase
- * @param {HTMLElement} container - Container onde serão exibidos os cards
+ * @param {HTMLElement|string} container - Container onde serão exibidos os cards ou seu id
  * @param {Function} [onClick] - Função chamada ao clicar em um card (opcional)
  */
 export function renderizarServicos(servicos, container, onClick) {
-    if (!container) return;
+    // Suporta receber o id do container como string
+    if (typeof container === "string") {
+        container = document.getElementById(container);
+    }
+    if (!container || typeof container.querySelectorAll !== "function") return;
     if (!Array.isArray(servicos) || servicos.length === 0) {
         container.innerHTML = '<p style="color:#f87171;">Nenhum serviço cadastrado.</p>';
         return;
@@ -57,9 +61,10 @@ export function renderizarServicos(servicos, container, onClick) {
                 </div>
             </div>
         `).join('');
-    container.querySelectorAll('.service-item-card').forEach(card => {
+    // Corrige: só chama querySelectorAll se container for um HTMLElement válido
+    Array.from(container.querySelectorAll('.service-item-card')).forEach(card => {
         card.onclick = () => {
-            container.querySelectorAll('.service-item-card.selecionado').forEach(c => c.classList.remove('selecionado'));
+            Array.from(container.querySelectorAll('.service-item-card.selecionado')).forEach(c => c.classList.remove('selecionado'));
             card.classList.add('selecionado');
             if (onClick) onClick(servicos[parseInt(card.dataset.idx)]);
         };
@@ -68,9 +73,15 @@ export function renderizarServicos(servicos, container, onClick) {
 
 /**
  * Renderiza profissionais (cards bonitos).
+ * @param {Array} profissionais
+ * @param {HTMLElement|string} container
+ * @param {Function} [onClick]
  */
 export function renderizarProfissionais(profissionais, container, onClick) {
-    if (!container) return;
+    if (typeof container === "string") {
+        container = document.getElementById(container);
+    }
+    if (!container || typeof container.querySelectorAll !== "function") return;
     if (!Array.isArray(profissionais) || profissionais.length === 0) {
         container.innerHTML = '<p style="color:#f87171;">Nenhum profissional cadastrado.</p>';
         return;
@@ -81,9 +92,9 @@ export function renderizarProfissionais(profissionais, container, onClick) {
             <h3>${prof.nome || '<span style="color:#ef4444">Sem nome</span>'}</h3>
         </div>
     `).join('');
-    container.querySelectorAll('.card-profissional').forEach(card => {
+    Array.from(container.querySelectorAll('.card-profissional')).forEach(card => {
         card.onclick = () => {
-            container.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
+            Array.from(container.querySelectorAll('.card-profissional.selecionado')).forEach(c => c.classList.remove('selecionado'));
             card.classList.add('selecionado');
             if (onClick) onClick(profissionais[parseInt(card.dataset.idx)]);
         };
