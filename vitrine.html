@@ -5,22 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Agendamento Online</title>
     
-    <!-- CSS principal da vitrine -->
     <link rel="stylesheet" href="vitrine.css">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Loader Inicial -->
     <div id="vitrine-loader">
         <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do negócio...</p>
     </div>
 
-    <!-- Conteúdo Principal da Vitrine -->
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
         
-        <!-- Sidebar -->
         <aside class="sidebar-vitrine">
             <div class="header-vitrine">
                 <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
@@ -34,10 +31,8 @@
             </nav>
         </aside>
 
-        <!-- Conteúdo Principal -->
         <main class="main-content-vitrine">
             
-            <!-- Aba: Informações -->
             <div id="menu-informacoes" class="menu-content ativo">
                 <div class="card">
                     <h2>Sobre o Negócio</h2>
@@ -53,7 +48,6 @@
                 </div>
             </div>
 
-            <!-- Aba: Agendamento -->
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
@@ -70,12 +64,11 @@
                     <div id="agendamento-form-container" style="display: none;">
                         <div class="form-group">
                             <label>2. Escolha um serviço</label>
-                            <!-- Corrigido: container de serviços deve ter id="lista-servicos" e classe servicos-container-cards -->
                             <div id="lista-servicos" class="servicos-container-cards"></div>
                         </div>
                         <div class="form-group">
                             <label for="data-agendamento">3. Escolha uma data</label>
-                            <input type="date" id="data-agendamento" required min="">
+                            <input type="date" id="data-agendamento" required>
                         </div>
                         <div class="form-group">
                             <label>4. Escolha um horário</label>
@@ -88,7 +81,6 @@
                 </div>
             </div>
 
-            <!-- Aba: Meus Agendamentos -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
@@ -103,7 +95,6 @@
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             
-            <!-- Aba: Perfil -->
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
                     <h2>Meu Perfil</h2>
@@ -120,7 +111,6 @@
         </main>
     </div>
 
-    <!-- Modal de Cadastro de Cliente -->
     <div id="cadastro-modal-bg" class="modal-bg" style="display:none;">
       <div class="modal-card">
         <h2>Cadastrar Novo Cliente</h2>
@@ -140,7 +130,6 @@
       </div>
     </div>
 
-    <!-- Modal de Confirmação -->
     <div id="custom-confirm-modal" class="modal-overlay">
         <div class="modal-box">
             <h3 id="modal-titulo">Confirmar Ação</h3>
@@ -152,8 +141,19 @@
         </div>
     </div>
     
-    <!-- Scripts -->
-    <script type="module" src="vitrine.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+
+    <script type="module" src="vitrini-firebase.js"></script>
+    <script type="module" src="vitrini-utils.js"></script> 
+    <script type="module" src="vitrini-profissionais.js"></script> 
+    <script type="module" src="vitrini-agendamento.js"></script>
     <script type="module" src="vitrine-cadastro-modal.js"></script>
+    <script type="module" src="vitrini-ui.js"></script> 
+    <script type="module" src="vitrini-auth.js"></script>
+
+    <script type="module" src="vitrine.js"></script>
+
 </body>
 </html>
