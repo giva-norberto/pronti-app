@@ -1,6 +1,5 @@
-// vitrine-profissionais.js - PARA USO COM FIREBASE CDN, sem import/export!
-//
-// Carregue antes:
+// vitrine-profissionais.js - Corrigido para Firebase CDN, sem import/export!
+// Carregue SEMPRE depois do Firebase CDN e da inicialização do Firebase no HTML:
 // <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
 // <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
 // <script>
@@ -8,6 +7,10 @@
 //   firebase.initializeApp(firebaseConfig);
 // </script>
 // <script src="vitrini-profissionais.js"></script>
+
+// ===============================
+// FUNÇÕES PARA PERFIL PROFISSIONAL (via SLUG)
+// ===============================
 
 function getSlugFromURL() {
     const params = new URLSearchParams(window.location.search);
@@ -17,7 +20,7 @@ function getSlugFromURL() {
 async function getProfissionalUidBySlug(slug) {
     if (!slug) return null;
     try {
-        const slugDocRef = firebase.firestore().doc("slugs/" + slug);
+        const slugDocRef = firebase.firestore().collection("slugs").doc(slug);
         const slugDocSnap = await slugDocRef.get();
         return slugDocSnap.exists ? slugDocSnap.data().uid : null;
     } catch (error) {
@@ -29,9 +32,9 @@ async function getProfissionalUidBySlug(slug) {
 async function getDadosProfissional(uid) {
     if (!uid) return null;
     try {
-        const perfilRef = firebase.firestore().doc("users/" + uid + "/publicProfile/profile");
-        const servicosRef = firebase.firestore().collection("users/" + uid + "/servicos");
-        const horariosRef = firebase.firestore().doc("users/" + uid + "/configuracoes/horarios");
+        const perfilRef = firebase.firestore().collection("users").doc(uid).collection("publicProfile").doc("profile");
+        const servicosRef = firebase.firestore().collection("users").doc(uid).collection("servicos");
+        const horariosRef = firebase.firestore().collection("users").doc(uid).collection("configuracoes").doc("horarios");
 
         const [perfilSnap, servicosSnap, horariosSnap] = await Promise.all([
             perfilRef.get(),
@@ -56,6 +59,10 @@ async function getDadosProfissional(uid) {
         throw new Error("Falha ao carregar dados do profissional.");
     }
 }
+
+// ===============================
+// FUNÇÕES PARA EMPRESA (vitrine)
+// ===============================
 
 function getEmpresaIdFromURL() {
     const params = new URLSearchParams(window.location.search);
@@ -94,7 +101,10 @@ async function getTodosServicosDaEmpresa(empresaId) {
     return servicos;
 }
 
-// Expondo no window para uso global
+// ===============================
+// Expõe todas funções no window
+// ===============================
+
 window.getSlugFromURL = getSlugFromURL;
 window.getProfissionalUidBySlug = getProfissionalUidBySlug;
 window.getDadosProfissional = getDadosProfissional;
