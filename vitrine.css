@@ -23,8 +23,9 @@ body {
     flex-grow: 1;
 }
 
-.menu-content { display: none; }
-.menu-content.ativo { display: block; }
+/* Corrige bug de display que trava menus/abas */
+.menu-content { display: none !important; }
+.menu-content.ativo { display: block !important; }
 
 /* =============================================== */
 /* CABEÇALHO E MENU LATERAL                        */
