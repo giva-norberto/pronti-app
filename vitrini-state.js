@@ -1,4 +1,3 @@
-// vitrini-state.js
 // Centraliza e gerencia o estado da aplicação para evitar variáveis globais.
 
 // O 'estado' é a memória de curto prazo da nossa aplicação.
