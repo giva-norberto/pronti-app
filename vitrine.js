@@ -1,5 +1,5 @@
 // vitrine.js - O Maestro da Aplicação
-// VERSÃO FINAL, COMPLETA E CORRIGIDA - Firebase v10.12.2
+// VERSÃO FINAL, COMPLETA E VALIDADA - Firebase v10.12.2
 
 // 1. Importa o gerenciador de estado
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+
 // --- CONFIGURAÇÃO DE EVENTOS ---
 
 function configurarEventosGerais() {
@@ -69,13 +70,13 @@ function configurarEventosGerais() {
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
-    if(user && document.getElementById('menu-visualizacao').classList.contains('ativo')) {
+    if(user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
         handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
     }
 }
 
 function handleMenuClick(e) {
-    if (e.target.matches('.menu-btn')) { // CORREÇÃO: A classe correta é 'menu-btn'
+    if (e.target.matches('.menu-btn')) {
         const menuKey = e.target.getAttribute('data-menu');
         UI.trocarAba(`menu-${menuKey}`);
         if (menuKey === 'visualizacao' && state.currentUser) {
@@ -96,16 +97,13 @@ async function handleProfissionalClick(e) {
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
     
-    // Busca os horários sob demanda para melhorar a performance inicial
     profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
     setAgendamento('profissional', profissional);
 
-    // "Hidrata" os IDs de serviço do profissional para objetos de serviço completos
     const servicosDoProfissional = (profissional.servicos || []).map(servicoId => {
         return state.todosOsServicos.find(servico => servico.id === servicoId);
-    }).filter(Boolean); // .filter(Boolean) remove 'undefined'
+    }).filter(Boolean);
 
-    // Atualiza a UI
     document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
     card.classList.add('selecionado');
     document.getElementById('agendamento-form-container').style.display = 'block';
