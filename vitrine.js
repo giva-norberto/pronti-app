@@ -1,11 +1,11 @@
 // vitrine.js - O Maestro da Aplicação
 // VERSÃO FINAL E CORRIGIDA - Firebase v10.12.2
 
-// 1. Importa o gerenciador de estado
-import { state, setEmpresa, setProfissionais, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
+// 1. Importa o gerenciador de estado (completo)
+import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 
-// 2. Importa as funções de busca de dados
-import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional } from './vitrini-profissionais.js';
+// 2. Importa as funções de busca de dados (completo)
+import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
 import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, buscarAgendamentosDoCliente, cancelarAgendamento } from './vitrini-agendamento.js';
 
 // 3. Importa as funções de autenticação
@@ -18,25 +18,33 @@ import * as UI from './vitrini-ui.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        UI.toggleLoader(true); // Mostra o loader
+        UI.toggleLoader(true);
 
         const empresaId = getEmpresaIdFromURL();
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
-        const dados = await getDadosEmpresa(empresaId);
-        if (!dados) throw new Error("Empresa não encontrada.");
-        setEmpresa(empresaId, dados);
+        // Busca todos os dados iniciais em paralelo para mais performance
+        const [dados, profissionais, todosServicos] = await Promise.all([
+            getDadosEmpresa(empresaId),
+            getProfissionaisDaEmpresa(empresaId),
+            getTodosServicosDaEmpresa(empresaId) // Busca a lista mestre de serviços
+        ]);
 
-        const profissionais = await getProfissionaisDaEmpresa(empresaId);
-        setProfissionais(profissionais);
+        if (!dados) throw new Error("Empresa não encontrada.");
         
-        UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.listaProfissionais);
+        // Salva tudo no nosso estado central
+        setEmpresa(empresaId, dados);
+        setProfissionais(profissionais);
+        setTodosOsServicos(todosServicos);
+        
+        // Renderiza a UI com os dados iniciais
+        UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
         UI.renderizarProfissionais(state.listaProfissionais);
         
         configurarEventosGerais();
         setupAuthListener(handleUserAuthStateChange);
 
-        UI.toggleLoader(false); // Esconde o loader e mostra o conteúdo
+        UI.toggleLoader(false);
 
     } catch (error) {
         console.error("Erro fatal na inicialização:", error);
@@ -90,16 +98,21 @@ async function handleProfissionalClick(e) {
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
     
-    // Busca horários sob demanda para melhorar a performance
     profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
     setAgendamento('profissional', profissional);
 
+    // "Hidrata" os IDs de serviço do profissional para objetos de serviço completos
+    const servicosDoProfissional = (profissional.servicos || []).map(servicoId => {
+        return state.todosOsServicos.find(servico => servico.id === servicoId);
+    }).filter(Boolean); // .filter(Boolean) remove 'undefined' se um ID não for encontrado
+
+    // Atualiza a UI
     document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
     card.classList.add('selecionado');
     document.getElementById('agendamento-form-container').style.display = 'block';
     
-    // Renderiza os serviços (que já temos, assumindo que vêm como array no profissional)
-    UI.renderizarServicos(profissional.servicos);
+    // Renderiza a lista de objetos de serviço completos
+    UI.renderizarServicos(servicosDoProfissional);
 }
 
 function handleServicoClick(e) {
@@ -107,7 +120,8 @@ function handleServicoClick(e) {
     if (!card) return;
     
     const servicoId = card.dataset.id;
-    const servico = state.agendamento.profissional.servicos.find(s => s.id === servicoId);
+    // Busca o serviço na lista de todos os serviços para garantir que temos o objeto completo
+    const servico = state.todosOsServicos.find(s => s.id === servicoId);
     setAgendamento('servico', servico);
     
     document.querySelectorAll('.card-servico.selecionado').forEach(c => c.classList.remove('selecionado'));
