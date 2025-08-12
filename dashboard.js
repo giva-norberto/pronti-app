@@ -7,7 +7,15 @@ window.addEventListener("DOMContentLoaded", () => {
   const btnVoltar = document.querySelector('.btn-voltar');
   if (btnVoltar) {
     btnVoltar.addEventListener('click', () => {
-      window.history.back(); // Mantém a navegação de voltar igual ao da equipe/vitrine
+      // Volta para o menu principal do dashboard (não apenas history.back)
+      // Remove 'ativo' de todos os menus e conteúdos
+      document.querySelectorAll('.sidebar-menu .menu-btn.ativo').forEach(el => el.classList.remove('ativo'));
+      document.querySelectorAll('.main-content-dashboard .menu-content.ativo').forEach(el => el.classList.remove('ativo'));
+      // Adiciona 'ativo' ao menu principal
+      const menuBtn = document.querySelector('.sidebar-menu .menu-btn[data-menu="principal"]');
+      if (menuBtn) menuBtn.classList.add('ativo');
+      const menuContent = document.getElementById('menu-principal');
+      if (menuContent) menuContent.classList.add('ativo');
     });
   }
 });
@@ -174,7 +182,7 @@ onAuthStateChanged(auth, user => {
   });
 });
 
-// Exportar resumo do dia
+// Exportar resumo do dia e botão promoção
 window.addEventListener("DOMContentLoaded", () => {
   const btnExportar = document.getElementById("btn-exportar");
   if (btnExportar) {
