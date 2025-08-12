@@ -55,6 +55,7 @@
                     <div id="agendamento-login-prompt" style="display: none;">
                         <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
                     </div>
+
                     <div class="form-group">
                         <label>1. Escolha um profissional</label>
                         <div id="lista-profissionais" class="profissionais-container"></div>
@@ -67,12 +68,12 @@
                         </div>
                         <div class="form-group">
                             <label for="data-agendamento">3. Escolha uma data</label>
-                            <input type="date" id="data-agendamento" required>
+                            <input type="date" id="data-agendamento" required disabled>
                         </div>
                         <div class="form-group">
                             <label>4. Escolha um horário</label>
                             <div id="grade-horarios" class="horarios-container-grid">
-                                <p class="aviso-horarios">Selecione um profissional, serviço e data.</p>
+                                <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
                             </div>
                         </div>
                         <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
