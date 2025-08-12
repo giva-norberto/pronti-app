@@ -1,0 +1,7 @@
+# netlify.toml
+# Configuração de cabeçalhos de segurança para permitir o login do Firebase
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
