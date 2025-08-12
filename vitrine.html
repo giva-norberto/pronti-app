@@ -11,12 +11,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Loader -->
     <div id="vitrine-loader">
         <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do negócio...</p>
     </div>
 
-    <!-- Conteúdo principal SPA -->
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
         <aside class="sidebar-vitrine">
             <div class="header-vitrine">
@@ -30,8 +28,9 @@
                 <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
             </nav>
         </aside>
+
         <main class="main-content-vitrine">
-            <!-- Tela Informações -->
+            <!-- Cada tela é um bloco separado, dados são carregados ao clicar no menu -->
             <div id="menu-informacoes" class="menu-content ativo">
                 <div class="card">
                     <h2>Sobre o Negócio</h2>
@@ -46,7 +45,6 @@
                     <div id="info-contato"></div>
                 </div>
             </div>
-            <!-- Tela Agendar -->
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
@@ -76,7 +74,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Tela Meus Agendamentos -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Meus Agendamentos</h2>
@@ -90,7 +87,6 @@
                 </div>
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
-            <!-- Tela Perfil -->
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
                     <h2>Meu Perfil</h2>
@@ -107,7 +103,6 @@
         </main>
     </div>
 
-    <!-- Modal de confirmação -->
     <div id="custom-confirm-modal" class="modal-overlay">
         <div class="modal-box">
             <h3 id="modal-titulo">Confirmar Ação</h3>
@@ -119,15 +114,27 @@
         </div>
     </div>
     
-    <!-- Navegação SPA (troca de abas) -->
+    <!-- Menu SPA real: troca de tela e disparo de renderização -->
     <script>
       document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
             btn.addEventListener('click', function() {
+                // Troca visual
                 document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
                 btn.classList.add('ativo');
                 document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
-                document.getElementById('menu-' + btn.dataset.menu).classList.add('ativo');
+                const tela = document.getElementById('menu-' + btn.dataset.menu);
+                tela.classList.add('ativo');
+                // Dispara função de renderização/fetch para cada tela separadamente
+                if(btn.dataset.menu === "informacoes") {
+                    if(window.renderInformacoes) window.renderInformacoes();
+                } else if(btn.dataset.menu === "agendamento") {
+                    if(window.renderAgendamento) window.renderAgendamento();
+                } else if(btn.dataset.menu === "visualizacao") {
+                    if(window.renderVisualizacao) window.renderVisualizacao();
+                } else if(btn.dataset.menu === "perfil") {
+                    if(window.renderPerfil) window.renderPerfil();
+                }
             });
         });
       });
@@ -142,16 +149,16 @@
           if (!card) return;
           document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
           card.classList.add('selecionado');
-          // Atualiza o estado do profissional selecionado, se você usar um state global, atualize aqui
           window.state = window.state || {};
           window.state.agendamento = window.state.agendamento || {};
           window.state.agendamento.profissionalId = card.dataset.id;
-          // Aqui você pode disparar atualização de serviços/horários, se quiser
+          // Quando selecionar, pode disparar fetch de serviços/horários aqui
+          if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
         });
       });
     </script>
-    
-    <!-- Seus scripts JS de funcionalidades -->
+
+    <!-- Scripts JS do sistema -->
     <script type="module" src="./vitrini-firebase.js"></script>
     <script type="module" src="./vitrini-utils.js"></script>
     <script type="module" src="./vitrini-profissionais.js"></script>
