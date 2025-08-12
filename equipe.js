@@ -491,8 +491,9 @@ function adicionarAgendaEspecial() {
 }
 
 // Salvar perfil do profissional (serviços, horários, agenda especial, intervalo)
+// CORRIGIDO: agora salva horários na subcoleção 'configuracoes/horarios'
 async function salvarPerfilProfissional() {
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
     try {
         // Serviços
@@ -508,11 +509,13 @@ async function salvarPerfilProfissional() {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
         await updateDoc(profissionalRef, {
             servicos: servicosSelecionados,
-            horarios: horarios,
             agendaEspecial: agendaEspecial
         });
 
-        // Fechar modal
+        // Salva horários na subcoleção correta
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
+        await setDoc(horariosRef, horarios, { merge: true });
+
         elementos.modalPerfilProfissional.classList.remove('show');
         alert("✅ Perfil atualizado com sucesso!");
 
@@ -574,8 +577,9 @@ function adicionarEventListeners() {
 }
 
 // Adicionar profissional
+// CORRIGIDO: agora horários são salvos na subcoleção 'configuracoes/horarios'
 async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
     const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
@@ -607,19 +611,24 @@ async function adicionarProfissional() {
         }
     }
 
+    // Corrigido: sem campo 'horarios' no documento principal
     const novoProfissional = {
         nome,
         fotoUrl: fotoURL,
         ehDono: false,
         servicos: [],
-        horarios: { ...horariosBase, intervalo: intervaloBase },
         criadoEm: serverTimestamp(),
         agendaEspecial: []
     };
 
     try {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        await addDoc(profissionaisRef, novoProfissional);
+        const docRef = await addDoc(profissionaisRef, novoProfissional);
+
+        // Cria documento de horários padrão na subcoleção correta
+        const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
+        await setDoc(horariosRef, horariosPadrao);
 
         elementos.modalAddProfissional.classList.remove('show');
         alert("✅ Profissional adicionado com sucesso!");
