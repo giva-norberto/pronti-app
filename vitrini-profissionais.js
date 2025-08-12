@@ -1,110 +1,78 @@
 // vitrini-profissionais.js
-// RESPONSABILIDADE: Funções para buscar dados públicos de empresas e profissionais.
-// VERSÃO FINAL E CORRIGIDA - Firebase v10.12.2
 
-import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { db } from './vitrini-firebase.js'; // Importa a conexão 'db' do nosso arquivo central
+import { db } from './firebase-config.js';
+import { doc, getDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- FUNÇÕES DE UTILIDADE DE URL ---
-
-export function getSlugFromURL() {
-    try {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('slug');
-    } catch (e) {
-        console.error("Erro ao ler slug da URL:", e);
-        return null;
-    }
-}
-
+/**
+ * Pega o ID da empresa a partir da URL.
+ * @returns {string|null} O ID da empresa ou nulo.
+ */
 export function getEmpresaIdFromURL() {
-    try {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('empresa');
-    } catch (e) {
-        console.error("Erro ao ler empresa da URL:", e);
-        return null;
-    }
+    const params = new URLSearchParams(window.location.search);
+    return params.get('empresa');
 }
 
-// --- FUNÇÕES DE BUSCA DE DADOS ---
-
+/**
+ * Busca os dados principais de uma empresa no Firestore.
+ * @param {string} empresaId - O ID da empresa.
+ * @returns {Promise<Object|null>} Os dados da empresa ou nulo.
+ */
 export async function getDadosEmpresa(empresaId) {
-    if (!empresaId) return null;
     try {
-        const empresaRef = doc(db, "empresarios", empresaId);
-        const docSnap = await getDoc(empresaRef);
-        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+        const empresaRef = doc(db, 'empresarios', empresaId);
+        const empresaSnap = await getDoc(empresaRef);
+        return empresaSnap.exists() ? empresaSnap.data() : null;
     } catch (error) {
-        console.error("Erro ao carregar dados da empresa:", error);
+        console.error("Erro ao buscar dados da empresa:", error);
         return null;
     }
 }
 
+/**
+ * Busca a lista de todos os profissionais de uma empresa.
+ * @param {string} empresaId - O ID da empresa.
+ * @returns {Promise<Array>} Uma lista com os profissionais.
+ */
 export async function getProfissionaisDaEmpresa(empresaId) {
-    if (!empresaId) return [];
     try {
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const snapshot = await getDocs(profissionaisRef);
-        const profissionais = [];
-        snapshot.forEach(docSnap => profissionais.push({ id: docSnap.id, ...docSnap.data() }));
-        return profissionais;
+        const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
+        const snapshot = await getDocs(query(profissionaisRef));
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-        console.error("Erro ao carregar profissionais da empresa:", error);
+        console.error("Erro ao buscar profissionais:", error);
         return [];
     }
 }
 
-export async function getServicosDoProfissional(empresaId, profissionalId) {
-    if (!empresaId || !profissionalId) return [];
+/**
+ * Busca a lista de todos os serviços que uma empresa oferece.
+ * @param {string} empresaId - O ID da empresa.
+ * @returns {Promise<Array>} Uma lista com todos os serviços.
+ */
+export async function getTodosServicosDaEmpresa(empresaId) {
     try {
-        const servicosRef = collection(db, "empresarios", empresaId, "profissionais", profissionalId, "servicos");
-        const snapshot = await getDocs(servicosRef);
-        const servicos = [];
-        snapshot.forEach(docSnap => servicos.push({ id: docSnap.id, ...docSnap.data() }));
-        return servicos;
+        const servicosRef = collection(db, 'empresarios', empresaId, 'servicos');
+        const snapshot = await getDocs(query(servicosRef));
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-        console.error("Erro ao buscar serviços do profissional:", error);
+        console.error("Erro ao buscar todos os serviços:", error);
         return [];
     }
 }
 
+/**
+ * Busca a configuração de horários de um profissional específico.
+ * @param {string} empresaId - O ID da empresa.
+ * @param {string} profissionalId - O ID do profissional.
+ * @returns {Promise<Object|null>} O objeto de horários ou nulo.
+ */
 export async function getHorariosDoProfissional(empresaId, profissionalId) {
-    if (!empresaId || !profissionalId) return {};
     try {
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+        const horariosRef = doc(db, 'empresarios', empresaId, 'profissionais', profissionalId, 'configuracoes', 'horarios');
         const horariosSnap = await getDoc(horariosRef);
-        return horariosSnap.exists() ? horariosSnap.data() : {};
+        return horariosSnap.exists() ? horariosSnap.data() : null;
     } catch (error) {
         console.error("Erro ao buscar horários do profissional:", error);
-        return {};
-    }
-}
-
-// --- FUNÇÕES COMPLETADAS ---
-
-export async function getServicoById(empresaId, servicoId) {
-    if (!empresaId || !servicoId) return null;
-    try {
-        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
-        const docSnap = await getDoc(servicoRef);
-        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
-    } catch (error) {
-        console.error("Erro ao buscar serviço por ID:", error);
         return null;
-    }
-}
-
-export async function getTodosServicosDaEmpresa(empresaId) {
-    if (!empresaId) return [];
-    try {
-        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
-        const snapshot = await getDocs(servicosRef);
-        const servicos = [];
-        snapshot.forEach(docSnap => servicos.push({ id: docSnap.id, ...docSnap.data() }));
-        return servicos;
-    } catch (error) {
-        console.error("Erro ao carregar todos os serviços da empresa:", error);
-        return [];
     }
 }
