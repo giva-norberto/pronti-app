@@ -3,7 +3,9 @@
  * Corrigido para Firestore modular v10+!
  * - Descobre empresaId do usuário logado (dono)
  * - Busca e exibe agendamentos da subcoleção correta
- * - Renderização dos cards com nome do profissional
+ * - Renderização dos cards com nome do profissional, serviço e cliente
+ * - Mostra apenas agendamentos ativos e com horário igual ou posterior ao atual
+ * - Se não houver agendamentos futuros no dia, mostra próximo dia com agendamento futuro
  * - Notificações via showAlert/showCustomConfirm
  */
 
@@ -55,10 +57,41 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /**
-   * Carrega os agendamentos da EMPRESA para um dia específico.
+   * Busca a próxima data com agendamentos ativos e horário futuro.
+   * @param {string} empresaId
+   * @returns {Promise<string|null>} Data no formato 'YYYY-MM-DD' ou null
+   */
+  async function encontrarProximaDataComAgendamentos(empresaId) {
+    const hoje = new Date();
+    for (let i = 0; i < 30; i++) { // procura nos próximos 30 dias
+      const dataAtual = new Date(hoje);
+      dataAtual.setDate(hoje.getDate() + i);
+      const dataString = dataAtual.toISOString().split('T')[0];
+      const inicioDoDia = new Date(`${dataString}T00:00:00.000Z`);
+      const fimDoDia = new Date(`${dataString}T23:59:59.999Z`);
+      const colecao = collection(db, "empresarios", empresaId, "agendamentos");
+      const q = query(colecao,
+        where("status", "==", "agendado"),
+        where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
+        where("horario", "<=", Timestamp.fromDate(fimDoDia))
+      );
+      const snapshot = await getDocs(q);
+      const agora = new Date();
+      const futuros = snapshot.docs.filter(doc => doc.data().horario.toDate() >= agora);
+      if (futuros.length > 0) {
+        return dataString;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Carrega os agendamentos ativos da EMPRESA para a data selecionada,
+   * mostrando apenas os agendamentos com horário igual ou posterior ao atual.
+   * Se não houver, mostra o próximo dia com agendamento futuro.
    * @param {string} empresaId - O ID da empresa.
    */
-  async function carregarAgendamentos(empresaId) {
+  async function carregarOuAvancarAgendamentos(empresaId) {
     if (!empresaId || !listaAgendamentos) return;
     listaAgendamentos.innerHTML = "<p>Carregando...</p>";
 
@@ -69,22 +102,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-        const inicioDoDia = new Date(`${dataSelecionada}T00:00:00.000Z`);
-        const fimDoDia = new Date(`${dataSelecionada}T23:59:59.999Z`);
-        
-        const colecao = collection(db, "empresarios", empresaId, "agendamentos");
-        const q = query(colecao,
-            where("status", "==", "agendado"),
-            where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
-            where("horario", "<=", Timestamp.fromDate(fimDoDia))
-        );
+      const inicioDoDia = new Date(`${dataSelecionada}T00:00:00.000Z`);
+      const fimDoDia = new Date(`${dataSelecionada}T23:59:59.999Z`);
+      const colecao = collection(db, "empresarios", empresaId, "agendamentos");
+      const q = query(colecao,
+        where("status", "==", "agendado"),
+        where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
+        where("horario", "<=", Timestamp.fromDate(fimDoDia))
+      );
+      const snapshot = await getDocs(q);
+      const agora = new Date();
+      const agendamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const agendamentosFuturos = agendamentos.filter(ag => ag.horario.toDate() >= agora);
 
-        const snapshot = await getDocs(q);
-        const agendamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderizarAgendamentos(agendamentos);
+      if (agendamentosFuturos.length > 0) {
+        renderizarAgendamentos(agendamentosFuturos);
+      } else {
+        const proximaData = await encontrarProximaDataComAgendamentos(empresaId);
+        if (proximaData) {
+          inputData.value = proximaData;
+          await carregarOuAvancarAgendamentos(empresaId);
+          showAlert("Aviso", `Não há horários ativos futuros para a data selecionada. Mostrando agendamentos do próximo dia disponível: ${proximaData}`);
+        } else {
+          listaAgendamentos.innerHTML = `<p>Nenhum agendamento ativo futuro encontrado nos próximos dias.</p>`;
+        }
+      }
     } catch (error) {
-        console.error("Erro ao carregar agendamentos:", error);
-        listaAgendamentos.innerHTML = '<p>Ocorreu um erro ao carregar os agendamentos. Verifique suas regras de segurança do Firestore.</p>';
+      console.error("Erro ao carregar agendamentos:", error);
+      listaAgendamentos.innerHTML = '<p>Ocorreu um erro ao carregar os agendamentos. Verifique suas regras de segurança do Firestore.</p>';
     }
   }
   
@@ -105,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
         div.className = "agendamento-item";
         div.innerHTML = `
           <h3>${ag.servicoNome || ag.servicoDescricao || 'Serviço não informado'}</h3>
-          <p><strong>Profissional:</strong> ${ag.profissionalNome || 'Não informado'}</p>
+          <p><strong>Funcionário:</strong> ${ag.profissionalNome || 'Não informado'}</p>
           <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p> 
           <p><strong>Horário:</strong> ${formatarDataCompleta(ag.horario)}</p>
         `;
@@ -123,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const agendamentoRef = doc(db, "empresarios", empresaId, "agendamentos", agendamentoId);
           await deleteDoc(agendamentoRef);
           await showAlert("Sucesso", "Registro removido com sucesso!");
-          carregarAgendamentos(empresaId);
+          carregarOuAvancarAgendamentos(empresaId);
       } catch (error) {
           console.error("Erro ao excluir agendamento:", error);
           await showAlert("Erro", "Erro ao remover registro.");
@@ -140,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const agendamentoRef = doc(db, "empresarios", empresaId, "agendamentos", agendamentoId);
           await updateDoc(agendamentoRef, { status: 'agendado' });
           await showAlert("Sucesso", "Agendamento reativado com sucesso!");
-          carregarAgendamentos(empresaId);
+          carregarOuAvancarAgendamentos(empresaId);
       } catch (error) {
           console.error("Erro ao reativar agendamento:", error);
           await showAlert("Erro", "Erro ao reativar.");
@@ -159,9 +204,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 hoje.setMinutes(hoje.getMinutes() - hoje.getTimezoneOffset());
                 inputData.value = hoje.toISOString().split("T")[0];
             }
-            carregarAgendamentos(currentEmpresaId);
+            carregarOuAvancarAgendamentos(currentEmpresaId);
             if (inputData) {
-                inputData.addEventListener("change", () => carregarAgendamentos(currentEmpresaId));
+                inputData.addEventListener("change", () => carregarOuAvancarAgendamentos(currentEmpresaId));
             }
         } else {
              if(listaAgendamentos) listaAgendamentos.innerHTML = "<p>Você não parece ser o dono de nenhuma empresa cadastrada.</p>"
