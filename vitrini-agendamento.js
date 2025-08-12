@@ -1,10 +1,16 @@
-// vitrini-agendamento.js
-
 import { db } from './firebase-config.js';
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+    collection,
+    query,
+    where,
+    getDocs,
+    addDoc,
+    doc,
+    updateDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- Funções Auxiliares de Tempo ---
-
 function timeStringToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
@@ -27,7 +33,11 @@ function minutesToTimeString(totalMinutes) {
 export async function buscarAgendamentosDoDia(empresaId, data) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
-        const q = query(agendamentosRef, where("data", "==", data), where("status", "==", "ativo"));
+        const q = query(
+            agendamentosRef,
+            where("data", "==", data),
+            where("status", "==", "ativo")
+        );
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
@@ -165,13 +175,15 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         // Se erro de índice, mostra instrução clara para o dev/admin
-        if (error.code === "failed-precondition" && error.message.indexOf("index") !== -1) {
+        if (
+            error.name === "FirebaseError" &&
+            error.message.includes("The query requires an index") &&
+            error.message.includes("firestore/indexes?create_composite=")
+        ) {
             const link = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s"]+/)?.[0];
             alert(
                 "Sua consulta precisa de um índice no Firestore.\n\n" +
-                "Clique no link abaixo para criar o índice:\n" +
-                link +
-                "\n\nDepois de criado, recarregue a página."
+                (link ? `Clique para criar o índice:\n${link}\n\nDepois de criar, recarregue a página.` : "Copie o link do erro para criar o índice no Firebase.")
             );
         }
         console.error("Erro ao buscar agendamentos do cliente:", error);
