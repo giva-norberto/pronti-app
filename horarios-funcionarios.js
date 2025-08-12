@@ -19,7 +19,6 @@ let empresaId = null;
 let profissionalId = null;
 let horariosRef = null;
 
-// Inicialização segura: aguarda autenticação e carrega dados quando DOM está pronto
 window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -33,6 +32,8 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
     profissionalId = user.uid;
+
+    // Caminho correto: subcoleção 'configuracoes' > documento 'horarios'
     horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
 
     gerarEstruturaDosDias();
@@ -47,7 +48,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Busca o ID da empresa do usuário logado
+ * Busca o ID da empresa do usuário logado (dono)
  */
 async function getEmpresaIdDoDono(uid) {
   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
@@ -170,6 +171,7 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
 
 /**
  * Trata o submit do formulário e grava os horários no Firestore
+ * (sempre em 'configuracoes/horarios', nunca como campo do profissional!)
  */
 async function handleFormSubmit(event) {
   event.preventDefault();
@@ -194,6 +196,7 @@ async function handleFormSubmit(event) {
   });
 
   try {
+    // Salva no caminho correto: subcoleção 'configuracoes' > documento 'horarios'
     await setDoc(horariosRef, horariosData, { merge: true });
     alert("Horários salvos com sucesso!");
   } catch (err) {
