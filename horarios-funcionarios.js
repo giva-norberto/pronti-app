@@ -26,16 +26,26 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    empresaId = await getEmpresaIdDoDono(user.uid);
-    if (!empresaId) {
-      alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
-      return;
-    }
+    // LOG: UID do profissional
+    console.log('UID do usuário logado (profissionalId):', user.uid);
     profissionalId = user.uid;
 
-    // Caminho correto: subcoleção 'configuracoes' > documento 'horarios'
-    horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+    empresaId = await getEmpresaIdDoDono(user.uid);
+    // LOG: empresaId encontrado
+    console.log('ID da empresa encontrado (empresaId):', empresaId);
 
+    if (!empresaId) {
+      alert("Empresa não encontrada. Verifique se o seu usuário está corretamente associado a uma empresa.");
+      console.error("Não foi possível encontrar o empresaId para o UID:", user.uid);
+      return;
+    }
+
+    // Referência correta
+    horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+    // LOG: caminho completo da referência
+    console.log('Caminho completo da referência do Firestore:', horariosRef.path);
+
+    // Continuação do fluxo
     gerarEstruturaDosDias();
     await carregarHorarios();
 
@@ -171,7 +181,6 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
 
 /**
  * Trata o submit do formulário e grava os horários no Firestore
- * (sempre em 'configuracoes/horarios', nunca como campo do profissional!)
  */
 async function handleFormSubmit(event) {
   event.preventDefault();
@@ -196,7 +205,9 @@ async function handleFormSubmit(event) {
   });
 
   try {
-    // Salva no caminho correto: subcoleção 'configuracoes' > documento 'horarios'
+    // LOG: dados que serão salvos
+    console.log('Dados que serão salvos em horariosRef:', horariosData);
+
     await setDoc(horariosRef, horariosData, { merge: true });
     alert("Horários salvos com sucesso!");
   } catch (err) {
