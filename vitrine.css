@@ -1,34 +1,44 @@
 /* =============================================== */
-/* ESTILOS GERAIS E LAYOUT                         */
+/* ESTILOS GERAIS E LAYOUT                           */
 /* =============================================== */
 body {
     font-family: 'Poppins', sans-serif;
     background-color: #F3F4F6; /* Cor de fundo suave */
+    color: #374151;
+    margin: 0;
 }
 
 .vitrine-container {
     display: flex;
     max-width: 1200px;
     margin: 30px auto;
-    gap: 20px;
+    gap: 30px;
     padding: 0 15px;
 }
 
 .sidebar-vitrine {
     width: 280px;
     flex-shrink: 0;
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    align-self: flex-start;
 }
 
 .main-content-vitrine {
     flex-grow: 1;
 }
 
-/* Corrige bug de display que trava menus/abas */
-.menu-content { display: none !important; }
-.menu-content.ativo { display: block !important; }
+/* --- CORREÇÃO IMPORTANTE --- */
+/* Remove o "!important" para garantir que o JS consiga controlar a visibilidade das abas sem conflitos. */
+.menu-content { display: none; }
+.menu-content.ativo { display: block; }
+/* --- FIM DA CORREÇÃO --- */
+
 
 /* =============================================== */
-/* CABEÇALHO E MENU LATERAL                        */
+/* CABEÇALHO E MENU LATERAL                          */
 /* =============================================== */
 .header-vitrine {
     text-align: center;
@@ -37,7 +47,7 @@ body {
     border-bottom: 1px solid #E5E7EB;
 }
 
-.header-vitrine img {
+#logo-publico {
     width: 100px;
     height: 100px;
     border-radius: 50%;
@@ -45,9 +55,10 @@ body {
     margin-bottom: 10px;
 }
 
-.header-vitrine h1 {
+#nome-negocio-publico {
     font-size: 1.4rem;
     color: #111827;
+    margin: 0;
 }
 
 .sidebar-menu .menu-btn {
@@ -83,23 +94,18 @@ body {
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
-    transition: all 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .card h2 {
     font-size: 1.5rem;
+    margin-top: 0;
     margin-bottom: 20px;
     padding-bottom: 15px;
     border-bottom: 1px solid #E5E7EB;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .form-group label {
@@ -107,7 +113,7 @@ body {
     font-weight: 600;
     font-size: 1.1rem;
     color: #374151;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 input[type="date"] {
@@ -116,16 +122,16 @@ input[type="date"] {
     border: 1px solid #D1D5DB;
     border-radius: 8px;
     font-size: 1rem;
+    box-sizing: border-box;
 }
 
 /* =============================================== */
-/* SELEÇÃO DE PROFISSIONAIS                        */
+/* SELEÇÃO DE PROFISSIONAIS                         */
 /* =============================================== */
 .profissionais-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 15px;
-    margin-top: 10px;
 }
 
 .card-profissional {
@@ -134,21 +140,21 @@ input[type="date"] {
     padding: 15px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     background: #fff;
 }
 
 .card-profissional:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.07);
     border-color: #A5B4FC;
 }
 
 .card-profissional.selecionado {
     border-color: #4F46E5;
     background-color: #EEF2FF;
-    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.15);
-    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.1);
+    transform: translateY(-3px);
 }
 
 .card-profissional img {
@@ -156,8 +162,7 @@ input[type="date"] {
     height: 70px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 12px;
-    border: 2px solid white;
+    margin-bottom: 10px;
 }
 
 .card-profissional h3 {
@@ -174,27 +179,40 @@ input[type="date"] {
 }
 
 /* =============================================== */
-/* BOTÕES DE SELEÇÃO (SERVIÇOS E HORÁRIOS)         */
+/* SELEÇÃO DE SERVIÇOS E HORÁRIOS                   */
 /* =============================================== */
-.servicos-container-cards { display: flex; flex-wrap: wrap; gap: 8px; }
-.servicos-container-cards .service-item {
-    background-color: white;
-    border: 1px solid #D1D5DB;
-    color: #4B5563;
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 14px;
-}
-.servicos-container-cards .service-item.selecionado {
-    background-color: #6D28D9;
-    color: white;
-    border-color: #6D28D9;
+.servicos-container-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
+.card-servico {
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.card-servico:hover {
+    border-color: #C7D2FE;
+    background-color: #EEF2FF;
+}
+.card-servico.selecionado {
+    border-color: #4F46E5;
+    background-color: #4F46E5;
+    color: white;
+}
+.servico-nome { font-weight: 600; }
+.servico-detalhes { font-size: 0.9rem; }
+.card-servico.selecionado .servico-detalhes { color: #E0E7FF; }
+
 .horarios-container-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
-.horarios-container-grid .btn-horario {
+.btn-horario {
     background-color: white;
     border: 1px solid #D1D5DB;
     color: #4B5563;
@@ -203,21 +221,24 @@ input[type="date"] {
     cursor: pointer;
     text-align: center;
     transition: all 0.2s ease;
+    font-weight: 600;
 }
-.horarios-container-grid .btn-horario:hover:not(.selecionado) {
-    border-color: #9CA3AF;
+.btn-horario:hover:not(.selecionado) {
+    border-color: #4F46E5;
+    color: #4F46E5;
 }
-.horarios-container-grid .btn-horario.selecionado {
+.btn-horario.selecionado {
     background-color: #4F46E5;
     border-color: #4F46E5;
     color: white;
-    font-weight: 600;
 }
+.aviso-horarios { color: #6B7280; text-align: center; padding: 10px; }
+
 
 /* =============================================== */
-/* BOTÕES DE AÇÃO PRINCIPAIS                       */
+/* BOTÕES DE AÇÃO E OUTROS                         */
 /* =============================================== */
-#btn-confirmar-agendamento, .btn-submit {
+.btn-submit {
     background: linear-gradient(to right, #8B5CF6, #EC4899);
     color: white;
     border: none;
@@ -231,32 +252,49 @@ input[type="date"] {
     transition: all 0.3s ease;
     margin-top: 1rem;
 }
-
-#btn-confirmar-agendamento:hover:not(:disabled), .btn-submit:hover {
+.btn-submit:hover {
     opacity: 0.9;
     transform: translateY(-2px);
 }
 
+#btn-confirmar-agendamento {
+    background: #10B981; /* Verde para confirmação */
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+#btn-confirmar-agendamento:hover:not(:disabled) {
+    background: #059669;
+}
 #btn-confirmar-agendamento:disabled {
     background: #E5E7EB;
     color: #9CA3AF;
     cursor: not-allowed;
-    transform: translateY(0);
-    opacity: 1;
+    transform: none;
+}
+.btn-secondary {
+    /* Estilo para botões secundários, como 'Sair' */
 }
 
+
 /* =============================================== */
-/* ABA "MEUS AGENDAMENTOS"                         */
+/* ABA "MEUS AGENDAMENTOS"                           */
 /* =============================================== */
 .botoes-agendamento {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
-    align-items: center;
 }
 .botoes-agendamento .btn-toggle {
-    background: none;
-    border: 1px solid #D1D5DB;
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
     padding: 10px;
     cursor: pointer;
     font-weight: 600;
@@ -266,19 +304,18 @@ input[type="date"] {
     flex-grow: 1;
 }
 .botoes-agendamento .btn-toggle.ativo {
-    background: linear-gradient(to right, #8B5CF6, #EC4899);
+    background: #4F46E5;
     color: white;
-    border-color: transparent;
+    border-color: #4F46E5;
 }
 
 .lista-agendamentos-resultado {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-top: 20px;
 }
 .agendamento-card {
-    background-color: #F9FAFB;
+    background-color: white;
     border: 1px solid #E5E7EB;
     border-left: 5px solid #4F46E5;
     border-radius: 8px;
@@ -288,11 +325,10 @@ input[type="date"] {
     align-items: center;
     gap: 20px;
 }
-.agendamento-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+.agendamento-card.status-cancelado_pelo_cliente { border-left-color: #EF4444; }
+.agendamento-card.status-concluido { border-left-color: #10B981; }
+
+.agendamento-info { display: flex; flex-direction: column; gap: 4px; }
 .agendamento-info h4 { margin: 0; font-size: 1.1rem; color: #111827; }
 .agendamento-info p { margin: 0; color: #6B7280; font-size: 0.9rem; }
 .agendamento-acao .btn-cancelar {
@@ -307,13 +343,14 @@ input[type="date"] {
 }
 .agendamento-acao .btn-cancelar:hover { background-color: #DC2626; }
 
+
 /* =============================================== */
 /* MODAL DE CONFIRMAÇÃO                            */
 /* =============================================== */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(17, 24, 39, 0.6);
     display: flex; justify-content: center; align-items: center;
     z-index: 1000;
     opacity: 0; visibility: hidden;
@@ -327,12 +364,12 @@ input[type="date"] {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     width: 90%; max-width: 400px;
     text-align: center;
-    transform: scale(0.9);
+    transform: translateY(20px) scale(0.95);
     transition: transform 0.3s ease;
 }
-.modal-overlay.ativo .modal-box { transform: scale(1); }
-.modal-box h3 { margin-top: 0; margin-bottom: 15px; color: #4F46E5; }
-.modal-box p { margin-bottom: 25px; color: #4B5563; }
+.modal-overlay.ativo .modal-box { transform: translateY(0) scale(1); }
+.modal-box h3 { margin-top: 0; margin-bottom: 15px; color: #111827; }
+.modal-box p { margin-bottom: 25px; color: #4B5563; line-height: 1.6; }
 .modal-botoes { display: flex; justify-content: center; gap: 15px; }
 .modal-botoes button { border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; }
 #modal-btn-confirmar { background-color: #EF4444; color: white; }
@@ -340,27 +377,15 @@ input[type="date"] {
 #modal-btn-cancelar { background-color: #E5E7EB; color: #4B5563; }
 #modal-btn-cancelar:hover { background-color: #D1D5DB; }
 
-/* =============================================== */
-/* RESPONSIVIDADE                                  */
-/* =============================================== */
-@media (max-width: 768px) {
-    .vitrine-container {
-        flex-direction: column;
-    }
-    .sidebar-vitrine {
-        width: 100%;
-    }
-}
-/* =============================================== */
-/* [CORREÇÃO] ESTILOS PARA CARDS DE SERVIÇOS (ABA INFO) */
-/* =============================================== */
 
+/* =============================================== */
+/* ABA DE INFORMAÇÕES - SERVIÇOS                     */
+/* =============================================== */
 #info-servicos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 15px;
 }
-
 .servico-info-card {
     background-color: #F9FAFB;
     border: 1px solid #E5E7EB;
@@ -369,85 +394,24 @@ input[type="date"] {
     text-align: center;
     transition: all 0.2s ease;
 }
-
 .servico-info-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-color: #D1D5DB;
 }
+.servico-info-card h4 { margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: #1F2937; }
+.servico-info-card .servico-card-footer { display: flex; justify-content: space-around; margin-top: 15px; color: #4F46E5; font-weight: 600;}
 
-.servico-info-card h4 {
-    margin: 0 0 8px 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #4F46E5;
-}
-
-.servico-info-card p {
-    margin: 4px 0;
-    color: #6B7280;
-    font-size: 0.9rem;
-}
 
 /* =============================================== */
-/* [NOVOS] CARDS DE SERVIÇOS (PADRÃO PRONTI/SELEÇÃO) */
+/* RESPONSIVIDADE                                  */
 /* =============================================== */
-.service-item-card {
-    background: linear-gradient(95deg, #eef2ff 60%, #f3f4f6 100%);
-    border: 2px solid #e0e7ff;
-    border-radius: 14px;
-    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.07);
-    padding: 18px 16px;
-    margin: 0 0 12px 0;
-    cursor: pointer;
-    transition: all 0.18s ease;
-    display: flex;
-    flex-direction: column;
-}
-.service-item-card:hover:not(.selecionado) {
-    border-color: #4f46e5;
-    box-shadow: 0 6px 12px rgba(79, 70, 229, 0.13);
-    transform: translateY(-2px) scale(1.02);
-}
-.service-item-card.selecionado {
-    border-color: #8b5cf6;
-    background: linear-gradient(95deg, #ec4899 20%, #8b5cf6 100%);
-    color: #fff;
-    box-shadow: 0 10px 20px rgba(139, 92, 246, 0.12);
-    transform: scale(1.03);
-}
-.service-card-header {
-    display: flex; align-items: center; gap: 8px;
-}
-.service-card-header h4 {
-    margin: 0; font-size: 1.12rem; font-weight: 600;
-}
-.service-icon {
-    font-size: 1.4rem;
-}
-.service-desc {
-    margin: 7px 0 10px 0;
-    font-size: 0.98rem;
-    color: #6b7280;
-}
-.service-item-card.selecionado .service-desc,
-.service-item-card.selecionado .service-duracao,
-.service-item-card.selecionado .service-preco {
-    color: #fff;
-}
-.service-card-footer {
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 0.97rem;
-}
-.service-duracao, .service-preco {
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 7px;
-    background: #eef2ff;
-    color: #4f46e5;
-}
-.service-item-card.selecionado .service-duracao,
-.service-item-card.selecionado .service-preco {
-    background: rgba(255,255,255,0.19);
-    color: #fff;
+@media (max-width: 768px) {
+    .vitrine-container {
+        flex-direction: column;
+        margin: 15px auto;
+    }
+    .sidebar-vitrine {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
