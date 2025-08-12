@@ -1,5 +1,16 @@
 // vitrine.js - Fluxo do cliente com dados reais de empresa, profissionais, serviços e horários
 
+// IMPORTANTE: Certifique-se de importar/definir as funções auxiliares abaixo em outro arquivo JS ou neste mesmo!
+/*
+import { 
+    getEmpresaIdFromURL, 
+    getDadosEmpresa, 
+    getProfissionaisDaEmpresa, 
+    getServicosDoProfissional, 
+    getHorariosDoProfissional 
+} from './vitrine-helpers.js';
+*/
+
 let empresaId = null;
 let dadosEmpresa = {};
 let listaProfissionais = [];
@@ -8,50 +19,62 @@ let agendamentoState = { data: null, horario: null, servico: null, profissional:
 
 async function init() {
     try {
-        document.getElementById('agendamento-form-container').style.display = 'none';
+        const agendamentoFormContainer = document.getElementById('agendamento-form-container');
+        if (agendamentoFormContainer) agendamentoFormContainer.style.display = 'none';
 
-        empresaId = getEmpresaIdFromURL();
+        empresaId = typeof getEmpresaIdFromURL === "function" ? getEmpresaIdFromURL() : null;
         if (!empresaId) throw new Error("URL inválida: ID da empresa não encontrado.");
 
-        dadosEmpresa = await getDadosEmpresa(empresaId);
+        dadosEmpresa = typeof getDadosEmpresa === "function" ? await getDadosEmpresa(empresaId) : null;
         if (!dadosEmpresa) throw new Error("Empresa não encontrada.");
 
         renderizarDadosEmpresa(dadosEmpresa);
 
         // Carrega profissionais da empresa
-        listaProfissionais = await getProfissionaisDaEmpresa(empresaId);
+        listaProfissionais = typeof getProfissionaisDaEmpresa === "function" ? await getProfissionaisDaEmpresa(empresaId) : [];
 
         // Para cada profissional, carrega serviços e horários
         for (const prof of listaProfissionais) {
-            prof.servicos = await getServicosDoProfissional(empresaId, prof.id);
-            prof.horarios = await getHorariosDoProfissional(empresaId, prof.id);
+            prof.servicos = typeof getServicosDoProfissional === "function" 
+                ? await getServicosDoProfissional(empresaId, prof.id) : [];
+            prof.horarios = typeof getHorariosDoProfissional === "function" 
+                ? await getHorariosDoProfissional(empresaId, prof.id) : {};
         }
 
         renderizarInformacoesDaEmpresa(dadosEmpresa, listaProfissionais);
 
         const containerProfissionais = document.getElementById('lista-profissionais');
-        if (listaProfissionais.length === 0) {
-            containerProfissionais.innerHTML = "<p>Nenhum profissional cadastrado no momento.</p>";
-        } else {
-            renderizarProfissionais(listaProfissionais, containerProfissionais, selecionarProfissional);
+        if (containerProfissionais) {
+            if (listaProfissionais.length === 0) {
+                containerProfissionais.innerHTML = "<p>Nenhum profissional cadastrado no momento.</p>";
+            } else {
+                renderizarProfissionais(listaProfissionais, containerProfissionais, selecionarProfissional);
+            }
         }
 
         configurarEventosGerais();
 
-        document.getElementById("vitrine-loader").style.display = 'none';
-        document.getElementById("vitrine-content").style.display = 'flex';
+        const vitrineLoader = document.getElementById("vitrine-loader");
+        const vitrineContent = document.getElementById("vitrine-content");
+        if (vitrineLoader) vitrineLoader.style.display = 'none';
+        if (vitrineContent) vitrineContent.style.display = 'flex';
 
     } catch (error) {
         console.error("Erro na inicialização:", error);
-        document.getElementById("vitrine-loader").innerHTML = `<p style="color:red; text-align: center;">${error.message}</p>`;
+        const vitrineLoader = document.getElementById("vitrine-loader");
+        if (vitrineLoader) {
+            vitrineLoader.innerHTML = `<p style="color:red; text-align: center;">${error.message}</p>`;
+        }
     }
 }
 
 function renderizarDadosEmpresa(empresa) {
     document.title = empresa.nomeFantasia || "Agendamento Online";
-    document.getElementById('nome-negocio-publico').textContent = empresa.nomeFantasia || "Nome do Negócio";
+    const nomeNegocio = document.getElementById('nome-negocio-publico');
+    if (nomeNegocio) nomeNegocio.textContent = empresa.nomeFantasia || "Nome do Negócio";
     if (empresa.logoUrl) {
-        document.getElementById('logo-publico').src = empresa.logoUrl;
+        const logo = document.getElementById('logo-publico');
+        if (logo) logo.src = empresa.logoUrl;
     }
 }
 
@@ -59,7 +82,9 @@ function renderizarInformacoesDaEmpresa(empresa, profissionais) {
     const infoNegocioDiv = document.getElementById('info-negocio');
     const infoServicosDiv = document.getElementById('info-servicos');
     if (infoNegocioDiv) {
-        infoNegocioDiv.innerHTML = empresa.descricao ? `<p>${empresa.descricao}</p>` : `<p>Bem-vindo! Utilize a aba "Agendar" para marcar seu horário.</p>`;
+        infoNegocioDiv.innerHTML = empresa.descricao 
+            ? `<p>${empresa.descricao}</p>` 
+            : `<p>Bem-vindo! Utilize a aba "Agendar" para marcar seu horário.</p>`;
     }
     if (infoServicosDiv) {
         const todosOsServicos = new Map();
@@ -108,7 +133,8 @@ async function selecionarProfissional(profissional) {
     const cardSel = document.querySelector(`.card-profissional[data-id="${profissional.id}"]`);
     if (cardSel) cardSel.classList.add('selecionado');
 
-    document.getElementById('agendamento-form-container').style.display = 'block';
+    const agendamentoFormContainer = document.getElementById('agendamento-form-container');
+    if (agendamentoFormContainer) agendamentoFormContainer.style.display = 'block';
 
     renderizarServicos(
         profissionalSelecionado.servicos || [],
@@ -119,13 +145,21 @@ async function selecionarProfissional(profissional) {
     agendamentoState.servico = null;
     agendamentoState.data = null;
     agendamentoState.horario = null;
-    document.getElementById('data-agendamento').value = '';
-    document.getElementById('data-agendamento').disabled = true;
-    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um serviço para prosseguir.</p>';
+
+    const dataAgendamentoInput = document.getElementById('data-agendamento');
+    if (dataAgendamentoInput) {
+        dataAgendamentoInput.value = '';
+        dataAgendamentoInput.disabled = true;
+        dataAgendamentoInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    }
+
+    const gradeHorarios = document.getElementById('grade-horarios');
+    if (gradeHorarios) gradeHorarios.innerHTML = '<p class="aviso-horarios">Selecione um serviço para prosseguir.</p>';
     updateConfirmButtonState();
 }
 
 function renderizarServicos(servicos, container, callback) {
+    if (!container) return;
     container.innerHTML = servicos.length > 0
         ? servicos.map(s => `<div class="card-servico" data-id="${s.id}">${s.nome} - ${s.duracao || 'N/A'}min - R$${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</div>`).join('')
         : '<p>Nenhum serviço cadastrado para este profissional.</p>';
@@ -143,11 +177,14 @@ function selecionarServico(servico) {
     agendamentoState.data = null;
 
     const dataInput = document.getElementById('data-agendamento');
-    dataInput.value = '';
-    dataInput.disabled = false;
-    dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    if (dataInput) {
+        dataInput.value = '';
+        dataInput.disabled = false;
+        dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    }
 
-    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione uma data para ver os horários disponíveis.</p>';
+    const gradeHorarios = document.getElementById('grade-horarios');
+    if (gradeHorarios) gradeHorarios.innerHTML = '<p class="aviso-horarios">Selecione uma data para ver os horários disponíveis.</p>';
     updateConfirmButtonState();
 }
 
@@ -159,47 +196,58 @@ function updateConfirmButtonState() {
 }
 
 function configurarEventosGerais() {
-    document.getElementById('data-agendamento')?.addEventListener('change', async (e) => {
-        agendamentoState.data = e.target.value;
-        agendamentoState.horario = null;
-        const horariosContainer = document.getElementById('grade-horarios');
-        horariosContainer.innerHTML = '';
+    const dataAgendamentoInput = document.getElementById('data-agendamento');
+    if (dataAgendamentoInput) {
+        dataAgendamentoInput.addEventListener('change', async (e) => {
+            agendamentoState.data = e.target.value;
+            agendamentoState.horario = null;
+            const horariosContainer = document.getElementById('grade-horarios');
+            if (horariosContainer) horariosContainer.innerHTML = '';
 
-        if (!profissionalSelecionado || !agendamentoState.servico || !agendamentoState.data) {
-            horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione serviço e data.</p>';
-            return;
-        }
+            if (!profissionalSelecionado || !agendamentoState.servico || !agendamentoState.data) {
+                if (horariosContainer) horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione serviço e data.</p>';
+                return;
+            }
 
-        // Exemplo de horários disponíveis (pode ser customizado conforme regras do seu sistema)
-        const horariosConfig = profissionalSelecionado.horarios || {};
-        const listaHorarios = horariosConfig[agendamentoState.data] || horariosConfig["horariosPadrao"] || [];
-        if (listaHorarios.length > 0) {
-            horariosContainer.innerHTML = listaHorarios.map(horario =>
-                `<button class="btn-horario">${horario}</button>`
-            ).join('');
-        } else {
-            horariosContainer.innerHTML = `<p>Nenhum horário disponível para este dia.</p>`;
-        }
-        updateConfirmButtonState();
-    });
-
-    document.getElementById('grade-horarios')?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-horario')) {
-            document.querySelectorAll('.btn-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
-            e.target.classList.add('selecionado');
-            agendamentoState.horario = e.target.textContent;
+            // Exemplo de horários disponíveis (pode ser customizado conforme regras do seu sistema)
+            const horariosConfig = profissionalSelecionado.horarios || {};
+            const listaHorarios = horariosConfig[agendamentoState.data] || horariosConfig["horariosPadrao"] || [];
+            if (horariosContainer) {
+                if (listaHorarios.length > 0) {
+                    horariosContainer.innerHTML = listaHorarios.map(horario =>
+                        `<button class="btn-horario">${horario}</button>`
+                    ).join('');
+                } else {
+                    horariosContainer.innerHTML = `<p>Nenhum horário disponível para este dia.</p>`;
+                }
+            }
             updateConfirmButtonState();
-        }
-    });
+        });
+    }
 
-    document.getElementById('btn-confirmar-agendamento')?.addEventListener('click', async () => {
-        if (!agendamentoState.profissional || !agendamentoState.servico || !agendamentoState.data || !agendamentoState.horario) {
-            alert("Preencha todos os campos para agendar!");
-            return;
-        }
-        // Aqui você pode salvar o agendamento no Firestore se desejar!
-        alert(`Agendamento confirmado:\n${agendamentoState.servico.nome} - ${agendamentoState.profissional.nome} - ${agendamentoState.data} - ${agendamentoState.horario}`);
-    });
+    const gradeHorarios = document.getElementById('grade-horarios');
+    if (gradeHorarios) {
+        gradeHorarios.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-horario')) {
+                document.querySelectorAll('.btn-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
+                e.target.classList.add('selecionado');
+                agendamentoState.horario = e.target.textContent;
+                updateConfirmButtonState();
+            }
+        });
+    }
+
+    const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
+    if (btnConfirmarAgendamento) {
+        btnConfirmarAgendamento.addEventListener('click', async () => {
+            if (!agendamentoState.profissional || !agendamentoState.servico || !agendamentoState.data || !agendamentoState.horario) {
+                alert("Preencha todos os campos para agendar!");
+                return;
+            }
+            // Aqui você pode salvar o agendamento no Firestore se desejar!
+            alert(`Agendamento confirmado:\n${agendamentoState.servico.nome} - ${agendamentoState.profissional.nome} - ${agendamentoState.data} - ${agendamentoState.horario}`);
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);
