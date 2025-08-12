@@ -1,11 +1,10 @@
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Use nomes completos para garantir compatibilidade com o backend!
 const diasDaSemana = [
   { id: 'segunda', nome: 'Segunda-feira' },
   { id: 'terca', nome: 'Terça-feira' },
@@ -17,7 +16,8 @@ const diasDaSemana = [
 ];
 
 let empresaId = null;
-let profissionalRef = null;
+let profissionalId = null;
+let horariosRef = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, async (user) => {
@@ -27,18 +27,16 @@ window.addEventListener('DOMContentLoaded', () => {
         alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
         return;
       }
-      profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+      profissionalId = user.uid;
+      horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
       gerarEstruturaDosDias();
       await carregarHorarios();
       const form = document.getElementById('form-horarios');
       if (form) form.addEventListener('submit', handleFormSubmit);
 
-      // Botão voltar fecha modal (caso exista modal, ajuste para sua lógica)
       const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
       if (btnVoltar) {
         btnVoltar.onclick = () => {
-          // Coloque aqui a lógica para fechar o modal
-          // Exemplo: document.getElementById('modal-perfil-profissional').style.display = "none";
           window.history.back();
         }
       }
@@ -56,14 +54,17 @@ async function getEmpresaIdDoDono(uid) {
 }
 
 async function carregarHorarios() {
-  if (!profissionalRef) { console.warn("profissionalRef não existe"); return; }
-  const snap = await getDoc(profissionalRef);
-  if (!snap.exists()) { console.warn("Snap não existe"); return; }
-  const { horarios = {}, intervalo = 30 } = snap.data();
-  console.log("Horários carregados:", horarios);
-
+  if (!horariosRef) { console.warn("horariosRef não existe"); return; }
+  const snap = await getDoc(horariosRef);
+  let horarios = {};
+  let intervalo = 30;
+  if (snap.exists()) {
+    const data = snap.data();
+    horarios = data || {};
+    intervalo = horarios.intervalo || 30;
+  }
   const intervaloInput = document.getElementById("intervalo-atendimento");
-  if (intervaloInput) intervaloInput.value = horarios.intervalo || intervalo || 30;
+  if (intervaloInput) intervaloInput.value = intervalo;
 
   diasDaSemana.forEach(dia => {
     const diaData = horarios[dia.id] || {};
@@ -109,7 +110,6 @@ function gerarEstruturaDosDias() {
     `;
     diasContainer.appendChild(divDia);
 
-    // Listener do toggle ativo
     const ativoInput = divDia.querySelector(`#${dia.id}-ativo`);
     if (ativoInput) {
       ativoInput.addEventListener('change', (e) => {
@@ -126,7 +126,6 @@ function gerarEstruturaDosDias() {
     }
   });
 
-  // Listener para adicionar horários
   diasContainer.addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-add-slot')) {
       adicionarBlocoDeHorario(e.target.dataset.dia);
@@ -180,9 +179,8 @@ async function handleFormSubmit(event) {
     horariosData[dia.id] = { ativo: estaAtivo, blocos: blocos };
   });
 
-  console.log("Dados a salvar:", horariosData);
   try {
-    await setDoc(profissionalRef, { horarios: horariosData }, { merge: true });
+    await setDoc(horariosRef, horariosData, { merge: true });
     alert("Horários salvos com sucesso!");
   } catch (err) {
     console.error("Erro ao salvar:", err);
