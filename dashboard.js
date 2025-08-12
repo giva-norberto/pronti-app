@@ -2,20 +2,13 @@ import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Botão voltar para o menu principal (igual ao da equipe/vitrine, mantendo o formato visual do dashboard)
+// Botão voltar para o link principal do projeto
 window.addEventListener("DOMContentLoaded", () => {
   const btnVoltar = document.querySelector('.btn-voltar');
   if (btnVoltar) {
     btnVoltar.addEventListener('click', () => {
-      // Volta para o menu principal do dashboard (não apenas history.back)
-      // Remove 'ativo' de todos os menus e conteúdos
-      document.querySelectorAll('.sidebar-menu .menu-btn.ativo').forEach(el => el.classList.remove('ativo'));
-      document.querySelectorAll('.main-content-dashboard .menu-content.ativo').forEach(el => el.classList.remove('ativo'));
-      // Adiciona 'ativo' ao menu principal
-      const menuBtn = document.querySelector('.sidebar-menu .menu-btn[data-menu="principal"]');
-      if (menuBtn) menuBtn.classList.add('ativo');
-      const menuContent = document.getElementById('menu-principal');
-      if (menuContent) menuContent.classList.add('ativo');
+      // Redireciona para o link principal (ajuste conforme seu projeto)
+      window.location.href = "/"; // Exemplo: "/" ou "/index.html" ou "/dashboard"
     });
   }
 });
