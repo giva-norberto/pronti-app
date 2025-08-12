@@ -105,6 +105,7 @@ export async function buscarAgendamentosDoDia(empresaId, dataString) {
 
 /**
  * Função pura que calcula os slots de horário disponíveis.
+ * Respeita o campo "intervalo" de cada bloco.
  */
 export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico) {
     const slotsDisponiveis = [];
@@ -116,6 +117,8 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
         return [];
     }
     configDia.blocos.forEach(bloco => {
+        // Por padrão, intervalo = 15, mas respeita bloco.intervalo se existir
+        const intervaloMinutos = bloco.intervalo ? parseInt(bloco.intervalo) : 15;
         let slotAtual = new Date(`${data}T${bloco.inicio}:00`);
         const fimBloco = new Date(`${data}T${bloco.fim}:00`);
         while (slotAtual < fimBloco) {
@@ -125,7 +128,7 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
             if (!estaOcupado) {
                 slotsDisponiveis.push(slotAtual.toTimeString().substring(0, 5));
             }
-            slotAtual = new Date(slotAtual.getTime() + 15 * 60000); // Avança em intervalos de 15 min
+            slotAtual = new Date(slotAtual.getTime() + intervaloMinutos * 60000); // Avança pelo intervalo do bloco
         }
     });
     return slotsDisponiveis;
@@ -133,7 +136,8 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
 
 /**
  * Encontra a data atual com horários disponíveis, ou a próxima data disponível.
- * Se não houver slots nos próximos 90 dias, retorna a data atual (slots vazio).
+ * Busca em até 30 dias.
+ * Se não houver slots nos próximos 30 dias, retorna a data atual (slots vazio).
  * @param {string} empresaId - ID da empresa.
  * @param {object} profissional - O objeto completo do profissional selecionado.
  * @returns {Promise<{data: string, slots: string[]}>}
@@ -163,9 +167,9 @@ export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissiona
         }
     }
 
-    // Busca a próxima data até 90 dias
+    // Busca a próxima data até 30 dias
     let proximaData = null;
-    for (let i = 1; i < 90; i++) {
+    for (let i = 1; i < 30; i++) {
         let dataBusca = new Date(dataAtual);
         dataBusca.setDate(dataAtual.getDate() + i);
         const diaBusca = dataBusca.getDay();
