@@ -193,3 +193,16 @@ export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissiona
         return { data: dataISO, slots: [] };
     }
 }
+
+/**
+ * Mantém export da função antiga para compatibilidade.
+ * @returns {Promise<string|null>} Retorna apenas a data ou null se não houver slots.
+ */
+export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
+    const result = await encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional);
+    if (result && result.slots.length > 0) {
+        return result.data;
+    } else {
+        return null;
+    }
+}
