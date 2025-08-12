@@ -19,33 +19,36 @@ let empresaId = null;
 let profissionalId = null;
 let horariosRef = null;
 
+// Inicialização segura: aguarda autenticação e carrega dados quando DOM está pronto
 window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      empresaId = await getEmpresaIdDoDono(user.uid);
-      if (!empresaId) {
-        alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
-        return;
-      }
-      profissionalId = user.uid;
-      horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
-      gerarEstruturaDosDias();
-      await carregarHorarios();
-      const form = document.getElementById('form-horarios');
-      if (form) form.addEventListener('submit', handleFormSubmit);
-
-      const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
-      if (btnVoltar) {
-        btnVoltar.onclick = () => {
-          window.history.back();
-        }
-      }
-    } else {
+    if (!user) {
       window.location.href = 'login.html';
+      return;
     }
+
+    empresaId = await getEmpresaIdDoDono(user.uid);
+    if (!empresaId) {
+      alert("Empresa não encontrada. Por favor, complete o seu perfil primeiro.");
+      return;
+    }
+    profissionalId = user.uid;
+    horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+
+    gerarEstruturaDosDias();
+    await carregarHorarios();
+
+    const form = document.getElementById('form-horarios');
+    if (form) form.addEventListener('submit', handleFormSubmit);
+
+    const btnVoltar = document.getElementById('btn-voltar-modal-perfil');
+    if (btnVoltar) btnVoltar.onclick = () => window.history.back();
   });
 });
 
+/**
+ * Busca o ID da empresa do usuário logado
+ */
 async function getEmpresaIdDoDono(uid) {
   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
   const snapshot = await getDocs(q);
@@ -53,14 +56,16 @@ async function getEmpresaIdDoDono(uid) {
   return snapshot.docs[0].id;
 }
 
+/**
+ * Carrega os horários do Firestore e preenche o formulário
+ */
 async function carregarHorarios() {
   if (!horariosRef) { console.warn("horariosRef não existe"); return; }
   const snap = await getDoc(horariosRef);
   let horarios = {};
   let intervalo = 30;
   if (snap.exists()) {
-    const data = snap.data();
-    horarios = data || {};
+    horarios = snap.data() || {};
     intervalo = horarios.intervalo || 30;
   }
   const intervaloInput = document.getElementById("intervalo-atendimento");
@@ -85,6 +90,9 @@ async function carregarHorarios() {
   });
 }
 
+/**
+ * Gera a estrutura visual do formulário dos dias da semana
+ */
 function gerarEstruturaDosDias() {
   const diasContainer = document.getElementById("dias-container");
   if (!diasContainer) return;
@@ -133,6 +141,9 @@ function gerarEstruturaDosDias() {
   });
 }
 
+/**
+ * Adiciona um bloco de horário no dia selecionado
+ */
 function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
   const container = document.getElementById(`blocos-${diaId}`);
   if (!container) return;
@@ -157,6 +168,9 @@ function adicionarBlocoDeHorario(diaId, inicio = '09:00', fim = '18:00') {
   }
 }
 
+/**
+ * Trata o submit do formulário e grava os horários no Firestore
+ */
 async function handleFormSubmit(event) {
   event.preventDefault();
   const btnSalvar = document.querySelector('button[type="submit"]');
