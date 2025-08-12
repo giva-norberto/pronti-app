@@ -132,38 +132,64 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
 }
 
 /**
- * Encontra a primeira data com horários disponíveis para um PROFISSIONAL específico.
+ * Encontra a data atual com horários disponíveis, ou a próxima data disponível.
+ * Se não houver slots nos próximos 90 dias, retorna a data atual (slots vazio).
  * @param {string} empresaId - ID da empresa.
  * @param {object} profissional - O objeto completo do profissional selecionado.
- * @returns {Promise<string|null>} - A primeira data disponível no formato 'AAAA-MM-DD' ou nulo.
+ * @returns {Promise<{data: string, slots: string[]}>}
  */
-export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
+export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional) {
     if (!profissional?.horarios || !profissional?.servicos?.length) {
         console.warn("Profissional sem horários ou serviços configurados para encontrar data.");
         return null;
     }
-    // Usa a duração do primeiro serviço como base, ou um padrão de 30min
     const duracaoBase = profissional.servicos[0]?.duracao || 30;
     let dataAtual = new Date();
     dataAtual.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
-        const diaDaSemana = dataAtual.getDay(); // Corrigido: estava nomeDiaSemana
-        const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
-        const configDia = profissional.horarios[nomeDia];
+    // Tenta encontrar slots HOJE
+    const diaDaSemana = dataAtual.getDay();
+    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
+    const configDia = profissional.horarios[nomeDia];
 
-        if (configDia && configDia.ativo && configDia.blocos?.length > 0) {
-            const dataISO = dataAtual.toISOString().split('T')[0];
+    if (configDia && configDia.ativo && configDia.blocos?.length > 0) {
+        const dataISO = dataAtual.toISOString().split('T')[0];
+        const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
+        const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissional.id);
+        const slotsDisponiveis = calcularSlotsDisponiveis(dataISO, agendamentosDoProfissional, profissional.horarios, duracaoBase);
+
+        if (slotsDisponiveis.length > 0) {
+            return { data: dataISO, slots: slotsDisponiveis };
+        }
+    }
+
+    // Busca a próxima data até 90 dias
+    let proximaData = null;
+    for (let i = 1; i < 90; i++) {
+        let dataBusca = new Date(dataAtual);
+        dataBusca.setDate(dataAtual.getDate() + i);
+        const diaBusca = dataBusca.getDay();
+        const nomeBusca = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaBusca];
+        const configBusca = profissional.horarios[nomeBusca];
+
+        if (configBusca && configBusca.ativo && configBusca.blocos?.length > 0) {
+            const dataISO = dataBusca.toISOString().split('T')[0];
             const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
             const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissional.id);
             const slotsDisponiveis = calcularSlotsDisponiveis(dataISO, agendamentosDoProfissional, profissional.horarios, duracaoBase);
 
             if (slotsDisponiveis.length > 0) {
-                return dataISO; // Encontrou! Retorna a data.
+                proximaData = { data: dataISO, slots: slotsDisponiveis };
+                break;
             }
         }
-        dataAtual.setDate(dataAtual.getDate() + 1); // Vai para o próximo dia
     }
-    console.warn("Nenhuma data com slots encontrada nos próximos 90 dias.");
-    return null;
+
+    // Retorna próxima data disponível ou a data atual (sem slots)
+    if (proximaData) {
+        return proximaData;
+    } else {
+        const dataISO = dataAtual.toISOString().split('T')[0];
+        return { data: dataISO, slots: [] };
+    }
 }
