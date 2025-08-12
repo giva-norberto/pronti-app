@@ -1,5 +1,3 @@
-// vitrini-ui.js
-
 /**
  * Mostra ou esconde o loader inicial da página.
  * @param {boolean} mostrar - True para mostrar o loader, false para mostrar o conteúdo.
@@ -139,10 +137,27 @@ export function trocarAba(idDaAba) {
  * @param {string} id - O ID do item a ser selecionado.
  */
 export function selecionarCard(tipo, id) {
-    const seletor = `.card-${tipo}, .btn-${tipo}`;
+    let seletor;
+    switch(tipo) {
+        case 'profissional':
+            seletor = '.card-profissional';
+            break;
+        case 'servico':
+            seletor = '.card-servico';
+            break;
+        case 'horario':
+            seletor = '.btn-horario';
+            break;
+        default:
+            return;
+    }
     document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado'));
     if (id) {
-        document.querySelector(`${seletor}[data-id="${id}"], ${seletor}[data-horario="${id}"]`)?.classList.add('selecionado');
+        if (tipo === 'horario') {
+            document.querySelector(`${seletor}[data-horario="${id}"]`)?.classList.add('selecionado');
+        } else {
+            document.querySelector(`${seletor}[data-id="${id}"]`)?.classList.add('selecionado');
+        }
     }
 }
 
