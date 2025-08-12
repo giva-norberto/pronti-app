@@ -1,4 +1,4 @@
-// vitrine-profissionais.js
+// vitrine-profissionais.js//
 // Carregue SEMPRE DEPOIS dos scripts e inicialização do Firebase no HTML!
 
 function getSlugFromURL() {
