@@ -1,29 +1,30 @@
 // ======================================================================
 //                          EQUIPE.JS
-//          Lógica de horários CORRIGIDA para usar subcoleções
+//          VERSÃO COMPLETA E CORRIGIDA
+//          Implementa dias Ativo/Inativo e criação com dias desativados.
 // ======================================================================
 
 // Variáveis globais
 let db, auth, storage;
 let empresaId = null;
-let profissionalAtual = null; // Guarda o ID do profissional sendo editado
+let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 
-// Horários e intervalo padrão para NOVOS profissionais
+// NOVO: Horários base com dias INATIVOS por padrão, para novos funcionários
 let horariosBase = {
-    segunda: [{ inicio: '09:00', fim: '18:00' }],
-    terca: [{ inicio: '09:00', fim: '18:00' }],
-    quarta: [{ inicio: '09:00', fim: '18:00' }],
-    quinta: [{ inicio: '09:00', fim: '18:00' }],
-    sexta: [{ inicio: '09:00', fim: '18:00' }],
-    sabado: [{ inicio: '09:00', fim: '18:00' }],
-    domingo: [{ inicio: '09:00', fim: '18:00' }]
+    segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    quarta:  { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    quinta:  { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    sexta:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    sabado:  { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
+    domingo: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] }
 };
 let intervaloBase = 30;
 let agendaEspecial = [];
 
-// Elementos DOM
+// Elementos DOM (sem alterações)
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
@@ -53,7 +54,7 @@ const elementos = {
     inputIntervalo: document.getElementById('intervalo-atendimento')
 };
 
-// TABS do perfil
+// TABS do perfil (sem alterações)
 function setupPerfilTabs() {
     const tabServicos = document.getElementById('tab-servicos');
     const tabHorarios = document.getElementById('tab-horarios');
@@ -65,49 +66,29 @@ function setupPerfilTabs() {
     if (!tabServicos || !tabHorarios || !tabAgendaEspecial) return;
 
     tabServicos.onclick = () => {
-        tabServicos.classList.add('active');
-        tabHorarios.classList.remove('active');
-        tabAgendaEspecial.classList.remove('active');
-        contentServicos.classList.add('active');
-        contentHorarios.classList.remove('active');
-        contentAgendaEspecial.classList.remove('active');
+        tabServicos.classList.add('active'); tabHorarios.classList.remove('active'); tabAgendaEspecial.classList.remove('active');
+        contentServicos.classList.add('active'); contentHorarios.classList.remove('active'); contentAgendaEspecial.classList.remove('active');
     };
     tabHorarios.onclick = () => {
-        tabHorarios.classList.add('active');
-        tabServicos.classList.remove('active');
-        tabAgendaEspecial.classList.remove('active');
-        contentHorarios.classList.add('active');
-        contentServicos.classList.remove('active');
-        contentAgendaEspecial.classList.remove('active');
+        tabHorarios.classList.add('active'); tabServicos.classList.remove('active'); tabAgendaEspecial.classList.remove('active');
+        contentHorarios.classList.add('active'); contentServicos.classList.remove('active'); contentAgendaEspecial.classList.remove('active');
     };
     tabAgendaEspecial.onclick = () => {
-        tabAgendaEspecial.classList.add('active');
-        tabServicos.classList.remove('active');
-        tabHorarios.classList.remove('active');
-        contentAgendaEspecial.classList.add('active');
-        contentServicos.classList.remove('active');
-        contentHorarios.classList.remove('active');
+        tabAgendaEspecial.classList.add('active'); tabServicos.classList.remove('active'); tabHorarios.classList.remove('active');
+        contentAgendaEspecial.classList.add('active'); contentServicos.classList.remove('active'); contentHorarios.classList.remove('active');
     };
-
     elementos.agendaTipo.onchange = function () {
-        if (this.value === "mes") {
-            elementos.agendaMesArea.style.display = "block";
-            elementos.agendaIntervaloArea.style.display = "none";
-        } else {
-            elementos.agendaMesArea.style.display = "none";
-            elementos.agendaIntervaloArea.style.display = "block";
-        }
+        elementos.agendaMesArea.style.display = this.value === "mes" ? "block" : "none";
+        elementos.agendaIntervaloArea.style.display = this.value === "intervalo" ? "block" : "none";
     };
 }
 window.addEventListener('DOMContentLoaded', setupPerfilTabs);
 
-// Inicialização
+// Inicialização (sem alterações)
 async function inicializar() {
     try {
         const firebaseConfig = await import('./firebase-config.js');
-        db = firebaseConfig.db;
-        auth = firebaseConfig.auth;
-        storage = firebaseConfig.storage;
+        db = firebaseConfig.db; auth = firebaseConfig.auth; storage = firebaseConfig.storage;
 
         const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
 
@@ -125,16 +106,13 @@ async function inicializar() {
                 window.location.href = "login.html";
             }
         });
-
     } catch (error) {
         console.error("Erro na inicialização:", error);
         mostrarErro("Erro ao inicializar o sistema.");
     }
 }
 
-function voltarMenuLateral() {
-    window.location.href = "index.html";
-}
+function voltarMenuLateral() { window.location.href = "index.html"; }
 
 async function getEmpresaIdDoDono(uid) {
     const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -142,10 +120,7 @@ async function getEmpresaIdDoDono(uid) {
     const q = query(empresariosRef, where("donoId", "==", uid));
     try {
         const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-            return snapshot.docs[0].id;
-        }
-        return null; // Retorna nulo se não encontrar, para a verificação funcionar.
+        return snapshot.empty ? null : snapshot.docs[0].id;
     } catch (error) {
         console.error("Erro ao buscar empresa:", error);
         return null;
@@ -168,13 +143,10 @@ function iniciarListenerDaEquipe() {
     import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
     .then(({ collection, onSnapshot, query }) => {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const q = query(profissionaisRef);
-        onSnapshot(q, (snapshot) => {
+        onSnapshot(query(profissionaisRef), (snapshot) => {
             const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderizarEquipe(equipe);
-        }, (error) => {
-            console.error("Erro no listener da equipe:", error);
-        });
+        }, (error) => console.error("Erro no listener da equipe:", error));
     });
 }
 
@@ -188,19 +160,13 @@ function renderizarEquipe(equipe) {
         const div = document.createElement("div");
         div.className = "profissional-card";
         div.innerHTML = `
-            <div class="profissional-foto">
-                <img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'">
-            </div>
-            <div class="profissional-info">
-                <span class="profissional-nome">${profissional.nome}</span>
-                <span class="profissional-status">${profissional.ehDono ? 'Dono' : 'Funcionário'}</span>
-            </div>
+            <div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
+            <div class="profissional-info"><span class="profissional-nome">${profissional.nome}</span><span class="profissional-status">${profissional.ehDono ? 'Dono' : 'Funcionário'}</span></div>
             <div class="profissional-actions">
-                <button class="btn btn-profile" onclick="abrirPerfilProfissional('${profissional.id}', '${profissional.nome}')">👤 Perfil</button>
+                <button class="btn btn-profile" onclick="abrirPerfilProfissional('${profissional.id}')">👤 Perfil</button>
                 <button class="btn btn-edit" onclick="editarProfissional('${profissional.id}')">✏️ Editar</button>
                 ${!profissional.ehDono ? `<button class="btn btn-danger" onclick="excluirProfissional('${profissional.id}')">🗑️ Excluir</button>` : ""}
-            </div>
-        `;
+            </div>`;
         elementos.listaProfissionaisPainel.appendChild(div);
     });
 }
@@ -219,49 +185,33 @@ async function abrirPerfilProfissional(profissionalId) {
     elementos.modalPerfilProfissional.classList.add('show');
 }
 
-
-// ==========================================================
-// CORREÇÃO IMPORTANTE: Carregar horários da subcoleção
-// ==========================================================
 async function carregarDadosProfissional(profissionalId) {
     const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-
     try {
-        // 1. Carrega os dados principais do profissional (nome, serviços, etc.)
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
-
         if (!profissionalDoc.exists()) return null;
         
         const dados = profissionalDoc.data();
-
-        // 2. Carrega os dados de horários da subcoleção
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
         const horariosDoc = await getDoc(horariosRef);
 
         if (horariosDoc.exists()) {
-            const horariosData = horariosDoc.data();
-            const intervaloMin = horariosData.intervalo || intervaloBase;
-            // Remove o intervalo do objeto para não confundir a renderização dos dias
-            delete horariosData.intervalo;
-            renderizarHorarios(horariosData, intervaloMin);
+            renderizarHorarios(horariosDoc.data());
         } else {
-            // Se não houver documento de horários, usa o padrão
-            renderizarHorarios(horariosBase, intervaloBase);
+            renderizarHorarios({ ...horariosBase, intervalo: intervaloBase });
         }
-
-        return dados; // Retorna os dados principais para a função que chamou
+        return dados;
     } catch (error) {
         console.error("Erro ao carregar dados do profissional:", error);
         return null;
     }
 }
 
-
 function renderizarServicos(servicosSelecionados = []) {
     elementos.servicosLista.innerHTML = "";
     if (servicosDisponiveis.length === 0) {
-        elementos.servicosLista.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #6c757d;"><p>Nenhum serviço cadastrado ainda.</p><p>Vá para a página de serviços para adicionar serviços.</p></div>`;
+        elementos.servicosLista.innerHTML = `<div class="servicos-empty-state"><p>Nenhum serviço cadastrado ainda.</p><p>Vá para a página de serviços para adicioná-los.</p></div>`;
         return;
     }
     servicosDisponiveis.forEach(servico => {
@@ -269,15 +219,16 @@ function renderizarServicos(servicosSelecionados = []) {
         div.className = "servico-item";
         div.setAttribute('data-servico-id', servico.id);
         div.innerHTML = `<div class="servico-nome">${servico.nome}</div><div class="servico-preco">R$ ${servico.preco.toFixed(2)}</div>`;
-        if (servicosSelecionados.includes(servico.id)) {
-            div.classList.add('selected');
-        }
-        div.addEventListener('click', () => { div.classList.toggle('selected'); });
+        if (servicosSelecionados.includes(servico.id)) div.classList.add('selected');
+        div.addEventListener('click', () => div.classList.toggle('selected'));
         elementos.servicosLista.appendChild(div);
     });
 }
 
-function renderizarHorarios(horarios = {}, intervaloMin = intervaloBase) {
+// ==========================================================
+// MUDANÇA: Renderizar horários com toggle Ativo/Inativo
+// ==========================================================
+function renderizarHorarios(horariosDataCompleta = {}) {
     const horariosLista = elementos.horariosLista;
     horariosLista.innerHTML = '';
     const diasSemana = [
@@ -287,44 +238,54 @@ function renderizarHorarios(horarios = {}, intervaloMin = intervaloBase) {
         { key: 'domingo', nome: 'Domingo' }
     ];
 
-    if (elementos.inputIntervalo) {
-        elementos.inputIntervalo.value = intervaloMin;
-    }
+    elementos.inputIntervalo.value = horariosDataCompleta.intervalo || intervaloBase;
 
     diasSemana.forEach(dia => {
+        const diaData = horariosDataCompleta[dia.key] || { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] };
+        const estaAtivo = diaData.ativo;
+        const blocos = diaData.blocos && diaData.blocos.length > 0 ? diaData.blocos : [{ inicio: '09:00', fim: '18:00' }];
+        
         const div = document.createElement('div');
         div.className = 'dia-horario';
+        if (!estaAtivo) div.classList.add('inativo');
         div.setAttribute('data-dia', dia.key);
-        const intervalos = horarios[dia.key] && Array.isArray(horarios[dia.key]) && horarios[dia.key].length > 0
-            ? horarios[dia.key]
-            : [{ inicio: '09:00', fim: '18:00' }];
+
         div.innerHTML = `
-            <div class="dia-nome"><label>${dia.nome}</label></div>
-            <div class="horario-intervalos">
-                ${intervalos.map((intervalo, idx) => `
-                    <div class="horario-inputs" data-intervalo="${idx}">
-                        <input type="time" name="inicio" value="${intervalo.inicio}">
-                        <span>até</span>
-                        <input type="time" name="fim" value="${intervalo.fim}">
-                        <button class="btn-remover-intervalo" title="Remover intervalo" ${intervalos.length === 1 ? 'disabled' : ''}>✖</button>
-                    </div>
-                `).join('')}
+            <div class="dia-header">
+                <label class="dia-nome">${dia.nome}</label>
+                <label class="switch">
+                    <input type="checkbox" class="toggle-dia" ${estaAtivo ? 'checked' : ''}>
+                    <span class="slider"></span>
+                </label>
             </div>
-            <button class="btn-incluir-intervalo">+ Incluir horário</button>
-        `;
+            <div class="horario-conteudo">
+                <div class="horario-intervalos">
+                    ${blocos.map(bloco => `
+                        <div class="horario-inputs">
+                            <input type="time" name="inicio" value="${bloco.inicio}">
+                            <span>até</span>
+                            <input type="time" name="fim" value="${bloco.fim}">
+                            <button type="button" class="btn-remover-intervalo" title="Remover intervalo">✖</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" class="btn-incluir-intervalo">+ Incluir horário</button>
+            </div>`;
         horariosLista.appendChild(div);
     });
 
-    document.querySelectorAll('.btn-incluir-intervalo').forEach(btn => {
+    horariosLista.querySelectorAll('.toggle-dia').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            this.closest('.dia-horario').classList.toggle('inativo', !this.checked);
+        });
+    });
+    horariosLista.querySelectorAll('.btn-incluir-intervalo').forEach(btn => {
         btn.onclick = function () {
-            const diaDiv = this.closest('.dia-horario');
-            const horarioIntervalos = diaDiv.querySelector('.horario-intervalos');
-            const novoIdx = horarioIntervalos.children.length;
-            const novoDiv = document.createElement('div');
-            novoDiv.className = 'horario-inputs';
-            novoDiv.setAttribute('data-intervalo', novoIdx);
-            novoDiv.innerHTML = `<input type="time" name="inicio" value="09:00"><span>até</span><input type="time" name="fim" value="18:00"><button class="btn-remover-intervalo" title="Remover intervalo">✖</button>`;
-            horarioIntervalos.appendChild(novoDiv);
+            const container = this.previousElementSibling;
+            const novoBloco = document.createElement('div');
+            novoBloco.className = 'horario-inputs';
+            novoBloco.innerHTML = `<input type="time" name="inicio" value="09:00"><span>até</span><input type="time" name="fim" value="18:00"><button type="button" class="btn-remover-intervalo" title="Remover intervalo">✖</button>`;
+            container.appendChild(novoBloco);
             setupRemoverIntervalo();
         };
     });
@@ -332,27 +293,37 @@ function renderizarHorarios(horarios = {}, intervaloMin = intervaloBase) {
 }
 
 function setupRemoverIntervalo() {
-    document.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
+    elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
         btn.onclick = function () {
-            const horarioInputs = this.closest('.horario-inputs');
-            const horarioIntervalos = this.closest('.horario-intervalos');
-            if (horarioIntervalos.children.length > 1) {
-                horarioInputs.remove();
+            const container = this.closest('.horario-intervalos');
+            if (container.children.length > 1) {
+                this.closest('.horario-inputs').remove();
+            } else {
+                alert("Para desativar o dia, use o botão ao lado do nome do dia.");
             }
         };
     });
 }
 
+// ==========================================================
+// MUDANÇA: Coletar horários com o estado Ativo/Inativo
+// ==========================================================
 function coletarHorarios() {
     const horarios = {};
     document.querySelectorAll('.dia-horario').forEach(diaDiv => {
         const dia = diaDiv.getAttribute('data-dia');
-        horarios[dia] = [];
-        diaDiv.querySelectorAll('.horario-inputs').forEach(inputDiv => {
-            const inicio = inputDiv.querySelector('input[name="inicio"]').value;
-            const fim = inputDiv.querySelector('input[name="fim"]').value;
-            horarios[dia].push({ inicio, fim });
-        });
+        const estaAtivo = diaDiv.querySelector('.toggle-dia').checked;
+        const blocos = [];
+
+        if (estaAtivo) {
+            diaDiv.querySelectorAll('.horario-inputs').forEach(inputDiv => {
+                const inicio = inputDiv.querySelector('input[name="inicio"]').value;
+                const fim = inputDiv.querySelector('input[name="fim"]').value;
+                if (inicio && fim) blocos.push({ inicio, fim });
+            });
+        }
+        
+        horarios[dia] = { ativo: estaAtivo, blocos: blocos.length > 0 ? blocos : [{ inicio: '09:00', fim: '18:00' }] };
     });
     horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
     return horarios;
@@ -362,19 +333,19 @@ function renderizarAgendaEspecial() {
     const lista = elementos.agendaEspecialLista;
     lista.innerHTML = '';
     if (!agendaEspecial || agendaEspecial.length === 0) {
-        lista.innerHTML = '<div style="color:#888;">Nenhuma agenda especial cadastrada.</div>';
+        lista.innerHTML = '<div class="empty-state-agenda-especial">Nenhuma agenda especial cadastrada.</div>';
         return;
     }
     agendaEspecial.forEach((item, idx) => {
         let desc = (item.tipo === 'mes') ? `Mês: <b>${item.mes}</b>` : `De <b>${item.inicio}</b> até <b>${item.fim}</b>`;
         const div = document.createElement('div');
         div.className = 'agenda-especial-item';
-        div.innerHTML = `<span>${desc}</span><button class="btn btn-danger" data-agenda-idx="${idx}">Excluir</button>`;
+        div.innerHTML = `<span>${desc}</span><button type="button" class="btn btn-danger" data-agenda-idx="${idx}">Excluir</button>`;
         lista.appendChild(div);
     });
     lista.querySelectorAll('.btn-danger').forEach(btn => {
         btn.onclick = function () {
-            const idx = parseInt(btn.getAttribute('data-agenda-idx'), 10);
+            const idx = parseInt(this.getAttribute('data-agenda-idx'), 10);
             agendaEspecial.splice(idx, 1);
             renderizarAgendaEspecial();
         };
@@ -384,36 +355,24 @@ function renderizarAgendaEspecial() {
 function adicionarAgendaEspecial() {
     const tipo = elementos.agendaTipo.value;
     if (tipo === 'mes') {
-        const mes = elementos.agendaMes.value;
-        if (!mes) return alert('Selecione o mês.');
-        agendaEspecial.push({ tipo: 'mes', mes });
+        if (!elementos.agendaMes.value) return alert('Selecione o mês.');
+        agendaEspecial.push({ tipo: 'mes', mes: elementos.agendaMes.value });
     } else {
-        const inicio = elementos.agendaInicio.value;
-        const fim = elementos.agendaFim.value;
-        if (!inicio || !fim) return alert('Informe o intervalo.');
-        agendaEspecial.push({ tipo: 'intervalo', inicio, fim });
+        if (!elementos.agendaInicio.value || !elementos.agendaFim.value) return alert('Informe o intervalo.');
+        agendaEspecial.push({ tipo: 'intervalo', inicio: elementos.agendaInicio.value, fim: elementos.agendaFim.value });
     }
     renderizarAgendaEspecial();
 }
 
-// ==========================================================
-// CORREÇÃO: Salvar perfil e horários separadamente
-// ==========================================================
 async function salvarPerfilProfissional() {
     const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
-        const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected'))
-            .map(item => item.getAttribute('data-servico-id'));
+        const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
         const horarios = coletarHorarios();
 
-        // 1. Atualiza o documento principal do profissional
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
-        await updateDoc(profissionalRef, {
-            servicos: servicosSelecionados,
-            agendaEspecial: agendaEspecial
-        });
+        await updateDoc(profissionalRef, { servicos: servicosSelecionados, agendaEspecial: agendaEspecial });
 
-        // 2. Salva os horários na subcoleção correta
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
         await setDoc(horariosRef, horarios, { merge: true });
 
@@ -437,52 +396,33 @@ function adicionarEventListeners() {
         };
     });
 
-    if (elementos.btnCancelarEquipe) {
-        elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
-    }
-    elementos.btnCancelarProfissional.addEventListener("click", () => {
-        elementos.modalAddProfissional.classList.remove('show');
-    });
-    elementos.btnCancelarPerfil.addEventListener("click", () => {
-        elementos.modalPerfilProfissional.classList.remove('show');
-    });
+    if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
+    elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
+    elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
     elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
-
-    if (elementos.btnAgendaEspecial) {
-        elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
-    }
+    if (elementos.btnAgendaEspecial) elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
 
     [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
-        modal.addEventListener("click", (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('show');
-            }
-        });
+        modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
     });
 }
 
-// ==========================================================
-// CORREÇÃO: Adicionar profissional e criar subcoleção de horários
-// ==========================================================
 async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
     const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
-    btnSubmit.disabled = true;
-    btnSubmit.textContent = "Salvando...";
+    btnSubmit.disabled = true; btnSubmit.textContent = "Salvando...";
 
     const nome = elementos.nomeProfissional.value.trim();
-    const fotoFile = elementos.fotoProfissional.files[0];
-
     if (!nome) {
         alert("O nome do profissional é obrigatório.");
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = "💾 Salvar Profissional";
+        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
         return;
     }
 
     let fotoURL = "";
+    const fotoFile = elementos.fotoProfissional.files[0];
     if (fotoFile) {
         try {
             const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
@@ -490,23 +430,19 @@ async function adicionarProfissional() {
             fotoURL = await getDownloadURL(storageRef);
         } catch (error) {
             console.error("Erro no upload da foto:", error);
-            // continue without photo if upload fails
         }
     }
 
     const novoProfissional = {
-        nome,
-        fotoUrl: fotoURL,
-        ehDono: false,
-        servicos: [],
-        criadoEm: serverTimestamp(),
-        agendaEspecial: []
+        nome, fotoUrl: fotoURL, ehDono: false, servicos: [],
+        criadoEm: serverTimestamp(), agendaEspecial: []
     };
 
     try {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
         const docRef = await addDoc(profissionaisRef, novoProfissional);
 
+        // Usa o horariosBase (com dias inativos) para o novo profissional
         const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
         await setDoc(horariosRef, horariosPadrao);
@@ -517,11 +453,9 @@ async function adicionarProfissional() {
         console.error("Erro ao adicionar profissional:", error);
         alert("Erro ao adicionar profissional: " + error.message);
     } finally {
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = "💾 Salvar Profissional";
+        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
     }
 }
-
 
 async function editarProfissional(profissionalId) {
     const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -549,14 +483,10 @@ async function salvarEdicaoProfissional(profissionalId) {
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
     const nome = elementos.nomeProfissional.value.trim();
-    const fotoFile = elementos.fotoProfissional.files[0];
-
-    if (!nome) {
-        alert("O nome do profissional é obrigatório.");
-        return;
-    }
+    if (!nome) return alert("O nome do profissional é obrigatório.");
 
     let fotoURL = "";
+    const fotoFile = elementos.fotoProfissional.files[0];
     if (fotoFile) {
         try {
             const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
@@ -575,7 +505,6 @@ async function salvarEdicaoProfissional(profissionalId) {
         await updateDoc(profissionalRef, updateData);
         elementos.modalAddProfissional.classList.remove('show');
         alert("✅ Profissional editado com sucesso!");
-        editandoProfissionalId = null;
     } catch (error) {
         alert("Erro ao editar profissional: " + error.message);
     }
@@ -585,9 +514,6 @@ async function excluirProfissional(profissionalId) {
     if (!confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.")) return;
     const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
-        // ATENÇÃO: a exclusão de subcoleções não é automática no cliente.
-        // A melhor prática é usar uma Cloud Function para limpar subcoleções.
-        // Por agora, apenas o documento principal do profissional será excluído.
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await deleteDoc(profissionalRef);
         alert("✅ Profissional excluído!");
@@ -597,7 +523,7 @@ async function excluirProfissional(profissionalId) {
 }
 
 function mostrarErro(mensagem) {
-    elementos.listaProfissionaisPainel.innerHTML = `<div style="color: red; padding: 20px; border: 1px solid red; border-radius: 5px; grid-column: 1 / -1;"><h4>❌ Erro</h4><p>${mensagem}</p></div>`;
+    elementos.listaProfissionaisPainel.innerHTML = `<div class="error-message"><h4>❌ Erro</h4><p>${mensagem}</p></div>`;
 }
 
 // Tornar funções globais para uso no HTML (onclick)
