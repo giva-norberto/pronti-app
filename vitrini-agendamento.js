@@ -1,4 +1,4 @@
-// vitrini-agendamento.js
+/// vitrini-agendamento.js
 
 import { db } from './firebase-config.js';
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -89,11 +89,11 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
 
         const agendamentos = await buscarAgendamentosDoDia(empresaId, dataString);
         const agendamentosProfissional = agendamentos.filter(ag => ag.profissionalId === profissional.id);
-        
+
         // Assumindo que o primeiro serviço da lista é representativo
         // O ideal seria passar um serviço aqui, mas para uma busca inicial funciona
         const duracaoTeste = 30; // Usamos uma duração padrão para procurar
-        
+
         const slots = calcularSlotsDisponiveis(dataString, agendamentosProfissional, profissional.horarios, duracaoTeste);
 
         if (slots.length > 0) {
@@ -135,23 +135,45 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
 
 /**
  * Busca os agendamentos de um cliente específico.
+ * OBS: Caso consulte por mais de um campo (clienteId, status, data), Firestore exige índice composto!
  */
 export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) {
     if (!currentUser) return [];
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
         const hoje = new Date().toISOString().split('T')[0];
-        
+
         let q;
         if (modo === 'ativos') {
-            q = query(agendamentosRef, where("clienteId", "==", currentUser.uid), where("data", ">=", hoje), where("status", "==", "ativo"));
+            // Precisa de índice composto: clienteId + status + data
+            q = query(
+                agendamentosRef,
+                where("clienteId", "==", currentUser.uid),
+                where("status", "==", "ativo"),
+                where("data", ">=", hoje)
+            );
         } else { // historico
-            q = query(agendamentosRef, where("clienteId", "==", currentUser.uid), where("data", "<", hoje));
+            // Precisa de índice composto: clienteId + data
+            q = query(
+                agendamentosRef,
+                where("clienteId", "==", currentUser.uid),
+                where("data", "<", hoje)
+            );
         }
 
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
+        // Se erro de índice, mostra instrução clara para o dev/admin
+        if (error.code === "failed-precondition" && error.message.indexOf("index") !== -1) {
+            const link = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s"]+/)?.[0];
+            alert(
+                "Sua consulta precisa de um índice no Firestore.\n\n" +
+                "Clique no link abaixo para criar o índice:\n" +
+                link +
+                "\n\nDepois de criado, recarregue a página."
+            );
+        }
         console.error("Erro ao buscar agendamentos do cliente:", error);
         return [];
     }
