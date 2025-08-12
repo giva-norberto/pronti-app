@@ -1,4 +1,4 @@
-/// vitrini-agendamento.js
+// vitrini-agendamento.js
 
 import { db } from './firebase-config.js';
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
