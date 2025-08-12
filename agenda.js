@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   /**
-   * Renderiza os agendamentos mostrando o profissional.
+   * Renderiza os agendamentos mostrando o profissional, serviço e cliente.
    * @param {Array} agendamentos - Lista de agendamentos.
    */
   function renderizarAgendamentos(agendamentos) {
@@ -104,10 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const div = document.createElement("div");
         div.className = "agendamento-item";
         div.innerHTML = `
-          <h3>${ag.servicoNome || 'Serviço não informado'}</h3>
+          <h3>${ag.servicoNome || ag.servicoDescricao || 'Serviço não informado'}</h3>
           <p><strong>Profissional:</strong> ${ag.profissionalNome || 'Não informado'}</p>
           <p><strong>Cliente:</strong> ${ag.clienteNome || 'Não informado'}</p> 
-          <p><strong>Horário:</strong> ${formatarHorario(ag.horario)}</p>
+          <p><strong>Horário:</strong> ${formatarDataCompleta(ag.horario)}</p>
         `;
         listaAgendamentos.appendChild(div);
     });
