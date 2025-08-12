@@ -1,4 +1,3 @@
-// vitrini-utils.js
 // RESPONSABILIDADE: Funções de utilidade geral, como modais e alertas.
 
 /**
@@ -8,7 +7,7 @@
  * @param {Array<object>} buttons - Array com a configuração dos botões.
  * @returns {Promise<any>} - Retorna o valor associado ao botão clicado.
  */
-export function showModal(title, message, buttons) { // CORREÇÃO: Adicionado 'export'
+export function showModal(title, message, buttons) {
     return new Promise(resolve => {
         const overlay = document.getElementById('custom-confirm-modal');
         const titleEl = document.getElementById('modal-titulo');
