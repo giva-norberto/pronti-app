@@ -1,4 +1,3 @@
-// vitrini-auth.js
 // RESPONSABILIDADE: Interagir com o Firebase Authentication e
 // notificar a aplicação sobre mudanças no estado de login.
 // Este módulo não guarda estado.
