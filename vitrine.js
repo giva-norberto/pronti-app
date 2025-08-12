@@ -1,17 +1,9 @@
-// vitrine.js - O Maestro da Aplicação
-// VERSÃO FINAL, COMPLETA E VALIDADA - Firebase v10.12.2
+// vitrine.js - O Maestro da Aplicação (Revisado e Confirmado)
 
-// 1. Importa o gerenciador de estado
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
-
-// 2. Importa as funções de busca de dados
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
 import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, buscarAgendamentosDoCliente, cancelarAgendamento, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
-
-// 3. Importa as funções de autenticação
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
-
-// 4. Importa TODAS as funções de UI como um único objeto "UI"
 import * as UI from './vitrini-ui.js';
 
 // --- INICIALIZAÇÃO ---
@@ -48,7 +40,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById("vitrine-loader").innerHTML = `<p style="color:red;">${error.message}</p>`;
     }
 });
-
 
 // --- CONFIGURAÇÃO DE EVENTOS ---
 
@@ -90,9 +81,11 @@ async function handleProfissionalClick(e) {
     if (!card) return;
 
     resetarAgendamento();
-    document.getElementById('agendamento-form-container').style.display = 'none';
-    document.getElementById('lista-servicos').innerHTML = '';
-    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um profissional, serviço e data.</p>';
+    UI.limparSelecao('servico');
+    UI.limparSelecao('horario');
+    UI.mostrarContainerForm(false);
+    UI.renderizarServicos([]);
+    UI.renderizarHorarios([]);
 
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
@@ -100,14 +93,12 @@ async function handleProfissionalClick(e) {
     profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
     setAgendamento('profissional', profissional);
 
-    const servicosDoProfissional = (profissional.servicos || []).map(servicoId => {
-        return state.todosOsServicos.find(servico => servico.id === servicoId);
-    }).filter(Boolean);
+    const servicosDoProfissional = (profissional.servicos || []).map(servicoId => 
+        state.todosOsServicos.find(servico => servico.id === servicoId)
+    ).filter(Boolean);
 
-    document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
-    card.classList.add('selecionado');
-    document.getElementById('agendamento-form-container').style.display = 'block';
-    
+    UI.selecionarCard('profissional', profissionalId);
+    UI.mostrarContainerForm(true);
     UI.renderizarServicos(servicosDoProfissional);
 }
 
@@ -117,39 +108,37 @@ async function handleServicoClick(e) {
 
     setAgendamento('data', null);
     setAgendamento('horario', null);
+    UI.limparSelecao('horario');
 
     const servicoId = card.dataset.id;
     const servico = state.todosOsServicos.find(s => s.id === servicoId);
     setAgendamento('servico', servico);
     
-    document.querySelectorAll('.card-servico.selecionado').forEach(c => c.classList.remove('selecionado'));
-    card.classList.add('selecionado');
+    UI.selecionarCard('servico', servicoId);
     
-    const dataInput = document.getElementById('data-agendamento');
-    const horariosContainer = document.getElementById('grade-horarios');
-    
-    dataInput.disabled = true;
-    horariosContainer.innerHTML = '<p class="aviso-horarios">A procurar a data mais próxima com vagas...</p>';
+    UI.atualizarStatusData(true, 'A procurar a data mais próxima com vagas...');
 
     const primeiraDataDisponivel = await encontrarPrimeiraDataComSlots(state.empresaId, state.agendamento.profissional);
 
     if (primeiraDataDisponivel) {
+        const dataInput = document.getElementById('data-agendamento');
         dataInput.value = primeiraDataDisponivel;
         dataInput.disabled = false;
-        dataInput.dispatchEvent(new Event('change')); 
+        dataInput.dispatchEvent(new Event('change')); // Dispara o evento para carregar os horários
     } else {
-        horariosContainer.innerHTML = '<p class="aviso-horarios">Nenhuma data disponível para este profissional nos próximos 3 meses.</p>';
+        UI.renderizarHorarios([], 'Nenhuma data disponível para este profissional nos próximos 3 meses.');
     }
 }
 
 async function handleDataChange(e) {
     setAgendamento('data', e.target.value);
     setAgendamento('horario', null);
+    UI.limparSelecao('horario');
 
     const { profissional, servico, data } = state.agendamento;
     if (!profissional || !servico || !data) return;
 
-    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">A calcular horários...</p>';
+    UI.renderizarHorarios([], 'A calcular horários...');
     const todosAgendamentos = await buscarAgendamentosDoDia(state.empresaId, data);
     const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
 
@@ -162,8 +151,7 @@ function handleHorarioClick(e) {
     if (!btn) return;
     
     setAgendamento('horario', btn.dataset.horario);
-    document.querySelectorAll('.btn-horario.selecionado').forEach(b => b.classList.remove('selecionado'));
-    btn.classList.add('selecionado');
+    UI.selecionarCard('horario', btn.dataset.horario);
     document.getElementById('btn-confirmar-agendamento').disabled = false;
 }
 
@@ -181,18 +169,16 @@ async function handleConfirmarAgendamento() {
     btn.textContent = 'A agendar...';
     
     await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
-    btn.textContent = 'Confirmar Agendamento';
+    btn.textContent = 'Confirmar Agendamento'; // Em caso de erro, volta ao normal
 }
 
 async function handleFiltroAgendamentos(e) {
     if (!e.target.matches('.btn-toggle')) return;
     const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
     
-    document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('ativo'));
-    e.target.classList.add('ativo');
+    UI.selecionarFiltro(modo);
 
-    const container = document.getElementById('lista-agendamentos-visualizacao');
-    container.innerHTML = '<p>Buscando agendamentos...</p>';
+    UI.renderizarAgendamentosComoCards([], 'Buscando agendamentos...');
     const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
     UI.renderizarAgendamentosComoCards(agendamentos, modo);
 }
