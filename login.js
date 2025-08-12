@@ -1,7 +1,7 @@
 // CORREÇÃO: Versão do Firebase mantida em 10.12.2
 import { onAuthStateChanged, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// CORREÇÃO: Importa 'auth' e 'provider' já criados do nosso arquivo de configuração central
+// Importa 'auth' e 'provider' já criados do arquivo de configuração central
 import { auth, provider } from "./vitrini-firebase.js"; 
 
 // O ID do botão deve corresponder ao seu HTML
