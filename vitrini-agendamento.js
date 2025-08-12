@@ -48,6 +48,7 @@ export async function buscarAgendamentosDoDia(empresaId, data) {
 
 /**
  * Calcula os horários (slots) disponíveis para um agendamento.
+ * REFINADO: Não mostra horários passados se a data for hoje.
  */
 export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
@@ -68,6 +69,16 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
         return { inicio, fim };
     });
 
+    // Para filtrar horários passados se for hoje
+    const hoje = new Date();
+    const ehHoje =
+        hoje.getFullYear() === dataObj.getFullYear() &&
+        hoje.getMonth() === dataObj.getMonth() &&
+        hoje.getDate() === dataObj.getDate();
+    const minutosAgora = timeStringToMinutes(
+        `${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`
+    );
+
     for (const bloco of diaDeTrabalho.blocos) {
         let slotAtualEmMinutos = timeStringToMinutes(bloco.inicio);
         const fimDoBlocoEmMinutos = timeStringToMinutes(bloco.fim);
@@ -78,7 +89,11 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
                 slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio
             );
 
-            if (!temConflito) {
+            // REFINAMENTO: se hoje, só mostra horários futuros
+            if (
+                !temConflito &&
+                (!ehHoje || slotAtualEmMinutos > minutosAgora)
+            ) {
                 slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
             }
             slotAtualEmMinutos += intervaloEntreSessoes;
