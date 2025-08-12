@@ -430,3 +430,89 @@ input[type="date"] {
         position: static; /* Remove o sticky em telas menores */
     }
 }
+
+/* ========================= */
+/* MELHORIAS ADICIONAIS!     */
+/* ========================= */
+
+/* MENU HORIZONTAL FIXO */
+.menu-horizontal-vitrine {
+    width: 100%;
+    background: linear-gradient(90deg, #4F46E5 50%, #8B5CF6 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(79,70,229,0.04);
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    min-height: 64px;
+}
+.menu-horizontal-vitrine .menu-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.08rem;
+    font-weight: 600;
+    padding: 0 26px;
+    height: 64px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    border-bottom: 3px solid transparent;
+}
+.menu-horizontal-vitrine .menu-btn.ativo,
+.menu-horizontal-vitrine .menu-btn:focus {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+    border-bottom: 3px solid #EC4899;
+}
+.menu-horizontal-vitrine .menu-btn:hover:not(.ativo) {
+    background: rgba(255,255,255,0.08);
+    color: #EEF2FF;
+}
+
+/* BLOCOS DE HORÁRIOS PARA AGENDAMENTO */
+.horarios-profissional-blocos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 18px;
+    margin-top: 24px;
+}
+.horario-bloco {
+    background: #F3F4F6;
+    border: 2px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 18px 0 14px 0;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.08rem;
+    color: #4F46E5;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    box-shadow: 0 1px 4px rgba(79,70,229,0.04);
+    cursor: pointer;
+}
+.horario-bloco.disponivel {
+    background: #ECFEFF;
+    border-color: #10B981;
+    color: #059669;
+}
+.horario-bloco.indisponivel {
+    background: #F9FAFB;
+    border-color: #E5E7EB;
+    color: #9CA3AF;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+.horario-bloco.selecionado {
+    border-color: #4F46E5;
+    background: #EEF2FF;
+    color: #4F46E5;
+}
+
+/* RESPONSIVO MENU HORIZONTAL E HORÁRIOS */
+@media (max-width: 900px) {
+    .menu-horizontal-vitrine { min-height: 54px; }
+    .menu-horizontal-vitrine .menu-btn { font-size: 0.98rem; padding: 0 10px; height: 54px;}
+    .horarios-profissional-blocos { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 10px;}
+}
