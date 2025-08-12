@@ -1,13 +1,14 @@
 // Versão revisada para comunicação correta com Firebase 10.12.2
 // Alterações SELADAS: versão dos imports, inicialização garantida
 
+// Variáveis globais
 let db, auth, storage;
 let empresaId = null;
 let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 
-// Horários base com múltiplos intervalos por dia (default: um intervalo por dia)
+// Novo: Horários base com múltiplos intervalos por dia (default: um intervalo por dia)
 let horariosBase = {
     segunda: [{ inicio: '09:00', fim: '18:00' }],
     terca: [{ inicio: '09:00', fim: '18:00' }],
@@ -17,9 +18,10 @@ let horariosBase = {
     sabado: [{ inicio: '09:00', fim: '18:00' }],
     domingo: [{ inicio: '09:00', fim: '18:00' }]
 };
-let agendaEspecial = [];
+let agendaEspecial = []; // [{tipo, mes, inicio, fim}]
 let intervaloBase = 30;
 
+// Elementos DOM
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
@@ -448,34 +450,41 @@ function adicionarAgendaEspecial() {
 }
 
 // Salvar perfil do profissional (serviços, horários, agenda especial, intervalo)
-// Corrigido! Salva horários na subcoleção configuracoes/horarios
+// *** ÚNICA ALTERAÇÃO: SALVAR OS HORÁRIOS NA SUBCOLEÇÃO CORRETA ***
 async function salvarPerfilProfissional() {
     const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
+        // Serviços
         const servicosSelecionados = [];
         document.querySelectorAll('.servico-item.selected').forEach(item => {
             servicosSelecionados.push(item.getAttribute('data-servico-id'));
         });
 
+        // Horários/intervalos + intervalo atendimento
         const horarios = coletarHorarios();
 
+        // Agenda especial
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
         await updateDoc(profissionalRef, {
             servicos: servicosSelecionados,
             agendaEspecial: agendaEspecial
+            // NÃO salva o campo 'horarios' aqui!
         });
 
+        // Salva horários na subcoleção correta
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
         await setDoc(horariosRef, horarios, { merge: true });
 
         elementos.modalPerfilProfissional.classList.remove('show');
         alert("✅ Perfil atualizado com sucesso!");
+
     } catch (error) {
         console.error("Erro ao salvar perfil:", error);
         alert("❌ Erro ao salvar perfil: " + error.message);
     }
 }
 
+// Event listeners
 function adicionarEventListeners() {
     elementos.btnAddProfissional.addEventListener("click", () => {
         elementos.formAddProfissional.reset();
@@ -519,9 +528,8 @@ function adicionarEventListeners() {
     });
 }
 
-// Adicionar profissional (corrigido, horários vão para subcoleção)
 async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
     const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
@@ -558,20 +566,18 @@ async function adicionarProfissional() {
         fotoUrl: fotoURL,
         ehDono: false,
         servicos: [],
+        horarios: { ...horariosBase, intervalo: intervaloBase },
         criadoEm: serverTimestamp(),
         agendaEspecial: []
     };
 
     try {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const docRef = await addDoc(profissionaisRef, novoProfissional);
-
-        const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
-        await setDoc(horariosRef, horariosPadrao);
+        await addDoc(profissionaisRef, novoProfissional);
 
         elementos.modalAddProfissional.classList.remove('show');
         alert("✅ Profissional adicionado com sucesso!");
+
     } catch (error) {
         console.error("Erro ao adicionar profissional:", error);
         alert("Erro ao adicionar profissional: " + error.message);
