@@ -5,7 +5,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Configuração do seu projeto Firebase
+// Configuração do seu projeto Firebase//
 const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // Chave correta do seu painel
   authDomain: "pronti-app-37c6e.firebaseapp.com",
