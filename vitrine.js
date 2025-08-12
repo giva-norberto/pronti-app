@@ -1,12 +1,12 @@
 // vitrine.js - O Maestro da Aplicação
-// VERSÃO FINAL E CORRIGIDA - Firebase v10.12.2
+// VERSÃO FINAL E CORRIGIDA - Carrega horários e data automaticamente.
 
-// 1. Importa o gerenciador de estado (completo)
+// 1. Importa o gerenciador de estado
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 
-// 2. Importa as funções de busca de dados (completo)
+// 2. Importa as funções de busca de dados
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
-import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, buscarAgendamentosDoCliente, cancelarAgendamento } from './vitrini-agendamento.js';
+import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, buscarAgendamentosDoCliente, cancelarAgendamento, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js'; // <-- Importa a função nova
 
 // 3. Importa as funções de autenticação
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
@@ -23,21 +23,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const empresaId = getEmpresaIdFromURL();
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
-        // Busca todos os dados iniciais em paralelo para mais performance
         const [dados, profissionais, todosServicos] = await Promise.all([
             getDadosEmpresa(empresaId),
             getProfissionaisDaEmpresa(empresaId),
-            getTodosServicosDaEmpresa(empresaId) // Busca a lista mestre de serviços
+            getTodosServicosDaEmpresa(empresaId)
         ]);
 
         if (!dados) throw new Error("Empresa não encontrada.");
         
-        // Salva tudo no nosso estado central
         setEmpresa(empresaId, dados);
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
         
-        // Renderiza a UI com os dados iniciais
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
         UI.renderizarProfissionais(state.listaProfissionais);
         
@@ -53,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-// --- CONFIGURAÇÃO DE EVENTOS ---
+// --- CONFIGURAÇÃO DE EVENTOS (sempre igual) ---
 
 function configurarEventosGerais() {
     document.querySelector('.sidebar-menu').addEventListener('click', handleMenuClick);
@@ -68,7 +65,66 @@ function configurarEventosGerais() {
     document.getElementById('lista-agendamentos-visualizacao').addEventListener('click', handleCancelarClick);
 }
 
-// --- HANDLERS (As Funções que os Eventos Chamam) ---
+// --- HANDLERS (Funções que os eventos chamam) ---
+
+async function handleServicoClick(e) {
+    const card = e.target.closest('.card-servico');
+    if (!card) return;
+
+    // ----- INÍCIO DA MUDANÇA -----
+    
+    // Limpa seleções anteriores de horário
+    setAgendamento('data', null);
+    setAgendamento('horario', null);
+
+    const servicoId = card.dataset.id;
+    const servico = state.todosOsServicos.find(s => s.id === servicoId);
+    setAgendamento('servico', servico);
+    
+    document.querySelectorAll('.card-servico.selecionado').forEach(c => c.classList.remove('selecionado'));
+    card.classList.add('selecionado');
+    
+    const dataInput = document.getElementById('data-agendamento');
+    const horariosContainer = document.getElementById('grade-horarios');
+    
+    // Mostra um aviso enquanto procura a data
+    dataInput.disabled = true;
+    horariosContainer.innerHTML = '<p class="aviso-horarios">A procurar a data mais próxima com vagas...</p>';
+
+    // Usa a função para encontrar a primeira data disponível
+    const primeiraDataDisponivel = await encontrarPrimeiraDataComSlots(state.empresaId, state.agendamento.profissional);
+
+    if (primeiraDataDisponivel) {
+        // Encontrou uma data!
+        dataInput.value = primeiraDataDisponivel; // Marca a data no calendário
+        dataInput.disabled = false;
+        
+        // Dispara o evento 'change' para carregar os horários automaticamente
+        dataInput.dispatchEvent(new Event('change')); 
+    } else {
+        // Não encontrou nenhuma data nos próximos 90 dias
+        horariosContainer.innerHTML = '<p class="aviso-horarios">Nenhuma data disponível para este profissional nos próximos 3 meses.</p>';
+    }
+    // ----- FIM DA MUDANÇA -----
+}
+
+async function handleDataChange(e) {
+    setAgendamento('data', e.target.value);
+    setAgendamento('horario', null); // Reseta horário ao mudar a data
+
+    const { profissional, servico, data } = state.agendamento;
+    if (!profissional || !servico || !data) return;
+
+    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">A calcular horários...</p>';
+    const todosAgendamentos = await buscarAgendamentosDoDia(state.empresaId, data);
+    const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
+
+    const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, servico.duracao);
+    UI.renderizarHorarios(slots);
+}
+
+// --- O RESTANTE DAS FUNÇÕES (cole o restante do seu arquivo aqui) ---
+// (handleProfissionalClick, handleUserAuthStateChange, handleMenuClick, etc. continuam iguais)
 
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
@@ -79,7 +135,7 @@ function handleUserAuthStateChange(user) {
 }
 
 function handleMenuClick(e) {
-    if (e.target.matches('.menu-btn')) {
+    if (e.target.matches('.btn-btn')) {
         const menuKey = e.target.getAttribute('data-menu');
         UI.trocarAba(`menu-${menuKey}`);
         if (menuKey === 'visualizacao' && state.currentUser) {
@@ -94,6 +150,8 @@ async function handleProfissionalClick(e) {
 
     resetarAgendamento();
     document.getElementById('agendamento-form-container').style.display = 'none';
+    document.getElementById('lista-servicos').innerHTML = ''; // Limpa os serviços
+    document.getElementById('grade-horarios').innerHTML = '<p class="aviso-horarios">Selecione um profissional, serviço e data.</p>'; // Reseta horários
 
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
@@ -101,51 +159,15 @@ async function handleProfissionalClick(e) {
     profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
     setAgendamento('profissional', profissional);
 
-    // "Hidrata" os IDs de serviço do profissional para objetos de serviço completos
     const servicosDoProfissional = (profissional.servicos || []).map(servicoId => {
         return state.todosOsServicos.find(servico => servico.id === servicoId);
-    }).filter(Boolean); // .filter(Boolean) remove 'undefined' se um ID não for encontrado
+    }).filter(Boolean);
 
-    // Atualiza a UI
     document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
     card.classList.add('selecionado');
     document.getElementById('agendamento-form-container').style.display = 'block';
     
-    // Renderiza a lista de objetos de serviço completos
     UI.renderizarServicos(servicosDoProfissional);
-}
-
-function handleServicoClick(e) {
-    const card = e.target.closest('.card-servico');
-    if (!card) return;
-    
-    const servicoId = card.dataset.id;
-    // Busca o serviço na lista de todos os serviços para garantir que temos o objeto completo
-    const servico = state.todosOsServicos.find(s => s.id === servicoId);
-    setAgendamento('servico', servico);
-    
-    document.querySelectorAll('.card-servico.selecionado').forEach(c => c.classList.remove('selecionado'));
-    card.classList.add('selecionado');
-    
-    const dataInput = document.getElementById('data-agendamento');
-    dataInput.disabled = false;
-    dataInput.value = '';
-    dataInput.min = new Date().toISOString().split("T")[0];
-}
-
-async function handleDataChange(e) {
-    setAgendamento('data', e.target.value);
-    setAgendamento('horario', null);
-
-    const { profissional, servico, data } = state.agendamento;
-    if (!profissional || !servico || !data) return;
-
-    UI.renderizarHorarios(null); // Limpa e mostra "calculando"
-    const todosAgendamentos = await buscarAgendamentosDoDia(state.empresaId, data);
-    const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
-
-    const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, servico.duracao);
-    UI.renderizarHorarios(slots);
 }
 
 function handleHorarioClick(e) {
