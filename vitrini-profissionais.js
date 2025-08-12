@@ -43,6 +43,10 @@ async function getProfissionalUidBySlug(slug) {
         console.warn("Slug vazio ou inválido.");
         return null;
     }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
+        return null;
+    }
     try {
         const slugDocRef = firebase.firestore().collection("slugs").doc(slug);
         const slugDocSnap = await slugDocRef.get();
@@ -66,6 +70,10 @@ window.getProfissionalUidBySlug = getProfissionalUidBySlug;
 async function getDadosProfissional(uid) {
     if (!uid) {
         console.warn("UID do profissional inválido ou vazio.");
+        return null;
+    }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
         return null;
     }
     try {
@@ -110,6 +118,10 @@ async function getDadosEmpresa(empresaId) {
         console.warn("ID da empresa inválido ou vazio.");
         return null;
     }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
+        return null;
+    }
     try {
         const empresaRef = firebase.firestore().collection("empresarios").doc(empresaId);
         const docSnap = await empresaRef.get();
@@ -130,6 +142,10 @@ async function getProfissionaisDaEmpresa(empresaId) {
         console.warn("ID da empresa inválido ou vazio para buscar profissionais.");
         return [];
     }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
+        return [];
+    }
     try {
         const profissionaisRef = firebase.firestore().collection("empresarios").doc(empresaId).collection("profissionais");
         const snapshot = await profissionaisRef.get();
@@ -146,6 +162,10 @@ window.getProfissionaisDaEmpresa = getProfissionaisDaEmpresa;
 async function getServicoById(empresaId, servicoId) {
     if (!empresaId || !servicoId) {
         console.warn("Parâmetros inválidos para buscar serviço (empresaId, servicoId).");
+        return null;
+    }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
         return null;
     }
     try {
@@ -166,6 +186,10 @@ window.getServicoById = getServicoById;
 async function getTodosServicosDaEmpresa(empresaId) {
     if (!empresaId) {
         console.warn("ID da empresa inválido para buscar serviços.");
+        return [];
+    }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
         return [];
     }
     try {
@@ -190,6 +214,10 @@ async function getServicosDoProfissional(empresaId, profissionalId) {
         console.warn("Parâmetros inválidos para buscar serviços do profissional.");
         return [];
     }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
+        return [];
+    }
     try {
         const servicosRef = firebase.firestore()
             .collection("empresarios").doc(empresaId)
@@ -209,6 +237,10 @@ window.getServicosDoProfissional = getServicosDoProfissional;
 async function getHorariosDoProfissional(empresaId, profissionalId) {
     if (!empresaId || !profissionalId) {
         console.warn("Parâmetros inválidos para buscar horários do profissional.");
+        return {};
+    }
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+        console.error("Firebase não está definido. Verifique a ordem dos scripts no HTML.");
         return {};
     }
     try {
