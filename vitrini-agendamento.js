@@ -1,5 +1,4 @@
-// vitrini-agendamento.js
-// VERSÃO FINAL E COMPLETA - Firebase v10.12.2
+// VERSÃO DEFINITIVA E COMPLETA - Firebase v10.12.2
 
 import {
     collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc
@@ -89,7 +88,12 @@ export async function buscarAgendamentosDoDia(empresaId, dataString) {
     const inicioDoDia = new Date(`${dataString}T00:00:00`);
     const fimDoDia = new Date(`${dataString}T23:59:59`);
     const agendRef = collection(db, "empresarios", empresaId, "agendamentos");
-    const q = query(agendRef, where("horario", ">=", Timestamp.fromDate(inicioDoDia)), where("horario", "<=", Timestamp.fromDate(fimDoDia)), where("status", "==", "agendado"));
+    const q = query(
+        agendRef,
+        where("horario", ">=", Timestamp.fromDate(inicioDoDia)),
+        where("horario", "<=", Timestamp.fromDate(fimDoDia)),
+        where("status", "==", "agendado")
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
         const ag = doc.data();
@@ -104,16 +108,16 @@ export async function buscarAgendamentosDoDia(empresaId, dataString) {
  */
 export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico) {
     const slotsDisponiveis = [];
-    const diaDaSemanaNum = new Date(`${data}T12:00:00`).getDay();
-    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemanaNum];
+    const diaDaSemana = new Date(`${data}T12:00:00`).getDay();
+    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
     const configDia = horariosConfig?.[nomeDia];
 
     if (!configDia || !configDia.ativo || !configDia.blocos || !duracaoServico) {
         return [];
     }
     configDia.blocos.forEach(bloco => {
-        let slotAtual = new Date(`${data}T${bloco.inicio}`);
-        const fimBloco = new Date(`${data}T${bloco.fim}`);
+        let slotAtual = new Date(`${data}T${bloco.inicio}:00`);
+        const fimBloco = new Date(`${data}T${bloco.fim}:00`);
         while (slotAtual < fimBloco) {
             const fimSlot = new Date(slotAtual.getTime() + duracaoServico * 60000);
             if (fimSlot > fimBloco) break;
@@ -129,25 +133,23 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
 
 /**
  * Encontra a primeira data com horários disponíveis para um PROFISSIONAL específico.
+ * @param {string} empresaId - ID da empresa.
+ * @param {object} profissional - O objeto completo do profissional selecionado.
+ * @returns {Promise<string|null>} - A primeira data disponível no formato 'AAAA-MM-DD' ou nulo.
  */
 export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
     if (!profissional?.horarios || !profissional?.servicos?.length) {
         console.warn("Profissional sem horários ou serviços configurados para encontrar data.");
         return null;
     }
-    
-    // Supondo que profissional.servicos é um array de IDs. Precisamos dos objetos completos.
-    // Esta parte depende que 'state.todosOsServicos' esteja disponível. 
-    // Por isso, a lógica principal fica no vitrine.js, mas a função base está aqui.
-    const primeiroServicoId = profissional.servicos[0];
-    const duracaoBase = 30; // Padrão
-
+    // Usa a duração do primeiro serviço como base, ou um padrão de 30min
+    const duracaoBase = profissional.servicos[0]?.duracao || 30;
     let dataAtual = new Date();
     dataAtual.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < 90; i++) {
-        const diaSemana = dataAtual.getDay(); // diaSemana com 's' minúsculo
-        const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
+    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
+        const diaDaSemana = dataAtual.getDay(); // Corrigido: estava nomeDiaSemana
+        const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
         const configDia = profissional.horarios[nomeDia];
 
         if (configDia && configDia.ativo && configDia.blocos?.length > 0) {
@@ -157,10 +159,10 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
             const slotsDisponiveis = calcularSlotsDisponiveis(dataISO, agendamentosDoProfissional, profissional.horarios, duracaoBase);
 
             if (slotsDisponiveis.length > 0) {
-                return dataISO; // Encontrou!
+                return dataISO; // Encontrou! Retorna a data.
             }
         }
-        dataAtual.setDate(dataAtual.getDate() + 1);
+        dataAtual.setDate(dataAtual.getDate() + 1); // Vai para o próximo dia
     }
     console.warn("Nenhuma data com slots encontrada nos próximos 90 dias.");
     return null;
