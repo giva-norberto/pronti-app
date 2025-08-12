@@ -1,4 +1,4 @@
-// vitrine.js - O Maestro da Aplicação (Revisado e Confirmado)
+// O Maestro da Aplicação (Revisado e Confirmado)
 
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
