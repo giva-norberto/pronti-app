@@ -122,6 +122,38 @@
         </div>
     </div>
     
+    <!-- SPA menu behavior: troca de abas -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
+                btn.classList.add('ativo');
+                document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
+                document.getElementById('menu-' + btn.dataset.menu).classList.add('ativo');
+            });
+        });
+      });
+    </script>
+
+    <!-- Correção seleção profissional: seleção visual e lógica garantidas -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const profissionaisContainer = document.getElementById('lista-profissionais');
+        profissionaisContainer.addEventListener('click', function(e) {
+          const card = e.target.closest('.card-profissional');
+          if (!card) return;
+          document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
+          card.classList.add('selecionado');
+          // Atualiza o estado do profissional selecionado, se você usar um state global, atualize aqui
+          window.state = window.state || {};
+          window.state.agendamento = window.state.agendamento || {};
+          window.state.agendamento.profissionalId = card.dataset.id;
+          // Chame funções para atualizar serviços/horários se necessário
+        });
+      });
+    </script>
+    
     <script type="module" src="./vitrini-firebase.js"></script>
     <script type="module" src="./vitrini-utils.js"></script> 
     <script type="module" src="./vitrini-profissionais.js"></script> 
