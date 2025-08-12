@@ -1,5 +1,5 @@
 /* =============================================== */
-/* ESTILOS GERAIS E LAYOUT                           */
+/* ESTILOS GERAIS E LAYOUT                         */
 /* =============================================== */
 body {
     font-family: 'Poppins', sans-serif;
@@ -8,40 +8,33 @@ body {
     margin: 0;
 }
 
-/* --- LAYOUT CORRIGIDO COM CSS GRID (VERSÃO DEFINITIVA) --- */
+/* --- LAYOUT GRID PRINCIPAL --- */
 .vitrine-container {
     max-width: 1200px;
     margin: 30px auto;
     padding: 0 15px;
-
-    /* Define o layout como uma grade de 2 colunas */
     display: grid;
-    grid-template-columns: 280px 1fr; /* Coluna 1 (sidebar) = 280px, Coluna 2 (conteúdo) = resto */
-    gap: 30px; /* Espaço entre as colunas */
-    align-items: start; /* Alinha ambos no topo */
+    grid-template-columns: 280px 1fr; /* Sidebar e conteúdo */
+    gap: 30px;
+    align-items: start;
 }
-
 .sidebar-vitrine {
-    width: 100%; /* Ocupa 100% da sua coluna na grade */
+    width: 100%;
     background-color: white;
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    position: sticky; /* Efeito para "grudar" na tela ao rolar */
+    position: sticky;
     top: 30px;
 }
-
 .main-content-vitrine {
-    width: 100%; /* Ocupa 100% da sua coluna na grade */
+    width: 100%;
 }
-
 .menu-content { display: none; }
 .menu-content.ativo { display: block; }
-/* --- FIM DA CORREÇÃO DE LAYOUT --- */
-
 
 /* =============================================== */
-/* CABEÇALHO E MENU LATERAL                          */
+/* CABEÇALHO E MENU LATERAL                        */
 /* =============================================== */
 .header-vitrine {
     text-align: center;
@@ -49,7 +42,6 @@ body {
     margin-bottom: 20px;
     border-bottom: 1px solid #E5E7EB;
 }
-
 #logo-publico {
     width: 100px;
     height: 100px;
@@ -57,13 +49,11 @@ body {
     object-fit: cover;
     margin-bottom: 10px;
 }
-
 #nome-negocio-publico {
     font-size: 1.4rem;
     color: #111827;
     margin: 0;
 }
-
 .sidebar-menu .menu-btn {
     width: 100%;
     padding: 12px 20px;
@@ -78,11 +68,9 @@ body {
     transition: background-color 0.2s ease, color 0.2s ease;
     margin-bottom: 5px;
 }
-
 .sidebar-menu .menu-btn:hover:not(.ativo) {
     background-color: #F3F4F6;
 }
-
 .sidebar-menu .menu-btn.ativo {
     background-color: #4F46E5;
     color: white;
@@ -98,7 +86,6 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
 }
-
 .card h2 {
     font-size: 1.5rem;
     margin-top: 0;
@@ -106,11 +93,9 @@ body {
     padding-bottom: 15px;
     border-bottom: 1px solid #E5E7EB;
 }
-
 .form-group {
     margin-bottom: 25px;
 }
-
 .form-group label {
     display: block;
     font-weight: 600;
@@ -118,7 +103,6 @@ body {
     color: #374151;
     margin-bottom: 10px;
 }
-
 input[type="date"] {
     width: 100%;
     padding: 10px;
@@ -129,14 +113,13 @@ input[type="date"] {
 }
 
 /* =============================================== */
-/* SELEÇÃO DE PROFISSIONAIS                          */
+/* SELEÇÃO DE PROFISSIONAIS                        */
 /* =============================================== */
 .profissionais-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 15px;
 }
-
 .card-profissional {
     border: 2px solid #E5E7EB;
     border-radius: 12px;
@@ -146,20 +129,17 @@ input[type="date"] {
     transition: all 0.2s ease;
     background: #fff;
 }
-
 .card-profissional:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 16px rgba(0,0,0,0.07);
     border-color: #A5B4FC;
 }
-
 .card-profissional.selecionado {
     border-color: #4F46E5;
     background-color: #EEF2FF;
     box-shadow: 0 8px 20px rgba(79, 70, 229, 0.1);
     transform: translateY(-3px);
 }
-
 .card-profissional img {
     width: 70px;
     height: 70px;
@@ -167,15 +147,12 @@ input[type="date"] {
     object-fit: cover;
     margin-bottom: 10px;
 }
-
-/* Nome do profissional dentro do card */
 .card-profissional span {
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
     color: #1F2937;
 }
-
 #agendamento-form-container {
     margin-top: 2rem;
     border-top: 1px solid #E5E7EB;
@@ -183,14 +160,13 @@ input[type="date"] {
 }
 
 /* =============================================== */
-/* SELEÇÃO DE SERVIÇOS E HORÁRIOS                      */
+/* SELEÇÃO DE SERVIÇOS E HORÁRIOS                  */
 /* =============================================== */
 .servicos-container-cards {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
-
 .card-servico {
     background: #F9FAFB;
     border: 1px solid #E5E7EB;
@@ -215,7 +191,11 @@ input[type="date"] {
 .servico-detalhes { font-size: 0.9rem; }
 .card-servico.selecionado .servico-detalhes { color: #E0E7FF; }
 
-.horarios-container-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
+.horarios-container-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+}
 .btn-horario {
     background-color: white;
     border: 1px solid #D1D5DB;
@@ -236,8 +216,11 @@ input[type="date"] {
     border-color: #4F46E5;
     color: white;
 }
-.aviso-horarios { color: #6B7280; text-align: center; padding: 10px; }
-
+.aviso-horarios {
+    color: #6B7280;
+    text-align: center;
+    padding: 10px;
+}
 
 /* =============================================== */
 /* BOTÕES DE AÇÃO E OUTROS                         */
@@ -260,9 +243,8 @@ input[type="date"] {
     opacity: 0.9;
     transform: translateY(-2px);
 }
-
 #btn-confirmar-agendamento {
-    background: #10B981; /* Verde para confirmação */
+    background: #10B981;
     color: white;
     border: none;
     padding: 15px;
@@ -287,9 +269,8 @@ input[type="date"] {
     /* Estilo para botões secundários, como 'Sair' */
 }
 
-
 /* =============================================== */
-/* ABA "MEUS AGENDAMENTOS"                           */
+/* ABA "MEUS AGENDAMENTOS"                         */
 /* =============================================== */
 .botoes-agendamento {
     display: flex;
@@ -312,7 +293,6 @@ input[type="date"] {
     color: white;
     border-color: #4F46E5;
 }
-
 .lista-agendamentos-resultado {
     display: flex;
     flex-direction: column;
@@ -331,10 +311,21 @@ input[type="date"] {
 }
 .card-agendamento.status-cancelado_pelo_cliente { border-left-color: #EF4444; }
 .card-agendamento.status-concluido { border-left-color: #10B981; }
-
-.agendamento-info { display: flex; flex-direction: column; gap: 4px; }
-.agendamento-info strong { margin: 0; font-size: 1.1rem; color: #111827; }
-.agendamento-info span, .agendamento-info small { margin: 0; color: #6B7280; font-size: 0.9rem; }
+.agendamento-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.agendamento-info strong {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #111827;
+}
+.agendamento-info span, .agendamento-info small {
+    margin: 0;
+    color: #6B7280;
+    font-size: 0.9rem;
+}
 .agendamento-acao .btn-cancelar {
     background-color: #EF4444;
     color: white;
@@ -345,8 +336,9 @@ input[type="date"] {
     font-weight: 600;
     transition: background-color 0.2s ease;
 }
-.agendamento-acao .btn-cancelar:hover { background-color: #DC2626; }
-
+.agendamento-acao .btn-cancelar:hover {
+    background-color: #DC2626;
+}
 
 /* =============================================== */
 /* MODAL DE CONFIRMAÇÃO                            */
@@ -385,16 +377,14 @@ input[type="date"] {
 #modal-btn-cancelar { background-color: #E5E7EB; color: #4B5563; }
 #modal-btn-cancelar:hover { background-color: #D1D5DB; }
 
-
 /* =============================================== */
-/* ABA DE INFORMAÇÕES - SERVIÇOS                     */
+/* ABA DE INFORMAÇÕES - SERVIÇOS                   */
 /* =============================================== */
 #info-servicos {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
-
 .servico-info-item {
     background-color: #F9FAFB;
     border: 1px solid #E5E7EB;
@@ -412,29 +402,26 @@ input[type="date"] {
 .servico-info-item strong { font-size: 1rem; font-weight: 600; color: #1F2937; }
 .servico-info-item span { color: #4F46E5; font-weight: 600; }
 
-
 /* =============================================== */
 /* RESPONSIVIDADE                                  */
 /* =============================================== */
 @media (max-width: 900px) {
     .vitrine-container {
-        flex-direction: column; /* Em telas pequenas, volta a ser coluna */
+        flex-direction: column;
         margin: 15px auto;
         gap: 20px;
-        /* As regras do Grid não se aplicam mais aqui */
-        display: flex; /* Garante que o Grid seja sobrescrito */
+        display: flex;
     }
     .sidebar-vitrine {
         width: 100%;
         box-sizing: border-box;
-        position: static; /* Remove o sticky em telas menores */
+        position: static;
     }
 }
 
 /* ========================= */
-/* MELHORIAS ADICIONAIS!     */
+/* MELHORIAS ADICIONAIS      */
 /* ========================= */
-
 /* MENU HORIZONTAL FIXO */
 .menu-horizontal-vitrine {
     width: 100%;
