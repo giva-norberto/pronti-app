@@ -3,37 +3,42 @@
 /* =============================================== */
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #F3F4F6; /* Cor de fundo suave */
+    background-color: #F3F4F6;
     color: #374151;
     margin: 0;
 }
 
+/* --- LAYOUT CORRIGIDO COM CSS GRID (VERSÃO DEFINITIVA) --- */
 .vitrine-container {
-    display: flex;
     max-width: 1200px;
     margin: 30px auto;
-    gap: 30px;
     padding: 0 15px;
-    align-items: flex-start; /* <-- CORREÇÃO AQUI */ /* Alinha a sidebar e o conteúdo no topo */
+
+    /* Define o layout como uma grade de 2 colunas */
+    display: grid;
+    grid-template-columns: 280px 1fr; /* Coluna 1 (sidebar) = 280px, Coluna 2 (conteúdo) = resto */
+    gap: 30px; /* Espaço entre as colunas */
+    align-items: start; /* Alinha ambos no topo */
 }
 
 .sidebar-vitrine {
-    width: 280px;
-    flex-shrink: 0;
+    width: 100%; /* Ocupa 100% da sua coluna na grade */
     background-color: white;
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    position: sticky; /* <-- CORREÇÃO AQUI */ /* Faz a sidebar "grudar" no topo ao rolar */
+    position: sticky; /* Efeito para "grudar" na tela ao rolar */
     top: 30px;
 }
 
 .main-content-vitrine {
-    flex-grow: 1;
+    width: 100%; /* Ocupa 100% da sua coluna na grade */
 }
 
 .menu-content { display: none; }
 .menu-content.ativo { display: block; }
+/* --- FIM DA CORREÇÃO DE LAYOUT --- */
+
 
 /* =============================================== */
 /* CABEÇALHO E MENU LATERAL                          */
@@ -163,7 +168,7 @@ input[type="date"] {
     margin-bottom: 10px;
 }
 
-/* Alterei o seletor de h3 para span para bater com o JS */
+/* Nome do profissional dentro do card */
 .card-profissional span {
     margin: 0;
     font-size: 1rem;
@@ -313,7 +318,7 @@ input[type="date"] {
     flex-direction: column;
     gap: 15px;
 }
-.card-agendamento { /* Renomeado de .agendamento-card */
+.card-agendamento {
     background-color: white;
     border: 1px solid #E5E7EB;
     border-left: 5px solid #4F46E5;
@@ -328,7 +333,7 @@ input[type="date"] {
 .card-agendamento.status-concluido { border-left-color: #10B981; }
 
 .agendamento-info { display: flex; flex-direction: column; gap: 4px; }
-.agendamento-info strong { margin: 0; font-size: 1.1rem; color: #111827; } /* Alterado para strong */
+.agendamento-info strong { margin: 0; font-size: 1.1rem; color: #111827; }
 .agendamento-info span, .agendamento-info small { margin: 0; color: #6B7280; font-size: 0.9rem; }
 .agendamento-acao .btn-cancelar {
     background-color: #EF4444;
@@ -350,14 +355,14 @@ input[type="date"] {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(17, 24, 39, 0.6);
-    display: none; /* Alterado para none */
+    display: none;
     justify-content: center; align-items: center;
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
-.modal-overlay.ativo { 
-    display: flex; /* Alterado para flex */
+.modal-overlay.ativo {
+    display: flex;
     opacity: 1;
 }
 .modal-box {
@@ -386,11 +391,10 @@ input[type="date"] {
 /* =============================================== */
 #info-servicos {
     display: flex;
-    flex-direction: column; /* Alterado para coluna */
+    flex-direction: column;
     gap: 10px;
 }
 
-/* Renomeado para corresponder ao JS */
 .servico-info-item {
     background-color: #F9FAFB;
     border: 1px solid #E5E7EB;
@@ -412,11 +416,13 @@ input[type="date"] {
 /* =============================================== */
 /* RESPONSIVIDADE                                  */
 /* =============================================== */
-@media (max-width: 900px) { /* Aumentado o breakpoint */
+@media (max-width: 900px) {
     .vitrine-container {
-        flex-direction: column;
+        flex-direction: column; /* Em telas pequenas, volta a ser coluna */
         margin: 15px auto;
         gap: 20px;
+        /* As regras do Grid não se aplicam mais aqui */
+        display: flex; /* Garante que o Grid seja sobrescrito */
     }
     .sidebar-vitrine {
         width: 100%;
