@@ -7,8 +7,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const btnVoltar = document.querySelector('.btn-voltar');
   if (btnVoltar) {
     btnVoltar.addEventListener('click', () => {
-      // Redireciona para o link principal (ajuste conforme seu projeto)
-      window.location.href = "/"; // Exemplo: "/" ou "/index.html" ou "/dashboard"
+      window.location.href = "/";
     });
   }
 });
@@ -46,6 +45,38 @@ function desenharOcupacao(percent) {
   document.getElementById("ocupacao-circular").innerHTML = svg;
 }
 
+// Função para formatar data e horário amigavelmente
+function formatarDataHora(dataStr, horarioStr) {
+  // dataStr: "2025-08-12", horarioStr: "15:30"
+  const dias = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  const [ano, mes, dia] = dataStr.split('-');
+  const dataObj = new Date(`${dataStr}T${horarioStr}:00`);
+  return `${dias[dataObj.getDay()]}, ${dia}/${mes}/${ano} às ${horarioStr}`;
+}
+
+// Desenha os agendamentos do dia na agenda-resultado
+function desenharAgendamentosDoDia(agendamentos) {
+  const container = document.getElementById("agenda-resultado");
+  container.innerHTML = "";
+  if (!agendamentos || agendamentos.length === 0) {
+    container.innerHTML = `<div class="aviso-horarios">Nenhum agendamento encontrado para esta data.</div>`;
+    return;
+  }
+  agendamentos.forEach(ag => {
+    const card = document.createElement("div");
+    card.className = "card-agendamento";
+    card.innerHTML = `
+      <div class="agendamento-info">
+        <strong>${ag.servicoNome || ag.servico || "Serviço não informado"}</strong>
+        <span>com ${ag.profissionalNome || ag.profissional || "Profissional não informado"}</span>
+        <small>${formatarDataHora(ag.data, ag.horario)}</small>
+        <span style="color:#a5b4fc;font-size:0.98rem;">Cliente: ${ag.clienteNome || ag.cliente || "Não informado"}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
 // Preenche o dashboard
 async function preencherDashboard(user) {
   const empresaId = await getEmpresaId(user);
@@ -61,36 +92,36 @@ async function preencherDashboard(user) {
   const donoId = empresaRef.data().donoId;
   const isDono = user.uid === donoId;
 
-  // Agendamentos do dia
-  const hoje = new Date();
-  hoje.setHours(0,0,0,0);
-  const amanha = new Date(hoje);
-  amanha.setDate(hoje.getDate() + 1);
-
-  let agQuery;
-  const agCollection = collection(db, "empresarios", empresaId, "agendamentos");
-  if (isDono) {
-    agQuery = query(
-      agCollection,
-      where("data", ">=", hoje),
-      where("data", "<", amanha)
-    );
+  // Filtro de data para agenda geral
+  let dataSelecionada = '';
+  const filtroData = document.getElementById("filtro-data");
+  if (filtroData && filtroData.value) {
+    dataSelecionada = filtroData.value;
   } else {
-    agQuery = query(
-      agCollection,
-      where("data", ">=", hoje),
-      where("data", "<", amanha),
-      where("clienteUid", "==", user.uid)
-    );
+    // Padrão: hoje
+    const hoje = new Date();
+    dataSelecionada = hoje.toISOString().split('T')[0];
+    if (filtroData) filtroData.value = dataSelecionada;
   }
+
+  // Busca todos agendamentos da empresa na data selecionada
+  const agCollection = collection(db, "empresarios", empresaId, "agendamentos");
+  const agQuery = query(
+    agCollection,
+    where("data", "==", dataSelecionada),
+    where("status", "==", "ativo")
+  );
   const agSnap = await getDocs(agQuery);
   const ags = agSnap.docs.map(doc => doc.data());
+
+  desenharAgendamentosDoDia(ags);
 
   // Serviço destaque
   const servicos = {};
   ags.forEach(ag => {
-    if (!servicos[ag.servico]) servicos[ag.servico] = 0;
-    servicos[ag.servico]++;
+    const nomeServico = ag.servicoNome || ag.servico;
+    if (!servicos[nomeServico]) servicos[nomeServico] = 0;
+    servicos[nomeServico]++;
   });
   const servicoDestaque = Object.entries(servicos).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById("servico-destaque").textContent = servicoDestaque ? servicoDestaque[0] : "Nenhum serviço hoje";
@@ -98,8 +129,9 @@ async function preencherDashboard(user) {
   // Profissional destaque
   const profs = {};
   ags.forEach(ag => {
-    if (!profs[ag.profissional]) profs[ag.profissional] = 0;
-    profs[ag.profissional]++;
+    const nomeProf = ag.profissionalNome || ag.profissional;
+    if (!profs[nomeProf]) profs[nomeProf] = 0;
+    profs[nomeProf]++;
   });
   const profDestaque = Object.entries(profs).sort((a,b)=>b[1]-a[1])[0];
   if (profDestaque) {
@@ -119,29 +151,33 @@ async function preencherDashboard(user) {
   const totalSlots = empresaRef.data().slotsDia || 10;
   const ocupacaoPercent = Math.round((ags.length / totalSlots) * 100);
   desenharOcupacao(ocupacaoPercent);
-  document.getElementById("ocupacao-texto").textContent = `Sua agenda está ${ocupacaoPercent}% ocupada hoje`;
+  document.getElementById("ocupacao-texto").textContent = `Sua agenda está ${ocupacaoPercent}% ocupada na data selecionada`;
 
-  // Comparativo com ontem
-  const ontem = new Date(hoje); ontem.setDate(hoje.getDate()-1);
-  const agOntemQuery = query(
+  // Comparativo com data anterior
+  const dataAnteriorObj = new Date(dataSelecionada);
+  dataAnteriorObj.setDate(dataAnteriorObj.getDate() - 1);
+  const dataAnterior = dataAnteriorObj.toISOString().split('T')[0];
+  const agAnteriorQuery = query(
     agCollection,
-    where("data", ">=", ontem),
-    where("data", "<", hoje)
+    where("data", "==", dataAnterior),
+    where("status", "==", "ativo")
   );
-  const agOntemSnap = await getDocs(agOntemQuery);
-  const agOntemQtd = agOntemSnap.size;
-  const diff = ags.length - agOntemQtd;
-  const diffPercent = agOntemQtd ? Math.round((diff / agOntemQtd) * 100) : 0;
+  const agAnteriorSnap = await getDocs(agAnteriorQuery);
+  const agAnteriorQtd = agAnteriorSnap.size;
+  const diff = ags.length - agAnteriorQtd;
+  const diffPercent = agAnteriorQtd ? Math.round((diff / agAnteriorQtd) * 100) : 0;
   document.getElementById("comparativo-percent").textContent = (diffPercent >= 0 ? "+" : "") + diffPercent + "%";
-  document.getElementById("comparativo-texto").textContent = `Você tem ${Math.abs(diffPercent)}% ${diffPercent >= 0 ? "mais" : "menos"} agendamentos que ontem`;
+  document.getElementById("comparativo-texto").textContent = `Você tem ${Math.abs(diffPercent)}% ${diffPercent >= 0 ? "mais" : "menos"} agendamentos que no dia anterior`;
 
   // Alerta de horários próximos
   let alerta = false;
-  ags.sort((a,b)=>new Date(a.horario)-new Date(b.horario));
+  ags.sort((a,b)=>a.horario.localeCompare(b.horario));
   for (let i=1; i<ags.length; i++) {
-    const h1 = new Date(ags[i-1].horario);
-    const h2 = new Date(ags[i].horario);
-    if ((h2-h1)/60000 < 15) alerta = true;
+    const [h1, m1] = ags[i-1].horario.split(':').map(Number);
+    const [h2, m2] = ags[i].horario.split(':').map(Number);
+    const minAntes = h1*60 + m1;
+    const minDepois = h2*60 + m2;
+    if ((minDepois - minAntes) < 15) alerta = true;
   }
   if (alerta) {
     document.getElementById("card-alerta").style.display = "";
@@ -153,7 +189,7 @@ async function preencherDashboard(user) {
   // Sugestão da IA simples
   const horariosBaixa = [];
   for (let h=7; h<=19; h++) {
-    if (!ags.find(ag=>new Date(ag.horario).getHours()===h)) horariosBaixa.push(h);
+    if (!ags.find(ag=>parseInt(ag.horario.split(':')[0])===h)) horariosBaixa.push(h);
   }
   if (horariosBaixa.length) {
     document.getElementById("ia-sugestao").textContent = `Ofereça desconto para horários das ${horariosBaixa[0]}h às ${horariosBaixa[horariosBaixa.length-1]}h, estão com baixa ocupação.`;
@@ -164,7 +200,25 @@ async function preencherDashboard(user) {
   }
 }
 
-// Autenticação e carregamento
+// Evento para filtro por data
+window.addEventListener("DOMContentLoaded", () => {
+  const filtroData = document.getElementById("filtro-data");
+  if (filtroData) {
+    filtroData.addEventListener("change", () => {
+      onAuthStateChanged(auth, user => {
+        if (!user) {
+          alert("Faça login para acessar o dashboard!");
+          return;
+        }
+        preencherDashboard(user).catch(err => {
+          alert("Erro ao carregar dados: " + err.message);
+        });
+      });
+    });
+  }
+});
+
+// Autenticação e carregamento inicial
 onAuthStateChanged(auth, user => {
   if (!user) {
     alert("Faça login para acessar o dashboard!");
