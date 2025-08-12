@@ -6,7 +6,8 @@ export const state = {
     empresaId: null,
     dadosEmpresa: null,
     listaProfissionais: [], // Cache para não buscar toda hora
-    
+    todosOsServicos: [],    // Cache de todos os serviços da empresa
+
     // Estado do agendamento atual
     agendamento: {
         profissional: null,
@@ -27,6 +28,10 @@ export function setEmpresa(id, dados) {
 
 export function setProfissionais(profissionais) {
     state.listaProfissionais = profissionais;
+}
+
+export function setTodosOsServicos(servicos) {
+    state.todosOsServicos = servicos;
 }
 
 export function setAgendamento(propriedade, valor) {
