@@ -8,10 +8,18 @@ import { showAlert } from './vitrini-utils.js';
 
 /**
  * Salva um novo agendamento na subcoleção da EMPRESA.
+ * Validação rigorosa dos dados.
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamentoState) {
     const btn = document.getElementById('btn-confirmar-agendamento');
-    if (!currentUser || !agendamentoState.profissional || !agendamentoState.servico || !agendamentoState.data || !agendamentoState.horario) {
+    // Validação completa
+    if (
+        !currentUser ||
+        !agendamentoState.profissional ||
+        !agendamentoState.servico ||
+        !agendamentoState.data ||
+        !agendamentoState.horario
+    ) {
         if (btn) btn.disabled = false;
         await showAlert("Atenção", "Dados insuficientes para agendar. Verifique todas as seleções.");
         return;
@@ -22,10 +30,16 @@ export async function salvarAgendamento(empresaId, currentUser, agendamentoState
         const dataAgendamento = new Date(dataHoraString);
 
         const dadosAgendamento = {
-            clienteUid: currentUser.uid, clienteNome: currentUser.displayName, clienteEmail: currentUser.email,
-            profissionalId: agendamentoState.profissional.id, profissionalNome: agendamentoState.profissional.nome,
-            servicoId: agendamentoState.servico.id, servicoNome: agendamentoState.servico.nome, servicoDuracao: agendamentoState.servico.duracao, servicoPreco: agendamentoState.servico.preco,
-            horario: Timestamp.fromDate(dataAgendamento),
+            clienteUid: currentUser.uid,
+            clienteNome: currentUser.displayName,
+            clienteEmail: currentUser.email,
+            profissionalId: agendamentoState.profissional.id,
+            profissionalNome: agendamentoState.profissional.nome,
+            servicoId: agendamentoState.servico.id,
+            servicoNome: agendamentoState.servico.nome,
+            servicoDuracao: agendamentoState.servico.duracao,
+            servicoPreco: agendamentoState.servico.preco,
+            horario: Timestamp.fromDate(dataAgendamento), // Firestore Timestamp
             status: 'agendado'
         };
 
@@ -42,6 +56,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamentoState
 
 /**
  * Busca os agendamentos de um cliente para uma determinada EMPRESA e os retorna.
+ * Filtros claros para ativos e passados.
  */
 export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo = 'ativos') {
     if (!currentUser) return [];
@@ -56,9 +71,11 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo =
         const todos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
         if (modo === 'ativos') {
-            return todos.filter(ag => ag.horario.toDate() >= agora && ag.status === 'agendado').sort((a, b) => a.horario.toMillis() - b.horario.toMillis());
+            return todos.filter(ag => ag.horario.toDate() >= agora && ag.status === 'agendado')
+                        .sort((a, b) => a.horario.toMillis() - b.horario.toMillis());
         } else {
-            return todos.filter(ag => ag.horario.toDate() < agora || ag.status !== 'agendado').sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
+            return todos.filter(ag => ag.horario.toDate() < agora || ag.status !== 'agendado')
+                        .sort((a, b) => b.horario.toMillis() - a.horario.toMillis());
         }
     } catch (error) {
         console.error("Erro ao buscar agendamentos:", error);
@@ -105,19 +122,19 @@ export async function buscarAgendamentosDoDia(empresaId, dataString) {
 
 /**
  * Função pura que calcula os slots de horário disponíveis.
- * Respeita o campo "intervalo" de cada bloco.
+ * Respeita o campo "intervalo" de cada bloco. Se não existir, padrão 15min.
  */
 export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico) {
     const slotsDisponiveis = [];
     const diaDaSemana = new Date(`${data}T12:00:00`).getDay();
-    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
-    const configDia = horariosConfig?.[nomeDia];
+    const nomeDia = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][diaDaSemana];
+    const blocosDia = horariosConfig?.[nomeDia];
 
-    if (!configDia || !configDia.ativo || !configDia.blocos || !duracaoServico) {
+    if (!blocosDia || blocosDia.length === 0 || !duracaoServico) {
         return [];
     }
-    configDia.blocos.forEach(bloco => {
-        // Por padrão, intervalo = 15, mas respeita bloco.intervalo se existir
+    blocosDia.forEach(bloco => {
+        // Respeita o intervalo do bloco, padrão 15 min se não tiver
         const intervaloMinutos = bloco.intervalo ? parseInt(bloco.intervalo) : 15;
         let slotAtual = new Date(`${data}T${bloco.inicio}:00`);
         const fimBloco = new Date(`${data}T${bloco.fim}:00`);
@@ -128,7 +145,7 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
             if (!estaOcupado) {
                 slotsDisponiveis.push(slotAtual.toTimeString().substring(0, 5));
             }
-            slotAtual = new Date(slotAtual.getTime() + intervaloMinutos * 60000); // Avança pelo intervalo do bloco
+            slotAtual = new Date(slotAtual.getTime() + intervaloMinutos * 60000);
         }
     });
     return slotsDisponiveis;
@@ -136,27 +153,24 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
 
 /**
  * Encontra a data atual com horários disponíveis, ou a próxima data disponível.
- * Busca em até 30 dias.
- * Se não houver slots nos próximos 30 dias, retorna a data atual (slots vazio).
- * @param {string} empresaId - ID da empresa.
- * @param {object} profissional - O objeto completo do profissional selecionado.
- * @returns {Promise<{data: string, slots: string[]}>}
+ * Busca em até 30 dias. Retrocompatível.
  */
 export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional) {
     if (!profissional?.horarios || !profissional?.servicos?.length) {
         console.warn("Profissional sem horários ou serviços configurados para encontrar data.");
         return null;
     }
+    // Busca a duração do primeiro serviço do profissional
     const duracaoBase = profissional.servicos[0]?.duracao || 30;
     let dataAtual = new Date();
     dataAtual.setHours(0, 0, 0, 0);
 
     // Tenta encontrar slots HOJE
     const diaDaSemana = dataAtual.getDay();
-    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
-    const configDia = profissional.horarios[nomeDia];
+    const nomeDia = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][diaDaSemana];
+    const blocosDia = profissional.horarios[nomeDia];
 
-    if (configDia && configDia.ativo && configDia.blocos?.length > 0) {
+    if (blocosDia && blocosDia.length > 0) {
         const dataISO = dataAtual.toISOString().split('T')[0];
         const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
         const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissional.id);
@@ -173,10 +187,10 @@ export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissiona
         let dataBusca = new Date(dataAtual);
         dataBusca.setDate(dataAtual.getDate() + i);
         const diaBusca = dataBusca.getDay();
-        const nomeBusca = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaBusca];
-        const configBusca = profissional.horarios[nomeBusca];
+        const nomeBusca = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][diaBusca];
+        const blocosBusca = profissional.horarios[nomeBusca];
 
-        if (configBusca && configBusca.ativo && configBusca.blocos?.length > 0) {
+        if (blocosBusca && blocosBusca.length > 0) {
             const dataISO = dataBusca.toISOString().split('T')[0];
             const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
             const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissional.id);
@@ -199,8 +213,7 @@ export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissiona
 }
 
 /**
- * Mantém export da função antiga para compatibilidade.
- * @returns {Promise<string|null>} Retorna apenas a data ou null se não houver slots.
+ * Retrocompatibilidade: retorna apenas a data ou null se não houver slots.
  */
 export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
     const result = await encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional);
