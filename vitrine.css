@@ -14,6 +14,7 @@ body {
     margin: 30px auto;
     gap: 30px;
     padding: 0 15px;
+    align-items: flex-start; /* <-- CORREÇÃO AQUI */ /* Alinha a sidebar e o conteúdo no topo */
 }
 
 .sidebar-vitrine {
@@ -23,19 +24,16 @@ body {
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    align-self: flex-start;
+    position: sticky; /* <-- CORREÇÃO AQUI */ /* Faz a sidebar "grudar" no topo ao rolar */
+    top: 30px;
 }
 
 .main-content-vitrine {
     flex-grow: 1;
 }
 
-/* --- CORREÇÃO IMPORTANTE --- */
-/* Remove o "!important" para garantir que o JS consiga controlar a visibilidade das abas sem conflitos. */
 .menu-content { display: none; }
 .menu-content.ativo { display: block; }
-/* --- FIM DA CORREÇÃO --- */
-
 
 /* =============================================== */
 /* CABEÇALHO E MENU LATERAL                          */
@@ -126,7 +124,7 @@ input[type="date"] {
 }
 
 /* =============================================== */
-/* SELEÇÃO DE PROFISSIONAIS                         */
+/* SELEÇÃO DE PROFISSIONAIS                          */
 /* =============================================== */
 .profissionais-container {
     display: grid;
@@ -165,7 +163,8 @@ input[type="date"] {
     margin-bottom: 10px;
 }
 
-.card-profissional h3 {
+/* Alterei o seletor de h3 para span para bater com o JS */
+.card-profissional span {
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
@@ -179,7 +178,7 @@ input[type="date"] {
 }
 
 /* =============================================== */
-/* SELEÇÃO DE SERVIÇOS E HORÁRIOS                   */
+/* SELEÇÃO DE SERVIÇOS E HORÁRIOS                      */
 /* =============================================== */
 .servicos-container-cards {
     display: flex;
@@ -314,7 +313,7 @@ input[type="date"] {
     flex-direction: column;
     gap: 15px;
 }
-.agendamento-card {
+.card-agendamento { /* Renomeado de .agendamento-card */
     background-color: white;
     border: 1px solid #E5E7EB;
     border-left: 5px solid #4F46E5;
@@ -325,12 +324,12 @@ input[type="date"] {
     align-items: center;
     gap: 20px;
 }
-.agendamento-card.status-cancelado_pelo_cliente { border-left-color: #EF4444; }
-.agendamento-card.status-concluido { border-left-color: #10B981; }
+.card-agendamento.status-cancelado_pelo_cliente { border-left-color: #EF4444; }
+.card-agendamento.status-concluido { border-left-color: #10B981; }
 
 .agendamento-info { display: flex; flex-direction: column; gap: 4px; }
-.agendamento-info h4 { margin: 0; font-size: 1.1rem; color: #111827; }
-.agendamento-info p { margin: 0; color: #6B7280; font-size: 0.9rem; }
+.agendamento-info strong { margin: 0; font-size: 1.1rem; color: #111827; } /* Alterado para strong */
+.agendamento-info span, .agendamento-info small { margin: 0; color: #6B7280; font-size: 0.9rem; }
 .agendamento-acao .btn-cancelar {
     background-color: #EF4444;
     color: white;
@@ -351,12 +350,16 @@ input[type="date"] {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(17, 24, 39, 0.6);
-    display: flex; justify-content: center; align-items: center;
+    display: none; /* Alterado para none */
+    justify-content: center; align-items: center;
     z-index: 1000;
-    opacity: 0; visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
-.modal-overlay.ativo { opacity: 1; visibility: visible; }
+.modal-overlay.ativo { 
+    display: flex; /* Alterado para flex */
+    opacity: 1;
+}
 .modal-box {
     background-color: white;
     padding: 30px;
@@ -382,36 +385,42 @@ input[type="date"] {
 /* ABA DE INFORMAÇÕES - SERVIÇOS                     */
 /* =============================================== */
 #info-servicos {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
+    display: flex;
+    flex-direction: column; /* Alterado para coluna */
+    gap: 10px;
 }
-.servico-info-card {
+
+/* Renomeado para corresponder ao JS */
+.servico-info-item {
     background-color: #F9FAFB;
     border: 1px solid #E5E7EB;
     border-radius: 8px;
-    padding: 20px;
-    text-align: center;
+    padding: 15px 20px;
     transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
-.servico-info-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.servico-info-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
-.servico-info-card h4 { margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: #1F2937; }
-.servico-info-card .servico-card-footer { display: flex; justify-content: space-around; margin-top: 15px; color: #4F46E5; font-weight: 600;}
+.servico-info-item strong { font-size: 1rem; font-weight: 600; color: #1F2937; }
+.servico-info-item span { color: #4F46E5; font-weight: 600; }
 
 
 /* =============================================== */
 /* RESPONSIVIDADE                                  */
 /* =============================================== */
-@media (max-width: 768px) {
+@media (max-width: 900px) { /* Aumentado o breakpoint */
     .vitrine-container {
         flex-direction: column;
         margin: 15px auto;
+        gap: 20px;
     }
     .sidebar-vitrine {
         width: 100%;
         box-sizing: border-box;
+        position: static; /* Remove o sticky em telas menores */
     }
 }
