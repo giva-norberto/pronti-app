@@ -3,7 +3,8 @@
 // notificar a aplicação sobre mudanças no estado de login.
 // Este módulo não guarda estado.
 
-import { auth, provider, onAuthStateChanged, signInWithPopup, signOut } from './vitrini-firebase.js';
+import { auth, provider } from './vitrini-firebase.js';
+import { onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { showAlert } from './vitrini-utils.js'; // Assumindo que showAlert vem de utils
 
 /**
