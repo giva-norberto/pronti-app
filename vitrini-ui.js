@@ -4,9 +4,6 @@
 
 /**
  * Exibe as informações gerais da empresa no cabeçalho e na aba "Informações".
- * Combina os dados da empresa e a lista de todos os serviços únicos.
- * @param {object} dadosEmpresa - O objeto com os dados da empresa.
- * @param {Array} listaProfissionais - A lista completa de profissionais para extrair os serviços.
  */
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, listaProfissionais) {
     // Cabeçalho da página
@@ -56,7 +53,6 @@ export function renderizarDadosIniciaisEmpresa(dadosEmpresa, listaProfissionais)
 
 /**
  * Renderiza os cards de profissionais para seleção na aba de agendamento.
- * @param {Array} profissionais - A lista de profissionais da empresa.
  */
 export function renderizarProfissionais(profissionais) {
     const container = document.getElementById('lista-profissionais');
@@ -74,7 +70,6 @@ export function renderizarProfissionais(profissionais) {
 
 /**
  * Renderiza os cards de serviços do profissional que foi selecionado.
- * @param {Array} servicos - A lista de serviços do profissional.
  */
 export function renderizarServicos(servicos) {
     const container = document.getElementById('lista-servicos');
@@ -94,11 +89,9 @@ export function renderizarServicos(servicos) {
 
 /**
  * Renderiza os botões de horários disponíveis para agendamento.
- * @param {Array<string>} slots - Uma lista de strings de horários, ex: ['09:00', '09:30'].
  */
 export function renderizarHorarios(slots) {
     const container = document.getElementById('grade-horarios');
-    // Limpa o botão de confirmação sempre que novos horários são renderizados
     document.getElementById('btn-confirmar-agendamento').disabled = true;
 
     if (!slots || slots.length === 0) {
@@ -109,8 +102,7 @@ export function renderizarHorarios(slots) {
 }
 
 /**
- * Atualiza a interface (abas de perfil, agendamento) com base no estado de login do usuário.
- * @param {object|null} user - O objeto do usuário do Firebase, ou nulo se deslogado.
+ * Atualiza a interface com base no estado de login do usuário.
  */
 export function atualizarUIdeAuth(user) {
     const userInfo = document.getElementById('user-info');
@@ -121,7 +113,6 @@ export function atualizarUIdeAuth(user) {
     const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
 
     if (user) {
-        // --- USUÁRIO LOGADO ---
         userInfo.style.display = 'flex';
         document.getElementById('user-name').textContent = user.displayName || user.email;
         document.getElementById('user-photo').src = user.photoURL || 'https://placehold.co/80x80/e0e7ff/6366f1?text=👤';
@@ -131,29 +122,24 @@ export function atualizarUIdeAuth(user) {
         loginPromptVisualizacao.style.display = 'none';
         botoesVisualizacao.style.display = 'flex';
     } else {
-        // --- USUÁRIO DESLOGADO ---
         userInfo.style.display = 'none';
         loginContainer.style.display = 'block';
         
         loginPromptAgendamento.style.display = 'block';
         loginPromptVisualizacao.style.display = 'block';
         botoesVisualizacao.style.display = 'none';
-        if (listaAgendamentos) listaAgendamentos.innerHTML = ''; // Limpa a lista de agendamentos
+        if (listaAgendamentos) listaAgendamentos.innerHTML = '';
     }
 }
 
 /**
  * Altera a aba de conteúdo visível na seção principal.
- * @param {string} menuId - O ID do conteúdo do menu a ser exibido (ex: 'menu-agendamento').
  */
 export function trocarAba(menuId) {
-    // Esconde todos os conteúdos
     document.querySelectorAll('.menu-content').forEach(el => el.classList.remove('ativo'));
-    // Mostra o conteúdo correto
     const abaAtiva = document.getElementById(menuId);
     if(abaAtiva) abaAtiva.classList.add('ativo');
 
-    // Atualiza o estado visual do botão do menu
     document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('ativo'));
     const botaoAtivo = document.querySelector(`.menu-btn[data-menu="${menuId.replace('menu-','')}"]`);
     if(botaoAtivo) botaoAtivo.classList.add('ativo');
@@ -161,9 +147,42 @@ export function trocarAba(menuId) {
 
 /**
  * Controla a visibilidade do loader principal da página.
- * @param {boolean} mostrar - True para mostrar o loader, false para mostrar o conteúdo.
  */
 export function toggleLoader(mostrar) {
     document.getElementById('vitrine-loader').style.display = mostrar ? 'block' : 'none';
     document.getElementById('vitrine-content').style.display = mostrar ? 'none' : 'flex';
+}
+
+/**
+ * Renderiza os cards de agendamento na aba "Meus Agendamentos".
+ * @param {Array} agendamentos - A lista de agendamentos para exibir.
+ * @param {string} modo - 'ativos' ou 'historico'.
+ */
+export function renderizarAgendamentosComoCards(agendamentos, modo) {
+    const container = document.getElementById('lista-agendamentos-visualizacao');
+    if (!agendamentos || agendamentos.length === 0) {
+        container.innerHTML = `<p>Nenhum agendamento para exibir no modo '${modo}'.</p>`;
+        return;
+    }
+    container.innerHTML = agendamentos.map(ag => {
+        const horarioDate = ag.horario.toDate();
+        const horarioStr = horarioDate.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        const podeCancelar = (modo === 'ativos' && ag.status === 'agendado' && horarioDate > new Date());
+        const btnCancelar = podeCancelar ? `<button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>` : '';
+        let statusExibido = ag.status.replace(/_/g, ' ');
+        if (modo !== 'ativos' && ag.status === 'agendado') {
+            statusExibido = 'Concluído';
+        }
+
+        return `
+        <div class="agendamento-card status-${ag.status}">
+            <div class="agendamento-info">
+                <h4>${ag.servicoNome}</h4>
+                <p><strong>Profissional:</strong> ${ag.profissionalNome || 'N/A'}</p>
+                <p><strong>Data:</strong> ${horarioStr}</p>
+                <p><strong>Status:</strong> <span class="status">${statusExibido}</span></p>
+            </div>
+            <div class="agendamento-acao">${btnCancelar}</div>
+        </div>`;
+    }).join('');
 }
