@@ -1,4 +1,4 @@
-// VERSÃO DEFINITIVA E COMPLETA - Firebase v10.12.2
+// VERSÃO FINAL - AGENDAMENTO COM INTERVALO GLOBAL E DADOS COMPATÍVEIS COM FIREBASE
 
 import {
     collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc
@@ -12,7 +12,6 @@ import { showAlert } from './vitrini-utils.js';
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamentoState) {
     const btn = document.getElementById('btn-confirmar-agendamento');
-    // Validação completa
     if (
         !currentUser ||
         !agendamentoState.profissional ||
@@ -39,7 +38,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamentoState
             servicoNome: agendamentoState.servico.nome,
             servicoDuracao: agendamentoState.servico.duracao,
             servicoPreco: agendamentoState.servico.preco,
-            horario: Timestamp.fromDate(dataAgendamento), // Firestore Timestamp
+            horario: Timestamp.fromDate(dataAgendamento),
             status: 'agendado'
         };
 
@@ -121,27 +120,33 @@ export async function buscarAgendamentosDoDia(empresaId, dataString) {
 }
 
 /**
- * Função pura que calcula os slots de horário disponíveis.
- * Respeita o campo "intervalo" de cada bloco. Se não existir, padrão 15min.
+ * Gera os slots disponíveis para um dia e profissional.
+ * Respeita estrutura: intervalo global (horarios.intervalo), campo ativo, blocos, etc.
+ * Se não existir intervalo global, usa 15 minutos.
  */
-export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico) {
+export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico, profissionalId) {
     const slotsDisponiveis = [];
+    const diasNomes = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     const diaDaSemana = new Date(`${data}T12:00:00`).getDay();
-    const nomeDia = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][diaDaSemana];
-    const blocosDia = horariosConfig?.[nomeDia];
+    const nomeDia = diasNomes[diaDaSemana];
+    const diaConfig = horariosConfig?.[nomeDia];
 
-    if (!blocosDia || blocosDia.length === 0 || !duracaoServico) {
+    // Usa intervalo GLOBAL do objeto horariosConfig, se existir
+    const intervaloGlobal = horariosConfig?.intervalo ? parseInt(horariosConfig.intervalo) : 15;
+
+    if (!diaConfig?.ativo || !Array.isArray(diaConfig.blocos) || diaConfig.blocos.length === 0 || !duracaoServico) {
         return [];
     }
-    blocosDia.forEach(bloco => {
-        // Respeita o intervalo do bloco, padrão 15 min se não tiver
-        const intervaloMinutos = bloco.intervalo ? parseInt(bloco.intervalo) : 15;
+    diaConfig.blocos.forEach(bloco => {
+        const intervaloMinutos = intervaloGlobal;
         let slotAtual = new Date(`${data}T${bloco.inicio}:00`);
         const fimBloco = new Date(`${data}T${bloco.fim}:00`);
         while (slotAtual < fimBloco) {
             const fimSlot = new Date(slotAtual.getTime() + duracaoServico * 60000);
             if (fimSlot > fimBloco) break;
-            const estaOcupado = agendamentosOcupados.some(agendamento => (slotAtual < agendamento.fim && fimSlot > agendamento.inicio));
+            const estaOcupado = agendamentosOcupados
+                .filter(ag => ag.profissionalId === profissionalId)
+                .some(agendamento => (slotAtual < agendamento.fim && fimSlot > agendamento.inicio));
             if (!estaOcupado) {
                 slotsDisponiveis.push(slotAtual.toTimeString().substring(0, 5));
             }
@@ -152,71 +157,44 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
 }
 
 /**
- * Encontra a data atual com horários disponíveis, ou a próxima data disponível.
- * Busca em até 30 dias. Retrocompatível.
+ * Encontra a primeira data com horários disponíveis, ou retorna hoje (mesmo sem slots).
+ * Busca nos próximos 30 dias.
+ * Precisa do serviço selecionado para a duração.
  */
-export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional) {
-    if (!profissional?.horarios || !profissional?.servicos?.length) {
-        console.warn("Profissional sem horários ou serviços configurados para encontrar data.");
-        return null;
-    }
-    // Busca a duração do primeiro serviço do profissional
-    const duracaoBase = profissional.servicos[0]?.duracao || 30;
+export async function encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional, servicoSelecionado) {
+    const duracaoBase = servicoSelecionado?.duracao || 30;
     let dataAtual = new Date();
     dataAtual.setHours(0, 0, 0, 0);
 
-    // Tenta encontrar slots HOJE
-    const diaDaSemana = dataAtual.getDay();
-    const nomeDia = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][diaDaSemana];
-    const blocosDia = profissional.horarios[nomeDia];
-
-    if (blocosDia && blocosDia.length > 0) {
-        const dataISO = dataAtual.toISOString().split('T')[0];
+    for (let i = 0; i < 30; i++) {
+        let dataBusca = new Date(dataAtual);
+        dataBusca.setDate(dataAtual.getDate() + i);
+        const dataISO = dataBusca.toISOString().split('T')[0];
         const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
-        const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissional.id);
-        const slotsDisponiveis = calcularSlotsDisponiveis(dataISO, agendamentosDoProfissional, profissional.horarios, duracaoBase);
+
+        const slotsDisponiveis = calcularSlotsDisponiveis(
+            dataISO,
+            agendamentosDoDia,
+            profissional.horarios,
+            duracaoBase,
+            profissional.id
+        );
 
         if (slotsDisponiveis.length > 0) {
             return { data: dataISO, slots: slotsDisponiveis };
         }
     }
 
-    // Busca a próxima data até 30 dias
-    let proximaData = null;
-    for (let i = 1; i < 30; i++) {
-        let dataBusca = new Date(dataAtual);
-        dataBusca.setDate(dataAtual.getDate() + i);
-        const diaBusca = dataBusca.getDay();
-        const nomeBusca = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'][diaBusca];
-        const blocosBusca = profissional.horarios[nomeBusca];
-
-        if (blocosBusca && blocosBusca.length > 0) {
-            const dataISO = dataBusca.toISOString().split('T')[0];
-            const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataISO);
-            const agendamentosDoProfissional = agendamentosDoDia.filter(ag => ag.profissionalId === profissional.id);
-            const slotsDisponiveis = calcularSlotsDisponiveis(dataISO, agendamentosDoProfissional, profissional.horarios, duracaoBase);
-
-            if (slotsDisponiveis.length > 0) {
-                proximaData = { data: dataISO, slots: slotsDisponiveis };
-                break;
-            }
-        }
-    }
-
-    // Retorna próxima data disponível ou a data atual (sem slots)
-    if (proximaData) {
-        return proximaData;
-    } else {
-        const dataISO = dataAtual.toISOString().split('T')[0];
-        return { data: dataISO, slots: [] };
-    }
+    // Nenhum slot encontrado
+    const dataISO = dataAtual.toISOString().split('T')[0];
+    return { data: dataISO, slots: [] };
 }
 
 /**
  * Retrocompatibilidade: retorna apenas a data ou null se não houver slots.
  */
-export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
-    const result = await encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional);
+export async function encontrarPrimeiraDataComSlots(empresaId, profissional, servicoSelecionado) {
+    const result = await encontrarPrimeiraDataComSlotsOuHoje(empresaId, profissional, servicoSelecionado);
     if (result && result.slots.length > 0) {
         return result.data;
     } else {
