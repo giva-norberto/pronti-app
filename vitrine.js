@@ -1,253 +1,187 @@
-// vitrine.js - Fluxo do cliente com dados reais de empresa, profissionais, serviços e horários
+// vitrine.js - O Maestro da Aplicação
+// VERSÃO FINAL E CORRIGIDA - Firebase v10.12.2
 
-// IMPORTANTE: Certifique-se de importar/definir as funções auxiliares abaixo em outro arquivo JS ou neste mesmo!
-/*
-import { 
-    getEmpresaIdFromURL, 
-    getDadosEmpresa, 
-    getProfissionaisDaEmpresa, 
-    getServicosDoProfissional, 
-    getHorariosDoProfissional 
-} from './vitrine-helpers.js';
-*/
+// 1. Importa o gerenciador de estado
+import { state, setEmpresa, setProfissionais, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 
-let empresaId = null;
-let dadosEmpresa = {};
-let listaProfissionais = [];
-let profissionalSelecionado = null;
-let agendamentoState = { data: null, horario: null, servico: null, profissional: null };
+// 2. Importa as funções de busca de dados
+import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional } from './vitrini-profissionais.js';
+import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, buscarAgendamentosDoCliente, cancelarAgendamento } from './vitrini-agendamento.js';
 
-async function init() {
+// 3. Importa as funções de autenticação
+import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
+
+// 4. Importa TODAS as funções de UI como um único objeto "UI"
+import * as UI from './vitrini-ui.js';
+
+// --- INICIALIZAÇÃO ---
+
+document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const agendamentoFormContainer = document.getElementById('agendamento-form-container');
-        if (agendamentoFormContainer) agendamentoFormContainer.style.display = 'none';
+        UI.toggleLoader(true); // Mostra o loader
 
-        empresaId = typeof getEmpresaIdFromURL === "function" ? getEmpresaIdFromURL() : null;
-        if (!empresaId) throw new Error("URL inválida: ID da empresa não encontrado.");
+        const empresaId = getEmpresaIdFromURL();
+        if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
-        dadosEmpresa = typeof getDadosEmpresa === "function" ? await getDadosEmpresa(empresaId) : null;
-        if (!dadosEmpresa) throw new Error("Empresa não encontrada.");
+        const dados = await getDadosEmpresa(empresaId);
+        if (!dados) throw new Error("Empresa não encontrada.");
+        setEmpresa(empresaId, dados);
 
-        renderizarDadosEmpresa(dadosEmpresa);
-
-        // Carrega profissionais da empresa
-        listaProfissionais = typeof getProfissionaisDaEmpresa === "function" ? await getProfissionaisDaEmpresa(empresaId) : [];
-
-        // Para cada profissional, carrega serviços e horários
-        for (const prof of listaProfissionais) {
-            prof.servicos = typeof getServicosDoProfissional === "function" 
-                ? await getServicosDoProfissional(empresaId, prof.id) : [];
-            prof.horarios = typeof getHorariosDoProfissional === "function" 
-                ? await getHorariosDoProfissional(empresaId, prof.id) : {};
-        }
-
-        renderizarInformacoesDaEmpresa(dadosEmpresa, listaProfissionais);
-
-        const containerProfissionais = document.getElementById('lista-profissionais');
-        if (containerProfissionais) {
-            if (listaProfissionais.length === 0) {
-                containerProfissionais.innerHTML = "<p>Nenhum profissional cadastrado no momento.</p>";
-            } else {
-                renderizarProfissionais(listaProfissionais, containerProfissionais, selecionarProfissional);
-            }
-        }
-
+        const profissionais = await getProfissionaisDaEmpresa(empresaId);
+        setProfissionais(profissionais);
+        
+        UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.listaProfissionais);
+        UI.renderizarProfissionais(state.listaProfissionais);
+        
         configurarEventosGerais();
+        setupAuthListener(handleUserAuthStateChange);
 
-        const vitrineLoader = document.getElementById("vitrine-loader");
-        const vitrineContent = document.getElementById("vitrine-content");
-        if (vitrineLoader) vitrineLoader.style.display = 'none';
-        if (vitrineContent) vitrineContent.style.display = 'flex';
+        UI.toggleLoader(false); // Esconde o loader e mostra o conteúdo
 
     } catch (error) {
-        console.error("Erro na inicialização:", error);
-        const vitrineLoader = document.getElementById("vitrine-loader");
-        if (vitrineLoader) {
-            vitrineLoader.innerHTML = `<p style="color:red; text-align: center;">${error.message}</p>`;
-        }
+        console.error("Erro fatal na inicialização:", error);
+        document.getElementById("vitrine-loader").innerHTML = `<p style="color:red;">${error.message}</p>`;
     }
-}
+});
 
-function renderizarDadosEmpresa(empresa) {
-    document.title = empresa.nomeFantasia || "Agendamento Online";
-    const nomeNegocio = document.getElementById('nome-negocio-publico');
-    if (nomeNegocio) nomeNegocio.textContent = empresa.nomeFantasia || "Nome do Negócio";
-    if (empresa.logoUrl) {
-        const logo = document.getElementById('logo-publico');
-        if (logo) logo.src = empresa.logoUrl;
-    }
-}
 
-function renderizarInformacoesDaEmpresa(empresa, profissionais) {
-    const infoNegocioDiv = document.getElementById('info-negocio');
-    const infoServicosDiv = document.getElementById('info-servicos');
-    if (infoNegocioDiv) {
-        infoNegocioDiv.innerHTML = empresa.descricao 
-            ? `<p>${empresa.descricao}</p>` 
-            : `<p>Bem-vindo! Utilize a aba "Agendar" para marcar seu horário.</p>`;
-    }
-    if (infoServicosDiv) {
-        const todosOsServicos = new Map();
-        profissionais.forEach(prof => {
-            (prof.servicos || []).forEach(servico => {
-                if (!todosOsServicos.has(servico.nome)) {
-                    todosOsServicos.set(servico.nome, servico);
-                }
-            });
-        });
-        const listaDeServicos = Array.from(todosOsServicos.values());
-        if (listaDeServicos.length > 0) {
-            infoServicosDiv.innerHTML = listaDeServicos.map(s => `
-                <div class="servico-info-card">
-                    <h4>${s.nome}</h4>
-                    <p>${s.duracao || 'N/A'} min</p>
-                    <p>R$ ${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</p>
-                </div>
-            `).join('');
-        } else {
-            infoServicosDiv.innerHTML = '<p>Os serviços oferecidos aparecerão aqui.</p>';
-        }
-    }
-}
-
-function renderizarProfissionais(profissionais, container, callback) {
-    container.innerHTML = profissionais.map(prof =>
-        `<div class="card-profissional" data-id="${prof.id}">
-            ${prof.nome}
-        </div>`
-    ).join('');
-    container.querySelectorAll('.card-profissional').forEach(card => {
-        card.addEventListener('click', () => {
-            const prof = profissionais.find(p => p.id === card.getAttribute('data-id'));
-            if (callback) callback(prof);
-        });
-    });
-}
-
-async function selecionarProfissional(profissional) {
-    if (!profissional) return;
-    profissionalSelecionado = profissional;
-    agendamentoState.profissional = { id: profissional.id, nome: profissional.nome };
-
-    document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
-    const cardSel = document.querySelector(`.card-profissional[data-id="${profissional.id}"]`);
-    if (cardSel) cardSel.classList.add('selecionado');
-
-    const agendamentoFormContainer = document.getElementById('agendamento-form-container');
-    if (agendamentoFormContainer) agendamentoFormContainer.style.display = 'block';
-
-    renderizarServicos(
-        profissionalSelecionado.servicos || [],
-        document.getElementById('lista-servicos'),
-        selecionarServico
-    );
-
-    agendamentoState.servico = null;
-    agendamentoState.data = null;
-    agendamentoState.horario = null;
-
-    const dataAgendamentoInput = document.getElementById('data-agendamento');
-    if (dataAgendamentoInput) {
-        dataAgendamentoInput.value = '';
-        dataAgendamentoInput.disabled = true;
-        dataAgendamentoInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    }
-
-    const gradeHorarios = document.getElementById('grade-horarios');
-    if (gradeHorarios) gradeHorarios.innerHTML = '<p class="aviso-horarios">Selecione um serviço para prosseguir.</p>';
-    updateConfirmButtonState();
-}
-
-function renderizarServicos(servicos, container, callback) {
-    if (!container) return;
-    container.innerHTML = servicos.length > 0
-        ? servicos.map(s => `<div class="card-servico" data-id="${s.id}">${s.nome} - ${s.duracao || 'N/A'}min - R$${parseFloat(s.preco || 0).toFixed(2).replace('.', ',')}</div>`).join('')
-        : '<p>Nenhum serviço cadastrado para este profissional.</p>';
-    container.querySelectorAll('.card-servico').forEach(card => {
-        card.addEventListener('click', () => {
-            const servico = servicos.find(s => s.id === card.getAttribute('data-id'));
-            if (callback) callback(servico);
-        });
-    });
-}
-
-function selecionarServico(servico) {
-    agendamentoState.servico = servico;
-    agendamentoState.horario = null;
-    agendamentoState.data = null;
-
-    const dataInput = document.getElementById('data-agendamento');
-    if (dataInput) {
-        dataInput.value = '';
-        dataInput.disabled = false;
-        dataInput.min = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    }
-
-    const gradeHorarios = document.getElementById('grade-horarios');
-    if (gradeHorarios) gradeHorarios.innerHTML = '<p class="aviso-horarios">Selecione uma data para ver os horários disponíveis.</p>';
-    updateConfirmButtonState();
-}
-
-function updateConfirmButtonState() {
-    const btn = document.getElementById('btn-confirmar-agendamento');
-    if (!btn) return;
-    const isReady = agendamentoState.profissional && agendamentoState.servico && agendamentoState.data && agendamentoState.horario;
-    btn.disabled = !isReady;
-}
+// --- CONFIGURAÇÃO DE EVENTOS ---
 
 function configurarEventosGerais() {
-    const dataAgendamentoInput = document.getElementById('data-agendamento');
-    if (dataAgendamentoInput) {
-        dataAgendamentoInput.addEventListener('change', async (e) => {
-            agendamentoState.data = e.target.value;
-            agendamentoState.horario = null;
-            const horariosContainer = document.getElementById('grade-horarios');
-            if (horariosContainer) horariosContainer.innerHTML = '';
+    document.querySelector('.sidebar-menu').addEventListener('click', handleMenuClick);
+    document.getElementById('lista-profissionais').addEventListener('click', handleProfissionalClick);
+    document.getElementById('lista-servicos').addEventListener('click', handleServicoClick);
+    document.getElementById('data-agendamento').addEventListener('change', handleDataChange);
+    document.getElementById('grade-horarios').addEventListener('click', handleHorarioClick);
+    document.getElementById('btn-login').addEventListener('click', fazerLogin);
+    document.getElementById('btn-logout').addEventListener('click', fazerLogout);
+    document.getElementById('btn-confirmar-agendamento').addEventListener('click', handleConfirmarAgendamento);
+    document.getElementById('botoes-agendamento').addEventListener('click', handleFiltroAgendamentos);
+    document.getElementById('lista-agendamentos-visualizacao').addEventListener('click', handleCancelarClick);
+}
 
-            if (!profissionalSelecionado || !agendamentoState.servico || !agendamentoState.data) {
-                if (horariosContainer) horariosContainer.innerHTML = '<p class="aviso-horarios">Selecione serviço e data.</p>';
-                return;
-            }
+// --- HANDLERS (As Funções que os Eventos Chamam) ---
 
-            // Exemplo de horários disponíveis (pode ser customizado conforme regras do seu sistema)
-            const horariosConfig = profissionalSelecionado.horarios || {};
-            const listaHorarios = horariosConfig[agendamentoState.data] || horariosConfig["horariosPadrao"] || [];
-            if (horariosContainer) {
-                if (listaHorarios.length > 0) {
-                    horariosContainer.innerHTML = listaHorarios.map(horario =>
-                        `<button class="btn-horario">${horario}</button>`
-                    ).join('');
-                } else {
-                    horariosContainer.innerHTML = `<p>Nenhum horário disponível para este dia.</p>`;
-                }
-            }
-            updateConfirmButtonState();
-        });
-    }
-
-    const gradeHorarios = document.getElementById('grade-horarios');
-    if (gradeHorarios) {
-        gradeHorarios.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-horario')) {
-                document.querySelectorAll('.btn-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
-                e.target.classList.add('selecionado');
-                agendamentoState.horario = e.target.textContent;
-                updateConfirmButtonState();
-            }
-        });
-    }
-
-    const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
-    if (btnConfirmarAgendamento) {
-        btnConfirmarAgendamento.addEventListener('click', async () => {
-            if (!agendamentoState.profissional || !agendamentoState.servico || !agendamentoState.data || !agendamentoState.horario) {
-                alert("Preencha todos os campos para agendar!");
-                return;
-            }
-            // Aqui você pode salvar o agendamento no Firestore se desejar!
-            alert(`Agendamento confirmado:\n${agendamentoState.servico.nome} - ${agendamentoState.profissional.nome} - ${agendamentoState.data} - ${agendamentoState.horario}`);
-        });
+function handleUserAuthStateChange(user) {
+    setCurrentUser(user);
+    UI.atualizarUIdeAuth(user);
+    if(user && document.getElementById('menu-visualizacao').classList.contains('ativo')) {
+        handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
     }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+function handleMenuClick(e) {
+    if (e.target.matches('.menu-btn')) {
+        const menuKey = e.target.getAttribute('data-menu');
+        UI.trocarAba(`menu-${menuKey}`);
+        if (menuKey === 'visualizacao' && state.currentUser) {
+            handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+        }
+    }
+}
+
+async function handleProfissionalClick(e) {
+    const card = e.target.closest('.card-profissional');
+    if (!card) return;
+
+    resetarAgendamento();
+    document.getElementById('agendamento-form-container').style.display = 'none';
+
+    const profissionalId = card.dataset.id;
+    const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
+    
+    // Busca horários sob demanda para melhorar a performance
+    profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
+    setAgendamento('profissional', profissional);
+
+    document.querySelectorAll('.card-profissional.selecionado').forEach(c => c.classList.remove('selecionado'));
+    card.classList.add('selecionado');
+    document.getElementById('agendamento-form-container').style.display = 'block';
+    
+    // Renderiza os serviços (que já temos, assumindo que vêm como array no profissional)
+    UI.renderizarServicos(profissional.servicos);
+}
+
+function handleServicoClick(e) {
+    const card = e.target.closest('.card-servico');
+    if (!card) return;
+    
+    const servicoId = card.dataset.id;
+    const servico = state.agendamento.profissional.servicos.find(s => s.id === servicoId);
+    setAgendamento('servico', servico);
+    
+    document.querySelectorAll('.card-servico.selecionado').forEach(c => c.classList.remove('selecionado'));
+    card.classList.add('selecionado');
+    
+    const dataInput = document.getElementById('data-agendamento');
+    dataInput.disabled = false;
+    dataInput.value = '';
+    dataInput.min = new Date().toISOString().split("T")[0];
+}
+
+async function handleDataChange(e) {
+    setAgendamento('data', e.target.value);
+    setAgendamento('horario', null);
+
+    const { profissional, servico, data } = state.agendamento;
+    if (!profissional || !servico || !data) return;
+
+    UI.renderizarHorarios(null); // Limpa e mostra "calculando"
+    const todosAgendamentos = await buscarAgendamentosDoDia(state.empresaId, data);
+    const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
+
+    const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, servico.duracao);
+    UI.renderizarHorarios(slots);
+}
+
+function handleHorarioClick(e) {
+    const btn = e.target.closest('.btn-horario');
+    if (!btn) return;
+    
+    setAgendamento('horario', btn.dataset.horario);
+    document.querySelectorAll('.btn-horario.selecionado').forEach(b => b.classList.remove('selecionado'));
+    btn.classList.add('selecionado');
+    document.getElementById('btn-confirmar-agendamento').disabled = false;
+}
+
+async function handleConfirmarAgendamento() {
+    if (!state.currentUser) {
+        UI.trocarAba('menu-perfil');
+        alert("Você precisa fazer login para confirmar o agendamento.");
+        return;
+    }
+    const { profissional, servico, data, horario } = state.agendamento;
+    if (!profissional || !servico || !data || !horario) return;
+    
+    const btn = document.getElementById('btn-confirmar-agendamento');
+    btn.disabled = true;
+    btn.textContent = 'A agendar...';
+    
+    await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
+    btn.textContent = 'Confirmar Agendamento';
+}
+
+async function handleFiltroAgendamentos(e) {
+    if (!e.target.matches('.btn-toggle')) return;
+    const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
+    
+    document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('ativo'));
+    e.target.classList.add('ativo');
+
+    const container = document.getElementById('lista-agendamentos-visualizacao');
+    container.innerHTML = '<p>Buscando agendamentos...</p>';
+    const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
+    UI.renderizarAgendamentosComoCards(agendamentos, modo);
+}
+
+async function handleCancelarClick(e) {
+    if (e.target.matches('.btn-cancelar')) {
+        const agendamentoId = e.target.dataset.id;
+        const confirmou = confirm("Tem certeza que deseja cancelar este agendamento?");
+        if (confirmou) {
+            await cancelarAgendamento(state.empresaId, agendamentoId, () => {
+                handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+            });
+        }
+    }
+}
