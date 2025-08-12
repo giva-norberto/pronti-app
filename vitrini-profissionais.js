@@ -1,6 +1,6 @@
-// vitrine-profissionais.js
+// vitrini-profissionais.js
 // RESPONSABILIDADE: Funções para buscar dados públicos de empresas e profissionais.
-// ATUALIZADO para a sintaxe moderna do Firebase (v10) e para ser um módulo ES6.
+// VERSÃO FINAL E CORRIGIDA - Firebase v10.12.2
 
 import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from './vitrini-firebase.js'; // Importa a conexão 'db' do nosso arquivo central
@@ -27,47 +27,7 @@ export function getEmpresaIdFromURL() {
     }
 }
 
-// --- FUNÇÕES DE BUSCA DE DADOS (Refatoradas) ---
-
-export async function getProfissionalUidBySlug(slug) {
-    if (!slug) return null;
-    try {
-        const slugRef = doc(db, "slugs", slug);
-        const docSnap = await getDoc(slugRef);
-        if (!docSnap.exists()) return null;
-        return docSnap.data().uid || null;
-    } catch (error) {
-        console.error("Erro ao buscar UID pelo slug:", error);
-        return null;
-    }
-}
-
-export async function getDadosProfissional(uid) {
-    if (!uid) return null;
-    try {
-        const perfilRef = doc(db, "users", uid, "publicProfile", "profile");
-        const servicosRef = collection(db, "users", uid, "servicos");
-        const horariosRef = doc(db, "users", uid, "configuracoes", "horarios");
-
-        const [perfilSnap, servicosSnap, horariosSnap] = await Promise.all([
-            getDoc(perfilRef),
-            getDocs(servicosRef),
-            getDoc(horariosRef)
-        ]);
-
-        if (!perfilSnap.exists()) return null;
-
-        const perfil = perfilSnap.data();
-        const horarios = horariosSnap.exists() ? horariosSnap.data() : {};
-        const servicos = [];
-        servicosSnap.forEach(doc => servicos.push({ id: doc.id, ...doc.data() }));
-
-        return { uid, perfil, servicos, horarios };
-    } catch (error) {
-        console.error("Erro ao carregar dados do profissional:", error);
-        return null;
-    }
-}
+// --- FUNÇÕES DE BUSCA DE DADOS ---
 
 export async function getDadosEmpresa(empresaId) {
     if (!empresaId) return null;
@@ -121,4 +81,30 @@ export async function getHorariosDoProfissional(empresaId, profissionalId) {
     }
 }
 
-// O restante das suas funções de busca (`getServicoById`, `getTodosServicosDaEmpresa`) seguiriam o mesmo padrão de refatoração.
+// --- FUNÇÕES COMPLETADAS ---
+
+export async function getServicoById(empresaId, servicoId) {
+    if (!empresaId || !servicoId) return null;
+    try {
+        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+        const docSnap = await getDoc(servicoRef);
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
+    } catch (error) {
+        console.error("Erro ao buscar serviço por ID:", error);
+        return null;
+    }
+}
+
+export async function getTodosServicosDaEmpresa(empresaId) {
+    if (!empresaId) return [];
+    try {
+        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+        const snapshot = await getDocs(servicosRef);
+        const servicos = [];
+        snapshot.forEach(docSnap => servicos.push({ id: docSnap.id, ...docSnap.data() }));
+        return servicos;
+    } catch (error) {
+        console.error("Erro ao carregar todos os serviços da empresa:", error);
+        return [];
+    }
+}
