@@ -1,5 +1,5 @@
 // vitrini-agendamento.js
-// VERSÃO DEFINITIVA E COMPLETA - Firebase v10.12.2
+// VERSÃO FINAL E COMPLETA - Firebase v10.12.2
 
 import {
     collection, query, where, getDocs, addDoc, Timestamp, updateDoc, doc
@@ -104,8 +104,8 @@ export async function buscarAgendamentosDoDia(empresaId, dataString) {
  */
 export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosConfig, duracaoServico) {
     const slotsDisponiveis = [];
-    const diaDaSemana = new Date(`${data}T12:00:00`).getDay();
-    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
+    const diaDaSemanaNum = new Date(`${data}T12:00:00`).getDay();
+    const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemanaNum];
     const configDia = horariosConfig?.[nomeDia];
 
     if (!configDia || !configDia.ativo || !configDia.blocos || !duracaoServico) {
@@ -127,26 +127,27 @@ export function calcularSlotsDisponiveis(data, agendamentosOcupados, horariosCon
     return slotsDisponiveis;
 }
 
-// --- FUNÇÃO ADICIONADA DE VOLTA (ESSA ESTAVA FALTANDO) ---
 /**
  * Encontra a primeira data com horários disponíveis para um PROFISSIONAL específico.
- * @param {string} empresaId - ID da empresa.
- * @param {object} profissional - O objeto completo do profissional selecionado.
- * @returns {Promise<string|null>} - A primeira data disponível no formato 'AAAA-MM-DD' ou nulo.
  */
 export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
     if (!profissional?.horarios || !profissional?.servicos?.length) {
         console.warn("Profissional sem horários ou serviços configurados para encontrar data.");
         return null;
     }
-    // Usa a duração do primeiro serviço como base, ou um padrão de 30min
-    const duracaoBase = profissional.servicos[0]?.duracao || 30;
+    
+    // Supondo que profissional.servicos é um array de IDs. Precisamos dos objetos completos.
+    // Esta parte depende que 'state.todosOsServicos' esteja disponível. 
+    // Por isso, a lógica principal fica no vitrine.js, mas a função base está aqui.
+    const primeiroServicoId = profissional.servicos[0];
+    const duracaoBase = 30; // Padrão
+
     let dataAtual = new Date();
     dataAtual.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
-        const diaSemana = dataAtual.getDay();
-        const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaDaSemana];
+    for (let i = 0; i < 90; i++) {
+        const diaSemana = dataAtual.getDay(); // diaSemana com 's' minúsculo
+        const nomeDia = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][diaSemana];
         const configDia = profissional.horarios[nomeDia];
 
         if (configDia && configDia.ativo && configDia.blocos?.length > 0) {
@@ -156,10 +157,10 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
             const slotsDisponiveis = calcularSlotsDisponiveis(dataISO, agendamentosDoProfissional, profissional.horarios, duracaoBase);
 
             if (slotsDisponiveis.length > 0) {
-                return dataISO; // Encontrou! Retorna a data.
+                return dataISO; // Encontrou!
             }
         }
-        dataAtual.setDate(dataAtual.getDate() + 1); // Vai para o próximo dia
+        dataAtual.setDate(dataAtual.getDate() + 1);
     }
     console.warn("Nenhuma data com slots encontrada nos próximos 90 dias.");
     return null;
