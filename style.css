@@ -597,7 +597,7 @@ body {
     background-color: #FECACA;
 }
 /* ========================================================== */
-/* NOVO CSS PARA AGENDA - FOCO EM CARDS COMPACTOS             */
+/* ESTILOS FINAIS PARA A AGENDA (CARDS COMPACTOS E COM EFEITOS) */
 /* ========================================================== */
 
 .filtros-agenda {
@@ -617,9 +617,9 @@ body {
 /* A grade que organiza os cards */
 #lista-agendamentos {
     display: grid;
-    /* AQUI ESTÁ A MUDANÇA: cards com no mínimo 260px de largura */
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
+    /* AQUI ESTÁ A MUDANÇA: Força 2 colunas, tornando os cards mais estreitos */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px; /* Espaço entre os cards */
 }
 
 /* O card de um agendamento */
@@ -630,8 +630,16 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Garante que nada vaze do card */
+    overflow: hidden;
+    transition: all 0.2s ease-in-out; /* Adiciona a transição para o efeito */
 }
+
+/* EFEITO AO PASSAR O MOUSE */
+.card-agendamento:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+}
+
 
 .card-agendamento-header {
     padding: 15px;
@@ -655,7 +663,7 @@ body {
     padding: 15px;
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Espaço entre as linhas de informação */
+    gap: 8px;
 }
 
 .info-item {
@@ -664,14 +672,8 @@ body {
     font-size: 0.9rem;
 }
 
-.info-item .label {
-    color: #6a6a6a;
-}
-.info-item .valor {
-    font-weight: 500;
-    color: #22223b;
-    text-align: right;
-}
+.info-item .label { color: #6a6a6a; }
+.info-item .valor { font-weight: 500; color: #22223b; text-align: right; }
 
 .card-agendamento-footer {
     display: flex;
@@ -691,14 +693,15 @@ body {
     transition: all 0.2s ease;
 }
 
-.btn-concluir {
-    background-color: #D1FAE5;
-    color: #065F46;
-}
+.btn-concluir { background-color: #D1FAE5; color: #065F46; }
 .btn-concluir:hover { background-color: #A7F3D0; }
 
-.btn-cancelar {
-    background-color: #FEE2E2;
-    color: #991B1B;
-}
+.btn-cancelar { background-color: #FEE2E2; color: #991B1B; }
 .btn-cancelar:hover { background-color: #FECACA; }
+
+/* Em telas menores (celulares), volta a ter apenas 1 coluna */
+@media (max-width: 768px) {
+    #lista-agendamentos {
+        grid-template-columns: 1fr;
+    }
+}
