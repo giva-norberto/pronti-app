@@ -1,13 +1,27 @@
-// dashboard.js - VERSÃO COM CORREÇÃO DO ERRO 'ocupacaoPercent'
+// dashboard.js - VERSÃO FINAL COM RESUMO FINANCEIRO COMPLETO
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+// --- FUNÇÕES DE LÓGICA ---
+
+async function getEmpresaId(user) {
+    // Esta função busca o ID da empresa associado ao usuário logado
+    const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+        const empresaId = snap.docs[0].id;
+        localStorage.setItem('empresaId', empresaId); // Salva para uso futuro
+        return empresaId;
+    }
+    return localStorage.getItem('empresaId'); // Tenta pegar do cache se a busca falhar
+}
+
 // --- FUNÇÃO PRINCIPAL ---
 
 async function preencherDashboard(user, dataSelecionada) {
-    const empresaId = localStorage.getItem('empresaId');
+    const empresaId = await getEmpresaId(user);
     if (!empresaId) {
         alert("ID da Empresa não encontrado. Por favor, acesse a partir do painel principal.");
         return;
@@ -18,93 +32,106 @@ async function preencherDashboard(user, dataSelecionada) {
     const agSnap = await getDocs(agQuery);
     const agsDoDia = agSnap.docs.map(doc => doc.data());
 
-    // 1. Renderiza a Agenda do Dia
+    // Chamadas para preencher todos os cards
+    preencherAgendaDoDia(agsDoDia);
+    preencherCardServico(agsDoDia);
+    preencherCardProfissional(agsDoDia);
+    preencherCardResumo(agsDoDia); // <--- A antiga função de ocupação agora é esta
+    preencherCardIA(agsDoDia);
+}
+
+// --- FUNÇÕES DE PREENCHIMENTO DOS CARDS ---
+
+function preencherAgendaDoDia(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
-    if (agendaContainer) {
-        agendaContainer.innerHTML = "";
-        if (agsDoDia.length === 0) {
-            agendaContainer.innerHTML = `<div class="aviso-horarios">Nenhum agendamento para esta data.</div>`;
-        } else {
-            agsDoDia.sort((a, b) => a.horario.localeCompare(b.horario)).forEach(ag => {
-                agendaContainer.innerHTML += `
-                    <div class="card-agendamento">
-                        <span class="horario-destaque">${ag.horario}</span>
-                        <div class="agendamento-info">
-                            <strong>${ag.servicoNome || 'Serviço'}</strong>
-                            <span>${ag.profissionalNome || 'Profissional'}</span>
-                        </div>
-                    </div>`;
-            });
-        }
+    if (!agendaContainer) return;
+    agendaContainer.innerHTML = "";
+    if (agsDoDia.length === 0) {
+        agendaContainer.innerHTML = `<div class="aviso-horarios">Nenhum agendamento para esta data.</div>`;
+    } else {
+        agsDoDia.sort((a, b) => a.horario.localeCompare(b.horario)).forEach(ag => {
+            agendaContainer.innerHTML += `
+                <div class="card-agendamento">
+                    <span class="horario-destaque">${ag.horario}</span>
+                    <div class="agendamento-info">
+                        <strong>${ag.servicoNome || 'Serviço'}</strong>
+                        <span>${ag.profissionalNome || 'Profissional'}</span>
+                    </div>
+                </div>`;
+        });
     }
+}
 
-    // 2. Calcula e preenche o Card "Serviço Mais Procurado"
+function preencherCardServico(agsDoDia) {
     const servicoDestaqueEl = document.getElementById("servico-destaque");
-    if (servicoDestaqueEl) {
-        const servicosContados = agsDoDia.reduce((acc, ag) => {
-            const nome = ag.servicoNome || "N/A";
-            acc[nome] = (acc[nome] || 0) + 1;
-            return acc;
-        }, {});
-        const servicoDestaque = Object.entries(servicosContados).sort((a,b) => b[1] - a[1])[0];
-        servicoDestaqueEl.textContent = servicoDestaque ? servicoDestaque[0] : "Nenhum";
-    }
+    if (!servicoDestaqueEl) return;
+    const servicosContados = agsDoDia.reduce((acc, ag) => {
+        const nome = ag.servicoNome || "N/A";
+        acc[nome] = (acc[nome] || 0) + 1;
+        return acc;
+    }, {});
+    const servicoDestaque = Object.entries(servicosContados).sort((a,b) => b[1] - a[1])[0];
+    servicoDestaqueEl.textContent = servicoDestaque ? servicoDestaque[0] : "Nenhum";
+}
 
-    // 3. Calcula e preenche o Card "Profissional Destaque"
+function preencherCardProfissional(agsDoDia) {
     const profNomeEl = document.getElementById("prof-destaque-nome");
     const profQtdEl = document.getElementById("prof-destaque-qtd");
-    if (profNomeEl && profQtdEl) {
-        const profsContados = agsDoDia.reduce((acc, ag) => {
-            const nome = ag.profissionalNome || "N/A";
-            acc[nome] = (acc[nome] || 0) + 1;
-            return acc;
-        }, {});
-        const profDestaque = Object.entries(profsContados).sort((a,b) => b[1] - a[1])[0];
-        if (profDestaque) {
-            profNomeEl.textContent = profDestaque[0];
-            profQtdEl.textContent = `${profDestaque[1]} agendamento(s)`;
-        } else {
-            profNomeEl.textContent = "Nenhum profissional";
-            profQtdEl.textContent = "hoje";
-        }
+    if (!profNomeEl || !profQtdEl) return;
+    const profsContados = agsDoDia.reduce((acc, ag) => {
+        const nome = ag.profissionalNome || "N/A";
+        acc[nome] = (acc[nome] || 0) + 1;
+        return acc;
+    }, {});
+    const profDestaque = Object.entries(profsContados).sort((a,b) => b[1] - a[1])[0];
+    if (profDestaque) {
+        profNomeEl.textContent = profDestaque[0];
+        profQtdEl.textContent = `${profDestaque[1]} agendamento(s)`;
+    } else {
+        profNomeEl.textContent = "Nenhum profissional";
+        profQtdEl.textContent = "hoje";
     }
+}
 
-    // ===============================================
-    // CORREÇÃO: A variável 'ocupacaoPercent' foi movida para fora do 'if'
-    // ===============================================
+// ==========================================================
+// FUNÇÃO DO CARD DE RESUMO DO DIA (ANTIGO CARD DE OCUPAÇÃO)
+// ==========================================================
+function preencherCardResumo(agsDoDia) {
+    const totalAgendamentosEl = document.getElementById("total-agendamentos-dia");
+    const faturamentoPrevistoEl = document.getElementById("faturamento-previsto");
+    const percentualOcupacaoEl = document.getElementById("percentual-ocupacao");
+
+    if (!totalAgendamentosEl || !faturamentoPrevistoEl || !percentualOcupacaoEl) return;
+
+    // 1. Total de Agendamentos do Dia
+    const totalAgendamentos = agsDoDia.length;
+    totalAgendamentosEl.textContent = totalAgendamentos;
+
+    // 2. Valor Previsto em Reais (Faturamento)
+    const faturamentoPrevisto = agsDoDia.reduce((soma, agendamento) => {
+        return soma + (agendamento.servicoPreco || 0);
+    }, 0);
+    faturamentoPrevistoEl.textContent = faturamentoPrevisto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // 3. Percentual da Agenda
+    const totalSlotsExemplo = 20; // No futuro, este número virá das suas configurações de horário
+    const percentualOcupacao = Math.min(100, Math.round((totalAgendamentos / totalSlotsExemplo) * 100));
+    percentualOcupacaoEl.textContent = `${percentualOcupacao}%`;
+}
+
+function preencherCardIA(agsDoDia) {
+    const iaSugestaoEl = document.getElementById("ia-sugestao");
+    if(!iaSugestaoEl) return;
+
     const totalSlotsExemplo = 20;
     const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlotsExemplo) * 100));
 
-    // 4. Calcula e preenche o Card "Ocupação"
-    const ocupacaoCircularEl = document.getElementById("ocupacao-circular");
-    if (ocupacaoCircularEl) {
-        ocupacaoCircularEl.innerHTML = `
-            <svg viewBox="0 0 74 74">
-                <circle cx="37" cy="37" r="32" stroke="#ffffff33" stroke-width="8" fill="none"/>
-                <circle cx="37" cy="37" r="32" stroke="#3cec6c" stroke-width="8" fill="none"
-                    stroke-dasharray="${2 * Math.PI * 32}"
-                    stroke-dashoffset="${2 * Math.PI * 32 * (1 - ocupacaoPercent/100)}"
-                    transform="rotate(-90 37 37)"
-                    style="transition: stroke-dashoffset 0.8s ease-out"/>
-            </svg>
-            <div class="percent">${ocupacaoPercent}%</div>`;
-    }
-    const ocupacaoTextoEl = document.getElementById("ocupacao-texto");
-    if (ocupacaoTextoEl) {
-        ocupacaoTextoEl.textContent = `Sua agenda está ${ocupacaoPercent}% ocupada`;
-    }
-
-
-    // 5. Calcula e preenche a "Sugestão da IA"
-    const iaSugestaoEl = document.getElementById("ia-sugestao");
-    if(iaSugestaoEl){
-        if(agsDoDia.length === 0){
-            iaSugestaoEl.textContent = "O dia está livre! Que tal criar uma promoção para atrair clientes?";
-        } else if (ocupacaoPercent < 50) {
-            iaSugestaoEl.textContent = "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
-        } else {
-            iaSugestaoEl.textContent = "O dia está movimentado! Prepare-se para um dia produtivo.";
-        }
+    if(agsDoDia.length === 0){
+        iaSugestaoEl.textContent = "O dia está livre! Que tal criar uma promoção para atrair clientes?";
+    } else if (ocupacaoPercent < 50) {
+        iaSugestaoEl.textContent = "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
+    } else {
+        iaSugestaoEl.textContent = "O dia está movimentado! Prepare-se para um dia produtivo.";
     }
 }
 
@@ -112,7 +139,7 @@ async function preencherDashboard(user, dataSelecionada) {
 
 window.addEventListener("DOMContentLoaded", () => {
     
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             const filtroData = document.getElementById("filtro-data");
             
@@ -122,10 +149,7 @@ window.addEventListener("DOMContentLoaded", () => {
             }
             
             const dataInicial = filtroData ? filtroData.value : hoje;
-            preencherDashboard(user, dataInicial).catch(err => {
-                console.error("Erro ao carregar o dashboard:", err);
-                alert("Erro ao carregar dados: " + err.message);
-            });
+            await preencherDashboard(user, dataInicial);
 
             if (filtroData) {
                 filtroData.addEventListener("change", () => {
@@ -133,7 +157,6 @@ window.addEventListener("DOMContentLoaded", () => {
                 });
             }
         } else {
-            // Se não há usuário, redireciona para o login
             // window.location.href = "login.html"; 
         }
     });
