@@ -12,7 +12,7 @@ body {
 /* =========================================
    SIDEBAR
 ========================================= */
-//.sidebar {//
+.sidebar {
     width: 250px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: white;
