@@ -1,306 +1,141 @@
-/* ========================================   RESET & BASE======================================== */
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* dashboard.css - VERSÃO EXCLUSIVA E COMPLETA PARA O LAYOUT FINAL */
+
+/* --- RESET BÁSICO E ESTILO GERAL --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-    background: #f6f7fb;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    color: #22223b;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f0f2f5; /* Fundo cinza claro, como no seu layout esperado */
+    color: #333;
 }
 
-/* =========================================   SIDEBAR========================================= */
-.sidebar {
-    width: 250px;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 32px 20px;
-    border-radius: 0 18px 18px 0;
-    box-shadow: 0 16px 32px rgba(0,0,0,0.08);
-    z-index: 100;
-    min-height: 100vh;
-}
-.sidebar-brand {
-    font-size: 1.85rem;
-    font-weight: 700;
-    margin-bottom: 26px;
-    letter-spacing: 0.5px;
-    color: white;
-    text-decoration: none;
-}
-.sidebar-links {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-}
-.sidebar-links a {
-    color: #fff;
-    text-decoration: none;
-    padding: 13px 18px 13px 13px;
-    border-radius: 10px;
-    transition: background 0.2s, color 0.2s;
-    font-weight: 500;
-    font-size: 1.08rem;
-    margin-bottom: 4px;
-    letter-spacing: 0.2px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.sidebar-links a.active,
-.sidebar-links a:hover {
-    background: rgba(255,255,255,0.22);
-    color: white;
-}
-.sidebar-links a.active {
-    font-weight: 700;
-    box-shadow: 0 2px 8px #00f2fe44;
-}
-.sidebar-footer {
-    margin-top: 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-.btn-logout {
-    background: none;
-    border: none;
-    color: white;
-    padding: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1rem;
-    font-weight: 500;
-    width: 100%;
-    border-radius: 8px;
-    transition: background 0.2s;
-}
-.btn-logout:hover {
-    background: rgba(255,255,255,0.15);
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
 }
 
-
-/* =========================================   MAIN CONTENT AREA========================================= */
-.main-content {
-    margin-left: 270px; /* Espaço para sidebar */
-    padding: 40px;
-}
-
-
-/* =========================================   HEADER SECTION========================================= */
-.header-section, .agenda-header {
+/* --- CABEÇALHO --- */
+.header-dashboard {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 22px;
-    margin-bottom: 35px;
-}
-.header-content h1, .agenda-header h1 {
-    font-size: 2.1rem;
-    font-weight: 700;
-    margin: 0 0 8px 0;
-}
-.header-content p {
-    font-size: 1.06rem;
-    color: #666;
-}
-.header-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.btn, .btn-new, .btn-novo, .btn-secondary, .btn-perfil, .btn-add-profissional, .btn-upload {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: #22223b;
-    border-radius: 25px;
-    font-weight: 600;
-    padding: 12px 24px;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    font-size: 1rem;
-}
-.btn:hover, .btn-new:hover, .btn-novo:hover, .btn-secondary:hover, .btn-perfil:hover, .btn-add-profissional:hover, .btn-upload:hover {
-    box-shadow: 0 8px 20px rgba(79, 172, 254, 0.2);
-    transform: translateY(-2px);
-}
-
-/* =========================================   FORM CARDS========================================= */
-.form-card, .card-info {
-    background: #ffffff;
-    border-radius: 13px;
-    box-shadow: 0 4px 24px #d6d2f8;
-    padding: 38px 35px;
-    margin-top: 20px;
-}
-.form-section { margin-bottom: 35px; }
-.form-section h3 { font-size: 1.21rem; font-weight: 600; margin-bottom: 16px; color: #22223b; }
-.form-group { margin-bottom: 22px; }
-.form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #22223b; }
-.form-group input, .form-group textarea, .form-control {
-    width: 100%;
-    padding: 12px 15px;
-    border: 2px solid #e1e8ed;
-    border-radius: 10px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    margin-bottom: 4px;
-    background-color: white;
-}
-.form-group textarea { resize: vertical; }
-.form-group input:focus, .form-group textarea:focus, .form-control:focus {
-    outline: none;
-    border-color: #4facfe;
-    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.13);
-}
-
-/* =========================================   EQUIPE PAINEL========================================= */
-.profissional-card {
-    background: #fff;
-    border: 1px solid #e1e8ed;
-    border-radius: 15px;
-    padding: 20px 22px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 15px;
-    transition: box-shadow 0.3s, transform 0.2s;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-}
-.profissional-foto {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 2px solid #4facfe;
-}
-.profissional-foto img { width: 100%; height: 100%; object-fit: cover; }
-.profissional-info { flex: 1; }
-.profissional-nome { font-weight: 600; font-size: 1.11rem; display: block; }
-.profissional-status { display: inline-block; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 4px 13px; border-radius: 15px; font-size: 0.86rem; font-weight: 500; }
-
-/* =========================================   FORM ACTIONS========================================= */
-.form-actions { display: flex; gap: 18px; justify-content: flex-end; margin-top: 32px; }
-.btn-submit { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 25px; padding: 14px 0; font-weight: bold; font-size: 1.15rem; width: 100%; margin-top: 18px; box-shadow: 0 2px 8px #d6d2f8; transition: all 0.2s ease; display: block; border: none; cursor: pointer; }
-.btn-submit:hover { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
-
-/* =========================================   MODAL OVERLAY========================================= */
-.modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; right: 0; bottom: 0; background: rgba(60, 57, 80, 0.35); align-items: center; justify-content: center; }
-.modal-overlay.show { display: flex !important; }
-.modal-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 24px #d6d2f8; padding: 32px; max-width: 350px; width: 98vw; text-align: center; }
-
-/* =========================================   CARD PADRÃO PRONTI (SERVIÇOS, CLIENTES)========================================= */
-.servico-item, .cliente-item { background: #fff; border-radius: 18px; box-shadow: 0 12px 36px rgba(0,0,0,0.11); border: 1.5px solid #e1e8ed; padding: 48px 40px; margin-bottom: 38px; position: relative; transition: box-shadow 0.3s, transform 0.2s; overflow: hidden; width: 100%; max-width: 900px; margin-left: auto; margin-right: auto; }
-.servico-item:hover, .cliente-item:hover { box-shadow: 0 22px 48px rgba(0,0,0,0.17); transform: translateY(-6px); }
-.servico-item h3, .cliente-item h3 { font-size: 1.65rem; font-weight: 700; color: #22223b; margin-bottom: 14px; letter-spacing: 0.7px; }
-.servico-item p, .cliente-item p { color: #565676; font-size: 1.19rem; margin-bottom: 0; line-height: 1.7; }
-.item-acoes { margin-top: 36px; display: flex; gap: 18px; }
-.btn-excluir { background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%) !important; color: #fff !important; font-weight: 700; }
-
-/* =========================================   LOADER OVERLAY========================================= */
-.loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f6f7fb; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-.loader-spinner { border: 5px solid #e0e0e0; border-top: 5px solid #4facfe; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* =========================================   RESPONSIVIDADE========================================= */
-@media (max-width: 900px) {
-    .main-content, .container { margin-left: 0; }
-    .sidebar { position: static; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px; flex-direction: row; justify-content: space-between; align-items: center; }
-    .sidebar-brand, .sidebar-footer, .sidebar hr { display: none; }
-    .sidebar-links { flex-direction: row; overflow-x: auto; }
-}
-@media (max-width: 768px) {
-    .main-content, .container { margin: 10px; padding: 18px; border-radius: 10px; }
-    .header-section, .agenda-header { flex-direction: column; align-items: flex-start; }
-    .form-card { padding: 15px 8px; }
-}
-
-
-/* ========================================================== */
-/* ESTILOS ADICIONAIS PARA A PÁGINA DE AGENDA                 */
-/* ========================================================== */
-.filtros-agenda {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    background: white;
-    padding: 20px;
+    padding: 15px 25px;
+    background-color: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    margin-bottom: 25px;
 }
-.filtro-item {
-    display: flex;
-    flex-direction: column;
+
+.header-dashboard h1 {
+    font-size: 1.8rem;
+    color: #1e293b;
+    margin: 0;
 }
-.filtro-item label {
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: #374151;
-    font-size: 0.9rem;
-}
-.card-agendamento {
-    display: grid;
-    grid-template-columns: 80px 1fr auto;
-    gap: 20px;
-    align-items: center;
-    background: #fff;
-    padding: 15px 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    margin-bottom: 15px;
-    border-left: 5px solid #6366F1;
-}
-.agendamento-horario {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #111827;
-    text-align: center;
-    border-right: 1px solid #E5E7EB;
-    padding-right: 20px;
-}
-.agendamento-detalhes .servico-nome {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1F2937;
-    margin-bottom: 5px;
-    display: block;
-}
-.agendamento-detalhes .info-item {
-    font-size: 0.95rem;
-    color: #4B5563;
-    display: block;
-}
-.info-item strong { color: #374151; }
-.agendamento-acoes {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.btn-acao {
-    border: none;
-    padding: 8px 12px;
+
+.btn-voltar {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 8px 15px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     font-size: 0.9rem;
     transition: all 0.2s ease;
-    min-width: 110px;
-    text-align: center;
 }
-.btn-acao:hover { transform: scale(1.05); }
-.btn-concluir { background-color: #D1FAE5; color: #065F46; }
-.btn-concluir:hover { background-color: #A7F3D0; }
-.btn-cancelar { background-color: #FEE2E2; color: #991B1B; }
-.btn-cancelar:hover { background-color: #FECACA; }
+.btn-voltar:hover { background-color: #e2e8f0; }
+
+.filtro-container { display: flex; align-items: center; gap: 10px; }
+.filtro-container label { font-weight: 500; color: #475569; }
+.filtro-container input[type="date"] {
+    border: 1px solid #cbd5e1;
+    padding: 8px;
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+/* --- GRELHA DOS CARDS --- */
+.dashboard-grid {
+    display: grid;
+    gap: 25px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: 
+        "agenda agenda servico"
+        "agenda agenda prof"
+        "resumo ia inteligente";
+}
+
+.card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    padding: 10px 15px;
+    margin: -20px -20px 20px -20px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-body { font-size: 1rem; color: #475569; }
+.card-body-destaque { font-size: 1.5rem; font-weight: 600; color: #1e293b; text-align: center; flex-grow: 1; justify-content: center; display: flex; flex-direction: column; }
+.card-body-destaque strong { display: block; }
+.card-body-destaque span { font-size: 1rem; font-weight: 400; color: #64748b; }
+
+/* Posicionamento e cores dos cards */
+.card-agenda { 
+    grid-area: agenda;
+    background: linear-gradient(to top right, #f0f9ff, #e0f2fe);
+}
+.card-agenda h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); }
+#agenda-resultado { max-height: 450px; overflow-y: auto; padding-right: 10px; }
+
+.card-servico { grid-area: servico; }
+.card-servico h3 { background: linear-gradient(to right, #f59e0b, #facc15); }
+
+.card-profissional { grid-area: prof; }
+.card-profissional h3 { background: linear-gradient(to right, #10b981, #6ee7b7); }
+
+.card-resumo { grid-area: resumo; }
+.card-resumo h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); }
+
+.card-ia { grid-area: ia; }
+.card-ia h3 { background: linear-gradient(to right, #8b5cf6, #a78bfa); }
+
+.card-resumo-inteligente { grid-area: inteligente; }
+.card-resumo-inteligente h3 { background: linear-gradient(to right, #10b981, #6ee7b7); }
+
+/* Detalhes internos dos cards */
+.resumo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+.resumo-item:last-child { border-bottom: none; }
+.resumo-item strong { color: #1e293b; }
+
+.card-agendamento { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #dbeafe; }
+.card-agendamento:last-child { border-bottom: none; }
+.horario-destaque { font-weight: 600; color: #0c4a6e; }
+.agendamento-info { text-align: right; }
+.agendamento-info strong { display: block; color: #1e293b; }
+.agendamento-info span { font-size: 0.9rem; }
+.aviso-horarios { text-align: center; padding-top: 20px; color: #64748b; }
+
+/* Ícones (placeholders) */
+.icon-calendar::before { content: "📅"; }
+.icon-star::before { content: "⭐"; }
+.icon-user::before { content: "👤"; }
+.icon-clipboard::before { content: "📊"; }
+.icon-robot::before { content: "🤖"; }
+.icon-lightbulb::before { content: "💡"; }
