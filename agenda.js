@@ -1,4 +1,4 @@
-// agenda.js - VERSÃO FINAL COM CONFIRMAÇÃO PARA CANCELAR E MARCAR FALTA
+// agenda.js - VERSÃO MELHORADA: cards modernos e coloridos, sem CSS inline
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -105,31 +105,19 @@ document.addEventListener("DOMContentLoaded", () => {
         agendamentos.sort((a,b) => a.horario.localeCompare(b.horario)).forEach(ag => {
             const cardContainer = document.createElement('div');
             cardContainer.className = "card-agendamento pequeno";
-            cardContainer.style = `
-                background:#fff;
-                border-radius:10px;
-                padding:10px 13px;
-                box-shadow:0 1px 5px #e1e8ed;
-                margin-bottom:12px;
-                display:flex;
-                flex-direction:row;
-                align-items:center;
-                gap:12px;
-                min-height:45px;
-                font-size:0.96rem;
-            `;
+            // NÃO USAR cardContainer.style! Só classe CSS!
             cardContainer.innerHTML = `
-                <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;">
-                    <span style="font-weight:600;color:#22223b;">${ag.servicoNome || 'Serviço'}</span>
-                    <span style="font-size:0.95em;color:#5f6dfa;">${ag.horario}</span>
+                <div class="ag-col-servico">
+                    <span class="servico-nome">${ag.servicoNome || 'Serviço'}</span>
+                    <span class="ag-horario">${ag.horario}</span>
                 </div>
-                <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;">
-                    <span style="color:#22223b;">${ag.profissionalNome}</span>
-                    <span style="color:#3d3a57;font-size:0.95em;">${ag.clienteNome}</span>
+                <div class="ag-col-pessoas">
+                    <span class="ag-profissional">${ag.profissionalNome}</span>
+                    <span class="ag-cliente">${ag.clienteNome}</span>
                 </div>
-                <div style="flex-shrink:0;display:flex;gap:4px;">
-                    <button class="btn-acao-card btn-nao-compareceu" data-id="${ag.id}" title="Não Compareceu" style="font-size:0.92em;background:#fff3cd;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">⚠️</button>
-                    <button class="btn-acao-card btn-cancelar" data-id="${ag.id}" title="Cancelar" style="font-size:0.92em;background:#fdeceb;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">✖️</button>
+                <div class="ag-col-acoes">
+                    <button class="btn-acao-card btn-nao-compareceu" data-id="${ag.id}" title="Não Compareceu">⚠️</button>
+                    <button class="btn-acao-card btn-cancelar" data-id="${ag.id}" title="Cancelar">✖️</button>
                 </div>
             `;
             listaAgendamentosEl.appendChild(cardContainer);
