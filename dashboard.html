@@ -3,80 +3,80 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta name="description" content="Painel inteligente para controle de agendamentos e performance da sua empresa." />
     <title>Painel Inteligente - Dashboard</title>
     <link rel="stylesheet" href="dashboard.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <main>
+    <div class="container">
         <div class="header-dashboard">
             <button id="btn-voltar" class="btn-voltar">← Voltar</button>
             <h1>Painel Inteligente</h1>
             <div class="filtro-container">
                 <label for="filtro-data">Ver dados de:</label>
-                <input type="date" id="filtro-data">
+                <input type="date" id="filtro-data" />
             </div>
         </div>
 
-        <div class="dashboard-cards">
-
-            <!-- Card Agenda do Dia -->
+        <div class="dashboard-grid">
             <div class="card card-agenda">
-                <h3><i class="icon-calendar"></i> Agenda do Dia</h3>
+                <h3>📅 Agenda do Dia</h3>
                 <div id="agenda-resultado" class="card-body">
-                    <!-- Os agendamentos do dia serão inseridos aqui via JS.
-                    Exemplo de card que o JS deve criar:
-                    <div class="card-agendamento">
-                        <span>Cliente: João</span>
-                        <span>10:30</span>
-                    </div>
-                    -->
+                    <div class="aviso-horarios">Carregando agendamentos...</div>
                 </div>
             </div>
 
-            <!-- Card Serviço Destaque -->
             <div class="card card-servico">
-                <h3><i class="icon-star"></i> Serviço em Destaque</h3>
-                <div id="servico-destaque" class="card-body">Nenhum</div>
+                <h3>⭐ Serviço em Destaque</h3>
+                <div id="servico-destaque" class="card-body card-body-destaque">
+                    Carregando...
+                </div>
             </div>
 
-            <!-- Card Profissional Destaque -->
             <div class="card card-profissional">
-                <h3><i class="icon-user"></i> Profissional do Dia</h3>
-                <div class="card-body">
-                    <div id="prof-destaque-nome">Nenhum profissional</div>
-                    <div id="prof-destaque-qtd">hoje</div>
+                <h3>👤 Profissional do Dia</h3>
+                <div class="card-body card-body-destaque">
+                    <strong id="prof-destaque-nome">...</strong>
+                    <span id="prof-destaque-qtd">...</span>
                 </div>
             </div>
 
-            <!-- Card Resumo Geral -->
             <div class="card card-resumo">
-                <h3><i class="icon-clipboard"></i> Resumo do Dia</h3>
+                <h3>📊 Resumo do Dia</h3>
                 <div class="card-body">
-                    <div><strong>Total de Agendamentos:</strong> <span id="total-agendamentos-dia">0</span></div>
-                    <div><strong>Faturamento Estimado:</strong> <span id="faturamento-previsto">R$0,00</span></div>
-                    <div><strong>Ocupação:</strong> <span id="percentual-ocupacao">0%</span></div>
+                    <div class="resumo-item">
+                        <span>Total de Agendamentos:</span>
+                        <strong id="total-agendamentos-dia">0</strong>
+                    </div>
+                    <div class="resumo-item">
+                        <span>Faturamento Estimado:</span>
+                        <strong id="faturamento-previsto">R$ 0,00</strong>
+                    </div>
+                    <div class="resumo-item">
+                        <span>Ocupação:</span>
+                        <strong id="percentual-ocupacao">0%</strong>
+                    </div>
                 </div>
             </div>
 
-            <!-- Card Sugestão IA -->
             <div class="card card-ia">
-                <h3><i class="icon-robot"></i> Sugestão Inteligente</h3>
-                <div id="ia-sugestao" class="card-body">Mensagem IA</div>
-            </div>
-
-            <!-- Card Resumo Inteligente -->
-            <div class="card card-resumo-inteligente">
-                <h3><i class="icon-lightbulb"></i> Resumo Inteligente</h3>
-                <div id="resumo-inteligente" class="card-body">
-                    <!-- Preenchido via JS -->
+                <h3>🤖 Sugestão Inteligente</h3>
+                <div id="ia-sugestao" class="card-body">
+                    Analisando dados...
                 </div>
             </div>
 
+            <div class="card card-resumo-inteligente">
+                <h3>💡 Resumo Inteligente</h3>
+                <div id="resumo-inteligente" class="card-body">
+                    <p>Análise detalhada do dia aparecerá aqui.</p>
+                </div>
+            </div>
         </div>
-    </main>
+    </div>
     <script type="module" src="dashboard.js"></script>
 </body>
 </html>
