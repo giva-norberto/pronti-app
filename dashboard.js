@@ -1,9 +1,10 @@
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { gerarResumoDiarioInteligente } from "./inteligencia.js"; // <-- Importa o resumo inteligente
+import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-const totalSlots = 20; // Total de horários disponíveis no dia, idealmente virá da configuração do sistema
+// Total de horários disponíveis no dia, idealmente virá da configuração do sistema
+const totalSlots = 20;
 
 // --- FUNÇÕES DE LÓGICA E DADOS ---
 
@@ -212,10 +213,10 @@ async function preencherDashboard(user, dataSelecionada) {
                 fim: ag.fim || `${ag.data}T${ag.horarioFim || ag.horario}:00`,
                 cliente: ag.cliente
                     ? ag.cliente
-                    : { nome: ag.clienteNome || "Cliente" },
+                    : (ag.clienteNome || "Cliente"),
                 servico: ag.servico
                     ? ag.servico
-                    : { nome: ag.servicoNome || "Serviço", preco: ag.servicoPreco || 0 }
+                    : (ag.servicoNome || "Serviço")
             }))
         );
         preencherResumoInteligente(resumoInteligente);
@@ -243,7 +244,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if (user) {
             const filtroData = document.getElementById("filtro-data");
             const empresaId = await getEmpresaId(user);
-            
+
             if (!empresaId) {
                 alert("Não foi possível identificar sua empresa.");
                 return;
@@ -251,14 +252,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
             const hojeString = new Date().toISOString().split('T')[0];
             const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-            
+
             if (filtroData) {
                 filtroData.value = dataInicial;
                 filtroData.addEventListener("change", debounce(() => {
                     preencherDashboard(user, filtroData.value);
                 }, 300));
             }
-            
+
             await preencherDashboard(user, dataInicial);
         } else {
             // window.location.href = "login.html";
@@ -268,7 +269,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const btnVoltar = document.getElementById('btn-voltar');
     if (btnVoltar) {
         btnVoltar.addEventListener('click', () => {
-            window.location.href = "index.html"; 
+            window.location.href = "index.html";
         });
     }
 });
