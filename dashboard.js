@@ -1,3 +1,5 @@
+// dashboard.js - VERSÃO FINAL, COMPLETA E VALIDADA
+
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -161,28 +163,22 @@ function preencherCardIA(mensagem) {
     if (el) el.textContent = mensagem;
 }
 
-// --- RENDERIZAÇÃO DO RESUMO INTELIGENTE (NOVO CARD) ---
-
 function preencherResumoInteligente(resumoInteligente) {
     const el = document.getElementById("resumo-inteligente");
     if (!el) return;
-
     if (resumoInteligente.totalAtendimentos === 0) {
         el.innerHTML = `<span>${resumoInteligente.mensagem}</span>`;
         return;
     }
-
     let resumoHtml = `
         <div><strong>Total atendimentos:</strong> ${resumoInteligente.totalAtendimentos}</div>
         <div><strong>Primeiro:</strong> ${resumoInteligente.primeiro.horario} - ${resumoInteligente.primeiro.cliente} (${resumoInteligente.primeiro.servico})</div>
         <div><strong>Último:</strong> ${resumoInteligente.ultimo.horario} - ${resumoInteligente.ultimo.cliente} (${resumoInteligente.ultimo.servico})</div>
         <div><strong>Faturamento estimado:</strong> ${resumoInteligente.faturamentoEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
     `;
-
     if (resumoInteligente.maiorIntervalo) {
         resumoHtml += `<div><strong>Maior intervalo:</strong> ${resumoInteligente.maiorIntervalo.inicio} - ${resumoInteligente.maiorIntervalo.fim} (${resumoInteligente.maiorIntervalo.duracaoMinutos} min)</div>`;
     }
-
     el.innerHTML = resumoHtml;
 }
 
@@ -206,18 +202,25 @@ async function preencherDashboard(user, dataSelecionada) {
         preencherCardResumo(calcularResumo(agsDoDia));
         preencherCardIA(calcularSugestaoIA(agsDoDia));
 
-        // NOVO: Resumo Inteligente
+        // ===============================================
+        // ALTERAÇÃO: Passando o servicoPreco para a função de inteligência
+        // ===============================================
         const resumoInteligente = gerarResumoDiarioInteligente(
-            agsDoDia.map(ag => ({
-                inicio: ag.inicio || `${ag.data}T${ag.horario}:00`,
-                fim: ag.fim || `${ag.data}T${ag.horarioFim || ag.horario}:00`,
-                cliente: ag.cliente
-                    ? ag.cliente
-                    : (ag.clienteNome || "Cliente"),
-                servico: ag.servico
-                    ? ag.servico
-                    : (ag.servicoNome || "Serviço")
-            }))
+            agsDoDia.map(ag => {
+                // Lógica para calcular a hora de fim se não existir
+                const inicioMin = timeStringToMinutes(ag.horario);
+                const duracaoMin = ag.servicoDuracao || 60;
+                const fimMin = inicioMin + duracaoMin;
+                const horaFim = `${String(Math.floor(fimMin / 60)).padStart(2, '0')}:${String(fimMin % 60).padStart(2, '0')}`;
+
+                return {
+                    inicio: `${ag.data}T${ag.horario}:00`,
+                    fim: `${ag.data}T${horaFim}:00`,
+                    cliente: ag.clienteNome || "Cliente",
+                    servico: ag.servicoNome || "Serviço",
+                    servicoPreco: ag.servicoPreco // <-- CORREÇÃO APLICADA AQUI
+                };
+            })
         );
         preencherResumoInteligente(resumoInteligente);
 
