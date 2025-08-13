@@ -1,234 +1,236 @@
-// dashboard.js - VERSÃO 100% COMPLETA E CORRIGIDA
-
-import { db, auth } from "./firebase-config.js";
-import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-const totalSlots = 20; // Total de horários disponíveis no dia, idealmente virá da configuração do sistema
-
-// --- FUNÇÕES DE LÓGICA E DADOS ---
-
-function timeStringToMinutes(timeStr) {
-    if (!timeStr) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
-    return h * 60 + m;
-}
-
-async function getEmpresaId(user) {
-    try {
-        const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-            const empresaId = snap.docs[0].id;
-            localStorage.setItem('empresaId', empresaId);
-            return empresaId;
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Dashboard</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            background: #f6f8fc;
+            font-family: 'Inter', Arial, sans-serif;
         }
-        return localStorage.getItem('empresaId');
-    } catch (error) {
-        console.error("Erro ao buscar empresa:", error);
-        return localStorage.getItem('empresaId');
-    }
-}
-
-async function buscarHorariosDoDono(empresaId) {
-    try {
-        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
-        if (!empresaDoc.exists()) return null;
-        const donoId = empresaDoc.data().donoId;
-        if (!donoId) return null;
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios");
-        const horariosSnap = await getDoc(horariosRef);
-        return horariosSnap.exists() ? horariosSnap.data() : null;
-    } catch (error) {
-        console.error("Erro ao buscar horários do dono:", error);
-        return null;
-    }
-}
-
-async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
-    const horariosTrabalho = await buscarHorariosDoDono(empresaId);
-    if (!horariosTrabalho) return dataInicial;
-
-    const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    let dataAtual = new Date(`${dataInicial}T12:00:00`);
-
-    for (let i = 0; i < 90; i++) {
-        const nomeDia = diaDaSemana[dataAtual.getDay()];
-        const diaDeTrabalho = horariosTrabalho[nomeDia];
-
-        if (diaDeTrabalho && diaDeTrabalho.ativo) {
-            if (i === 0) {
-                const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
-                const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
-                const agoraEmMinutos = new Date().getHours() * 60 + new Date().getMinutes();
-                if (agoraEmMinutos < fimDoExpediente) {
-                    return dataAtual.toISOString().split('T')[0];
-                }
-            } else {
-                return dataAtual.toISOString().split('T')[0];
+        .dashboard-container {
+            max-width: 1020px;
+            margin: 38px auto 0;
+            padding: 0 18px 28px;
+        }
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+        .btn-voltar {
+            background: #e6eaff;
+            color: #1e3a8a;
+            border: none;
+            border-radius: 8px;
+            padding: 7px 18px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.17s;
+            box-shadow: 0 1px 4px #b0e1ff22;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-voltar:hover {
+            background: #cfe1fa;
+        }
+        .dashboard-header h1 {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #222a52;
+            margin: 0;
+        }
+        .dashboard-filtros {
+            margin-bottom: 18px;
+        }
+        .dashboard-filtros label {
+            font-weight: 600;
+            margin-right: 8px;
+            color: #223;
+        }
+        .dashboard-filtros input[type="date"] {
+            padding: 7px 12px;
+            border-radius: 6px;
+            border: 1.2px solid #d6dbef;
+            font-size: 1rem;
+            background: #fff;
+            color: #1a1a1a;
+        }
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+        .dashboard-card {
+            background: linear-gradient(120deg, #f7fafd 65%, #e9f3fd 100%);
+            border-radius: 14px;
+            box-shadow: 0 4px 18px 0 #b4e2fa18, 0 2px 6px #ddeafd55;
+            padding: 20px 18px 16px 18px;
+            min-height: 108px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            position: relative;
+        }
+        .dashboard-card h3 {
+            font-size: 1.09rem;
+            font-weight: 700;
+            color: #2e3b65;
+            margin: 0 0 2px 0;
+        }
+        .dashboard-card .card-valor {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #1d6ad9;
+            margin-bottom: 0;
+        }
+        .dashboard-card .card-sub {
+            font-size: 1.01rem;
+            color: #7c8bac;
+            margin-bottom: 0;
+        }
+        .dashboard-card .card-destaque {
+            font-size: 1.13rem;
+            font-weight: 700;
+            color: #175a9c;
+            margin-bottom: 0;
+        }
+        .dashboard-card .card-icone {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 1.6em;
+            opacity: 0.16;
+        }
+        .dashboard-card .card-info {
+            font-size: 0.97rem;
+            color: #37698f;
+            margin-top: 4px;
+        }
+        /* Card de sugestão IA */
+        .dashboard-card.ia {
+            background: linear-gradient(120deg, #f8fff1 65%, #e6fae9 100%);
+            color: #157e39;
+        }
+        .dashboard-card.ia .card-icone {
+            color: #157e39;
+            opacity: 0.13;
+        }
+        .dashboard-card.ia .card-info {
+            color: #157e39;
+            font-weight: 600;
+        }
+        /* Card de resumo financeiro */
+        .dashboard-card.resumo .card-valor {
+            color: #e38a1d;
+        }
+        .agenda-titulo {
+            font-size: 1.19rem;
+            font-weight: 700;
+            color: #234;
+            margin: 22px 0 10px 3px;
+        }
+        .agenda-resultado {
+            margin-bottom: 28px;
+        }
+        .card-agendamento {
+            display: flex;
+            align-items: center;
+            background: #fafdff;
+            border-radius: 10px;
+            box-shadow: 0 1px 7px #e5eafd41;
+            padding: 10px 16px 10px 14px;
+            margin-bottom: 8px;
+            gap: 14px;
+        }
+        .card-agendamento .horario-destaque {
+            background: #e0f2fe;
+            color: #1584d3;
+            font-weight: 700;
+            font-size: 1.06rem;
+            border-radius: 7px;
+            padding: 2.5px 10px 2px 10px;
+            margin-right: 8px;
+            min-width: 60px;
+            display: inline-block;
+            text-align: center;
+        }
+        .card-agendamento .agendamento-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5px;
+        }
+        .aviso-horarios {
+            background: #fcefd8;
+            color: #a27010;
+            border-radius: 8px;
+            padding: 13px 14px;
+            box-shadow: 0 2px 8px #f6e9c2;
+            text-align: center;
+            font-size: 1.03rem;
+            margin-bottom: 14px;
+        }
+        @media (max-width: 700px) {
+            .dashboard-container {
+                padding: 0 4px 16px;
+            }
+            .dashboard-cards {
+                grid-template-columns: 1fr;
             }
         }
-        dataAtual.setDate(dataAtual.getDate() + 1);
-    }
-    return dataInicial;
-}
-
-// --- FUNÇÕES DE CÁLCULO ---
-
-function calcularServicosDestaque(agsDoDia) {
-    const servicosContados = agsDoDia.reduce((acc, ag) => {
-        const nome = ag.servicoNome || "N/A";
-        acc[nome] = (acc[nome] || 0) + 1;
-        return acc;
-    }, {});
-    const servicoDestaque = Object.entries(servicosContados).sort((a,b) => b[1] - a[1])[0];
-    return servicoDestaque ? servicoDestaque[0] : null;
-}
-
-function calcularProfissionalDestaque(agsDoDia) {
-    const profsContados = agsDoDia.reduce((acc, ag) => {
-        const nome = ag.profissionalNome || "N/A";
-        acc[nome] = (acc[nome] || 0) + 1;
-        return acc;
-    }, {});
-    const profDestaque = Object.entries(profsContados).sort((a,b) => b[1] - a[1])[0];
-    return profDestaque ? { nome: profDestaque[0], qtd: profDestaque[1] } : null;
-}
-
-function calcularResumo(agsDoDia) {
-    const totalAgendamentos = agsDoDia.length;
-    const faturamentoPrevisto = agsDoDia.reduce((soma, ag) => soma + (Number(ag.servicoPreco) || 0), 0);
-    const percentualOcupacao = Math.min(100, Math.round((totalAgendamentos / totalSlots) * 100));
-    return { totalAgendamentos, faturamentoPrevisto, percentualOcupacao };
-}
-
-function calcularSugestaoIA(agsDoDia) {
-    const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
-    if(agsDoDia.length === 0){
-        return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
-    } else if (ocupacaoPercent < 50) {
-        return "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
-    } else {
-        return "O dia está movimentado! Prepare-se para um dia produtivo.";
-    }
-}
-
-// --- FUNÇÕES DE RENDERIZAÇÃO ---
-
-function preencherAgendaDoDia(agsDoDia) {
-    const agendaContainer = document.getElementById("agenda-resultado");
-    if (!agendaContainer) return;
-    agendaContainer.innerHTML = "";
-    if (agsDoDia.length === 0) {
-        agendaContainer.innerHTML = `<div class="aviso-horarios">Nenhum agendamento para esta data.</div>`;
-        return;
-    }
-    agsDoDia.sort((a, b) => a.horario.localeCompare(b.horario)).forEach(ag => {
-        agendaContainer.innerHTML += `<div class="card-agendamento"><span class="horario-destaque">${ag.horario}</span><div class="agendamento-info"><strong>${ag.servicoNome || 'Serviço'}</strong><span>${ag.profissionalNome || 'Profissional'}</span></div></div>`;
-    });
-}
-
-function preencherCardServico(servicoDestaque) {
-    const el = document.getElementById("servico-destaque");
-    if (el) el.textContent = servicoDestaque || "Nenhum";
-}
-
-function preencherCardProfissional(profissionalDestaque) {
-    const nomeEl = document.getElementById("prof-destaque-nome");
-    const qtdEl = document.getElementById("prof-destaque-qtd");
-    if (!nomeEl || !qtdEl) return;
-    if (profissionalDestaque) {
-        nomeEl.textContent = profissionalDestaque.nome;
-        qtdEl.textContent = `${profissionalDestaque.qtd} agendamento(s)`;
-    } else {
-        nomeEl.textContent = "Nenhum profissional";
-        qtdEl.textContent = "hoje";
-    }
-}
-
-function preencherCardResumo(resumo) {
-    const totalEl = document.getElementById("total-agendamentos-dia");
-    const fatEl = document.getElementById("faturamento-previsto");
-    const percEl = document.getElementById("percentual-ocupacao");
-    if (!totalEl || !fatEl || !percEl) return;
-    totalEl.textContent = resumo.totalAgendamentos;
-    fatEl.textContent = resumo.faturamentoPrevisto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    percEl.textContent = `${resumo.percentualOcupacao}%`;
-}
-
-function preencherCardIA(mensagem) {
-    const el = document.getElementById("ia-sugestao");
-    if (el) el.textContent = mensagem;
-}
-
-// --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD ---
-
-async function preencherDashboard(user, dataSelecionada) {
-    const empresaId = await getEmpresaId(user);
-    if (!empresaId) {
-        alert("ID da Empresa não encontrado.");
-        return;
-    }
-    try {
-        const agCollection = collection(db, "empresarios", empresaId, "agendamentos");
-        const agQuery = query(agCollection, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
-        const agSnap = await getDocs(agQuery);
-        const agsDoDia = agSnap.docs.map(doc => doc.data());
-
-        preencherAgendaDoDia(agsDoDia);
-        preencherCardServico(calcularServicosDestaque(agsDoDia));
-        preencherCardProfissional(calcularProfissionalDestaque(agsDoDia));
-        preencherCardResumo(calcularResumo(agsDoDia));
-        preencherCardIA(calcularSugestaoIA(agsDoDia));
-    } catch (error) {
-        console.error("Erro ao carregar agendamentos:", error);
-        alert("Ocorreu um erro ao carregar os dados do dashboard.");
-    }
-}
-
-// --- FUNÇÃO DE DEBOUNCE PARA MELHORAR PERFORMANCE ---
-
-function debounce(fn, delay) {
-    let timer = null;
-    return function(...args) {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn.apply(this, args), delay);
-    };
-}
-
-// --- INICIALIZAÇÃO E EVENTOS ---
-
-window.addEventListener("DOMContentLoaded", () => {
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            const filtroData = document.getElementById("filtro-data");
-            const empresaId = await getEmpresaId(user);
-            
-            if (!empresaId) {
-                alert("Não foi possível identificar sua empresa.");
-                return;
-            }
-
-            const hojeString = new Date().toISOString().split('T')[0];
-            const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-            
-            if (filtroData) {
-                filtroData.value = dataInicial;
-                filtroData.addEventListener("change", debounce(() => {
-                    preencherDashboard(user, filtroData.value);
-                }, 300));
-            }
-            
-            await preencherDashboard(user, dataInicial);
-        } else {
-            // window.location.href = "login.html";
-        }
-    });
-
-    const btnVoltar = document.getElementById('btn-voltar');
-    if (btnVoltar) {
-        btnVoltar.addEventListener('click', () => {
-            window.location.href = "index.html"; 
-        });
-    }
-});
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <button id="btn-voltar" class="btn-voltar">
+                &#8592; Voltar
+            </button>
+            <h1>Resumo do seu dia</h1>
+        </div>
+        <div class="dashboard-filtros">
+            <label for="filtro-data">Escolha a data:</label>
+            <input type="date" id="filtro-data" />
+        </div>
+        <div class="dashboard-cards">
+            <!-- Card 1: Serviço em destaque -->
+            <div class="dashboard-card">
+                <span class="card-icone">💇</span>
+                <h3>Serviço em destaque</h3>
+                <div class="card-destaque" id="servico-destaque">-</div>
+            </div>
+            <!-- Card 2: Profissional em destaque -->
+            <div class="dashboard-card">
+                <span class="card-icone">🧑‍💼</span>
+                <h3>Profissional em destaque</h3>
+                <div class="card-destaque" id="prof-destaque-nome">-</div>
+                <div class="card-info" id="prof-destaque-qtd"></div>
+            </div>
+            <!-- Card 3: Resumo do dia -->
+            <div class="dashboard-card resumo">
+                <span class="card-icone">📈</span>
+                <h3>Resumo do dia</h3>
+                <div class="card-sub">Agendamentos: <span class="card-valor" id="total-agendamentos-dia">-</span></div>
+                <div class="card-sub">Faturamento: <span class="card-valor" id="faturamento-previsto">-</span></div>
+                <div class="card-sub">Ocupação: <span class="card-valor" id="percentual-ocupacao">-</span></div>
+            </div>
+            <!-- Card 4: Sugestão da IA -->
+            <div class="dashboard-card ia">
+                <span class="card-icone">🤖</span>
+                <h3>Sugestão da IA</h3>
+                <div class="card-info" id="ia-sugestao">-</div>
+            </div>
+        </div>
+        <div class="agenda-titulo">Agenda do dia</div>
+        <div class="agenda-resultado" id="agenda-resultado"></div>
+    </div>
+    <script src="dashboard.js" type="module"></script>
+</body>
+</html>
