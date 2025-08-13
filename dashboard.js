@@ -1,6 +1,7 @@
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { gerarResumoDiarioInteligente } from "./inteligencia.js"; // <-- Importa o resumo inteligente
 
 const totalSlots = 20; // Total de horários disponíveis no dia, idealmente virá da configuração do sistema
 
@@ -159,6 +160,31 @@ function preencherCardIA(mensagem) {
     if (el) el.textContent = mensagem;
 }
 
+// --- RENDERIZAÇÃO DO RESUMO INTELIGENTE (NOVO CARD) ---
+
+function preencherResumoInteligente(resumoInteligente) {
+    const el = document.getElementById("resumo-inteligente");
+    if (!el) return;
+
+    if (resumoInteligente.totalAtendimentos === 0) {
+        el.innerHTML = `<span>${resumoInteligente.mensagem}</span>`;
+        return;
+    }
+
+    let resumoHtml = `
+        <div><strong>Total atendimentos:</strong> ${resumoInteligente.totalAtendimentos}</div>
+        <div><strong>Primeiro:</strong> ${resumoInteligente.primeiro.horario} - ${resumoInteligente.primeiro.cliente} (${resumoInteligente.primeiro.servico})</div>
+        <div><strong>Último:</strong> ${resumoInteligente.ultimo.horario} - ${resumoInteligente.ultimo.cliente} (${resumoInteligente.ultimo.servico})</div>
+        <div><strong>Faturamento estimado:</strong> ${resumoInteligente.faturamentoEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+    `;
+
+    if (resumoInteligente.maiorIntervalo) {
+        resumoHtml += `<div><strong>Maior intervalo:</strong> ${resumoInteligente.maiorIntervalo.inicio} - ${resumoInteligente.maiorIntervalo.fim} (${resumoInteligente.maiorIntervalo.duracaoMinutos} min)</div>`;
+    }
+
+    el.innerHTML = resumoHtml;
+}
+
 // --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD ---
 
 async function preencherDashboard(user, dataSelecionada) {
@@ -178,6 +204,22 @@ async function preencherDashboard(user, dataSelecionada) {
         preencherCardProfissional(calcularProfissionalDestaque(agsDoDia));
         preencherCardResumo(calcularResumo(agsDoDia));
         preencherCardIA(calcularSugestaoIA(agsDoDia));
+
+        // NOVO: Resumo Inteligente
+        const resumoInteligente = gerarResumoDiarioInteligente(
+            agsDoDia.map(ag => ({
+                inicio: ag.inicio || `${ag.data}T${ag.horario}:00`,
+                fim: ag.fim || `${ag.data}T${ag.horarioFim || ag.horario}:00`,
+                cliente: ag.cliente
+                    ? ag.cliente
+                    : { nome: ag.clienteNome || "Cliente" },
+                servico: ag.servico
+                    ? ag.servico
+                    : { nome: ag.servicoNome || "Serviço", preco: ag.servicoPreco || 0 }
+            }))
+        );
+        preencherResumoInteligente(resumoInteligente);
+
     } catch (error) {
         console.error("Erro ao carregar agendamentos:", error);
         alert("Ocorreu um erro ao carregar os dados do dashboard.");
