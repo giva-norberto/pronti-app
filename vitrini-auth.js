@@ -5,7 +5,7 @@ import { auth, provider } from './vitrini-firebase.js';
 
 // ======================================================================
 // ALTERAÇÃO: Importa as funções de persistência
-// ======================================================================
+// =====================================================================
 import { 
     onAuthStateChanged, 
     signInWithPopup, 
