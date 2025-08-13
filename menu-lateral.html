@@ -1,6 +1,6 @@
 <aside class="sidebar">
   <div class="sidebar-header">
-    <span class="sidebar-logo">Pronti</span>
+    <span class="sidebar-logo">Jetio</span>
     <hr class="sidebar-divider">
   </div>
   <nav class="sidebar-nav">
@@ -11,10 +11,6 @@
     <a href="servicos.html" class="sidebar-link" id="menu-servicos">
       <span class="sidebar-icon"><i class="fa fa-cut"></i></span>
       Serviços
-    </a>
-    <a href="agenda.html" class="sidebar-link" id="menu-agenda">
-      <span class="sidebar-icon"><i class="fa fa-calendar"></i></span>
-      Agenda
     </a>
     <a href="clientes.html" class="sidebar-link" id="menu-clientes">
       <span class="sidebar-icon"><i class="fa fa-users"></i></span>
@@ -31,7 +27,6 @@
   </nav>
 </aside>
 
-<!-- Inclua esta linha para FontAwesome Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -113,14 +108,15 @@
   }
 }
 </style>
-
 <script>
 // Ativa o menu correto conforme a página atual
-const links = document.querySelectorAll('.sidebar-link');
-const path = window.location.pathname;
-links.forEach(link => {
-  if (path.includes(link.getAttribute('href').replace('.html',''))) {
-    link.classList.add('active');
-  }
-});
+setTimeout(function() {
+  const links = document.querySelectorAll('.sidebar-link');
+  const path = window.location.pathname;
+  links.forEach(link => {
+    if (path.includes(link.getAttribute('href').replace('.html',''))) {
+      link.classList.add('active');
+    }
+  });
+}, 100);
 </script>
