@@ -6,10 +6,8 @@
     <title>Pronti - Agenda</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
-    <!-- MELHORIA: Adiciona um CSS extra para cards modernos -->
     <style>
-    /* Cards de agendamento modernos */
+    /* ===== Cards de Agendamento Modernos e Vivos ===== */
     .card-agendamento.pequeno {
         background: linear-gradient(120deg, #f6faff 68%, #e9f3fd 100%);
         border: none;
@@ -67,28 +65,54 @@
         gap: 2px;
         min-width: 120px;
     }
-    .card-agendamento .ag-profissional:before {
-        content: "👤 ";
-        font-size: 1rem;
-        opacity: 0.8;
+    .card-agendamento .ag-profissional,
+    .card-agendamento .ag-cliente {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 1px;
+    }
+    .card-agendamento .ag-profissional .icon {
+        color: #1797c5;
+        font-size: 1.1em;
+        margin-right: 1px;
+    }
+    .card-agendamento .ag-profissional .tag-label {
+        background: #e3f5fc;
+        color: #1797c5;
+        font-size: 0.85em;
+        padding: 2px 8px;
+        border-radius: 8px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.01em;
+        display: inline-block;
     }
     .card-agendamento .ag-profissional {
-        color: #3c435f;
-        font-size: 0.97rem;
-        font-weight: 600;
-        letter-spacing: 0.01em;
+        color: #324b63;
     }
-    .card-agendamento .ag-cliente:before {
-        content: "🧑‍💼 ";
-        font-size: 1rem;
-        opacity: 0.7;
+    .card-agendamento .ag-cliente .icon {
+        color: #b59100;
+        font-size: 1.1em;
+        margin-right: 1px;
+    }
+    .card-agendamento .ag-cliente .tag-label {
+        background: #fff4cd;
+        color: #b59100;
+        font-size: 0.85em;
+        padding: 2px 8px;
+        border-radius: 8px;
+        font-weight: 700;
+        margin-right: 4px;
+        letter-spacing: 0.01em;
+        display: inline-block;
     }
     .card-agendamento .ag-cliente {
-        color: #7d7db3;
-        font-size: 0.94rem;
-        font-weight: 500;
-        letter-spacing: 0.01em;
+        color: #8b6f00;
     }
+    /* ===== Botões de ação vivos ===== */
     .card-agendamento .ag-col-acoes {
         flex-shrink: 0;
         display: flex;
@@ -97,42 +121,42 @@
     }
     .card-agendamento .btn-acao-card {
         border: none;
-        padding: 6px 11px;
+        padding: 7px 13px;
         border-radius: 8px;
         cursor: pointer;
         font-weight: 700;
-        font-size: 1.08em;
+        font-size: 1.18em;
         transition: background 0.16s, box-shadow 0.18s, color 0.16s, transform 0.14s;
         outline: none;
-        min-width: 34px;
-        min-height: 32px;
+        min-width: 36px;
+        min-height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 1px 4px #b0e1ff22;
-        border: 1.4px solid transparent;
+        border: 2.5px solid transparent;
+        box-shadow: 0 1px 8px #b0e1ff22;
     }
     .card-agendamento .btn-nao-compareceu {
-        background: #fffbe7;
-        color: #bfa100;
-        border-color: #ffe066;
+        background: #ffe066;
+        color: #ad8a00;
+        border-color: #ffd200;
     }
     .card-agendamento .btn-nao-compareceu:hover {
-        background: #fff9b0;
-        color: #9d7e00;
+        background: #fff105;
+        color: #7c5c00;
         border-color: #ffe066;
-        transform: translateY(-1px) scale(1.10);
+        transform: translateY(-1px) scale(1.12);
     }
     .card-agendamento .btn-cancelar {
-        background: #fdeceb;
-        color: #e55b5b;
-        border-color: #fabebe;
+        background: #ff3b3b;
+        color: #fff;
+        border-color: #bb2323;
     }
     .card-agendamento .btn-cancelar:hover {
-        background: #ffdbdb;
-        color: #c93a3a;
-        border-color: #fabebe;
-        transform: translateY(-1px) scale(1.10);
+        background: #c30000;
+        color: #fff;
+        border-color: #ff3b3b;
+        transform: translateY(-1px) scale(1.12);
     }
     @media (max-width: 650px) {
         .card-agendamento.pequeno {
@@ -191,9 +215,30 @@
     </div>
 
     <section id="lista-agendamentos">
-        <div class="card-info">
-            <p>Selecione uma data para ver os agendamentos.</p>
+        <!-- Exemplo de card de agendamento renderizado corretamente -->
+        <div class="card-agendamento pequeno">
+            <div class="ag-col-servico">
+                <span class="servico-nome">Escova</span>
+                <span class="ag-horario">12:45</span>
+            </div>
+            <div class="ag-col-pessoas">
+                <span class="ag-profissional">
+                    <span class="icon">👨‍⚕️</span>
+                    <span class="tag-label">Profissional</span>
+                    FERNANDA RESENDE
+                </span>
+                <span class="ag-cliente">
+                    <span class="icon">🧑</span>
+                    <span class="tag-label">Cliente</span>
+                    GIVANILDO SILVA
+                </span>
+            </div>
+            <div class="ag-col-acoes">
+                <button class="btn-acao-card btn-nao-compareceu" title="Não Compareceu">⚠️</button>
+                <button class="btn-acao-card btn-cancelar" title="Cancelar">✖️</button>
+            </div>
         </div>
+        <!-- Fim do exemplo -->
     </section>
  </main>
 
