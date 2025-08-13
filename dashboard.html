@@ -10,9 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <button id="btn-voltar" class="btn-voltar">← Voltar para o menu</button>
     <main>
         <div class="header-dashboard">
+            <button id="btn-voltar" class="btn-voltar">← Voltar</button>
             <h1>Painel Inteligente</h1>
             <div class="filtro-container">
                 <label for="filtro-data">Ver dados de:</label>
@@ -33,27 +33,28 @@
                     <span class="titulo" id="prof-destaque-nome">...</span>
                     <span class="descricao" id="prof-destaque-qtd">...</span>
                 </div>
-               <div class="card ocupacao">
-    <div class="resumo-dia">
-        <div class="resumo-item">
-            <span class="resumo-valor" id="total-agendamentos-dia">0</span>
-            <span class="resumo-label">Agendamentos</span>
-        </div>
-        <div class="resumo-item">
-            <span class="resumo-valor" id="faturamento-previsto">R$ 0,00</span>
-            <span class="resumo-label">Faturamento Previsto</span>
-        </div>
-        <div class="resumo-item">
-            <span class="resumo-valor" id="percentual-ocupacao">0%</span>
-            <span class="resumo-label">Ocupação da Agenda</span>
-        </div>
-    </div>
-</div>
+
+                <div class="card ocupacao">
+                    <div class="resumo-dia">
+                        <div class="resumo-item">
+                            <span class="resumo-valor" id="total-agendamentos-dia">0</span>
+                            <span class="resumo-label">Agendamentos</span>
+                        </div>
+                        <div class="resumo-item">
+                            <span class="resumo-valor" id="faturamento-previsto">R$ 0,00</span>
+                            <span class="resumo-label">Faturamento Previsto</span>
+                        </div>
+                        <div class="resumo-item">
+                            <span class="resumo-valor" id="percentual-ocupacao">0%</span>
+                            <span class="resumo-label">Ocupação da Agenda</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card ia">
                     <span class="icon">💡</span>
                     <span class="titulo">Sugestão da IA:</span>
                     <span class="descricao" id="ia-sugestao">...</span>
-                    <button class="btn-promocao" id="btn-promocao" style="display:none;">Criar promoção</button>
                 </div>
             </div>
 
