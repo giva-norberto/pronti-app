@@ -1,4 +1,6 @@
-/* RESET */
+/* =========================================
+   RESET & BASE
+========================================= */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -7,7 +9,9 @@ body {
     color: #22223b;
 }
 
-/* SIDEBAR */
+/* =========================================
+   SIDEBAR
+========================================= */
 .sidebar {
     width: 250px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -64,7 +68,9 @@ body {
     align-items: flex-start;
 }
 
-/* MAIN CONTENT */
+/* =========================================
+   MAIN CONTENT AREA
+========================================= */
 .main-content, .container {
     max-width: 1000px;
     margin: 40px auto 0 auto;
@@ -76,7 +82,9 @@ body {
     padding: 40px;
 }
 
-/* HEADER SECTION */
+/* =========================================
+   HEADER SECTION
+========================================= */
 .header-section {
     display: flex;
     justify-content: space-between;
@@ -121,7 +129,9 @@ body {
     transform: translateY(-2px);
 }
 
-/* FORM CARD */
+/* =========================================
+   FORM CARDS
+========================================= */
 .form-card {
     background: #ffffff;
     border-radius: 13px;
@@ -165,7 +175,9 @@ body {
     box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.13);
 }
 
-/* LOGO UPLOAD CONTAINER */
+/* =========================================
+   LOGO UPLOAD
+========================================= */
 .logo-upload-container {
     display: flex;
     align-items: center;
@@ -188,7 +200,9 @@ body {
     gap: 6px;
 }
 
-/* VITRINE LINK */
+/* =========================================
+   VITRINE LINK
+========================================= */
 .vitrine-link-container {
     display: flex;
     align-items: center;
@@ -220,7 +234,9 @@ body {
     background: #3b2fd6;
 }
 
-/* SCHEDULE CONTAINER */
+/* =========================================
+   SCHEDULE CONTAINER
+========================================= */
 .schedule-container {
     background: #f6f7fb;
     border-radius: 12px;
@@ -234,7 +250,9 @@ body {
     color: #22223b;
 }
 
-/* EQUIPE PAINEL */
+/* =========================================
+   EQUIPE PAINEL
+========================================= */
 #lista-profissionais-painel {
     margin-top: 18px;
 }
@@ -289,7 +307,9 @@ body {
     margin-left: 6px;
 }
 
-/* FORM ACTIONS */
+/* =========================================
+   FORM ACTIONS
+========================================= */
 .form-actions {
     display: flex;
     gap: 18px;
@@ -313,7 +333,9 @@ body {
     background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
-/* MODAL OVERLAY */
+/* =========================================
+   MODAL OVERLAY
+========================================= */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -349,7 +371,9 @@ body {
     justify-content: center;
 }
 
-/* ============== CARD PADRÃO PRONTI ============== */
+/* =========================================
+   CARD PADRÃO PRONTI (SERVIÇOS, AGENDAMENTOS, CLIENTES)
+========================================= */
 .servico-item,
 .agendamento-item,
 .cliente-item {
@@ -401,9 +425,9 @@ body {
     font-weight: 700;
 }
 
-/* =================== AGENDA =================== */
-
-/* UNIFICADO - Remove duplicidade e prioriza grid colorido! */
+/* =========================================
+   AGENDA: FILTROS
+========================================= */
 .filtros-agenda {
     display: flex;
     gap: 20px;
@@ -426,108 +450,179 @@ body {
     font-size: 0.9rem;
 }
 
-/* Cards de agendamento bonitos e coloridos */
+/* =========================================
+   AGENDA: LISTA DE AGENDAMENTOS (GRID)
+========================================= */
 #lista-agendamentos {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
 }
 
+/* =========================================
+   AGENDA: CARDS DE AGENDAMENTO (MODERNOS)
+========================================= */
 .card-agendamento.pequeno {
-    background: linear-gradient(120deg, #f9fafc 80%, #e6f7fa 100%);
+    background: linear-gradient(120deg, #f6faff 68%, #e9f3fd 100%);
     border: none;
-    border-radius: 13px;
-    padding: 13px 18px;
-    box-shadow: 0 3px 18px 0 #c7e1f71a, 0 1.5px 6px #e7eafd55;
-    margin-bottom: 0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 18px 0 #b4e2fa18, 0 2px 6px #ddeafd55;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 18px;
-    min-height: 48px;
+    min-height: 56px;
     font-size: 1rem;
-    transition: box-shadow 0.18s, background 0.18s;
-    outline: 1.5px solid #e7eafd;
+    outline: 2px solid #e7eafd;
+    margin-bottom: 0;
+    transition: box-shadow 0.17s, background 0.17s, outline 0.17s;
+    position: relative;
 }
 .card-agendamento.pequeno:hover {
-    box-shadow: 0 8px 22px #b1e0fe33, 0 4px 20px #dedbf755;
-    background: linear-gradient(120deg, #f3f6ff 80%, #d6f0f8 100%);
-    outline-color: #b1e0fe;
+    box-shadow: 0 12px 30px #a8d8ff2a, 0 6px 24px #dedbf755;
+    background: linear-gradient(120deg, #f1f5ff 70%, #cfe9fa 110%);
+    outline-color: #9fd8fc;
 }
 
-.card-agendamento .servico-nome,
-.card-agendamento .ag-servico {
+/* ----- Serviço e Horário ----- */
+.card-agendamento .ag-col-servico {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 120px;
+}
+.card-agendamento .servico-nome {
     font-weight: 700;
-    color: #22223b;
+    color: #1b256b;
     margin-bottom: 0;
-    font-size: 1.05rem;
+    font-size: 1.08rem;
     letter-spacing: 0.01em;
-    line-height: 1.1;
+    line-height: 1.15;
 }
 .card-agendamento .ag-horario {
-    color: #5f6dfa;
-    font-size: 0.98rem;
+    display: inline-block;
+    background: #e0f2fe;
+    color: #2196f3;
     font-weight: 600;
+    font-size: 0.97rem;
+    border-radius: 7px;
+    padding: 2.5px 10px 2px 10px;
     margin-top: 2px;
+    margin-right: auto;
+    box-shadow: 0 1px 2px #b6d8f855;
+    letter-spacing: 0.05em;
+}
+
+/* ----- Profissional e Cliente Didáticos ----- */
+.card-agendamento .ag-col-pessoas {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 120px;
 }
 .card-agendamento .ag-profissional,
 .card-agendamento .ag-cliente {
-    color: #484a67;
-    font-size: 0.96rem;
-    font-weight: 500;
-    margin-bottom: 0;
-    line-height: 1.0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 1px;
+}
+.card-agendamento .ag-profissional {
+    color: #324b63;
+}
+.card-agendamento .ag-profissional .tag-label {
+    background: #e3f5fc;
+    color: #1797c5;
+    font-size: 0.85em;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 700;
+    margin-right: 4px;
+    letter-spacing: 0.01em;
+    display: inline-block;
+}
+.card-agendamento .ag-profissional .icon {
+    color: #1797c5;
+    font-size: 1.1em;
+    margin-right: 1px;
 }
 .card-agendamento .ag-cliente {
-    color: #7d7db3;
-    font-size: 0.95rem;
+    color: #8b6f00;
+}
+.card-agendamento .ag-cliente .tag-label {
+    background: #fff4cd;
+    color: #b59100;
+    font-size: 0.85em;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 700;
+    margin-right: 4px;
+    letter-spacing: 0.01em;
+    display: inline-block;
+}
+.card-agendamento .ag-cliente .icon {
+    color: #b59100;
+    font-size: 1.1em;
+    margin-right: 1px;
 }
 
+/* ----- Botões de Ação VIVOS ----- */
+.card-agendamento .ag-col-acoes {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
 .card-agendamento .btn-acao-card {
     border: none;
-    padding: 6px 10px;
+    padding: 7px 13px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
-    font-size: 1em;
+    font-size: 1.18em;
     transition: background 0.16s, box-shadow 0.18s, color 0.16s, transform 0.14s;
     outline: none;
-    margin-left: 2px;
-    min-width: 34px;
-    min-height: 30px;
-    display: inline-flex;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 4px #b0e1ff22;
+    border: 2.5px solid transparent;
+    box-shadow: 0 1px 8px #b0e1ff22;
 }
-
-/* Botão "Não compareceu" (amarelo) */
+/* Botão "Não compareceu" (amarelo vivo) */
 .card-agendamento .btn-nao-compareceu {
-    background: #fffbe7;
-    color: #bfa100;
-    border: 1.4px solid #ffe066;
+    background: #ffe066;
+    color: #ad8a00;
+    border-color: #ffd200;
 }
 .card-agendamento .btn-nao-compareceu:hover {
-    background: #fff9b0;
-    color: #9d7e00;
+    background: #fff105;
+    color: #7c5c00;
     border-color: #ffe066;
-    transform: translateY(-1px) scale(1.09);
+    transform: translateY(-1px) scale(1.12);
 }
-
-/* Botão "Cancelar" (vermelho claro) */
+/* Botão "Cancelar" (vermelho vivo) */
 .card-agendamento .btn-cancelar {
-    background: #fdeceb;
-    color: #e55b5b;
-    border: 1.4px solid #fabebe;
+    background: #ff3b3b;
+    color: #fff;
+    border-color: #bb2323;
 }
 .card-agendamento .btn-cancelar:hover {
-    background: #ffdbdb;
-    color: #c93a3a;
-    border-color: #fabebe;
-    transform: translateY(-1px) scale(1.09);
+    background: #c30000;
+    color: #fff;
+    border-color: #ff3b3b;
+    transform: translateY(-1px) scale(1.12);
 }
 
-/* Agenda do dia - lista */
+/* =========================================
+   AGENDA DO DIA - LISTA
+========================================= */
 .agenda-do-dia {
     background-color: white;
     border-radius: 12px;
@@ -591,7 +686,9 @@ body {
     font-weight: 500;
 }
 
-/* Loader overlay */
+/* =========================================
+   LOADER OVERLAY
+========================================= */
 .loader-overlay {
     position: fixed;
     top: 0;
@@ -619,7 +716,9 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-/* RESPONSIVO */
+/* =========================================
+   RESPONSIVIDADE
+========================================= */
 @media (max-width: 900px) {
     .main-content, .container { margin-left: 0; }
     .sidebar { position: relative; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px;}
@@ -666,225 +765,6 @@ body {
     #lista-agendamentos {
         grid-template-columns: 1fr;
     }
-    .card-agendamento.pequeno {
-        padding: 10px 7px;
-        font-size: 0.97rem;
-        gap: 9px;
-    }
-}
-.card-agendamento.pequeno {
-    background: linear-gradient(120deg, #f6faff 64%, #e9f3fd 100%);
-    border: none;
-    border-radius: 14px;
-    padding: 16px 20px;
-    box-shadow: 0 4px 18px 0 #b4e2fa18, 0 2px 6px #ddeafd55;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 18px;
-    min-height: 56px;
-    font-size: 1rem;
-    outline: 2px solid #e7eafd;
-    margin-bottom: 0;
-    transition: box-shadow 0.17s, background 0.17s, outline 0.17s;
-    position: relative;
-}
-
-.card-agendamento.pequeno:hover {
-    box-shadow: 0 12px 30px #a8d8ff2a, 0 6px 24px #dedbf755;
-    background: linear-gradient(120deg, #f1f5ff 70%, #cfe9fa 110%);
-    outline-color: #9fd8fc;
-}
-
-/* Coluna Serviço + Horário */
-.card-agendamento .ag-col-servico {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 120px;
-}
-.card-agendamento .servico-nome {
-    font-weight: 700;
-    color: #1b256b;
-    margin-bottom: 0;
-    font-size: 1.08rem;
-    letter-spacing: 0.01em;
-    line-height: 1.15;
-}
-.card-agendamento .ag-horario {
-    display: inline-block;
-    background: #e0f2fe;
-    color: #2196f3;
-    font-weight: 600;
-    font-size: 0.97rem;
-    border-radius: 7px;
-    padding: 2.5px 10px 2px 10px;
-    margin-top: 2px;
-    margin-right: auto;
-    box-shadow: 0 1px 2px #b6d8f855;
-    letter-spacing: 0.05em;
-}
-/* ========== CARDS DE AGENDAMENTO MELHORADOS ========== */
-.card-agendamento.pequeno {
-    background: linear-gradient(120deg, #f6faff 68%, #e9f3fd 100%);
-    border: none;
-    border-radius: 14px;
-    padding: 16px 20px;
-    box-shadow: 0 4px 18px 0 #b4e2fa18, 0 2px 6px #ddeafd55;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 18px;
-    min-height: 56px;
-    font-size: 1rem;
-    outline: 2px solid #e7eafd;
-    margin-bottom: 0;
-    transition: box-shadow 0.17s, background 0.17s, outline 0.17s;
-    position: relative;
-}
-.card-agendamento.pequeno:hover {
-    box-shadow: 0 12px 30px #a8d8ff2a, 0 6px 24px #dedbf755;
-    background: linear-gradient(120deg, #f1f5ff 70%, #cfe9fa 110%);
-    outline-color: #9fd8fc;
-}
-.card-agendamento .ag-col-servico {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 120px;
-}
-.card-agendamento .servico-nome {
-    font-weight: 700;
-    color: #1b256b;
-    margin-bottom: 0;
-    font-size: 1.08rem;
-    letter-spacing: 0.01em;
-    line-height: 1.15;
-}
-.card-agendamento .ag-horario {
-    display: inline-block;
-    background: #e0f2fe;
-    color: #2196f3;
-    font-weight: 600;
-    font-size: 0.97rem;
-    border-radius: 7px;
-    padding: 2.5px 10px 2px 10px;
-    margin-top: 2px;
-    margin-right: auto;
-    box-shadow: 0 1px 2px #b6d8f855;
-    letter-spacing: 0.05em;
-}
-/* ========== PROFISSIONAL E CLIENTE MAIS DIDÁTICO ========== */
-.card-agendamento .ag-col-pessoas {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 120px;
-}
-.card-agendamento .ag-profissional,
-.card-agendamento .ag-cliente {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 1px;
-}
-.card-agendamento .ag-profissional {
-    color: #324b63;
-}
-.card-agendamento .ag-profissional .tag-label {
-    background: #e3f5fc;
-    color: #1797c5;
-    font-size: 0.85em;
-    padding: 2px 8px;
-    border-radius: 8px;
-    font-weight: 700;
-    margin-right: 4px;
-    letter-spacing: 0.01em;
-    display: inline-block;
-}
-.card-agendamento .ag-profissional .icon {
-    color: #1797c5;
-    font-size: 1.1em;
-    margin-right: 1px;
-}
-
-.card-agendamento .ag-cliente {
-    color: #8b6f00;
-}
-.card-agendamento .ag-cliente .tag-label {
-    background: #fff4cd;
-    color: #b59100;
-    font-size: 0.85em;
-    padding: 2px 8px;
-    border-radius: 8px;
-    font-weight: 700;
-    margin-right: 4px;
-    letter-spacing: 0.01em;
-    display: inline-block;
-}
-.card-agendamento .ag-cliente .icon {
-    color: #b59100;
-    font-size: 1.1em;
-    margin-right: 1px;
-}
-
-/* ========== BOTÕES DE AÇÃO MAIS VIVOS ========== */
-.card-agendamento .ag-col-acoes {
-    flex-shrink: 0;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-.card-agendamento .btn-acao-card {
-    border: none;
-    padding: 7px 13px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 1.18em;
-    transition: background 0.16s, box-shadow 0.18s, color 0.16s, transform 0.14s;
-    outline: none;
-    min-width: 36px;
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2.5px solid transparent;
-    box-shadow: 0 1px 8px #b0e1ff22;
-}
-
-/* Botão "Não compareceu" (amarelo vivo) */
-.card-agendamento .btn-nao-compareceu {
-    background: #ffe066;
-    color: #ad8a00;
-    border-color: #ffd200;
-}
-.card-agendamento .btn-nao-compareceu:hover {
-    background: #fff105;
-    color: #7c5c00;
-    border-color: #ffe066;
-    transform: translateY(-1px) scale(1.12);
-}
-
-/* Botão "Cancelar" (vermelho vivo) */
-.card-agendamento .btn-cancelar {
-    background: #ff3b3b;
-    color: #fff;
-    border-color: #bb2323;
-}
-.card-agendamento .btn-cancelar:hover {
-    background: #c30000;
-    color: #fff;
-    border-color: #ff3b3b;
-    transform: translateY(-1px) scale(1.12);
-}
-
-@media (max-width: 650px) {
     .card-agendamento.pequeno {
         flex-direction: column;
         align-items: stretch;
