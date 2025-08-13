@@ -107,10 +107,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (agendamentos.length === 0) {
             const dataFormatada = new Date(`${dataSelecionada}T12:00:00`).toLocaleDateString('pt-BR');
             listaAgendamentosEl.innerHTML = `
-                <div class="card-info" style="padding:18px 10px;text-align:center;border-radius:10px;background:#eef2ff;color:#5f6dfa;box-shadow:0 2px 8px #d6d2f8;margin-bottom:24px;">
+                <div class="card-info card-info-vazia">
                     <svg width="34" height="34" style="margin-bottom:4px;" viewBox="0 0 24 24" fill="none" stroke="#5f6dfa" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="5" /><path d="M16 2v4M8 2v4M4 10h16"></path></svg>
-                    <h3 style="font-size:1.08rem;font-weight:600;margin-bottom:7px;">Nenhum agendamento encontrado</h3>
-                    <p style="font-size:0.93rem;margin-bottom:0;color:#3d3a57;">Ainda não existem compromissos marcados para <b>${dataFormatada}</b>.</p>
+                    <h3>Nenhum agendamento encontrado</h3>
+                    <p>Ainda não existem compromissos marcados para <b>${dataFormatada}</b>.</p>
                 </div>
             `;
             return;
@@ -120,7 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
             .forEach(ag => {
                 const cardContainer = document.createElement('div');
                 cardContainer.className = "card-agendamento pequeno";
-                // Estrutura didática: Profissional/Cliente com rótulo e ícone
                 cardContainer.innerHTML = `
                     <div class="ag-col-servico">
                         <span class="servico-nome">${ag.servicoNome || 'Serviço'}</span>
