@@ -735,3 +735,80 @@ body {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+/* =============================================== */
+/* ESTILOS PARA O CARD "AGENDA DO DIA"             */
+/* =============================================== */
+
+.agenda-do-dia {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    padding: 25px;
+    /* Faz este card ocupar mais espaço vertical se a grade permitir */
+    grid-row: span 2; 
+    display: flex;
+    flex-direction: column;
+}
+
+.agenda-do-dia h2 {
+    margin: 0 0 15px 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #E5E7EB;
+    padding-bottom: 15px;
+}
+
+#agenda-resultado {
+    overflow-y: auto; /* Adiciona scroll se a lista for muito longa */
+    flex-grow: 1; /* Faz a lista ocupar o espaço vertical disponível */
+    padding-right: 10px; /* Um pequeno espaço para a barra de scroll não colar */
+}
+
+/* Estilo para cada agendamento dentro da lista */
+.card-agendamento {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+/* Remove a borda do último item da lista */
+#agenda-resultado .card-agendamento:last-child {
+    border-bottom: none;
+    padding-bottom: 5px;
+}
+
+.horario-destaque {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #4facfe;
+    background-color: #eef2ff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    min-width: 70px;
+    text-align: center;
+}
+
+.agendamento-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.agendamento-info strong {
+    font-size: 1rem;
+    color: #22223b;
+    font-weight: 600;
+}
+
+.agendamento-info span {
+    font-size: 0.9rem;
+    color: #6B7280;
+}
+
+.aviso-horarios {
+    text-align: center;
+    padding: 30px;
+    color: #888;
+    font-weight: 500;
+}
