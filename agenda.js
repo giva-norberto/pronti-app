@@ -1,4 +1,4 @@
-// agenda.js - VERSÃO COM A ADIÇÃO DA FUNCIONALIDADE "NÃO COMPARECEU"
+// agenda.js - VERSÃO FINAL COM CONFIRMAÇÃO PARA CANCELAR E MARCAR FALTA
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -128,10 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span style="color:#3d3a57;font-size:0.95em;">${ag.clienteNome}</span>
                 </div>
                 <div style="flex-shrink:0;display:flex;gap:4px;">
-                    <button class="btn-acao-card btn-concluir" data-id="${ag.id}" title="Concluir" style="font-size:0.92em;background:#eaf7ed;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">✔️</button>
-                    
                     <button class="btn-acao-card btn-nao-compareceu" data-id="${ag.id}" title="Não Compareceu" style="font-size:0.92em;background:#fff3cd;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">⚠️</button>
-
                     <button class="btn-acao-card btn-cancelar" data-id="${ag.id}" title="Cancelar" style="font-size:0.92em;background:#fdeceb;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">✖️</button>
                 </div>
             `;
@@ -168,28 +165,34 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!target) return;
             const agendamentoId = target.dataset.id;
             
-            if (target.matches('.btn-concluir')) concluirAgendamento(agendamentoId);
             if (target.matches('.btn-cancelar')) cancelarAgendamento(agendamentoId);
-            // NOVO: Adicionado o evento para o botão de "Não Compareceu"
             if (target.matches('.btn-nao-compareceu')) marcarNaoCompareceu(agendamentoId);
         });
         
         atualizarAgenda();
     });
 
-    async function concluirAgendamento(agendamentoId) {
-        const agRef = doc(db, "empresarios", empresaIdGlobal, "agendamentos", agendamentoId);
-        await updateDoc(agRef, { status: "concluido" });
-        atualizarAgenda();
-    }
+    // ==========================================================
+    // ALTERAÇÃO: Adicionada a janela de confirmação
+    // ==========================================================
     async function cancelarAgendamento(agendamentoId) {
+        // NOVO: Pergunta ao usuário se ele tem certeza
+        if (!confirm("Tem certeza que deseja CANCELAR este agendamento?")) {
+            return; // Se clicar em "Cancelar", a função para aqui
+        }
         const agRef = doc(db, "empresarios", empresaIdGlobal, "agendamentos", agendamentoId);
-        await updateDoc(agRef, { status: "cancelado" });
+        await updateDoc(agRef, { status: "cancelado_pelo_gestor" }); // Status mais específico
         atualizarAgenda();
     }
     
-    // NOVO: Função para marcar "Não Compareceu"
+    // ==========================================================
+    // ALTERAÇÃO: Adicionada a janela de confirmação
+    // ==========================================================
     async function marcarNaoCompareceu(agendamentoId) {
+        // NOVO: Pergunta ao usuário se ele tem certeza
+        if (!confirm("Marcar FALTA para este agendamento? A ação não pode ser desfeita.")) {
+            return; // Se clicar em "Cancelar", a função para aqui
+        }
         const agRef = doc(db, "empresarios", empresaIdGlobal, "agendamentos", agendamentoId);
         await updateDoc(agRef, { status: "nao_compareceu" });
         atualizarAgenda();
