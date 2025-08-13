@@ -343,4 +343,6 @@ main {
     font-size: 0.97rem;
   }
 }
+
+/* TESTE: Borda vermelha para debug (remova depois de testar) */
 .card-agendamento { border: 3px solid red !important; }
