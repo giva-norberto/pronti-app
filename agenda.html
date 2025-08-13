@@ -9,78 +9,6 @@
     <!-- FontAwesome para ícones se quiser usar -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      /* Exemplo de estilos básicos do menu lateral */
-      .sidebar {
-        width: 220px;
-        min-height: 100vh;
-        background: linear-gradient(160deg, #4f46e5 0%, #38bdf8 100%);
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        left: 0;
-        top: 0;
-        z-index: 100;
-        padding: 0;
-      }
-      .sidebar-brand {
-        font-size: 1.6rem;
-        font-weight: bold;
-        color: #fff;
-        text-decoration: none;
-        padding: 32px 0 8px 32px;
-        display: block;
-        letter-spacing: 1px;
-      }
-      .sidebar hr {
-        border: none;
-        border-top: 1.5px solid #94a3b8;
-        margin: 15px 0 0 0;
-        width: 80%;
-        align-self: center;
-      }
-      .sidebar-links {
-        display: flex;
-        flex-direction: column;
-        margin-top: 32px;
-      }
-      .sidebar-links a {
-        padding: 13px 32px;
-        font-size: 1.08rem;
-        text-decoration: none;
-        color: #fff;
-        border: none;
-        background: none;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s;
-        border-left: 4px solid transparent;
-        margin-bottom: 2px;
-      }
-      .sidebar-links a.active,
-      .sidebar-links a:hover {
-        background: rgba(255,255,255,0.13);
-        color: #fff;
-        border-left: 4px solid #fff;
-      }
-      .sidebar-footer {
-        margin-top: auto;
-        padding: 24px 32px;
-      }
-      .btn-logout {
-        background: #fff;
-        color: #4f46e5;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 5px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s;
-      }
-      .btn-logout:hover {
-        background: #4f46e5;
-        color: #fff;
-        border: 1px solid #fff;
-      }
       .main-content {
         margin-left: 220px;
         padding: 40px 32px 32px 32px;
@@ -186,101 +114,81 @@
         margin: 0 6px 0 6px;
       }
       @media (max-width: 900px) {
-        .sidebar {
-          width: 60px;
-          min-width: 60px;
-        }
-        .sidebar-brand {
-          padding-left: 10px;
-          font-size: 1rem;
-        }
-        .sidebar-links a {
-          padding: 13px 10px;
-        }
         .main-content {
           margin-left: 60px;
-        }
-        .sidebar-links a span:not(.icon) {
-          display: none;
         }
       }
     </style>
 </head>
 <body>
+    <!-- Aqui é o ponto do include do menu lateral -->
+    <div id="sidebar-placeholder"></div>
 
- <aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <div class="sidebar-links">
-        <a href="dashboard.html">Dashboard</a>
-        <a href="servicos.html">Serviços</a>
-        <a href="agenda.html" class="active">Agenda</a>
-        <a href="clientes.html">Clientes</a>
-        <a href="equipe.html">Equipe</a>
-        <a href="perfil.html">Meu Perfil</a>
-    </div>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">
-            Sair
-        </button>
-    </div>
-</aside>
-
- <main class="main-content">
-    <div class="agenda-header">
-        <div>
-            <h1>Agenda de Compromissos</h1>
-        </div>
-        <a href="novo-agendamento.html" class="btn-new">+ Novo Agendamento</a>
-    </div>
-
-    <div class="filtros-agenda">
-        <div class="filtro-item">
-            <label for="data-agenda">Filtrar por data:</label>
-            <input type="date" id="data-agenda">
-        </div>
-        
-        <div class="filtro-item">
-            <label for="filtro-profissional">Ver agenda de:</label>
-            <select id="filtro-profissional" class="form-control">
-            </select>
-        </div>
-    </div>
-
-    <section id="lista-agendamentos">
-        <!-- Exemplo de card de agendamento renderizado corretamente -->
-        <div class="card-agendamento pequeno">
-            <div class="ag-col-servico">
-                <span class="servico-nome">Corte Feminino</span>
-                <span class="ag-horario">11:55</span>
+    <main class="main-content">
+        <div class="agenda-header">
+            <div>
+                <h1>Agenda de Compromissos</h1>
             </div>
-            <div class="ag-col-pessoas">
-                <span class="ag-profissional">
-                    <span class="icon">👨‍⚕️</span>
-                    <span class="tag-label">Profissional</span>
-                    GIVANILDO SILVA
-                </span>
-                <span class="ag-cliente">
-                    <span class="icon">🧑</span>
-                    <span class="tag-label">Cliente</span>
-                    FERNANDA RESENDE
-                </span>
+            <a href="novo-agendamento.html" class="btn-new">+ Novo Agendamento</a>
+        </div>
+
+        <div class="filtros-agenda">
+            <div class="filtro-item">
+                <label for="data-agenda">Filtrar por data:</label>
+                <input type="date" id="data-agenda">
             </div>
-            <div class="ag-col-acoes">
-                <button class="btn-acao-card btn-nao-compareceu" title="Não Compareceu">⚠️</button>
-                <button class="btn-acao-card btn-cancelar" title="Cancelar">✖️</button>
+            
+            <div class="filtro-item">
+                <label for="filtro-profissional">Ver agenda de:</label>
+                <select id="filtro-profissional" class="form-control"></select>
             </div>
         </div>
-        <!-- Fim do exemplo -->
-    </section>
- </main>
 
- <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
- <script src="https://unpkg.com/lucide@latest"></script>
- <script>
-    lucide.createIcons();
- </script>
- <script src="firebase-config.js" type="module"></script>
- <script src="agenda.js" type="module"></script>
+        <section id="lista-agendamentos">
+            <!-- Exemplo de card de agendamento renderizado corretamente -->
+            <div class="card-agendamento pequeno">
+                <div class="ag-col-servico">
+                    <span class="servico-nome">Corte Feminino</span>
+                    <span class="ag-horario">11:55</span>
+                </div>
+                <div class="ag-col-pessoas">
+                    <span class="ag-profissional">
+                        <span class="icon">👨‍⚕️</span>
+                        <span class="tag-label">Profissional</span>
+                        GIVANILDO SILVA
+                    </span>
+                    <span class="ag-cliente">
+                        <span class="icon">🧑</span>
+                        <span class="tag-label">Cliente</span>
+                        FERNANDA RESENDE
+                    </span>
+                </div>
+                <div class="ag-col-acoes">
+                    <button class="btn-acao-card btn-nao-compareceu" title="Não Compareceu">⚠️</button>
+                    <button class="btn-acao-card btn-cancelar" title="Cancelar">✖️</button>
+                </div>
+            </div>
+            <!-- Fim do exemplo -->
+        </section>
+    </main>
+
+    <script>
+    // Inclui o menu-lateral.html dinamicamente
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+        });
+    });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+    <script src="firebase-config.js" type="module"></script>
+    <script src="agenda.js" type="module"></script>
 </body>
 </html>
