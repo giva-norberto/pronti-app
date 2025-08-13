@@ -1,11 +1,13 @@
-// CORREÇÃO: Versão do Firebase mantida em 10.12.2
-import { onAuthStateChanged, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// login.js - VERSÃO FINAL COM PERSISTÊNCIA DE LOGIN
+
+// ALTERAÇÃO: Adicionadas as funções 'setPersistence' e 'browserLocalPersistence'
+import { onAuthStateChanged, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // Importa 'auth' e 'provider' já criados do arquivo de configuração central
 import { auth, provider } from "./vitrini-firebase.js"; 
 
 // O ID do botão deve corresponder ao seu HTML
-const btnLoginGoogle = document.getElementById('btn-login-google');
+const btnLoginGoogle = document.getElementById('btn-login-google'); 
 
 if (!btnLoginGoogle) {
     console.error("Botão com id 'btn-login-google' não foi encontrado!");
@@ -14,7 +16,6 @@ if (!btnLoginGoogle) {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             console.log("Usuário já está logado. Redirecionando para o dashboard...");
-            // Garante que o redirecionamento não aconteça se já estivermos no dashboard
             if (!window.location.pathname.includes('dashboard.html')) {
                 window.location.href = 'dashboard.html';
             }
@@ -25,12 +26,18 @@ if (!btnLoginGoogle) {
     btnLoginGoogle.addEventListener('click', async () => {
         btnLoginGoogle.disabled = true;
         try {
-            const result = await signInWithPopup(auth, provider); // Usa o 'auth' e 'provider' importados
+            // ==========================================================
+            // ALTERAÇÃO: Esta é a linha que resolve o problema.
+            // Ela força o Firebase a "lembrar" do usuário permanentemente.
+            // ==========================================================
+            await setPersistence(auth, browserLocalPersistence);
+
+            const result = await signInWithPopup(auth, provider);
             console.log("Login com Google bem-sucedido para:", result.user.displayName);
-            window.location.href = 'dashboard.html'; // Redireciona após o login
+            window.location.href = 'dashboard.html';
+
         } catch (error) {
             console.error("Erro no login com Google:", error);
-            // Evita alerta para ação normal do usuário de fechar o popup
             if (error.code !== 'auth/popup-closed-by-user') {
                 alert(`Erro ao fazer login: ${error.message}`);
             }
