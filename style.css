@@ -705,3 +705,17 @@ body {
 .btn-cancelar:hover {
     background-color: #FECACA;
 }
+/* Adicione ao final do seu style.css */
+
+.slot-livre {
+    background: #f9fafb; /* Cinza bem claro */
+    border-radius: 12px;
+    border: 1px dashed #d1d5db; /* Borda tracejada */
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #6b7280; /* Cor do texto cinza */
+    font-weight: 500;
+}
