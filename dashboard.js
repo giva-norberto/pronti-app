@@ -1,5 +1,4 @@
-// dashboard.js - VERSÃO COMPLETA E CORRIGIDA
-// Preenche todos os cards do dashboard e evita erros de carregamento.
+// dashboard.js - VERSÃO COM CORREÇÃO DO ERRO 'ocupacaoPercent'
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -14,7 +13,6 @@ async function preencherDashboard(user, dataSelecionada) {
         return;
     }
 
-    // Busca agendamentos da data selecionada
     const agCollection = collection(db, "empresarios", empresaId, "agendamentos");
     const agQuery = query(agCollection, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
     const agSnap = await getDocs(agQuery);
@@ -71,13 +69,15 @@ async function preencherDashboard(user, dataSelecionada) {
         }
     }
 
+    // ===============================================
+    // CORREÇÃO: A variável 'ocupacaoPercent' foi movida para fora do 'if'
+    // ===============================================
+    const totalSlotsExemplo = 20;
+    const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlotsExemplo) * 100));
+
     // 4. Calcula e preenche o Card "Ocupação"
     const ocupacaoCircularEl = document.getElementById("ocupacao-circular");
-    const ocupacaoTextoEl = document.getElementById("ocupacao-texto");
-    if (ocupacaoCircularEl && ocupacaoTextoEl) {
-        const totalSlotsExemplo = 20; // Idealmente, este número viria do seu banco
-        const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlotsExemplo) * 100));
-        
+    if (ocupacaoCircularEl) {
         ocupacaoCircularEl.innerHTML = `
             <svg viewBox="0 0 74 74">
                 <circle cx="37" cy="37" r="32" stroke="#ffffff33" stroke-width="8" fill="none"/>
@@ -88,8 +88,12 @@ async function preencherDashboard(user, dataSelecionada) {
                     style="transition: stroke-dashoffset 0.8s ease-out"/>
             </svg>
             <div class="percent">${ocupacaoPercent}%</div>`;
+    }
+    const ocupacaoTextoEl = document.getElementById("ocupacao-texto");
+    if (ocupacaoTextoEl) {
         ocupacaoTextoEl.textContent = `Sua agenda está ${ocupacaoPercent}% ocupada`;
     }
+
 
     // 5. Calcula e preenche a "Sugestão da IA"
     const iaSugestaoEl = document.getElementById("ia-sugestao");
@@ -97,7 +101,7 @@ async function preencherDashboard(user, dataSelecionada) {
         if(agsDoDia.length === 0){
             iaSugestaoEl.textContent = "O dia está livre! Que tal criar uma promoção para atrair clientes?";
         } else if (ocupacaoPercent < 50) {
-            iaSugestaoEl.textContent = "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes sobre os horários disponíveis.";
+            iaSugestaoEl.textContent = "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
         } else {
             iaSugestaoEl.textContent = "O dia está movimentado! Prepare-se para um dia produtivo.";
         }
@@ -112,19 +116,17 @@ window.addEventListener("DOMContentLoaded", () => {
         if (user) {
             const filtroData = document.getElementById("filtro-data");
             
-            // Define a data de hoje como padrão no filtro
             const hoje = new Date().toISOString().split('T')[0];
             if (filtroData && !filtroData.value) {
                 filtroData.value = hoje;
             }
             
-            // Carrega o dashboard com a data inicial
-            preencherDashboard(user, filtroData.value).catch(err => {
+            const dataInicial = filtroData ? filtroData.value : hoje;
+            preencherDashboard(user, dataInicial).catch(err => {
                 console.error("Erro ao carregar o dashboard:", err);
                 alert("Erro ao carregar dados: " + err.message);
             });
 
-            // Adiciona o evento para quando o usuário MUDAR a data
             if (filtroData) {
                 filtroData.addEventListener("change", () => {
                     preencherDashboard(user, filtroData.value);
@@ -139,7 +141,6 @@ window.addEventListener("DOMContentLoaded", () => {
     const btnVoltar = document.getElementById('btn-voltar');
     if (btnVoltar) {
         btnVoltar.addEventListener('click', () => {
-            // Idealmente, volte para a página do painel principal, ex: 'index.html'
             window.location.href = "index.html"; 
         });
     }
