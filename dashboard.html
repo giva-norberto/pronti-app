@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <meta name="description" content="Painel inteligente para controle de agendamentos e performance da sua empresa." />
     <title>Painel Inteligente - Dashboard</title>
-    <link rel="stylesheet" href="dashboard.css" />
+    
+    <!-- Garante que apenas o CSS do dashboard seja carregado -->
+    <link rel="stylesheet" href="dashboard.css" /> 
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,14 +27,14 @@
             <div class="card card-agenda">
                 <h3>📅 Agenda do Dia</h3>
                 <div id="agenda-resultado" class="card-body">
-                    <div class="aviso-horarios">Carregando agendamentos...</div>
+                    <!-- Agendamentos do dia aparecerão aqui -->
                 </div>
             </div>
 
             <div class="card card-servico">
                 <h3>⭐ Serviço em Destaque</h3>
                 <div id="servico-destaque" class="card-body card-body-destaque">
-                    Carregando...
+                    ...
                 </div>
             </div>
 
@@ -53,7 +55,7 @@
                     </div>
                     <div class="resumo-item">
                         <span>Faturamento Estimado:</span>
-                        <strong id="faturamento-previsto">R$ 0,00</strong>
+                        <strong id="faturamento-previsto">R$0,00</strong>
                     </div>
                     <div class="resumo-item">
                         <span>Ocupação:</span>
@@ -65,14 +67,14 @@
             <div class="card card-ia">
                 <h3>🤖 Sugestão Inteligente</h3>
                 <div id="ia-sugestao" class="card-body">
-                    Analisando dados...
+                    ...
                 </div>
             </div>
 
             <div class="card card-resumo-inteligente">
                 <h3>💡 Resumo Inteligente</h3>
                 <div id="resumo-inteligente" class="card-body">
-                    <p>Análise detalhada do dia aparecerá aqui.</p>
+                    ...
                 </div>
             </div>
         </div>
