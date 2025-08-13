@@ -1,0 +1,126 @@
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-logo">Pronti</span>
+    <hr class="sidebar-divider">
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html" class="sidebar-link" id="menu-dashboard">
+      <span class="sidebar-icon"><i class="fa fa-th-large"></i></span>
+      Dashboard
+    </a>
+    <a href="servicos.html" class="sidebar-link" id="menu-servicos">
+      <span class="sidebar-icon"><i class="fa fa-cut"></i></span>
+      Serviços
+    </a>
+    <a href="agenda.html" class="sidebar-link" id="menu-agenda">
+      <span class="sidebar-icon"><i class="fa fa-calendar"></i></span>
+      Agenda
+    </a>
+    <a href="clientes.html" class="sidebar-link" id="menu-clientes">
+      <span class="sidebar-icon"><i class="fa fa-users"></i></span>
+      Clientes
+    </a>
+    <a href="equipe.html" class="sidebar-link" id="menu-equipe">
+      <span class="sidebar-icon"><i class="fa fa-user-friends"></i></span>
+      Equipe
+    </a>
+    <a href="perfil.html" class="sidebar-link" id="menu-perfil">
+      <span class="sidebar-icon"><i class="fa fa-user-circle"></i></span>
+      Meu Perfil
+    </a>
+  </nav>
+</aside>
+
+<!-- Inclua esta linha para FontAwesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+.sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #4f46e5 0%, #38bdf8 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+.sidebar-header {
+  padding: 32px 0 8px 32px;
+}
+.sidebar-logo {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #fff;
+  letter-spacing: 1px;
+}
+.sidebar-divider {
+  border: none;
+  border-top: 1.5px solid #94a3b8;
+  margin: 15px 0 0 0;
+  width: 80%;
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  margin-top: 32px;
+}
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 32px;
+  font-size: 1.08rem;
+  text-decoration: none;
+  color: #fff;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  border-left: 4px solid transparent;
+}
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: rgba(255,255,255,0.13);
+  color: #fff;
+  border-left: 4px solid #fff;
+}
+.sidebar-icon {
+  min-width: 24px;
+  text-align: center;
+  font-size: 1.15em;
+}
+@media (max-width: 900px) {
+  .sidebar {
+    width: 60px;
+    min-width: 60px;
+  }
+  .sidebar-header {
+    padding-left: 10px;
+  }
+  .sidebar-logo {
+    font-size: 1rem;
+  }
+  .sidebar-link {
+    padding: 13px 10px;
+    justify-content: center;
+  }
+  .sidebar-link span:not(.sidebar-icon) {
+    display: none;
+  }
+}
+</style>
+
+<script>
+// Ativa o menu correto conforme a página atual
+const links = document.querySelectorAll('.sidebar-link');
+const path = window.location.pathname;
+links.forEach(link => {
+  if (path.includes(link.getAttribute('href').replace('.html',''))) {
+    link.classList.add('active');
+  }
+});
+</script>
