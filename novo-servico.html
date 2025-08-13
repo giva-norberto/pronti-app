@@ -10,55 +10,6 @@
       font-family: 'Inter', Arial, sans-serif;
       color: #22223b;
     }
-    .sidebar {
-      width: 240px;
-      background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-      min-height: 100vh;
-      color: #fff;
-      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-      position: fixed;
-      left: 0; top: 0; bottom: 0;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      padding-top: 20px;
-    }
-    .sidebar-brand {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #fff;
-      text-decoration: none;
-      letter-spacing: 2px;
-      padding: 24px 24px 12px 24px;
-      display: block;
-      margin-bottom: 10px;
-    }
-    .sidebar-links a {
-      display: block;
-      background: #fff;
-      color: #22223b;
-      font-weight: 500;
-      border-radius: 12px;
-      margin-bottom: 10px;
-      box-shadow: none;
-      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-      padding: 14px 0;
-      text-align: center;
-      text-decoration: none;
-      letter-spacing: 0.01em;
-    }
-    .sidebar-links a.active {
-      background: #6366f1;
-      color: #fff;
-      font-weight: bold;
-      box-shadow: 2px 4px 0 0 #ff3e7f;
-      border-radius: 12px;
-    }
-    .sidebar-links a:hover:not(.active) {
-      background: #f6f8fa;
-      color: #4f46e5;
-    }
     .main-content {
       margin-left: 240px;
       padding: 36px 40px;
@@ -132,7 +83,6 @@
       background: #4f46e5;
     }
     @media (max-width: 900px) {
-      .sidebar { width: 100vw; min-height: 0; position: relative; }
       .main-content { margin-left: 0; padding: 24px 10px; }
       .form-card { margin: 24px auto 0 auto; }
     }
@@ -143,17 +93,8 @@
   </style>
 </head>
 <body>
-  <!-- Sidebar/menu lateral -->
-  <aside class="sidebar">
-    <a href="dashboard.html" class="sidebar-brand">Jetio</a>
-    <nav class="sidebar-links">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="servicos.html" class="active">Serviços</a>
-      <a href="clientes.html">Clientes</a>
-      <a href="equipe.html">Equipe</a>
-      <a href="perfil.html">Meu Perfil</a>
-    </nav>
-  </aside>
+  <!-- Sidebar/menu lateral INCLUDE -->
+  <div id="sidebar-placeholder"></div>
 
   <!-- Conteúdo principal -->
   <div class="main-content">
@@ -184,5 +125,15 @@
   <!-- SCRIPTS DOS MÓDULOS -->
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="novo-servico.js"></script>
+  <script>
+    // Inclui o menu-lateral.html dinamicamente
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+        });
+    });
+  </script>
 </body>
 </html>
