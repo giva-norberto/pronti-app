@@ -6,6 +6,7 @@ body {
   color: #fff;
   min-height: 100vh;
 }
+
 .btn-voltar {
   position: fixed;
   top: 22px;
@@ -26,6 +27,7 @@ body {
   background: #54aaff;
   color: #202b5c;
 }
+
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(230px, 1fr));
@@ -34,6 +36,7 @@ body {
   max-width: 650px;
   margin: 48px auto 0 auto;
 }
+
 .card {
   border-radius: 22px;
   padding: 28px 22px;
@@ -58,6 +61,7 @@ body {
 .card.comparativo { background: linear-gradient(135deg, #202b5c 80%, #284399 100%); }
 .card.alerta    { background: linear-gradient(135deg, #f85a7a 80%, #f93e55 100%); }
 .card.ia        { background: linear-gradient(135deg, #202b5c 80%, #284399 100%); }
+
 .card .icon {
   font-size: 2.5rem;
   margin-bottom: 6px;
@@ -154,6 +158,7 @@ body {
   background: #ffe46d;
   color: #202b5c;
 }
+
 .exportar {
   display: flex;
   align-items: center;
@@ -180,6 +185,7 @@ body {
   background: #54aaff;
   color: #202b5c;
 }
+
 @media (max-width: 700px) {
   .dashboard-cards {
     grid-template-columns: 1fr;
@@ -199,36 +205,30 @@ body {
     padding: 10px 16px;
   }
 }
-/* Adicione este CSS ao seu dashboard.css */
 
 .resumo-dia {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 20px; /* Espaço entre os itens */
-    width: 100%;
-    height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
 }
-
 .resumo-item {
-    text-align: center;
+  text-align: center;
 }
-
 .resumo-valor {
-    display: block;
-    font-size: 1.8rem; /* Tamanho grande para o número/valor */
-    font-weight: 700;
-    color: #3cec6c; /* Cor verde para destaque */
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #3cec6c;
 }
-
-/* Cor específica para o faturamento */
 #faturamento-previsto {
-    color: #4facfe; /* Cor azul para o dinheiro */
+  color: #4facfe;
 }
-
 .resumo-label {
-    font-size: 0.9rem;
-    color: #a5b4fc; /* Cor mais suave para o texto descritivo */
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  font-size: 0.9rem;
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
