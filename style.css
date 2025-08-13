@@ -603,7 +603,7 @@ body {
 /* Transforma a lista de agendamentos em uma grade de cards */
 #lista-agendamentos {
     display: grid;
-    /* Cria colunas de no mínimo 300px, que se ajustam ao espaço */
+    /* Cria colunas de no mínimo 360px, que se ajustam ao espaço */
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 25px; /* Espaço entre os cards */
 }
