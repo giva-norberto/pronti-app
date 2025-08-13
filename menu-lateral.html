@@ -1,122 +1,100 @@
-<aside class="sidebar">
-  <div class="sidebar-header">
-    <span class="sidebar-logo">Jetio</span>
-    <hr class="sidebar-divider">
-  </div>
-  <nav class="sidebar-nav">
-    <a href="dashboard.html" class="sidebar-link" id="menu-dashboard">
-      <span class="sidebar-icon"><i class="fa fa-th-large"></i></span>
-      Dashboard
-    </a>
-    <a href="servicos.html" class="sidebar-link" id="menu-servicos">
-      <span class="sidebar-icon"><i class="fa fa-cut"></i></span>
-      Serviços
-    </a>
-    <a href="clientes.html" class="sidebar-link" id="menu-clientes">
-      <span class="sidebar-icon"><i class="fa fa-users"></i></span>
-      Clientes
-    </a>
-    <a href="equipe.html" class="sidebar-link" id="menu-equipe">
-      <span class="sidebar-icon"><i class="fa fa-user-friends"></i></span>
-      Equipe
-    </a>
-    <a href="perfil.html" class="sidebar-link" id="menu-perfil">
-      <span class="sidebar-icon"><i class="fa fa-user-circle"></i></span>
-      Meu Perfil
-    </a>
-  </nav>
+<aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <nav class="sidebar-links">
+        <a href="dashboard.html"><span>🏠</span> Dashboard</a>
+        <a href="servicos.html"><span>🛠️</span> Serviços</a>
+        <a href="agenda.html"><span>📅</span> Agenda</a>
+        <a href="clientes.html"><span>👤</span> Clientes</a>
+        <a href="equipe.html"><span>👥</span> Equipe</a>
+        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
 </aside>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <style>
 .sidebar {
-  width: 220px;
+  width: 240px;
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
   min-height: 100vh;
-  background: linear-gradient(160deg, #4f46e5 0%, #38bdf8 100%);
   color: #fff;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 10;
   display: flex;
   flex-direction: column;
-  padding: 0;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 100;
+  justify-content: flex-start;
+  padding-top: 20px;
 }
-.sidebar-header {
-  padding: 32px 0 8px 32px;
-}
-.sidebar-logo {
-  font-size: 1.6rem;
+.sidebar-brand {
+  font-size: 2rem;
   font-weight: bold;
   color: #fff;
-  letter-spacing: 1px;
-}
-.sidebar-divider {
-  border: none;
-  border-top: 1.5px solid #94a3b8;
-  margin: 15px 0 0 0;
-  width: 80%;
-}
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  margin-top: 32px;
-}
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 32px;
-  font-size: 1.08rem;
   text-decoration: none;
+  letter-spacing: 2px;
+  padding: 24px 24px 12px 24px;
+  display: block;
+  margin-bottom: 10px;
+}
+.sidebar-links a {
+  display: block;
+  background: #fff;
+  color: #22223b;
+  font-weight: 500;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: none;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  padding: 14px 0;
+  text-align: center;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+.sidebar-links a.active {
+  background: #6366f1;
   color: #fff;
+  font-weight: bold;
+  box-shadow: 2px 4px 0 0 #ff3e7f;
+  border-radius: 12px;
+}
+.sidebar-links a:hover:not(.active) {
+  background: #f6f8fa;
+  color: #4f46e5;
+}
+.sidebar-footer {
+  margin-top: auto;
+  padding: 24px 32px;
+}
+.btn-logout {
+  background: #fff;
+  color: #4f46e5;
   border: none;
-  background: none;
+  padding: 10px 24px;
+  border-radius: 5px;
+  font-weight: bold;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  border-left: 4px solid transparent;
 }
-.sidebar-link:hover,
-.sidebar-link.active {
-  background: rgba(255,255,255,0.13);
+.btn-logout:hover {
+  background: #4f46e5;
   color: #fff;
-  border-left: 4px solid #fff;
-}
-.sidebar-icon {
-  min-width: 24px;
-  text-align: center;
-  font-size: 1.15em;
+  border: 1px solid #fff;
 }
 @media (max-width: 900px) {
-  .sidebar {
-    width: 60px;
-    min-width: 60px;
-  }
-  .sidebar-header {
-    padding-left: 10px;
-  }
-  .sidebar-logo {
-    font-size: 1rem;
-  }
-  .sidebar-link {
-    padding: 13px 10px;
-    justify-content: center;
-  }
-  .sidebar-link span:not(.sidebar-icon) {
-    display: none;
-  }
+  .sidebar { width: 100vw; min-height: 0; position: relative; }
 }
 </style>
 <script>
-// Ativa o menu correto conforme a página atual
-setTimeout(function() {
-  const links = document.querySelectorAll('.sidebar-link');
+// Adiciona a classe 'active' ao link correspondente à página atual
+document.addEventListener("DOMContentLoaded", function() {
+  const links = document.querySelectorAll('.sidebar-links a');
   const path = window.location.pathname;
   links.forEach(link => {
     if (path.includes(link.getAttribute('href').replace('.html',''))) {
       link.classList.add('active');
     }
   });
-}, 100);
+});
 </script>
