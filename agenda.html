@@ -6,6 +6,147 @@
     <title>Pronti - Agenda</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
+    <!-- MELHORIA: Adiciona um CSS extra para cards modernos -->
+    <style>
+    /* Cards de agendamento modernos */
+    .card-agendamento.pequeno {
+        background: linear-gradient(120deg, #f6faff 68%, #e9f3fd 100%);
+        border: none;
+        border-radius: 14px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 18px 0 #b4e2fa18, 0 2px 6px #ddeafd55;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 18px;
+        min-height: 56px;
+        font-size: 1rem;
+        outline: 2px solid #e7eafd;
+        margin-bottom: 0;
+        transition: box-shadow 0.17s, background 0.17s, outline 0.17s;
+        position: relative;
+    }
+    .card-agendamento.pequeno:hover {
+        box-shadow: 0 12px 30px #a8d8ff2a, 0 6px 24px #dedbf755;
+        background: linear-gradient(120deg, #f1f5ff 70%, #cfe9fa 110%);
+        outline-color: #9fd8fc;
+    }
+    .card-agendamento .ag-col-servico {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 120px;
+    }
+    .card-agendamento .servico-nome {
+        font-weight: 700;
+        color: #1b256b;
+        margin-bottom: 0;
+        font-size: 1.08rem;
+        letter-spacing: 0.01em;
+        line-height: 1.15;
+    }
+    .card-agendamento .ag-horario {
+        display: inline-block;
+        background: #e0f2fe;
+        color: #2196f3;
+        font-weight: 600;
+        font-size: 0.97rem;
+        border-radius: 7px;
+        padding: 2.5px 10px 2px 10px;
+        margin-top: 2px;
+        margin-right: auto;
+        box-shadow: 0 1px 2px #b6d8f855;
+        letter-spacing: 0.05em;
+    }
+    .card-agendamento .ag-col-pessoas {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 120px;
+    }
+    .card-agendamento .ag-profissional:before {
+        content: "👤 ";
+        font-size: 1rem;
+        opacity: 0.8;
+    }
+    .card-agendamento .ag-profissional {
+        color: #3c435f;
+        font-size: 0.97rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+    .card-agendamento .ag-cliente:before {
+        content: "🧑‍💼 ";
+        font-size: 1rem;
+        opacity: 0.7;
+    }
+    .card-agendamento .ag-cliente {
+        color: #7d7db3;
+        font-size: 0.94rem;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+    }
+    .card-agendamento .ag-col-acoes {
+        flex-shrink: 0;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .card-agendamento .btn-acao-card {
+        border: none;
+        padding: 6px 11px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 1.08em;
+        transition: background 0.16s, box-shadow 0.18s, color 0.16s, transform 0.14s;
+        outline: none;
+        min-width: 34px;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 4px #b0e1ff22;
+        border: 1.4px solid transparent;
+    }
+    .card-agendamento .btn-nao-compareceu {
+        background: #fffbe7;
+        color: #bfa100;
+        border-color: #ffe066;
+    }
+    .card-agendamento .btn-nao-compareceu:hover {
+        background: #fff9b0;
+        color: #9d7e00;
+        border-color: #ffe066;
+        transform: translateY(-1px) scale(1.10);
+    }
+    .card-agendamento .btn-cancelar {
+        background: #fdeceb;
+        color: #e55b5b;
+        border-color: #fabebe;
+    }
+    .card-agendamento .btn-cancelar:hover {
+        background: #ffdbdb;
+        color: #c93a3a;
+        border-color: #fabebe;
+        transform: translateY(-1px) scale(1.10);
+    }
+    @media (max-width: 650px) {
+        .card-agendamento.pequeno {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            padding: 10px 7px;
+            font-size: 0.97rem;
+        }
+        .card-agendamento .ag-col-acoes {
+            justify-content: flex-end;
+        }
+    }
+    </style>
 </head>
 <body>
 
