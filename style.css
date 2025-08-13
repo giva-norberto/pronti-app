@@ -597,30 +597,41 @@ body {
     background-color: #FECACA;
 }
 /* ========================================================== */
-/* NOVO DESIGN DOS CARDS DE AGENDAMENTO (COMPACTO)            */
+/* ESTILOS FINAIS PARA A AGENDA (LAYOUT UNIFICADO)            */
 /* ========================================================== */
 
-/* Transforma a lista de agendamentos em uma grade de cards */
 #lista-agendamentos {
     display: grid;
-    /* Cria colunas de no mínimo 360px, que se ajustam ao espaço */
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 25px; /* Espaço entre os cards */
+    /* Altera o tamanho MÍNIMO do card. Em telas grandes, ele pode crescer. */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
 }
 
-.card-agendamento {
+/* Um container para cada item da grade (seja card ou slot livre) */
+.card-agendamento-container {
+    min-height: 180px; /* Garante uma altura mínima para todos */
+    display: flex; /* Permite que o conteúdo interno cresça */
+}
+
+/* Estilo base para ambos (card e slot livre) */
+.card-agendamento, .slot-livre {
+    width: 100%;
     background: #fff;
     border-radius: 15px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-    border-top: 5px solid #4facfe; /* Detalhe da marca */
-    display: flex;
-    flex-direction: column;
     transition: all 0.2s ease-in-out;
 }
 
-.card-agendamento:hover {
+.card-agendamento:hover, .slot-livre:hover {
     transform: translateY(-5px);
     box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+
+/* Estilo específico para o CARD DE AGENDAMENTO */
+.card-agendamento {
+    border-top: 5px solid #4facfe;
+    display: flex;
+    flex-direction: column;
 }
 
 .card-agendamento-header {
@@ -631,91 +642,36 @@ body {
     border-bottom: 1px solid #f0f0f0;
 }
 
-.servico-info .servico-nome {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #22223b;
-}
-
-.servico-info .servico-horario {
-    font-size: 1rem;
-    color: #5f6dfa;
-    font-weight: 500;
-}
-
-.servico-preco {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #28a745;
-    background: #eafaf1;
-    padding: 5px 10px;
-    border-radius: 8px;
-}
+.servico-info .servico-nome { font-size: 1.2rem; font-weight: 600; color: #22223b; }
+.servico-info .servico-horario { font-size: 1rem; color: #5f6dfa; font-weight: 500; }
+.servico-preco { font-size: 1.1rem; font-weight: 600; color: #28a745; background: #eafaf1; padding: 5px 10px; border-radius: 8px; }
 
 .card-agendamento-body {
     padding: 15px 20px;
-    flex-grow: 1; /* Faz esta parte crescer para empurrar o rodapé para baixo */
+    flex-grow: 1;
 }
 
-.info-item {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.95rem;
-    padding: 8px 0;
-}
+.info-item { display: flex; justify-content: space-between; font-size: 0.95rem; padding: 8px 0; }
+.info-item .label { color: #6a6a6a; }
+.info-item .valor { font-weight: 500; color: #22223b; }
 
-.info-item .label {
-    color: #6a6a6a;
-}
+.card-agendamento-footer { display: flex; gap: 10px; padding: 0 20px 20px 20px; }
 
-.info-item .valor {
-    font-weight: 500;
-    color: #22223b;
-}
+.btn-acao-card { flex-grow: 1; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s ease; }
+.btn-concluir { background-color: #D1FAE5; color: #065F46; }
+.btn-concluir:hover { background-color: #A7F3D0; }
+.btn-cancelar { background-color: #FEE2E2; color: #991B1B; }
+.btn-cancelar:hover { background-color: #FECACA; }
 
-.card-agendamento-footer {
-    display: flex;
-    gap: 10px;
-    padding: 0 20px 20px 20px;
-}
-
-.btn-acao-card {
-    flex-grow: 1; /* Faz os botões ocuparem o espaço igualmente */
-    border: none;
-    padding: 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-.btn-concluir {
-    background-color: #D1FAE5; /* Verde bem claro */
-    color: #065F46; /* Verde escuro */
-}
-.btn-concluir:hover {
-    background-color: #A7F3D0;
-}
-
-.btn-cancelar {
-    background-color: #FEE2E2; /* Vermelho bem claro */
-    color: #991B1B; /* Vermelho escuro */
-}
-.btn-cancelar:hover {
-    background-color: #FECACA;
-}
-/* Adicione ao final do seu style.css */
-
+/* Estilo específico para o SLOT LIVRE */
 .slot-livre {
-    background: #f9fafb; /* Cinza bem claro */
-    border-radius: 12px;
-    border: 1px dashed #d1d5db; /* Borda tracejada */
-    padding: 15px 20px;
-    margin-bottom: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #6b7280; /* Cor do texto cinza */
+    padding: 20px;
+    font-size: 1.1rem;
     font-weight: 500;
+    color: #6b7280;
+    background: #f9fafb;
+    border: 2px dashed #e5e7eb;
 }
