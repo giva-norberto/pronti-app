@@ -1,4 +1,4 @@
-// agenda.js - VERSÃO COMPACTA, CARDS PEQUENOS E FUNCIONALIDADES COMPLETAS
+// agenda.js - VERSÃO COM A ADIÇÃO DA FUNCIONALIDADE "NÃO COMPARECEU"
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -128,8 +128,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span style="color:#3d3a57;font-size:0.95em;">${ag.clienteNome}</span>
                 </div>
                 <div style="flex-shrink:0;display:flex;gap:4px;">
-                    <button class="btn-acao-card btn-concluir" data-id="${ag.id}" style="font-size:0.92em;background:#eaf7ed;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">✔️</button>
-                    <button class="btn-acao-card btn-cancelar" data-id="${ag.id}" style="font-size:0.92em;background:#fdeceb;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">✖️</button>
+                    <button class="btn-acao-card btn-concluir" data-id="${ag.id}" title="Concluir" style="font-size:0.92em;background:#eaf7ed;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">✔️</button>
+                    
+                    <button class="btn-acao-card btn-nao-compareceu" data-id="${ag.id}" title="Não Compareceu" style="font-size:0.92em;background:#fff3cd;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">⚠️</button>
+
+                    <button class="btn-acao-card btn-cancelar" data-id="${ag.id}" title="Cancelar" style="font-size:0.92em;background:#fdeceb;border:none;padding:4px 8px;border-radius:7px;cursor:pointer;">✖️</button>
                 </div>
             `;
             listaAgendamentosEl.appendChild(cardContainer);
@@ -140,8 +143,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!user) return window.location.href = 'login.html';
         empresaIdGlobal = await getEmpresaIdDoDono(user.uid);
         if (!empresaIdGlobal) return document.body.innerHTML = '<h1>Acesso negado.</h1>';
+        
         todosProfissionais = await buscarProfissionais(empresaIdGlobal);
         popularFiltroProfissionais();
+        
         const hojeString = new Date(new Date().setMinutes(new Date().getMinutes() - new Date().getTimezoneOffset())).toISOString().split("T")[0];
         const primeiroProfissional = todosProfissionais[0];
         if(primeiroProfissional) {
@@ -154,15 +159,21 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             inputDataEl.value = hojeString;
         }
+
         inputDataEl.addEventListener("change", atualizarAgenda);
         filtroProfissionalEl.addEventListener("change", atualizarAgenda);
+
         listaAgendamentosEl.addEventListener('click', (e) => {
             const target = e.target.closest('.btn-acao-card');
             if (!target) return;
             const agendamentoId = target.dataset.id;
+            
             if (target.matches('.btn-concluir')) concluirAgendamento(agendamentoId);
             if (target.matches('.btn-cancelar')) cancelarAgendamento(agendamentoId);
+            // NOVO: Adicionado o evento para o botão de "Não Compareceu"
+            if (target.matches('.btn-nao-compareceu')) marcarNaoCompareceu(agendamentoId);
         });
+        
         atualizarAgenda();
     });
 
@@ -174,6 +185,13 @@ document.addEventListener("DOMContentLoaded", () => {
     async function cancelarAgendamento(agendamentoId) {
         const agRef = doc(db, "empresarios", empresaIdGlobal, "agendamentos", agendamentoId);
         await updateDoc(agRef, { status: "cancelado" });
+        atualizarAgenda();
+    }
+    
+    // NOVO: Função para marcar "Não Compareceu"
+    async function marcarNaoCompareceu(agendamentoId) {
+        const agRef = doc(db, "empresarios", empresaIdGlobal, "agendamentos", agendamentoId);
+        await updateDoc(agRef, { status: "nao_compareceu" });
         atualizarAgenda();
     }
 });
