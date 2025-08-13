@@ -2,7 +2,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', Arial, sans-serif;
-  background: #fff !important; /* FUNDO BRANCO */
+  background: #fff !important; /* Fundo branco garantido */
   color: #22223b;
   min-height: 100vh;
 }
