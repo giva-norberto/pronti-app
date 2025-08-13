@@ -199,3 +199,36 @@ body {
     padding: 10px 16px;
   }
 }
+/* Adicione este CSS ao seu dashboard.css */
+
+.resumo-dia {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px; /* Espaço entre os itens */
+    width: 100%;
+    height: 100%;
+}
+
+.resumo-item {
+    text-align: center;
+}
+
+.resumo-valor {
+    display: block;
+    font-size: 1.8rem; /* Tamanho grande para o número/valor */
+    font-weight: 700;
+    color: #3cec6c; /* Cor verde para destaque */
+}
+
+/* Cor específica para o faturamento */
+#faturamento-previsto {
+    color: #4facfe; /* Cor azul para o dinheiro */
+}
+
+.resumo-label {
+    font-size: 0.9rem;
+    color: #a5b4fc; /* Cor mais suave para o texto descritivo */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
