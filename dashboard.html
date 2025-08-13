@@ -1,79 +1,131 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Painel Inteligente - Dashboard</title>
-    <link rel="stylesheet" href="dashboard.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <main>
-        <div class="header-dashboard">
-            <button id="btn-voltar" class="btn-voltar">← Voltar</button>
-            <h1>Painel Inteligente</h1>
-            <div class="filtro-container">
-                <label for="filtro-data">Ver dados de:</label>
-                <input type="date" id="filtro-data">
-            </div>
-        </div>
+<!-- DASHBOARD CARDS -->
+<div class="dashboard-cards">
 
-        <div class="dashboard-grid">
-            <div class="dashboard-cards">
-                <!-- Card 1: Serviço mais procurado -->
-                <div class="card servico">
-                    <span class="icon">💇‍♂️✂️</span>
-                    <span class="titulo">Seu serviço mais procurado:</span>
-                    <span class="descricao" id="servico-destaque">...</span>
-                </div>
-                <!-- Card 2: Profissional em destaque -->
-                <div class="card prof">
-                    <span class="icon">🏆</span>
-                    <img id="avatar-prof" class="avatar" src="https://placehold.co/50x50/eef2ff/4f46e5?text=P" alt="Profissional destaque" />
-                    <span class="titulo" id="prof-destaque-nome">...</span>
-                    <span class="descricao" id="prof-destaque-qtd">...</span>
-                </div>
-                <!-- Card 3: Resumo do dia -->
-                <div class="card ocupacao">
-                    <div class="resumo-dia">
-                        <div class="resumo-item">
-                            <span class="resumo-valor" id="total-agendamentos-dia">0</span>
-                            <span class="resumo-label">Agendamentos</span>
-                        </div>
-                        <div class="resumo-item">
-                            <span class="resumo-valor" id="faturamento-previsto">R$ 0,00</span>
-                            <span class="resumo-label">Faturamento Previsto</span>
-                        </div>
-                        <div class="resumo-item">
-                            <span class="resumo-valor" id="percentual-ocupacao">0%</span>
-                            <span class="resumo-label">Ocupação da Agenda</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- Card 4: Sugestão da IA -->
-                <div class="card ia">
-                    <span class="icon">💡</span>
-                    <span class="titulo">Sugestão da IA:</span>
-                    <span class="descricao" id="ia-sugestao">...</span>
-                </div>
-                <!-- Card 5: Resumo Inteligente do Dia -->
-                <div class="card resumo-inteligente">
-                    <span class="icon">🧠</span>
-                    <span class="titulo">Resumo Inteligente do Dia:</span>
-                    <div class="descricao" id="resumo-inteligente">...</div>
-                </div>
-            </div>
-
-            <div class="agenda-do-dia">
-                <h2>Agenda do Dia</h2>
-                <div id="agenda-resultado">
-                    <div class="aviso-horarios">Selecione uma data para ver os agendamentos.</div>
-                </div>
-            </div>
+    <!-- Card Agenda do Dia -->
+    <div class="card card-agenda">
+        <h3><i class="icon-calendar"></i> Agenda do Dia</h3>
+        <div id="agenda-resultado" class="card-body">
+            <!-- Preenchido via JS -->
         </div>
-    </main>
-    <script type="module" src="dashboard.js"></script>
-</body>
-</html>
+    </div>
+
+    <!-- Card Serviço Destaque -->
+    <div class="card card-servico">
+        <h3><i class="icon-star"></i> Serviço em Destaque</h3>
+        <div id="servico-destaque" class="card-body">Nenhum</div>
+    </div>
+
+    <!-- Card Profissional Destaque -->
+    <div class="card card-profissional">
+        <h3><i class="icon-user"></i> Profissional do Dia</h3>
+        <div class="card-body">
+            <div id="prof-destaque-nome">Nenhum profissional</div>
+            <div id="prof-destaque-qtd">hoje</div>
+        </div>
+    </div>
+
+    <!-- Card Resumo Geral -->
+    <div class="card card-resumo">
+        <h3><i class="icon-clipboard"></i> Resumo do Dia</h3>
+        <div class="card-body">
+            <div><strong>Total de Agendamentos:</strong> <span id="total-agendamentos-dia">0</span></div>
+            <div><strong>Faturamento Estimado:</strong> <span id="faturamento-previsto">R$0,00</span></div>
+            <div><strong>Ocupação:</strong> <span id="percentual-ocupacao">0%</span></div>
+        </div>
+    </div>
+
+    <!-- Card Sugestão IA -->
+    <div class="card card-ia">
+        <h3><i class="icon-robot"></i> Sugestão Inteligente</h3>
+        <div id="ia-sugestao" class="card-body">Mensagem IA</div>
+    </div>
+
+    <!-- Card Resumo Inteligente -->
+    <div class="card card-resumo-inteligente">
+        <h3><i class="icon-lightbulb"></i> Resumo Inteligente</h3>
+        <div id="resumo-inteligente" class="card-body">
+            <!-- Preenchido via JS -->
+        </div>
+    </div>
+
+</div>
+
+<style>
+/* --- Dashboard Cards Layout --- */
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 20px;
+}
+
+/* --- Card Base --- */
+.card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    padding: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+/* --- Card Header --- */
+.card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1E3A8A; /* Azul profissional */
+}
+
+/* --- Card Body --- */
+.card-body {
+    font-size: 1rem;
+    color: #374151;
+}
+
+/* --- Tipos de Cards com Gradiente --- */
+.card-agenda { background: linear-gradient(135deg, #60a5fa, #2563eb); color: #fff; }
+.card-servico { background: linear-gradient(135deg, #facc15, #f59e0b); color: #fff; }
+.card-profissional { background: linear-gradient(135deg, #34d399, #059669); color: #fff; }
+.card-resumo { background: linear-gradient(135deg, #f87171, #b91c1c); color: #fff; }
+.card-ia { background: linear-gradient(135deg, #a78bfa, #6d28d9); color: #fff; }
+.card-resumo-inteligente { background: linear-gradient(135deg, #f472b6, #be185d); color: #fff; }
+
+/* --- Agenda Cards --- */
+.card-agenda .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.card-agenda .card-body .card-agendamento {
+    background: rgba(255,255,255,0.15);
+    padding: 8px 12px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+}
+
+/* --- Pequenos ajustes --- */
+.icon-calendar::before { content: "📅"; }
+.icon-star::before { content: "⭐"; }
+.icon-user::before { content: "👤"; }
+.icon-clipboard::before { content: "📝"; }
+.icon-robot::before { content: "🤖"; }
+.icon-lightbulb::before { content: "💡"; }
+
+@media(max-width: 600px){
+    .dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
