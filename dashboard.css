@@ -343,3 +343,4 @@ main {
     font-size: 0.97rem;
   }
 }
+.card-agendamento { border: 3px solid red !important; }
