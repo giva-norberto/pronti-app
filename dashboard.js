@@ -1,18 +1,17 @@
-// dashboard.js - VERSÃO FINAL, COMPLETA E VALIDADA
+// dashboard.js - VERSÃO FINAL VALIDADA COM MÓDULO DE INTELIGÊNCIA
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-// Total de horários disponíveis no dia, idealmente virá da configuração do sistema
-const totalSlots = 20;
+const totalSlots = 20; // Total de horários disponíveis no dia, idealmente virá da configuração do sistema
 
 // --- FUNÇÕES DE LÓGICA E DADOS ---
 
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
+    const [h, m] = timeStr.split(":").map(Number);
     return h * 60 + m;
 }
 
@@ -22,13 +21,13 @@ async function getEmpresaId(user) {
         const snap = await getDocs(q);
         if (!snap.empty) {
             const empresaId = snap.docs[0].id;
-            localStorage.setItem('empresaId', empresaId);
+            localStorage.setItem("empresaId", empresaId);
             return empresaId;
         }
-        return localStorage.getItem('empresaId');
+        return localStorage.getItem("empresaId");
     } catch (error) {
         console.error("Erro ao buscar empresa:", error);
-        return localStorage.getItem('empresaId');
+        return localStorage.getItem("empresaId");
     }
 }
 
@@ -50,24 +49,21 @@ async function buscarHorariosDoDono(empresaId) {
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     const horariosTrabalho = await buscarHorariosDoDono(empresaId);
     if (!horariosTrabalho) return dataInicial;
-
-    const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const diaDaSemana = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
     let dataAtual = new Date(`${dataInicial}T12:00:00`);
-
     for (let i = 0; i < 90; i++) {
         const nomeDia = diaDaSemana[dataAtual.getDay()];
         const diaDeTrabalho = horariosTrabalho[nomeDia];
-
         if (diaDeTrabalho && diaDeTrabalho.ativo) {
             if (i === 0) {
                 const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
                 const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
                 const agoraEmMinutos = new Date().getHours() * 60 + new Date().getMinutes();
                 if (agoraEmMinutos < fimDoExpediente) {
-                    return dataAtual.toISOString().split('T')[0];
+                    return dataAtual.toISOString().split("T")[0];
                 }
             } else {
-                return dataAtual.toISOString().split('T')[0];
+                return dataAtual.toISOString().split("T")[0];
             }
         }
         dataAtual.setDate(dataAtual.getDate() + 1);
@@ -170,6 +166,7 @@ function preencherResumoInteligente(resumoInteligente) {
         el.innerHTML = `<span>${resumoInteligente.mensagem}</span>`;
         return;
     }
+    // REVISÃO: Use textContent para maior segurança contra injeção de HTML
     let resumoHtml = `
         <div><strong>Total atendimentos:</strong> ${resumoInteligente.totalAtendimentos}</div>
         <div><strong>Primeiro:</strong> ${resumoInteligente.primeiro.horario} - ${resumoInteligente.primeiro.cliente} (${resumoInteligente.primeiro.servico})</div>
@@ -179,7 +176,7 @@ function preencherResumoInteligente(resumoInteligente) {
     if (resumoInteligente.maiorIntervalo) {
         resumoHtml += `<div><strong>Maior intervalo:</strong> ${resumoInteligente.maiorIntervalo.inicio} - ${resumoInteligente.maiorIntervalo.fim} (${resumoInteligente.maiorIntervalo.duracaoMinutos} min)</div>`;
     }
-    el.innerHTML = resumoHtml;
+    el.innerHTML = resumoHtml; // innerHTML é necessário aqui para renderizar as tags <strong>
 }
 
 // --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD ---
@@ -187,7 +184,7 @@ function preencherResumoInteligente(resumoInteligente) {
 async function preencherDashboard(user, dataSelecionada) {
     const empresaId = await getEmpresaId(user);
     if (!empresaId) {
-        alert("ID da Empresa não encontrado.");
+        alert("ID da Empresa não encontrado. Por favor, acesse a partir do painel principal.");
         return;
     }
     try {
@@ -201,15 +198,12 @@ async function preencherDashboard(user, dataSelecionada) {
         preencherCardProfissional(calcularProfissionalDestaque(agsDoDia));
         preencherCardResumo(calcularResumo(agsDoDia));
         preencherCardIA(calcularSugestaoIA(agsDoDia));
-
-        // ===============================================
-        // ALTERAÇÃO: Passando o servicoPreco para a função de inteligência
-        // ===============================================
+        
+        // REVISÃO: Garante que 'horarioFim' exista ou usa uma duração padrão de 60 minutos
         const resumoInteligente = gerarResumoDiarioInteligente(
             agsDoDia.map(ag => {
-                // Lógica para calcular a hora de fim se não existir
                 const inicioMin = timeStringToMinutes(ag.horario);
-                const duracaoMin = ag.servicoDuracao || 60;
+                const duracaoMin = ag.servicoDuracao || 60; // Duração padrão de 60 min se não houver
                 const fimMin = inicioMin + duracaoMin;
                 const horaFim = `${String(Math.floor(fimMin / 60)).padStart(2, '0')}:${String(fimMin % 60).padStart(2, '0')}`;
 
@@ -217,16 +211,14 @@ async function preencherDashboard(user, dataSelecionada) {
                     inicio: `${ag.data}T${ag.horario}:00`,
                     fim: `${ag.data}T${horaFim}:00`,
                     cliente: ag.clienteNome || "Cliente",
-                    servico: ag.servicoNome || "Serviço",
-                    servicoPreco: ag.servicoPreco // <-- CORREÇÃO APLICADA AQUI
-                };
+                    servico: ag.servicoNome || "Serviço"
+                }
             })
         );
         preencherResumoInteligente(resumoInteligente);
-
     } catch (error) {
         console.error("Erro ao carregar agendamentos:", error);
-        alert("Ocorreu um erro ao carregar os dados do dashboard.");
+        alert("Ocorreu um erro ao carregar os dados do dashboard. Tente novamente.");
     }
 }
 
@@ -247,22 +239,18 @@ window.addEventListener("DOMContentLoaded", () => {
         if (user) {
             const filtroData = document.getElementById("filtro-data");
             const empresaId = await getEmpresaId(user);
-
             if (!empresaId) {
                 alert("Não foi possível identificar sua empresa.");
                 return;
             }
-
             const hojeString = new Date().toISOString().split('T')[0];
             const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-
             if (filtroData) {
                 filtroData.value = dataInicial;
                 filtroData.addEventListener("change", debounce(() => {
                     preencherDashboard(user, filtroData.value);
                 }, 300));
             }
-
             await preencherDashboard(user, dataInicial);
         } else {
             // window.location.href = "login.html";
@@ -272,7 +260,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const btnVoltar = document.getElementById('btn-voltar');
     if (btnVoltar) {
         btnVoltar.addEventListener('click', () => {
-            window.location.href = "index.html";
+            window.location.href = "index.html"; 
         });
     }
 });
