@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil e Configurações - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <!-- FontAwesome (opcional, para ícones dos botões de link) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -43,7 +44,7 @@
                     <div class="form-group">
                         <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
                         <div class="logo-upload-container">
-                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logótipo">
+                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
                             <div class="logo-upload-actions">
                                 <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
                                 <button type="button" id="btn-upload-logo" class="btn-upload">Escolher Arquivo</button>
@@ -66,7 +67,7 @@
         <!-- O conteúdo do seu modal vai aqui dentro -->
     </div>
     <script>
-    // Inclusão dinâmica do menu lateral
+    // Inclusão dinâmica do menu lateral e destaque do menu de perfil
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
