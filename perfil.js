@@ -1,11 +1,12 @@
 // ======================================================================
 //                          PERFIL.JS
-//      Gerencia o perfil do negócio, os dados da empresa e a equipe.
+//      Gerencia o perfil do negócio e os dados da empresa.
+//      (Função de equipe REMOVIDA desta tela.)
 // ======================================================================
 
 import {
   getFirestore, doc, getDoc, setDoc, addDoc, collection,
-  query, where, getDocs, onSnapshot
+  query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getStorage, ref, uploadBytes, getDownloadURL
@@ -38,17 +39,12 @@ window.addEventListener('DOMContentLoaded', () => {
     btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
     btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
     linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
-    btnLogout: document.getElementById('btn-logout'),
-    listaProfissionaisPainel: document.getElementById('lista-profissionais-painel'),
-    btnAddProfissional: document.getElementById('btn-add-profissional'),
-    modalAddProfissional: document.getElementById('modal-add-profissional'),
-    formAddProfissional: document.getElementById('form-add-profissional'),
-    btnCancelarProfissional: document.getElementById('btn-cancelar-profissional')
+    btnLogout: document.getElementById('btn-logout')
+    // Equipe removida desta tela!
   };
 
   let currentUser;
   let empresaId = null;
-  let unsubProfissionais = null;
 
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -68,8 +64,6 @@ window.addEventListener('DOMContentLoaded', () => {
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
 
-      const secaoEquipe = elements.btnAddProfissional?.closest?.('.form-section');
-
       if (snapshot.empty) {
         console.warn("[DEBUG] Nenhuma empresa encontrada. Criando nova empresa...");
         empresaId = (await addDoc(collection(db, "empresarios"), {
@@ -79,13 +73,15 @@ window.addEventListener('DOMContentLoaded', () => {
           logoUrl: ""
         })).id;
 
+        // Cria registro do proprietário (como profissional) apenas para manter a consistência do Firestore,
+        // mas não mostra equipe nesta tela.
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), {
           nome: currentUser.displayName || "Proprietário",
           fotoUrl: currentUser.photoURL || "",
           ehDono: true
         });
 
-        atualizarTelaParaNovoPerfil(secaoEquipe);
+        atualizarTelaParaNovoPerfil();
       } else {
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
@@ -93,67 +89,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
         console.log("[DEBUG] Empresa encontrada:", empresaId, dadosEmpresa);
 
-        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-        const profissionalSnap = await getDoc(profissionalRef);
-
-        let ehDono = false;
-        if (profissionalSnap.exists()) {
-          ehDono = profissionalSnap.data().ehDono === true;
-        }
-
         preencherFormulario(dadosEmpresa);
-
-        if (ehDono) {
-          if (secaoEquipe) secaoEquipe.style.display = 'block';
-          iniciarListenerProfissionais(empresaId);
-        } else {
-          if (secaoEquipe) secaoEquipe.style.display = 'none';
-        }
       }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
-      console.error("Tipo do erro:", error.name);
-      console.error("Mensagem do erro:", error.message);
-      console.error("Stack:", error.stack);
       alert("Erro ao carregar dados do perfil: " + error.message);
     }
   }
 
-  function atualizarTelaParaNovoPerfil(secaoEquipe) {
+  function atualizarTelaParaNovoPerfil() {
     if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
     if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
     if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
-    if (secaoEquipe) secaoEquipe.style.display = 'none';
     if (elements.linkVitrineMenu) {
       elements.linkVitrineMenu.classList.add('disabled');
       elements.linkVitrineMenu.style.pointerEvents = 'none';
       elements.linkVitrineMenu.style.opacity = '0.5';
       elements.linkVitrineMenu.href = '#';
     }
-  }
-
-  function iniciarListenerProfissionais(idDaEmpresa) {
-    if (!elements.listaProfissionaisPainel || !idDaEmpresa) return;
-    if (unsubProfissionais) unsubProfissionais();
-    const profissionaisRef = collection(db, "empresarios", idDaEmpresa, "profissionais");
-    unsubProfissionais = onSnapshot(profissionaisRef, (snapshot) => {
-      const profissionais = snapshot.docs.map(doc => doc.data());
-      renderizarListaProfissionais(profissionais);
-    });
-  }
-
-  function renderizarListaProfissionais(profissionais) {
-    if (!elements.listaProfissionaisPainel) return;
-    if (profissionais.length === 0) {
-      elements.listaProfissionaisPainel.innerHTML = `<p>Nenhum profissional na equipe ainda.</p>`;
-      return;
-    }
-    elements.listaProfissionaisPainel.innerHTML = profissionais.map(profissional => (
-      `<div class="profissional-card" style="border:1px solid #e5e7eb;padding:10px;border-radius:8px;display:flex;align-items:center;gap:10px;background:white;margin-bottom:8px;">
-        <img src="${profissional.fotoUrl || 'https://placehold.co/40x40/eef2ff/4f46e5?text=P'}" alt="Foto de ${profissional.nome}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
-        <span class="profissional-nome" style="font-weight:500;">${profissional.nome}</span>
-      </div>`
-    )).join('');
   }
 
   function preencherFormulario(dadosEmpresa) {
@@ -234,39 +187,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function handleAdicionarProfissional(event) {
-    event.preventDefault();
-    const btnSubmit = event.target.querySelector('button[type="submit"]');
-    btnSubmit.disabled = true;
-    btnSubmit.textContent = 'Salvando...';
-    try {
-      const nomeInput = document.getElementById('nome-profissional');
-      const fotoInput = document.getElementById('foto-profissional');
-      const nome = nomeInput ? nomeInput.value.trim() : '';
-      const fotoFile = fotoInput ? fotoInput.files[0] : undefined;
-      if (!nome) throw new Error("O nome do profissional é obrigatório.");
-
-      let fotoUrl = '';
-      if (fotoFile) {
-        const storagePath = `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`;
-        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-        fotoUrl = await uploadFile(firebaseDependencies, fotoFile, storagePath);
-      }
-
-      const novoProfissional = { nome, fotoUrl, servicos: [], ehDono: false };
-      await addDoc(collection(db, "empresarios", empresaId, "profissionais"), novoProfissional);
-
-      alert("Profissional adicionado com sucesso!");
-      if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-    } catch (error) {
-      console.error("Erro ao adicionar profissional:", error);
-      alert("Erro ao adicionar profissional: " + error.message);
-    } finally {
-      btnSubmit.disabled = false;
-      btnSubmit.textContent = 'Salvar Profissional';
-    }
-  }
-
   function adicionarListenersDeEvento() {
     if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
     if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
@@ -282,26 +202,6 @@ window.addEventListener('DOMContentLoaded', () => {
       try { await signOut(auth); window.location.href = 'login.html'; }
       catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
     });
-
-    if (elements.btnAddProfissional) {
-      elements.btnAddProfissional.addEventListener('click', () => {
-        if (!empresaId) {
-          alert("Você precisa salvar as configurações do seu negócio antes de adicionar um funcionário.");
-          return;
-        }
-        if (elements.formAddProfissional) elements.formAddProfissional.reset();
-        if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'flex';
-      });
-    }
-
-    if (elements.btnCancelarProfissional) {
-      elements.btnCancelarProfissional.addEventListener('click', () => {
-        if (elements.modalAddProfissional) elements.modalAddProfissional.style.display = 'none';
-      });
-    }
-    if (elements.formAddProfissional) {
-      elements.formAddProfissional.addEventListener('submit', handleAdicionarProfissional);
-    }
   }
 
   function copiarLink() {
