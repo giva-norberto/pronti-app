@@ -7,7 +7,63 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      /* Só aparência dos cards, igual clientes */
+      .main-content {
+        margin-left: 220px;
+        padding: 40px 32px 32px 32px;
+        background: #f7f8fe;
+        min-height: 100vh;
+      }
+      @media (max-width: 900px) {
+        .main-content { margin-left: 60px; }
+      }
+
+      .servicos-container {
+        max-width: 540px;
+        margin: 0 auto;
+        width: 100%;
+      }
+
+      .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 22px;
+        gap: 14px;
+      }
+      .header-content h1 {
+        font-size: 2em;
+        font-weight: 800;
+        color: #22223b;
+        margin-bottom: 4px;
+      }
+      .header-content p {
+        font-size: 1.06em;
+        color: #64748b;
+        margin-bottom: 0;
+      }
+      .btn-add {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: #fff;
+        border: none;
+        border-radius: 13px;
+        font-weight: 700;
+        padding: 11px 22px;
+        font-size: 1em;
+        cursor: pointer;
+        box-shadow: 0 2px 10px #93c5fd25;
+        transition: background 0.13s, box-shadow 0.15s, transform 0.13s;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        text-decoration: none;
+      }
+      .btn-add:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #4facfe 100%);
+        box-shadow: 0 4px 18px #4facfe30;
+        transform: translateY(-2px) scale(1.05);
+        color: #fff;
+      }
+
       .servico-lista {
         display: flex;
         flex-direction: column;
@@ -15,102 +71,96 @@
       }
       .servico-card {
         background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.09), 0 1.5px 12px #64748b12;
-        padding: 16px 20px;
+        border-radius: 18px;
+        box-shadow: 0 4px 24px #b0c6ff17;
+        padding: 18px 20px;
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         gap: 16px;
-        transition: box-shadow 0.18s, transform 0.14s;
+        transition: box-shadow 0.16s, transform 0.14s;
         width: 100%;
-        min-height: 48px;
-        position: relative;
-        overflow: hidden;
       }
       .servico-card:hover {
-        box-shadow: 0 8px 32px rgba(30,64,175,0.13), 0 2px 16px #64748b0c;
+        box-shadow: 0 6px 30px #a5b4fc33, 0 1.5px 12px #64748b12;
         transform: translateY(-2px) scale(1.01);
       }
       .servico-info {
         flex: 1;
         min-width: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
       }
       .servico-nome {
         font-weight: 700;
         color: #22223b;
-        font-size: 1.09em;
-        margin-bottom: 3px;
-        word-break: break-word;
+        font-size: 1.13em;
+        margin-bottom: 2px;
       }
       .servico-duracao, .servico-preco {
         display: inline-block;
-        font-size: 0.97em;
+        font-size: 0.98em;
         color: #64748b;
-        margin-right: 12px;
+        margin-right: 15px;
         margin-top: 3px;
       }
       .servico-duracao i, .servico-preco i {
-        margin-right: 3px;
+        margin-right: 4px;
       }
       .servico-acoes {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         flex-shrink: 0;
-        align-items: center;
-        margin-top: 2px;
       }
-      .btn-edit, .btn-delete {
+      .btn-editar, .btn-remover {
         border: none;
-        padding: 7px 15px 7px 12px;
-        border-radius: 7px;
+        padding: 8px 15px;
+        border-radius: 9px;
         font-weight: 600;
         cursor: pointer;
         font-size: 1em;
         display: flex;
         align-items: center;
         gap: 6px;
-        transition: background 0.13s, color 0.13s, transform 0.12s;
+        transition: background 0.13s, color 0.13s, transform 0.13s;
         text-decoration: none;
       }
-      .btn-edit {
+      .btn-editar {
         background: #e0f2fe;
         color: #2563eb;
       }
-      .btn-edit i { font-size: 1.08em; }
-      .btn-edit:hover {
+      .btn-editar:hover {
         background: #bae6fd;
         color: #1e40af;
         transform: translateY(-1.5px) scale(1.04);
       }
-      .btn-delete {
+      .btn-remover {
         background: #fee2e2;
         color: #b91c1c;
       }
-      .btn-delete i { font-size: 1.08em; }
-      .btn-delete:hover {
+      .btn-remover:hover {
         background: #fecaca;
         color: #991b1b;
         transform: translateY(-1.5px) scale(1.04);
       }
-      /* Responsivo igual clientes */
       @media (max-width: 600px) {
+        .servicos-container {
+          max-width: 100vw;
+          padding: 0 2vw;
+        }
         .servico-card {
           flex-direction: column;
-          align-items: stretch;
-          gap: 10px;
-          padding: 13px 7px;
+          align-items: flex-start;
+          gap: 12px;
         }
-        .servico-acoes {
-          justify-content: flex-end;
+        .header-section {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
         }
       }
     </style>
 </head>
 <body>
+    <!-- Menu lateral incluso dinamicamente -->
     <div id="sidebar-placeholder"></div>
     <main class="main-content">
       <div class="servicos-container">
@@ -119,28 +169,68 @@
                 <h1>Serviços</h1>
                 <p>Gerencie os serviços oferecidos pelo seu negócio.</p>
             </div>
-            <a class="btn-new" href="servico-novo.html"><i class="fa fa-plus"></i> Novo Serviço</a>
+            <a class="btn-add" href="servico-novo.html"><i class="fa fa-plus"></i> Novo Serviço</a>
         </div>
+
+        <!-- Lista de serviços cadastrados -->
         <div class="servico-lista" id="servico-lista">
             <!-- Serviços serão listados dinamicamente aqui -->
         </div>
       </div>
     </main>
-    <!-- SEU SCRIPT DO FIREBASE DEVE CONTINUAR NORMAL -->
-    <script src="firebase-config.js" type="module"></script>
-    <script src="servicos.js" type="module"></script>
+
     <script>
-    // Menu lateral dinâmico (padrão do sistema, não mexe em nada do Firebase)
+    // Inclui o menu-lateral.html dinamicamente
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Destaca o item Serviços
           const links = document.querySelectorAll('.sidebar-links a');
           links.forEach(link => link.classList.remove('active'));
           const servicosLink = document.querySelector('.sidebar-links a[href*="servicos"]');
           if(servicosLink) servicosLink.classList.add('active');
         });
+
+      // Demonstração: lista fictícia de serviços (substitua pelo seu backend)
+      const listaServicos = [
+        { nome: "Corte de Cabelo", duracao: 60, preco: 50.00 },
+        { nome: "Barba", duracao: 30, preco: 30.00 },
+        { nome: "Coloração", duracao: 90, preco: 100.00 },
+      ];
+      const container = document.getElementById('servico-lista');
+      function renderServicos() {
+        container.innerHTML = "";
+        listaServicos.forEach((serv, idx) => {
+          const card = document.createElement('div');
+          card.className = 'servico-card';
+          card.innerHTML = `
+            <div class="servico-info">
+              <div class="servico-nome">${serv.nome}</div>
+              <span class="servico-duracao"><i class="fa fa-clock"></i> ${serv.duracao} min</span>
+              <span class="servico-preco"><i class="fa fa-money-bill"></i> R$ ${serv.preco.toFixed(2)}</span>
+            </div>
+            <div class="servico-acoes">
+              <a class="btn-editar" href="servico-editar.html?id=${idx}" title="Editar"><i class="fa fa-pencil-alt"></i> Editar</a>
+              <button class="btn-remover" data-idx="${idx}" title="Remover"><i class="fa fa-trash"></i> Remover</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+      renderServicos();
+
+      // Handler para remover serviço (apenas na lista local)
+      container.addEventListener('click', function(e) {
+        if(e.target.closest('.btn-remover')) {
+          const idx = e.target.closest('.btn-remover').dataset.idx;
+          if(confirm("Deseja remover este serviço?")) {
+            listaServicos.splice(idx, 1);
+            renderServicos();
+          }
+        }
+      });
     });
     </script>
 </body>
