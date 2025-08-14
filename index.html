@@ -5,31 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="inicio-container.css">
     <!-- FontAwesome (opcional, para ícones) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .main-content {
-            margin-left: 220px;
-            padding: 40px 32px 32px 32px;
-            text-align: center;
-        }
-        @media (max-width: 900px) {
-            .main-content { margin-left: 60px; }
-        }
-    </style>
 </head>
 <body>
 
 <!-- Sidebar (menu lateral) incluso dinamicamente -->
 <div id="sidebar-placeholder"></div>
 
-<main class="main-content">
-    <h1>Bem-vindo ao Pronti App!</h1>
-    <p>A solução completa para gerenciar seus agendamentos.</p>
+<main class="main-content inicio-container">
+  <div class="dashboard-card">
+    <div class="dashboard-header">
+      <h1>Olá, <span id="nome-usuario">Usuário</span>!</h1>
+      <p>Pronto para gerenciar seu dia?</p>
+    </div>
+    <div class="dashboard-summaries">
+      <div class="summary-card">
+        <i class="fa fa-calendar"></i>
+        <div>
+          <span class="summary-number" id="total-agendamentos-dia">0</span>
+          <span class="summary-label">Agendamentos hoje</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <i class="fa fa-users"></i>
+        <div>
+          <span class="summary-number" id="clientes-ativos">0</span>
+          <span class="summary-label">Clientes ativos</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <i class="fa fa-clock"></i>
+        <div>
+          <span class="summary-number" id="proximos-servicos">0</span>
+          <span class="summary-label">Próximos serviços</span>
+        </div>
+      </div>
+    </div>
+    <div class="dashboard-actions">
+      <button class="action-btn blue" id="novo-agendamento">Novo agendamento</button>
+      <button class="action-btn green" id="adicionar-cliente">Adicionar cliente</button>
+      <button class="action-btn yellow" id="adicionar-servico">Adicionar serviço</button>
+    </div>
+    <div class="dashboard-news">
+      <h2>Novidades</h2>
+      <div class="news-card">
+        <strong>Novas funcionalidades na agenda</strong>
+        Confira as últimas atualizações na aplicação.
+      </div>
+    </div>
+  </div>
 </main>
 
 <script>
-    // Inclui o menu-lateral.html dinamicamente (padrão centralizado)
+    // Inclui o menu-lateral.html dinamicamente
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
@@ -45,6 +75,14 @@
           }
         });
     });
+
+    // Exemplo: ajuste o nome do usuário se sua lógica permitir
+    document.addEventListener("DOMContentLoaded", function() {
+      // Substitua por lógica real se tiver login/nome dinâmico
+      document.getElementById("nome-usuario").textContent = "João";
+    });
+
+    // Aqui você pode adicionar handlers para os botões, se desejar
 </script>
 
 </body>
