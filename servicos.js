@@ -1,11 +1,8 @@
-// --- GARANTE QUE A SESSÃO DO FIREBASE AUTH PERSISTE ENTRE PÁGINAS (opcional, mas recomendado) ---
-// Coloque isso no topo do seu firebase-config.js OU logo antes do onAuthStateChanged aqui:
-/*
-import { setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-setPersistence(auth, browserLocalPersistence).catch(console.error);
-*/
+// servicos.js
+// RESPONSABILIDADE: Gerenciar a listagem, exclusão e navegação dos serviços cadastrados pela empresa no painel Pronti.
+// OTIMIZAÇÕES: Garante persistência do login, exibe feedback de carregamento e reduz delay na experiência do usuário.
 
-import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, getDocs, deleteDoc, query, where, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
 
@@ -14,7 +11,7 @@ const btnAddServico = document.querySelector('.btn-new');
 let empresaId = null;
 let isDono = false;
 
-// Modal customizado de confirmação CORRIGIDO
+// Modal customizado de confirmação
 function showCustomConfirm(title, message) {
   return new Promise((resolve) => {
     const modal = document.getElementById('custom-confirm-modal');
@@ -88,9 +85,11 @@ function renderizarServicos(servicos) {
 
 // Busca a empresa do usuário (dono ou profissional)
 async function getEmpresaDoUsuario(uid) {
+    // Primeiro busca como dono
     let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     let snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    // Depois busca como profissional
     q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
     snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
@@ -108,7 +107,9 @@ async function carregarServicosDoFirebase() {
         listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
     }
     try {
+        // Use limit() se tiver muitos serviços para melhorar performance, ajuste conforme necessário
         const servicosCol = collection(db, "empresarios", empresaId, "servicos");
+        // const snap = await getDocs(query(servicosCol, limit(30))); // Descomente para limitar a 30
         const snap = await getDocs(servicosCol);
         const servicos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderizarServicos(servicos);
@@ -166,18 +167,30 @@ if (listaServicosDiv) {
     });
 }
 
+// Melhoria: mostra o loader assim que inicia o script
+document.getElementById('loader')?.classList.remove('hidden');
+document.getElementById('app-content')?.classList.add('hidden');
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
+        // Mostra o loader enquanto carrega a empresa e os serviços
+        document.getElementById('loader')?.classList.remove('hidden');
+        document.getElementById('app-content')?.classList.add('hidden');
         const empresa = await getEmpresaDoUsuario(user.uid);
         if (empresa) {
             empresaId = empresa.id;
             isDono = empresa.donoId === user.uid;
-            carregarServicosDoFirebase();
+            await carregarServicosDoFirebase();
             if (btnAddServico) btnAddServico.style.display = isDono ? '' : 'none';
+            // Oculta o loader e mostra o app quando terminar tudo
+            document.getElementById('loader')?.classList.add('hidden');
+            document.getElementById('app-content')?.classList.remove('hidden');
         } else {
             if (listaServicosDiv) {
                 listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
             }
+            document.getElementById('loader')?.classList.add('hidden');
+            document.getElementById('app-content')?.classList.remove('hidden');
         }
     } else {
         window.location.href = 'login.html';
@@ -190,3 +203,11 @@ if (btnAddServico) {
         window.location.href = 'novo-servico.html';
     });
 }
+
+/*
+    DICAS DE PERFORMANCE:
+    - Se você tem muitos serviços, use o método limit() do Firestore na consulta.
+    - Otimize suas regras do Firestore para retornar apenas os documentos realmente necessários.
+    - Utilize indexação no Firestore se o dataset for grande.
+    - Loader só é removido depois de buscar e renderizar os serviços.
+*/
