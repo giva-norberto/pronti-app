@@ -1,12 +1,10 @@
-// dashboard.js - VERSÃO FINAL COM CORREÇÃO DE FUSO HORÁRIO, DATA INTELIGENTE E LÓGICA ROBUSTA (MANTÉM TODA A LÓGICA DAS OUTRAS FUNÇÕES)
+// dashboard.js - VERSÃO DEFINITIVA com CORREÇÃO DE FUSO HORÁRIO E DATA INTELIGENTE PARA O BRASIL (America/Sao_Paulo)
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-// Total de horários disponíveis no dia, idealmente virá da configuração do sistema
-const totalSlots = 20;
+const totalSlots = 20; // Total de horários disponíveis no dia
 
 // --- FUNÇÕES DE LÓGICA E DADOS ---
 
@@ -32,7 +30,6 @@ async function getEmpresaId(user) {
     }
 }
 
-// --- NOVA LÓGICA: busca horários de todos os profissionais ---
 async function buscarTodosOsHorarios(empresaId) {
     try {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
@@ -52,39 +49,28 @@ async function buscarTodosOsHorarios(empresaId) {
     }
 }
 
-/**
- * Retorna a data e hora atual no fuso horário de São Paulo.
- * @returns {Date}
- */
+// Retorna a data e hora atual no fuso horário de São Paulo.
 function getAgoraEmSaoPaulo() {
-    // Use toLocaleString para garantir o fuso correto, independente do navegador.
+    // Força o horário para o Brasil, independente do fuso do navegador/servidor
     return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
 }
 
-/**
- * Data inteligente: verifica o expediente de TODOS os profissionais e retorna a próxima data com expediente aberto,
- * considerando o fuso horário de São Paulo. Mantém toda lógica funcional!
- */
+// Data inteligente baseada em toda a equipe e fuso horário do Brasil
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     const todosOsHorarios = await buscarTodosOsHorarios(empresaId);
     if (todosOsHorarios.length === 0) return dataInicial;
 
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    let dataAtual = new Date(getAgoraEmSaoPaulo().setHours(12,0,0,0));
-    // Se dataInicial não for hoje, reseta para o dia correto
-    if (dataInicial) {
-        const partes = dataInicial.split('-');
-        if (partes.length === 3) {
-            dataAtual = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0, 0);
-        }
-    }
+    // dataInicial pode vir como string "YYYY-MM-DD", então montamos a data no fuso correto:
+    let partes = dataInicial.split('-');
+    let dataAtual = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0, 0);
 
     for (let i = 0; i < 90; i++) {
         const nomeDia = diaDaSemana[dataAtual.getDay()];
         let diaDeTrabalho = false;
         let ultimoHorarioGeral = 0;
 
-        // Verifica se ALGUM profissional trabalha no dia e qual o último horário
+        // Verifica se ALGUM profissional trabalha neste dia e qual o último horário de todos
         todosOsHorarios.forEach(horarioProf => {
             if (horarioProf[nomeDia] && horarioProf[nomeDia].ativo) {
                 diaDeTrabalho = true;
@@ -98,7 +84,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
         });
 
         if (diaDeTrabalho) {
-            if (i === 0) { // Se for hoje
+            if (i === 0) { // Se está analisando "hoje"
                 const agoraSP = getAgoraEmSaoPaulo();
                 const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
                 if (agoraEmMinutos < ultimoHorarioGeral) {
@@ -110,10 +96,9 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
                 return dataAtual.toISOString().split('T')[0];
             }
         }
-        // Avança para o próximo dia (mantendo horário local)
-        dataAtual.setDate(dataAtual.getDate() + 1);
+        dataAtual.setDate(dataAtual.getDate() + 1); // Avança para o próximo dia (mantendo local)
     }
-    return dataInicial; // Retorna a data inicial se não encontrar nada
+    return dataInicial; // Se deu 90 dias sem expediente, retorna data inicial
 }
 
 // --- FUNÇÕES DE CÁLCULO ---
@@ -204,29 +189,9 @@ function preencherCardIA(mensagem) {
     if (el) el.textContent = mensagem;
 }
 
-function preencherResumoInteligente(resumoInteligente) {
-    const el = document.getElementById("resumo-inteligente");
-    if (!el) return;
-    if (resumoInteligente.totalAtendimentos === 0) {
-        el.innerHTML = `<span>${resumoInteligente.mensagem}</span>`;
-        return;
-    }
-    let resumoHtml = `
-        <div><strong>Total atendimentos:</strong> ${resumoInteligente.totalAtendimentos}</div>
-        <div><strong>Primeiro:</strong> ${resumoInteligente.primeiro.horario} - ${resumoInteligente.primeiro.cliente} (${resumoInteligente.primeiro.servico})</div>
-        <div><strong>Último:</strong> ${resumoInteligente.ultimo.horario} - ${resumoInteligente.ultimo.cliente} (${resumoInteligente.ultimo.servico})</div>
-        <div><strong>Faturamento estimado:</strong> ${resumoInteligente.faturamentoEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
-    `;
-    if (resumoInteligente.maiorIntervalo) {
-        resumoHtml += `<div><strong>Maior intervalo:</strong> ${resumoInteligente.maiorIntervalo.inicio} - ${resumoInteligente.maiorIntervalo.fim} (${resumoInteligente.maiorIntervalo.duracaoMinutos} min)</div>`;
-    }
-    el.innerHTML = resumoHtml;
-}
-
 // --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD ---
 
 async function preencherDashboard(user, dataSelecionada) {
-    console.log("4. A preencher o dashboard para a data:", dataSelecionada);
     const empresaId = await getEmpresaId(user);
     if (!empresaId) {
         alert("ID da Empresa não encontrado.");
@@ -237,35 +202,14 @@ async function preencherDashboard(user, dataSelecionada) {
         const agQuery = query(agCollection, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
         const agSnap = await getDocs(agQuery);
         const agsDoDia = agSnap.docs.map(doc => doc.data());
-        console.log(`   -> Encontrados ${agsDoDia.length} agendamentos para esta data.`);
 
         preencherAgendaDoDia(agsDoDia);
         preencherCardServico(calcularServicosDestaque(agsDoDia));
         preencherCardProfissional(calcularProfissionalDestaque(agsDoDia));
         preencherCardResumo(calcularResumo(agsDoDia));
         preencherCardIA(calcularSugestaoIA(agsDoDia));
-
-        const resumoInteligente = gerarResumoDiarioInteligente(
-            agsDoDia.map(ag => {
-                const inicioMin = timeStringToMinutes(ag.horario);
-                const duracaoMin = ag.servicoDuracao || 60;
-                const fimMin = inicioMin + duracaoMin;
-                const horaFim = `${String(Math.floor(fimMin / 60)).padStart(2, '0')}:${String(fimMin % 60).padStart(2, '0')}`;
-
-                return {
-                    inicio: `${ag.data}T${ag.horario}:00`,
-                    fim: `${ag.data}T${horaFim}:00`,
-                    cliente: ag.clienteNome || "Cliente",
-                    servico: ag.servicoNome || "Serviço",
-                    servicoPreco: ag.servicoPreco
-                };
-            })
-        );
-        preencherResumoInteligente(resumoInteligente);
-        console.log("   -> Dashboard preenchido com sucesso.");
-
     } catch (error) {
-        console.error("   -> ERRO ao carregar agendamentos para o dashboard:", error);
+        console.error("Erro ao carregar agendamentos:", error);
         alert("Ocorreu um erro ao carregar os dados do dashboard.");
     }
 }
@@ -282,41 +226,31 @@ function debounce(fn, delay) {
 
 // --- INICIALIZAÇÃO E EVENTOS ---
 
-async function init(user) {
-    console.log("1. Utilizador autenticado. A iniciar o dashboard...");
-    const filtroData = document.getElementById("filtro-data");
-    const empresaId = await getEmpresaId(user);
-
-    if (!empresaId) {
-        alert("Não foi possível identificar sua empresa.");
-        return;
-    }
-    console.log("2. ID da Empresa encontrado:", empresaId);
-
-    const hojeSP = getAgoraEmSaoPaulo();
-    const hojeString = hojeSP.toISOString().split('T')[0];
-    const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-    console.log("3. Data inteligente definida para:", dataInicial);
-
-    if (filtroData) {
-        filtroData.value = dataInicial;
-        filtroData.addEventListener("change", debounce(() => {
-            preencherDashboard(user, filtroData.value);
-        }, 300));
-    }
-
-    await preencherDashboard(user, dataInicial);
-}
-
 window.addEventListener("DOMContentLoaded", () => {
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            init(user).catch(err => {
-                console.error("Erro fatal na inicialização:", err);
-                alert("Ocorreu um erro crítico ao iniciar o dashboard.");
-            });
+            const filtroData = document.getElementById("filtro-data");
+            const empresaId = await getEmpresaId(user);
+
+            if (!empresaId) {
+                alert("Não foi possível identificar sua empresa.");
+                return;
+            }
+
+            // Pega a data de hoje em São Paulo, independente do fuso do servidor/cliente
+            const hojeSP = getAgoraEmSaoPaulo();
+            const hojeString = hojeSP.toISOString().split('T')[0];
+            const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
+
+            if (filtroData) {
+                filtroData.value = dataInicial;
+                filtroData.addEventListener("change", debounce(() => {
+                    preencherDashboard(user, filtroData.value);
+                }, 300));
+            }
+
+            await preencherDashboard(user, dataInicial);
         } else {
-            console.log("Utilizador não autenticado. A redirecionar para o login...");
             // window.location.href = "login.html";
         }
     });
