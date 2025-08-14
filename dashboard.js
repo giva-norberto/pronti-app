@@ -1,4 +1,4 @@
-// dashboard.js - VERSÃO FINAL VALIDADA COM MÓDULO DE INTELIGÊNCIA
+// dashboard.js - VERSÃO FINAL COM A LÓGICA DE DATA INTELIGENTE CORRIGIDA
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -47,6 +47,9 @@ async function buscarHorariosDoDono(empresaId) {
     }
 }
 
+// ==========================================================
+// LÓGICA DE DATA INTELIGENTE CORRIGIDA
+// ==========================================================
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     const horariosTrabalho = await buscarHorariosDoDono(empresaId);
     if (!horariosTrabalho) return dataInicial;
@@ -54,26 +57,35 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     let dataAtual = new Date(`${dataInicial}T12:00:00`);
 
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
+        const dataAtualString = dataAtual.toISOString().split('T')[0];
         const nomeDia = diaDaSemana[dataAtual.getDay()];
         const diaDeTrabalho = horariosTrabalho[nomeDia];
 
+        // Verifica se é um dia de trabalho
         if (diaDeTrabalho && diaDeTrabalho.ativo) {
-            if (i === 0) {
+            // Se for hoje, verifica se o expediente já encerrou
+            if (dataAtualString === dataInicial) {
                 const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
                 const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
                 const agoraEmMinutos = new Date().getHours() * 60 + new Date().getMinutes();
+                
+                // Se o expediente de hoje ainda não acabou, retorna hoje
                 if (agoraEmMinutos < fimDoExpediente) {
-                    return dataAtual.toISOString().split('T')[0];
+                    return dataAtualString;
                 }
+                // Se não, continua o loop para achar o próximo dia
             } else {
-                return dataAtual.toISOString().split('T')[0];
+                // Se for um dia futuro que é dia de trabalho, retorna ele
+                return dataAtualString;
             }
         }
+        // Se não é um dia de trabalho ou o expediente de hoje já acabou, avança para o dia seguinte
         dataAtual.setDate(dataAtual.getDate() + 1);
     }
-    return dataInicial;
+    return dataInicial; // Retorna a data inicial se não encontrar nada
 }
+
 
 // --- FUNÇÕES DE CÁLCULO ---
 
@@ -105,7 +117,7 @@ function calcularResumo(agsDoDia) {
 }
 
 function calcularSugestaoIA(agsDoDia) {
-    const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
+    const ocupacaoPercent = Math.min(100, Math.round((totalAgendamentos / totalSlots) * 100));
     if(agsDoDia.length === 0){
         return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
     } else if (ocupacaoPercent < 50) {
@@ -202,7 +214,6 @@ async function preencherDashboard(user, dataSelecionada) {
         preencherCardResumo(calcularResumo(agsDoDia));
         preencherCardIA(calcularSugestaoIA(agsDoDia));
 
-        // REVISÃO: Garantindo que o preço do serviço seja passado para o módulo de inteligência
         const resumoInteligente = gerarResumoDiarioInteligente(
             agsDoDia.map(ag => {
                 const inicioMin = timeStringToMinutes(ag.horario);
@@ -215,7 +226,7 @@ async function preencherDashboard(user, dataSelecionada) {
                     fim: `${ag.data}T${horaFim}:00`,
                     cliente: ag.clienteNome || "Cliente",
                     servico: ag.servicoNome || "Serviço",
-                    servicoPreco: ag.servicoPreco // <-- CORREÇÃO APLICADA AQUI
+                    servicoPreco: ag.servicoPreco
                 };
             })
         );
