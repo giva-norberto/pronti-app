@@ -1,20 +1,35 @@
 // servicos.js
-// RESPONSABILIDADE: Gerenciar a listagem, exclusão e navegação dos serviços cadastrados pela empresa no painel Pronti.
+// Gerencia a listagem, exclusão e navegação dos serviços.
 
 import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { db, auth } from "./firebase-config.js";
+import { db, auth } from "./vitrini-firebase.js";
+import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
 const listaServicosDiv = document.getElementById('lista-servicos');
 const btnAddServico = document.querySelector('.btn-new');
-const loader = document.getElementById('loader'); // Adicionado para controle do loader
-const appContent = document.getElementById('app-content'); // Adicionado para controle do conteúdo
+const loader = document.getElementById('loader');
+const appContent = document.getElementById('app-content');
 
 let empresaId = null;
 let isDono = false;
 
-// --- LÓGICA DE AUTENTICAÇÃO E INICIALIZAÇÃO ---
+// Permite dono ou profissional acessar a empresa
+async function getEmpresaDoUsuario(uid) {
+    // Dono
+    let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    let snapshot = await getDocs(q);
+    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
 
+    // Profissional
+    q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
+    snapshot = await getDocs(q);
+    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+
+    return null;
+}
+
+// Inicialização e autenticação
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         try {
@@ -22,43 +37,25 @@ onAuthStateChanged(auth, async (user) => {
             if (empresa) {
                 empresaId = empresa.id;
                 isDono = empresa.donoId === user.uid;
-                
                 await carregarServicosDoFirebase();
-                
+
                 if (btnAddServico) {
                     btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
                 }
-                
-                // Esconde o loader e mostra o conteúdo principal
-                if(loader) loader.style.display = 'none';
-                if(appContent) appContent.style.display = 'block';
 
+                if (loader) loader.style.display = 'none';
+                if (appContent) appContent.style.display = 'block';
             } else {
-                // Se não encontrar empresa, mostra uma mensagem de erro clara
-                if(loader) loader.innerHTML = '<p style="color:red;">Nenhuma empresa associada a este utilizador. Verifique se o seu perfil está configurado corretamente.</p>';
+                if (loader) loader.innerHTML = '<p style="color:red;">Nenhuma empresa associada a este utilizador. Verifique se o seu perfil está configurado corretamente.</p>';
             }
         } catch (error) {
             console.error("Erro fatal durante a inicialização:", error);
-            if(loader) loader.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
+            if (loader) loader.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
         }
     } else {
         window.location.href = 'login.html';
     }
 });
-
-
-// --- FUNÇÕES DA PÁGINA ---
-
-// CORREÇÃO: Função de busca de empresa simplificada e mais robusta
-async function getEmpresaDoUsuario(uid) {
-    // A lógica correta para o painel do dono é buscar apenas pela propriedade 'donoId'
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-        return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-    }
-    return null;
-}
 
 async function carregarServicosDoFirebase() {
     if (!empresaId) {
@@ -66,7 +63,7 @@ async function carregarServicosDoFirebase() {
         return;
     }
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>A carregar serviços...</p>';
-    
+
     try {
         const servicosCol = collection(db, "empresarios", empresaId, "servicos");
         const snap = await getDocs(servicosCol);
@@ -86,7 +83,6 @@ function renderizarServicos(servicos) {
         return;
     }
     servicos.sort((a, b) => a.nome.localeCompare(b.nome));
-    
     listaServicosDiv.innerHTML = servicos.map(servico => `
         <div class="servico-card">
             <div class="servico-header">
@@ -109,63 +105,27 @@ function renderizarServicos(servicos) {
 
 async function excluirServico(servicoId) {
     if (!isDono) {
-        alert("Apenas o dono pode excluir serviços.");
+        await showAlert("Acesso Negado", "Apenas o dono pode excluir serviços.");
         return;
     }
-    const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem a certeza que deseja excluir este serviço? Esta ação é permanente.");
+    const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
     if (!confirmado) return;
 
     try {
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         await deleteDoc(servicoRef);
-        alert("Serviço excluído com sucesso!");
+        await showAlert("Sucesso!", "Serviço excluído com sucesso!");
         await carregarServicosDoFirebase();
     } catch (error) {
-        alert("Ocorreu um erro ao excluir o serviço: " + error.message);
+        await showAlert("Erro", "Ocorreu um erro ao excluir o serviço: " + error.message);
     }
 }
-
-// --- FUNÇÕES UTILITÁRIAS ---
 
 function formatarPreco(preco) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco || 0);
 }
 
-function showCustomConfirm(title, message) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-confirm-modal');
-        const modalTitle = document.getElementById('modal-titulo');
-        const modalMessage = document.getElementById('modal-mensagem');
-        const btnConfirmar = document.getElementById('modal-btn-confirmar');
-        const btnCancelar = document.getElementById('modal-btn-cancelar');
-
-        if (!modal || !modalTitle || !modalMessage || !btnConfirmar || !btnCancelar) {
-            resolve(confirm(message));
-            return;
-        }
-
-        modalTitle.textContent = title;
-        modalMessage.textContent = message;
-
-        const newBtnConfirmar = btnConfirmar.cloneNode(true);
-        btnConfirmar.parentNode.replaceChild(newBtnConfirmar, btnConfirmar);
-        const newBtnCancelar = btnCancelar.cloneNode(true);
-        btnCancelar.parentNode.replaceChild(newBtnCancelar, btnCancelar);
-
-        const close = (value) => {
-            modal.classList.remove('ativo');
-            resolve(value);
-        };
-
-        newBtnConfirmar.addEventListener('click', () => close(true));
-        newBtnCancelar.addEventListener('click', () => close(false));
-
-        modal.classList.add('ativo');
-    });
-}
-
-// --- EVENT LISTENERS ---
-
+// Event delegation para novo, editar e excluir
 if (listaServicosDiv) {
     listaServicosDiv.addEventListener('click', function(e) {
         const target = e.target.closest('.btn-acao');
@@ -183,7 +143,8 @@ if (listaServicosDiv) {
 }
 
 if (btnAddServico) {
-    btnAddServico.addEventListener('click', () => {
+    btnAddServico.addEventListener('click', (e) => {
+        e.preventDefault();
         window.location.href = 'novo-servico.html';
     });
 }
