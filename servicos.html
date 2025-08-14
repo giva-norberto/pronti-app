@@ -1,211 +1,137 @@
-<!DOCTYPE html>
+
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Serviços</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Serviços</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* Estilos para a tela de carregamento */
+        .loader-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f6f7fb;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+        .loader-spinner {
+            border: 5px solid #e0e0e0;
+            border-top: 5px solid #4facfe;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Estilos para o Modal de Confirmação */
+        .modal-overlay {
+            position: fixed;
+            left: 0; top: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998; /* Abaixo do loader principal */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.ativo {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+        }
+        .modal-botoes {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .modal-botoes button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        #modal-btn-confirmar { background-color: #d9534f; color: white; }
+        #modal-btn-cancelar { background-color: #f0f0f0; color: #333; }
+
+        /* Estilos para os cartões de serviços */
+        .servico-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .servico-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .servico-titulo { font-size: 1.3em; font-weight: bold; color: #333; margin: 0; }
+        .servico-descricao { color: #666; margin: 10px 0; line-height: 1.4; }
+        .servico-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0; }
+        .servico-preco { font-size: 1.2em; font-weight: bold; color: #28a745; }
+        .servico-duracao { color: #666; font-size: 0.9em; }
+        .servico-acoes { display: flex; gap: 10px; }
+        .btn-acao { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        .btn-editar { background-color: #ffc107; color: #333; }
+        .btn-excluir { background-color: #dc3545; color: white; }
+    </style>
 </head>
 <body>
-  <!-- Sidebar será incluído dinamicamente -->
-  <div id="sidebar-placeholder"></div>
 
-  <main class="main-content">
-    <h1>Nossos Serviços</h1>
-    <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
-    <div id="lista-servicos" style="margin-top:20px;"></div>
-  </main>
+<!-- TELA DE CARREGAMENTO INICIAL -->
+<div id="loader" class="loader-overlay">
+    <div class="loader-spinner"></div>
+    <p>A verificar sessão...</p>
+</div>
 
-  <script src="servicos.js" type="module"></script>
+<!-- CORREÇÃO: O menu lateral agora está FORA do conteúdo que é escondido -->
+<aside class="sidebar">
+    <!-- O seu componente de menu lateral unificado vai aqui -->
+</aside>
 
-  <div id="custom-confirm-modal" class="modal-overlay">
-      <div class="modal-box">
-          <h2 id="modal-titulo"></h2>
-          <p id="modal-mensagem"></p>
-          <div class="modal-botoes">
-              <button id="modal-btn-cancelar">Cancelar</button>
-              <button id="modal-btn-confirmar">Confirmar</button>
-          </div>
-      </div>
-  </div>
+<!-- CONTEÚDO PRINCIPAL (ESCONDIDO POR DEFEITO) -->
+<div id="app-content" style="display: none;">
+    <main class="main-content">
+        <h1>Nossos Serviços</h1>
+        <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
+        <div id="lista-servicos" style="margin-top:20px;"></div>
+    </main>
 
-  <style>
-      .main-content {
-          position: relative;
-          z-index: 1;
-      }
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 id="modal-titulo"></h2>
+            <p id="modal-mensagem"></p>
+            <div class="modal-botoes">
+                <button id="modal-btn-cancelar">Cancelar</button>
+                <button id="modal-btn-confirmar">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-      .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.6);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 9999;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s ease;
-      }
-      .modal-overlay.ativo {
-          opacity: 1;
-          pointer-events: auto;
-      }
-      .modal-box {
-          background: white;
-          padding: 30px;
-          border-radius: 12px;
-          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
-          text-align: center;
-          max-width: 420px;
-          width: 90%;
-          transform: scale(0.95);
-          transition: transform 0.3s ease;
-      }
-      .modal-overlay.ativo .modal-box {
-          transform: scale(1);
-      }
-      .modal-box h2 {
-          margin-top: 0;
-          font-size: 1.5em;
-          color: #333;
-      }
-      .modal-box p {
-          margin-bottom: 20px;
-          font-size: 1.1em;
-          color: #555;
-      }
-      .modal-botoes {
-          display: flex;
-          justify-content: center;
-          gap: 15px;
-          margin-top: 20px;
-      }
-      .modal-botoes button {
-          padding: 12px 25px;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 1em;
-          font-weight: bold;
-          transition: background-color 0.2s, transform 0.2s;
-      }
-      .modal-botoes button:hover {
-          transform: translateY(-2px);
-      }
-      #modal-btn-confirmar {
-          background-color: #d9534f;
-          color: white;
-      }
-      #modal-btn-confirmar:hover {
-          background-color: #c9302c;
-      }
-      #modal-btn-cancelar {
-          background-color: #f0f0f0;
-          color: #333;
-      }
-      #modal-btn-cancelar:hover {
-          background-color: #e0e0e0;
-      }
-      .servico-card {
-          background: white;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          padding: 20px;
-          margin-bottom: 15px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          transition: box-shadow 0.2s;
-      }
-      .servico-card:hover {
-          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-      }
-      .servico-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 10px;
-      }
-      .servico-titulo {
-          font-size: 1.3em;
-          font-weight: bold;
-          color: #333;
-          margin: 0;
-      }
-      .servico-categoria {
-          background: #007bff;
-          color: white;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 0.8em;
-          font-weight: bold;
-      }
-      .servico-descricao {
-          color: #666;
-          margin: 10px 0;
-          line-height: 1.4;
-      }
-      .servico-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 15px;
-          padding-top: 15px;
-          border-top: 1px solid #f0f0f0;
-      }
-      .servico-preco {
-          font-size: 1.2em;
-          font-weight: bold;
-          color: #28a745;
-      }
-      .servico-duracao {
-          color: #666;
-          font-size: 0.9em;
-      }
-      .servico-acoes {
-          display: flex;
-          gap: 10px;
-      }
-      .btn-acao {
-          padding: 8px 12px;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.9em;
-          transition: background-color 0.2s;
-      }
-      .btn-editar {
-          background-color: #ffc107;
-          color: #333;
-      }
-      .btn-editar:hover {
-          background-color: #e0a800;
-      }
-      .btn-excluir {
-          background-color: #dc3545;
-          color: white;
-      }
-      .btn-excluir:hover {
-          background-color: #c82333;
-      }
-  </style>
-  <script>
-    // Inclui o menu lateral dinamicamente
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Realça o item do menu Serviços, se desejar:
-          const links = document.querySelectorAll('.sidebar-links a');
-          links.forEach(link => link.classList.remove('active'));
-          const servicosLink = document.querySelector('.sidebar-links a[href*="servicos"]');
-          if(servicosLink) servicosLink.classList.add('active');
-        });
-    });
-  </script>
-  <script src="perfil.js" type="module"></script>
+<script src="servicos.js" type="module"></script>
+
 </body>
 </html>
