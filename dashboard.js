@@ -1,17 +1,16 @@
-// dashboard.js - PAINEL INTELIGENTE: Mostra apenas os próximos 3 agendamentos e um resumo, não polui o painel.
-// Se houver mais, exibe "+N agendamentos — ver todos na Agenda"
-
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
+// Total de horários disponíveis no dia, idealmente virá da configuração do sistema
 const totalSlots = 20;
 
 // --- FUNÇÕES DE LÓGICA E DADOS ---
 
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
+    const [h, m] = timeStr.split(":").map(Number);
     return h * 60 + m;
 }
 
@@ -21,94 +20,52 @@ async function getEmpresaId(user) {
         const snap = await getDocs(q);
         if (!snap.empty) {
             const empresaId = snap.docs[0].id;
-            localStorage.setItem('empresaId', empresaId);
+            localStorage.setItem("empresaId", empresaId);
             return empresaId;
         }
-        return localStorage.getItem('empresaId');
+        return localStorage.getItem("empresaId");
     } catch (error) {
         console.error("Erro ao buscar empresa:", error);
-        return localStorage.getItem('empresaId');
+        return localStorage.getItem("empresaId");
     }
 }
 
-async function buscarTodosOsHorarios(empresaId) {
+async function buscarHorariosDoDono(empresaId) {
     try {
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const profissionaisSnap = await getDocs(profissionaisRef);
-        if (profissionaisSnap.empty) return [];
-
-        const promessasDeHorarios = profissionaisSnap.docs.map(profDoc => {
-            const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profDoc.id, "configuracoes", "horarios");
-            return getDoc(horariosRef);
-        });
-
-        const horariosSnaps = await Promise.all(promessasDeHorarios);
-        return horariosSnaps.map(snap => snap.exists() ? snap.data() : null).filter(Boolean);
+        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
+        if (!empresaDoc.exists()) return null;
+        const donoId = empresaDoc.data().donoId;
+        if (!donoId) return null;
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios");
+        const horariosSnap = await getDoc(horariosRef);
+        return horariosSnap.exists() ? horariosSnap.data() : null;
     } catch (error) {
-        console.error("Erro ao buscar todos os horários:", error);
-        return [];
+        console.error("Erro ao buscar horários do dono:", error);
+        return null;
     }
-}
-
-function getAgoraEmSaoPaulo() {
-    const local = new Date();
-    const utc = local.getTime() + (local.getTimezoneOffset() * 60000);
-    const offset = -3;
-    const brasil = new Date(utc + (3600000 * offset));
-    return brasil;
-}
-
-function getHojeStringSaoPaulo() {
-    const hojeSP = getAgoraEmSaoPaulo();
-    return [
-        hojeSP.getFullYear(),
-        String(hojeSP.getMonth() + 1).padStart(2, "0"),
-        String(hojeSP.getDate()).padStart(2, "0")
-    ].join("-");
 }
 
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
-    const todosOsHorarios = await buscarTodosOsHorarios(empresaId);
-    if (todosOsHorarios.length === 0) return dataInicial;
+    const horariosTrabalho = await buscarHorariosDoDono(empresaId);
+    if (!horariosTrabalho) return dataInicial;
 
-    const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    let partes = dataInicial.split('-');
-    let dataAtual = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0, 0);
+    const diaDaSemana = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+    let dataAtual = new Date(`${dataInicial}T12:00:00`);
 
     for (let i = 0; i < 90; i++) {
         const nomeDia = diaDaSemana[dataAtual.getDay()];
-        let diaDeTrabalho = false;
-        let ultimoHorarioGeral = 0;
+        const diaDeTrabalho = horariosTrabalho[nomeDia];
 
-        todosOsHorarios.forEach(horarioProf => {
-            if (horarioProf[nomeDia] && horarioProf[nomeDia].ativo) {
-                diaDeTrabalho = true;
-                horarioProf[nomeDia].blocos.forEach(bloco => {
-                    const fimMinutos = timeStringToMinutes(bloco.fim);
-                    if (fimMinutos > ultimoHorarioGeral) {
-                        ultimoHorarioGeral = fimMinutos;
-                    }
-                });
-            }
-        });
-
-        if (diaDeTrabalho) {
+        if (diaDeTrabalho && diaDeTrabalho.ativo) {
             if (i === 0) {
-                const agoraSP = getAgoraEmSaoPaulo();
-                const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
-                if (agoraEmMinutos < ultimoHorarioGeral) {
-                    return [
-                        dataAtual.getFullYear(),
-                        String(dataAtual.getMonth() + 1).padStart(2, "0"),
-                        String(dataAtual.getDate()).padStart(2, "0")
-                    ].join("-");
+                const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
+                const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
+                const agoraEmMinutos = new Date().getHours() * 60 + new Date().getMinutes();
+                if (agoraEmMinutos < fimDoExpediente) {
+                    return dataAtual.toISOString().split("T")[0];
                 }
             } else {
-                return [
-                    dataAtual.getFullYear(),
-                    String(dataAtual.getMonth() + 1).padStart(2, "0"),
-                    String(dataAtual.getDate()).padStart(2, "0")
-                ].join("-");
+                return dataAtual.toISOString().split("T")[0];
             }
         }
         dataAtual.setDate(dataAtual.getDate() + 1);
@@ -124,7 +81,7 @@ function calcularServicosDestaque(agsDoDia) {
         acc[nome] = (acc[nome] || 0) + 1;
         return acc;
     }, {});
-    const servicoDestaque = Object.entries(servicosContados).sort((a, b) => b[1] - a[1])[0];
+    const servicoDestaque = Object.entries(servicosContados).sort((a,b) => b[1] - a[1])[0];
     return servicoDestaque ? servicoDestaque[0] : null;
 }
 
@@ -134,7 +91,7 @@ function calcularProfissionalDestaque(agsDoDia) {
         acc[nome] = (acc[nome] || 0) + 1;
         return acc;
     }, {});
-    const profDestaque = Object.entries(profsContados).sort((a, b) => b[1] - a[1])[0];
+    const profDestaque = Object.entries(profsContados).sort((a,b) => b[1] - a[1])[0];
     return profDestaque ? { nome: profDestaque[0], qtd: profDestaque[1] } : null;
 }
 
@@ -147,7 +104,7 @@ function calcularResumo(agsDoDia) {
 
 function calcularSugestaoIA(agsDoDia) {
     const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
-    if (agsDoDia.length === 0) {
+    if(agsDoDia.length === 0){
         return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
     } else if (ocupacaoPercent < 50) {
         return "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
@@ -158,46 +115,17 @@ function calcularSugestaoIA(agsDoDia) {
 
 // --- FUNÇÕES DE RENDERIZAÇÃO ---
 
-function preencherAgendaDoDiaInteligente(agsDoDia) {
+function preencherAgendaDoDia(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
     if (!agendaContainer) return;
     agendaContainer.innerHTML = "";
-
     if (agsDoDia.length === 0) {
         agendaContainer.innerHTML = `<div class="aviso-horarios">Nenhum agendamento para esta data.</div>`;
         return;
     }
-
-    const agoraSP = getAgoraEmSaoPaulo();
-    const horaAtual = String(agoraSP.getHours()).padStart(2, "0") + ":" + String(agoraSP.getMinutes()).padStart(2, "0");
-
-    const agsOrdenados = agsDoDia
-        .slice()
-        .sort((a, b) => a.horario.localeCompare(b.horario));
-
-    let agsFuturos = agsOrdenados;
-    const filtroData = document.getElementById("filtro-data");
-    if (filtroData && filtroData.value === getHojeStringSaoPaulo()) {
-        agsFuturos = agsOrdenados.filter(ag => ag.horario >= horaAtual);
-        if (agsFuturos.length === 0) agsFuturos = agsOrdenados.slice(-3);
-    }
-    const agsVisiveis = agsFuturos.slice(0, 3);
-
-    agsVisiveis.forEach(ag => {
-        agendaContainer.innerHTML += `
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                <strong>${ag.horario}</strong> — ${ag.servicoNome || "-"}${ag.clienteNome ? " (" + ag.clienteNome + ")" : ""}
-            </div>
-        `;
+    agsDoDia.sort((a, b) => a.horario.localeCompare(b.horario)).forEach(ag => {
+        agendaContainer.innerHTML += `<div class="card-agendamento"><span class="horario-destaque">${ag.horario}</span><div class="agendamento-info"><strong>${ag.servicoNome || 'Serviço'}</strong><span>${ag.profissionalNome || 'Profissional'}</span></div></div>`;
     });
-
-    if (agsFuturos.length > 3) {
-        agendaContainer.innerHTML += `
-            <div style="margin-top: 6px; color: #679;">
-                +${agsFuturos.length - 3} agendamentos — <a href="agenda.html" style="color:#1976d2;text-decoration:underline;">ver todos na Agenda</a>
-            </div>
-        `;
-    }
 }
 
 function preencherCardServico(servicoDestaque) {
@@ -233,6 +161,31 @@ function preencherCardIA(mensagem) {
     if (el) el.textContent = mensagem;
 }
 
+// --- RENDERIZAÇÃO DO RESUMO INTELIGENTE (NOVO CARD) ---
+
+function preencherResumoInteligente(resumoInteligente) {
+    const el = document.getElementById("resumo-inteligente");
+    if (!el) return;
+
+    if (!resumoInteligente || resumoInteligente.totalAtendimentos === 0) {
+        el.innerHTML = `<span>${resumoInteligente?.mensagem || "Nenhum dado disponível."}</span>`;
+        return;
+    }
+
+    let resumoHtml = `
+        <div><strong>Total atendimentos:</strong> ${resumoInteligente.totalAtendimentos}</div>
+        <div><strong>Primeiro:</strong> ${resumoInteligente.primeiro.horario} - ${resumoInteligente.primeiro.cliente} (${resumoInteligente.primeiro.servico})</div>
+        <div><strong>Último:</strong> ${resumoInteligente.ultimo.horario} - ${resumoInteligente.ultimo.cliente} (${resumoInteligente.ultimo.servico})</div>
+        <div><strong>Faturamento estimado:</strong> ${resumoInteligente.faturamentoEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+    `;
+
+    if (resumoInteligente.maiorIntervalo) {
+        resumoHtml += `<div><strong>Maior intervalo:</strong> ${resumoInteligente.maiorIntervalo.inicio} - ${resumoInteligente.maiorIntervalo.fim} (${resumoInteligente.maiorIntervalo.duracaoMinutos} min)</div>`;
+    }
+
+    el.innerHTML = resumoHtml;
+}
+
 // --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD ---
 
 async function preencherDashboard(user, dataSelecionada) {
@@ -247,11 +200,27 @@ async function preencherDashboard(user, dataSelecionada) {
         const agSnap = await getDocs(agQuery);
         const agsDoDia = agSnap.docs.map(doc => doc.data());
 
-        preencherAgendaDoDiaInteligente(agsDoDia);
+        preencherAgendaDoDia(agsDoDia);
         preencherCardServico(calcularServicosDestaque(agsDoDia));
         preencherCardProfissional(calcularProfissionalDestaque(agsDoDia));
         preencherCardResumo(calcularResumo(agsDoDia));
         preencherCardIA(calcularSugestaoIA(agsDoDia));
+
+        // NOVO: Resumo Inteligente
+        const resumoInteligente = gerarResumoDiarioInteligente(
+            agsDoDia.map(ag => ({
+                inicio: ag.inicio || `${ag.data}T${ag.horario}:00`,
+                fim: ag.fim || `${ag.data}T${ag.horarioFim || ag.horario}:00`,
+                cliente: ag.cliente
+                    ? ag.cliente
+                    : (ag.clienteNome || "Cliente"),
+                servico: ag.servico
+                    ? ag.servico
+                    : (ag.servicoNome || "Serviço")
+            }))
+        );
+        preencherResumoInteligente(resumoInteligente);
+
     } catch (error) {
         console.error("Erro ao carregar agendamentos:", error);
         alert("Ocorreu um erro ao carregar os dados do dashboard.");
@@ -273,30 +242,25 @@ function debounce(fn, delay) {
 window.addEventListener("DOMContentLoaded", () => {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            try {
-                const filtroData = document.getElementById("filtro-data");
-                const empresaId = await getEmpresaId(user);
+            const filtroData = document.getElementById("filtro-data");
+            const empresaId = await getEmpresaId(user);
 
-                if (!empresaId) {
-                    alert("Não foi possível identificar sua empresa.");
-                    return;
-                }
-
-                const hojeString = getHojeStringSaoPaulo();
-                const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-
-                if (filtroData) {
-                    filtroData.value = dataInicial;
-                    filtroData.addEventListener("change", debounce(() => {
-                        preencherDashboard(user, filtroData.value);
-                    }, 300));
-                }
-
-                await preencherDashboard(user, dataInicial);
-            } catch (e) {
-                alert("Erro inesperado ao carregar o dashboard.");
-                console.error(e);
+            if (!empresaId) {
+                alert("Não foi possível identificar sua empresa.");
+                return;
             }
+
+            const hojeString = new Date().toISOString().split('T')[0];
+            const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
+
+            if (filtroData) {
+                filtroData.value = dataInicial;
+                filtroData.addEventListener("change", debounce(() => {
+                    preencherDashboard(user, filtroData.value);
+                }, 300));
+            }
+
+            await preencherDashboard(user, dataInicial);
         } else {
             // window.location.href = "login.html";
         }
