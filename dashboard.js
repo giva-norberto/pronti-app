@@ -1,4 +1,4 @@
-// dashboard.js - VERSÃO FINAL COM A LÓGICA DE DATA INTELIGENTE CORRIGIDA
+// dashboard.js - VERSÃO FINAL COM DATA INTELIGENTE BASEADA NA EQUIPA
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -32,62 +32,71 @@ async function getEmpresaId(user) {
     }
 }
 
-async function buscarHorariosDoDono(empresaId) {
+// REVISÃO: Nova função para buscar os horários de TODOS os profissionais
+async function buscarTodosOsHorarios(empresaId) {
     try {
-        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
-        if (!empresaDoc.exists()) return null;
-        const donoId = empresaDoc.data().donoId;
-        if (!donoId) return null;
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios");
-        const horariosSnap = await getDoc(horariosRef);
-        return horariosSnap.exists() ? horariosSnap.data() : null;
+        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+        const profissionaisSnap = await getDocs(profissionaisRef);
+        if (profissionaisSnap.empty) return [];
+
+        const promessasDeHorarios = profissionaisSnap.docs.map(profDoc => {
+            const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profDoc.id, "configuracoes", "horarios");
+            return getDoc(horariosRef);
+        });
+
+        const horariosSnaps = await Promise.all(promessasDeHorarios);
+        return horariosSnaps.map(snap => snap.exists() ? snap.data() : null).filter(Boolean);
     } catch (error) {
-        console.error("Erro ao buscar horários do dono:", error);
-        return null;
+        console.error("Erro ao buscar todos os horários:", error);
+        return [];
     }
 }
 
-// ==========================================================
-// LÓGICA DE DATA INTELIGENTE CORRIGIDA
-// ==========================================================
+
+// REVISÃO: Lógica de data inteligente agora usa os horários de toda a equipa
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
-    const horariosTrabalho = await buscarHorariosDoDono(empresaId);
-    if (!horariosTrabalho) return dataInicial;
+    const todosOsHorarios = await buscarTodosOsHorarios(empresaId);
+    if (todosOsHorarios.length === 0) return dataInicial;
 
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     let dataAtual = new Date(`${dataInicial}T12:00:00`);
 
-    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
-        const dataAtualString = dataAtual.toISOString().split('T')[0];
+    for (let i = 0; i < 90; i++) {
         const nomeDia = diaDaSemana[dataAtual.getDay()];
-        const diaDeTrabalho = horariosTrabalho[nomeDia];
+        let diaDeTrabalho = false;
+        let ultimoHorarioGeral = 0;
 
-        // Verifica se é um dia de trabalho
-        if (diaDeTrabalho && diaDeTrabalho.ativo) {
-            // Se for hoje, verifica se o expediente já encerrou
-            if (dataAtualString === dataInicial) {
-                const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
-                const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
+        // Verifica se ALGUM profissional trabalha no dia e qual o último horário
+        todosOsHorarios.forEach(horarioProf => {
+            if (horarioProf[nomeDia] && horarioProf[nomeDia].ativo) {
+                diaDeTrabalho = true;
+                horarioProf[nomeDia].blocos.forEach(bloco => {
+                    const fimMinutos = timeStringToMinutes(bloco.fim);
+                    if (fimMinutos > ultimoHorarioGeral) {
+                        ultimoHorarioGeral = fimMinutos;
+                    }
+                });
+            }
+        });
+
+        if (diaDeTrabalho) {
+            if (i === 0) { // Se for hoje
                 const agoraEmMinutos = new Date().getHours() * 60 + new Date().getMinutes();
-                
-                // Se o expediente de hoje ainda não acabou, retorna hoje
-                if (agoraEmMinutos < fimDoExpediente) {
-                    return dataAtualString;
+                if (agoraEmMinutos < ultimoHorarioGeral) {
+                    return dataAtual.toISOString().split('T')[0]; // Ainda há expediente hoje
                 }
-                // Se não, continua o loop para achar o próximo dia
             } else {
-                // Se for um dia futuro que é dia de trabalho, retorna ele
-                return dataAtualString;
+                // Se for um dia futuro, retorna ele
+                return dataAtual.toISOString().split('T')[0];
             }
         }
-        // Se não é um dia de trabalho ou o expediente de hoje já acabou, avança para o dia seguinte
         dataAtual.setDate(dataAtual.getDate() + 1);
     }
     return dataInicial; // Retorna a data inicial se não encontrar nada
 }
 
 
-// --- FUNÇÕES DE CÁLCULO ---
+// --- FUNÇÕES DE CÁLCULO (sem alterações) ---
 
 function calcularServicosDestaque(agsDoDia) {
     const servicosContados = agsDoDia.reduce((acc, ag) => {
@@ -116,9 +125,6 @@ function calcularResumo(agsDoDia) {
     return { totalAgendamentos, faturamentoPrevisto, percentualOcupacao };
 }
 
-// ==========================================================
-// CORREÇÃO: Usando 'agsDoDia.length' em vez de 'totalAgendamentos'
-// ==========================================================
 function calcularSugestaoIA(agsDoDia) {
     const percentualOcupacao = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
     if(agsDoDia.length === 0){
@@ -130,7 +136,7 @@ function calcularSugestaoIA(agsDoDia) {
     }
 }
 
-// --- FUNÇÕES DE RENDERIZAÇÃO ---
+// --- FUNÇÕES DE RENDERIZAÇÃO (sem alterações) ---
 
 function preencherAgendaDoDia(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
