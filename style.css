@@ -1,4 +1,6 @@
-/* ========================================   RESET & BASE ======================================== */
+/* ========================================
+   RESET & BASE
+======================================== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     background: #f6f7fb;
@@ -6,7 +8,9 @@ body {
     color: #22223b;
 }
 
-/* =========================================   BARRA LATERAL ========================================= */
+/* =========================================
+   SIDEBAR
+========================================= */
 .sidebar {
     width: 250px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -52,7 +56,7 @@ body {
 .sidebar-links a.active,
 .sidebar-links a:hover {
     background: rgba(255,255,255,0.22);
-    color: white;
+    color: #22223b;
 }
 .sidebar-links a.active {
     font-weight: 700;
@@ -83,7 +87,9 @@ body {
     background: rgba(255,255,255,0.15);
 }
 
-/* =========================================   ÁREA DE CONTEÚDO PRINCIPAL ========================================= */
+/* =========================================
+   MAIN CONTENT AREA
+========================================= */
 .main-content, .container {
     max-width: 1000px;
     margin: 40px auto 40px 290px;
@@ -91,50 +97,193 @@ body {
     box-sizing: border-box;
 }
 
-/* =========================================   SEÇÃO DE CABEÇALHO ========================================= */
-.header-section, .agenda-header {
+/* =========================================
+   HEADER DASHBOARD (VISUAL NOVO/PRONTI)
+========================================= */
+.header-dashboard {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 22px;
-    margin-bottom: 35px;
+    padding: 18px 40px;
+    background: linear-gradient(90deg, #23c6f8 0%, #00ecbc 100%);
+    color: white;
+    margin-bottom: 32px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(79, 172, 254, 0.18);
 }
-.header-content h1, .agenda-header h1 {
-    font-size: 2.1rem;
+.header-dashboard h1 {
+    font-size: 2.2rem;
     font-weight: 700;
-    margin: 0 0 8px 0;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    letter-spacing: 1px;
 }
-.header-content p {
-    font-size: 1.06rem;
-    color: #666;
-}
-.header-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-.btn, .btn-new, .btn-novo, .btn-secondary, .btn-perfil, .btn-add-profissional, .btn-upload {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: #22223b;
-    border-radius: 25px;
-    font-weight: 600;
-    padding: 12px 24px;
+.btn-voltar {
+    background: rgba(255,255,255,0.2);
+    color: white;
     border: none;
+    border-radius: 25px;
+    padding: 7px 19px;
+    font-weight: 500;
+    font-size: 1rem;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    transition: all .2s;
     text-decoration: none;
+    outline: none;
+}
+.btn-voltar:hover {
+    background: rgba(255,255,255,0.35);
+    color: #1976d2;
+}
+.filtro-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.13);
+    padding: 8px 16px;
+    border-radius: 18px;
+}
+.filtro-container label {
+    font-weight: 500;
+    color: white;
     font-size: 1rem;
 }
-.btn:hover, .btn-new:hover, .btn-novo:hover, .btn-secondary:hover, .btn-perfil:hover, .btn-add-profissional:hover, .btn-upload:hover {
-    box-shadow: 0 8px 20px rgba(79, 172, 254, 0.2);
-    transform: translateY(-2px);
+.filtro-container input[type="date"] {
+    background: rgba(255,255,255,0.87);
+    border: none;
+    border-radius: 8px;
+    padding: 7px 13px;
+    color: #22223b;
+    font-weight: 500;
+    font-size: 1rem;
+    min-width: 120px;
 }
 
-/* =========================================   CARDS DE FORMULÁRIO ========================================= */
+/* =========================================
+   DASHBOARD CARDS GRID (VISUAL NOVO)
+========================================= */
+.dashboard-cards {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 28px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+}
+
+/* CARD PADRÃO (VISUAL NOVO) */
+.card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 12px 38px rgba(36, 198, 220, 0.09), 0 1.5px 16px #00ecbc28;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.13s;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.card:hover {
+    box-shadow: 0 24px 50px 0 #27d1f940, 0 5px 30px #00ecbc28;
+    transform: translateY(-4px) scale(1.012);
+}
+.card h3 {
+    margin: 0;
+    padding: 18px 24px;
+    font-size: 1.19rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.1em;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+}
+.card-agenda h3 { background: linear-gradient(90deg, #20b5f6 0%, #07e4ed 100%); }
+.card-servico h3 { background: linear-gradient(90deg, #22b2f7 0%, #0fd7e7 100%); }
+.card-profissional h3 { background: linear-gradient(90deg, #2893e3 0%, #1ed8e6 100%); }
+.card-resumo h3 { background: linear-gradient(90deg, #22b2f7 0%, #0fd7e7 100%); }
+.card-ia h3 { background: linear-gradient(90deg, #6d6ad8 0%, #b388ff 100%); }
+.card-resumo-inteligente h3 { background: linear-gradient(90deg, #23c6f8 0%, #00ecbc 100%); }
+.card-ia { background: linear-gradient(130deg, #6d6ad8 0%, #b388ff 100%); color: #fff; }
+.card-ia .card-body { color: #fff; }
+.card-ia h3 { background: rgba(255,255,255,0.08); }
+.card-body {
+    padding: 24px 24px 18px 24px;
+    font-size: 1.11rem;
+    flex: 1;
+    background: #fff;
+    color: #22223b;
+    min-height: 60px;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+}
+.card-agenda { grid-column: span 2; }
+@media (max-width: 900px) {
+    .card-agenda { grid-column: span 1; }
+}
+.card-agenda .card-body {
+    min-height: 120px;
+    max-height: 340px;
+    overflow-y: auto;
+}
+.card-agendamento {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 13px 19px;
+    margin-bottom: 12px;
+    border-left: 4px solid #22b2f7;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    transition: all 0.2s;
+}
+.card-agendamento:hover {
+    background: #e3f4fe;
+    transform: translateX(6px);
+}
+.horario-destaque {
+    background: linear-gradient(90deg, #22b2f7 0%, #0fd7e7 100%);
+    color: white;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: .98rem;
+    margin-right: 11px;
+}
+.agendamento-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+.agendamento-info strong { color: #22223b; font-size: 1.08rem; margin-bottom: 3px;}
+.agendamento-info span { color: #666; font-size: 0.95rem; }
+.aviso-horarios {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 38px 18px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 2px dashed #cbd5e0;
+}
+.card-resumo .card-body div { margin-bottom: 11px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+.card-resumo .card-body div:last-child { border-bottom: none; }
+.card-resumo-inteligente .card-body div { margin-bottom: 8px; padding: 5px 0; }
+/* ICONES EMOJI */
+.icon-calendar::before { content: "📅"; }
+.icon-star::before { content: "⭐"; }
+.icon-user::before { content: "👤"; }
+.icon-clipboard::before { content: "📊"; }
+.icon-robot::before { content: "🤖"; }
+.icon-lightbulb::before { content: "💡"; }
+
+/* =========================================
+   FORM CARDS & EQUIPE (ANTIGO)
+========================================= */
 .form-card, .card-info {
     background: #ffffff;
     border-radius: 13px;
@@ -162,8 +311,6 @@ body {
     border-color: #4facfe;
     box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.13);
 }
-
-/* =========================================   PAINEL DA EQUIPE ========================================= */
 .profissional-card {
     background: #fff;
     border: 1px solid #e1e8ed;
@@ -189,424 +336,65 @@ body {
 .profissional-nome { font-weight: 600; font-size: 1.11rem; display: block; }
 .profissional-status { display: inline-block; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 4px 13px; border-radius: 15px; font-size: 0.86rem; font-weight: 500; }
 
-/* =========================================   AÇÕES DE FORMULÁRIO ========================================= */
+/* FORM ACTIONS */
 .form-actions { display: flex; gap: 18px; justify-content: flex-end; margin-top: 32px; }
 .btn-submit { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 25px; padding: 14px 0; font-weight: bold; font-size: 1.15rem; width: 100%; margin-top: 18px; box-shadow: 0 2px 8px #d6d2f8; transition: all 0.2s ease; display: block; border: none; cursor: pointer; }
 .btn-submit:hover { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
 
-/* =========================================   MODAL (JANELA SOBREPOSTA) ========================================= */
+/* MODAL OVERLAY */
 .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; right: 0; bottom: 0; background: rgba(60, 57, 80, 0.35); align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex !important; }
 .modal-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 24px #d6d2f8; padding: 32px; max-width: 350px; width: 98vw; text-align: center; }
 
-/* =========================================   CARD PADRÃO PRONTI (SERVIÇOS, CLIENTES) ========================================= */
-.servico-item, .cliente-item { background: #fff; border-radius: 18px; box-shadow: 0 12px 36px rgba(0,0,0,0.11); border: 1.5px solid #e1e8ed; padding: 48px 40px; margin-bottom: 38px; position: relative; transition: box-shadow 0.3s, transform 0.2s; overflow: hidden; width: 100%; max-width: 900px; margin-left: auto; margin-right: auto; }
-.servico-item:hover, .cliente-item:hover { box-shadow: 0 22px 48px rgba(0,0,0,0.17); transform: translateY(-6px); }
-.servico-item h3, .cliente-item h3 { font-size: 1.65rem; font-weight: 700; color: #22223b; margin-bottom: 14px; letter-spacing: 0.7px; }
-.servico-item p, .cliente-item p { color: #565676; font-size: 1.19rem; margin-bottom: 0; line-height: 1.7; }
-.item-acoes { margin-top: 36px; display: flex; gap: 18px; }
-.btn-excluir { background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%) !important; color: #fff !important; font-weight: 700; }
-
-/* =========================================   LOADER (TELA DE CARREGAMENTO) ========================================= */
-.loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f6f7fb; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-.loader-spinner { border: 5px solid #e0e0e0; border-top: 5px solid #4facfe; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+/* LOADER */
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f6f7fb;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+.loader-spinner {
+    border: 5px solid #e0e0e0;
+    border-top: 5px solid #4facfe;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* =========================================   RESPONSIVIDADE ========================================= */
+/* RESPONSIVIDADE */
+@media (max-width: 1200px) {
+    .dashboard-cards {
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+        gap: 18px;
+    }
+    .header-dashboard { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px 15px; }
+    .header-dashboard h1 { font-size: 1.6rem;}
+}
 @media (max-width: 900px) {
     .main-content, .container { margin-left: 0; }
     .sidebar { position: static; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px; flex-direction: row; justify-content: space-between; align-items: center; }
     .sidebar-brand, .sidebar-footer, .sidebar hr { display: none; }
     .sidebar-links { flex-direction: row; overflow-x: auto; }
+    .dashboard-cards { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 }
 @media (max-width: 768px) {
     .main-content, .container { margin: 10px; padding: 18px; border-radius: 10px; }
-    .header-section, .agenda-header { flex-direction: column; align-items: flex-start; }
-    .form-card { padding: 15px 8px; }
+    .header-dashboard { flex-direction: column; gap: 10px; padding: 12px 7px; }
+    .header-dashboard h1 { font-size: 1.16rem;}
+    .dashboard-cards { grid-template-columns: 1fr; gap: 13px; }
+    .card-body { padding: 13px 10px 11px 13px; }
+    .filtro-container { flex-direction: column; gap: 8px; padding: 10px; }
 }
-
-/* ========================================================== */
-/* ESTILOS ADICIONAIS PARA A PÁGINA DE AGENDA                 */
-/* ========================================================== */
-.filtros-agenda {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-}
-.filtro-item {
-    display: flex;
-    flex-direction: column;
-}
-.filtro-item label {
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: #374151;
-    font-size: 0.9rem;
-}
-.card-agendamento {
-    display: grid;
-    grid-template-columns: 80px 1fr auto;
-    gap: 20px;
-    align-items: center;
-    background: #fff;
-    padding: 15px 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    margin-bottom: 15px;
-    border-left: 5px solid #6366F1;
-}
-.agendamento-horario {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #111827;
-    text-align: center;
-    border-right: 1px solid #E5E7EB;
-    padding-right: 20px;
-}
-.agendamento-detalhes .servico-nome {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1F2937;
-    margin-bottom: 5px;
-    display: block;
-}
-.agendamento-detalhes .info-item {
-    font-size: 0.95rem;
-    color: #4B5563;
-    display: block;
-}
-.info-item strong { color: #374151; }
-.agendamento-acoes {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.btn-acao {
-    border: none;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    min-width: 110px;
-    text-align: center;
-}
-.btn-acao:hover { transform: scale(1.05); }
-.btn-concluir { background-color: #D1FAE5; color: #065F46; }
-.btn-concluir:hover { background-color: #A7F3D0; }
-.btn-cancelar { background-color: #FEE2E2; color: #991B1B; }
-.btn-cancelar:hover { background-color: #FECACA; }
-
-/* ==============================================
-   CARD DE AGENDAMENTO PÚBLICO/EXTERNO (REVISADO)
-============================================== */
-
-.card-agendamento {
-    background: linear-gradient(120deg, #f6faff 68%, #e9f3fd 100%);
-    border: none;
-    border-radius: 14px;
-    box-shadow: 0 4px 18px 0 #b4e2fa18, 0 2px 6px #ddeafd55;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-    gap: 8px 18px;
-    align-items: center;
-    min-width: 280px;
-    max-width: 540px;
-    width: 100%;
-    padding: 16px 20px;
-    font-size: 1rem;
-    outline: 2px solid #e7eafd;
-    margin-bottom: 0;
-    transition: box-shadow 0.17s, background 0.17s, outline 0.17s;
-    position: relative;
-}
-
-.card-agendamento:hover {
-    box-shadow: 0 12px 30px #a8d8ff2a, 0 6px 24px #dedbf755;
-    background: linear-gradient(120deg, #f1f5ff 70%, #b5e2ff 110%);
-    outline-color: #3ecfff;
-}
-
-.card-agendamento .ag-col-servico {
-    grid-column: 1 / 2;
-    grid-row: 1;
-}
-
-.card-agendamento .ag-col-pessoas {
-    grid-column: 1 / 2;
-    grid-row: 2;
-    display: flex;
-    flex-direction: column;
-    gap: 2.5px;
-    min-width: 0;
-    word-break: break-word;
-}
-
-.card-agendamento .ag-profissional,
-.card-agendamento .ag-cliente {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.96rem;
-    font-weight: 600;
-    margin-bottom: 1px;
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
-/* REVISÃO: Adicionados estilos para os ícones */
-.card-agendamento .icon {
-    display: inline-block;
-    width: 1.2em;
-    height: 1.2em;
-    margin-right: 2px;
-    background-color: currentColor; /* Usa a cor do texto do pai */
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-}
-.card-agendamento .ag-profissional .icon {
-    color: #1797c5;
-    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>');
-    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>');
-}
-.card-agendamento .ag-cliente .icon {
-    color: #b59100;
-    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>');
-    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>');
-}
-
-.card-agendamento .ag-profissional .tag-label {
-    background: #e3f5fc;
-    color: #1797c5;
-    font-size: 0.85em;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 700;
-    margin-right: 4px;
-    letter-spacing: 0.01em;
-    display: inline-block;
-}
-.card-agendamento .ag-profissional {
-    color: #324b63;
-}
-
-.card-agendamento .ag-cliente .tag-label {
-    background: #fff4cd;
-    color: #b59100;
-    font-size: 0.85em;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 700;
-    margin-right: 4px;
-    letter-spacing: 0.01em;
-    display: inline-block;
-}
-.card-agendamento .ag-cliente {
-    color: #8b6f00;
-}
-
-.card-agendamento .servico-nome {
-    font-weight: 700;
-    color: #1b256b;
-    margin-bottom: 0;
-    font-size: 1.08rem;
-    letter-spacing: 0.01em;
-    line-height: 1.15;
-}
-
-.card-agendamento .ag-horario {
-    display: inline-block;
-    background: #e0f2fe;
-    color: #2196f3;
-    font-weight: 600;
-    font-size: 0.97rem;
-    border-radius: 7px;
-    padding: 2.5px 10px 2px 10px;
-    margin-top: 2px;
-    margin-right: auto;
-    box-shadow: 0 1px 2px #b6d8f855;
-    letter-spacing: 0.05em;
-}
-
-.card-agendamento .ag-col-acoes {
-    grid-column: 2 / 3;
-    grid-row: 1 / 3;
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-    align-items: flex-end;
-    justify-content: center;
-    min-width: 72px;
-}
-
-/* BOTÕES MAIS VIVOS E MODERNOS */
-.card-agendamento .btn-acao-card {
-    border: none;
-    padding: 7px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 1.18em;
-    transition: background 0.18s, box-shadow 0.18s, color 0.16s, transform 0.12s, filter 0.2s;
-    outline: none;
-    min-width: 36px;
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2.5px solid transparent;
-    box-shadow: 0 1px 8px #b0e1ff22;
-    filter: brightness(1.00);
-}
-
-.card-agendamento .btn-nao-compareceu {
-    background: linear-gradient(135deg, #ffe066 0%, #ffd600 100%);
-    color: #ad8a00;
-    border-color: #ffd200;
-    box-shadow: 0 0 10px 0 #ffe06699;
-}
-.card-agendamento .btn-nao-compareceu:hover {
-    background: linear-gradient(135deg, #fff105 0%, #ffe066 100%);
-    color: #7c5c00;
-    border-color: #ffc400;
-    filter: brightness(1.15);
-    transform: translateY(-1px) scale(1.10);
-}
-
-.card-agendamento .btn-cancelar {
-    background: linear-gradient(135deg, #ff3b3b 0%, #ff7878 100%);
-    color: #fff;
-    border-color: #e60026;
-    box-shadow: 0 0 10px 0 #ff3b3b44;
-}
-.card-agendamento .btn-cancelar:hover {
-    background: linear-gradient(135deg, #ff5252 0%, #ff3b3b 100%);
-    color: #fff;
-    border-color: #ff3b3b;
-    filter: brightness(1.18) contrast(1.05);
-    transform: translateY(-1px) scale(1.10);
-}
-
-.card-agendamento .btn-acao-card:not(.btn-cancelar):not(.btn-nao-compareceu) {
-    background: linear-gradient(135deg, #21d4fd 0%, #b721ff 100%);
-    color: #fff;
-    border-color: #21d4fd;
-    box-shadow: 0 0 10px 0 #21d4fd55;
-}
-.card-agendamento .btn-acao-card:not(.btn-cancelar):not(.btn-nao-compareceu):hover {
-    background: linear-gradient(135deg, #b721ff 0%, #21d4fd 100%);
-    color: #fff;
-    border-color: #b721ff;
-    filter: brightness(1.20);
-    transform: translateY(-1px) scale(1.10);
-}
-
-/* Responsivo para telas pequenas */
-@media (max-width: 700px) {
-    .card-agendamento {
-        min-width: 0;
-        max-width: 100vw;
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
-        gap: 7px 0;
-    }
-    .card-agendamento .ag-col-acoes {
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-start;
-        grid-column: 1 / 2;
-        grid-row: 3;
-        margin-top: 4px;
-        gap: 8px;
-    }
-}
-/* Container para o link da vitrine */
-.vitrine-link-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #f5f7ff;
-    border: 1.5px solid #e0e7ff;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-top: 6px;
-    box-shadow: 0 2px 12px #6366f12c;
-    flex-wrap: wrap;
-}
-
-.vitrine-url {
-    font-size: 1.01em;
-    color: #4f46e5;
-    word-break: break-all;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: none;
-    padding: 0 3px;
-    border-radius: 6px;
-    flex: 1 1 auto;
-    min-width: 170px;
-}
-
-.vitrine-actions {
-    display: flex;
-    gap: 7px;
-}
-
-/* Botão de copiar e abrir */
-.btn-copy, .btn-open {
-    background: linear-gradient(90deg, #818cf8 0%, #38bdf8 100%);
-    color: #fff;
-    border: none;
-    border-radius: 7px;
-    padding: 7px 18px 7px 14px;
-    font-size: 1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.18s, transform 0.13s, box-shadow 0.14s;
-    box-shadow: 0 1px 6px #38bdf83a;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    outline: none;
-    text-decoration: none;
-}
-.btn-copy::before {
-    content: '\f0c5'; /* ícone FontAwesome: clipboard */
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    margin-right: 5px;
-    font-size: 1em;
-    vertical-align: middle;
-}
-.btn-open::before {
-    content: '\f35d'; /* ícone FontAwesome: external-link-alt */
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    margin-right: 5px;
-    font-size: 1em;
-    vertical-align: middle;
-}
-/* Se não usar fontawesome, pode remover os ::before e usar texto simples ou SVG. */
-
-.btn-copy:hover, .btn-open:hover {
-    background: linear-gradient(90deg, #6366f1 0%, #0ea5e9 100%);
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 3px 12px #38bdf86b;
-    color: #fff;
-}
-
 @media (max-width: 600px) {
     .main-content, .container {
         margin-left: 0;
@@ -622,56 +410,17 @@ body {
         max-width: 99vw;
         min-width: 0;
     }
-    .header-section {
+    .header-dashboard {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
-    }
-    .header-actions {
-        width: 100%;
-        padding: 0;
-        margin: 0;
-    }
-    .btn-new, .btn-submit {
-        width: 100%;
-        font-size: 1.09em;
-        padding: 15px 0;
-    }
-    .logo-upload-container {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    .logo-upload-container img#logo-preview {
-        max-width: 90px;
-        max-height: 90px;
-        width: 90px;
-        height: 90px;
-        border-radius: 14px;
-        margin: 0 auto;
-    }
-    .form-group input, .form-group textarea {
-        font-size: 1.08em;
-        padding: 14px 12px;
-    }
-    .form-section h3 { font-size: 1.07em; }
-    .vitrine-link-container {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 6px;
         padding: 10px 6px;
     }
-    .vitrine-actions {
-        flex-direction: row;
-        gap: 3vw;
-        justify-content: flex-start;
-    }
+    .header-actions { width: 100%; padding: 0; margin: 0; }
+    .btn-new, .btn-submit { width: 100%; font-size: 1.09em; padding: 15px 0; }
+    .logo-upload-container { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .form-group input, .form-group textarea { font-size: 1.08em; padding: 14px 12px; }
+    .form-section h3 { font-size: 1.07em; }
     /* Ajuste para esconder o menu lateral fixo se houver */
-    .sidebar {
-        display: none;
-    }
+    .sidebar { display: none; }
 }
-
-/* ======= FIM DO CSS PRINCIPAL ======= */
-
-/* Para a HOME (index), use um CSS separado (.inicio-container.css) com .inicio-container no main */
