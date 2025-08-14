@@ -1,4 +1,4 @@
-// dashboard.js - VERSÃO DEFINITIVA com CORREÇÃO DE FUSO HORÁRIO E DATA INTELIGENTE PARA O BRASIL (America/Sao_Paulo)
+// dashboard.js - VERSÃO DEFINITIVA COM FUSO HORÁRIO CORRIGIDO E DATA LOCAL DE SÃO PAULO GARANTIDA
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -51,8 +51,17 @@ async function buscarTodosOsHorarios(empresaId) {
 
 // Retorna a data e hora atual no fuso horário de São Paulo.
 function getAgoraEmSaoPaulo() {
-    // Força o horário para o Brasil, independente do fuso do navegador/servidor
     return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+}
+
+// Retorna a string "YYYY-MM-DD" da data local de São Paulo.
+function getHojeStringSaoPaulo() {
+    const hojeSP = getAgoraEmSaoPaulo();
+    return [
+      hojeSP.getFullYear(),
+      String(hojeSP.getMonth() + 1).padStart(2, "0"),
+      String(hojeSP.getDate()).padStart(2, "0")
+    ].join("-");
 }
 
 // Data inteligente baseada em toda a equipe e fuso horário do Brasil
@@ -89,11 +98,19 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
                 const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
                 if (agoraEmMinutos < ultimoHorarioGeral) {
                     // Ainda há expediente hoje
-                    return dataAtual.toISOString().split('T')[0];
+                    return [
+                        dataAtual.getFullYear(),
+                        String(dataAtual.getMonth() + 1).padStart(2, "0"),
+                        String(dataAtual.getDate()).padStart(2, "0")
+                    ].join("-");
                 }
             } else {
                 // Se for um dia futuro, retorna ele
-                return dataAtual.toISOString().split('T')[0];
+                return [
+                    dataAtual.getFullYear(),
+                    String(dataAtual.getMonth() + 1).padStart(2, "0"),
+                    String(dataAtual.getDate()).padStart(2, "0")
+                ].join("-");
             }
         }
         dataAtual.setDate(dataAtual.getDate() + 1); // Avança para o próximo dia (mantendo local)
@@ -238,8 +255,7 @@ window.addEventListener("DOMContentLoaded", () => {
             }
 
             // Pega a data de hoje em São Paulo, independente do fuso do servidor/cliente
-            const hojeSP = getAgoraEmSaoPaulo();
-            const hojeString = hojeSP.toISOString().split('T')[0];
+            const hojeString = getHojeStringSaoPaulo();
             const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
 
             if (filtroData) {
@@ -253,6 +269,15 @@ window.addEventListener("DOMContentLoaded", () => {
         } else {
             // window.location.href = "login.html";
         }
+    });
+
+    const btnVoltar = document.getElementById('btn-voltar');
+    if (btnVoltar) {
+        btnVoltar.addEventListener('click', () => {
+            window.location.href = "index.html";
+        });
+    }
+});
     });
 
     const btnVoltar = document.getElementById('btn-voltar');
