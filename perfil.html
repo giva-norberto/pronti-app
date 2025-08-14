@@ -8,128 +8,76 @@
     <!-- FontAwesome (opcional, para ícones) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .main-content {
-            margin-left: 220px;
-            padding: 40px 32px 32px 32px;
+        body {
+            background: linear-gradient(120deg, #eef2ff 0%, #f0fdfa 100%);
         }
-        @media (max-width: 900px) {
-            .main-content { margin-left: 60px; }
-        }
-        .logo-upload-container {
+        .main-content.profile-main {
             display: flex;
             align-items: center;
-            gap: 18px;
-            margin-top: 6px;
+            justify-content: center;
+            min-height: 85vh;
+            margin-left: 220px;
+            padding: 0;
         }
-        .logo-upload-container img#logo-preview {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 2px solid #e0e7ff;
-            background: #eef2ff;
-            box-shadow: 0 1px 4px #0001;
-            display: block;
+        @media (max-width: 900px) {
+            .main-content.profile-main { margin-left: 60px; }
         }
-        .logo-upload-actions {
+        @media (max-width: 700px) {
+            .main-content.profile-main { margin-left: 0; padding: 0 4vw; }
+        }
+        .profile-container {
             display: flex;
-            flex-direction: column;
-            gap: 9px;
+            gap: 60px;
+            width: 100%;
+            max-width: 1050px;
+            align-items: flex-start;
+            justify-content: center;
         }
-        .btn-upload {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        .profile-sidebar {
+            min-width: 250px;
+            max-width: 270px;
+            padding: 25px 0 0 0;
+            text-align: left;
+        }
+        .profile-sidebar h1 {
+            font-size: 2rem;
+            color: #312e81;
+            font-weight: bold;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .profile-sidebar p {
+            color: #64748b;
+            margin-bottom: 26px;
+        }
+        .sidebar-vitrine-btn {
+            display: inline-block;
+            background: linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%);
             color: #fff;
-            border: none;
-            border-radius: 25px;
-            font-weight: 600;
-            padding: 12px 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
+            border-radius: 22px;
+            font-weight: 700;
+            font-size: 1em;
+            padding: 11px 24px;
+            margin-top: 10px;
+            text-decoration: none;
+            transition: background .18s, transform .12s;
+            box-shadow: 0 2px 10px #06b6d425;
         }
-        .btn-upload:hover {
-            background: linear-gradient(135deg, #3730a3 0%, #2563eb 100%);
-            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.2);
-            transform: translateY(-2px);
+        .sidebar-vitrine-btn:hover {
+            background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
+            transform: translateY(-2px) scale(1.04);
         }
-    </style>
-</head>
-<body>
-    <!-- Menu lateral incluso dinamicamente -->
-    <div id="sidebar-placeholder"></div>
-
-    <main class="main-content">
-        <div class="header-section">
-            <div class="header-content">
-                <h1 id="main-title">Meu Perfil e Configurações</h1>
-                <p>Defina aqui todas as informações do seu negócio.</p>
-            </div>
-            <div class="header-actions">
-                <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">Abrir Minha Vitrine</a>
-            </div>
-        </div>
-
-        <div class="form-card">
-            <form id="form-perfil">
-                <div class="form-section">
-                    <h3>Informações do Negócio</h3>
-                    <div class="form-group">
-                        <label for="nomeNegocio">Nome do Negócio</label>
-                        <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
-                    </div>
-                    <div class="form-group" id="container-link-vitrine" style="display: none;">
-                        <label>Link da sua Vitrine Pública</label>
-                        <div class="vitrine-link-container">
-                            <div class="vitrine-url" id="url-vitrine-display"></div>
-                            <div class="vitrine-actions">
-                                <button type="button" id="btn-copiar-link" class="btn-copy">Copiar</button>
-                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">Abrir</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
-                        <div class="logo-upload-container">
-                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logótipo">
-                            <div class="logo-upload-actions">
-                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                                <button type="button" id="btn-upload-logo" class="btn-upload">Escolher Arquivo</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="descricao">Descrição Curta</label>
-                        <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
-                </div>
-            </form>
-        </div>
-    </main>
-    
-    <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
-        <!-- O conteúdo do seu modal vai aqui dentro -->
-    </div>
-    <script>
-    // Inclui o menu-lateral.html dinamicamente (padrão unificado)
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Destaca o item de perfil após inclusão do menu
-          const links = document.querySelectorAll('.sidebar-links a');
-          links.forEach(link => link.classList.remove('active'));
-          const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
-          if (perfilLink) {
-              perfilLink.classList.add('active');
-          }
-        });
-    });
-    </script>
-    <script src="perfil.js" type="module"></script>
-</body>
-</html>
+        .profile-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 6px 40px #4f46e515, 0 1.5px 5px #4f46e510;
+            padding: 42px 36px 30px 36px;
+            max-width: 410px;
+            width: 100%;
+        }
+        @media (max-width: 900px) {
+            .profile-container { flex-direction: column; gap: 34px; align-items: center; }
+            .profile-sidebar, .profile-card { max-width: 98vw; min-width: 0; }
+            .profile-card { padding: 28px 8vw 22px 8vw; }
+        }
+        /* Card Form Elements
