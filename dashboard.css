@@ -9,7 +9,7 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #f0f2f5; /* Fundo cinza claro, como no seu layout esperado */
+    background-color: #f0f2f5;
     color: #333;
 }
 
@@ -58,27 +58,52 @@ body {
     font-family: inherit;
 }
 
-/* --- GRELHA DOS CARDS --- */
-.dashboard-grid {
-    display: grid;
-    gap: 25px;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto;
-    grid-template-areas: 
-        "agenda agenda servico"
-        "agenda agenda prof"
-        "resumo ia inteligente";
-}
-
-.card {
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-    padding: 20px;
+/* --- NOVA GRID DO DASHBOARD --- */
+.dashboard-grid-v2 {
     display: flex;
     flex-direction: column;
+    gap: 32px;
 }
 
+.row-main-cards {
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+}
+.card {
+    flex: 1;
+    min-width: 220px;
+    min-height: 170px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px #0001;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.row-mini-cards {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 0;
+}
+.mini-card {
+    width: 240px;
+    min-width: 200px;
+    min-height: 120px;
+    background: #f7faff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px #0000;
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- HEADERS DOS CARDS --- */
 .card h3 {
     font-size: 1.1rem;
     font-weight: 600;
@@ -91,35 +116,17 @@ body {
     gap: 8px;
 }
 
-.card-body { font-size: 1rem; color: #475569; }
-.card-body-destaque { font-size: 1.5rem; font-weight: 600; color: #1e293b; text-align: center; flex-grow: 1; justify-content: center; display: flex; flex-direction: column; }
-.card-body-destaque strong { display: block; }
-.card-body-destaque span { font-size: 1rem; font-weight: 400; color: #64748b; }
-
-/* Posicionamento e cores dos cards */
-.card-agenda { 
-    grid-area: agenda;
-    background: linear-gradient(to top right, #f0f9ff, #e0f2fe);
-}
-.card-agenda h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); }
+.card-agenda { background: linear-gradient(to top right, #f0f9ff, #e0f2fe); }
+.card-agenda h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); color: #fff; }
 #agenda-resultado { max-height: 450px; overflow-y: auto; padding-right: 10px; }
 
-.card-servico { grid-area: servico; }
-.card-servico h3 { background: linear-gradient(to right, #f59e0b, #facc15); }
+.card-servico h3 { background: linear-gradient(to right, #f59e0b, #facc15); color: #fff; }
+.card-profissional h3 { background: linear-gradient(to right, #10b981, #6ee7b7); color: #fff; }
+.card-resumo h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); color: #fff; }
+.card-ia h3 { background: linear-gradient(to right, #8b5cf6, #a78bfa); color: #fff; }
+.card-resumo-inteligente h3 { background: linear-gradient(to right, #10b981, #6ee7b7); color: #fff; }
 
-.card-profissional { grid-area: prof; }
-.card-profissional h3 { background: linear-gradient(to right, #10b981, #6ee7b7); }
-
-.card-resumo { grid-area: resumo; }
-.card-resumo h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); }
-
-.card-ia { grid-area: ia; }
-.card-ia h3 { background: linear-gradient(to right, #8b5cf6, #a78bfa); }
-
-.card-resumo-inteligente { grid-area: inteligente; }
-.card-resumo-inteligente h3 { background: linear-gradient(to right, #10b981, #6ee7b7); }
-
-/* Detalhes internos dos cards */
+/* --- DETALHES INTERNOS DOS CARDS --- */
 .resumo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
 .resumo-item:last-child { border-bottom: none; }
 .resumo-item strong { color: #1e293b; }
@@ -132,10 +139,38 @@ body {
 .agendamento-info span { font-size: 0.9rem; }
 .aviso-horarios { text-align: center; padding-top: 20px; color: #64748b; }
 
-/* Ícones (placeholders) */
+.card-body { font-size: 1rem; color: #475569; }
+.card-body-destaque { font-size: 1.5rem; font-weight: 600; color: #1e293b; text-align: center; flex-grow: 1; justify-content: center; display: flex; flex-direction: column; }
+.card-body-destaque strong { display: block; }
+.card-body-destaque span { font-size: 1rem; font-weight: 400; color: #64748b; }
+
+/* --- ÍCONES (placeholders) --- */
 .icon-calendar::before { content: "📅"; }
 .icon-star::before { content: "⭐"; }
 .icon-user::before { content: "👤"; }
 .icon-clipboard::before { content: "📊"; }
 .icon-robot::before { content: "🤖"; }
 .icon-lightbulb::before { content: "💡"; }
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 1050px) {
+    .row-main-cards {
+        flex-direction: column;
+        gap: 16px;
+    }
+    .card {
+        min-width: unset;
+        min-height: 170px;
+    }
+}
+@media (max-width: 700px) {
+    .row-main-cards, .row-mini-cards {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+    .mini-card {
+        width: 100%;
+        min-width: unset;
+    }
+}
