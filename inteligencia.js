@@ -1,4 +1,4 @@
-// inteligencia.js - COMPLETO E REVISADO
+// Módulo de Inteligência para Resumo Diário
 
 // Funcionalidades de análise inteligente dos agendamentos
 export function gerarResumoDiarioInteligente(agendamentos) {
@@ -17,7 +17,7 @@ export function gerarResumoDiarioInteligente(agendamentos) {
 
     // Calcular faturamento estimado
     const faturamentoEstimado = agendamentos.reduce((total, ag) => {
-        // REVISÃO: Usa o servicoPreco que agora é enviado do dashboard.js
+        // REVISÃO: Usa o servicoPreco que agora é enviado do dashboard.js para maior precisão
         return total + (Number(ag.servicoPreco) || 0);
     }, 0);
 
@@ -30,7 +30,6 @@ export function gerarResumoDiarioInteligente(agendamentos) {
             const fimAtual = new Date(agendamentosOrdenados[i].fim);
             const inicioProximo = new Date(agendamentosOrdenados[i + 1].inicio);
             
-            // Garante que as datas são válidas antes de calcular
             if (!isNaN(fimAtual) && !isNaN(inicioProximo)) {
                 const duracaoMinutos = (inicioProximo - fimAtual) / (1000 * 60);
                 if (duracaoMinutos > maiorDuracao) {
