@@ -6,7 +6,6 @@
     <title>Meu Perfil e Configurações - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <style>
-        /* Ajuste para a logo do perfil ficar centralizada, redonda e bonita */
         .logo-upload-container {
             display: flex;
             align-items: center;
@@ -28,7 +27,6 @@
             flex-direction: column;
             gap: 9px;
         }
-        /* Botões de upload (sobrescreve se style.css não carregar) */
         .btn-upload {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: #fff;
@@ -46,7 +44,6 @@
             box-shadow: 0 8px 20px rgba(79, 172, 254, 0.2);
             transform: translateY(-2px);
         }
-        /* Responsividade para a logo e upload */
         @media (max-width: 600px) {
             .logo-upload-container {
                 flex-direction: column;
@@ -117,15 +114,7 @@
                         <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
                     </div>
                 </div>
-                
-                <div class="form-section" id="secao-equipe" style="display: none;">
-                    <h3>Equipe de Profissionais</h3>
-                    <div id="lista-profissionais-painel"></div>
-                    <button type="button" id="btn-add-profissional" class="btn-new" style="margin-top: 15px;">
-                        + Adicionar Novo Funcionário
-                    </button>
-                </div>
-                
+                <!-- A seção de equipe FOI REMOVIDA conforme solicitado -->
                 <div class="form-actions">
                     <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
                 </div>
