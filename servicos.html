@@ -1,129 +1,242 @@
-este é o arquivo serviços. valide e me retorne compelto pra chamr a tela serviços <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Perfil e Configurações - Pronti IA</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones se quiser usar -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-      .main-content {
-        margin-left: 220px;
-        padding: 40px 32px 32px 32px;
-      }
-      @media (max-width: 900px) {
-        .main-content { margin-left: 60px; }
-      }
-      .logo-upload-container {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          margin-top: 6px;
-      }
-      .logo-upload-container img#logo-preview {
-          width: 80px;
-          height: 80px;
-          object-fit: cover;
-          border-radius: 50%;
-          border: 2px solid #e0e7ff;
-          background: #eef2ff;
-          box-shadow: 0 1px 4px #0001;
-          display: block;
-      }
-      .logo-upload-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 9px;
-      }
-      .btn-upload {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-          color: #fff;
-          border: none;
-          border-radius: 25px;
-          font-weight: 600;
-          padding: 12px 24px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.2s;
-      }
-      .btn-upload:hover {
-          background: linear-gradient(135deg, #3730a3 0%, #2563eb 100%);
-          box-shadow: 0 8px 20px rgba(79, 172, 254, 0.2);
-          transform: translateY(-2px);
-      }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pronti - Serviços</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <!-- Menu lateral incluso dinamicamente -->
-    <div id="sidebar-placeholder"></div>
-    <main class="main-content">
-        <div class="header-section">
-            <div class="header-content">
-                <h1 id="main-title">Meu Perfil e Configurações</h1>
-                <p>Defina aqui todas as informações do seu negócio.</p>
-            </div>
-            <div class="header-actions">
-                <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">Abrir Minha Vitrine</a>
-            </div>
-        </div>
-
-        <div class="form-card">
-            <form id="form-perfil">
-                <div class="form-section">
-                    <h3>Informações do Negócio</h3>
-                    <div class="form-group">
-                        <label for="nomeNegocio">Nome do Negócio</label>
-                        <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
-                    </div>
-                    <div class="form-group" id="container-link-vitrine" style="display: none;">
-                        <label>Link da sua Vitrine Pública</label>
-                        <div class="vitrine-link-container">
-                            <div class="vitrine-url" id="url-vitrine-display"></div>
-                            <div class="vitrine-actions">
-                                <button type="button" id="btn-copiar-link" class="btn-copy">Copiar</button>
-                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">Abrir</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
-                        <div class="logo-upload-container">
-                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logótipo">
-                            <div class="logo-upload-actions">
-                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                                <button type="button" id="btn-upload-logo" class="btn-upload">Escolher Arquivo</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="descricao">Descrição Curta</label>
-                        <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
-                </div>
-            </form>
-        </div>
-    </main>
-
-    <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
-        <!-- O conteúdo do seu modal vai aqui dentro -->
+ <aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <div class="sidebar-links">
+        <a href="dashboard.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard</a>
+        <a href="servicos.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path></svg> Serviços</a>
+        <a href="agenda.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Agenda</a>
+        <a href="clientes.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Clientes</a>
+        <a href="equipe.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Equipe</a>
+        <a href="perfil.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Meu Perfil</a>
     </div>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16,17 21,12 16,7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Sair
+        </button>
+    </div>
+</aside>
 
-    <script>
-    // Inclui o menu-lateral.html dinamicamente
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-        });
-    });
-    </script>
-    <script src="firebase-config.js" type="module"></script>
-    <script src="perfil.js" type="module"></script>
+  <main class="main-content">
+    <h1>Nossos Serviços</h1>
+    <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
+    <div id="lista-servicos" style="margin-top:20px;"></div>
+  </main>
+
+  <script src="servicos.js" type="module"></script>
+
+  <div id="custom-confirm-modal" class="modal-overlay">
+      <div class="modal-box">
+          <h2 id="modal-titulo"></h2>
+          <p id="modal-mensagem"></p>
+          <div class="modal-botoes">
+              <button id="modal-btn-cancelar">Cancelar</button>
+              <button id="modal-btn-confirmar">Confirmar</button>
+          </div>
+      </div>
+  </div>
+
+  <style>
+      /* Adicionada uma regra para o conteúdo principal para controlar o empilhamento */
+      .main-content {
+          position: relative;
+          z-index: 1;
+      }
+
+      /* Estilos para o Modal de Confirmação (COM Z-INDEX AUMENTADO) */
+      .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.6);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999; /* MUITO ALTO PARA GARANTIR QUE FICA NO TOPO */
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+      }
+
+      /* Classe 'ativo' é adicionada pelo JS para mostrar o modal */
+      .modal-overlay.ativo {
+          opacity: 1;
+          pointer-events: auto;
+      }
+
+      .modal-box {
+          background: white;
+          padding: 30px;
+          border-radius: 12px;
+          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+          text-align: center;
+          max-width: 420px;
+          width: 90%;
+          transform: scale(0.95);
+          transition: transform 0.3s ease;
+      }
+
+      .modal-overlay.ativo .modal-box {
+          transform: scale(1);
+      }
+
+      .modal-box h2 {
+          margin-top: 0;
+          font-size: 1.5em;
+          color: #333;
+      }
+
+      .modal-box p {
+          margin-bottom: 20px;
+          font-size: 1.1em;
+          color: #555;
+      }
+
+      .modal-botoes {
+          display: flex;
+          justify-content: center;
+          gap: 15px;
+          margin-top: 20px;
+      }
+
+      .modal-botoes button {
+          padding: 12px 25px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 1em;
+          font-weight: bold;
+          transition: background-color 0.2s, transform 0.2s;
+      }
+
+      .modal-botoes button:hover {
+          transform: translateY(-2px);
+      }
+
+      #modal-btn-confirmar {
+          background-color: #d9534f;
+          color: white;
+      }
+      #modal-btn-confirmar:hover {
+          background-color: #c9302c;
+      }
+
+      #modal-btn-cancelar {
+          background-color: #f0f0f0;
+          color: #333;
+      }
+      #modal-btn-cancelar:hover {
+          background-color: #e0e0e0;
+      }
+
+      /* Estilos para os cartões de serviços */
+      .servico-card {
+          background: white;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 20px;
+          margin-bottom: 15px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          transition: box-shadow 0.2s;
+      }
+
+      .servico-card:hover {
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      }
+
+      .servico-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 10px;
+      }
+
+      .servico-titulo {
+          font-size: 1.3em;
+          font-weight: bold;
+          color: #333;
+          margin: 0;
+      }
+
+      .servico-categoria {
+          background: #007bff;
+          color: white;
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.8em;
+          font-weight: bold;
+      }
+
+      .servico-descricao {
+          color: #666;
+          margin: 10px 0;
+          line-height: 1.4;
+      }
+
+      .servico-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 15px;
+          padding-top: 15px;
+          border-top: 1px solid #f0f0f0;
+      }
+
+      .servico-preco {
+          font-size: 1.2em;
+          font-weight: bold;
+          color: #28a745;
+      }
+
+      .servico-duracao {
+          color: #666;
+          font-size: 0.9em;
+      }
+
+      .servico-acoes {
+          display: flex;
+          gap: 10px;
+      }
+
+      .btn-acao {
+          padding: 8px 12px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.9em;
+          transition: background-color 0.2s;
+      }
+
+      .btn-editar {
+          background-color: #ffc107;
+          color: #333;
+      }
+
+      .btn-editar:hover {
+          background-color: #e0a800;
+      }
+
+      .btn-excluir {
+          background-color: #dc3545;
+          color: white;
+      }
+
+      .btn-excluir:hover {
+          background-color: #c82333;
+      }
+  </style>
+<script src="perfil.js" type="module"></script>
+
 </body>
 </html>
