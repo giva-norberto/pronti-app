@@ -51,10 +51,9 @@ async function buscarTodosOsHorarios(empresaId) {
 }
 
 function getAgoraEmSaoPaulo() {
-    // Horário local de São Paulo, seguro para browsers e Node.js
     const local = new Date();
     const utc = local.getTime() + (local.getTimezoneOffset() * 60000);
-    const offset = -3; // Horário padrão de Brasília (corrige para horário de verão se necessário)
+    const offset = -3;
     const brasil = new Date(utc + (3600000 * offset));
     return brasil;
 }
@@ -62,9 +61,9 @@ function getAgoraEmSaoPaulo() {
 function getHojeStringSaoPaulo() {
     const hojeSP = getAgoraEmSaoPaulo();
     return [
-      hojeSP.getFullYear(),
-      String(hojeSP.getMonth() + 1).padStart(2, "0"),
-      String(hojeSP.getDate()).padStart(2, "0")
+        hojeSP.getFullYear(),
+        String(hojeSP.getMonth() + 1).padStart(2, "0"),
+        String(hojeSP.getDate()).padStart(2, "0")
     ].join("-");
 }
 
@@ -94,7 +93,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
         });
 
         if (diaDeTrabalho) {
-            if (i === 0) { // Hoje
+            if (i === 0) {
                 const agoraSP = getAgoraEmSaoPaulo();
                 const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
                 if (agoraEmMinutos < ultimoHorarioGeral) {
@@ -125,7 +124,7 @@ function calcularServicosDestaque(agsDoDia) {
         acc[nome] = (acc[nome] || 0) + 1;
         return acc;
     }, {});
-    const servicoDestaque = Object.entries(servicosContados).sort((a,b) => b[1] - a[1])[0];
+    const servicoDestaque = Object.entries(servicosContados).sort((a, b) => b[1] - a[1])[0];
     return servicoDestaque ? servicoDestaque[0] : null;
 }
 
@@ -135,7 +134,7 @@ function calcularProfissionalDestaque(agsDoDia) {
         acc[nome] = (acc[nome] || 0) + 1;
         return acc;
     }, {});
-    const profDestaque = Object.entries(profsContados).sort((a,b) => b[1] - a[1])[0];
+    const profDestaque = Object.entries(profsContados).sort((a, b) => b[1] - a[1])[0];
     return profDestaque ? { nome: profDestaque[0], qtd: profDestaque[1] } : null;
 }
 
@@ -148,7 +147,7 @@ function calcularResumo(agsDoDia) {
 
 function calcularSugestaoIA(agsDoDia) {
     const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
-    if(agsDoDia.length === 0){
+    if (agsDoDia.length === 0) {
         return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
     } else if (ocupacaoPercent < 50) {
         return "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
@@ -169,25 +168,21 @@ function preencherAgendaDoDiaInteligente(agsDoDia) {
         return;
     }
 
-    // Pega o horário atual (HH:MM) no fuso de SP
     const agoraSP = getAgoraEmSaoPaulo();
     const horaAtual = String(agoraSP.getHours()).padStart(2, "0") + ":" + String(agoraSP.getMinutes()).padStart(2, "0");
 
-    // Ordena todos e pega só os próximos a partir de agora, ou todos se for para outro dia
     const agsOrdenados = agsDoDia
         .slice()
         .sort((a, b) => a.horario.localeCompare(b.horario));
 
-    // Se for hoje, mostra só os que ainda vão acontecer, senão mostra do começo do dia
     let agsFuturos = agsOrdenados;
     const filtroData = document.getElementById("filtro-data");
     if (filtroData && filtroData.value === getHojeStringSaoPaulo()) {
         agsFuturos = agsOrdenados.filter(ag => ag.horario >= horaAtual);
-        if (agsFuturos.length === 0) agsFuturos = agsOrdenados.slice(-3); // Se já passou tudo, mostra últimos 3
+        if (agsFuturos.length === 0) agsFuturos = agsOrdenados.slice(-3);
     }
     const agsVisiveis = agsFuturos.slice(0, 3);
 
-    // Renderiza os próximos até 3 agendamentos
     agsVisiveis.forEach(ag => {
         agendaContainer.innerHTML += `
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
@@ -196,7 +191,6 @@ function preencherAgendaDoDiaInteligente(agsDoDia) {
         `;
     });
 
-    // Se houver mais, mostra aviso/link para agenda completa
     if (agsFuturos.length > 3) {
         agendaContainer.innerHTML += `
             <div style="margin-top: 6px; color: #679;">
