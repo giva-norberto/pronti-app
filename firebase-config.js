@@ -1,11 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // Configuração do Firebase do seu projeto
 export const firebaseConfig = {
-  // A CHAVE CORRETA DO SEU PAINEL ESTÁ AQUI
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", 
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
@@ -19,3 +18,6 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);      // Firestore (banco de dados)
 export const auth = getAuth(app);         // Autenticação
 export const storage = getStorage(app);   // Storage (arquivos)
+
+// --- GARANTE QUE O USUÁRIO SE MANTÉM LOGADO ENTRE AS PÁGINAS ---
+setPersistence(auth, browserLocalPersistence).catch(console.error);
