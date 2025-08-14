@@ -1,6 +1,7 @@
-// dashboard.js - VERSÃO REVISADA E FUNCIONAL
+// dashboard.js - VERSÃO REVISADA E FUNCIONAL (PAINEL INTELIGENTE)
 // Fuso horário garantido na string de data e lógica robusta de data inteligente para o Brasil.
 // Não pula o dia se ainda houver expediente hoje e a tela não trava!
+// Agenda do Dia mostra apenas os próximos 3 agendamentos (ou todos se menos de 3) + botão/link para "ver agenda completa"
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -53,16 +54,13 @@ async function buscarTodosOsHorarios(empresaId) {
 
 // Retorna a data e hora atual no fuso horário de São Paulo.
 function getAgoraEmSaoPaulo() {
-    // Este método é seguro, funciona em browsers e Node.js
     const local = new Date();
     const utc = local.getTime() + (local.getTimezoneOffset() * 60000);
-    // Offset -3 para São Paulo (corrige para horário de verão se for o caso)
     const offset = -3; // Horário padrão de Brasília
     const brasil = new Date(utc + (3600000 * offset));
     return brasil;
 }
 
-// MAIS SEGURO: faz a string "YYYY-MM-DD" para a data local de São Paulo
 function getHojeStringSaoPaulo() {
     const hojeSP = getAgoraEmSaoPaulo();
     return [
@@ -72,13 +70,11 @@ function getHojeStringSaoPaulo() {
     ].join("-");
 }
 
-// Data inteligente baseada em toda a equipe e fuso horário do Brasil
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     const todosOsHorarios = await buscarTodosOsHorarios(empresaId);
     if (todosOsHorarios.length === 0) return dataInicial;
 
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    // dataInicial: "YYYY-MM-DD"
     let partes = dataInicial.split('-');
     let dataAtual = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0, 0);
 
@@ -101,11 +97,9 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 
         if (diaDeTrabalho) {
             if (i === 0) { // Hoje
-                // Pega o horário real de agora em SP, não UTC
                 const agoraSP = getAgoraEmSaoPaulo();
                 const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
                 if (agoraEmMinutos < ultimoHorarioGeral) {
-                    // Monta string de data local
                     return [
                         dataAtual.getFullYear(),
                         String(dataAtual.getMonth() + 1).padStart(2, "0"),
@@ -165,20 +159,54 @@ function calcularSugestaoIA(agsDoDia) {
     }
 }
 
-// --- FUNÇÕES DE RENDERIZAÇÃO ---
+// --- FUNÇÃO INTELIGENTE DE RENDERIZAÇÃO DA AGENDA DO DIA ---
 
 function preencherAgendaDoDia(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
     if (!agendaContainer) return;
     agendaContainer.innerHTML = "";
+
     if (agsDoDia.length === 0) {
         agendaContainer.innerHTML = `<div class="aviso-horarios">Nenhum agendamento para esta data.</div>`;
         return;
     }
-    agsDoDia.sort((a, b) => a.horario.localeCompare(b.horario)).forEach(ag => {
-        agendaContainer.innerHTML += `<div class="card-agendamento"><span class="horario-destaque">${ag.horario}</span><div class="agendamento-info"><strong>${ag.servicoNome || 'Serviço'}</strong><span>${ag.profissionalNome || 'Profissional'}</span></div></div>`;
+
+    // Pega o horário atual (HH:MM) no fuso de SP
+    const agoraSP = getAgoraEmSaoPaulo();
+    const horaAtual = String(agoraSP.getHours()).padStart(2, "0") + ":" + String(agoraSP.getMinutes()).padStart(2, "0");
+
+    // Ordena todos e pega só os próximos a partir de agora, ou todos se for para outro dia
+    const agsOrdenados = agsDoDia.slice().sort((a, b) => a.horario.localeCompare(b.horario));
+
+    // Se for hoje, mostra só os que ainda vão acontecer, senão mostra do começo do dia
+    let agsFuturos = agsOrdenados;
+    const filtroData = document.getElementById("filtro-data");
+    if (filtroData && filtroData.value === getHojeStringSaoPaulo()) {
+        agsFuturos = agsOrdenados.filter(ag => ag.horario >= horaAtual);
+        if (agsFuturos.length === 0) agsFuturos = agsOrdenados.slice(-3); // Se já passou tudo, mostra últimos 3
+    }
+    const agsVisiveis = agsFuturos.slice(0, 3);
+
+    // Renderiza os próximos até 3 agendamentos
+    agsVisiveis.forEach(ag => {
+        agendaContainer.innerHTML += `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                <strong>${ag.horario}</strong> — ${ag.servicoNome || "-"}${ag.profissionalNome ? " (" + ag.profissionalNome + ")" : ""}
+            </div>
+        `;
     });
+
+    // Se houver mais, mostra aviso/link para agenda completa
+    if (agsFuturos.length > 3) {
+        agendaContainer.innerHTML += `
+            <div style="margin-top: 6px; color: #679;">
+                +${agsFuturos.length - 3} agendamentos — <a href="agenda.html" style="color:#1976d2;text-decoration:underline;">ver agenda completa</a>
+            </div>
+        `;
+    }
 }
+
+// --- RESTANTE DAS FUNÇÕES DE RENDERIZAÇÃO (SEM ALTERAÇÃO) ---
 
 function preencherCardServico(servicoDestaque) {
     const el = document.getElementById("servico-destaque");
@@ -262,7 +290,6 @@ window.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // Data local correta de SP!
                 const hojeString = getHojeStringSaoPaulo();
                 const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
 
