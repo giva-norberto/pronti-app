@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Perfil e Configurações - Pronti IA</title>
+    <title>Serviços - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones se quiser usar -->
+    <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       .main-content {
@@ -15,43 +15,69 @@
       @media (max-width: 900px) {
         .main-content { margin-left: 60px; }
       }
-      .logo-upload-container {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          margin-top: 6px;
+      .servico-lista {
+        margin-top: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
       }
-      .logo-upload-container img#logo-preview {
-          width: 80px;
-          height: 80px;
-          object-fit: cover;
-          border-radius: 50%;
-          border: 2px solid #e0e7ff;
-          background: #eef2ff;
-          box-shadow: 0 1px 4px #0001;
-          display: block;
+      .servico-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px #b0c6ff18;
+        padding: 18px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
       }
-      .logo-upload-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 9px;
+      .servico-info {
+        flex: 1;
       }
-      .btn-upload {
-          background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-          color: #fff;
-          border: none;
-          border-radius: 25px;
-          font-weight: 600;
-          padding: 12px 24px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.2s;
+      .servico-nome {
+        font-weight: 700;
+        color: #22223b;
+        font-size: 1.15em;
       }
-      .btn-upload:hover {
-          background: linear-gradient(135deg, #3730a3 0%, #2563eb 100%);
-          box-shadow: 0 8px 20px rgba(79, 172, 254, 0.2);
-          transform: translateY(-2px);
+      .servico-duracao, .servico-preco {
+        display: inline-block;
+        font-size: 0.97em;
+        color: #64748b;
+        margin-right: 10px;
+      }
+      .servico-acoes {
+        display: flex;
+        gap: 9px;
+      }
+      .btn-editar, .btn-remover, .btn-add {
+        border: none;
+        padding: 9px 18px;
+        border-radius: 9px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background 0.13s, color 0.13s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-editar { background: #e0f2fe; color: #2563eb; }
+      .btn-editar:hover { background: #93c5fd; color: #1e40af; }
+      .btn-remover { background: #fee2e2; color: #b91c1c; }
+      .btn-remover:hover { background: #fecaca; color: #991b1b; }
+      .btn-add {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: #fff;
+        font-weight: 700;
+        margin-bottom: 16px;
+      }
+      .btn-add:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #4facfe 100%);
+        color: #fff;
+      }
+      .form-card {
+        margin-top: 28px;
+        margin-bottom: 15px;
       }
     </style>
 </head>
@@ -61,57 +87,44 @@
     <main class="main-content">
         <div class="header-section">
             <div class="header-content">
-                <h1 id="main-title">Meu Perfil e Configurações</h1>
-                <p>Defina aqui todas as informações do seu negócio.</p>
+                <h1 id="main-title">Serviços</h1>
+                <p>Gerencie os serviços oferecidos pelo seu negócio.</p>
             </div>
             <div class="header-actions">
-                <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">Abrir Minha Vitrine</a>
+                <button class="btn-add" id="btn-adicionar-servico"><i class="fa fa-plus"></i> Novo Serviço</button>
             </div>
         </div>
 
-        <div class="form-card">
-            <form id="form-perfil">
+        <!-- Formulário para adicionar/editar serviço (inicialmente oculto) -->
+        <div class="form-card" id="form-servico-container" style="display:none;">
+            <form id="form-servico">
                 <div class="form-section">
-                    <h3>Informações do Negócio</h3>
+                    <h3 id="form-servico-titulo">Adicionar Serviço</h3>
                     <div class="form-group">
-                        <label for="nomeNegocio">Nome do Negócio</label>
-                        <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
-                    </div>
-                    <div class="form-group" id="container-link-vitrine" style="display: none;">
-                        <label>Link da sua Vitrine Pública</label>
-                        <div class="vitrine-link-container">
-                            <div class="vitrine-url" id="url-vitrine-display"></div>
-                            <div class="vitrine-actions">
-                                <button type="button" id="btn-copiar-link" class="btn-copy">Copiar</button>
-                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">Abrir</a>
-                            </div>
-                        </div>
+                        <label for="servico-nome-input">Nome do Serviço</label>
+                        <input type="text" id="servico-nome-input" required>
                     </div>
                     <div class="form-group">
-                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
-                        <div class="logo-upload-container">
-                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logótipo">
-                            <div class="logo-upload-actions">
-                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                                <button type="button" id="btn-upload-logo" class="btn-upload">Escolher Arquivo</button>
-                            </div>
-                        </div>
+                        <label for="servico-duracao-input">Duração (minutos)</label>
+                        <input type="number" id="servico-duracao-input" min="1" max="600" required>
                     </div>
                     <div class="form-group">
-                        <label for="descricao">Descrição Curta</label>
-                        <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
+                        <label for="servico-preco-input">Preço (R$)</label>
+                        <input type="number" id="servico-preco-input" step="0.01" min="0" required>
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
+                    <button type="submit" class="btn-submit">Salvar Serviço</button>
+                    <button type="button" class="btn-remover" id="btn-cancelar-servico">Cancelar</button>
                 </div>
             </form>
         </div>
-    </main>
 
-    <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
-        <!-- O conteúdo do seu modal vai aqui dentro -->
-    </div>
+        <!-- Lista de serviços cadastrados -->
+        <div class="servico-lista" id="servico-lista">
+            <!-- Serviços serão listados dinamicamente aqui -->
+        </div>
+    </main>
 
     <script>
     // Inclui o menu-lateral.html dinamicamente
@@ -120,10 +133,93 @@
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Destaca o item Serviços
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const servicosLink = document.querySelector('.sidebar-links a[href*="servicos"]');
+          if(servicosLink) servicosLink.classList.add('active');
         });
+
+      // Demonstração: lista fictícia de serviços (substitua pelo seu backend)
+      const listaServicos = [
+        { nome: "Corte de Cabelo", duracao: 60, preco: 50.00 },
+        { nome: "Barba", duracao: 30, preco: 30.00 },
+        { nome: "Coloração", duracao: 90, preco: 100.00 },
+      ];
+      const container = document.getElementById('servico-lista');
+      function renderServicos() {
+        container.innerHTML = "";
+        listaServicos.forEach((serv, idx) => {
+          const card = document.createElement('div');
+          card.className = 'servico-card';
+          card.innerHTML = `
+            <div class="servico-info">
+              <div class="servico-nome">${serv.nome}</div>
+              <span class="servico-duracao"><i class="fa fa-clock"></i> ${serv.duracao} min</span>
+              <span class="servico-preco"><i class="fa fa-money-bill"></i> R$ ${serv.preco.toFixed(2)}</span>
+            </div>
+            <div class="servico-acoes">
+              <button class="btn-editar" data-idx="${idx}"><i class="fa fa-edit"></i> Editar</button>
+              <button class="btn-remover" data-idx="${idx}"><i class="fa fa-trash"></i> Remover</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+      renderServicos();
+
+      // Mostra/oculta formulário de serviço
+      const btnAdicionar = document.getElementById('btn-adicionar-servico');
+      const formContainer = document.getElementById('form-servico-container');
+      const formServico = document.getElementById('form-servico');
+      const btnCancelar = document.getElementById('btn-cancelar-servico');
+      let editIdx = null;
+
+      btnAdicionar.onclick = () => {
+        formServico.reset();
+        document.getElementById('form-servico-titulo').textContent = "Adicionar Serviço";
+        formContainer.style.display = 'block';
+        editIdx = null;
+      };
+      btnCancelar.onclick = () => {
+        formContainer.style.display = 'none';
+        editIdx = null;
+      };
+      container.addEventListener('click', function(e) {
+        if(e.target.closest('.btn-editar')) {
+          const idx = e.target.closest('.btn-editar').dataset.idx;
+          const serv = listaServicos[idx];
+          document.getElementById('servico-nome-input').value = serv.nome;
+          document.getElementById('servico-duracao-input').value = serv.duracao;
+          document.getElementById('servico-preco-input').value = serv.preco;
+          document.getElementById('form-servico-titulo').textContent = "Editar Serviço";
+          formContainer.style.display = 'block';
+          editIdx = idx;
+        }
+        if(e.target.closest('.btn-remover')) {
+          const idx = e.target.closest('.btn-remover').dataset.idx;
+          if(confirm("Deseja remover este serviço?")) {
+            listaServicos.splice(idx, 1);
+            renderServicos();
+          }
+        }
+      });
+      formServico.onsubmit = function(ev) {
+        ev.preventDefault();
+        const nome = document.getElementById('servico-nome-input').value;
+        const duracao = parseInt(document.getElementById('servico-duracao-input').value, 10);
+        const preco = parseFloat(document.getElementById('servico-preco-input').value);
+        if(editIdx !== null) {
+          listaServicos[editIdx] = { nome, duracao, preco };
+        } else {
+          listaServicos.push({ nome, duracao, preco });
+        }
+        renderServicos();
+        formContainer.style.display = 'none';
+        editIdx = null;
+      };
     });
     </script>
-    <script src="firebase-config.js" type="module"></script>
-    <script src="perfil.js" type="module"></script>
+    <!-- Adapte para usar seu backend/firebase conforme necessário -->
 </body>
 </html>
