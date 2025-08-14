@@ -87,12 +87,13 @@
 }
 </style>
 <script>
-// Adiciona a classe 'active' ao link correspondente à página atual
+// Adiciona a classe 'active' ao link correspondente à página atual de forma precisa
 document.addEventListener("DOMContentLoaded", function() {
   const links = document.querySelectorAll('.sidebar-links a');
-  const path = window.location.pathname;
+  const current = window.location.pathname.split('/').pop();
   links.forEach(link => {
-    if (path.includes(link.getAttribute('href').replace('.html',''))) {
+    const href = link.getAttribute('href');
+    if (href === current) {
       link.classList.add('active');
     }
   });
