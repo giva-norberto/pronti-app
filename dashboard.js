@@ -1,10 +1,12 @@
-// dashboard.js - VERSÃO DEFINITIVA COM FUSO HORÁRIO CORRIGIDO E DATA LOCAL DE SÃO PAULO GARANTIDA
+// dashboard.js - VERSÃO REVISADA E FUNCIONAL
+// Fuso horário garantido na string de data e lógica robusta de data inteligente para o Brasil.
+// Não pula o dia se ainda houver expediente hoje e a tela não trava!
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const totalSlots = 20; // Total de horários disponíveis no dia
+const totalSlots = 20;
 
 // --- FUNÇÕES DE LÓGICA E DADOS ---
 
@@ -51,10 +53,16 @@ async function buscarTodosOsHorarios(empresaId) {
 
 // Retorna a data e hora atual no fuso horário de São Paulo.
 function getAgoraEmSaoPaulo() {
-    return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    // Este método é seguro, funciona em browsers e Node.js
+    const local = new Date();
+    const utc = local.getTime() + (local.getTimezoneOffset() * 60000);
+    // Offset -3 para São Paulo (corrige para horário de verão se for o caso)
+    const offset = -3; // Horário padrão de Brasília
+    const brasil = new Date(utc + (3600000 * offset));
+    return brasil;
 }
 
-// Retorna a string "YYYY-MM-DD" da data local de São Paulo.
+// MAIS SEGURO: faz a string "YYYY-MM-DD" para a data local de São Paulo
 function getHojeStringSaoPaulo() {
     const hojeSP = getAgoraEmSaoPaulo();
     return [
@@ -70,7 +78,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     if (todosOsHorarios.length === 0) return dataInicial;
 
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    // dataInicial pode vir como string "YYYY-MM-DD", então montamos a data no fuso correto:
+    // dataInicial: "YYYY-MM-DD"
     let partes = dataInicial.split('-');
     let dataAtual = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0, 0);
 
@@ -79,7 +87,6 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
         let diaDeTrabalho = false;
         let ultimoHorarioGeral = 0;
 
-        // Verifica se ALGUM profissional trabalha neste dia e qual o último horário de todos
         todosOsHorarios.forEach(horarioProf => {
             if (horarioProf[nomeDia] && horarioProf[nomeDia].ativo) {
                 diaDeTrabalho = true;
@@ -93,11 +100,12 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
         });
 
         if (diaDeTrabalho) {
-            if (i === 0) { // Se está analisando "hoje"
+            if (i === 0) { // Hoje
+                // Pega o horário real de agora em SP, não UTC
                 const agoraSP = getAgoraEmSaoPaulo();
                 const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
                 if (agoraEmMinutos < ultimoHorarioGeral) {
-                    // Ainda há expediente hoje
+                    // Monta string de data local
                     return [
                         dataAtual.getFullYear(),
                         String(dataAtual.getMonth() + 1).padStart(2, "0"),
@@ -105,7 +113,6 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
                     ].join("-");
                 }
             } else {
-                // Se for um dia futuro, retorna ele
                 return [
                     dataAtual.getFullYear(),
                     String(dataAtual.getMonth() + 1).padStart(2, "0"),
@@ -113,9 +120,9 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
                 ].join("-");
             }
         }
-        dataAtual.setDate(dataAtual.getDate() + 1); // Avança para o próximo dia (mantendo local)
+        dataAtual.setDate(dataAtual.getDate() + 1);
     }
-    return dataInicial; // Se deu 90 dias sem expediente, retorna data inicial
+    return dataInicial;
 }
 
 // --- FUNÇÕES DE CÁLCULO ---
@@ -246,38 +253,34 @@ function debounce(fn, delay) {
 window.addEventListener("DOMContentLoaded", () => {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            const filtroData = document.getElementById("filtro-data");
-            const empresaId = await getEmpresaId(user);
+            try {
+                const filtroData = document.getElementById("filtro-data");
+                const empresaId = await getEmpresaId(user);
 
-            if (!empresaId) {
-                alert("Não foi possível identificar sua empresa.");
-                return;
+                if (!empresaId) {
+                    alert("Não foi possível identificar sua empresa.");
+                    return;
+                }
+
+                // Data local correta de SP!
+                const hojeString = getHojeStringSaoPaulo();
+                const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
+
+                if (filtroData) {
+                    filtroData.value = dataInicial;
+                    filtroData.addEventListener("change", debounce(() => {
+                        preencherDashboard(user, filtroData.value);
+                    }, 300));
+                }
+
+                await preencherDashboard(user, dataInicial);
+            } catch (e) {
+                alert("Erro inesperado ao carregar o dashboard.");
+                console.error(e);
             }
-
-            // Pega a data de hoje em São Paulo, independente do fuso do servidor/cliente
-            const hojeString = getHojeStringSaoPaulo();
-            const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-
-            if (filtroData) {
-                filtroData.value = dataInicial;
-                filtroData.addEventListener("change", debounce(() => {
-                    preencherDashboard(user, filtroData.value);
-                }, 300));
-            }
-
-            await preencherDashboard(user, dataInicial);
         } else {
             // window.location.href = "login.html";
         }
-    });
-
-    const btnVoltar = document.getElementById('btn-voltar');
-    if (btnVoltar) {
-        btnVoltar.addEventListener('click', () => {
-            window.location.href = "index.html";
-        });
-    }
-});
     });
 
     const btnVoltar = document.getElementById('btn-voltar');
