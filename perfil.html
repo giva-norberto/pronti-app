@@ -7,6 +7,29 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <!-- FontAwesome (opcional, para ícones dos botões de link) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+    /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande */
+    .logo-upload-container img#logo-preview {
+        max-width: 120px;
+        max-height: 120px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+        background: #eef2ff;
+        box-shadow: 0 1px 4px #0001;
+        display: block;
+        margin: 0;
+    }
+    /* Responsivo para telas menores */
+    @media (max-width: 600px) {
+      .logo-upload-container img#logo-preview {
+        max-width: 92vw;
+        max-height: 80px;
+      }
+    }
+    </style>
 </head>
 <body>
     <!-- Menu lateral incluso dinamicamente -->
