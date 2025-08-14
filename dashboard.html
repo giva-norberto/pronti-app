@@ -16,6 +16,7 @@
       @media (max-width: 900px) {
         .main-content { margin-left: 60px; }
       }
+      /* ... (restante dos estilos permanece igual ao seu exemplo) ... */
       .servicos-container {
         max-width: 540px;
         margin: 0 auto;
@@ -191,17 +192,22 @@
 
     <script>
     document.addEventListener("DOMContentLoaded", function() {
+      // Carrega o menu lateral
       fetch('menu-lateral.html')
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
+
+          // Remove todos os 'active'
           const links = document.querySelectorAll('.sidebar-links a');
           links.forEach(link => link.classList.remove('active'));
+
+          // Marca como ativo o link de Serviços (ajuste para dashboard se for dashboard.html)
           const servicosLink = document.querySelector('.sidebar-links a[href*="servicos"]');
           if(servicosLink) servicosLink.classList.add('active');
         });
 
-      // Exemplo: serviços fictícios para teste
+      // Simulação de serviços para teste
       const listaServicos = [
         { nome: "Corte de Cabelo (com hidratação e finalização especial, descrição longa para testar o card)", duracao: 60, preco: 50.00 },
         { nome: "Barba", duracao: 30, preco: 30.00 },
