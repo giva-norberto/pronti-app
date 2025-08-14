@@ -5,6 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil e Configurações - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* Ajuste para a logo do perfil ficar centralizada, redonda e bonita */
+        .logo-upload-container {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-top: 6px;
+        }
+        .logo-upload-container img#logo-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid #e0e7ff;
+            background: #eef2ff;
+            box-shadow: 0 1px 4px #0001;
+            display: block;
+        }
+        .logo-upload-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+        .btn-upload {
+            background: linear-gradient(90deg, #6366f1, #60a5fa);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 1px 3px #0001;
+            transition: background 0.2s;
+        }
+        .btn-upload:hover {
+            background: linear-gradient(90deg, #3730a3, #2563eb);
+        }
+        /* Opcional: responsividade para a logo e upload */
+        @media (max-width: 600px) {
+            .logo-upload-container {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 <body>
     <aside class="sidebar">
