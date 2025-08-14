@@ -116,11 +116,14 @@ function calcularResumo(agsDoDia) {
     return { totalAgendamentos, faturamentoPrevisto, percentualOcupacao };
 }
 
+// ==========================================================
+// CORREÇÃO: Usando 'agsDoDia.length' em vez de 'totalAgendamentos'
+// ==========================================================
 function calcularSugestaoIA(agsDoDia) {
-    const ocupacaoPercent = Math.min(100, Math.round((totalAgendamentos / totalSlots) * 100));
+    const percentualOcupacao = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
     if(agsDoDia.length === 0){
         return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
-    } else if (ocupacaoPercent < 50) {
+    } else if (percentualOcupacao < 50) {
         return "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
     } else {
         return "O dia está movimentado! Prepare-se para um dia produtivo.";
