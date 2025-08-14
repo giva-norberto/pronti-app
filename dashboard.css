@@ -1,25 +1,17 @@
-/* dashboard.css - VERSÃO EXCLUSIVA E COMPLETA PARA O LAYOUT FINAL */
-
-/* --- RESET BÁSICO E ESTILO GERAL --- */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+/* RESET E GERAL */
+* { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: 'Poppins', sans-serif;
     background-color: #f0f2f5;
     color: #333;
 }
-
 .container {
     max-width: 1200px;
     margin: 20px auto;
     padding: 0 20px;
 }
 
-/* --- CABEÇALHO --- */
+/* HEADER */
 .header-dashboard {
     display: flex;
     justify-content: space-between;
@@ -30,13 +22,10 @@ body {
     box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     margin-bottom: 25px;
 }
-
 .header-dashboard h1 {
     font-size: 1.8rem;
     color: #1e293b;
-    margin: 0;
 }
-
 .btn-voltar {
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
@@ -45,10 +34,9 @@ body {
     cursor: pointer;
     font-weight: 600;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
 }
 .btn-voltar:hover { background-color: #e2e8f0; }
-
 .filtro-container { display: flex; align-items: center; gap: 10px; }
 .filtro-container label { font-weight: 500; color: #475569; }
 .filtro-container input[type="date"] {
@@ -58,31 +46,49 @@ body {
     font-family: inherit;
 }
 
-/* --- NOVA GRID DO DASHBOARD --- */
-.dashboard-grid-v2 {
+/* GRID DO NOVO PAINEL */
+.dashboard-grid-v3 {
     display: flex;
     flex-direction: column;
     gap: 32px;
 }
 
+/* Linha dos cards principais */
 .row-main-cards {
     display: flex;
     gap: 24px;
-    justify-content: space-between;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 .card {
-    flex: 1;
-    min-width: 220px;
-    min-height: 170px;
+    flex: 1 1 230px;
+    min-width: 230px;
+    max-width: 310px;
+    min-height: 180px;
     background: #fff;
     border-radius: 14px;
     box-shadow: 0 2px 8px #0001;
-    padding: 24px 20px;
+    padding: 24px 20px 20px 20px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    margin-bottom: 0;
 }
+.card h3 {
+    font-size: 1.09rem;
+    font-weight: 600;
+    color: #fff;
+    padding: 11px 16px;
+    margin: -24px -20px 18px -20px;
+    border-radius: 14px 14px 0 0;
+    display: flex; align-items: center; gap: 8px;
+}
+.card-agenda h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); }
+.card-resumo h3 { background: linear-gradient(to right, #0ea5e9, #6366f1); }
+.card-ia h3 { background: linear-gradient(to right, #a78bfa, #818cf8); }
+.card-resumo-inteligente h3 { background: linear-gradient(to right, #34d399, #10b981); }
 
+/* Linha central dos mini cards */
 .row-mini-cards {
     display: flex;
     justify-content: center;
@@ -102,31 +108,10 @@ body {
     align-items: center;
     justify-content: center;
 }
-
-/* --- HEADERS DOS CARDS --- */
-.card h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: white;
-    padding: 10px 15px;
-    margin: -20px -20px 20px -20px;
-    border-radius: 12px 12px 0 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.card-agenda { background: linear-gradient(to top right, #f0f9ff, #e0f2fe); }
-.card-agenda h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); color: #fff; }
-#agenda-resultado { max-height: 450px; overflow-y: auto; padding-right: 10px; }
-
 .card-servico h3 { background: linear-gradient(to right, #f59e0b, #facc15); color: #fff; }
 .card-profissional h3 { background: linear-gradient(to right, #10b981, #6ee7b7); color: #fff; }
-.card-resumo h3 { background: linear-gradient(to right, #0ea5e9, #22d3ee); color: #fff; }
-.card-ia h3 { background: linear-gradient(to right, #8b5cf6, #a78bfa); color: #fff; }
-.card-resumo-inteligente h3 { background: linear-gradient(to right, #10b981, #6ee7b7); color: #fff; }
 
-/* --- DETALHES INTERNOS DOS CARDS --- */
+/* Detalhes internos dos cards */
 .resumo-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
 .resumo-item:last-child { border-bottom: none; }
 .resumo-item strong { color: #1e293b; }
@@ -144,33 +129,12 @@ body {
 .card-body-destaque strong { display: block; }
 .card-body-destaque span { font-size: 1rem; font-weight: 400; color: #64748b; }
 
-/* --- ÍCONES (placeholders) --- */
-.icon-calendar::before { content: "📅"; }
-.icon-star::before { content: "⭐"; }
-.icon-user::before { content: "👤"; }
-.icon-clipboard::before { content: "📊"; }
-.icon-robot::before { content: "🤖"; }
-.icon-lightbulb::before { content: "💡"; }
-
-/* --- RESPONSIVIDADE --- */
+/* RESPONSIVO */
 @media (max-width: 1050px) {
-    .row-main-cards {
-        flex-direction: column;
-        gap: 16px;
-    }
-    .card {
-        min-width: unset;
-        min-height: 170px;
-    }
+    .row-main-cards { flex-direction: column; gap: 16px; }
+    .card { min-width: unset; max-width: unset; }
 }
 @media (max-width: 700px) {
-    .row-main-cards, .row-mini-cards {
-        flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
-    }
-    .mini-card {
-        width: 100%;
-        min-width: unset;
-    }
+    .row-main-cards, .row-mini-cards { flex-direction: column; gap: 16px; align-items: stretch; }
+    .mini-card { width: 100%; min-width: unset; }
 }
