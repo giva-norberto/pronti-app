@@ -7,7 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      /* Apenas visual dos cards, igual clientes */
+      /* Apenas aparência dos cards, igual clientes */
       .servico-lista {
         display: flex;
         flex-direction: column;
@@ -125,16 +125,19 @@
             </div>
             <a class="btn-add" href="servico-novo.html"><i class="fa fa-plus"></i> Novo Serviço</a>
         </div>
+
+        <!-- Lista de serviços cadastrados -->
         <div class="servico-lista" id="servico-lista">
-            <!-- Serviços DO FIREBASE aparecem aqui via seu JS/TS -->
+            <!-- Serviços são renderizados via seu JS/Firebase, NÃO altere nada aqui -->
         </div>
       </div>
     </main>
-    <!-- SEUS SCRIPTS DO FIREBASE ABAIXO, NÃO ALTERE -->
+
+    <!-- Scripts originais: Firebase/configuração e renderização dos serviços -->
     <script src="firebase-config.js" type="module"></script>
     <script src="servicos.js" type="module"></script>
     <script>
-    // Menu lateral dinâmico, padrão do seu sistema
+    // Inclui o menu-lateral.html dinamicamente (NÃO altera backend)
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
