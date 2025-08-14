@@ -5,141 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <!-- FontAwesome (opcional, para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Estilos específicos para esta página */
         .main-content {
-            margin-left: 270px; /* Espaço para a nova sidebar */
-            padding: 40px;
+            margin-left: 220px;
+            padding: 40px 32px 32px 32px;
             text-align: center;
         }
-        
-        /* ========================================================== */
-        /* NOVO ESTILO PARA A BARRA LATERAL (SIDEBAR) UNIFICADA     */
-        /* ========================================================== */
-        .sidebar {
-            width: 250px;
-            background-color: #4f46e5; /* Cor roxa sólida */
-            min-height: 100vh;
-            color: #fff;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-
-        .sidebar-brand {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #fff;
-            text-decoration: none;
-            text-align: center;
-            padding: 20px 0;
-            margin-bottom: 20px;
-        }
-
-        .sidebar-links {
-            display: flex;
-            flex-direction: column;
-            gap: 10px; /* Espaço entre os botões */
-        }
-
-        .sidebar-links a {
-            display: flex;
-            align-items: center;
-            gap: 15px; /* Espaço entre o ícone e o texto */
-            background-color: #fff;
-            color: #4f46e5;
-            font-weight: 600;
-            border-radius: 10px;
-            padding: 15px;
-            text-decoration: none;
-            transition: all 0.2s ease-in-out;
-        }
-
-        .sidebar-links a:hover {
-            background-color: #eef2ff; /* Roxo bem claro ao passar o mouse */
-            transform: translateX(5px);
-        }
-
-        .sidebar-links a.active {
-            background-color: #312e81; /* Roxo mais escuro para o item ativo */
-            color: #fff;
-        }
-
-        .sidebar-footer {
-            margin-top: auto; /* Empurra o rodapé para baixo */
-            padding: 20px 0 10px 0;
-        }
-
-        .btn-logout {
-            width: 100%;
-            background: #fff;
-            color: #4f46e5;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-logout:hover {
-            background-color: #312e81;
-            color: #fff;
-        }
-
         @media (max-width: 900px) {
-            .main-content {
-                margin-left: 0;
-            }
-            .sidebar {
-                /* Adicione aqui estilos para a sidebar em modo responsivo, se necessário */
-                /* Ex: position: static; width: 100%; */
-            }
+            .main-content { margin-left: 60px; }
         }
     </style>
 </head>
 <body>
 
-<!-- ========================================================== -->
-<!-- COMPONENTE DA BARRA LATERAL (SIDEBAR) UNIFICADA          -->
-<!-- ========================================================== -->
-<aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <nav class="sidebar-links">
-        <a href="dashboard.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            <span>Dashboard</span>
-        </a>
-        <a href="servicos.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-            <span>Serviços</span>
-        </a>
-        <a href="agenda.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <span>Agenda</span>
-        </a>
-        <a href="clientes.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span>Clientes</span>
-        </a>
-        <a href="equipe.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span>Equipe</span>
-        </a>
-        <a href="perfil.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>Meu Perfil</span>
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
+<!-- Sidebar (menu lateral) incluso dinamicamente -->
+<div id="sidebar-placeholder"></div>
 
 <main class="main-content">
     <h1>Bem-vindo ao Pronti App!</h1>
@@ -148,18 +30,21 @@
 </main>
 
 <script>
-    // Script para destacar o link ativo na sidebar
+    // Inclui o menu-lateral.html dinamicamente (padrão centralizado)
     document.addEventListener("DOMContentLoaded", function() {
-        const currentPage = window.location.pathname.split('/').pop();
-        const links = document.querySelectorAll('.sidebar-links a');
-        
-        links.forEach(link => link.classList.remove('active'));
-        
-        // Adiciona a classe 'active' ao link que corresponde à página de início (index.html)
-        const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
-        if (homeLink && (currentPage === 'index.html' || currentPage === '')) {
-            homeLink.classList.add('active');
-        }
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Destaca o item "Início" (index.html) após inclusão do menu
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
+          const currentPage = window.location.pathname.split('/').pop();
+          if (homeLink && (currentPage === 'index.html' || currentPage === '')) {
+              homeLink.classList.add('active');
+          }
+        });
     });
 </script>
 
