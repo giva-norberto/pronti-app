@@ -1,7 +1,5 @@
-// dashboard.js - VERSÃO REVISADA E FUNCIONAL (PAINEL INTELIGENTE)
-// Fuso horário garantido na string de data e lógica robusta de data inteligente para o Brasil.
-// Não pula o dia se ainda houver expediente hoje e a tela não trava!
-// Agenda do Dia mostra apenas os próximos 3 agendamentos (ou todos se menos de 3) + botão/link para "ver agenda completa"
+// dashboard.js - PAINEL INTELIGENTE: Mostra apenas os próximos 3 agendamentos e um resumo, não polui o painel.
+// Se houver mais, exibe "+N agendamentos — ver todos na Agenda"
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -52,11 +50,11 @@ async function buscarTodosOsHorarios(empresaId) {
     }
 }
 
-// Retorna a data e hora atual no fuso horário de São Paulo.
 function getAgoraEmSaoPaulo() {
+    // Horário local de São Paulo, seguro para browsers e Node.js
     const local = new Date();
     const utc = local.getTime() + (local.getTimezoneOffset() * 60000);
-    const offset = -3; // Horário padrão de Brasília
+    const offset = -3; // Horário padrão de Brasília (corrige para horário de verão se necessário)
     const brasil = new Date(utc + (3600000 * offset));
     return brasil;
 }
@@ -159,9 +157,9 @@ function calcularSugestaoIA(agsDoDia) {
     }
 }
 
-// --- FUNÇÃO INTELIGENTE DE RENDERIZAÇÃO DA AGENDA DO DIA ---
+// --- FUNÇÕES DE RENDERIZAÇÃO ---
 
-function preencherAgendaDoDia(agsDoDia) {
+function preencherAgendaDoDiaInteligente(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
     if (!agendaContainer) return;
     agendaContainer.innerHTML = "";
@@ -176,7 +174,9 @@ function preencherAgendaDoDia(agsDoDia) {
     const horaAtual = String(agoraSP.getHours()).padStart(2, "0") + ":" + String(agoraSP.getMinutes()).padStart(2, "0");
 
     // Ordena todos e pega só os próximos a partir de agora, ou todos se for para outro dia
-    const agsOrdenados = agsDoDia.slice().sort((a, b) => a.horario.localeCompare(b.horario));
+    const agsOrdenados = agsDoDia
+        .slice()
+        .sort((a, b) => a.horario.localeCompare(b.horario));
 
     // Se for hoje, mostra só os que ainda vão acontecer, senão mostra do começo do dia
     let agsFuturos = agsOrdenados;
@@ -191,7 +191,7 @@ function preencherAgendaDoDia(agsDoDia) {
     agsVisiveis.forEach(ag => {
         agendaContainer.innerHTML += `
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                <strong>${ag.horario}</strong> — ${ag.servicoNome || "-"}${ag.profissionalNome ? " (" + ag.profissionalNome + ")" : ""}
+                <strong>${ag.horario}</strong> — ${ag.servicoNome || "-"}${ag.clienteNome ? " (" + ag.clienteNome + ")" : ""}
             </div>
         `;
     });
@@ -200,13 +200,11 @@ function preencherAgendaDoDia(agsDoDia) {
     if (agsFuturos.length > 3) {
         agendaContainer.innerHTML += `
             <div style="margin-top: 6px; color: #679;">
-                +${agsFuturos.length - 3} agendamentos — <a href="agenda.html" style="color:#1976d2;text-decoration:underline;">ver agenda completa</a>
+                +${agsFuturos.length - 3} agendamentos — <a href="agenda.html" style="color:#1976d2;text-decoration:underline;">ver todos na Agenda</a>
             </div>
         `;
     }
 }
-
-// --- RESTANTE DAS FUNÇÕES DE RENDERIZAÇÃO (SEM ALTERAÇÃO) ---
 
 function preencherCardServico(servicoDestaque) {
     const el = document.getElementById("servico-destaque");
@@ -255,7 +253,7 @@ async function preencherDashboard(user, dataSelecionada) {
         const agSnap = await getDocs(agQuery);
         const agsDoDia = agSnap.docs.map(doc => doc.data());
 
-        preencherAgendaDoDia(agsDoDia);
+        preencherAgendaDoDiaInteligente(agsDoDia);
         preencherCardServico(calcularServicosDestaque(agsDoDia));
         preencherCardProfissional(calcularProfissionalDestaque(agsDoDia));
         preencherCardResumo(calcularResumo(agsDoDia));
