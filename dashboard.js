@@ -1,4 +1,4 @@
-// dashboard.js - VERSÃO FINAL COM CORREÇÃO DE FUSO HORÁRIO E INICIALIZAÇÃO ROBUSTA
+// dashboard.js - VERSÃO FINAL COM CORREÇÃO DE FUSO HORÁRIO, DATA INTELIGENTE E LÓGICA ROBUSTA (MANTÉM TODA A LÓGICA DAS OUTRAS FUNÇÕES)
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -32,18 +32,23 @@ async function getEmpresaId(user) {
     }
 }
 
-async function buscarHorariosDoDono(empresaId) {
+// --- NOVA LÓGICA: busca horários de todos os profissionais ---
+async function buscarTodosOsHorarios(empresaId) {
     try {
-        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
-        if (!empresaDoc.exists()) return null;
-        const donoId = empresaDoc.data().donoId;
-        if (!donoId) return null;
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios");
-        const horariosSnap = await getDoc(horariosRef);
-        return horariosSnap.exists() ? horariosSnap.data() : null;
+        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+        const profissionaisSnap = await getDocs(profissionaisRef);
+        if (profissionaisSnap.empty) return [];
+
+        const promessasDeHorarios = profissionaisSnap.docs.map(profDoc => {
+            const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profDoc.id, "configuracoes", "horarios");
+            return getDoc(horariosRef);
+        });
+
+        const horariosSnaps = await Promise.all(promessasDeHorarios);
+        return horariosSnaps.map(snap => snap.exists() ? snap.data() : null).filter(Boolean);
     } catch (error) {
-        console.error("Erro ao buscar horários do dono:", error);
-        return null;
+        console.error("Erro ao buscar todos os horários:", error);
+        return [];
     }
 }
 
@@ -52,39 +57,63 @@ async function buscarHorariosDoDono(empresaId) {
  * @returns {Date}
  */
 function getAgoraEmSaoPaulo() {
+    // Use toLocaleString para garantir o fuso correto, independente do navegador.
     return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
 }
 
-
+/**
+ * Data inteligente: verifica o expediente de TODOS os profissionais e retorna a próxima data com expediente aberto,
+ * considerando o fuso horário de São Paulo. Mantém toda lógica funcional!
+ */
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
-    const horariosTrabalho = await buscarHorariosDoDono(empresaId);
-    if (!horariosTrabalho) return dataInicial;
+    const todosOsHorarios = await buscarTodosOsHorarios(empresaId);
+    if (todosOsHorarios.length === 0) return dataInicial;
 
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    let dataAtual = new Date(`${dataInicial}T12:00:00`);
+    let dataAtual = new Date(getAgoraEmSaoPaulo().setHours(12,0,0,0));
+    // Se dataInicial não for hoje, reseta para o dia correto
+    if (dataInicial) {
+        const partes = dataInicial.split('-');
+        if (partes.length === 3) {
+            dataAtual = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0, 0);
+        }
+    }
 
     for (let i = 0; i < 90; i++) {
         const nomeDia = diaDaSemana[dataAtual.getDay()];
-        const diaDeTrabalho = horariosTrabalho[nomeDia];
+        let diaDeTrabalho = false;
+        let ultimoHorarioGeral = 0;
 
-        if (diaDeTrabalho && diaDeTrabalho.ativo) {
-            if (i === 0) {
-                const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
-                const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
-                
+        // Verifica se ALGUM profissional trabalha no dia e qual o último horário
+        todosOsHorarios.forEach(horarioProf => {
+            if (horarioProf[nomeDia] && horarioProf[nomeDia].ativo) {
+                diaDeTrabalho = true;
+                horarioProf[nomeDia].blocos.forEach(bloco => {
+                    const fimMinutos = timeStringToMinutes(bloco.fim);
+                    if (fimMinutos > ultimoHorarioGeral) {
+                        ultimoHorarioGeral = fimMinutos;
+                    }
+                });
+            }
+        });
+
+        if (diaDeTrabalho) {
+            if (i === 0) { // Se for hoje
                 const agoraSP = getAgoraEmSaoPaulo();
                 const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
-
-                if (agoraEmMinutos < fimDoExpediente) {
+                if (agoraEmMinutos < ultimoHorarioGeral) {
+                    // Ainda há expediente hoje
                     return dataAtual.toISOString().split('T')[0];
                 }
             } else {
+                // Se for um dia futuro, retorna ele
                 return dataAtual.toISOString().split('T')[0];
             }
         }
+        // Avança para o próximo dia (mantendo horário local)
         dataAtual.setDate(dataAtual.getDate() + 1);
     }
-    return dataInicial;
+    return dataInicial; // Retorna a data inicial se não encontrar nada
 }
 
 // --- FUNÇÕES DE CÁLCULO ---
@@ -264,7 +293,8 @@ async function init(user) {
     }
     console.log("2. ID da Empresa encontrado:", empresaId);
 
-    const hojeString = new Date().toISOString().split('T')[0];
+    const hojeSP = getAgoraEmSaoPaulo();
+    const hojeString = hojeSP.toISOString().split('T')[0];
     const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
     console.log("3. Data inteligente definida para:", dataInicial);
 
@@ -277,7 +307,6 @@ async function init(user) {
 
     await preencherDashboard(user, dataInicial);
 }
-
 
 window.addEventListener("DOMContentLoaded", () => {
     onAuthStateChanged(auth, (user) => {
