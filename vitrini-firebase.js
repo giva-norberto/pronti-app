@@ -1,11 +1,12 @@
 // vitrini-firebase.js
-// RESPONSABILIDADE: Criar e exportar as instâncias do Firebase.
+// RESPONSABILIDADE: Criar e exportar as instâncias do Firebase, garantindo persistência de login.
 
+// 1. Importa os módulos necessários do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Configuração do seu projeto Firebase//
+// 2. Configuração do seu projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // Chave correta do seu painel
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -15,8 +16,21 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Inicializa e exporta as instâncias
+// 3. Inicializa as instâncias do Firebase
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
+
+// 4. Garante que o usuário permaneça logado entre páginas/tabs
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  // Opcional: você pode tratar/logar erros aqui se desejar
+  console.error("Erro ao definir persistência do Auth:", error);
+});
+
+/*
+  DOCUMENTAÇÃO:
+  - Este módulo deve ser importado em todos os arquivos que dependem de autenticação, Firestore ou provider Google.
+  - O bloco setPersistence(auth, browserLocalPersistence) garante que o login do usuário não se perca ao navegar ou recarregar a página.
+  - Se precisar de logout, use: import { signOut } from "firebase/auth"; signOut(auth);
+*/
