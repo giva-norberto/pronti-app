@@ -609,3 +609,73 @@ body {
     box-shadow: 0 3px 12px #38bdf86b;
     color: #fff;
 }
+.main-content {
+    margin-left: 220px;
+    padding: 40px 32px 32px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    background: linear-gradient(120deg, #eef2ff 0%, #f0fdfa 100%);
+}
+@media (max-width: 900px) { .main-content { margin-left: 60px; } }
+
+.welcome-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 6px 40px #4f46e515, 0 1.5px 5px #4f46e510;
+    padding: 50px 32px 38px 32px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    animation: fadein 1s;
+}
+@keyframes fadein { from { opacity: 0; transform: translateY(30px);} to {opacity: 1; transform: none;} }
+
+.logo-pronti {
+    width: 92px;
+    height: 92px;
+    margin-bottom: 16px;
+}
+
+.pronti-title {
+    color: #4f46e5;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+    background: linear-gradient(90deg, #38bdf8 30%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: 1.1em;
+    color: #64748b;
+    margin-bottom: 18px;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.welcome-desc {
+    color: #334155;
+    font-size: 1em;
+    margin-bottom: 26px;
+}
+
+.btn-start {
+    display: inline-block;
+    background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    padding: 13px 36px;
+    font-size: 1.12em;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 4px 14px #38bdf86b;
+    transition: background 0.15s, transform 0.12s;
+}
+.btn-start:hover {
+    background: linear-gradient(90deg, #3730a3 0%, #2563eb 100%);
+    transform: translateY(-2px) scale(1.04);
+}
