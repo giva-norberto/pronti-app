@@ -1,38 +1,83 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pronti - Início</title>
-  <link href="style.css" rel="stylesheet" type="text/css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Início</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* Estilos específicos para esta página */
+        .main-content {
+            margin-left: 270px; /* Espaço para a nova sidebar */
+            padding: 40px;
+            text-align: center;
+        }
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <aside class="sidebar">
-  <a href="index.html" class="sidebar-brand">Pronti</a>
-  <hr />
-  <div class="sidebar-links">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="index.html">Home</a>
-    <a href="servicos.html">Serviços</a>
-    <a href="agenda.html">Agenda</a>
-    <a href="clientes.html">Clientes</a>
-    <a href="perfil.html">Meu Perfil</a>
-    <a href="horarios.html">Meus Horários</a>
-    <a href="vitrine.html" class="btn-vitrine">Minha Vitrine</a>
-  </div>
+<!-- ========================================================== -->
+<!-- COMPONENTE DA BARRA LATERAL (SIDEBAR) UNIFICADA          -->
+<!-- ========================================================== -->
+<aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <nav class="sidebar-links">
+        <a href="dashboard.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Dashboard</span>
+        </a>
+        <a href="servicos.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+            <span>Serviços</span>
+        </a>
+        <a href="agenda.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Agenda</span>
+        </a>
+        <a href="clientes.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Clientes</span>
+        </a>
+        <a href="equipe.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Equipe</span>
+        </a>
+        <a href="perfil.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Meu Perfil</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
 </aside>
 
-
-  <main class="main-content">
+<main class="main-content">
     <h1>Bem-vindo ao Pronti App!</h1>
     <p>A solução completa para gerenciar seus agendamentos.</p>
     <a href="novo-cliente.html" class="btn-new" style="background-color: #ffc107;">Cadastrar Novo Cliente</a>
-  </main>
-  <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-      lucide.createIcons();
-    </script>
+</main>
 
-  </body>
-  </html>
+<script>
+    // Script para destacar o link ativo na sidebar
+    document.addEventListener("DOMContentLoaded", function() {
+        const currentPage = window.location.pathname.split('/').pop();
+        const links = document.querySelectorAll('.sidebar-links a');
+        
+        links.forEach(link => link.classList.remove('active'));
+        
+        // Adiciona a classe 'active' ao link que corresponde à página de início (index.html)
+        const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
+        if (homeLink && (currentPage === 'index.html' || currentPage === '')) {
+            homeLink.classList.add('active');
+        }
+    });
+</script>
+
+</body>
+</html>
