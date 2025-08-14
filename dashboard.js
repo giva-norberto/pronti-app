@@ -1,6 +1,9 @@
 // dashboard.js - VERSÃO FINAL COM DATA INTELIGENTE BASEADA NA EQUIPA
 
 import { db, auth } from "./firebase-config.js";
+im// dashboard.js - VERSÃO FINAL COM CORREÇÃO DE FUSO HORÁRIO
+
+import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
@@ -32,71 +35,68 @@ async function getEmpresaId(user) {
     }
 }
 
-// REVISÃO: Nova função para buscar os horários de TODOS os profissionais
-async function buscarTodosOsHorarios(empresaId) {
+async function buscarHorariosDoDono(empresaId) {
     try {
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const profissionaisSnap = await getDocs(profissionaisRef);
-        if (profissionaisSnap.empty) return [];
-
-        const promessasDeHorarios = profissionaisSnap.docs.map(profDoc => {
-            const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profDoc.id, "configuracoes", "horarios");
-            return getDoc(horariosRef);
-        });
-
-        const horariosSnaps = await Promise.all(promessasDeHorarios);
-        return horariosSnaps.map(snap => snap.exists() ? snap.data() : null).filter(Boolean);
+        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
+        if (!empresaDoc.exists()) return null;
+        const donoId = empresaDoc.data().donoId;
+        if (!donoId) return null;
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios");
+        const horariosSnap = await getDoc(horariosRef);
+        return horariosSnap.exists() ? horariosSnap.data() : null;
     } catch (error) {
-        console.error("Erro ao buscar todos os horários:", error);
-        return [];
+        console.error("Erro ao buscar horários do dono:", error);
+        return null;
     }
 }
 
+// ===============================================
+// CORREÇÃO DE FUSO HORÁRIO
+// ===============================================
+/**
+ * Retorna a data e hora atual no fuso horário de São Paulo.
+ * @returns {Date}
+ */
+function getAgoraEmSaoPaulo() {
+    // Cria uma data e a formata para a string correspondente em São Paulo,
+    // depois converte de volta para um objeto Date. Isso ajusta o fuso.
+    return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+}
 
-// REVISÃO: Lógica de data inteligente agora usa os horários de toda a equipa
+
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
-    const todosOsHorarios = await buscarTodosOsHorarios(empresaId);
-    if (todosOsHorarios.length === 0) return dataInicial;
+    const horariosTrabalho = await buscarHorariosDoDono(empresaId);
+    if (!horariosTrabalho) return dataInicial;
 
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     let dataAtual = new Date(`${dataInicial}T12:00:00`);
 
     for (let i = 0; i < 90; i++) {
         const nomeDia = diaDaSemana[dataAtual.getDay()];
-        let diaDeTrabalho = false;
-        let ultimoHorarioGeral = 0;
+        const diaDeTrabalho = horariosTrabalho[nomeDia];
 
-        // Verifica se ALGUM profissional trabalha no dia e qual o último horário
-        todosOsHorarios.forEach(horarioProf => {
-            if (horarioProf[nomeDia] && horarioProf[nomeDia].ativo) {
-                diaDeTrabalho = true;
-                horarioProf[nomeDia].blocos.forEach(bloco => {
-                    const fimMinutos = timeStringToMinutes(bloco.fim);
-                    if (fimMinutos > ultimoHorarioGeral) {
-                        ultimoHorarioGeral = fimMinutos;
-                    }
-                });
-            }
-        });
+        if (diaDeTrabalho && diaDeTrabalho.ativo) {
+            if (i === 0) {
+                const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
+                const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
+                
+                // USA A HORA CORRETA DE SÃO PAULO
+                const agoraSP = getAgoraEmSaoPaulo();
+                const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
 
-        if (diaDeTrabalho) {
-            if (i === 0) { // Se for hoje
-                const agoraEmMinutos = new Date().getHours() * 60 + new Date().getMinutes();
-                if (agoraEmMinutos < ultimoHorarioGeral) {
-                    return dataAtual.toISOString().split('T')[0]; // Ainda há expediente hoje
+                if (agoraEmMinutos < fimDoExpediente) {
+                    return dataAtual.toISOString().split('T')[0];
                 }
             } else {
-                // Se for um dia futuro, retorna ele
                 return dataAtual.toISOString().split('T')[0];
             }
         }
         dataAtual.setDate(dataAtual.getDate() + 1);
     }
-    return dataInicial; // Retorna a data inicial se não encontrar nada
+    return dataInicial;
 }
 
-
-// --- FUNÇÕES DE CÁLCULO (sem alterações) ---
+// --- FUNÇÕES DE CÁLCULO ---
 
 function calcularServicosDestaque(agsDoDia) {
     const servicosContados = agsDoDia.reduce((acc, ag) => {
@@ -126,17 +126,17 @@ function calcularResumo(agsDoDia) {
 }
 
 function calcularSugestaoIA(agsDoDia) {
-    const percentualOcupacao = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
+    const ocupacaoPercent = Math.min(100, Math.round((agsDoDia.length / totalSlots) * 100));
     if(agsDoDia.length === 0){
         return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
-    } else if (percentualOcupacao < 50) {
+    } else if (ocupacaoPercent < 50) {
         return "Ainda há muitos horários vagos. Considere enviar um lembrete para seus clientes.";
     } else {
         return "O dia está movimentado! Prepare-se para um dia produtivo.";
     }
 }
 
-// --- FUNÇÕES DE RENDERIZAÇÃO (sem alterações) ---
+// --- FUNÇÕES DE RENDERIZAÇÃO ---
 
 function preencherAgendaDoDia(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
