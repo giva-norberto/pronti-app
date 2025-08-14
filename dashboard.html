@@ -1,83 +1,43 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Painel Inteligente - Dashboard</title>
-    <link rel="stylesheet" href="dashboard.css" /> 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="container">
-        <div class="header-dashboard">
-            <button id="btn-voltar" class="btn-voltar">← Voltar</button>
-            <h1>Painel Inteligente</h1>
-            <div class="filtro-container">
-                <label for="filtro-data">Ver dados de:</label>
-                <input type="date" id="filtro-data" />
-            </div>
-        </div>
-
-        <!-- GRADE DO PAINEL -->
-        <div class="dashboard-grid-v3">
-            <div class="row-main-cards">
-                <div class="card card-agenda">
-                    <h3>📅 Agenda do Dia</h3>
-                    <div id="agenda-resultado" class="card-body">
-                        <!-- Agendamentos do dia aparecerão aqui -->
-                    </div>
-                </div>
-                <div class="card card-resumo">
-                    <h3>📊 Resumo do Dia</h3>
-                    <div class="card-body">
-                        <div class="resumo-item">
-                            <span>Total de Agendamentos:</span>
-                            <strong id="total-agendamentos-dia">0</strong>
-                        </div>
-                        <div class="resumo-item">
-                            <span>Faturamento Estimado:</span>
-                            <strong id="faturamento-previsto">R$0,00</strong>
-                        </div>
-                        <div class="resumo-item">
-                            <span>Ocupação:</span>
-                            <strong id="percentual-ocupacao">0%</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="card card-ia">
-                    <h3>🤖 Sugestão Inteligente</h3>
-                    <div id="ia-sugestao" class="card-body">
-                        ...
-                    </div>
-                </div>
-                <div class="card card-resumo-inteligente">
-                    <h3>💡 Resumo Inteligente</h3>
-                    <div id="resumo-inteligente" class="card-body">
-                        ...
-                    </div>
-                </div>
-            </div>
-            <!-- Linha central dos dois mini-cards -->
-            <div class="row-mini-cards">
-                <div class="mini-card card-servico">
-                    <h3>⭐ Serviço em Alta</h3>
-                    <div id="servico-destaque" class="card-body card-body-destaque">
-                        ...
-                    </div>
-                </div>
-                <div class="mini-card card-profissional">
-                    <h3>👤 Profissional em Alta</h3>
-                    <div class="card-body card-body-destaque">
-                        <strong id="prof-destaque-nome">...</strong>
-                        <span id="prof-destaque-qtd">...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /GRADE DO PAINEL -->
+<main class="main-content">
+  <div class="dashboard-card">
+    <div class="dashboard-header">
+      <h1>Olá, João!</h1>
+      <p>Pronto para gerenciar seu dia?</p>
     </div>
-    <script type="module" src="dashboard.js"></script>
-</body>
-</html>
+    <div class="dashboard-summaries">
+      <div class="summary-card">
+        <i class="fa-regular fa-calendar"></i>
+        <div>
+          <span class="summary-number">6</span>
+          <span class="summary-label">Agendamentos hoje</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <i class="fa-regular fa-user"></i>
+        <div>
+          <span class="summary-number">38</span>
+          <span class="summary-label">Clientes ativos</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <i class="fa-solid fa-briefcase"></i>
+        <div>
+          <span class="summary-number">3</span>
+          <span class="summary-label">Próximos serviços</span>
+        </div>
+      </div>
+    </div>
+    <div class="dashboard-actions">
+      <button class="action-btn blue"><i class="fa-solid fa-plus"></i> Novo agendamento</button>
+      <button class="action-btn green"><i class="fa-solid fa-user-plus"></i> Adicionar cliente</button>
+      <button class="action-btn yellow"><i class="fa-solid fa-tasks"></i> Adicionar serviço</button>
+    </div>
+    <div class="dashboard-news">
+      <h2>Novidades</h2>
+      <div class="news-card">
+        <strong>Novas funcionalidades na agenda</strong>
+        <p>Confira as últimas atualizações na aplicação.</p>
+      </div>
+    </div>
+  </div>
+</main>
