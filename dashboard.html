@@ -9,20 +9,18 @@
     <style>
       .main-content {
         margin-left: 220px;
-        padding: 40px 32px 32px 32px;
+        padding: 40px 8px 32px 8px;
         background: #f7f8fe;
         min-height: 100vh;
       }
       @media (max-width: 900px) {
         .main-content { margin-left: 60px; }
       }
-
       .servicos-container {
         max-width: 540px;
         margin: 0 auto;
         width: 100%;
       }
-
       .header-section {
         display: flex;
         justify-content: space-between;
@@ -63,7 +61,6 @@
         transform: translateY(-2px) scale(1.05);
         color: #fff;
       }
-
       .servico-lista {
         display: flex;
         flex-direction: column;
@@ -76,10 +73,13 @@
         padding: 18px 20px;
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         gap: 16px;
         transition: box-shadow 0.16s, transform 0.14s;
         width: 100%;
+        min-height: 60px;
+        position: relative;
+        overflow: hidden;
       }
       .servico-card:hover {
         box-shadow: 0 6px 30px #a5b4fc33, 0 1.5px 12px #64748b12;
@@ -88,12 +88,16 @@
       .servico-info {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
       .servico-nome {
         font-weight: 700;
         color: #22223b;
         font-size: 1.13em;
         margin-bottom: 2px;
+        word-break: break-word;
       }
       .servico-duracao, .servico-preco {
         display: inline-block;
@@ -109,6 +113,8 @@
         display: flex;
         gap: 8px;
         flex-shrink: 0;
+        align-items: center;
+        margin-top: 2px;
       }
       .btn-editar, .btn-remover {
         border: none;
@@ -127,6 +133,7 @@
         background: #e0f2fe;
         color: #2563eb;
       }
+      .btn-editar i { font-size: 1.08em; }
       .btn-editar:hover {
         background: #bae6fd;
         color: #1e40af;
@@ -136,6 +143,7 @@
         background: #fee2e2;
         color: #b91c1c;
       }
+      .btn-remover i { font-size: 1.08em; }
       .btn-remover:hover {
         background: #fecaca;
         color: #991b1b;
@@ -148,19 +156,22 @@
         }
         .servico-card {
           flex-direction: column;
-          align-items: flex-start;
+          align-items: stretch;
           gap: 12px;
+          padding: 15px 8px;
         }
         .header-section {
           flex-direction: column;
           align-items: flex-start;
           gap: 8px;
         }
+        .servico-acoes {
+          justify-content: flex-end;
+        }
       }
     </style>
 </head>
 <body>
-    <!-- Menu lateral incluso dinamicamente -->
     <div id="sidebar-placeholder"></div>
     <main class="main-content">
       <div class="servicos-container">
@@ -172,7 +183,6 @@
             <a class="btn-add" href="servico-novo.html"><i class="fa fa-plus"></i> Novo Serviço</a>
         </div>
 
-        <!-- Lista de serviços cadastrados -->
         <div class="servico-lista" id="servico-lista">
             <!-- Serviços serão listados dinamicamente aqui -->
         </div>
@@ -180,22 +190,20 @@
     </main>
 
     <script>
-    // Inclui o menu-lateral.html dinamicamente
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Destaca o item Serviços
           const links = document.querySelectorAll('.sidebar-links a');
           links.forEach(link => link.classList.remove('active'));
           const servicosLink = document.querySelector('.sidebar-links a[href*="servicos"]');
           if(servicosLink) servicosLink.classList.add('active');
         });
 
-      // Demonstração: lista fictícia de serviços (substitua pelo seu backend)
+      // Exemplo: serviços fictícios para teste
       const listaServicos = [
-        { nome: "Corte de Cabelo", duracao: 60, preco: 50.00 },
+        { nome: "Corte de Cabelo (com hidratação e finalização especial, descrição longa para testar o card)", duracao: 60, preco: 50.00 },
         { nome: "Barba", duracao: 30, preco: 30.00 },
         { nome: "Coloração", duracao: 90, preco: 100.00 },
       ];
