@@ -7,24 +7,8 @@
   <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
- <aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <div class="sidebar-links">
-        <a href="dashboard.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard</a>
-        <a href="servicos.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path></svg> Serviços</a>
-        <a href="agenda.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Agenda</a>
-        <a href="clientes.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Clientes</a>
-        <a href="equipe.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Equipe</a>
-        <a href="perfil.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Meu Perfil</a>
-    </div>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16,17 21,12 16,7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            Sair
-        </button>
-    </div>
-</aside>
+  <!-- Sidebar será incluído dinamicamente -->
+  <div id="sidebar-placeholder"></div>
 
   <main class="main-content">
     <h1>Nossos Serviços</h1>
@@ -46,13 +30,11 @@
   </div>
 
   <style>
-      /* Adicionada uma regra para o conteúdo principal para controlar o empilhamento */
       .main-content {
           position: relative;
           z-index: 1;
       }
 
-      /* Estilos para o Modal de Confirmação (COM Z-INDEX AUMENTADO) */
       .modal-overlay {
           position: fixed;
           top: 0;
@@ -63,18 +45,15 @@
           display: flex;
           justify-content: center;
           align-items: center;
-          z-index: 9999; /* MUITO ALTO PARA GARANTIR QUE FICA NO TOPO */
+          z-index: 9999;
           opacity: 0;
           pointer-events: none;
           transition: opacity 0.3s ease;
       }
-
-      /* Classe 'ativo' é adicionada pelo JS para mostrar o modal */
       .modal-overlay.ativo {
           opacity: 1;
           pointer-events: auto;
       }
-
       .modal-box {
           background: white;
           padding: 30px;
@@ -86,30 +65,25 @@
           transform: scale(0.95);
           transition: transform 0.3s ease;
       }
-
       .modal-overlay.ativo .modal-box {
           transform: scale(1);
       }
-
       .modal-box h2 {
           margin-top: 0;
           font-size: 1.5em;
           color: #333;
       }
-
       .modal-box p {
           margin-bottom: 20px;
           font-size: 1.1em;
           color: #555;
       }
-
       .modal-botoes {
           display: flex;
           justify-content: center;
           gap: 15px;
           margin-top: 20px;
       }
-
       .modal-botoes button {
           padding: 12px 25px;
           border: none;
@@ -119,11 +93,9 @@
           font-weight: bold;
           transition: background-color 0.2s, transform 0.2s;
       }
-
       .modal-botoes button:hover {
           transform: translateY(-2px);
       }
-
       #modal-btn-confirmar {
           background-color: #d9534f;
           color: white;
@@ -131,7 +103,6 @@
       #modal-btn-confirmar:hover {
           background-color: #c9302c;
       }
-
       #modal-btn-cancelar {
           background-color: #f0f0f0;
           color: #333;
@@ -139,8 +110,6 @@
       #modal-btn-cancelar:hover {
           background-color: #e0e0e0;
       }
-
-      /* Estilos para os cartões de serviços */
       .servico-card {
           background: white;
           border: 1px solid #e0e0e0;
@@ -150,25 +119,21 @@
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           transition: box-shadow 0.2s;
       }
-
       .servico-card:hover {
           box-shadow: 0 4px 8px rgba(0,0,0,0.15);
       }
-
       .servico-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 10px;
       }
-
       .servico-titulo {
           font-size: 1.3em;
           font-weight: bold;
           color: #333;
           margin: 0;
       }
-
       .servico-categoria {
           background: #007bff;
           color: white;
@@ -177,13 +142,11 @@
           font-size: 0.8em;
           font-weight: bold;
       }
-
       .servico-descricao {
           color: #666;
           margin: 10px 0;
           line-height: 1.4;
       }
-
       .servico-footer {
           display: flex;
           justify-content: space-between;
@@ -192,23 +155,19 @@
           padding-top: 15px;
           border-top: 1px solid #f0f0f0;
       }
-
       .servico-preco {
           font-size: 1.2em;
           font-weight: bold;
           color: #28a745;
       }
-
       .servico-duracao {
           color: #666;
           font-size: 0.9em;
       }
-
       .servico-acoes {
           display: flex;
           gap: 10px;
       }
-
       .btn-acao {
           padding: 8px 12px;
           border: none;
@@ -217,26 +176,36 @@
           font-size: 0.9em;
           transition: background-color 0.2s;
       }
-
       .btn-editar {
           background-color: #ffc107;
           color: #333;
       }
-
       .btn-editar:hover {
           background-color: #e0a800;
       }
-
       .btn-excluir {
           background-color: #dc3545;
           color: white;
       }
-
       .btn-excluir:hover {
           background-color: #c82333;
       }
   </style>
-<script src="perfil.js" type="module"></script>
-
+  <script>
+    // Inclui o menu lateral dinamicamente
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Realça o item do menu Serviços, se desejar:
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const servicosLink = document.querySelector('.sidebar-links a[href*="servicos"]');
+          if(servicosLink) servicosLink.classList.add('active');
+        });
+    });
+  </script>
+  <script src="perfil.js" type="module"></script>
 </body>
 </html>
