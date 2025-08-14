@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil e Configurações - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <!-- FontAwesome (opcional, para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .main-content {
+            margin-left: 220px;
+            padding: 40px 32px 32px 32px;
+        }
+        @media (max-width: 900px) {
+            .main-content { margin-left: 60px; }
+        }
         .logo-upload-container {
             display: flex;
             align-items: center;
@@ -44,31 +53,11 @@
             box-shadow: 0 8px 20px rgba(79, 172, 254, 0.2);
             transform: translateY(-2px);
         }
-        @media (max-width: 600px) {
-            .logo-upload-container {
-                flex-direction: column;
-                gap: 12px;
-                align-items: flex-start;
-            }
-        }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <a href="index.html" class="sidebar-brand">Pronti</a><hr />
-        <div class="sidebar-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="servicos.html">Serviços</a>
-            <a href="agenda.html">Agenda</a>
-            <a href="clientes.html">Clientes</a>
-            <a href="equipe.html">Equipe</a>
-            <a href="perfil.html" class="active">Meu Perfil</a>
-            <a href="vitrine.html">Vitrine</a>
-        </div>
-        <div class="sidebar-footer">
-            <button id="btn-logout" class="btn-logout">Sair</button>
-        </div>
-    </aside>
+    <!-- Menu lateral incluso dinamicamente -->
+    <div id="sidebar-placeholder"></div>
 
     <main class="main-content">
         <div class="header-section">
@@ -114,7 +103,6 @@
                         <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
                     </div>
                 </div>
-                <!-- A seção de equipe FOI REMOVIDA conforme solicitado -->
                 <div class="form-actions">
                     <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
                 </div>
@@ -125,6 +113,23 @@
     <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
         <!-- O conteúdo do seu modal vai aqui dentro -->
     </div>
+    <script>
+    // Inclui o menu-lateral.html dinamicamente (padrão unificado)
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Destaca o item de perfil após inclusão do menu
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
+          if (perfilLink) {
+              perfilLink.classList.add('active');
+          }
+        });
+    });
+    </script>
     <script src="perfil.js" type="module"></script>
 </body>
 </html>
