@@ -1,7 +1,4 @@
-// dashboard.js - VERSÃO FINAL COM DATA INTELIGENTE BASEADA NA EQUIPA
-
-import { db, auth } from "./firebase-config.js";
-im// dashboard.js - VERSÃO FINAL COM CORREÇÃO DE FUSO HORÁRIO
+// dashboard.js - VERSÃO FINAL COM CORREÇÃO DE FUSO HORÁRIO E INICIALIZAÇÃO ROBUSTA
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -50,16 +47,11 @@ async function buscarHorariosDoDono(empresaId) {
     }
 }
 
-// ===============================================
-// CORREÇÃO DE FUSO HORÁRIO
-// ===============================================
 /**
  * Retorna a data e hora atual no fuso horário de São Paulo.
  * @returns {Date}
  */
 function getAgoraEmSaoPaulo() {
-    // Cria uma data e a formata para a string correspondente em São Paulo,
-    // depois converte de volta para um objeto Date. Isso ajusta o fuso.
     return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
 }
 
@@ -80,7 +72,6 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
                 const ultimoBloco = diaDeTrabalho.blocos[diaDeTrabalho.blocos.length - 1];
                 const fimDoExpediente = timeStringToMinutes(ultimoBloco.fim);
                 
-                // USA A HORA CORRETA DE SÃO PAULO
                 const agoraSP = getAgoraEmSaoPaulo();
                 const agoraEmMinutos = agoraSP.getHours() * 60 + agoraSP.getMinutes();
 
@@ -206,6 +197,7 @@ function preencherResumoInteligente(resumoInteligente) {
 // --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD ---
 
 async function preencherDashboard(user, dataSelecionada) {
+    console.log("4. A preencher o dashboard para a data:", dataSelecionada);
     const empresaId = await getEmpresaId(user);
     if (!empresaId) {
         alert("ID da Empresa não encontrado.");
@@ -216,6 +208,7 @@ async function preencherDashboard(user, dataSelecionada) {
         const agQuery = query(agCollection, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
         const agSnap = await getDocs(agQuery);
         const agsDoDia = agSnap.docs.map(doc => doc.data());
+        console.log(`   -> Encontrados ${agsDoDia.length} agendamentos para esta data.`);
 
         preencherAgendaDoDia(agsDoDia);
         preencherCardServico(calcularServicosDestaque(agsDoDia));
@@ -240,9 +233,10 @@ async function preencherDashboard(user, dataSelecionada) {
             })
         );
         preencherResumoInteligente(resumoInteligente);
+        console.log("   -> Dashboard preenchido com sucesso.");
 
     } catch (error) {
-        console.error("Erro ao carregar agendamentos:", error);
+        console.error("   -> ERRO ao carregar agendamentos para o dashboard:", error);
         alert("Ocorreu um erro ao carregar os dados do dashboard.");
     }
 }
@@ -259,29 +253,41 @@ function debounce(fn, delay) {
 
 // --- INICIALIZAÇÃO E EVENTOS ---
 
+async function init(user) {
+    console.log("1. Utilizador autenticado. A iniciar o dashboard...");
+    const filtroData = document.getElementById("filtro-data");
+    const empresaId = await getEmpresaId(user);
+
+    if (!empresaId) {
+        alert("Não foi possível identificar sua empresa.");
+        return;
+    }
+    console.log("2. ID da Empresa encontrado:", empresaId);
+
+    const hojeString = new Date().toISOString().split('T')[0];
+    const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
+    console.log("3. Data inteligente definida para:", dataInicial);
+
+    if (filtroData) {
+        filtroData.value = dataInicial;
+        filtroData.addEventListener("change", debounce(() => {
+            preencherDashboard(user, filtroData.value);
+        }, 300));
+    }
+
+    await preencherDashboard(user, dataInicial);
+}
+
+
 window.addEventListener("DOMContentLoaded", () => {
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
         if (user) {
-            const filtroData = document.getElementById("filtro-data");
-            const empresaId = await getEmpresaId(user);
-
-            if (!empresaId) {
-                alert("Não foi possível identificar sua empresa.");
-                return;
-            }
-
-            const hojeString = new Date().toISOString().split('T')[0];
-            const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-
-            if (filtroData) {
-                filtroData.value = dataInicial;
-                filtroData.addEventListener("change", debounce(() => {
-                    preencherDashboard(user, filtroData.value);
-                }, 300));
-            }
-
-            await preencherDashboard(user, dataInicial);
+            init(user).catch(err => {
+                console.error("Erro fatal na inicialização:", err);
+                alert("Ocorreu um erro crítico ao iniciar o dashboard.");
+            });
         } else {
+            console.log("Utilizador não autenticado. A redirecionar para o login...");
             // window.location.href = "login.html";
         }
     });
