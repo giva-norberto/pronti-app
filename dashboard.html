@@ -23,58 +23,60 @@
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <div class="card card-agenda">
-                <h3>📅 Agenda do Dia</h3>
-                <div id="agenda-resultado" class="card-body">
-                    <!-- Agendamentos do dia aparecerão aqui -->
-                </div>
-            </div>
-
-            <div class="card card-servico">
-                <h3>⭐ Serviço em Destaque</h3>
-                <div id="servico-destaque" class="card-body card-body-destaque">
-                    ...
-                </div>
-            </div>
-
-            <div class="card card-profissional">
-                <h3>👤 Profissional do Dia</h3>
-                <div class="card-body card-body-destaque">
-                    <strong id="prof-destaque-nome">...</strong>
-                    <span id="prof-destaque-qtd">...</span>
-                </div>
-            </div>
-
-            <div class="card card-resumo">
-                <h3>📊 Resumo do Dia</h3>
-                <div class="card-body">
-                    <div class="resumo-item">
-                        <span>Total de Agendamentos:</span>
-                        <strong id="total-agendamentos-dia">0</strong>
-                    </div>
-                    <div class="resumo-item">
-                        <span>Faturamento Estimado:</span>
-                        <strong id="faturamento-previsto">R$0,00</strong>
-                    </div>
-                    <div class="resumo-item">
-                        <span>Ocupação:</span>
-                        <strong id="percentual-ocupacao">0%</strong>
+        <!-- NOVA ESTRUTURA INSPIRADA NO LAYOUT MODERNO -->
+        <div class="dashboard-grid-v2">
+            <!-- Linha dos cards principais (Agenda, Resumo, IA, Resumo Inteligente) -->
+            <div class="row-main-cards">
+                <div class="card card-agenda">
+                    <h3>📅 Agenda do Dia</h3>
+                    <div id="agenda-resultado" class="card-body">
+                        <!-- Agendamentos do dia aparecerão aqui -->
                     </div>
                 </div>
-            </div>
-
-            <div class="card card-ia">
-                <h3>🤖 Sugestão Inteligente</h3>
-                <div id="ia-sugestao" class="card-body">
-                    ...
+                <div class="card card-resumo">
+                    <h3>📊 Resumo do Dia</h3>
+                    <div class="card-body">
+                        <div class="resumo-item">
+                            <span>Total de Agendamentos:</span>
+                            <strong id="total-agendamentos-dia">0</strong>
+                        </div>
+                        <div class="resumo-item">
+                            <span>Faturamento Estimado:</span>
+                            <strong id="faturamento-previsto">R$0,00</strong>
+                        </div>
+                        <div class="resumo-item">
+                            <span>Ocupação:</span>
+                            <strong id="percentual-ocupacao">0%</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="card card-ia">
+                    <h3>🤖 Sugestão Inteligente</h3>
+                    <div id="ia-sugestao" class="card-body">
+                        ...
+                    </div>
+                </div>
+                <div class="card card-resumo-inteligente">
+                    <h3>💡 Resumo Inteligente</h3>
+                    <div id="resumo-inteligente" class="card-body">
+                        ...
+                    </div>
                 </div>
             </div>
-
-            <div class="card card-resumo-inteligente">
-                <h3>💡 Resumo Inteligente</h3>
-                <div id="resumo-inteligente" class="card-body">
-                    ...
+            <!-- Linha centralizada dos dois cards menores -->
+            <div class="row-mini-cards">
+                <div class="mini-card card-servico">
+                    <h3>⭐ Serviço em Alta</h3>
+                    <div id="servico-destaque" class="card-body card-body-destaque">
+                        ...
+                    </div>
+                </div>
+                <div class="mini-card card-profissional">
+                    <h3>👤 Profissional em Alta</h3>
+                    <div class="card-body card-body-destaque">
+                        <strong id="prof-destaque-nome">...</strong>
+                        <span id="prof-destaque-qtd">...</span>
+                    </div>
                 </div>
             </div>
         </div>
