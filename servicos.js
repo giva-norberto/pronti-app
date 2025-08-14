@@ -1,3 +1,10 @@
+// --- GARANTE QUE A SESSÃO DO FIREBASE AUTH PERSISTE ENTRE PÁGINAS (opcional, mas recomendado) ---
+// Coloque isso no topo do seu firebase-config.js OU logo antes do onAuthStateChanged aqui:
+/*
+import { setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+setPersistence(auth, browserLocalPersistence).catch(console.error);
+*/
+
 import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
