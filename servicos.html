@@ -103,15 +103,15 @@
 <!-- TELA DE CARREGAMENTO INICIAL -->
 <div id="loader" class="loader-overlay">
     <div class="loader-spinner"></div>
-    <p>A verificar sessão...</p>
+    <p>Carregando seus serviços...</p>
 </div>
 
-<!-- CORREÇÃO: O menu lateral agora está FORA do conteúdo que é escondido -->
+<!-- Menu lateral (não é afetado pelo loader do app-content) -->
 <aside class="sidebar">
     <!-- O seu componente de menu lateral unificado vai aqui -->
 </aside>
 
-<!-- CONTEÚDO PRINCIPAL (ESCONDIDO POR DEFEITO) -->
+<!-- CONTEÚDO PRINCIPAL -->
 <div id="app-content" style="display: none;">
     <main class="main-content">
         <h1>Nossos Serviços</h1>
@@ -131,6 +131,11 @@
     </div>
 </div>
 
+<!-- Certifique-se de que seu JS já está otimizando:
+    - Persistência do Firebase Auth (browserLocalPersistence)
+    - Só busca serviços após autenticar
+    - Mostra o loader enquanto carrega 
+-->
 <script src="servicos.js" type="module"></script>
 
 </body>
