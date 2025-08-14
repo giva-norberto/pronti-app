@@ -1,45 +1,19 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <title>Pronti - Clientes</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Clientes</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
-        /* Responsividade básica para sidebar e conteúdo */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: -220px; top: 0;
-                width: 200px;
-                height: 100vh;
-                background: #4facfe;
-                color: #fff;
-                z-index: 998;
-                transition: left 0.3s;
-            }
-            .sidebar.open {
-                left: 0;
-            }
-            .main-content {
-                margin-left: 0 !important;
-                padding: 12px;
-            }
-            .btn-new, .btn-logout, .btn-modal {
-                width: 100%;
-                min-width: 0;
-                font-size: 1.1rem;
-            }
-            .modal-box {
-                max-width: 98vw !important;
-                padding: 16px !important;
-            }
-            .modal-overlay {
-                align-items: flex-end !important;
-            }
+        /* Estilos específicos da página de Clientes */
+        .main-content {
+            margin-left: 270px; /* Espaço para a nova sidebar */
+            padding: 32px;
         }
-        /* Modal overlay centralizado */
+
+        /* Estilos para o Modal de Confirmação */
         .modal-overlay {
             position: fixed;
             left: 0; top: 0;
@@ -58,6 +32,13 @@
             max-width: 400px;
             width: 90vw;
             box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            text-align: center;
+        }
+        .modal-botoes {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
         }
         .btn-modal {
             margin: 6px 0;
@@ -69,74 +50,89 @@
         }
         .btn-cancelar { background: #eee; color: #333;}
         .btn-confirmar { background: #ff6b6b; color: #fff;}
+
+        /* Responsividade */
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <aside class="sidebar" id="sidebar">
-        <a href="index.html" class="sidebar-brand">Pronti</a>
-        <hr />
-        <nav class="sidebar-links">
-            <a href="dashboard.html"><span>🏠</span> Dashboard</a>
-            <a href="servicos.html"><span>🛠️</span> Serviços</a>
-            <a href="agenda.html"><span>📅</span> Agenda</a>
-            <a href="clientes.html" class="active"><span>👤</span> Clientes</a>
-            <a href="equipe.html"><span>👥</span> Equipe</a>
-            <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-        </nav>
-        <div class="sidebar-footer">
-            <button id="btn-logout" class="btn-logout">Sair</button>
-        </div>
-    </aside>
-    <!-- Botão menu hamburguer para mobile -->
-    <button id="btn-menu" style="position:fixed;top:14px;left:12px;z-index:999;display:none;background:#4facfe;color:#fff;border:none;padding:8px 14px;border-radius:7px;">
-        ☰ Menu
-    </button>
 
-    <main class="main-content" style="margin-left:220px;padding:32px;">
-        <h1>Meus Clientes</h1>
-        <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
-        <div id="lista-clientes" style="margin-top: 20px;"></div>
-    </main>
+<!-- ========================================================== -->
+<!-- COMPONENTE DA BARRA LATERAL (SIDEBAR) UNIFICADA          -->
+<!-- ========================================================== -->
+<aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <nav class="sidebar-links">
+        <a href="dashboard.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Dashboard</span>
+        </a>
+        <a href="servicos.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+            <span>Serviços</span>
+        </a>
+        <a href="agenda.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Agenda</span>
+        </a>
+        <a href="clientes.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Clientes</span>
+        </a>
+        <a href="equipe.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Equipe</span>
+        </a>
+        <a href="perfil.html">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Meu Perfil</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
+</aside>
 
-    <!-- Modal de confirmação -->
-    <div id="modal-confirmacao" class="modal-overlay">
-        <div class="modal-box">
-            <h3 id="modal-titulo">Confirmar Exclusão</h3>
-            <p id="modal-mensagem">Você tem certeza?</p>
-            <div class="modal-botoes">
-                <button id="btn-modal-cancelar" class="btn-modal btn-cancelar">Cancelar</button>
-                <button id="btn-modal-confirmar" class="btn-modal btn-confirmar">Sim, Excluir</button>
-            </div>
+<main class="main-content">
+    <h1>Meus Clientes</h1>
+    <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
+    <div id="lista-clientes" style="margin-top: 20px;"></div>
+</main>
+
+<!-- Modal de confirmação -->
+<div id="modal-confirmacao" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modal-titulo">Confirmar Exclusão</h3>
+        <p id="modal-mensagem">Você tem certeza?</p>
+        <div class="modal-botoes">
+            <button id="btn-modal-cancelar" class="btn-modal btn-cancelar">Cancelar</button>
+            <button id="btn-modal-confirmar" class="btn-modal btn-confirmar">Sim, Excluir</button>
         </div>
     </div>
+</div>
 
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="clientes.js"></script>
-    <script>
-        // Sidebar responsiva para mobile
-        function checkMobileSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const btnMenu = document.getElementById('btn-menu');
-            if(window.innerWidth <= 768) {
-                sidebar.classList.remove('open');
-                btnMenu.style.display = "block";
-                document.querySelector('.main-content').style.marginLeft = "0";
-            } else {
-                sidebar.classList.remove('open');
-                btnMenu.style.display = "none";
-                document.querySelector('.main-content').style.marginLeft = "220px";
-            }
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Script para destacar o link ativo na sidebar
+    document.addEventListener("DOMContentLoaded", function() {
+        const currentPage = window.location.pathname.split('/').pop();
+        const links = document.querySelectorAll('.sidebar-links a');
+        
+        links.forEach(link => link.classList.remove('active'));
+        
+        // Adiciona a classe 'active' ao link que corresponde à página de clientes
+        const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
+        if (clientesLink) {
+            clientesLink.classList.add('active');
         }
-        window.addEventListener('resize', checkMobileSidebar);
-        window.addEventListener('DOMContentLoaded', checkMobileSidebar);
-        document.getElementById('btn-menu').onclick = function() {
-            document.getElementById('sidebar').classList.toggle('open');
-        };
-        // Fecha modal ao clicar fora da caixa
-        document.getElementById('modal-confirmacao').addEventListener('click', function(e) {
-            if(e.target === this) this.classList.remove('show');
-        });
-    </script>
+    });
+</script>
+<script src="clientes.js" type="module"></script>
+
 </body>
 </html>
