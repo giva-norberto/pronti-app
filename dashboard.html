@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Painel Inteligente - Dashboard</title>
-    
-    <!-- Garante que apenas o CSS do dashboard seja carregado -->
     <link rel="stylesheet" href="dashboard.css" /> 
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,9 +20,8 @@
             </div>
         </div>
 
-        <!-- NOVA ESTRUTURA INSPIRADA NO LAYOUT MODERNO -->
-        <div class="dashboard-grid-v2">
-            <!-- Linha dos cards principais (Agenda, Resumo, IA, Resumo Inteligente) -->
+        <!-- GRADE DO PAINEL -->
+        <div class="dashboard-grid-v3">
             <div class="row-main-cards">
                 <div class="card card-agenda">
                     <h3>📅 Agenda do Dia</h3>
@@ -63,7 +59,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Linha centralizada dos dois cards menores -->
+            <!-- Linha central dos dois mini-cards -->
             <div class="row-mini-cards">
                 <div class="mini-card card-servico">
                     <h3>⭐ Serviço em Alta</h3>
@@ -80,6 +76,7 @@
                 </div>
             </div>
         </div>
+        <!-- /GRADE DO PAINEL -->
     </div>
     <script type="module" src="dashboard.js"></script>
 </body>
