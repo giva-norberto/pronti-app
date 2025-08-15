@@ -10,15 +10,21 @@
     --cor-cinza: #6b7280;
     --cor-texto-escuro: #22223b;
     --cor-texto-claro: #44446a;
-    --cor-fundo: #f6f7fb;
-    --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --cor-fundo-app: #f6f7fb;
 }
 
+/* ESTILO PADRÃO PARA TODAS AS PÁGINAS (CLIENTES, AGENDA, ETC.) */
 body {
     font-family: 'Inter', Arial, sans-serif;
-    background-color: var(--cor-fundo);
+    background-color: var(--cor-fundo-app);
     margin: 0;
     color: var(--cor-texto-escuro);
+}
+
+/* ESTILO ESPECIAL QUE SÓ SE APLICA AO INDEX.HTML (DASHBOARD) */
+body.dashboard-body {
+    background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
+    color: #fff;
 }
 
 /* ==================================================
@@ -33,10 +39,12 @@ body {
     display: flex;
     flex-direction: column;
     padding: 32px 20px;
-    border-radius: 0 18px 18px 0;
-    box-shadow: 0 16px 32px rgba(0,0,0,0.08);
     z-index: 100;
     transition: transform 0.3s ease;
+}
+/* Altera o fundo do sidebar APENAS na página do dashboard */
+.dashboard-body .sidebar {
+    background: transparent;
 }
 .sidebar-brand {
     font-size: 1.85rem;
@@ -57,7 +65,7 @@ body {
     text-decoration: none;
     padding: 13px 18px;
     border-radius: 10px;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s;
     font-weight: 500;
     font-size: 1.05rem;
     display: flex;
@@ -66,12 +74,134 @@ body {
 }
 .sidebar-links a.active,
 .sidebar-links a:hover {
-    background: rgba(255,255,255,0.25);
-    color: var(--cor-texto-escuro);
+    background: rgba(255,255,255,0.15);
 }
-.sidebar-links a.active {
+
+/* ==================================================
+   ÁREA DE CONTEÚDO PRINCIPAL
+   ================================================== */
+.main-content {
+    margin-left: 250px;
+    padding: 40px;
+    width: calc(100% - 250px);
+    box-sizing: border-box;
+}
+
+/* Centraliza o conteúdo APENAS na página do dashboard */
+.dashboard-body .main-content {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* ==================================================
+   DASHBOARD (INÍCIO) - NOVO ESTILO
+   ================================================== */
+.dashboard-welcome-center h1 {
+    font-size: 3rem;
     font-weight: 700;
+    margin: 0;
+    color: #fff;
 }
+.dashboard-welcome-center p {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 10px;
+    margin-bottom: 40px;
+}
+
+.dashboard-main-actions {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.action-card {
+    background-color: #fff;
+    color: var(--cor-texto-escuro);
+    border-radius: 16px;
+    padding: 30px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    text-decoration: none;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-width: 180px;
+}
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+.action-card i {
+    font-size: 2.5rem;
+    color: #6366f1;
+}
+.action-card span {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.status-button {
+    background-color: #fff;
+    color: var(--cor-texto-escuro);
+    border: none;
+    border-radius: 12px;
+    padding: 15px 60px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.status-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* ==================================================
+   ESTILOS DAS OUTRAS PÁGINAS (Agenda, Clientes, etc.)
+   ================================================== */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.page-header h1 {
+    font-size: 2rem;
+    color: var(--cor-texto-escuro);
+    margin: 0;
+}
+.card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+/* Adicione aqui as outras regras que faltavam do seu ficheiro original */
 .sidebar-footer {
     margin-top: 24px;
 }
@@ -93,34 +223,6 @@ body {
 .btn-logout:hover {
     background: rgba(255,255,255,0.15);
 }
-
-/* ==================================================
-   ÁREA DE CONTEÚDO E CABEÇALHO DE PÁGINA
-   ================================================== */
-.main-content {
-    margin-left: 250px;
-    padding: 40px;
-    width: calc(100% - 250px);
-    box-sizing: border-box;
-    transition: margin-left 0.3s, width 0.3s;
-}
-
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.page-header h1 {
-    font-size: 2rem;
-    color: var(--cor-texto-escuro);
-    margin: 0;
-}
-
-/* Estilos para os filtros da agenda */
 .filtros-agenda {
     display: flex;
     gap: 15px;
@@ -145,59 +247,22 @@ body {
     font-size: 1rem;
     background-color: #fff;
 }
-
-/* ==================================================
-   PADRÃO GLOBAL DE BOTÕES
-   ================================================== */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
-
-/* Variações de Botões */
 .btn-primary { background-color: var(--cor-primaria); color: #fff; }
 .btn-primary:hover { background: #2795e6; }
-
 .btn-edit { background-color: #6366f1; color: #fff; }
 .btn-edit:hover { background-color: #4f46e5; }
-
 .btn-remove, .btn-cancelar { background-color: var(--cor-perigo); color: #fff; }
 .btn-remove:hover, .btn-cancelar:hover { background-color: #b91c1c; }
-
 .btn-nao-compareceu { background-color: var(--cor-cinza); color: #fff; }
 .btn-nao-compareceu:hover { background-color: #4b5563; }
-
-
-/* ==================================================
-   GRID DE CARDS E CARD UNIVERSAL
-   ================================================== */
 .dashboard-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 24px;
-}
-.card {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: var(--sombra-card);
-    display: flex;
-    flex-direction: column;
-    transition: box-shadow 0.2s, transform 0.2s;
-    overflow: hidden;
 }
 .card:hover {
     transform: translateY(-4px);
@@ -236,8 +301,6 @@ body {
     flex-grow: 1;
     padding: 8px 12px;
 }
-
-/* Padrão de cor para cards da agenda */
 .card.card--agenda .card-title {
     background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
     color: white;
@@ -246,10 +309,6 @@ body {
 .card.card--agenda .card-info {
     padding-top: 24px;
 }
-
-/* ==================================================
-   FORMULÁRIOS PADRONIZADOS
-   ================================================== */
 .form-group {
     margin-bottom: 20px;
 }
@@ -277,7 +336,6 @@ body {
     border-color: var(--cor-primaria);
     box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.3);
 }
-
 #grade-horarios {
     display: flex;
     flex-wrap: wrap;
@@ -312,10 +370,6 @@ body {
     color: var(--cor-texto-claro);
     font-size: 0.9rem;
 }
-
-/* ==================================================
-   OUTROS COMPONENTES (MODAIS, LOADER)
-   ================================================== */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -345,6 +399,7 @@ body {
     margin-top: 20px;
 }
 
+
 /* ==================================================
    RESPONSIVIDADE GERAL
    ================================================== */
@@ -360,20 +415,18 @@ body {
 }
 
 @media (max-width: 768px) {
+    .dashboard-main-actions {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .dashboard-welcome-center h1 {
+        font-size: 2.5rem;
+    }
+    .action-card {
+        min-width: 250px;
+    }
     .page-header {
         flex-direction: column;
         align-items: flex-start;
-    }
-    .page-header .btn {
-        width: 100%;
-    }
-    .page-header h1 {
-        font-size: 1.8rem;
-    }
-    .dashboard-cards {
-        grid-template-columns: 1fr;
-    }
-    .card-actions {
-        flex-direction: column;
     }
 }
