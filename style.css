@@ -178,8 +178,9 @@ body {
 .btn-remove { background-color: var(--cor-perigo); color: #fff; }
 .btn-remove:hover { background-color: #b91c1c; }
 
-.btn-cancelar { background-color: var(--cor-aviso); color: #fff; }
-.btn-cancelar:hover { background-color: #d97706; }
+/* CORREÇÃO: Botão Cancelar agora é vermelho */
+.btn-cancelar { background-color: var(--cor-perigo); color: #fff; }
+.btn-cancelar:hover { background-color: #b91c1c; }
 
 .btn-nao-compareceu { background-color: var(--cor-cinza); color: #fff; }
 .btn-nao-compareceu:hover { background-color: #4b5563; }
