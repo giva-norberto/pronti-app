@@ -1,187 +1,197 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Clientes</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <!-- FontAwesome (opcional) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Fundo e fonte ESPECÍFICOS desta página -->
     <style>
+        /* Reset básico */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            margin: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            width: 100vw;
+            display: flex;
+            font-family: Arial, sans-serif;
             background: #f6f7fb;
             color: #22223b;
         }
+        #sidebar-placeholder {
+            width: 250px;
+            min-width: 200px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px 0 20px 0;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.05);
+        }
         .main-content {
-            margin-left: 220px;
-            padding: 40px 32px 32px 32px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 48px 32px 32px 32px;
+            min-height: 100vh;
+        }
+
+        .clientes-header {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .clientes-header h1 {
+            color: #222b54;
+            font-size: 2.1rem;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+        .btn-new {
+            background-color: #6a5af9;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            font-size: 1rem;
+            border: none;
+            transition: background 0.18s;
+            margin-left: 12px;
+        }
+        .btn-new:hover {
+            background-color: #4f46e5;
+        }
+        .lista-clientes {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .cliente-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px 26px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.09);
+            max-width: 370px;
+            margin-left: auto;
+        }
+        .cliente-nome {
+            font-size: 1.13em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .cliente-info {
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            font-size: 0.98em;
+        }
+        .cliente-acoes {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-acao {
+            padding: 7px 13px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+        .btn-editar { background-color: #ffc107; color: #333; }
+        .btn-excluir { background-color: #dc3545; color: white; }
+        .btn-editar:hover { background: #ffb300; }
+        .btn-excluir:hover { background: #c82333; }
+        /* Responsividade */
+        @media (max-width: 1100px) {
+            .clientes-header, .lista-clientes {
+                max-width: 98vw;
+            }
         }
         @media (max-width: 900px) {
-            .main-content { margin-left: 60px; }
+            body {
+                flex-direction: column;
+            }
+            #sidebar-placeholder {
+                width: 100vw;
+                min-width: unset;
+                flex-direction: row;
+                padding: 0;
+            }
+            .main-content {
+                padding: 24px 0;
+            }
         }
-        /* Modal de confirmação */
-        .modal-overlay {
-            position: fixed;
-            left: 0; top: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
+        @media (max-width: 700px) {
+            .clientes-header, .lista-clientes {
+                padding: 0 8vw;
+            }
+            .main-content {
+                padding: 10px 0;
+            }
         }
-        .modal-overlay.show { display: flex; }
-        .modal-box {
-            background: #fff;
-            border-radius: 10px;
-            padding: 28px;
-            max-width: 400px;
-            width: 90vw;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-            text-align: center;
-        }
-        .modal-botoes {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .btn-modal {
-            margin: 6px 0;
-            padding: 10px 24px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .btn-cancelar { background: #eee; color: #333;}
-        .btn-confirmar { background: #ff6b6b; color: #fff;}
-        /* ==== CARD CLIENTE - PADRÃO PRONTI ==== */
-        .card-cliente {
-          background: #fff;
-          border-radius: 14px;
-          box-shadow: 0 2px 8px #0001;
-          padding: 22px 20px 16px 20px;
-          margin-bottom: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          position: relative;
-          transition: box-shadow 0.18s, transform 0.12s;
-        }
-        .card-cliente:hover {
-          box-shadow: 0 8px 24px #4facfe22;
-          transform: translateY(-2px) scale(1.01);
-        }
-        .card-cliente-nome {
-          font-size: 1.17rem;
-          font-weight: 600;
-          color: #3730a3;
-          margin-bottom: 6px;
-        }
-        .card-cliente-info {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 14px 22px;
-          font-size: 1.01rem;
-          color: #44446a;
-          margin-bottom: 6px;
-        }
-        .card-cliente-acoes {
-          display: flex;
-          gap: 8px;
-          margin-top: 8px;
-        }
-        .card-cliente .btn-copy,
-        .card-cliente .btn-edit,
-        .card-cliente .btn-remove {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.98rem;
-          border: none;
-          border-radius: 7px;
-          padding: 8px 12px;
-          color: #fff;
-          background: #4f8cff;
-          cursor: pointer;
-          transition: background 0.16s;
-          outline: none;
-        }
-        .card-cliente .btn-copy { background: #34d399; }
-        .card-cliente .btn-copy:hover { background: #059669; }
-        .card-cliente .btn-edit { background: #f59e42; }
-        .card-cliente .btn-edit:hover { background: #d97706; }
-        .card-cliente .btn-remove { background: #ef4444; }
-        .card-cliente .btn-remove:hover { background: #b91c1c; }
-        @media (max-width: 600px) {
-          .card-cliente { padding: 13px 7px 11px 10px; }
-          .card-cliente-nome { font-size: 1.07rem; }
-          .card-cliente-info { gap: 7px 10px; font-size: 0.95rem; }
+        @media (max-width: 500px) {
+            .cliente-card {
+                padding: 15px 7px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Menu lateral incluso dinamicamente -->
+    <!-- Menu lateral dinâmico -->
     <div id="sidebar-placeholder"></div>
 
     <main class="main-content">
-        <h1>Meus Clientes</h1>
-        <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
-        <div id="lista-clientes" style="margin-top: 20px;">
-            <!-- Exemplo de card, os reais serão inseridos via JS/Firebase -->
+        <div class="clientes-header">
+            <h1>Clientes</h1>
+            <a href="novo-cliente.html" class="btn-new">Adicionar Novo Cliente</a>
+        </div>
+        <div id="lista-clientes" class="lista-clientes">
+            <!-- Cards de clientes serão inseridos aqui via JS ou manualmente -->
+            <!-- Exemplo de card estático: -->
             <!--
-            <div class="card-cliente">
-              <div class="card-cliente-nome">Maria Oliveira</div>
-              <div class="card-cliente-info">
-                <span><i class="fa-solid fa-phone"></i> (11) 99999-0000</span>
-                <span><i class="fa-solid fa-envelope"></i> maria@email.com</span>
-              </div>
-              <div class="card-cliente-acoes">
-                <button class="btn-copy"><i class="fa-regular fa-copy"></i> Copiar</button>
-                <button class="btn-edit"><i class="fa-solid fa-pen"></i> Editar</button>
-                <button class="btn-remove"><i class="fa-solid fa-trash"></i> Remover</button>
-              </div>
+            <div class="cliente-card">
+                <div class="cliente-nome">Maria Silva</div>
+                <div class="cliente-info">E-mail: maria@email.com<br>Telefone: (11) 90000-0000</div>
+                <div class="cliente-acoes">
+                    <button class="btn-acao btn-editar">Editar</button>
+                    <button class="btn-acao btn-excluir">Excluir</button>
+                </div>
             </div>
             -->
         </div>
     </main>
 
-    <!-- Modal de confirmação -->
-    <div id="modal-confirmacao" class="modal-overlay">
-        <div class="modal-box">
-            <h3 id="modal-titulo">Confirmar Exclusão</h3>
-            <p id="modal-mensagem">Você tem certeza?</p>
-            <div class="modal-botoes">
-                <button id="btn-modal-cancelar" class="btn-modal btn-cancelar">Cancelar</button>
-                <button id="btn-modal-confirmar" class="btn-modal btn-confirmar">Sim, Excluir</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-    // Inclui o menu-lateral.html dinamicamente (padrão unificado)
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Destaca o item clientes após inclusão do menu
-          const links = document.querySelectorAll('.sidebar-links a');
-          links.forEach(link => link.classList.remove('active'));
-          const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
-          if (clientesLink) {
-              clientesLink.classList.add('active');
-          }
-        });
-    });
+        // Carrega o menu lateral padrão dinamicamente
+        fetch('sidebar.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('sidebar-placeholder').innerHTML = html;
+                // Destaca o item de clientes no menu lateral, se o menu usar .sidebar-links
+                const links = document.querySelectorAll('.sidebar-links a');
+                links.forEach(link => link.classList.remove('active'));
+                const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
+                if (clientesLink) {
+                    clientesLink.classList.add('active');
+                }
+            });
     </script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="clientes.js" type="module"></script>
+
+    <!-- Seus scripts do sistema, se houver -->
+    <script src="./clientes.js" type="module"></script>
 </body>
 </html>
