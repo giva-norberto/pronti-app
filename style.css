@@ -256,7 +256,83 @@
   .card-info { font-size: 0.95rem; }
 }
 
-/* Cards especiais do dashboard com cabeçalho colorido */
+/* ==================================================
+   CARD DESTAQUE DE SERVIÇO (INTEGRADO)
+   - Usado em: cards especiais de destaque (ex: promoções, serviço do dia)
+   - Uso:
+     <div class="card destaque-servico">
+       <span class="icon">💇‍♂️✂️</span>
+       <div>
+         <span class="card-title">Seu serviço mais procurado hoje:</span>
+         <span class="card-info">Corte de cabelo</span>
+       </div>
+     </div>
+================================================== */
+.card.destaque-servico {
+  background: #7c5cff;
+  color: #fff;
+  border-radius: 18px;
+  padding: 22px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 4px 16px rgba(60,60,120,0.09);
+  font-family: 'Inter', Arial, sans-serif;
+}
+.card.destaque-servico .card-title {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+  display: block;
+}
+.card.destaque-servico .card-info {
+  color: #f3f0ff;
+  font-size: 1.06rem;
+}
+.card.destaque-servico .icon {
+  margin-right: 12px;
+  font-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+@media (max-width: 600px) {
+  .card.destaque-servico {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 5vw;
+  }
+  .card.destaque-servico .icon {
+    font-size: 1.4rem;
+    margin-right: 8px;
+  }
+}
+
+/* ==================================================
+   ÍCONE UNIVERSAL PARA CARDS
+   - Usado em: qualquer card com emoji ou ícone, inclusive destaque-servico
+   - Estrutura:
+     <span class="icon">💇‍♂️✂️</span>
+================================================== */
+.card .icon {
+  margin-right: 12px;
+  font-size: 2rem;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+@media (max-width: 600px) {
+  .card .icon {
+    font-size: 1.4rem;
+    margin-right: 8px;
+  }
+}
+
+/* ==================================================
+   Cards especiais do dashboard com cabeçalho colorido
+================================================== */
 .card h3 {
     margin: 0;
     padding: 18px 24px;
