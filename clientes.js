@@ -89,13 +89,14 @@ function mostrarConfirmacao(mensagem) {
   });
 }
 
-// Listener para botão excluir
+// Listener para botão excluir e editar
 function safeAddClientesListener() {
   if (!listaClientesDiv) {
     console.error("Elemento #lista-clientes não encontrado no DOM.");
     return;
   }
   listaClientesDiv.addEventListener("click", async (event) => {
+    // Excluir
     if (event.target && event.target.classList.contains("btn-excluir")) {
       event.preventDefault();
       event.stopPropagation();
@@ -110,6 +111,14 @@ function safeAddClientesListener() {
       if (confirmado) {
         await excluirCliente(clienteId);
       }
+    }
+    // Editar
+    if (event.target && event.target.classList.contains("btn-edit")) {
+      event.preventDefault();
+      event.stopPropagation();
+      const clienteId = event.target.dataset.id;
+      // Redireciona para a página de edição (ajuste o nome da página se necessário)
+      window.location.href = `novo-cliente.html?id=${clienteId}`;
     }
   });
 }
