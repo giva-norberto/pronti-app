@@ -310,7 +310,126 @@ body {
 .btn-submit { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 25px; padding: 14px 0; font-weight: bold; font-size: 1.15rem; width: 100%; margin-top: 18px; box-shadow: 0 2px 8px #d6d2f8; transition: all 0.2s ease; display: block; border: none; cursor: pointer; }
 .btn-submit:hover { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
 
-/* MODAL OVERLAY */
+/* =========================================
+   CLIENTES PADRÃO PRONTI
+========================================= */
+/* Card Clientes */
+.clientes-card {
+  max-width: 900px;
+  margin: 32px auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 32px 26px 20px 26px;
+}
+/* Header Clientes */
+.clientes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.clientes-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #3730a3;
+}
+.btn-new {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 18px;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(79,140,255,0.10);
+  cursor: pointer;
+  transition: background 0.18s;
+  text-decoration: none;
+  outline: none;
+}
+.btn-new:hover, .btn-new:focus { background: #4338ca; }
+/* Tabela Clientes */
+.clientes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 24px;
+  background: #f7faff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.clientes-table th, .clientes-table td {
+  padding: 13px 11px;
+  text-align: left;
+}
+.clientes-table th {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+.clientes-table tr {
+  border-bottom: 1px solid #e0e7ff;
+  transition: background 0.15s;
+}
+.clientes-table tr:hover {
+  background: #e0e7ff44;
+}
+/* Botões Clientes */
+.btn-copy, .btn-edit, .btn-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.98rem;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: #fff;
+  background: #4f8cff;
+  cursor: pointer;
+  transition: background 0.16s;
+  outline: none;
+}
+.btn-copy { background: #34d399; }
+.btn-copy:hover { background: #059669; }
+.btn-edit { background: #f59e42; }
+.btn-edit:hover { background: #d97706; }
+.btn-remove { background: #ef4444; }
+.btn-remove:hover { background: #b91c1c; }
+/* Inputs e filtros clientes */
+.cliente-filter-bar {
+  margin: 18px 0 10px 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.input-filter {
+  padding: 8px 14px;
+  border: 1.5px solid #e0e7ff;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.14s;
+}
+.input-filter:focus {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+/* Responsividade clientes */
+@media (max-width: 700px) {
+  .clientes-card { padding: 16px 3vw 12px 3vw; }
+  .clientes-header h1 { font-size: 1.3rem; }
+  .clientes-table th, .clientes-table td { padding: 8px 4px; font-size: 0.97rem; }
+}
+
+/* =========================================
+   MODAL OVERLAY
+========================================= */
 .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; right: 0; bottom: 0; background: rgba(60, 57, 80, 0.35); align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex !important; }
 .modal-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 24px #d6d2f8; padding: 32px; max-width: 350px; width: 98vw; text-align: center; }
@@ -340,7 +459,7 @@ body {
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* RESPONSIVIDADE */
+/* RESPONSIVIDADE GERAL */
 @media (max-width: 1200px) {
     .dashboard-cards { grid-template-columns: repeat(2, 1fr); }
     .card-agenda { grid-column: span 2; }
@@ -395,8 +514,15 @@ body {
     .form-section h3 { font-size: 1.07em; }
     /* Ajuste para esconder o menu lateral fixo se houver */
     .sidebar { display: none; }
+    .clientes-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .cliente-filter-bar { flex-direction: column; gap: 8px; width: 100%; }
+    .clientes-table th, .clientes-table td { font-size: 0.95rem; }
 }
-.button {
+
+/* =========================================
+   BOTÕES UNIVERSAIS PADRÃO PRONTI
+========================================= */
+.button, .btn-custom {
   display: inline-flex;
   align-items: center;
   padding: 10px 20px;
@@ -409,15 +535,14 @@ body {
   cursor: pointer;
   transition: background 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  gap: 8px;
 }
-
-.button:hover, .button:focus {
+.button:hover, .btn-custom:hover, .button:focus, .btn-custom:focus {
   background-color: #3767b7;
   box-shadow: 0 4px 12px rgba(79,140,255,0.15);
   outline: none;
 }
-
-.button .icon {
+.button .icon, .btn-custom .icon {
   margin-right: 8px;
   font-size: 1.1em;
 }
