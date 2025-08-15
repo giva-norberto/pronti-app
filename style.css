@@ -11,6 +11,7 @@
     --cor-texto-escuro: #22223b;
     --cor-texto-claro: #44446a;
     --cor-fundo-app: #f6f7fb;
+    --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 /* ESTILO PADRÃO PARA TODAS AS PÁGINAS (CLIENTES, AGENDA, ETC.) */
@@ -74,6 +75,27 @@ body.dashboard-body {
 }
 .sidebar-links a.active,
 .sidebar-links a:hover {
+    background: rgba(255,255,255,0.15);
+}
+.sidebar-footer {
+    margin-top: 24px;
+}
+.btn-logout {
+    background: none;
+    border: none;
+    color: white;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    width: 100%;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.btn-logout:hover {
     background: rgba(255,255,255,0.15);
 }
 
@@ -179,50 +201,6 @@ body.dashboard-body {
     color: var(--cor-texto-escuro);
     margin: 0;
 }
-.card {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-/* Adicione aqui as outras regras que faltavam do seu ficheiro original */
-.sidebar-footer {
-    margin-top: 24px;
-}
-.btn-logout {
-    background: none;
-    border: none;
-    color: white;
-    padding: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1rem;
-    font-weight: 500;
-    width: 100%;
-    border-radius: 8px;
-    transition: background 0.2s;
-}
-.btn-logout:hover {
-    background: rgba(255,255,255,0.15);
-}
 .filtros-agenda {
     display: flex;
     gap: 15px;
@@ -247,22 +225,59 @@ body.dashboard-body {
     font-size: 1rem;
     background-color: #fff;
 }
+
+/* ==================================================
+   PADRÃO GLOBAL DE BOTÕES
+   ================================================== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+
+/* Variações de Botões */
 .btn-primary { background-color: var(--cor-primaria); color: #fff; }
 .btn-primary:hover { background: #2795e6; }
+
 .btn-edit { background-color: #6366f1; color: #fff; }
 .btn-edit:hover { background-color: #4f46e5; }
+
 .btn-remove, .btn-cancelar { background-color: var(--cor-perigo); color: #fff; }
 .btn-remove:hover, .btn-cancelar:hover { background-color: #b91c1c; }
+
 .btn-nao-compareceu { background-color: var(--cor-cinza); color: #fff; }
 .btn-nao-compareceu:hover { background-color: #4b5563; }
+
+
+/* ==================================================
+   GRID DE CARDS E CARD UNIVERSAL
+   ================================================== */
 .dashboard-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 24px;
+}
+.card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--sombra-card);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s, transform 0.2s;
+    overflow: hidden;
 }
 .card:hover {
     transform: translateY(-4px);
@@ -301,6 +316,8 @@ body.dashboard-body {
     flex-grow: 1;
     padding: 8px 12px;
 }
+
+/* Padrão de cor para cards da agenda */
 .card.card--agenda .card-title {
     background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
     color: white;
@@ -309,6 +326,10 @@ body.dashboard-body {
 .card.card--agenda .card-info {
     padding-top: 24px;
 }
+
+/* ==================================================
+   FORMULÁRIOS PADRONIZADOS
+   ================================================== */
 .form-group {
     margin-bottom: 20px;
 }
@@ -398,7 +419,6 @@ body.dashboard-body {
     justify-content: center;
     margin-top: 20px;
 }
-
 
 /* ==================================================
    RESPONSIVIDADE GERAL
