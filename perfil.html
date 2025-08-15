@@ -8,19 +8,44 @@
     <!-- FontAwesome para ícones dos botões -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-    /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande */
+    .logo-upload-container {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 0;
+        margin-bottom: 6px;
+    }
     .logo-upload-container img#logo-preview {
-        max-width: 120px;
-        max-height: 120px;
+        max-width: 130px;
+        max-height: 130px;
         width: auto;
         height: auto;
         object-fit: contain;
-        border-radius: 12px;
+        border-radius: 14px;
         border: 2px solid #e0e7ff;
         background: #eef2ff;
         box-shadow: 0 1px 4px #0001;
         display: block;
         margin: 0;
+    }
+    /* Campo do link com borda e padding */
+    .vitrine-url {
+        border: 1.5px solid #e0e7ff;
+        border-radius: 8px;
+        padding: 8px 16px;
+        min-width: 180px;
+        background: #f7faff;
+        color: #312e81;
+        font-size: 1rem;
+        font-family: inherit;
+        overflow-x: auto;
+        white-space: nowrap;
+        margin-right: 4px;
+        transition: border 0.16s;
+    }
+    .vitrine-url:empty:before {
+        content: "—";
+        color: #cbd5e1;
     }
     /* Botões customizados */
     .btn-custom, .btn-copy, .btn-open, .btn-upload, .btn-new, .btn-submit {
@@ -50,12 +75,16 @@
     .btn-new:hover, .btn-new:focus { background: #4338ca; }
     .btn-submit { background: #4f8cff; }
     .btn-submit:hover, .btn-submit:focus { background: #1e40af; }
-    /* Ícone ajustado */
     .btn-custom i, .btn-copy i, .btn-open i, .btn-upload i, .btn-new i, .btn-submit i {
         font-size: 1.05em;
     }
-    /* Responsivo para telas menores */
     @media (max-width: 600px) {
+      .logo-upload-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 10px 0;
+      }
       .logo-upload-container img#logo-preview {
         max-width: 92vw;
         max-height: 80px;
@@ -63,6 +92,12 @@
       .btn-custom, .btn-copy, .btn-open, .btn-upload, .btn-new, .btn-submit {
         font-size: 0.98rem;
         padding: 10px 10px;
+      }
+      .vitrine-url {
+        min-width: 0;
+        max-width: 60vw;
+        padding: 8px 6px;
+        font-size: 0.97rem;
       }
     }
     </style>
