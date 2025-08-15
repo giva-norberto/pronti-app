@@ -118,28 +118,19 @@ document.addEventListener("DOMContentLoaded", () => {
         agendamentos
             .sort((a, b) => a.horario.localeCompare(b.horario))
             .forEach(ag => {
+                // ALTERAÇÃO: Usa card universal padronizado sem mudar lógica/função
                 const cardContainer = document.createElement('div');
-                cardContainer.className = "card-agendamento pequeno";
+                cardContainer.className = "card";
                 cardContainer.innerHTML = `
-                    <div class="ag-col-servico">
-                        <span class="servico-nome">${ag.servicoNome || 'Serviço'}</span>
-                        <span class="ag-horario">${ag.horario}</span>
+                    <div class="card-title">${ag.servicoNome || 'Serviço'}</div>
+                    <div class="card-info">
+                        <span class="tag-label">Horário</span> ${ag.horario}<br>
+                        <span class="tag-label">Profissional</span> ${ag.profissionalNome}<br>
+                        <span class="tag-label">Cliente</span> ${ag.clienteNome}
                     </div>
-                    <div class="ag-col-pessoas">
-                        <span class="ag-profissional">
-                            <span class="icon">👨‍⚕️</span>
-                            <span class="tag-label">Profissional</span>
-                            ${ag.profissionalNome}
-                        </span>
-                        <span class="ag-cliente">
-                            <span class="icon">🧑</span>
-                            <span class="tag-label">Cliente</span>
-                            ${ag.clienteNome}
-                        </span>
-                    </div>
-                    <div class="ag-col-acoes">
-                        <button class="btn-acao-card btn-nao-compareceu" data-id="${ag.id}" title="Não Compareceu">⚠️</button>
-                        <button class="btn-acao-card btn-cancelar" data-id="${ag.id}" title="Cancelar">✖️</button>
+                    <div class="card-actions">
+                        <button class="btn-edit btn-acao-card btn-nao-compareceu" data-id="${ag.id}" title="Não Compareceu"><i class="fa fa-exclamation-triangle"></i></button>
+                        <button class="btn-remove btn-acao-card btn-cancelar" data-id="${ag.id}" title="Cancelar"><i class="fa fa-times"></i></button>
                     </div>
                 `;
                 listaAgendamentosEl.appendChild(cardContainer);
