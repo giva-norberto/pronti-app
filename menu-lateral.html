@@ -83,8 +83,51 @@
   color: #fff;
   border: 1px solid #fff;
 }
+
+/* CORREÇÃO PARA CELULAR */
 @media (max-width: 900px) {
-  .sidebar { width: 100vw; min-height: 0; position: relative; }
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    position: static; /* Deixa de ser fixo na lateral */
+    flex-direction: column;
+    padding: 10px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .sidebar-brand {
+    font-size: 1.5rem;
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    text-align: left;
+  }
+  .sidebar hr {
+    display: none;
+  }
+  .sidebar-links {
+    display: flex;
+    flex-direction: row; /* Coloca os links lado a lado */
+    overflow-x: auto; /* Permite rolar horizontalmente */
+    padding: 0 15px 10px 15px; /* Adiciona espaçamento lateral */
+    justify-content: flex-start;
+  }
+  /* Esconde a barra de rolagem para um visual mais limpo */
+  .sidebar-links::-webkit-scrollbar {
+    display: none;
+  }
+  .sidebar-links {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .sidebar-links a {
+    flex: 0 0 auto; /* Impede que os botões encolham */
+    margin-bottom: 0;
+    margin-right: 10px; /* Espaço entre os botões */
+    padding: 10px 15px;
+    white-space: nowrap; /* Impede que o texto quebre a linha */
+  }
+  .sidebar-footer {
+    display: none; /* Esconde o botão de sair para economizar espaço */
+  }
 }
 </style>
 <script>
