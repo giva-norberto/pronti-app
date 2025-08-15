@@ -269,6 +269,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #fff;
 }
 .form-input:focus,
 .form-select:focus {
