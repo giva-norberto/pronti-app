@@ -3,56 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Agenda</title>
+    <title>Pronti - Clientes</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Sidebar (menu lateral) -->
     <div id="sidebar-placeholder"></div>
-
     <main class="main-content">
-        <div class="agenda-header">
-            <div>
-                <h1>Agenda de Compromissos</h1>
-            </div>
-            <a href="novo-agendamento.html" class="btn-new">+ Novo Agendamento</a>
+        <div class="header-dashboard">
+            <h1>Clientes</h1>
+            <a href="novo-cliente.html" class="btn-new">+ Novo Cliente</a>
         </div>
-
-        <div class="filtros-agenda">
-            <div class="filtro-item">
-                <label for="data-agenda">Filtrar por data:</label>
-                <input type="date" id="data-agenda">
-            </div>
-            
-            <div class="filtro-item">
-                <label for="filtro-profissional">Ver agenda de:</label>
-                <select id="filtro-profissional" class="form-control"></select>
-            </div>
-        </div>
-
-        <section id="lista-agendamentos">
-            <!-- Exemplo de card de agendamento renderizado corretamente -->
-            <div class="card">
-                <div class="card-title">Corte Feminino</div>
+        <section id="lista-clientes">
+            <!-- Exemplo de card. O JS deve preencher mais cards dinamicamente. -->
+            <div class="card" data-id="exemplo">
+                <div class="card-title">Nome do Cliente</div>
                 <div class="card-info">
-                    <span class="tag-label">Horário</span> 11:55<br>
-                    <span class="tag-label">Profissional</span> GIVANILDO SILVA<br>
-                    <span class="tag-label">Cliente</span> FERNANDA RESENDE
+                    <span class="tag-label">Telefone</span> (99) 99999-9999<br>
+                    <span class="tag-label">E-mail</span> cliente@email.com
                 </div>
                 <div class="card-actions">
-                    <button class="btn-edit" title="Editar"><i class="fa fa-edit"></i></button>
-                    <button class="btn-remove" title="Excluir"><i class="fa fa-trash"></i></button>
+                    <button class="btn-edit" title="Editar"><i class="fa fa-edit"></i> Editar</button>
+                    <button class="btn-remove" title="Excluir"><i class="fa fa-trash"></i> Excluir</button>
                 </div>
             </div>
-            <!-- Fim do exemplo -->
         </section>
     </main>
 
     <script>
-    // Inclui o menu-lateral.html dinamicamente
+    // Inclui o menu lateral
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
@@ -61,13 +41,12 @@
         });
     });
     </script>
-
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        lucide.createIcons();
+      lucide.createIcons();
     </script>
     <script src="firebase-config.js" type="module"></script>
-    <script src="agenda.js" type="module"></script>
+    <script src="clientes.js" type="module"></script>
 </body>
 </html>
