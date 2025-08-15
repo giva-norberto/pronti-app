@@ -3,135 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Clientes</title>
+    <title>Pronti - Meus Clientes</title>
+
+    <!-- Fontes e Ícones -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Estilos -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* O estilo do modal pode continuar aqui ou ser movido para o style.css global */
-        .modal-overlay {
-            position: fixed;
-            left: 0; top: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal-box {
-            background: #fff;
-            border-radius: 10px;
-            padding: 28px;
-            max-width: 400px;
-            width: 90vw;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-            text-align: center;
-        }
-        .modal-botoes {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .btn-modal {
-            margin: 6px 0;
-            padding: 10px 24px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .btn-cancelar { background: #eee; color: #333;}
-        .btn-confirmar { background: #ff6b6b; color: #fff;}
-    </style>
+
 </head>
 <body>
+    <!-- O menu lateral padronizado será carregado aqui -->
     <div id="sidebar-placeholder"></div>
 
+    <!-- Conteúdo Principal da Página -->
     <main class="main-content">
-        <h1>Meus Clientes</h1>
-        <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
         
+        <!-- CABEÇALHO PADRONIZADO: Título à esquerda, botão à direita -->
+        <div class="page-header">
+            <h1>Meus Clientes</h1>
+            <a href="novo-cliente.html" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i>
+                Cadastrar Novo Cliente
+            </a>
+        </div>
+        
+        <!-- GRID DE CARDS: Aplica o layout de grade responsiva -->
         <div id="lista-clientes" class="dashboard-cards">
-            <div class="card" data-id="exemplo">
-                <div class="card-title">Nome do Cliente</div>
-                <div class="card-info">
-                    <p><span class="tag-label">Telefone:</span> (99) 99999-9999</p>
-                    <p><span class="tag-label">E-mail:</span> cliente@email.com</p>
-                </div>
-                <div class="card-actions">
-                    <button class="btn-edit" title="Editar"><i class="fa fa-edit"></i> Editar</button>
-                    <button class="btn-remove" title="Excluir"><i class="fa fa-trash"></i> Excluir</button>
-                </div>
-            </div>
-             </div>
+            <!-- O script 'clientes.js' irá carregar os cards do banco de dados aqui. -->
+        </div>
     </main>
 
+    <!-- MODAL DE CONFIRMAÇÃO -->
     <div id="modal-confirmacao" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-card">
             <h3 id="modal-titulo">Confirmar Exclusão</h3>
-            <p id="modal-mensagem">Você tem certeza?</p>
-            <div class="modal-botoes">
-                <button id="btn-modal-cancelar" class="btn-modal btn-cancelar">Cancelar</button>
-                <button id="btn-modal-confirmar" class="btn-modal btn-confirmar">Sim, Excluir</button>
+            <p id="modal-mensagem">Você tem certeza que deseja excluir este cliente?</p>
+            <div class="modal-botoes" style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                <button id="btn-modal-cancelar" class="btn">Cancelar</button>
+                <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
             </div>
         </div>
     </div>
 
+    <!-- SCRIPTS -->
     <script>
-    // Sidebar dinâmica
+    // Carrega o menu lateral padronizado de um arquivo externo.
+    // Para que isso funcione, a página deve ser aberta através de um servidor web (ex: Live Server do VSCode).
     document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          const links = document.querySelectorAll('.sidebar-links a');
-          links.forEach(link => link.classList.remove('active'));
-          const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
-          if (clientesLink) clientesLink.classList.add('active');
-        });
-    });
-
-    // Função de exclusão
-    document.addEventListener("DOMContentLoaded", function() {
-        let clienteParaExcluir = null;
-        const lista = document.getElementById("lista-clientes");
-        const modal = document.getElementById("modal-confirmacao");
-        const btnCancelar = document.getElementById("btn-modal-cancelar");
-        const btnConfirmar = document.getElementById("btn-modal-confirmar");
-
-        lista.addEventListener("click", function(e) {
-            const btn = e.target.closest(".btn-remove");
-            if (btn) {
-                clienteParaExcluir = btn.closest(".card");
-                modal.classList.add("show");
+      const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
+      if (sidebarPlaceholder) {
+        fetch('menu-lateral.html')
+          .then(res => {
+            if (!res.ok) {
+              throw new Error('Não foi possível carregar o menu. Verifique se o arquivo "menu-lateral.html" existe.');
             }
-        });
-
-        btnCancelar.addEventListener("click", function() {
-            modal.classList.remove("show");
-            clienteParaExcluir = null;
-        });
-
-        btnConfirmar.addEventListener("click", function() {
-            if (clienteParaExcluir) {
-                clienteParaExcluir.remove();
-                Toastify({
-                    text: "Cliente excluído com sucesso!",
-                    duration: 2000,
-                    gravity: "top",
-                    backgroundColor: "#38bdf8",
-                }).showToast();
-            }
-            modal.classList.remove("show");
-            clienteParaExcluir = null;
-        });
+            return res.text();
+          })
+          .then(html => {
+            sidebarPlaceholder.innerHTML = html;
+            // Marca o link 'Clientes' como ativo no menu
+            const activeLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
+            if (activeLink) activeLink.classList.add('active');
+          })
+          .catch(error => {
+            console.error('Erro ao carregar o menu lateral:', error);
+            sidebarPlaceholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar menu.</p>';
+          });
+      }
     });
     </script>
+    
+    <!-- Scripts de bibliotecas externas -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Seu script principal para a lógica da página de clientes -->
     <script src="clientes.js" type="module"></script>
 </body>
 </html>
