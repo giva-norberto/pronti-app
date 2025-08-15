@@ -1,89 +1,52 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="inicio-container.css">
-    <!-- FontAwesome (opcional, para ícones) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Menu Lateral -->
+    <div id="sidebar-placeholder"></div>
 
-<!-- Sidebar (menu lateral) incluso dinamicamente -->
-<div id="sidebar-placeholder"></div>
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+        <section class="welcome-section">
+            <h1>Bom dia, João!</h1>
+            <p>Pronto para gerenciar seu dia?</p>
 
-<main class="main-content inicio-container">
-  <div class="dashboard-card">
-    <div class="dashboard-header">
-      <h1>Olá, <span id="nome-usuario">Usuário</span>!</h1>
-      <p>Pronto para gerenciar seu dia?</p>
-    </div>
-    <div class="dashboard-summaries">
-      <div class="summary-card">
-        <i class="fa fa-calendar"></i>
-        <div>
-          <span class="summary-number" id="total-agendamentos-dia">0</span>
-          <span class="summary-label">Agendamentos hoje</span>
-        </div>
-      </div>
-      <div class="summary-card">
-        <i class="fa fa-users"></i>
-        <div>
-          <span class="summary-number" id="clientes-ativos">0</span>
-          <span class="summary-label">Clientes ativos</span>
-        </div>
-      </div>
-      <div class="summary-card">
-        <i class="fa fa-clock"></i>
-        <div>
-          <span class="summary-number" id="proximos-servicos">0</span>
-          <span class="summary-label">Próximos serviços</span>
-        </div>
-      </div>
-    </div>
-    <div class="dashboard-actions">
-      <button class="action-btn blue" id="novo-agendamento">Novo agendamento</button>
-      <button class="action-btn green" id="adicionar-cliente">Adicionar cliente</button>
-      <button class="action-btn yellow" id="adicionar-servico">Adicionar serviço</button>
-    </div>
-    <div class="dashboard-news">
-      <h2>Novidades</h2>
-      <div class="news-card">
-        <strong>Novas funcionalidades na agenda</strong>
-        Confira as últimas atualizações na aplicação.
-      </div>
-    </div>
-  </div>
-</main>
+            <div class="cards-container">
+                <a href="painel-inteligente.html" class="card">
+                    <div class="card-icon">📈</div>
+                    <span>Painel Inteligente</span>
+                </a>
+                <a href="agenda.html" class="card">
+                    <div class="card-icon">📅</div>
+                    <span>Agenda</span>
+                </a>
+                <a href="servicos.html" class="card">
+                    <div class="card-icon">🔧</div>
+                    <span>Serviços</span>
+                </a>
+            </div>
 
-<script>
-    // Inclui o menu-lateral.html dinamicamente
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Destaca o item "Início" (index.html) após inclusão do menu
-          const links = document.querySelectorAll('.sidebar-links a');
-          links.forEach(link => link.classList.remove('active'));
-          const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
-          const currentPage = window.location.pathname.split('/').pop();
-          if (homeLink && (currentPage === 'index.html' || currentPage === '')) {
-              homeLink.classList.add('active');
-          }
-        });
-    });
+            <a href="painel-inteligente.html" class="status-btn">Ver status de hoje</a>
+        </section>
+    </main>
 
-    // Exemplo: ajuste o nome do usuário se sua lógica permitir
-    document.addEventListener("DOMContentLoaded", function() {
-      // Substitua por lógica real se tiver login/nome dinâmico
-      document.getElementById("nome-usuario").textContent = "João";
-    });
-
-    // Aqui você pode adicionar handlers para os botões, se desejar
-</script>
-
+    <!-- Carregar Menu Lateral -->
+    <script>
+        fetch('sidebar.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('sidebar-placeholder').innerHTML = html;
+                // Destacar o menu ativo, se necessário:
+                const links = document.querySelectorAll('.sidebar-links a');
+                links.forEach(link => link.classList.remove('active'));
+                const dashboardLink = document.querySelector('.sidebar-links a[href="dashboard.html"], .sidebar-links a[href="index.html"]');
+                if(dashboardLink) dashboardLink.classList.add('active');
+            });
+    </script>
 </body>
 </html>
