@@ -1,204 +1,274 @@
 /**
- * novo-agendamento.js (Painel do Dono - Corrigido para a estrutura 'empresarios')
- * Firestore Modular v10+ (corrigido!)
+ * novo-agendamento.js
+ * Gerencia a criação de agendamentos, vinculando a profissionais específicos.
+ * Busca serviços, profissionais que os executam e horários de trabalho para calcular a disponibilidade.
+ * Firebase Modular v10+
  */
 
+// Importações dos módulos Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, query, where, doc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, doc, addDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-// Inicialização Firebase
+// Inicialização do Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('form-agendamento');
-    const clienteInput = document.getElementById('cliente');
-    const servicoSelect = document.getElementById('servico');
-    const diaInput = document.getElementById('dia');
-    const gradeHorariosDiv = document.getElementById('grade-horarios');
-    const horarioFinalInput = document.getElementById('horario-final');
+// --- Elementos do DOM ---
+const formAgendamento = document.getElementById("form-agendamento");
+const selectServico = document.getElementById("servico");
+const selectProfissional = document.getElementById("profissional");
+const inputData = document.getElementById("dia");
+const gradeHorarios = document.getElementById("grade-horarios");
+const inputHorarioFinal = document.getElementById("horario-final");
+const inputClienteNome = document.getElementById("cliente");
 
-    if (!form || !servicoSelect || !diaInput || !gradeHorariosDiv) {
-        console.error("Erro Crítico: Elementos do formulário não encontrados.");
-        return;
+let empresaId = null;
+let servicosCache = [];
+let profissionaisCache = [];
+
+// --- FUNÇÕES UTILITÁRIAS ---
+function mostrarToast(texto, cor = '#38bdf8') {
+  if (typeof Toastify !== "undefined") {
+    Toastify({ text: texto, duration: 4000, gravity: "top", position: "center", style: { background: cor, color: "white", borderRadius: "8px" } }).showToast();
+  } else {
+    alert(texto);
+  }
+}
+
+function timeStringToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+function minutesToTimeString(totalMinutes) {
+    const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+    const minutes = (totalMinutes % 60).toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+// --- LÓGICA PRINCIPAL DA PÁGINA ---
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    try {
+      empresaId = await getEmpresaIdDoDono(user.uid);
+      if (empresaId) await inicializarFormulario();
+      else document.body.innerHTML = "<h1>Empresa não encontrada.</h1>";
+    } catch (error) {
+      console.error("Erro na inicialização:", error);
+      document.body.innerHTML = "<h1>Ocorreu um erro ao iniciar.</h1>";
     }
-
-    let isInitialized = false;
-
-    onAuthStateChanged(auth, (user) => {
-        if (user && !isInitialized) {
-            isInitialized = true;
-            inicializarPaginaDeAgendamento(user.uid, { form, clienteInput, servicoSelect, diaInput, gradeHorariosDiv, horarioFinalInput });
-        } else if (!user && !isInitialized) {
-            window.location.href = 'login.html';
-        }
-    });
+  } else {
+    window.location.href = "login.html";
+  }
 });
 
-// =======================================================
-// FUNÇÕES DE LÓGICA PRINCIPAL (CORRIGIDAS)
-// =======================================================
-
-let empresaId = null; // Guardará o ID da empresa para ser usado nas funções
-
-/**
- * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
- */
 async function getEmpresaIdDoDono(uid) {
-    const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(empresQ);
-    if (snapshot.empty) return null;
-    return snapshot.docs[0].id;
+  const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+  const snapshot = await getDocs(q);
+  return snapshot.empty ? null : snapshot.docs[0].id;
 }
 
-async function inicializarPaginaDeAgendamento(uid, elements) {
-    const { form, clienteInput, servicoSelect, diaInput, gradeHorariosDiv, horarioFinalInput } = elements;
+async function inicializarFormulario() {
+    await carregarDadosIniciais();
     
-    // CORREÇÃO: Primeiro, encontramos o ID da empresa
-    empresaId = await getEmpresaIdDoDono(uid);
-    if (!empresaId) {
-        alert("Empresa não encontrada. Verifique o seu perfil.");
-        return;
-    }
+    selectServico.addEventListener("change", popularSelectProfissionais);
+    selectProfissional.addEventListener("change", buscarHorariosDisponiveis);
+    inputData.addEventListener("change", buscarHorariosDisponiveis);
 
-    // Agora, as outras funções usarão o 'empresaId' correto
-    await carregarServicosDoFirebase(uid, servicoSelect);
-    
-    // O resto da sua lógica original...
-    const urlParams = new URLSearchParams(window.location.search);
-    const servicoIdFromUrl = urlParams.get('servico');
-    if (servicoIdFromUrl) {
-        servicoSelect.value = servicoIdFromUrl;
-    }
-    
-    if (!diaInput.value) {
-        diaInput.value = new Date().toISOString().split("T")[0];
-    }
-
-    gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput });
-
-    servicoSelect.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
-    diaInput.addEventListener('change', () => gerarEExibirHorarios(uid, { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput }));
-    form.addEventListener('submit', (event) => handleFormSubmit(event, uid, { clienteInput, servicoSelect, horarioFinalInput }));
-}
-
-async function carregarServicosDoFirebase(uid, servicoSelect) {
-    servicoSelect.innerHTML = '<option value="">Selecione um serviço</option>';
-    try {
-        // Busca os serviços do documento do profissional, dentro da empresa correta
-        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", uid);
-        const docSnap = await getDoc(profissionalRef);
-        
-        if (docSnap.exists() && docSnap.data().servicos) {
-            const servicosArray = docSnap.data().servicos;
-            servicosArray.forEach(servico => {
-                const option = document.createElement('option');
-                option.value = servico.id; // Usa o ID do serviço no array
-                option.textContent = `${servico.nome} (duração: ${servico.duracao} min)`;
-                option.dataset.servicoNome = servico.nome;
-                servicoSelect.appendChild(option);
-            });
+    gradeHorarios.addEventListener("click", (e) => {
+        if (e.target.classList.contains("slot-horario") && !e.target.classList.contains("desabilitado")) {
+            document.querySelectorAll('.slot-horario.selecionado').forEach(slot => slot.classList.remove('selecionado'));
+            e.target.classList.add('selecionado');
+            inputHorarioFinal.value = e.target.textContent;
         }
-    } catch (error) { 
-        console.error("Erro ao carregar serviços:", error); 
-    }
+    });
+
+    formAgendamento.addEventListener("submit", salvarAgendamento);
 }
 
-async function gerarEExibirHorarios(uid, elements) {
-    const { diaInput, servicoSelect, gradeHorariosDiv, horarioFinalInput } = elements;
-    const diaSelecionado = diaInput.value;
-    const servicoId = servicoSelect.value;
-    const HORA_INICIO = 9;
-    const HORA_FIM = 18;
-    const INTERVALO_MINUTOS = 30;
-
-    if (!diaSelecionado || !servicoId) {
-        gradeHorariosDiv.innerHTML = '<p class="aviso-horarios">Selecione um serviço e uma data.</p>';
-        return;
-    }
-    gradeHorariosDiv.innerHTML = '<p class="aviso-horarios">A verificar horários...</p>';
+async function carregarDadosIniciais() {
+    // Carrega todos os serviços e profissionais em cache para otimizar
     try {
-        const inicioDoDia = new Date(`${diaSelecionado}T00:00:00.000Z`);
-        const fimDoDia = new Date(`${diaSelecionado}T23:59:59.999Z`);
-        
-        // Busca agendamentos da subcoleção da empresa
-        const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
-        const agendamentosQuery = query(agendamentosCollection, 
-            where("horario", ">=", Timestamp.fromDate(inicioDoDia)), 
-            where("horario", "<=", Timestamp.fromDate(fimDoDia))
-        );
-        
-        const querySnapshot = await getDocs(agendamentosQuery);
-        const horariosOcupados = querySnapshot.docs.map(doc => {
-            const dataUtc = doc.data().horario.toDate();
-            return `${String(dataUtc.getUTCHours()).padStart(2, '0')}:${String(dataUtc.getUTCMinutes()).padStart(2, '0')}`;
+        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+
+        const [servicosSnapshot, profissionaisSnapshot] = await Promise.all([
+            getDocs(servicosRef),
+            getDocs(profissionaisRef)
+        ]);
+
+        servicosCache = servicosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        profissionaisCache = profissionaisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Popula o select de serviços
+        selectServico.innerHTML = '<option value="">Selecione um serviço</option>';
+        servicosCache.forEach(servico => {
+            selectServico.appendChild(new Option(`${servico.nome} (${servico.duracao} min)`, servico.id));
         });
 
-        gradeHorariosDiv.innerHTML = '';
-        for (let hora = HORA_INICIO; hora < HORA_FIM; hora++) {
-            for (let min = 0; min < 60; min += INTERVALO_MINUTOS) {
-                const horarioParaVerificar = `${String(hora).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                const estaOcupado = horariosOcupados.includes(horarioParaVerificar);
-                const slotButton = document.createElement('button');
-                slotButton.type = 'button';
-                slotButton.classList.add('slot-horario');
-                slotButton.textContent = horarioParaVerificar;
-                if (estaOcupado) {
-                    slotButton.classList.add('desabilitado');
-                    slotButton.disabled = true;
-                } else {
-                    slotButton.addEventListener('click', () => {
-                        document.querySelectorAll('.slot-horario.selecionado').forEach(btn => btn.classList.remove('selecionado'));
-                        slotButton.classList.add('selecionado');
-                        horarioFinalInput.value = horarioParaVerificar;
-                    });
-                }
-                gradeHorariosDiv.appendChild(slotButton);
-            }
-        }
-    } catch (error) { console.error("Erro ao buscar horários:", error); }
+    } catch (error) {
+        console.error("Erro ao carregar dados iniciais:", error);
+        mostrarToast("Erro ao carregar serviços e profissionais.", "#ef4444");
+    }
 }
 
-async function handleFormSubmit(event, uid, elements) {
-    const { clienteInput, servicoSelect, horarioFinalInput } = elements;
-    event.preventDefault();
+function popularSelectProfissionais() {
+    const servicoId = selectServico.value;
+    selectProfissional.innerHTML = '<option value="">Primeiro, selecione um serviço</option>';
+    selectProfissional.disabled = true;
+    gradeHorarios.innerHTML = '<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>';
 
-    const horarioSelecionado = horarioFinalInput.value;
-    if (!horarioSelecionado) {
-        alert("Por favor, selecione um horário.");
+    if (!servicoId) return;
+
+    // Filtra os profissionais que oferecem o serviço selecionado
+    const profissionaisFiltrados = profissionaisCache.filter(p => 
+        p.servicos && p.servicos.includes(servicoId)
+    );
+
+    if (profissionaisFiltrados.length > 0) {
+        selectProfissional.innerHTML = '<option value="">Selecione um profissional</option>';
+        profissionaisFiltrados.forEach(p => {
+            selectProfissional.appendChild(new Option(p.nome, p.id));
+        });
+        selectProfissional.disabled = false;
+    } else {
+        selectProfissional.innerHTML = '<option value="">Nenhum profissional para este serviço</option>';
+    }
+}
+
+async function buscarHorariosDisponiveis() {
+    const servicoId = selectServico.value;
+    const profissionalId = selectProfissional.value;
+    const dataSelecionada = inputData.value;
+
+    if (!servicoId || !profissionalId || !dataSelecionada) {
+        gradeHorarios.innerHTML = `<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>`;
         return;
     }
 
-    const dataSelecionada = document.getElementById('dia').value;
-    const [hora, minuto] = horarioSelecionado.split(':');
-    
-    const dataHoraCompleta = new Date(dataSelecionada + 'T00:00:00.000Z');
-    dataHoraCompleta.setUTCHours(hora, minuto, 0, 0);
-
-    const opcaoServicoSelecionado = servicoSelect.options[servicoSelect.selectedIndex];
-    const nomeServico = opcaoServicoSelecionado.dataset.servicoNome;
-
-    const novoAgendamento = {
-        clienteNome: clienteInput.value,
-        servicoId: servicoSelect.value,
-        servicoNome: nomeServico,
-        horario: Timestamp.fromDate(dataHoraCompleta),
-        status: 'agendado',
-        criadoEm: Timestamp.now(),
-        profissionalId: uid // Importante adicionar o ID do profissional que está a fazer o agendamento
-    };
+    gradeHorarios.innerHTML = `<p class="aviso-horarios">A verificar horários...</p>`;
 
     try {
-        // Salva o agendamento na subcoleção da empresa
-        const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
-        await addDoc(agendamentosCollection, novoAgendamento);
-        alert("Agendamento salvo com sucesso!");
-        window.location.href = 'agenda.html';
+        const profissional = profissionaisCache.find(p => p.id === profissionalId);
+        const servico = servicosCache.find(s => s.id === servicoId);
+
+        // Busca os horários de trabalho do profissional
+        const horariosTrabalhoRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+        const horariosTrabalhoSnap = await getDoc(horariosTrabalhoRef);
+        const horariosTrabalho = horariosTrabalhoSnap.exists() ? horariosTrabalhoSnap.data() : null;
+
+        if (!horariosTrabalho) {
+            gradeHorarios.innerHTML = `<p class="aviso-horarios" style="color: red;">Este profissional não tem horários configurados.</p>`;
+            return;
+        }
+
+        const agendamentosDoDia = await getAgendamentosDoDia(dataSelecionada, profissionalId);
+        const slotsDisponiveis = calcularSlotsDisponiveis(dataSelecionada, agendamentosDoDia, horariosTrabalho, servico.duracao);
+
+        gradeHorarios.innerHTML = '';
+        if (slotsDisponiveis.length === 0) {
+            gradeHorarios.innerHTML = `<p class="aviso-horarios">Nenhum horário disponível para esta data.</p>`;
+            return;
+        }
+
+        slotsDisponiveis.forEach(horario => {
+            const slot = document.createElement('div');
+            slot.className = 'slot-horario';
+            slot.textContent = horario;
+            gradeHorarios.appendChild(slot);
+        });
+
     } catch (error) {
-        console.error("Erro ao salvar agendamento: ", error);
-        alert("Erro ao salvar o agendamento.");
+        console.error("Erro ao buscar horários:", error);
+        gradeHorarios.innerHTML = `<p class="aviso-horarios" style="color: red;">Erro ao carregar horários.</p>`;
     }
+}
+
+async function salvarAgendamento(e) {
+    e.preventDefault();
+    const servicoId = selectServico.value;
+    const profissionalId = selectProfissional.value;
+    const servico = servicosCache.find(s => s.id === servicoId);
+    const profissional = profissionaisCache.find(p => p.id === profissionalId);
+
+    const novoAgendamento = {
+        clienteNome: inputClienteNome.value,
+        servicoId,
+        servicoNome: servico.nome,
+        profissionalId,
+        profissionalNome: profissional.nome,
+        data: inputData.value,
+        horario: inputHorarioFinal.value,
+        status: 'ativo',
+        criadoEm: serverTimestamp()
+    };
+
+    if (!novoAgendamento.horario) {
+        mostrarToast("Por favor, selecione um horário.", "#ef4444");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, "empresarios", empresaId, "agendamentos"), novoAgendamento);
+        mostrarToast("Agendamento salvo com sucesso!", "#34d399");
+        formAgendamento.reset();
+        gradeHorarios.innerHTML = `<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>`;
+        selectProfissional.innerHTML = '<option value="">Primeiro, selecione um serviço</option>';
+        selectProfissional.disabled = true;
+        setTimeout(() => { window.location.href = 'agenda.html'; }, 1500);
+    } catch (error) {
+        console.error("Erro ao salvar agendamento:", error);
+        mostrarToast("Erro ao salvar agendamento.", "#ef4444");
+    }
+}
+
+// --- Funções de Apoio ---
+
+async function getAgendamentosDoDia(data, profissionalId) {
+    const q = query(collection(db, "empresarios", empresaId, "agendamentos"), 
+        where("data", "==", data),
+        where("profissionalId", "==", profissionalId)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data());
+}
+
+function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
+    const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const dataObj = new Date(`${data}T12:00:00`);
+    const nomeDia = diaDaSemana[dataObj.getDay()];
+    const diaDeTrabalho = horariosTrabalho?.[nomeDia];
+
+    if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos) return [];
+
+    const slotsDisponiveis = [];
+    const horariosOcupados = agendamentosDoDia.map(ag => {
+        const inicio = timeStringToMinutes(ag.horario);
+        // Assumindo que a duração do serviço está no agendamento, se não, buscar do serviço
+        const fim = inicio + (ag.servicoDuracao || duracaoServico);
+        return { inicio, fim };
+    });
+
+    diaDeTrabalho.blocos.forEach(bloco => {
+        let slotAtual = timeStringToMinutes(bloco.inicio);
+        const fimBloco = timeStringToMinutes(bloco.fim);
+
+        while (slotAtual + duracaoServico <= fimBloco) {
+            const fimSlotProposto = slotAtual + duracaoServico;
+            let temConflito = horariosOcupados.some(ocupado => 
+                slotAtual < ocupado.fim && fimSlotProposto > ocupado.inicio
+            );
+
+            if (!temConflito) {
+                slotsDisponiveis.push(minutesToTimeString(slotAtual));
+            }
+            // Avança para o próximo slot. O ideal é usar um intervalo definido, mas usar a duração do serviço é uma abordagem comum.
+            slotAtual += (horariosTrabalho.intervalo || duracaoServico);
+        }
+    });
+    return slotsDisponiveis;
 }
