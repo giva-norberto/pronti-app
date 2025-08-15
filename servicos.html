@@ -66,20 +66,8 @@
 </head>
 <body>
 
-<aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <nav class="sidebar-links">
-        <a href="dashboard.html"><span>Dashboard</span></a>
-        <a href="servicos.html"><span>Serviços</span></a>
-        <a href="agenda.html"><span>Agenda</span></a>
-        <a href="clientes.html"><span>Clientes</span></a>
-        <a href="equipe.html"><span>Equipe</span></a>
-        <a href="perfil.html"><span>Meu Perfil</span></a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
+<!-- Menu lateral incluso dinamicamente -->
+<div id="sidebar-placeholder"></div>
 
 <main class="main-content">
     <h1>Nossos Serviços</h1>
@@ -100,14 +88,20 @@
 </div>
 
 <script>
+    // Inclusão dinâmica do menu lateral e destaque do menu de serviços
     document.addEventListener("DOMContentLoaded", function() {
-        const links = document.querySelectorAll('.sidebar-links a');
-        const currentPath = window.location.pathname;
-        links.forEach(link => {
-            if (link.pathname === currentPath) {
-                link.classList.add('active');
-            }
-        });
+        fetch('menu-lateral.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('sidebar-placeholder').innerHTML = html;
+                // Destaca o item de serviços após inclusão do menu
+                const links = document.querySelectorAll('.sidebar-links a');
+                links.forEach(link => link.classList.remove('active'));
+                const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
+                if (servicosLink) {
+                    servicosLink.classList.add('active');
+                }
+            });
     });
 </script>
 
