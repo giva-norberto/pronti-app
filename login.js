@@ -1,5 +1,3 @@
-// login.js - VERSÃO FINAL COM PERSISTÊNCIA DE LOGIN
-
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -7,8 +5,8 @@ import {
   browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth, provider } from "./vitrini-firebase.js";
+import { showCustomAlert } from "./custom-alert.js"; // NOVO
 
-// O ID do botão deve corresponder ao seu HTML
 const btnLoginGoogle = document.getElementById('btn-login-google');
 
 if (!btnLoginGoogle) {
@@ -30,20 +28,28 @@ if (!btnLoginGoogle) {
     }
   });
 
-  // Adiciona o evento de clique ao botão de login com Google
   btnLoginGoogle.addEventListener('click', async () => {
     btnLoginGoogle.disabled = true;
     try {
       // Não precisa setar persistência novamente, já foi feita acima
-
       const result = await signInWithPopup(auth, provider);
       console.log("Login com Google bem-sucedido para:", result.user.displayName);
       window.location.href = 'dashboard.html';
-
     } catch (error) {
       console.error("Erro no login com Google:", error);
       if (error.code !== 'auth/popup-closed-by-user') {
-        alert(`Erro ao fazer login: ${error.message}`);
+        // Usa o alerta customizado
+        showCustomAlert({
+          title: "Erro ao fazer login",
+          message: error.message,
+          onTrial: () => {
+            // Lógica do trial (opcional)
+            console.log("Usuário optou pelo trial");
+          },
+          onClose: () => {
+            // Qualquer ação ao fechar (opcional)
+          }
+        });
       }
     } finally {
       btnLoginGoogle.disabled = false;
