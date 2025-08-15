@@ -599,6 +599,12 @@
   .card-cliente-nome { font-size: 1.07rem; }
   .card-cliente-info { gap: 7px 10px; font-size: 0.95rem; }
 }
+
+/* =========================================
+   AJUSTES EXCLUSIVOS PÁGINA INÍCIO
+   (deixe o body, .main-content e .welcome-section SÓ NO INDEX se quiser fundo diferente)
+========================================= */
+/* Remova este bloco do style.css global se quiser que outras páginas NÃO fiquem com fundo azul!
 body {
     margin: 0;
     font-family: Arial, sans-serif;
@@ -611,7 +617,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Sugestão: efeito vidro e sombra para destacar o conteúdo */
 .main-content {
     flex: 1;
     display: flex;
@@ -686,3 +691,9 @@ body {
 .status-btn:hover {
     background: #f0f0f0;
 }
+*/
+
+/* Sugestão final: 
+ * Deixe o bloco acima APENAS em um <style> no HEAD do index.html se quiser fundo azul SÓ no index!
+ * Não use body, #sidebar-placeholder, .main-content, .welcome-section, etc, no style.css global se não quiser o fundo azul em todas as páginas.
+ */
