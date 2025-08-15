@@ -1,6 +1,7 @@
-/* =========================================
+/* ==================================================
    SIDEBAR
-========================================= */
+   - Usado em: menu lateral de todas as páginas (sidebar.html, index.html, clientes.html, agenda.html, servicos.html, etc)
+================================================== */
 .sidebar {
     width: 250px;
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -77,19 +78,21 @@
     background: rgba(255,255,255,0.15);
 }
 
-/* =========================================
-   MAIN CONTENT AREA
-========================================= */
+/* ==================================================
+   ÁREA PRINCIPAL DE CONTEÚDO
+   - Usado em: todos os HTMLs principais (.main-content, .container)
+================================================== */
 .main-content, .container {
-    margin: 40px auto 40px 290px;
+    margin: 40px auto 40px 290px; /* espaço para sidebar */
     padding: 0 20px;
     box-sizing: border-box;
     max-width: 1400px;
 }
 
-/* =========================================
-   HEADER DASHBOARD (VISUAL NOVO/PRONTI)
-========================================= */
+/* ==================================================
+   HEADER DO DASHBOARD (VISUAL NOVO/PRONTI)
+   - Usado em: index.html, dashboard, páginas principais
+================================================== */
 .header-dashboard {
     display: flex;
     justify-content: space-between;
@@ -152,9 +155,10 @@
     min-width: 120px;
 }
 
-/* =========================================
-   DASHBOARD CARDS GRID (VISUAL NOVO)
-========================================= */
+/* ==================================================
+   GRID DE CARDS DO DASHBOARD
+   - Usado em: index.html, dashboard, cards principais
+================================================== */
 .dashboard-cards {
     width: 100%;
     display: grid;
@@ -176,22 +180,83 @@
     .card-agenda { grid-column: span 1; }
 }
 
-/* CARD PADRÃO (VISUAL NOVO) */
+/* ==================================================
+   CARD UNIVERSAL (VISUAL NOVO/PRONTI)
+   - Usado em: todos os cards do sistema (clientes, serviços, agenda, dashboard, etc)
+   - Exemplo de uso:
+     <div class="card">
+       <div class="card-title">Título</div>
+       <div class="card-info">Info</div>
+       <div class="card-actions">...</div>
+     </div>
+================================================== */
 .card {
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 12px 40px rgba(36, 198, 220, 0.09), 0 1.5px 16px #00ecbc28;
-    overflow: hidden;
-    transition: box-shadow 0.2s, transform 0.13s;
-    border: none;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px #4facfe18, 0 0.5px 3px #00ecbc14;
+  padding: 18px 16px 14px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  transition: box-shadow 0.17s, transform 0.13s;
+  max-width: 99vw;
+  width: 100%;
 }
-.card:hover {
-    box-shadow: 0 24px 50px 0 #27d1f940, 0 5px 30px #00ecbc28;
-    transform: translateY(-4px) scale(1.012);
+.card:hover, .card:focus-within {
+  box-shadow: 0 8px 32px #00ecbc26, 0 5px 24px #4facfe12;
+  transform: translateY(-2px) scale(1.013);
 }
+.card-title {
+  font-size: 1.11rem;
+  font-weight: 600;
+  color: #3730a3;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+.card-info {
+  font-size: 0.97rem;
+  color: #44446a;
+  margin-bottom: 5px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.card-actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 7px;
+}
+/* Botões universais para todas as ações de card */
+.card .btn-copy,
+.card .btn-edit,
+.card .btn-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.98rem;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: #fff;
+  background: #4f8cff;
+  cursor: pointer;
+  transition: background 0.16s;
+  outline: none;
+}
+.card .btn-copy { background: #34d399; }
+.card .btn-copy:hover { background: #059669; }
+.card .btn-edit { background: #f59e42; }
+.card .btn-edit:hover { background: #d97706; }
+.card .btn-remove { background: #ef4444; }
+.card .btn-remove:hover { background: #b91c1c; }
+@media (max-width: 600px) {
+  .card { padding: 10px 6px 9px 10px; border-radius: 11px; }
+  .card-title { font-size: 1rem; }
+  .card-info { font-size: 0.95rem; }
+}
+
+/* Cards especiais do dashboard com cabeçalho colorido */
 .card h3 {
     margin: 0;
     padding: 18px 24px;
@@ -229,202 +294,15 @@
     max-height: 340px;
     overflow-y: auto;
 }
-.card-resumo .card-body div { margin-bottom: 11px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
-.card-resumo .card-body div:last-child { border-bottom: none; }
-.card-resumo-inteligente .card-body div { margin-bottom: 8px; padding: 5px 0; }
-/* ICONES EMOJI */
-.icon-calendar::before { content: "📅"; }
-.icon-star::before { content: "⭐"; }
-.icon-user::before { content: "👤"; }
-.icon-clipboard::before { content: "📊"; }
-.icon-robot::before { content: "🤖"; }
-.icon-lightbulb::before { content: "💡"; }
 
-/* =========================================
-   FORM CARDS & EQUIPE (ANTIGO)
-========================================= */
-.form-card, .card-info {
-    background: #ffffff;
-    border-radius: 13px;
-    box-shadow: 0 4px 24px #d6d2f8;
-    padding: 38px 35px;
-    margin-top: 20px;
-}
-.form-section { margin-bottom: 35px; }
-.form-section h3 { font-size: 1.21rem; font-weight: 600; margin-bottom: 16px; color: #22223b; }
-.form-group { margin-bottom: 22px; }
-.form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #22223b; }
-.form-group input, .form-group textarea, .form-control {
-    width: 100%;
-    padding: 12px 15px;
-    border: 2px solid #e1e8ed;
-    border-radius: 10px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    margin-bottom: 4px;
-    background-color: white;
-}
-.form-group textarea { resize: vertical; }
-.form-group input:focus, .form-group textarea:focus, .form-control:focus {
-    outline: none;
-    border-color: #4facfe;
-    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.13);
-}
-.profissional-card {
-    background: #fff;
-    border: 1px solid #e1e8ed;
-    border-radius: 15px;
-    padding: 20px 22px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 15px;
-    transition: box-shadow 0.3s, transform 0.2s;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-}
-.profissional-foto {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 2px solid #4facfe;
-}
-.profissional-foto img { width: 100%; height: 100%; object-fit: cover; }
-.profissional-info { flex: 1; }
-.profissional-nome { font-weight: 600; font-size: 1.11rem; display: block; }
-.profissional-status { display: inline-block; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 4px 13px; border-radius: 15px; font-size: 0.86rem; font-weight: 500; }
-
-/* FORM ACTIONS */
-.form-actions { display: flex; gap: 18px; justify-content: flex-end; margin-top: 32px; }
-.btn-submit { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 25px; padding: 14px 0; font-weight: bold; font-size: 1.15rem; width: 100%; margin-top: 18px; box-shadow: 0 2px 8px #d6d2f8; transition: all 0.2s ease; display: block; border: none; cursor: pointer; }
-.btn-submit:hover { background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
-
-/* =========================================
-   CLIENTES PADRÃO PRONTI
-========================================= */
-/* Card Clientes */
-.clientes-card {
-  max-width: 900px;
-  margin: 32px auto;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 8px #0001;
-  padding: 32px 26px 20px 26px;
-}
-/* Header Clientes */
-.clientes-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.clientes-header h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #3730a3;
-}
-.btn-new {
-  background: #6366f1;
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 10px 18px;
-  font-size: 1rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 2px 4px rgba(79,140,255,0.10);
-  cursor: pointer;
-  transition: background 0.18s;
-  text-decoration: none;
-  outline: none;
-}
-.btn-new:hover, .btn-new:focus { background: #4338ca; }
-/* Tabela Clientes */
-.clientes-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 24px;
-  background: #f7faff;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.clientes-table th, .clientes-table td {
-  padding: 13px 11px;
-  text-align: left;
-}
-.clientes-table th {
-  background: #eef2ff;
-  color: #4338ca;
-  font-weight: 600;
-}
-.clientes-table tr {
-  border-bottom: 1px solid #e0e7ff;
-  transition: background 0.15s;
-}
-.clientes-table tr:hover {
-  background: #e0e7ff44;
-}
-/* Botões Clientes */
-.btn-copy, .btn-edit, .btn-remove {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.98rem;
-  border: none;
-  border-radius: 7px;
-  padding: 8px 12px;
-  color: #fff;
-  background: #4f8cff;
-  cursor: pointer;
-  transition: background 0.16s;
-  outline: none;
-}
-.btn-copy { background: #34d399; }
-.btn-copy:hover { background: #059669; }
-.btn-edit { background: #f59e42; }
-.btn-edit:hover { background: #d97706; }
-.btn-remove { background: #ef4444; }
-.btn-remove:hover { background: #b91c1c; }
-/* Inputs e filtros clientes */
-.cliente-filter-bar {
-  margin: 18px 0 10px 0;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.input-filter {
-  padding: 8px 14px;
-  border: 1.5px solid #e0e7ff;
-  border-radius: 7px;
-  background: #fff;
-  font-size: 1rem;
-  outline: none;
-  transition: border 0.14s;
-}
-.input-filter:focus {
-  border-color: #6366f1;
-  background: #eef2ff;
-}
-/* Responsividade clientes */
-@media (max-width: 700px) {
-  .clientes-card { padding: 16px 3vw 12px 3vw; }
-  .clientes-header h1 { font-size: 1.3rem; }
-  .clientes-table th, .clientes-table td { padding: 8px 4px; font-size: 0.97rem; }
-}
-
-/* =========================================
-   MODAL OVERLAY
-========================================= */
+/* ==================================================
+   OUTROS COMPONENTES (MODAIS, LOADER, ETC)
+   - Usado em: modais universais, loader global
+================================================== */
 .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; right: 0; bottom: 0; background: rgba(60, 57, 80, 0.35); align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex !important; }
 .modal-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 24px #d6d2f8; padding: 32px; max-width: 350px; width: 98vw; text-align: center; }
 
-/* LOADER */
 .loader-overlay {
     position: fixed;
     top: 0;
@@ -449,7 +327,9 @@
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* RESPONSIVIDADE GERAL */
+/* ==================================================
+   RESPONSIVIDADE GERAL
+================================================== */
 @media (max-width: 1200px) {
     .dashboard-cards { grid-template-columns: repeat(2, 1fr); }
     .card-agenda { grid-column: span 2; }
@@ -484,13 +364,6 @@
         background: #f6f7fb;
         display: block;
     }
-    .form-card {
-        padding: 16px 4vw 20px 4vw;
-        margin: 10px 0;
-        box-shadow: 0 2px 12px #d6d2f8;
-        max-width: 99vw;
-        min-width: 0;
-    }
     .header-dashboard {
         flex-direction: column;
         align-items: flex-start;
@@ -499,113 +372,16 @@
     }
     .header-actions { width: 100%; padding: 0; margin: 0; }
     .btn-new, .btn-submit { width: 100%; font-size: 1.09em; padding: 15px 0; }
-    .logo-upload-container { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .form-group input, .form-group textarea { font-size: 1.08em; padding: 14px 12px; }
-    .form-section h3 { font-size: 1.07em; }
-    /* Ajuste para esconder o menu lateral fixo se houver */
+    /* Sidebar some em dispositivos muito pequenos */
     .sidebar { display: none; }
-    .clientes-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .cliente-filter-bar { flex-direction: column; gap: 8px; width: 100%; }
-    .clientes-table th, .clientes-table td { font-size: 0.95rem; }
-}
-
-/* =========================================
-   BOTÕES UNIVERSAIS PADRÃO PRONTI
-========================================= */
-.button, .btn-custom {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 20px;
-  margin: 5px 0;
-  background-color: #4F8CFF;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-  gap: 8px;
-}
-.button:hover, .btn-custom:hover, .button:focus, .btn-custom:focus {
-  background-color: #3767b7;
-  box-shadow: 0 4px 12px rgba(79,140,255,0.15);
-  outline: none;
-}
-.button .icon, .btn-custom .icon {
-  margin-right: 8px;
-  font-size: 1.1em;
-}
-/* ==== CARD CLIENTE - PADRÃO PRONTI ==== */
-.card-cliente {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 8px #0001;
-  padding: 22px 20px 16px 20px;
-  margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: relative;
-  transition: box-shadow 0.18s, transform 0.12s;
-}
-.card-cliente:hover {
-  box-shadow: 0 8px 24px #4facfe22;
-  transform: translateY(-2px) scale(1.01);
-}
-.card-cliente-nome {
-  font-size: 1.17rem;
-  font-weight: 600;
-  color: #3730a3;
-  margin-bottom: 6px;
-}
-.card-cliente-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px 22px;
-  font-size: 1.01rem;
-  color: #44446a;
-  margin-bottom: 6px;
-}
-.card-cliente-acoes {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-.card-cliente .btn-copy,
-.card-cliente .btn-edit,
-.card-cliente .btn-remove {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.98rem;
-  border: none;
-  border-radius: 7px;
-  padding: 8px 12px;
-  color: #fff;
-  background: #4f8cff;
-  cursor: pointer;
-  transition: background 0.16s;
-  outline: none;
-}
-.card-cliente .btn-copy { background: #34d399; }
-.card-cliente .btn-copy:hover { background: #059669; }
-.card-cliente .btn-edit { background: #f59e42; }
-.card-cliente .btn-edit:hover { background: #d97706; }
-.card-cliente .btn-remove { background: #ef4444; }
-.card-cliente .btn-remove:hover { background: #b91c1c; }
-@media (max-width: 600px) {
-  .card-cliente { padding: 13px 7px 11px 10px; }
-  .card-cliente-nome { font-size: 1.07rem; }
-  .card-cliente-info { gap: 7px 10px; font-size: 0.95rem; }
 }
 
 /*
-=========================================
+==================================================
 NÃO DEIXE ESSE BLOCO NO style.css GLOBAL!
 Se quiser fundo especial (azul/vidro) só no index.html,
 coloque no <style> DO PRÓPRIO INDEX.HTML!
-=========================================
+==================================================
 body { ... }
 .main-content { ... }
 .welcome-section { ... }
