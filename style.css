@@ -391,6 +391,55 @@ body.dashboard-body {
     color: var(--cor-texto-claro);
     font-size: 0.9rem;
 }
+
+/* ==================================================
+   PÁGINA DE PERFIL
+   ================================================== */
+.form-section h3 {
+    font-size: 1.25rem;
+    color: var(--cor-texto-escuro);
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.vitrine-link-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.vitrine-url {
+    border: 1.5px solid #e0e7ff;
+    border-radius: 8px;
+    padding: 8px 16px;
+    background: #f7faff;
+    color: #312e81;
+    font-size: 1rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-grow: 1;
+}
+.vitrine-actions {
+    display: flex;
+    gap: 5px;
+}
+.logo-upload-container {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 0;
+}
+.logo-upload-container img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 14px;
+    border: 2px solid #e0e7ff;
+    background: #eef2ff;
+}
+
+/* ==================================================
+   OUTROS COMPONENTES (MODAIS, LOADER)
+   ================================================== */
 .modal-overlay {
     display: none;
     position: fixed;
