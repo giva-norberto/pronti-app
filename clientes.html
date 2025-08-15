@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Só o modal aqui! */
+        /* Modal de confirmação */
         .modal-overlay {
             position: fixed;
             left: 0; top: 0;
@@ -97,7 +97,7 @@
         });
     });
 
-    // Função de exclusão básica para DEMONSTRAÇÃO (substitua pelo seu fluxo Firebase em clientes.js)
+    // Função de exclusão básica para DEMONSTRAÇÃO (para cards estáticos)
     document.addEventListener("DOMContentLoaded", function() {
         let clienteParaExcluir = null;
         const lista = document.getElementById("lista-clientes");
@@ -121,7 +121,7 @@
 
         btnConfirmar.addEventListener("click", function() {
             if (clienteParaExcluir) {
-                // Aqui você pode disparar sua função do clientes.js/Firebase, se desejar
+                // Aqui você pode disparar sua função do clientes.js/Firebase para remover do banco, se desejar
                 clienteParaExcluir.remove();
                 Toastify({
                     text: "Cliente excluído com sucesso!",
