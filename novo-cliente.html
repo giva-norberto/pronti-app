@@ -3,131 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Novo Cliente</title>
+    <title>Pronti - Novo Agendamento</title>
+
+    <!-- Fontes e Ícones -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Estilos -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <style>
-        /* Estilos específicos para esta página. Recomenda-se movê-los para o style.css principal */
-        .main-content {
-            margin-left: 270px; /* Espaço para a nova sidebar de 250px + 20px de margem */
-            padding: 36px 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .form-card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-            padding: 32px;
-            margin-top: 20px;
-            max-width: 450px;
-            width: 100%;
-        }
-        .form-group {
-            margin-bottom: 18px;
-        }
-        .form-group label {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .form-group input {
-            font-size: 1rem;
-            padding: 12px 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            width: 100%;
-        }
-        .btn-submit {
-            width: 100%;
-            margin-top: 20px;
-        }
-        @media (max-width: 900px) {
-            .main-content {
-                margin-left: 0;
-                padding: 24px 15px;
-            }
-        }
-    </style>
 </head>
 <body>
+    <!-- O menu lateral padronizado será carregado aqui -->
+    <div id="sidebar-placeholder"></div>
 
-<!-- ========================================================== -->
-<!-- COMPONENTE DA BARRA LATERAL (SIDEBAR) UNIFICADA          -->
-<!-- ========================================================== -->
-<aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <nav class="sidebar-links">
-        <a href="dashboard.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            <span>Dashboard</span>
-        </a>
-        <a href="servicos.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-            <span>Serviços</span>
-        </a>
-        <a href="agenda.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <span>Agenda</span>
-        </a>
-        <a href="clientes.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span>Clientes</span>
-        </a>
-        <a href="equipe.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span>Equipe</span>
-        </a>
-        <a href="perfil.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>Meu Perfil</span>
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
+    <!-- Conteúdo Principal da Página -->
+    <main class="main-content">
+        
+        <div class="page-header">
+            <h1>Novo Agendamento</h1>
+            <a href="agenda.html" class="btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Voltar para Agenda
+            </a>
+        </div>
+        
+        <!-- O formulário agora usa a classe .card para um visual consistente -->
+        <form id="form-agendamento" class="card" autocomplete="off">
+            <div class="card-info" style="padding: 24px;"> <!-- Usamos card-info para o padding padrão -->
+                <div class="form-group">
+                    <label for="cliente">Nome do Cliente:</label>
+                    <input type="text" id="cliente" name="cliente" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="servico">1. Escolha o Serviço:</label>
+                    <select id="servico" name="servico" required class="form-select">
+                        <option value="">Selecione um serviço</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profissional">2. Escolha o Profissional:</label>
+                    <select id="profissional" name="profissional" required class="form-select" disabled>
+                        <option value="">Primeiro, selecione um serviço</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dia">3. Escolha o Dia:</label>
+                    <input type="date" id="dia" name="dia" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>4. Escolha o Horário Disponível:</label>
+                    <div id="grade-horarios">
+                        <p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>
+                    </div>
+                    <input type="hidden" id="horario-final" name="horario-final">
+                </div>
+            </div>
+            <div class="card-actions">
+                 <button type="submit" class="btn btn-primary">Salvar Agendamento</button>
+            </div>
+        </form>
+    </main>
 
-<main class="main-content">
-    <h1>Cadastrar Novo Cliente</h1>
-    <p>Preencha os dados do novo cliente.</p>
-    <form id="form-cliente" class="form-card" autocomplete="off">
-        <div class="form-group">
-            <label for="nome-cliente">Nome Completo:</label>
-            <input type="text" id="nome-cliente" name="nome-cliente" required>
-        </div>
-        <div class="form-group">
-            <label for="telefone-cliente">Telefone:</label>
-            <input type="tel" id="telefone-cliente" name="telefone-cliente" placeholder="(XX) XXXXX-XXXX">
-        </div>
-        <div class="form-group">
-            <label for="email-cliente">Email:</label>
-            <input type="email" id="email-cliente" name="email-cliente">
-        </div>
-        <button type="submit" class="btn-submit">Salvar Cliente</button>
-    </form>
-</main>
-
-<script>
-    // Script para destacar o link ativo na sidebar
+    <!-- SCRIPTS -->
+    <script>
+    // Carrega o menu lateral e destaca o link da agenda
     document.addEventListener("DOMContentLoaded", function() {
-        const currentPage = window.location.pathname.split('/').pop();
-        const links = document.querySelectorAll('.sidebar-links a');
-        
-        // Remove a classe 'active' de todos os links primeiro
-        links.forEach(link => link.classList.remove('active'));
-        
-        // Adiciona a classe 'active' ao link que corresponde à página de clientes
-        const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
-        if (clientesLink && (currentPage.includes('clientes') || currentPage.includes('novo-cliente'))) {
-            clientesLink.classList.add('active');
-        }
+      const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
+      if (sidebarPlaceholder) {
+        fetch('menu-lateral.html')
+          .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
+          .then(html => {
+            sidebarPlaceholder.innerHTML = html;
+            const activeLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
+            if (activeLink) {
+                document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
+                activeLink.classList.add('active');
+            }
+          })
+          .catch(error => {
+            console.error('Erro ao carregar o menu lateral:', error);
+            sidebarPlaceholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar menu.</p>';
+          });
+      }
     });
-</script>
-<script src="novo-cliente.js" type="module"></script>
-
+    </script>
+    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="novo-agendamento.js" type="module"></script>
 </body>
 </html>
