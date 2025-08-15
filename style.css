@@ -521,4 +521,19 @@ textarea.form-input:focus {
     .page-header .btn {
         width: 100%;
     }
+    /* CORREÇÃO: Adiciona regras responsivas para a página de perfil */
+    .vitrine-link-container, .logo-upload-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    .vitrine-url {
+        text-align: center;
+    }
+    .vitrine-actions {
+        justify-content: center;
+    }
+    .logo-upload-container img {
+        align-self: center;
+    }
 }
