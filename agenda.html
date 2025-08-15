@@ -31,10 +31,16 @@
             </a>
         </div>
 
-        <!-- NOVO: Filtros da Agenda -->
+        <!-- REVISÃO: Adicionadas labels para acessibilidade e clareza -->
         <div class="filtros-agenda">
-            <input type="date" id="data-agenda" class="filtro-input">
-            <select id="filtro-profissional" class="filtro-select"></select>
+            <div class="filtro-item">
+                <label for="data-agenda">Data</label>
+                <input type="date" id="data-agenda" class="filtro-input">
+            </div>
+            <div class="filtro-item">
+                <label for="filtro-profissional">Profissional</label>
+                <select id="filtro-profissional" class="filtro-select"></select>
+            </div>
         </div>
         
         <div id="lista-agendamentos" class="dashboard-cards">
