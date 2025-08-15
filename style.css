@@ -83,10 +83,12 @@
    - Usado em: todos os HTMLs principais (.main-content, .container)
 ================================================== */
 .main-content, .container {
-    margin: 40px auto 40px 290px; /* espaço para sidebar */
+    margin: 40px auto 40px 250px; /* espaço exato para sidebar de 250px */
     padding: 0 20px;
     box-sizing: border-box;
     max-width: 1400px;
+    width: 100%;
+    transition: margin-left 0.3s;
 }
 
 /* ==================================================
