@@ -146,26 +146,16 @@
 
         <section id="lista-agendamentos">
             <!-- Exemplo de card de agendamento renderizado corretamente -->
-            <div class="card-agendamento pequeno">
-                <div class="ag-col-servico">
-                    <span class="servico-nome">Corte Feminino</span>
-                    <span class="ag-horario">11:55</span>
+            <div class="card">
+                <div class="card-title">Corte Feminino</div>
+                <div class="card-info">
+                    <span class="tag-label">Horário</span> 11:55<br>
+                    <span class="tag-label">Profissional</span> GIVANILDO SILVA<br>
+                    <span class="tag-label">Cliente</span> FERNANDA RESENDE
                 </div>
-                <div class="ag-col-pessoas">
-                    <span class="ag-profissional">
-                        <span class="icon">👨‍⚕️</span>
-                        <span class="tag-label">Profissional</span>
-                        GIVANILDO SILVA
-                    </span>
-                    <span class="ag-cliente">
-                        <span class="icon">🧑</span>
-                        <span class="tag-label">Cliente</span>
-                        FERNANDA RESENDE
-                    </span>
-                </div>
-                <div class="ag-col-acoes">
-                    <button class="btn-acao-card btn-nao-compareceu" title="Não Compareceu">⚠️</button>
-                    <button class="btn-acao-card btn-cancelar" title="Cancelar">✖️</button>
+                <div class="card-actions">
+                    <button class="btn-edit" title="Editar"><i class="fa fa-edit"></i></button>
+                    <button class="btn-remove" title="Excluir"><i class="fa fa-trash"></i></button>
                 </div>
             </div>
             <!-- Fim do exemplo -->
