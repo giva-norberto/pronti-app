@@ -37,7 +37,17 @@ let empresaId = null;
  */
 function mostrarToast(texto, cor = '#38bdf8') {
   if (typeof Toastify !== "undefined") {
-    Toastify({ text: texto, duration: 4000, gravity: "top", position: "right", style: { background: cor, color: "white" } }).showToast();
+    Toastify({
+      text: texto,
+      duration: 4000,
+      gravity: "top",
+      position: "center", // <-- ALTERAÇÃO AQUI
+      style: { 
+        background: cor, 
+        color: "white",
+        borderRadius: "8px" // Sugestão: adicione cantos arredondados
+      }
+    }).showToast();
   } else {
     alert(texto);
   }
