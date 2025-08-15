@@ -101,7 +101,9 @@ function safeAddClientesListener() {
       event.stopPropagation();
 
       const clienteId = event.target.dataset.id;
-      const nomeCliente = event.target.closest(".cliente-item").querySelector("h3").textContent;
+      const nomeCliente = event.target.closest(".card-cliente")?.querySelector(".card-cliente-nome")?.textContent
+        || event.target.closest(".cliente-item")?.querySelector("h3")?.textContent
+        || "";
 
       const confirmado = await mostrarConfirmacao(`Tem a certeza de que deseja excluir "${nomeCliente}"? Esta ação é permanente.`);
 
@@ -159,17 +161,20 @@ async function carregarClientesDoFirebase() {
       const cliente = docItem.data();
       const clienteId = docItem.id;
       if (cliente.nome) { 
+        // CARD PADRÃO PRONTI
         const el = document.createElement('div');
-        el.classList.add('cliente-item');
-        el.dataset.id = clienteId;
+        el.classList.add('card-cliente');
+        el.setAttribute('data-id', clienteId);
         el.innerHTML = `
-          <div class="item-info">
-            <h3>${cliente.nome}</h3>
-            <p style="color: #6b7280; margin: 5px 0 0 0;">${cliente.telefone || ""}</p>
+          <div class="card-cliente-nome">${cliente.nome}</div>
+          <div class="card-cliente-info">
+            <span><i class="fa-solid fa-phone"></i> ${cliente.telefone || ""}</span>
+            <span><i class="fa-solid fa-envelope"></i> ${cliente.email || ""}</span>
           </div>
-          <div class="item-acoes">
-            <a href="ficha-cliente.html?id=${clienteId}" class="btn-ver-historico">Ver histórico</a>
-            <button class="btn-excluir" data-id="${clienteId}">Excluir</button>
+          <div class="card-cliente-acoes">
+            <a href="ficha-cliente.html?id=${clienteId}" class="btn-copy"><i class="fa-regular fa-file-lines"></i> Histórico</a>
+            <button class="btn-edit" data-id="${clienteId}"><i class="fa-solid fa-pen"></i> Editar</button>
+            <button class="btn-remove btn-excluir" data-id="${clienteId}"><i class="fa-solid fa-trash"></i> Excluir</button>
           </div>
         `;
         listaClientesDiv.appendChild(el);
@@ -185,7 +190,7 @@ async function excluirCliente(id) {
   try {
     await deleteDoc(doc(db, "empresarios", empresaId, "clientes", id));
     mostrarToast("Cliente excluído com sucesso!", "var(--cor-perigo)");
-    const itemRemovido = document.querySelector(`.cliente-item[data-id="${id}"]`);
+    const itemRemovido = document.querySelector(`.card-cliente[data-id="${id}"]`);
     if (itemRemovido) {
       itemRemovido.style.transition = "opacity 0.3s ease";
       itemRemovido.style.opacity = "0";
