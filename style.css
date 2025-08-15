@@ -107,10 +107,10 @@ body {
 
 .page-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start; /* Alterado para alinhar à esquerda */
     align-items: center;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 20px; /* Mantém um espaço agradável entre o título e o botão */
     margin-bottom: 30px;
 }
 
