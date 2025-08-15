@@ -30,9 +30,8 @@
             </a>
         </div>
         
-        <!-- O formulário agora usa a classe .card para um visual consistente -->
         <form id="form-agendamento" class="card" autocomplete="off">
-            <div class="card-info" style="padding: 24px;"> <!-- Usamos card-info para o padding padrão -->
+            <div class="card-info" style="padding: 24px;">
                 <div class="form-group">
                     <label for="cliente">Nome do Cliente:</label>
                     <input type="text" id="cliente" name="cliente" required class="form-input">
@@ -43,14 +42,21 @@
                         <option value="">Selecione um serviço</option>
                     </select>
                 </div>
+                <!-- NOVO CAMPO PARA PROFISSIONAL -->
                 <div class="form-group">
-                    <label for="dia">2. Escolha o Dia:</label>
+                    <label for="profissional">2. Escolha o Profissional:</label>
+                    <select id="profissional" name="profissional" required class="form-select" disabled>
+                        <option value="">Primeiro, selecione um serviço</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dia">3. Escolha o Dia:</label>
                     <input type="date" id="dia" name="dia" required class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>3. Escolha o Horário Disponível:</label>
+                    <label>4. Escolha o Horário Disponível:</label>
                     <div id="grade-horarios">
-                        <p class="aviso-horarios">Por favor, selecione um serviço e uma data.</p>
+                        <p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>
                     </div>
                     <input type="hidden" id="horario-final" name="horario-final">
                 </div>
