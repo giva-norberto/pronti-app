@@ -1,9 +1,6 @@
 // login.js - VERSÃO FINAL COM PERSISTÊNCIA DE LOGIN
 
-// ALTERAÇÃO: Adicionadas as funções 'setPersistence' e 'browserLocalPersistence'
 import { onAuthStateChanged, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-// Importa 'auth' e 'provider' já criados do arquivo de configuração central
 import { auth, provider } from "./vitrini-firebase.js"; 
 
 // O ID do botão deve corresponder ao seu HTML
@@ -26,10 +23,7 @@ if (!btnLoginGoogle) {
     btnLoginGoogle.addEventListener('click', async () => {
         btnLoginGoogle.disabled = true;
         try {
-            // ==========================================================
-            // ALTERAÇÃO: Esta é a linha que resolve o problema.
-            // Ela força o Firebase a "lembrar" do usuário permanentemente.
-            // ==========================================================
+            // Força o Firebase a lembrar do usuário permanentemente (persistência local)
             await setPersistence(auth, browserLocalPersistence);
 
             const result = await signInWithPopup(auth, provider);
@@ -39,7 +33,10 @@ if (!btnLoginGoogle) {
         } catch (error) {
             console.error("Erro no login com Google:", error);
             if (error.code !== 'auth/popup-closed-by-user') {
+                // ALERTA PADRÃO - Aqui você pode trocar para um alerta customizado no futuro!
                 alert(`Erro ao fazer login: ${error.message}`);
+                // Exemplo para o futuro:
+                // showCustomAlert({title: "Erro ao fazer login", message: error.message});
             }
         } finally {
             btnLoginGoogle.disabled = false;
