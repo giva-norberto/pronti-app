@@ -8,7 +8,7 @@
 
 // Importações dos módulos Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy, doc, deleteDoc, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, doc, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -19,16 +19,14 @@ const auth = getAuth(app);
 
 // --- Elementos do DOM ---
 const listaAgendamentosDiv = document.getElementById("lista-agendamentos");
-const placeholder = document.getElementById("agendamentos-placeholder");
-const inputDataEl = document.getElementById("data-agenda"); // Assumindo que você tem um <input type="date" id="data-agenda"> no seu HTML
-const filtroProfissionalEl = document.getElementById("filtro-profissional"); // Assumindo que você tem um <select id="filtro-profissional">
-
+const inputDataEl = document.getElementById("data-agenda");
+const filtroProfissionalEl = document.getElementById("filtro-profissional");
 const modal = document.getElementById("modal-confirmacao");
 const modalMensagem = document.getElementById("modal-mensagem");
 const btnModalConfirmar = document.getElementById("btn-modal-confirmar");
 const btnModalCancelar = document.getElementById("btn-modal-cancelar");
 
-let empresaId = null; // Armazena o ID da empresa do usuário logado
+let empresaId = null;
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
@@ -39,20 +37,14 @@ let empresaId = null; // Armazena o ID da empresa do usuário logado
  */
 function mostrarToast(texto, cor = '#38bdf8') {
   if (typeof Toastify !== "undefined") {
-    Toastify({
-      text: texto,
-      duration: 4000,
-      gravity: "top",
-      position: "right",
-      style: { background: cor, color: "white" }
-    }).showToast();
+    Toastify({ text: texto, duration: 4000, gravity: "top", position: "right", style: { background: cor, color: "white" } }).showToast();
   } else {
     alert(texto);
   }
 }
 
 /**
- * Exibe um modal de confirmação.
+ * Exibe um modal de confirmação personalizado.
  * @param {string} mensagem - A pergunta de confirmação.
  * @returns {Promise<boolean>} - Resolve como true (confirmado) ou false (cancelado).
  */
@@ -60,29 +52,17 @@ function mostrarConfirmacao(mensagem) {
   if (!modal || !modalMensagem || !btnModalConfirmar || !btnModalCancelar) {
       return Promise.resolve(window.confirm(mensagem));
   }
-
   modalMensagem.textContent = mensagem;
   modal.classList.add("show");
-
   return new Promise((resolve) => {
     const fecharModal = (resultado) => {
       modal.classList.remove("show");
       btnModalConfirmar.onclick = null;
       btnModalCancelar.onclick = null;
-      document.removeEventListener("keydown", handleEsc);
       resolve(resultado);
     };
-
-    const handleConfirm = () => fecharModal(true);
-    const handleCancel = () => fecharModal(false);
-    
-    const handleEsc = (e) => {
-      if (e.key === "Escape") handleCancel();
-    };
-
-    btnModalConfirmar.onclick = handleConfirm;
-    btnModalCancelar.onclick = handleCancel;
-    document.addEventListener("keydown", handleEsc);
+    btnModalConfirmar.onclick = () => fecharModal(true);
+    btnModalCancelar.onclick = () => fecharModal(false);
   });
 }
 
@@ -98,11 +78,11 @@ onAuthStateChanged(auth, async (user) => {
       if (empresaId) {
         await inicializarPaginaAgenda();
       } else {
-        exibirMensagemDeErro("Não foi possível encontrar uma empresa associada a este usuário.");
+        exibirMensagemDeErro("Empresa não encontrada para este usuário.");
       }
     } catch (error) {
-      console.error("Erro ao verificar empresa:", error);
-      exibirMensagemDeErro("Ocorreu um erro ao verificar os dados da sua empresa.");
+      console.error("Erro na inicialização:", error);
+      exibirMensagemDeErro("Ocorreu um erro ao iniciar a página.");
     }
   } else {
     window.location.href = "login.html";
@@ -117,27 +97,19 @@ onAuthStateChanged(auth, async (user) => {
 async function getEmpresaIdDoDono(uid) {
   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
   const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    console.warn("Nenhum documento de empresário encontrado para o UID:", uid);
-    return null;
-  }
-  return snapshot.docs[0].id;
+  return snapshot.empty ? null : snapshot.docs[0].id;
 }
 
 /**
  * Configura os listeners de eventos e carrega os dados iniciais.
  */
 async function inicializarPaginaAgenda() {
-    // Define a data de hoje no input de data
     if(inputDataEl) {
         inputDataEl.value = new Date().toISOString().split("T")[0];
     }
-    
     await popularFiltroProfissionais();
     configurarListenersDeAcao();
-    await carregarAgendamentos(); // Carrega a agenda do dia atual
-
-    // Adiciona listeners para os filtros mudarem o conteúdo
+    await carregarAgendamentos();
     if(inputDataEl) inputDataEl.addEventListener("change", carregarAgendamentos);
     if(filtroProfissionalEl) filtroProfissionalEl.addEventListener("change", carregarAgendamentos);
 }
@@ -148,14 +120,10 @@ async function inicializarPaginaAgenda() {
 async function popularFiltroProfissionais() {
     if (!filtroProfissionalEl) return;
     try {
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const snapshot = await getDocs(profissionaisRef);
-        
+        const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
         filtroProfissionalEl.innerHTML = '<option value="todos">Todos os Profissionais</option>';
         snapshot.forEach(doc => {
-            const profissional = doc.data();
-            const option = new Option(profissional.nome, doc.id);
-            filtroProfissionalEl.appendChild(option);
+            filtroProfissionalEl.appendChild(new Option(doc.data().nome, doc.id));
         });
     } catch (error) {
         console.error("Erro ao buscar profissionais:", error);
@@ -170,20 +138,15 @@ async function carregarAgendamentos() {
   
   const dataSelecionada = inputDataEl ? inputDataEl.value : new Date().toISOString().split("T")[0];
   const profissionalId = filtroProfissionalEl ? filtroProfissionalEl.value : 'todos';
-
   listaAgendamentosDiv.innerHTML = `<p>A carregar agendamentos...</p>`;
   
   try {
-    const agendamentosRef = collection(db, "empresarios", empresaId, "agendamentos");
-    
-    // Constrói a query com base nos filtros
-    let q;
-    if (profissionalId === 'todos') {
-        q = query(agendamentosRef, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
-    } else {
-        q = query(agendamentosRef, where("data", "==", dataSelecionada), where("profissionalId", "==", profissionalId), where("status", "==", "ativo"));
+    const ref = collection(db, "empresarios", empresaId, "agendamentos");
+    const constraints = [where("data", "==", dataSelecionada), where("status", "==", "ativo")];
+    if (profissionalId !== 'todos') {
+        constraints.push(where("profissionalId", "==", profissionalId));
     }
-    
+    const q = query(ref, ...constraints);
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
@@ -192,29 +155,26 @@ async function carregarAgendamentos() {
       return;
     }
 
-    listaAgendamentosDiv.innerHTML = ''; // Limpa a lista
+    listaAgendamentosDiv.innerHTML = '';
     const agendamentos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
-    // Ordena por horário
     agendamentos.sort((a, b) => (a.horario || "00:00").localeCompare(b.horario || "00:00"));
 
-    agendamentos.forEach(agendamento => {
-      const agendamentoId = agendamento.id;
-
+    agendamentos.forEach(ag => {
       const cardElement = document.createElement('div');
-      cardElement.className = 'card';
-      cardElement.setAttribute('data-id', agendamentoId);
+      // Adiciona a classe 'card--agenda' para o estilo colorido
+      cardElement.className = 'card card--agenda';
+      cardElement.setAttribute('data-id', ag.id);
       
       cardElement.innerHTML = `
-        <div class="card-title">${agendamento.servicoNome || 'Serviço não informado'}</div>
+        <div class="card-title">${ag.servicoNome || 'Serviço não informado'}</div>
         <div class="card-info">
-          <p><i class="fa-solid fa-user"></i> <strong>Cliente:</strong> ${agendamento.clienteNome || "Não informado"}</p>
-          <p><i class="fa-solid fa-user-tie"></i> <strong>Profissional:</strong> ${agendamento.profissionalNome || "Não informado"}</p>
-          <p><i class="fa-solid fa-clock"></i> <strong>Hora:</strong> ${agendamento.horario || "Não informada"}</p>
+          <p><i class="fa-solid fa-user"></i> <strong>Cliente:</strong> ${ag.clienteNome || "Não informado"}</p>
+          <p><i class="fa-solid fa-user-tie"></i> <strong>Profissional:</strong> ${ag.profissionalNome || "Não informado"}</p>
+          <p><i class="fa-solid fa-clock"></i> <strong>Hora:</strong> ${ag.horario || "Não informada"}</p>
         </div>
         <div class="card-actions">
-          <button class="btn btn-nao-compareceu" data-id="${agendamentoId}"><i class="fa-solid fa-user-clock"></i> Não Compareceu</button>
-          <button class="btn btn-cancelar" data-id="${agendamentoId}"><i class="fa-solid fa-ban"></i> Cancelar</button>
+          <button class="btn btn-nao-compareceu" data-id="${ag.id}"><i class="fa-solid fa-user-clock"></i> Não Compareceu</button>
+          <button class="btn btn-cancelar" data-id="${ag.id}"><i class="fa-solid fa-ban"></i> Cancelar</button>
         </div>
       `;
       listaAgendamentosDiv.appendChild(cardElement);
@@ -226,64 +186,54 @@ async function carregarAgendamentos() {
 }
 
 /**
- * Atualiza o status de um agendamento para 'cancelado_pelo_gestor'.
- * @param {string} id - O ID do agendamento a ser cancelado.
- */
-async function cancelarAgendamento(id) {
-    const confirmado = await mostrarConfirmacao("Tem a certeza de que deseja CANCELAR este agendamento?");
-    if (!confirmado) return;
-
-    try {
-        const agRef = doc(db, "empresarios", empresaId, "agendamentos", id);
-        await updateDoc(agRef, { status: "cancelado_pelo_gestor" });
-        mostrarToast("Agendamento cancelado.", "#f59e42");
-        carregarAgendamentos(); // Recarrega a lista para remover o card
-    } catch(error) {
-        console.error("Erro ao cancelar agendamento:", error);
-        mostrarToast("Erro ao cancelar o agendamento.", "#ef4444");
-    }
-}
-
-/**
- * Atualiza o status de um agendamento para 'nao_compareceu'.
+ * Função genérica para atualizar o status de um agendamento.
  * @param {string} id - O ID do agendamento.
+ * @param {string} status - O novo status ('cancelado_pelo_gestor' ou 'nao_compareceu').
+ * @param {string} mensagemConfirmacao - A mensagem para o modal.
+ * @param {string} mensagemSucesso - A mensagem para o toast de sucesso.
+ * @param {string} corToast - A cor para o toast de sucesso.
  */
-async function marcarNaoCompareceu(id) {
-    const confirmado = await mostrarConfirmacao("Marcar FALTA para este agendamento? A ação não pode ser desfeita.");
+async function atualizarStatusAgendamento(id, status, mensagemConfirmacao, mensagemSucesso, corToast) {
+    const confirmado = await mostrarConfirmacao(mensagemConfirmacao);
     if (!confirmado) return;
 
     try {
-        const agRef = doc(db, "empresarios", empresaId, "agendamentos", id);
-        await updateDoc(agRef, { status: "nao_compareceu" });
-        mostrarToast("Falta marcada para o agendamento.", "#ef4444");
-        carregarAgendamentos(); // Recarrega a lista para remover o card
+        await updateDoc(doc(db, "empresarios", empresaId, "agendamentos", id), { status });
+        mostrarToast(mensagemSucesso, corToast);
+        carregarAgendamentos(); // Recarrega a lista para refletir a mudança
     } catch(error) {
-        console.error("Erro ao marcar falta:", error);
-        mostrarToast("Erro ao marcar falta.", "#ef4444");
+        console.error(`Erro ao atualizar status para ${status}:`, error);
+        mostrarToast(`Erro ao atualizar agendamento.`, "#ef4444");
     }
 }
-
 
 /**
  * Configura um único listener de eventos na lista para lidar com cliques de ação.
  */
 function configurarListenersDeAcao() {
   if (!listaAgendamentosDiv) return;
-  
   listaAgendamentosDiv.addEventListener("click", async (event) => {
     const target = event.target;
-    
     const btnCancelar = target.closest(".btn-cancelar");
     const btnNaoCompareceu = target.closest(".btn-nao-compareceu");
 
     if (btnCancelar) {
-      const agendamentoId = btnCancelar.dataset.id;
-      if (agendamentoId) await cancelarAgendamento(agendamentoId);
+      await atualizarStatusAgendamento(
+        btnCancelar.dataset.id, 
+        'cancelado_pelo_gestor', 
+        'Tem a certeza de que deseja CANCELAR este agendamento?',
+        'Agendamento cancelado.', 
+        '#f59e42'
+      );
     }
-    
     if (btnNaoCompareceu) {
-      const agendamentoId = btnNaoCompareceu.dataset.id;
-      if (agendamentoId) await marcarNaoCompareceu(agendamentoId);
+      await atualizarStatusAgendamento(
+        btnNaoCompareceu.dataset.id, 
+        'nao_compareceu', 
+        'Marcar FALTA para este agendamento? A ação não pode ser desfeita.',
+        'Falta marcada para o agendamento.', 
+        '#6b7280'
+      );
     }
   });
 }
