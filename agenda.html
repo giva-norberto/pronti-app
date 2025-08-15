@@ -35,9 +35,9 @@
         <!-- GRID DE CARDS: Onde os agendamentos serão exibidos -->
         <div id="lista-agendamentos" class="dashboard-cards">
             <!-- 
-              MELHORIA: Adicionada uma mensagem de placeholder.
-              O seu script 'agenda.js' deve remover este parágrafo 
-              e inserir os cards, ou alterar o texto para "Nenhum agendamento encontrado."
+              Mensagem de placeholder.
+              O script 'agenda.js' deve substituir este conteúdo pelos cards 
+              ou por uma mensagem de "Nenhum agendamento encontrado."
             -->
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
@@ -46,9 +46,10 @@
     <!-- MODAL DE CONFIRMAÇÃO: Reutilizado para exclusão de agendamentos -->
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-card">
-            <h3 id="modal-titulo">Confirmar Exclusão</h3>
-            <p id="modal-mensagem">Você tem certeza que deseja excluir este agendamento?</p>
-            <div class="modal-botoes" style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
+            <div class="modal-botoes">
+                <!-- REVISÃO: Botões agora usam o padrão global '.btn' para consistência -->
                 <button id="btn-modal-cancelar" class="btn">Cancelar</button>
                 <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
             </div>
@@ -64,15 +65,14 @@
         fetch('menu-lateral.html')
           .then(res => {
             if (!res.ok) {
-              throw new Error('Não foi possível carregar o menu. Verifique se o arquivo "menu-lateral.html" existe.');
+              throw new Error('Não foi possível carregar o menu. Verifique se o arquivo "menu-lateral.html" existe e se a página está a ser servida por um servidor web.');
             }
             return res.text();
           })
           .then(html => {
             sidebarPlaceholder.innerHTML = html;
             
-            // ===== A CORREÇÃO ESTÁ AQUI =====
-            // Marca o link 'Agenda' como ativo no menu, em vez de 'Clientes'.
+            // Marca o link 'Agenda' como ativo no menu
             const activeLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
             if (activeLink) {
                 // Remove a classe 'active' de qualquer outro link que possa tê-la
