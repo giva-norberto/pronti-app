@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil e Configurações - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome (opcional, para ícones dos botões de link) -->
+    <!-- FontAwesome para ícones dos botões -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
     /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande */
@@ -22,11 +22,47 @@
         display: block;
         margin: 0;
     }
+    /* Botões customizados */
+    .btn-custom, .btn-copy, .btn-open, .btn-upload, .btn-new, .btn-submit {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 18px;
+        font-size: 1rem;
+        font-weight: 500;
+        border: none;
+        border-radius: 7px;
+        color: #fff;
+        background: #4f8cff;
+        cursor: pointer;
+        transition: background 0.18s, box-shadow 0.18s;
+        box-shadow: 0 2px 4px rgba(79,140,255,0.10);
+        text-decoration: none;
+        outline: none;
+    }
+    .btn-copy { background: #34d399; }
+    .btn-copy:hover, .btn-copy:focus { background: #059669; }
+    .btn-open { background: #6366f1; }
+    .btn-open:hover, .btn-open:focus { background: #4338ca; }
+    .btn-upload { background: #f59e42; }
+    .btn-upload:hover, .btn-upload:focus { background: #d97706; }
+    .btn-new { background: #6366f1; }
+    .btn-new:hover, .btn-new:focus { background: #4338ca; }
+    .btn-submit { background: #4f8cff; }
+    .btn-submit:hover, .btn-submit:focus { background: #1e40af; }
+    /* Ícone ajustado */
+    .btn-custom i, .btn-copy i, .btn-open i, .btn-upload i, .btn-new i, .btn-submit i {
+        font-size: 1.05em;
+    }
     /* Responsivo para telas menores */
     @media (max-width: 600px) {
       .logo-upload-container img#logo-preview {
         max-width: 92vw;
         max-height: 80px;
+      }
+      .btn-custom, .btn-copy, .btn-open, .btn-upload, .btn-new, .btn-submit {
+        font-size: 0.98rem;
+        padding: 10px 10px;
       }
     }
     </style>
@@ -43,7 +79,9 @@
                     <p>Defina aqui todas as informações do seu negócio.</p>
                 </div>
                 <div class="header-actions">
-                    <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">Abrir Minha Vitrine</a>
+                    <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">
+                        <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
+                    </a>
                 </div>
             </div>
 
@@ -56,11 +94,15 @@
                     </div>
                     <div class="form-group" id="container-link-vitrine" style="display: none;">
                         <label>Link da sua Vitrine Pública</label>
-                        <div class="vitrine-link-container">
+                        <div class="vitrine-link-container" style="display: flex; align-items: center; gap: 10px;">
                             <div class="vitrine-url" id="url-vitrine-display"></div>
-                            <div class="vitrine-actions">
-                                <button type="button" id="btn-copiar-link" class="btn-copy">Copiar</button>
-                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">Abrir</a>
+                            <div class="vitrine-actions" style="display: flex; gap: 4px;">
+                                <button type="button" id="btn-copiar-link" class="btn-copy">
+                                    <i class="fa-regular fa-copy"></i> Copiar
+                                </button>
+                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -70,7 +112,9 @@
                             <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
                             <div class="logo-upload-actions">
                                 <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                                <button type="button" id="btn-upload-logo" class="btn-upload">Escolher Arquivo</button>
+                                <button type="button" id="btn-upload-logo" class="btn-upload">
+                                    <i class="fa-regular fa-image"></i> Escolher Arquivo
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -80,7 +124,9 @@
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fa-solid fa-floppy-disk"></i> Salvar Todas as Configurações
+                    </button>
                 </div>
             </form>
         </div>
@@ -104,6 +150,24 @@
               perfilLink.classList.add('active');
           }
         });
+      // Botão de upload de logo
+      document.getElementById('btn-upload-logo').onclick = function() {
+        document.getElementById('logoNegocio').click();
+      };
+      // Botão copiar link
+      if (document.getElementById('btn-copiar-link')) {
+        document.getElementById('btn-copiar-link').onclick = function() {
+          const url = document.getElementById('url-vitrine-display').innerText;
+          if (!url) return;
+          navigator.clipboard.writeText(url).then(function() {
+            const btn = document.getElementById('btn-copiar-link');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+            setTimeout(() => {
+              btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar';
+            }, 1300);
+          });
+        };
+      }
     });
     </script>
     <script src="perfil.js" type="module"></script>
