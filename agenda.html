@@ -23,7 +23,6 @@
     <!-- Conteúdo Principal da Página -->
     <main class="main-content">
         
-        <!-- CABEÇALHO PADRONIZADO: Adaptado para a Agenda -->
         <div class="page-header">
             <h1>Minha Agenda</h1>
             <a href="novo-agendamento.html" class="btn btn-primary">
@@ -31,25 +30,24 @@
                 Novo Agendamento
             </a>
         </div>
+
+        <!-- NOVO: Filtros da Agenda -->
+        <div class="filtros-agenda">
+            <input type="date" id="data-agenda" class="filtro-input">
+            <select id="filtro-profissional" class="filtro-select"></select>
+        </div>
         
-        <!-- GRID DE CARDS: Onde os agendamentos serão exibidos -->
         <div id="lista-agendamentos" class="dashboard-cards">
-            <!-- 
-              Mensagem de placeholder.
-              O script 'agenda.js' deve substituir este conteúdo pelos cards 
-              ou por uma mensagem de "Nenhum agendamento encontrado."
-            -->
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
     </main>
 
-    <!-- MODAL DE CONFIRMAÇÃO: Reutilizado para exclusão de agendamentos -->
+    <!-- MODAL DE CONFIRMAÇÃO -->
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-card">
             <h3 id="modal-titulo">Confirmar Ação</h3>
             <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
             <div class="modal-botoes">
-                <!-- REVISÃO: Botões agora usam o padrão global '.btn' para consistência -->
                 <button id="btn-modal-cancelar" class="btn">Cancelar</button>
                 <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
             </div>
@@ -58,26 +56,16 @@
 
     <!-- SCRIPTS -->
     <script>
-    // Carrega o menu lateral padronizado de um arquivo externo.
     document.addEventListener("DOMContentLoaded", function() {
       const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
       if (sidebarPlaceholder) {
         fetch('menu-lateral.html')
-          .then(res => {
-            if (!res.ok) {
-              throw new Error('Não foi possível carregar o menu. Verifique se o arquivo "menu-lateral.html" existe e se a página está a ser servida por um servidor web.');
-            }
-            return res.text();
-          })
+          .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
           .then(html => {
             sidebarPlaceholder.innerHTML = html;
-            
-            // Marca o link 'Agenda' como ativo no menu
             const activeLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
             if (activeLink) {
-                // Remove a classe 'active' de qualquer outro link que possa tê-la
                 document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-                // Adiciona a classe 'active' apenas ao link da agenda
                 activeLink.classList.add('active');
             }
           })
@@ -89,10 +77,7 @@
     });
     </script>
     
-    <!-- Scripts de bibliotecas externas -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    
-    <!-- Script principal para a lógica da página de agenda -->
     <script src="agenda.js" type="module"></script>
 </body>
 </html>
