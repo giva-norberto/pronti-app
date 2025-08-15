@@ -94,7 +94,7 @@ body {
 }
 
 /* ==================================================
-   ÁREA DE CONTEÚDO PRINCIPAL
+   ÁREA DE CONTEÚDO E CABEÇALHO DE PÁGINA
    ================================================== */
 .main-content {
     margin-left: 250px; /* Espaço para o sidebar */
@@ -103,10 +103,20 @@ body {
     box-sizing: border-box;
     transition: margin-left 0.3s, width 0.3s;
 }
-.main-content h1 {
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Permite quebrar a linha em telas menores */
+    gap: 20px; /* Espaçamento entre título e botão */
+    margin-bottom: 30px; /* Espaço abaixo do cabeçalho, antes dos cards */
+}
+
+.page-header h1 {
     font-size: 2rem;
     color: var(--cor-texto-escuro);
-    margin-bottom: 10px;
+    margin: 0; /* Remove margem padrão do h1 */
 }
 
 /* ==================================================
@@ -138,9 +148,6 @@ body {
 }
 .btn-primary:hover {
     background: #2795e6; /* Tom mais escuro da primária */
-}
-.main-content > .btn-primary {
-    margin-bottom: 30px; /* Espaço abaixo do botão "Novo Cliente" */
 }
 
 .btn-edit {
@@ -267,6 +274,7 @@ body {
     .sidebar {
         /* Esconde o menu lateral, preparando para a transição */
         transform: translateX(-100%);
+        /* Adicione um botão para abrir/fechar o menu via JS se necessário */
     }
     .main-content {
         /* Conteúdo principal ocupa toda a tela */
@@ -280,7 +288,14 @@ body {
 }
 
 @media (max-width: 768px) {
-    .main-content h1 {
+    .page-header {
+        flex-direction: column; /* Título e botão um embaixo do outro */
+        align-items: flex-start; /* Alinha ambos à esquerda */
+    }
+    .page-header .btn {
+        width: 100%; /* Botão ocupa a largura total */
+    }
+    .page-header h1 {
         font-size: 1.8rem;
     }
     .dashboard-cards {
