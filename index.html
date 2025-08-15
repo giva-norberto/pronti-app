@@ -5,84 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="inicio-container.css">
-    <!-- FontAwesome (opcional, para ícones) -->
+    <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<!-- CORREÇÃO: Adicionada a classe "dashboard-body" para aplicar o estilo especial -->
+<body class="dashboard-body">
 
 <!-- Sidebar (menu lateral) incluso dinamicamente -->
 <div id="sidebar-placeholder"></div>
 
-<main class="main-content inicio-container">
-  <div class="dashboard-card">
-    <div class="dashboard-header">
-      <h1>Olá, <span id="nome-usuario">Usuário</span>!</h1>
-      <p>Pronto para gerenciar seu dia?</p>
-    </div>
-    <div class="dashboard-summaries">
-      <div class="summary-card">
-        <i class="fa fa-calendar"></i>
-        <div>
-          <span class="summary-number" id="total-agendamentos-dia">0</span>
-          <span class="summary-label">Agendamentos hoje</span>
-        </div>
-      </div>
-      <div class="summary-card">
-        <i class="fa fa-users"></i>
-        <div>
-          <span class="summary-number" id="clientes-ativos">0</span>
-          <span class="summary-label">Clientes ativos</span>
-        </div>
-      </div>
-      <div class="summary-card">
-        <i class="fa fa-clock"></i>
-        <div>
-          <span class="summary-number" id="proximos-servicos">0</span>
-          <span class="summary-label">Próximos serviços</span>
-        </div>
-      </div>
-    </div>
-    <div class="dashboard-actions">
-      <button class="action-btn blue" id="novo-agendamento">Novo agendamento</button>
-      <button class="action-btn green" id="adicionar-cliente">Adicionar cliente</button>
-      <button class="action-btn yellow" id="adicionar-servico">Adicionar serviço</button>
-    </div>
-    <div class="dashboard-news">
-      <h2>Novidades</h2>
-      <div class="news-card">
-        <strong>Novas funcionalidades na agenda</strong>
-        Confira as últimas atualizações na aplicação.
-      </div>
-    </div>
+<main class="main-content">
+  <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
+  <div class="dashboard-welcome-center">
+    <h1>Bom dia, <span id="nome-usuario">João</span>!</h1>
+    <p>Pronto para gerenciar seu dia?</p>
   </div>
+
+  <!-- AÇÕES PRINCIPAIS -->
+  <div class="dashboard-main-actions">
+    <a href="#" class="action-card">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Painel Inteligente</span>
+    </a>
+    <a href="agenda.html" class="action-card">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>Agenda</span>
+    </a>
+    <a href="servicos.html" class="action-card">
+        <i class="fa-solid fa-scissors"></i>
+        <span>Serviços</span>
+    </a>
+  </div>
+
+  <!-- BOTÃO DE STATUS -->
+  <button class="status-button">Ver status de hoje</button>
 </main>
 
 <script>
     // Inclui o menu-lateral.html dinamicamente
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
-        .then(res => res.text())
+        .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Destaca o item "Início" (index.html) após inclusão do menu
-          const links = document.querySelectorAll('.sidebar-links a');
-          links.forEach(link => link.classList.remove('active'));
+          // Destaca o item "Início" (index.html)
           const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
-          const currentPage = window.location.pathname.split('/').pop();
-          if (homeLink && (currentPage === 'index.html' || currentPage === '')) {
-              homeLink.classList.add('active');
+          if (homeLink) {
+            document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
+            homeLink.classList.add('active');
           }
         });
-    });
 
-    // Exemplo: ajuste o nome do usuário se sua lógica permitir
-    document.addEventListener("DOMContentLoaded", function() {
-      // Substitua por lógica real se tiver login/nome dinâmico
-      document.getElementById("nome-usuario").textContent = "João";
+      // Lógica para buscar dados do Firebase e atualizar o dashboard
+      // Exemplo: document.getElementById("nome-usuario").textContent = "João";
     });
-
-    // Aqui você pode adicionar handlers para os botões, se desejar
 </script>
 
 </body>
