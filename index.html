@@ -1,274 +1,89 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Serviços</title>
-    <style>
-        /* Reset básico */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        /* Layout principal */
-        body {
-            min-height: 100vh;
-            width: 100vw;
-            display: flex;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1877f2, #6a5af9);
-        }
-
-        /* Sidebar */
-        #sidebar-placeholder {
-            width: 220px;
-            min-width: 200px;
-            background: #6a5af9;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 30px 0 20px 0;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.05);
-        }
-
-        /* Conteúdo principal */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 48px 32px 32px 32px;
-            min-height: 100vh;
-        }
-
-        /* Cabeçalho e botão novo serviço */
-        .servicos-header {
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 32px;
-        }
-        .servicos-header h1 {
-            color: #222b54;
-            font-size: 2.1rem;
-            margin: 0;
-            font-weight: 700;
-            letter-spacing: -1px;
-        }
-        .btn-new {
-            background-color: #6a5af9;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            display: inline-block;
-            font-size: 1rem;
-            border: none;
-            transition: background 0.18s;
-            margin-left: 12px;
-        }
-        .btn-new:hover {
-            background-color: #4f46e5;
-        }
-
-        /* Cards de serviços */
-        .lista-servicos {
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .servico-card {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px 26px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.09);
-            max-width: 370px;
-            margin-left: auto;
-        }
-        .servico-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 7px;
-        }
-        .servico-titulo {
-            font-size: 1.13em;
-            font-weight: bold;
-            color: #333;
-            margin: 0;
-        }
-        .servico-descricao {
-            color: #666;
-            margin: 2px 0 12px 0;
-            line-height: 1.4;
-            font-size: 0.98em;
-        }
-        .servico-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #f0f0f0;
-        }
-        .servico-preco {
-            font-size: 1.07em;
-            font-weight: bold;
-            color: #28a745;
-        }
-        .servico-duracao {
-            color: #666;
-            font-size: 0.93em;
-            margin-left: 10px;
-        }
-        .servico-acoes {
-            display: flex;
-            gap: 8px;
-        }
-        .btn-acao {
-            padding: 7px 13px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 500;
-        }
-        .btn-editar { background-color: #ffc107; color: #333; }
-        .btn-excluir { background-color: #dc3545; color: white; }
-        .btn-editar:hover { background: #ffb300; }
-        .btn-excluir:hover { background: #c82333; }
-
-        /* Modal overlay */
-        .modal-overlay {
-            position: fixed;
-            left: 0; top: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .modal-overlay.ativo {
-            display: flex;
-            opacity: 1;
-        }
-        .modal-box {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
-            text-align: center;
-            max-width: 420px;
-            width: 90%;
-        }
-        .modal-botoes {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .modal-botoes button {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-        }
-        #modal-btn-confirmar { background-color: #d9534f; color: white; }
-        #modal-btn-cancelar { background-color: #f0f0f0; color: #333; }
-
-        /* Responsividade */
-        @media (max-width: 1100px) {
-            .servicos-header, .lista-servicos {
-                max-width: 98vw;
-            }
-        }
-        @media (max-width: 900px) {
-            body {
-                flex-direction: column;
-            }
-            #sidebar-placeholder {
-                width: 100vw;
-                min-width: unset;
-                flex-direction: row;
-                padding: 0;
-            }
-            .main-content {
-                padding: 24px 0;
-            }
-        }
-        @media (max-width: 700px) {
-            .servicos-header, .lista-servicos {
-                padding: 0 8vw;
-            }
-            .main-content {
-                padding: 10px 0;
-            }
-        }
-        @media (max-width: 500px) {
-            .servico-card {
-                padding: 15px 7px;
-            }
-        }
-    </style>
+    <title>Pronti - Início</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="inicio-container.css">
+    <!-- FontAwesome (opcional, para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-<!-- Menu lateral dinâmico -->
+<!-- Sidebar (menu lateral) incluso dinamicamente -->
 <div id="sidebar-placeholder"></div>
 
-<main class="main-content">
-    <div class="servicos-header">
-        <h1>Nossos Serviços</h1>
-        <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
+<main class="main-content inicio-container">
+  <div class="dashboard-card">
+    <div class="dashboard-header">
+      <h1>Olá, <span id="nome-usuario">Usuário</span>!</h1>
+      <p>Pronto para gerenciar seu dia?</p>
     </div>
-    <div id="lista-servicos" class="lista-servicos"></div>
+    <div class="dashboard-summaries">
+      <div class="summary-card">
+        <i class="fa fa-calendar"></i>
+        <div>
+          <span class="summary-number" id="total-agendamentos-dia">0</span>
+          <span class="summary-label">Agendamentos hoje</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <i class="fa fa-users"></i>
+        <div>
+          <span class="summary-number" id="clientes-ativos">0</span>
+          <span class="summary-label">Clientes ativos</span>
+        </div>
+      </div>
+      <div class="summary-card">
+        <i class="fa fa-clock"></i>
+        <div>
+          <span class="summary-number" id="proximos-servicos">0</span>
+          <span class="summary-label">Próximos serviços</span>
+        </div>
+      </div>
+    </div>
+    <div class="dashboard-actions">
+      <button class="action-btn blue" id="novo-agendamento">Novo agendamento</button>
+      <button class="action-btn green" id="adicionar-cliente">Adicionar cliente</button>
+      <button class="action-btn yellow" id="adicionar-servico">Adicionar serviço</button>
+    </div>
+    <div class="dashboard-news">
+      <h2>Novidades</h2>
+      <div class="news-card">
+        <strong>Novas funcionalidades na agenda</strong>
+        Confira as últimas atualizações na aplicação.
+      </div>
+    </div>
+  </div>
 </main>
 
-<div id="custom-confirm-modal" class="modal-overlay">
-    <div class="modal-box">
-        <h2 id="modal-titulo"></h2>
-        <p id="modal-mensagem"></p>
-        <div class="modal-botoes">
-            <button id="modal-btn-cancelar">Cancelar</button>
-            <button id="modal-btn-confirmar">Confirmar</button>
-        </div>
-    </div>
-</div>
-
 <script>
-    // Carrega o menu lateral padrão dinamicamente
-    fetch('sidebar.html')
+    // Inclui o menu-lateral.html dinamicamente
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
         .then(res => res.text())
         .then(html => {
-            document.getElementById('sidebar-placeholder').innerHTML = html;
-            // Destaca o item de serviços no menu lateral, se o menu usar .sidebar-links
-            const links = document.querySelectorAll('.sidebar-links a');
-            links.forEach(link => link.classList.remove('active'));
-            const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
-            if (servicosLink) {
-                servicosLink.classList.add('active');
-            }
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Destaca o item "Início" (index.html) após inclusão do menu
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
+          const currentPage = window.location.pathname.split('/').pop();
+          if (homeLink && (currentPage === 'index.html' || currentPage === '')) {
+              homeLink.classList.add('active');
+          }
         });
+    });
+
+    // Exemplo: ajuste o nome do usuário se sua lógica permitir
+    document.addEventListener("DOMContentLoaded", function() {
+      // Substitua por lógica real se tiver login/nome dinâmico
+      document.getElementById("nome-usuario").textContent = "João";
+    });
+
+    // Aqui você pode adicionar handlers para os botões, se desejar
 </script>
 
-<!-- Seus scripts do sistema -->
-<script src="./vitrini-firebase.js" type="module"></script>
-<script src="./vitrini-utils.js" type="module"></script>
-<script src="./vitrini-profissionais.js" type="module"></script>
-<script src="./servicos.js" type="module"></script>
 </body>
 </html>
