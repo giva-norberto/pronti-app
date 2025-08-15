@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Modal de confirmação */
+        /* O estilo do modal pode continuar aqui ou ser movido para o style.css global */
         .modal-overlay {
             position: fixed;
             left: 0; top: 0;
@@ -48,29 +48,27 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
     <div id="sidebar-placeholder"></div>
 
     <main class="main-content">
         <h1>Meus Clientes</h1>
         <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
-        <div id="lista-clientes" style="margin-top: 20px;">
-            <!-- Exemplo de card para visualização. O JS deve gerar os reais dinamicamente! -->
+        
+        <div id="lista-clientes" class="dashboard-cards">
             <div class="card" data-id="exemplo">
                 <div class="card-title">Nome do Cliente</div>
                 <div class="card-info">
-                    <span class="tag-label">Telefone</span> (99) 99999-9999<br>
-                    <span class="tag-label">E-mail</span> cliente@email.com
+                    <p><span class="tag-label">Telefone:</span> (99) 99999-9999</p>
+                    <p><span class="tag-label">E-mail:</span> cliente@email.com</p>
                 </div>
                 <div class="card-actions">
                     <button class="btn-edit" title="Editar"><i class="fa fa-edit"></i> Editar</button>
                     <button class="btn-remove" title="Excluir"><i class="fa fa-trash"></i> Excluir</button>
                 </div>
             </div>
-        </div>
+             </div>
     </main>
 
-    <!-- Modal de confirmação -->
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-box">
             <h3 id="modal-titulo">Confirmar Exclusão</h3>
@@ -89,7 +87,6 @@
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Destaca o item clientes no menu
           const links = document.querySelectorAll('.sidebar-links a');
           links.forEach(link => link.classList.remove('active'));
           const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
@@ -97,7 +94,7 @@
         });
     });
 
-    // Função de exclusão básica para DEMONSTRAÇÃO (para cards estáticos)
+    // Função de exclusão
     document.addEventListener("DOMContentLoaded", function() {
         let clienteParaExcluir = null;
         const lista = document.getElementById("lista-clientes");
@@ -105,7 +102,6 @@
         const btnCancelar = document.getElementById("btn-modal-cancelar");
         const btnConfirmar = document.getElementById("btn-modal-confirmar");
 
-        // Delegação para todos os botões remover
         lista.addEventListener("click", function(e) {
             const btn = e.target.closest(".btn-remove");
             if (btn) {
@@ -121,7 +117,6 @@
 
         btnConfirmar.addEventListener("click", function() {
             if (clienteParaExcluir) {
-                // Aqui você pode disparar sua função do clientes.js/Firebase para remover do banco, se desejar
                 clienteParaExcluir.remove();
                 Toastify({
                     text: "Cliente excluído com sucesso!",
