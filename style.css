@@ -1,10 +1,31 @@
 /* ==================================================
-   SIDEBAR
-   - Usado em: menu lateral de todas as páginas (sidebar.html, index.html, clientes.html, agenda.html, servicos.html, etc)
-================================================== */
+   CONFIGURAÇÕES GLOBAIS E VARIÁVEIS
+   ================================================== */
+:root {
+    --cor-primaria: #4facfe;
+    --cor-secundaria: #00f2fe;
+    --cor-sucesso: #34d399;
+    --cor-aviso: #f59e42;
+    --cor-perigo: #ef4444;
+    --cor-texto-escuro: #22223b;
+    --cor-texto-claro: #44446a;
+    --cor-fundo: #f6f7fb;
+    --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+body {
+    font-family: 'Inter', Arial, sans-serif;
+    background-color: var(--cor-fundo);
+    margin: 0;
+    color: var(--cor-texto-escuro);
+}
+
+/* ==================================================
+   SIDEBAR (MENU LATERAL)
+   ================================================== */
 .sidebar {
     width: 250px;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
     color: white;
     position: fixed;
     top: 0; left: 0; bottom: 0;
@@ -14,50 +35,44 @@
     border-radius: 0 18px 18px 0;
     box-shadow: 0 16px 32px rgba(0,0,0,0.08);
     z-index: 100;
-    min-height: 100vh;
+    transition: transform 0.3s ease;
 }
 .sidebar-brand {
     font-size: 1.85rem;
     font-weight: 700;
     margin-bottom: 26px;
-    letter-spacing: 0.5px;
     color: white;
     text-decoration: none;
+    text-align: center;
 }
 .sidebar-links {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    flex: 1;
+    flex-grow: 1; /* Ocupa o espaço disponível */
 }
 .sidebar-links a {
     color: #fff;
     text-decoration: none;
-    padding: 13px 18px 13px 13px;
+    padding: 13px 18px;
     border-radius: 10px;
     transition: background 0.2s, color 0.2s;
     font-weight: 500;
-    font-size: 1.08rem;
-    margin-bottom: 4px;
-    letter-spacing: 0.2px;
+    font-size: 1.05rem;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 .sidebar-links a.active,
 .sidebar-links a:hover {
-    background: rgba(255,255,255,0.22);
-    color: #22223b;
+    background: rgba(255,255,255,0.25);
+    color: var(--cor-texto-escuro);
 }
 .sidebar-links a.active {
     font-weight: 700;
-    box-shadow: 0 2px 8px #00f2fe44;
 }
 .sidebar-footer {
     margin-top: 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
 }
 .btn-logout {
     background: none;
@@ -79,391 +94,200 @@
 }
 
 /* ==================================================
-   ÁREA PRINCIPAL DE CONTEÚDO
-   - Usado em: todos os HTMLs principais (.main-content, .container)
-================================================== */
-.main-content, .container {
-    margin: 40px auto 40px 250px; /* espaço exato para sidebar de 250px */
-    padding: 0 20px;
+   ÁREA DE CONTEÚDO PRINCIPAL
+   ================================================== */
+.main-content {
+    margin-left: 250px; /* Espaço para o sidebar */
+    padding: 40px;      /* Espaçamento interno para afastar o conteúdo */
+    width: calc(100% - 250px);
     box-sizing: border-box;
-    max-width: 1400px;
-    width: 100%;
-    transition: margin-left 0.3s;
+    transition: margin-left 0.3s, width 0.3s;
+}
+.main-content h1 {
+    font-size: 2rem;
+    color: var(--cor-texto-escuro);
+    margin-bottom: 10px;
 }
 
 /* ==================================================
-   HEADER DO DASHBOARD (VISUAL NOVO/PRONTI)
-   - Usado em: index.html, dashboard, páginas principais
-================================================== */
-.header-dashboard {
-    display: flex;
-    justify-content: space-between;
+   PADRÃO GLOBAL DE BOTÕES
+   ================================================== */
+.btn {
+    display: inline-flex;
     align-items: center;
-    padding: 18px 40px;
-    background: linear-gradient(90deg, #23c6f8 0%, #00ecbc 100%);
-    color: white;
-    margin-bottom: 32px;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(79, 172, 254, 0.18);
-    max-width: 1400px;
-    margin-left: auto;
-    margin-right: auto;
-}
-.header-dashboard h1 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    margin: 0;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    letter-spacing: 1px;
-}
-.btn-voltar {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: none;
-    border-radius: 25px;
-    padding: 7px 19px;
-    font-weight: 500;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all .2s;
-    text-decoration: none;
-    outline: none;
-}
-.btn-voltar:hover {
-    background: rgba(255,255,255,0.35);
-    color: #1976d2;
-}
-.filtro-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255,255,255,0.13);
-    padding: 8px 16px;
-    border-radius: 18px;
-}
-.filtro-container label {
-    font-weight: 500;
-    color: white;
-    font-size: 1rem;
-}
-.filtro-container input[type="date"] {
-    background: rgba(255,255,255,0.87);
-    border: none;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
     border-radius: 8px;
-    padding: 7px 13px;
-    color: #22223b;
-    font-weight: 500;
-    font-size: 1rem;
-    min-width: 120px;
+    border: 1px solid transparent;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Variações de Botões */
+.btn-primary {
+    background-color: var(--cor-primaria);
+    color: #fff;
+}
+.btn-primary:hover {
+    background: #2795e6; /* Tom mais escuro da primária */
+}
+.main-content > .btn-primary {
+    margin-bottom: 30px; /* Espaço abaixo do botão "Novo Cliente" */
+}
+
+.btn-edit {
+    background-color: var(--cor-aviso);
+    color: #fff;
+}
+.btn-edit:hover {
+    background-color: #d97706;
+}
+
+.btn-remove {
+    background-color: var(--cor-perigo);
+    color: #fff;
+}
+.btn-remove:hover {
+    background-color: #b91c1c;
 }
 
 /* ==================================================
-   GRID DE CARDS DO DASHBOARD
-   - Usado em: index.html, dashboard, cards principais
-================================================== */
+   GRID DE CARDS E CARD UNIVERSAL
+   ================================================== */
 .dashboard-cards {
-    width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 28px 28px;
-    max-width: 1400px;
-    margin: 0 auto 60px auto;
-    padding-bottom: 40px;
+    /* Colunas responsivas: mínimo de 320px, máximo 1fr (ocupa espaço igual) */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
 }
-.card-agenda {
-    grid-column: span 2;
-}
-@media (max-width: 1200px) {
-    .dashboard-cards { grid-template-columns: repeat(2, 1fr); }
-    .card-agenda { grid-column: span 2; }
-}
-@media (max-width: 900px) {
-    .dashboard-cards { grid-template-columns: 1fr; gap: 13px; }
-    .card-agenda { grid-column: span 1; }
-}
-
-/* ==================================================
-   CARD UNIVERSAL (VISUAL NOVO/PRONTI)
-   - Usado em: todos os cards do sistema (clientes, serviços, agenda, dashboard, etc)
-   - Exemplo de uso:
-     <div class="card">
-       <div class="card-title">Título</div>
-       <div class="card-info">Info</div>
-       <div class="card-actions">...</div>
-     </div>
-================================================== */
 .card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 16px #4facfe18, 0 0.5px 3px #00ecbc14;
-  padding: 18px 16px 14px 16px;
-  margin-bottom: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-  transition: box-shadow 0.17s, transform 0.13s;
-  max-width: 99vw;
-  width: 100%;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--sombra-card);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s, transform 0.2s;
 }
-.card:hover, .card:focus-within {
-  box-shadow: 0 8px 32px #00ecbc26, 0 5px 24px #4facfe12;
-  transform: translateY(-2px) scale(1.013);
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 .card-title {
-  font-size: 1.11rem;
-  font-weight: 600;
-  color: #3730a3;
-  margin-bottom: 3px;
-  line-height: 1.3;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #3730a3;
+    margin: 0 0 12px 0;
 }
 .card-info {
-  font-size: 0.97rem;
-  color: #44446a;
-  margin-bottom: 5px;
-  line-height: 1.5;
-  word-break: break-word;
+    font-size: 0.95rem;
+    color: var(--cor-texto-claro);
+    line-height: 1.6;
+    flex-grow: 1; /* Empurra as ações para baixo */
+    word-break: break-word;
 }
-.card-actions {
-  display: flex;
-  gap: 7px;
-  margin-top: 7px;
-}
-/* Botões universais para todas as ações de card */
-.card .btn-copy,
-.card .btn-edit,
-.card .btn-remove {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.98rem;
-  border: none;
-  border-radius: 7px;
-  padding: 8px 12px;
-  color: #fff;
-  background: #4f8cff;
-  cursor: pointer;
-  transition: background 0.16s;
-  outline: none;
-}
-.card .btn-copy { background: #34d399; }
-.card .btn-copy:hover { background: #059669; }
-.card .btn-edit { background: #f59e42; }
-.card .btn-edit:hover { background: #d97706; }
-.card .btn-remove { background: #ef4444; }
-.card .btn-remove:hover { background: #b91c1c; }
-@media (max-width: 600px) {
-  .card { padding: 10px 6px 9px 10px; border-radius: 11px; }
-  .card-title { font-size: 1rem; }
-  .card-info { font-size: 0.95rem; }
-}
-
-/* ==================================================
-   CARD DESTAQUE DE SERVIÇO (INTEGRADO)
-   - Usado em: cards especiais de destaque (ex: promoções, serviço do dia)
-   - Uso:
-     <div class="card destaque-servico">
-       <span class="icon">💇‍♂️✂️</span>
-       <div>
-         <span class="card-title">Seu serviço mais procurado hoje:</span>
-         <span class="card-info">Corte de cabelo</span>
-       </div>
-     </div>
-================================================== */
-.card.destaque-servico {
-  background: #7c5cff;
-  color: #fff;
-  border-radius: 18px;
-  padding: 22px 18px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  box-shadow: 0 4px 16px rgba(60,60,120,0.09);
-  font-family: 'Inter', Arial, sans-serif;
-}
-.card.destaque-servico .card-title {
-  color: #fff;
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 6px;
-  display: block;
-}
-.card.destaque-servico .card-info {
-  color: #f3f0ff;
-  font-size: 1.06rem;
-}
-.card.destaque-servico .icon {
-  margin-right: 12px;
-  font-size: 2rem;
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-}
-@media (max-width: 600px) {
-  .card.destaque-servico {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 5vw;
-  }
-  .card.destaque-servico .icon {
-    font-size: 1.4rem;
-    margin-right: 8px;
-  }
-}
-
-/* ==================================================
-   ÍCONE UNIVERSAL PARA CARDS
-   - Usado em: qualquer card com emoji ou ícone, inclusive destaque-servico
-   - Estrutura:
-     <span class="icon">💇‍♂️✂️</span>
-================================================== */
-.card .icon {
-  margin-right: 12px;
-  font-size: 2rem;
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-}
-@media (max-width: 600px) {
-  .card .icon {
-    font-size: 1.4rem;
-    margin-right: 8px;
-  }
-}
-
-/* ==================================================
-   Cards especiais do dashboard com cabeçalho colorido
-================================================== */
-.card h3 {
-    margin: 0;
-    padding: 18px 24px;
-    font-size: 1.19rem;
-    font-weight: 700;
-    color: #fff;
+.card-info p {
+    margin: 0 0 8px 0;
     display: flex;
     align-items: center;
+    gap: 8px;
+}
+.card-actions {
+    display: flex;
     gap: 10px;
-    letter-spacing: 0.1em;
-    border-top-left-radius: 18px;
-    border-top-right-radius: 18px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
 }
-.card-agenda h3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);}
-.card-servico h3 { background: linear-gradient(90deg, #ffc600 0%, #ffe680 100%); color: #22223b; }
-.card-profissional h3 { background: linear-gradient(90deg, #1dd1a1 0%, #10ac84 100%); }
-.card-resumo h3 { background: linear-gradient(90deg, #4267b2 0%, #42a5f5 100%); }
-.card-ia h3 { background: linear-gradient(90deg, #7e57c2 0%, #b388ff 100%); }
-.card-resumo-inteligente h3 { background: linear-gradient(90deg, #10ac84 0%, #48dbfb 100%); }
-.card-ia { background: linear-gradient(130deg, #6d6ad8 0%, #b388ff 100%); color: #fff; }
-.card-ia .card-body { color: #fff; }
-.card-ia h3 { background: rgba(255,255,255,0.08); }
-.card-body {
-    padding: 24px 24px 18px 24px;
-    font-size: 1.11rem;
-    flex: 1;
-    background: #fff;
-    color: #22223b;
-    min-height: 60px;
-    border-bottom-left-radius: 18px;
-    border-bottom-right-radius: 18px;
-}
-.card-agenda .card-body {
-    min-height: 120px;
-    max-height: 340px;
-    overflow-y: auto;
+.card-actions .btn {
+    flex-grow: 1; /* Faz os botões ocuparem o mesmo espaço */
+    padding: 8px 12px; /* Botões menores dentro do card */
 }
 
 /* ==================================================
-   OUTROS COMPONENTES (MODAIS, LOADER, ETC)
-   - Usado em: modais universais, loader global
-================================================== */
-.modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; right: 0; bottom: 0; background: rgba(60, 57, 80, 0.35); align-items: center; justify-content: center; }
-.modal-overlay.show { display: flex !important; }
-.modal-card { background: #fff; border-radius: 14px; box-shadow: 0 4px 24px #d6d2f8; padding: 32px; max-width: 350px; width: 98vw; text-align: center; }
-
+   OUTROS COMPONENTES (MODAIS, LOADER)
+   ================================================== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background: rgba(30, 41, 59, 0.5); /* Cinza escuro com transparência */
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}
+.modal-overlay.show {
+    display: flex;
+}
+.modal-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 32px;
+    max-width: 400px;
+    width: 90vw;
+    text-align: center;
+}
 .loader-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #f6f7fb;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: var(--cor-fundo);
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 9999;
 }
 .loader-spinner {
     border: 5px solid #e0e0e0;
-    border-top: 5px solid #4facfe;
+    border-top: 5px solid var(--cor-primaria);
     border-radius: 50%;
     width: 50px;
     height: 50px;
     animation: spin 1s linear infinite;
-    margin-bottom: 20px;
 }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
 /* ==================================================
    RESPONSIVIDADE GERAL
-================================================== */
-@media (max-width: 1200px) {
-    .dashboard-cards { grid-template-columns: repeat(2, 1fr); }
-    .card-agenda { grid-column: span 2; }
-    .header-dashboard { flex-direction: column; align-items: flex-start; gap: 10px; padding: 15px 15px; }
-    .header-dashboard h1 { font-size: 1.6rem;}
-}
-@media (max-width: 900px) {
-    .main-content, .container { margin-left: 0; }
-    .sidebar { position: static; width: 100%; border-radius: 0; min-height: auto; padding: 16px 8px; flex-direction: row; justify-content: space-between; align-items: center; }
-    .sidebar-brand, .sidebar-footer, .sidebar hr { display: none; }
-    .sidebar-links { flex-direction: row; overflow-x: auto; }
-    .dashboard-cards { grid-template-columns: 1fr; gap: 13px; }
-    .card-agenda { grid-column: span 1; }
-}
-@media (max-width: 800px) {
-    .dashboard-cards { grid-template-columns: 1fr; gap: 13px; }
-    .card-agenda { grid-column: span 1; }
-}
-@media (max-width: 768px) {
-    .main-content, .container { margin: 10px; padding: 18px; border-radius: 10px; }
-    .header-dashboard { flex-direction: column; gap: 10px; padding: 12px 7px; }
-    .header-dashboard h1 { font-size: 1.16rem;}
-    .dashboard-cards { grid-template-columns: 1fr; gap: 13px; }
-    .card-body { padding: 13px 10px 11px 13px; }
-    .filtro-container { flex-direction: column; gap: 8px; padding: 10px; }
-}
-@media (max-width: 600px) {
-    .main-content, .container {
+   ================================================== */
+@media (max-width: 992px) {
+    .sidebar {
+        /* Esconde o menu lateral, preparando para a transição */
+        transform: translateX(-100%);
+    }
+    .main-content {
+        /* Conteúdo principal ocupa toda a tela */
         margin-left: 0;
-        padding: 10px 0;
-        min-height: unset;
-        background: #f6f7fb;
-        display: block;
+        width: 100%;
+        padding: 20px; /* Padding menor em telas menores */
     }
-    .header-dashboard {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 10px 6px;
+    .dashboard-cards {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
-    .header-actions { width: 100%; padding: 0; margin: 0; }
-    .btn-new, .btn-submit { width: 100%; font-size: 1.09em; padding: 15px 0; }
-    /* Sidebar some em dispositivos muito pequenos */
-    .sidebar { display: none; }
 }
 
-/*
-==================================================
-NÃO DEIXE ESSE BLOCO NO style.css GLOBAL!
-Se quiser fundo especial (azul/vidro) só no index.html,
-coloque no <style> DO PRÓPRIO INDEX.HTML!
-==================================================
-body { ... }
-.main-content { ... }
-.welcome-section { ... }
-.cards-container { ... }
-.status-btn { ... }
-.card-icon { ... }
-*/
+@media (max-width: 768px) {
+    .main-content h1 {
+        font-size: 1.8rem;
+    }
+    .dashboard-cards {
+        /* Força uma única coluna em celulares */
+        grid-template-columns: 1fr;
+    }
+    .card-actions {
+        flex-direction: column; /* Botões um embaixo do outro */
+    }
+}
