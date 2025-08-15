@@ -21,7 +21,7 @@ export function AdminClientes() {
 
   // Substitua pelo seu UID do admin. 
   // Você pode achar no painel do Firebase Auth ou com user.uid logado como admin.
-  const ADMIN_UID = "SEU_UID_AQUI";
+  const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
   useEffect(() => {
     if (!user || user.uid !== ADMIN_UID) return;
