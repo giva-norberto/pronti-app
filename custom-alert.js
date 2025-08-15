@@ -106,6 +106,7 @@ export function showCustomAlert({ title, message, onTrial, onClose }) {
     btns.appendChild(cancelBtn);
 
     card.appendChild(btns);
+
     // Previne fechamento ao clicar dentro do card
     card.onclick = (e) => e.stopPropagation();
 
@@ -119,9 +120,19 @@ export function showCustomAlert({ title, message, onTrial, onClose }) {
         }
     };
 
+    // Fecha ao pressionar ESC
+    const escListener = (e) => {
+        if (e.key === "Escape") {
+            if (onClose) onClose();
+            backdrop.remove();
+            document.removeEventListener('keydown', escListener);
+        }
+    };
+    document.addEventListener('keydown', escListener);
+
     document.body.appendChild(backdrop);
 
-    // Foco automático no botão principal
+    // Foco automático no botão principal para acessibilidade
     setTimeout(() => {
         trialBtn.focus();
     }, 100);
