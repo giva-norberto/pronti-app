@@ -17,14 +17,13 @@
 <main class="main-content">
   <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
   <div class="dashboard-welcome-center">
-    <h1>Bom dia, <span id="nome-usuario">João</span>!</h1>
+    <h1>Bom dia, <span id="nome-usuario">Usuário</span>!</h1>
     <p>Pronto para gerenciar seu dia?</p>
   </div>
 
   <!-- AÇÕES PRINCIPAIS -->
   <div class="dashboard-main-actions">
-    <!-- CORREÇÃO: Link alterado para dashboard.html para consistência com o menu -->
-    <a href="dashboard.html" class="action-card">
+    <a href="index.html" class="action-card">
         <i class="fa-solid fa-chart-line"></i>
         <span>Painel Inteligente</span>
     </a>
@@ -56,9 +55,38 @@
             homeLink.classList.add('active');
           }
         });
+    });
+</script>
 
-      // Lógica para buscar dados do Firebase e atualizar o dashboard
-      // Exemplo: document.getElementById("nome-usuario").textContent = "João";
+<!-- SCRIPT PARA LÓGICA DO DASHBOARD E NOME DO USUÁRIO -->
+<script type="module">
+    // Importações dos módulos Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { firebaseConfig } from "./firebase-config.js";
+
+    // Inicialização do Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const nomeUsuarioSpan = document.getElementById("nome-usuario");
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Usuário está logado.
+            // Pega o primeiro nome para uma saudação mais pessoal.
+            const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
+            if (nomeUsuarioSpan) {
+                nomeUsuarioSpan.textContent = primeiroNome;
+            }
+        } else {
+            // Usuário não está logado.
+            if (nomeUsuarioSpan) {
+                nomeUsuarioSpan.textContent = 'Visitante';
+            }
+            // Opcional: redirecionar para a página de login se não houver usuário
+            // window.location.href = 'login.html';
+        }
     });
 </script>
 
