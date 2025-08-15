@@ -53,6 +53,120 @@
         }
         .btn-cancelar { background: #eee; color: #333;}
         .btn-confirmar { background: #ff6b6b; color: #fff;}
+        /* ----------- INÍCIO PADRÃO CARD CLIENTES ----------- */
+        .clientes-card {
+          max-width: 900px;
+          margin: 32px auto;
+          background: #fff;
+          border-radius: 14px;
+          box-shadow: 0 2px 8px #0001;
+          padding: 32px 26px 20px 26px;
+        }
+        .clientes-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+        .clientes-header h1 {
+          margin: 0;
+          font-size: 2rem;
+          font-weight: 700;
+          color: #3730a3;
+        }
+        .btn-new {
+          background: #6366f1;
+          color: #fff;
+          border: none;
+          border-radius: 7px;
+          padding: 10px 18px;
+          font-size: 1rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 2px 4px rgba(79,140,255,0.10);
+          cursor: pointer;
+          transition: background 0.18s;
+          text-decoration: none;
+          outline: none;
+        }
+        .btn-new:hover, .btn-new:focus { background: #4338ca; }
+        .clientes-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 24px;
+          background: #f7faff;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .clientes-table th, .clientes-table td {
+          padding: 13px 11px;
+          text-align: left;
+        }
+        .clientes-table th {
+          background: #eef2ff;
+          color: #4338ca;
+          font-weight: 600;
+        }
+        .clientes-table tr {
+          border-bottom: 1px solid #e0e7ff;
+          transition: background 0.15s;
+        }
+        .clientes-table tr:hover {
+          background: #e0e7ff44;
+        }
+        .btn-copy, .btn-edit, .btn-remove {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.98rem;
+          border: none;
+          border-radius: 7px;
+          padding: 8px 12px;
+          color: #fff;
+          background: #4f8cff;
+          cursor: pointer;
+          transition: background 0.16s;
+          outline: none;
+        }
+        .btn-copy { background: #34d399; }
+        .btn-copy:hover { background: #059669; }
+        .btn-edit { background: #f59e42; }
+        .btn-edit:hover { background: #d97706; }
+        .btn-remove { background: #ef4444; }
+        .btn-remove:hover { background: #b91c1c; }
+        .cliente-filter-bar {
+          margin: 18px 0 10px 0;
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+        .input-filter {
+          padding: 8px 14px;
+          border: 1.5px solid #e0e7ff;
+          border-radius: 7px;
+          background: #fff;
+          font-size: 1rem;
+          outline: none;
+          transition: border 0.14s;
+        }
+        .input-filter:focus {
+          border-color: #6366f1;
+          background: #eef2ff;
+        }
+        @media (max-width: 700px) {
+          .clientes-card { padding: 16px 3vw 12px 3vw; }
+          .clientes-header h1 { font-size: 1.3rem; }
+          .clientes-table th, .clientes-table td { padding: 8px 4px; font-size: 0.97rem; }
+        }
+        @media (max-width: 600px) {
+          .clientes-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+          .cliente-filter-bar { flex-direction: column; gap: 8px; width: 100%; }
+          .clientes-table th, .clientes-table td { font-size: 0.95rem; }
+        }
+        /* ----------- FIM PADRÃO CARD CLIENTES ----------- */
     </style>
 </head>
 <body>
@@ -60,9 +174,31 @@
     <div id="sidebar-placeholder"></div>
 
     <main class="main-content">
-        <h1>Meus Clientes</h1>
-        <a href="novo-cliente.html" class="btn-new">Cadastrar Novo Cliente</a>
-        <div id="lista-clientes" style="margin-top: 20px;"></div>
+        <div class="clientes-card">
+            <div class="clientes-header">
+                <h1><i class="fa-solid fa-users"></i> Meus Clientes</h1>
+                <a href="novo-cliente.html" class="btn-new">
+                    <i class="fa-solid fa-user-plus"></i> Novo Cliente
+                </a>
+            </div>
+            <div class="cliente-filter-bar">
+                <input type="text" class="input-filter" placeholder="Buscar cliente...">
+                <!-- outros filtros aqui se necessário -->
+            </div>
+            <table class="clientes-table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Email</th>
+                        <th style="width: 140px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-clientes-tabela">
+                    <!-- Linhas geradas pelo JS -->
+                </tbody>
+            </table>
+        </div>
     </main>
 
     <!-- Modal de confirmação -->
