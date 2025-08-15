@@ -40,6 +40,7 @@ export function setupAuthListener(callback) {
 /**
  * Inicia o processo de login com o popup do Google e garante a persistência.
  * Se faltar telefone ou nome, pede antes de prosseguir e salva no Firestore.
+ * BLOQUEIA o login caso não informe telefone.
  */
 export async function fazerLogin() {
     try {
@@ -71,6 +72,8 @@ export async function fazerLogin() {
                 nome = prompt("Informe seu nome completo:");
                 if (!nome) {
                     await showAlert("Nome obrigatório", "Seu nome é necessário para concluir o cadastro.");
+                    // Se cancelar nome, faz logout e bloqueia login
+                    await signOut(auth);
                     return;
                 }
             } else {
@@ -78,10 +81,20 @@ export async function fazerLogin() {
             }
 
             if (telefoneFaltando) {
-                telefone = prompt("Informe seu telefone (WhatsApp):");
-                if (!telefone) {
-                    await showAlert("Telefone obrigatório", "Seu telefone é necessário para concluir o cadastro.");
-                    return;
+                // Loop até informar telefone válido ou cancelar (cancela faz logout!)
+                while (true) {
+                    telefone = prompt("Informe seu telefone (WhatsApp):");
+                    if (telefone === null) {
+                        await showAlert("Telefone obrigatório", "Você precisa informar um telefone para continuar.");
+                        // Faz logout e bloqueia login
+                        await signOut(auth);
+                        return;
+                    }
+                    if (telefone && telefone.trim()) {
+                        telefone = telefone.trim();
+                        break;
+                    }
+                    await showAlert("Telefone obrigatório", "Você precisa informar um telefone para continuar.");
                 }
             } else {
                 telefone = user.phoneNumber || (clienteDocSnap.exists() ? clienteDocSnap.data().telefone : "");
