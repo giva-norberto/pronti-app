@@ -395,6 +395,13 @@ body.dashboard-body {
 /* ==================================================
    PÁGINA DE PERFIL
    ================================================== */
+/* Centraliza o card do formulário e define uma largura máxima */
+.main-content > .card#form-perfil {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .form-section h3 {
     font-size: 1.25rem;
     color: var(--cor-texto-escuro);
@@ -406,17 +413,21 @@ body.dashboard-body {
     display: flex;
     align-items: center;
     gap: 10px;
+    background-color: #f9fafb;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
 }
 .vitrine-url {
-    border: 1.5px solid #e0e7ff;
-    border-radius: 8px;
-    padding: 8px 16px;
-    background: #f7faff;
+    border: none;
+    padding: 8px 12px;
+    background: #f0f2f5;
     color: #312e81;
     font-size: 1rem;
     overflow-x: auto;
     white-space: nowrap;
     flex-grow: 1;
+    border-radius: 6px;
 }
 .vitrine-actions {
     display: flex;
@@ -426,16 +437,20 @@ body.dashboard-body {
     display: flex;
     align-items: center;
     gap: 18px;
-    padding: 14px 0;
+    padding: 14px;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    background-color: #f9fafb;
 }
 .logo-upload-container img {
     width: 80px;
     height: 80px;
     object-fit: contain;
     border-radius: 14px;
-    border: 2px solid #e0e7ff;
+    border: none;
     background: #eef2ff;
 }
+
 
 /* ==================================================
    OUTROS COMPONENTES (MODAIS, LOADER)
