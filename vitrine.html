@@ -113,6 +113,42 @@
             </div>
         </div>
     </div>
+
+    <!-- ===================== NOVO BLOCO: MODAL DE AUTENTICAÇÃO ===================== -->
+    <div id="modal-auth-janela" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+      <div style="background:white;padding:2rem 1.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0003;">
+        <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
+        <!-- LOGIN -->
+        <div id="modal-auth-login" class="modal-auth-step">
+          <h2>Entrar</h2>
+          <button type="button" class="modal-auth-btn" id="modal-auth-btn-google" style="width:100%;margin-bottom:1em;">Entrar com Google</button>
+          <div style="text-align:center;color:#888;margin:8px 0;">ou</div>
+          <form id="modal-auth-form-login">
+            <input id="modal-auth-login-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-login-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:10px;">
+            <button class="modal-auth-btn" style="width:100%;">Entrar</button>
+          </form>
+          <div style="text-align:center;margin-top:10px;">
+            <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
+          </div>
+        </div>
+        <!-- CADASTRO -->
+        <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
+          <h2>Criar Conta</h2>
+          <form id="modal-auth-form-cadastro">
+            <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required style="width:100%;margin-bottom:10px;">
+            <button class="modal-auth-btn" style="width:100%;">Cadastrar</button>
+          </form>
+          <div style="text-align:center;margin-top:10px;">
+            <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- =========================================================================== -->
     
     <!-- Menu SPA real: troca de tela e disparo de renderização -->
     <script>
@@ -167,5 +203,7 @@
     <script type="module" src="./vitrini-ui.js"></script>
     <script type="module" src="./vitrini-auth.js"></script>
     <script type="module" src="./vitrine.js"></script>
+    <!-- NOVO SCRIPT DO MODAL DE AUTENTICAÇÃO -->
+    <script type="module" src="./vitrine-auth-modal.js"></script>
 </body>
 </html>
