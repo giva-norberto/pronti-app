@@ -396,3 +396,28 @@ body {
     /* Ajuste para esconder o menu lateral fixo se houver */
     .sidebar { display: none; }
 }
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  margin: 5px 0;
+  background-color: #4F8CFF;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.button:hover, .button:focus {
+  background-color: #3767b7;
+  box-shadow: 0 4px 12px rgba(79,140,255,0.15);
+  outline: none;
+}
+
+.button .icon {
+  margin-right: 8px;
+  font-size: 1.1em;
+}
