@@ -5,32 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Serviços</title>
     <style>
-        /* Layout base */
+        /* Reset básico */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* Layout principal */
         body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
             min-height: 100vh;
+            width: 100vw;
+            display: flex;
+            font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #1877f2, #6a5af9);
         }
 
+        /* Sidebar */
         #sidebar-placeholder {
             width: 220px;
             min-width: 200px;
-            flex-shrink: 0;
+            background: #6a5af9;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px 0 20px 0;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.05);
         }
 
+        /* Conteúdo principal */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            padding: 40px 0;
+            padding: 48px 32px 32px 32px;
             min-height: 100vh;
         }
 
-        /* Título e botão */
+        /* Cabeçalho e botão novo serviço */
         .servicos-header {
             width: 100%;
             max-width: 900px;
@@ -190,8 +201,10 @@
                 flex-direction: column;
             }
             #sidebar-placeholder {
-                width: 100%;
+                width: 100vw;
                 min-width: unset;
+                flex-direction: row;
+                padding: 0;
             }
             .main-content {
                 padding: 24px 0;
