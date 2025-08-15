@@ -4,53 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Clientes</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
     <style>
-        /* Reset básico */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
-            min-height: 100vh;
-            width: 100vw;
-            display: flex;
-            font-family: Arial, sans-serif;
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
             background: #f6f7fb;
             color: #22223b;
         }
-        #sidebar-placeholder {
-            width: 250px;
-            min-width: 200px;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 30px 0 20px 0;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.05);
-        }
+        /* Sidebar é fixa, não coloque width/margin aqui! */
         .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
+            margin-left: 250px; /* Igual à sidebar do seu style.css */
             padding: 48px 32px 32px 32px;
             min-height: 100vh;
+            box-sizing: border-box;
+            transition: margin-left 0.2s;
         }
-
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0;
+                padding: 24px 3vw 24px 3vw;
+            }
+        }
         .clientes-header {
             width: 100%;
             max-width: 900px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 32px;
+            margin: 0 auto 32px auto;
         }
         .clientes-header h1 {
             color: #222b54;
             font-size: 2.1rem;
             margin: 0;
             font-weight: 700;
-            letter-spacing: -1px;
         }
         .btn-new {
             background-color: #6a5af9;
@@ -74,6 +62,7 @@
             display: flex;
             flex-direction: column;
             gap: 18px;
+            margin: 0 auto;
         }
         .cliente-card {
             background: white;
@@ -84,7 +73,6 @@
             flex-direction: column;
             box-shadow: 0 2px 6px rgba(0,0,0,0.09);
             max-width: 370px;
-            margin-left: auto;
         }
         .cliente-nome {
             font-size: 1.13em;
@@ -121,23 +109,9 @@
                 max-width: 98vw;
             }
         }
-        @media (max-width: 900px) {
-            body {
-                flex-direction: column;
-            }
-            #sidebar-placeholder {
-                width: 100vw;
-                min-width: unset;
-                flex-direction: row;
-                padding: 0;
-            }
-            .main-content {
-                padding: 24px 0;
-            }
-        }
         @media (max-width: 700px) {
             .clientes-header, .lista-clientes {
-                padding: 0 8vw;
+                padding: 0 4vw;
             }
             .main-content {
                 padding: 10px 0;
@@ -177,7 +151,7 @@
 
     <script>
         // Carrega o menu lateral padrão dinamicamente
-        fetch('sidebar.html')
+        fetch('menu-lateral.html')
             .then(res => res.text())
             .then(html => {
                 document.getElementById('sidebar-placeholder').innerHTML = html;
