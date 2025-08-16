@@ -41,52 +41,61 @@
   <button class="status-button">Ver status de hoje</button>
 </main>
 
-<script>
-    // Inclui o menu-lateral.html dinamicamente
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Destaca o item "Início" (index.html)
-          const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
-          if (homeLink) {
-            document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-            homeLink.classList.add('active');
-          }
-        });
-    });
-</script>
-
-<!-- SCRIPT PARA LÓGICA DO DASHBOARD E NOME DO USUÁRIO -->
+<!-- SCRIPT PRINCIPAL UNIFICADO -->
 <script type="module">
-    // Importações dos módulos Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { firebaseConfig } from "./firebase-config.js";
+    // 1. Importações dos módulos Firebase
+    // ADICIONADO: signOut para a funcionalidade de logout
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    
+    // ATENÇÃO: Verifique se o nome do seu arquivo de config está correto
+    import { auth } from "./vitrini-firebase.js"; 
 
-    // Inicialização do Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
+    // 2. Lógica de Autenticação e Nome do Usuário
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
             // Usuário está logado.
-            // Pega o primeiro nome para uma saudação mais pessoal.
             const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
             if (nomeUsuarioSpan) {
                 nomeUsuarioSpan.textContent = primeiroNome;
             }
         } else {
-            // Usuário não está logado.
-            if (nomeUsuarioSpan) {
-                nomeUsuarioSpan.textContent = 'Visitante';
-            }
-            // Opcional: redirecionar para a página de login se não houver usuário
-            // window.location.href = 'login.html';
+            // Usuário não está logado, redireciona para o login.
+            window.location.href = 'login.html';
         }
+    });
+
+    // 3. Carregamento Dinâmico do Menu Lateral e Lógica de Logout
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          
+          // Destaca o item "Início"
+          const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
+          if (homeLink) {
+            document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
+            homeLink.classList.add('active');
+          }
+
+          // --- LÓGICA DE LOGOUT ADICIONADA AQUI ---
+          // Esta parte só roda DEPOIS que o menu foi carregado.
+          const btnLogout = document.getElementById('btn-logout');
+          if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+              signOut(auth).then(() => {
+                console.log('Logout bem-sucedido.');
+                // Redireciona para a página de login após o logout.
+                window.location.href = 'login.html';
+              }).catch((error) => {
+                console.error('Erro ao fazer logout:', error);
+              });
+            });
+          }
+        })
+        .catch(error => console.error(error));
     });
 </script>
 
