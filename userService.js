@@ -1,6 +1,6 @@
-// userTrial.ts (ou userService.js)
+// userService.js
 
-// Imports corrigidos com as URLs completas do Firebase
+// Imports do Firebase (já corrigidos)
 import { 
     getFirestore, 
     collection, 
@@ -8,27 +8,18 @@ import {
     where, 
     getDocs, 
     doc, 
-    updateDoc,
-    DocumentSnapshot,
-    DocumentData 
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, User } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Lembre-se de verificar se o nome do seu arquivo de config é este
+// Verifique o nome do seu arquivo de configuração
 import { db, auth } from './vitrini-firebase.js';
-
-// Define um tipo para a resposta, para clareza
-type UserStatus = {
-    hasActivePlan: boolean;
-    isTrialActive: boolean;
-};
 
 /**
  * Função auxiliar para encontrar o documento da empresa associado ao usuário logado.
- * @returns {Promise<DocumentSnapshot<DocumentData> | null>}
  */
-async function getEmpresaDoc(): Promise<DocumentSnapshot<DocumentData> | null> {
-    const user: User | null = auth.currentUser;
+async function getEmpresaDoc() {
+    const user = auth.currentUser;
     if (!user) return null;
 
     try {
@@ -48,12 +39,10 @@ async function getEmpresaDoc(): Promise<DocumentSnapshot<DocumentData> | null> {
 }
 
 /**
- * REVISADO: Ativa o período de teste para o usuário.
- * Agora ele lê os dias customizáveis e salva a DATA FINAL do trial.
- * @returns {Promise<void>}
+ * Ativa o período de teste para o usuário.
  */
-export async function ensureTrialStart(): Promise<void> {
-    const user: User | null = auth.currentUser;
+export async function ensureTrialStart() {
+    const user = auth.currentUser;
     if (!user) {
         console.error("Tentativa de iniciar trial sem usuário logado.");
         return;
@@ -67,33 +56,26 @@ export async function ensureTrialStart(): Promise<void> {
 
     const empresaData = empresaDoc.data();
     
-    // Só executa se o trial ainda não foi iniciado
     if (empresaData && !empresaData.trialEndsAt) {
-        // 1. Pega os dias de trial do documento (ou usa 15 como padrão)
-        const trialDurationDays: number = empresaData.trialDays || 15;
-        
-        // 2. Calcula a data final do trial
+        const trialDurationDays = empresaData.trialDays || 15;
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + trialDurationDays);
 
-        // 3. Salva a DATA FINAL no Firestore
         await updateDoc(empresaDoc.ref, {
-            trialEndsAt: endDate.toISOString() // Novo campo! Mais eficiente.
+            trialEndsAt: endDate.toISOString()
         });
         console.log(`Trial ativado. Termina em: ${endDate.toLocaleDateString()}`);
     }
 }
 
 /**
- * REVISADO: Verifica o status do usuário.
- * Agora a verificação é muito mais simples e rápida.
- * @returns {Promise<UserStatus>}
+ * Verifica o status de assinatura e trial do usuário logado.
  */
-export async function checkUserStatus(): Promise<UserStatus> {
-    const safeReturn: UserStatus = { hasActivePlan: false, isTrialActive: false };
+export async function checkUserStatus() {
+    const safeReturn = { hasActivePlan: false, isTrialActive: false };
 
     try {
-        const user: User | null = auth.currentUser;
+        const user = auth.currentUser;
         if (!user) return safeReturn;
 
         const empresaDoc = await getEmpresaDoc();
@@ -105,10 +87,8 @@ export async function checkUserStatus(): Promise<UserStatus> {
         const hasActivePlan = empresaData.isPremium === true;
         let isTrialActive = false;
       
-        // LÓGICA REVISADA E MAIS SIMPLES
         if (empresaData.trialEndsAt) {
             const endDate = new Date(empresaData.trialEndsAt);
-            // Verifica simplesmente se a data de término ainda não chegou
             if (endDate > new Date()) {
                 isTrialActive = true;
             }
