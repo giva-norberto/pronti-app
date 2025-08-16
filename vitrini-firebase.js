@@ -2,25 +2,34 @@
 // RESPONSABILIDADE: Criar e exportar as instâncias do Firebase, garantindo persistência de login.
 
 // 1. Importa os módulos necessários do Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // 2. Configuração do seu projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // Chave correta do seu painel
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com",
+  storageBucket: "pronti-app-37c6e.firebasestorage.app", // <-- Corrigido aqui!
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// 3. Inicializa as instâncias do Firebase
-export const app = initializeApp(firebaseConfig);
+// 3. Inicializa as instâncias do Firebase (previne duplicidade)
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
+export { app };
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
+export const storage = getStorage(app);
 
 // 4. Garante que o usuário permaneça logado entre páginas/tabs
 setPersistence(auth, browserLocalPersistence).catch((error) => {
