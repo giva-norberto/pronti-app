@@ -1,17 +1,34 @@
-// userService.js
+// userTrial.ts (ou userService.js)
 
-// AMBOS OS IMPORTS DO FIREBASE CORRIGIDOS COM A URL COMPLETA
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// Imports corrigidos com as URLs completas do Firebase
+import { 
+    getFirestore, 
+    collection, 
+    query, 
+    where, 
+    getDocs, 
+    doc, 
+    updateDoc,
+    DocumentSnapshot,
+    DocumentData 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, User } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Verifique se o nome do seu arquivo de configuração está correto
-import { db, auth } from './vitrini-firebase.js'; 
+// Lembre-se de verificar se o nome do seu arquivo de config é este
+import { db, auth } from './vitrini-firebase.js';
+
+// Define um tipo para a resposta, para clareza
+type UserStatus = {
+    hasActivePlan: boolean;
+    isTrialActive: boolean;
+};
 
 /**
- * Encontra o documento da empresa associado ao usuário logado.
+ * Função auxiliar para encontrar o documento da empresa associado ao usuário logado.
+ * @returns {Promise<DocumentSnapshot<DocumentData> | null>}
  */
-async function getEmpresaDoc() {
-    const user = auth.currentUser;
+async function getEmpresaDoc(): Promise<DocumentSnapshot<DocumentData> | null> {
+    const user: User | null = auth.currentUser;
     if (!user) return null;
 
     try {
@@ -22,64 +39,77 @@ async function getEmpresaDoc() {
             console.warn("Nenhum documento de empresa encontrado para o donoId:", user.uid);
             return null;
         }
-        
         return querySnapshot.docs[0];
 
     } catch (error) {
-        console.error("ERRO CRÍTICO ao buscar documento da empresa:", error);
+        console.error("ERRO ao buscar documento da empresa:", error);
         return null;
     }
 }
 
 /**
- * Garante que o usuário tenha o trial iniciado.
+ * REVISADO: Ativa o período de teste para o usuário.
+ * Agora ele lê os dias customizáveis e salva a DATA FINAL do trial.
+ * @returns {Promise<void>}
  */
-export async function ensureTrialStart() {
-    const user = auth.currentUser;
+export async function ensureTrialStart(): Promise<void> {
+    const user: User | null = auth.currentUser;
     if (!user) {
         console.error("Tentativa de iniciar trial sem usuário logado.");
         return;
     }
 
     const empresaDoc = await getEmpresaDoc();
+    if (!empresaDoc) {
+        console.error("Não foi possível iniciar o trial: empresa não encontrada.");
+        return;
+    }
 
-    if (empresaDoc && !empresaDoc.data().trialStart) {
+    const empresaData = empresaDoc.data();
+    
+    // Só executa se o trial ainda não foi iniciado
+    if (empresaData && !empresaData.trialEndsAt) {
+        // 1. Pega os dias de trial do documento (ou usa 15 como padrão)
+        const trialDurationDays: number = empresaData.trialDays || 15;
+        
+        // 2. Calcula a data final do trial
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + trialDurationDays);
+
+        // 3. Salva a DATA FINAL no Firestore
         await updateDoc(empresaDoc.ref, {
-            trialStart: new Date().toISOString()
+            trialEndsAt: endDate.toISOString() // Novo campo! Mais eficiente.
         });
-        console.log("Trial iniciado para a empresa:", empresaDoc.id);
-    } else if (!empresaDoc) {
-        console.error("Não foi possível iniciar o trial pois não há uma empresa associada a este usuário.");
+        console.log(`Trial ativado. Termina em: ${endDate.toLocaleDateString()}`);
     }
 }
 
 /**
- * Verifica o status de assinatura e trial do usuário logado.
+ * REVISADO: Verifica o status do usuário.
+ * Agora a verificação é muito mais simples e rápida.
+ * @returns {Promise<UserStatus>}
  */
-export async function checkUserStatus() {
+export async function checkUserStatus(): Promise<UserStatus> {
+    const safeReturn: UserStatus = { hasActivePlan: false, isTrialActive: false };
+
     try {
-        const user = auth.currentUser;
-        if (!user) {
-            return { hasActivePlan: false, isTrialActive: false };
-        }
+        const user: User | null = auth.currentUser;
+        if (!user) return safeReturn;
 
         const empresaDoc = await getEmpresaDoc();
-
-        if (!empresaDoc) {
-            return { hasActivePlan: false, isTrialActive: false };
-        }
+        if (!empresaDoc) return safeReturn;
 
         const empresaData = empresaDoc.data();
+        if (!empresaData) return safeReturn;
+
         const hasActivePlan = empresaData.isPremium === true;
         let isTrialActive = false;
       
-        if (empresaData.trialStart) {
-            const startDate = new Date(empresaData.trialStart);
-            const today = new Date();
-            const diffTime = today.getTime() - startDate.getTime();
-            const diffDays = diffTime / (1000 * 60 * 60 * 24);
-
-            if (diffDays <= 15) {
+        // LÓGICA REVISADA E MAIS SIMPLES
+        if (empresaData.trialEndsAt) {
+            const endDate = new Date(empresaData.trialEndsAt);
+            // Verifica simplesmente se a data de término ainda não chegou
+            if (endDate > new Date()) {
                 isTrialActive = true;
             }
         }
@@ -87,7 +117,7 @@ export async function checkUserStatus() {
         return { hasActivePlan, isTrialActive };
 
     } catch (error) {
-        console.error("ERRO CRÍTICO no checkUserStatus:", error);
-        return { hasActivePlan: false, isTrialActive: false };
+        console.error("ERRO no checkUserStatus:", error);
+        return safeReturn;
     }
 }
