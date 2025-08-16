@@ -1,10 +1,10 @@
 // userService.js
 
-// AQUI ESTÁ A CORREÇÃO: Usando a URL completa do Firestore
+// AMBOS OS IMPORTS DO FIREBASE CORRIGIDOS COM A URL COMPLETA
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth } from "firebase/auth";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// ATENÇÃO: Verifique se o nome do seu arquivo de configuração é 'vitrini-firebase.js'.
+// Verifique se o nome do seu arquivo de configuração está correto
 import { db, auth } from './vitrini-firebase.js'; 
 
 /**
@@ -75,7 +75,7 @@ export async function checkUserStatus() {
       
         if (empresaData.trialStart) {
             const startDate = new Date(empresaData.trialStart);
-            const today = new Date(); // Hoje, 15 de agosto de 2025
+            const today = new Date();
             const diffTime = today.getTime() - startDate.getTime();
             const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
