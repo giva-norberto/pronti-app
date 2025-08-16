@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Gestão de Clientes</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <style>
+    /* Estilos básicos para a página de admin */
+    body {
+      background-color: #f3f4f6;
+      font-family: sans-serif;
+      margin: 0;
+    }
+    /* Estilos para o cabeçalho, se você quiser adicionar um */
+    .admin-header {
+      background-color: #fff;
+      padding: 16px 32px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="admin-header">
+    Painel do Administrador
+  </header>
+  
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+  <script type="module" src="admin.js"></script>
+  
+</body>
+</html>
