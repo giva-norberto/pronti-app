@@ -162,3 +162,57 @@
   <script type="module" src="login.js"></script>
 </body>
 </html>
+// login.js
+
+// 1. IMPORTS DO FIREBASE (continuam no topo, fora do evento)
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { auth } from './firebase-config.js';
+
+// NOVO: Garantimos que todo o código abaixo só rode DEPOIS que o HTML da página estiver pronto.
+window.addEventListener('DOMContentLoaded', () => {
+
+    // 2. SELEÇÃO DOS ELEMENTOS DO HTML (agora dentro do evento)
+    const loginForm = document.getElementById('login-form');
+    const googleBtn = document.getElementById('btn-login-google');
+    const loginStatusDiv = document.getElementById('login-status');
+    
+    // Proteção extra: verifica se os elementos foram encontrados antes de adicionar os listeners
+    if (loginForm) {
+        // 3. LÓGICA DO LOGIN MANUAL
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Impede o recarregamento da página
+            loginStatusDiv.textContent = ""; // Limpa mensagens de erro antigas
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-senha').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = './dashboard.html';
+            } catch (error) {
+                console.error("Erro no login manual:", error.code);
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    loginStatusDiv.textContent = 'E-mail ou senha inválidos.';
+                } else {
+                    loginStatusDiv.textContent = 'Ocorreu um erro. Tente novamente.';
+                }
+            }
+        });
+    }
+
+    if (googleBtn) {
+        // 4. LÓGICA DO LOGIN COM GOOGLE
+        googleBtn.addEventListener('click', async () => {
+            loginStatusDiv.textContent = ""; // Limpa mensagens de erro antigas
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                window.location.href = './dashboard.html';
+            } catch (error) {
+                console.error("Erro no login com Google:", error);
+                loginStatusDiv.textContent = 'Não foi possível fazer login com o Google.';
+            }
+        });
+    }
+
+});
