@@ -559,4 +559,4 @@ window.abrirPerfilProfissional = abrirPerfilProfissional;
 window.editarProfissional = editarProfissional;
 window.excluirProfissional = excluirProfissional;
 
-window.addEventListener("DOMContentLoaded", inicializa
+window.addEventListener("DOMContentLoaded", inicializar);
