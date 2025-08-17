@@ -408,6 +408,9 @@ async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
+    // CRÍTICO: Obter o usuário autenticado para salvar o campo uid
+    const usuarioLogado = auth.currentUser;
+
     const btnSubmit = elementos.formAddProfissional.querySelector('button[type="submit"]');
     btnSubmit.disabled = true; btnSubmit.textContent = "A gravar...";
 
@@ -421,9 +424,10 @@ async function adicionarProfissional() {
     }
 
     try {
-        // 1. Cria o documento do profissional primeiro, com fotoUrl vazia
+        // 1. Cria o documento do profissional com o campo uid do usuário logado
         const novoProfissionalData = {
             nome,
+            uid: usuarioLogado ? usuarioLogado.uid : "", // ESSENCIAL PARA AS REGRAS
             fotoUrl: "", 
             ehDono: false,
             servicos: [],
