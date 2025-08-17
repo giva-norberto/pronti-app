@@ -4,8 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciamento de Equipe</title>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"> <!-- favicon adicionado -->
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="equipe.css">
+    <!-- ACRESCENTADO: Estilos para a nova seção de convite -->
+    <style>
+        .invite-section {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .invite-section h2 {
+            margin-top: 0;
+            color: #343a40;
+        }
+        .invite-section p {
+            color: #6c757d;
+            max-width: 500px;
+            margin: 10px auto 20px auto;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -35,14 +55,14 @@
                 </button>
             </div>
             <!-- ====================================================== -->
-            
+
             <div id="lista-profissionais-painel" class="equipe-grid">
                 <!-- Profissionais renderizados pelo JS -->
             </div>
         </div>
     </div>
 
-    <!-- Modal Adicionar/Editar Profissional -->
+    <!-- Modal Adicionar/Editar Profissional (INTOCÁVEL) -->
     <div id="modal-add-profissional" class="modal" style="display:none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -89,7 +109,7 @@
         </div>
     </div>
 
-    <!-- Modal Perfil do Profissional (com abas) -->
+    <!-- Modal Perfil do Profissional (INTOCÁVEL) -->
     <div id="modal-perfil-profissional" class="modal" style="display:none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -170,7 +190,7 @@
     </div>
 
     <script>
-    // Pré-visualização da foto do profissional (UX aprimorado)
+    // Pré-visualização da foto do profissional (INTOCÁVEL)
     document.addEventListener('DOMContentLoaded', function() {
         const fotoInput = document.getElementById('foto-profissional');
         const preview = document.getElementById('preview-foto-profissional');
