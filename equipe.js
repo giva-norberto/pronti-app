@@ -11,7 +11,7 @@ let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 
-// Horários base com dias INATIVOS por padrão, para novos funcionários
+// NOVO: Horários base com dias INATIVOS por padrão, para novos funcionários
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
     terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -24,7 +24,7 @@ let horariosBase = {
 let intervaloBase = 30;
 let agendaEspecial = [];
 
-// Elementos DOM
+// Elementos DOM (sem alterações)
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
@@ -410,9 +410,6 @@ function adicionarEventListeners() {
     });
 }
 
-// ======================================================================
-// Lógica de upload de fotos (sem alterações)
-// ======================================================================
 async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -564,4 +561,4 @@ window.abrirPerfilProfissional = abrirPerfilProfissional;
 window.editarProfissional = editarProfissional;
 window.excluirProfissional = excluirProfissional;
 
-window.addEventListener("DOMContentLoaded", inicializar);
+window.addEventListener("DOMContentLoaded", inicializa
