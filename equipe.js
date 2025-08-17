@@ -1,6 +1,6 @@
 // ======================================================================
 //                         EQUIPE.JS
-//                         VERSÃO 100% COMPLETA E CORRIGIDA
+//                         VERSÃO CORRETA
 //         Apenas a lógica de convite por link foi acrescentada.
 // ======================================================================
 
@@ -560,5 +560,4 @@ window.abrirPerfilProfissional = abrirPerfilProfissional;
 window.editarProfissional = editarProfissional;
 window.excluirProfissional = excluirProfissional;
 
-window.addEventListener("DOMContentLoaded", inicializa
-                        
+window.addEventListener("DOMContentLoaded", inicializar);
