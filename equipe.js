@@ -1,6 +1,6 @@
 // ======================================================================
 //                         EQUIPE.JS
-//                         VERSÃO CORRETA
+//                         VERSÃO 100% COMPLETA E CORRIGIDA
 //         Apenas a lógica de convite por link foi acrescentada.
 // ======================================================================
 
@@ -409,43 +409,44 @@ function adicionarEventListeners() {
 }
 
 async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { collection, addDoc, serverTimestamp, doc, setDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
-    const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
-    btnSubmit.disabled = true; btnSubmit.textContent = "Salvando...";
+    const btnSubmit = elementos.formAddProfissional.querySelector('button[type="submit"]');
+    btnSubmit.disabled = true; btnSubmit.textContent = "A gravar...";
 
     const nome = elementos.nomeProfissional.value.trim();
+    const fotoFile = elementos.fotoProfissional.files[0];
+
     if (!nome) {
         alert("O nome do profissional é obrigatório.");
-        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
+        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Gravar Profissional";
         return;
     }
 
-    let fotoURL = "";
-    const fotoFile = elementos.fotoProfissional.files[0];
-    if (fotoFile) {
-        try {
-            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
-            await uploadBytes(storageRef, fotoFile);
-            fotoURL = await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error("Erro no upload da foto:", error);
-        }
-    }
-
-    const novoProfissional = {
-        nome, fotoUrl: fotoURL, ehDono: false, servicos: [],
-        criadoEm: serverTimestamp(), agendaEspecial: []
-    };
-
     try {
+        const novoProfissionalData = {
+            nome,
+            fotoUrl: "", 
+            ehDono: false,
+            servicos: [],
+            criadoEm: serverTimestamp(),
+            agendaEspecial: []
+        };
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const docRef = await addDoc(profissionaisRef, novoProfissional);
+        const docRef = await addDoc(profissionaisRef, novoProfissionalData);
+        const novoProfissionalId = docRef.id;
 
-        // Usa o horariosBase (com dias inativos) para o novo profissional
+        if (fotoFile) {
+            const storagePath = `fotos-profissionais/${empresaId}/${novoProfissionalId}/foto-perfil.jpg`;
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, fotoFile);
+            const fotoURL = await getDownloadURL(storageRef);
+            await updateDoc(docRef, { fotoUrl: fotoURL });
+        }
+
         const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", novoProfissionalId, "configuracoes", "horarios");
         await setDoc(horariosRef, horariosPadrao);
 
         elementos.modalAddProfissional.classList.remove('show');
@@ -454,7 +455,7 @@ async function adicionarProfissional() {
         console.error("Erro ao adicionar profissional:", error);
         alert("Erro ao adicionar profissional: " + error.message);
     } finally {
-        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
+        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Gravar Profissional";
     }
 }
 
@@ -483,30 +484,28 @@ async function editarProfissional(profissionalId) {
 async function salvarEdicaoProfissional(profissionalId) {
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+    
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) return alert("O nome do profissional é obrigatório.");
 
-    let fotoURL = "";
     const fotoFile = elementos.fotoProfissional.files[0];
-    if (fotoFile) {
-        try {
-            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
-            await uploadBytes(storageRef, fotoFile);
-            fotoURL = await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error("Erro no upload da foto:", error);
-        }
-    }
-
     const updateData = { nome };
-    if (fotoURL) updateData.fotoUrl = fotoURL;
 
     try {
+        if (fotoFile) {
+            const storagePath = `fotos-profissionais/${empresaId}/${profissionalId}/foto-perfil.jpg`;
+            const storageRef = ref(storage, storagePath);
+            await uploadBytes(storageRef, fotoFile);
+            updateData.fotoUrl = await getDownloadURL(storageRef);
+        }
+
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, updateData);
+        
         elementos.modalAddProfissional.classList.remove('show');
-        alert("✅ Profissional editado com sucesso!");
+        alert("✅ Profissional atualizado com sucesso!");
     } catch (error) {
+        console.error("Erro ao editar profissional:", error);
         alert("Erro ao editar profissional: " + error.message);
     }
 }
