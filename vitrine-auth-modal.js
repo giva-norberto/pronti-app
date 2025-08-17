@@ -1,16 +1,15 @@
+// Importa a função de listener de autenticação do arquivo central de auth
+import { setupAuthListener } from './vitrini-auth.js';
+
 // --------- EXIBE O MODAL QUANDO NÃO LOGADO ---------
-if (typeof setupAuthListener === "function") {
-  setupAuthListener(async (user) => {
-    if (!user) {
-      if (typeof showModalAuth === "function") showModalAuth();
-      if (typeof showStep === "function") showStep('login');
-    } else {
-      if (typeof hideModalAuth === "function") hideModalAuth();
-    }
-  });
-} else {
-  console.error("setupAuthListener não está definido.");
-}
+setupAuthListener(async (user) => {
+  if (!user) {
+    if (typeof showModalAuth === "function") showModalAuth();
+    if (typeof showStep === "function") showStep('login');
+  } else {
+    if (typeof hideModalAuth === "function") hideModalAuth();
+  }
+});
 
 // --------- EVENTOS E TROCA DE TELA ---------
 window.addEventListener('DOMContentLoaded', () => {
