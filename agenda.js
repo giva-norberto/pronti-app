@@ -1,10 +1,11 @@
 /**
- * agenda.js REVISADO
+ * agenda.js REVISIONADO PRONTI PADRÃO
  * - Agenda Futura: mostra agendamentos ativos de hoje em diante.
- * - Histórico: mostra todos agendamentos (qualquer status) em um período customizado (por padrão, mês atual).
- * - Botões alternam a visão e mostram/escondem filtros de data.
+ * - Histórico: mostra todos agendamentos (qualquer status) em um período customizável (por padrão, mês atual).
+ * - Botões alternam visão e mostram/escondem filtros de data.
  * - Filtro de profissional para dono.
  * - Firebase Modular v10+
+ * - Tratamento de erros e feedback padrão Pronti
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -39,7 +40,7 @@ let perfilUsuario = "dono"; // "dono" ou "funcionario"
 let meuUid = null;
 let modoAgenda = "futura"; // "futura" ou "historico"
 
-// Utils
+// UTILITÁRIOS
 function mostrarToast(texto, cor = '#38bdf8') {
   if (typeof Toastify !== "undefined") {
     Toastify({
@@ -85,8 +86,8 @@ onAuthStateChanged(auth, async (user) => {
         exibirMensagemDeErro("Empresa não encontrada para este usuário.");
       }
     } catch (error) {
-      console.error("Erro na inicialização:", error);
       exibirMensagemDeErro("Ocorreu um erro ao iniciar a página.");
+      console.error("Erro na inicialização:", error);
     }
   } else {
     window.location.href = "login.html";
@@ -157,7 +158,6 @@ function ativarModoAgenda(modo) {
   // Visual do botão
   if (btnAgendaFutura) btnAgendaFutura.classList.toggle("active", modo === "futura");
   if (btnHistorico) btnHistorico.classList.toggle("active", modo === "historico");
-  // Filtros
   if (filtrosHistoricoDiv) filtrosHistoricoDiv.style.display = (modo === "historico") ? "" : "none";
   if (inputDataEl) inputDataEl.style.display = (modo === "futura") ? "" : "none";
   carregarAgendamentos();
@@ -174,6 +174,7 @@ async function popularFiltroProfissionais() {
       filtroProfissionalEl.appendChild(new Option(doc.data().nome, doc.id));
     });
   } catch (error) {
+    mostrarToast("Erro ao buscar profissionais.", "#ef4444");
     console.error("Erro ao buscar profissionais:", error);
   }
 }
@@ -200,6 +201,8 @@ async function carregarAgendamentos() {
       const hoje = new Date();
       const dataHoje = hoje.toISOString().split("T")[0];
       constraints.push(where("data", ">=", dataHoje), where("status", "==", "ativo"));
+      if (profissionalId !== 'todos') constraints.push(where("profissionalId", "==", profissionalId));
+      q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
     } else {
       // Histórico: entre data inicial e final, todos status
       const dataIni = dataInicialEl ? dataInicialEl.value : "";
@@ -209,12 +212,9 @@ async function carregarAgendamentos() {
         return;
       }
       constraints.push(where("data", ">=", dataIni), where("data", "<=", dataFim));
-      // Não filtra status
+      if (profissionalId !== 'todos') constraints.push(where("profissionalId", "==", profissionalId));
+      q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
     }
-    if (profissionalId !== 'todos') {
-      constraints.push(where("profissionalId", "==", profissionalId));
-    }
-    q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
     snapshot = await getDocs(q);
 
     if (snapshot.empty) {
@@ -244,20 +244,29 @@ async function carregarAgendamentos() {
           <p><i class="fa-solid fa-clock"></i> <strong>Hora:</strong> ${ag.horario || "Não informada"}</p>
           <p><i class="fa-solid fa-info-circle"></i> <strong>Status:</strong> ${statusLabel}</p>
         </div>
-        ${(
-          perfilUsuario === "dono" || (ag.profissionalId === meuUid)
-        ) && ag.status === "ativo" && modoAgenda === "futura"
-          ? `<div class="card-actions">
-              <button class="btn btn-nao-compareceu" data-id="${ag.id}"><i class="fa-solid fa-user-clock"></i> Não Compareceu</button>
-              <button class="btn btn-cancelar" data-id="${ag.id}"><i class="fa-solid fa-ban"></i> Cancelar</button>
-            </div>` : ""
+        ${
+          (perfilUsuario === "dono" || (ag.profissionalId === meuUid)) && ag.status === "ativo" && modoAgenda === "futura"
+            ? `<div class="card-actions">
+                <button class="btn btn-outline btn-nao-compareceu" data-id="${ag.id}">
+                  <i class="fa-solid fa-user-clock"></i> Não Compareceu
+                </button>
+                <button class="btn btn-outline btn-cancelar" data-id="${ag.id}">
+                  <i class="fa-solid fa-ban"></i> Cancelar
+                </button>
+              </div>`
+            : ""
         }
       `;
       listaAgendamentosDiv.appendChild(cardElement);
     });
   } catch (error) {
+    let mensagemExtra = "";
+    // Indica se é erro de índice do Firestore
+    if (error.code && error.code === "failed-precondition" && error.message && error.message.includes("index")) {
+      mensagemExtra = "<br>É necessário criar um índice composto no Firestore. Veja o console para detalhes.";
+    }
+    exibirMensagemDeErro("Ocorreu um erro ao carregar a agenda." + mensagemExtra);
     console.error("Erro ao carregar agendamentos:", error);
-    exibirMensagemDeErro("Ocorreu um erro ao carregar a agenda.");
   }
 }
 
@@ -280,8 +289,8 @@ async function atualizarStatusAgendamento(id, status, mensagemConfirmacao, mensa
     mostrarToast(mensagemSucesso, corToast);
     carregarAgendamentos();
   } catch (error) {
-    console.error(`Erro ao atualizar status para ${status}:`, error);
     mostrarToast(`Erro ao atualizar agendamento.`, "#ef4444");
+    console.error(`Erro ao atualizar status para ${status}:`, error);
   }
 }
 
