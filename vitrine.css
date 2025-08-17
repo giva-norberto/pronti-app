@@ -503,3 +503,46 @@ input[type="date"] {
     .menu-horizontal-vitrine .menu-btn { font-size: 0.98rem; padding: 0 10px; height: 54px;}
     .horarios-profissional-blocos { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 10px;}
 }
+/* Bottom Navigation para Mobile */
+@media (max-width: 900px) {
+  .sidebar-vitrine {
+    display: none !important; /* Esconde sidebar em mobile */
+  }
+  .bottom-nav-vitrine {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    border-top: 1px solid #E5E7EB;
+    z-index: 1200;
+    height: 60px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+  }
+  .bottom-nav-vitrine button {
+    flex: 1;
+    border: none;
+    background: none;
+    color: #6366f1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    height: 60px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+  }
+  .bottom-nav-vitrine button.ativo {
+    color: #EC4899;
+    border-bottom: 3px solid #EC4899;
+    background: #eef2ff;
+  }
+  .main-content-vitrine {
+    padding-bottom: 70px; /* Espaço para o menu não cobrir conteúdo */
+  }
+}
