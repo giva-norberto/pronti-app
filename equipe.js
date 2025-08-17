@@ -11,7 +11,7 @@ let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 
-// Horários base com dias INATIVOS por padrão, para novos funcionários
+// NOVO: Horários base com dias INATIVOS por padrão, para novos funcionários
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
     terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -24,7 +24,7 @@ let horariosBase = {
 let intervaloBase = 30;
 let agendaEspecial = [];
 
-// Elementos DOM
+// Elementos DOM (sem alterações)
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
@@ -56,7 +56,7 @@ const elementos = {
     btnGerarConvite: document.getElementById('btn-gerar-convite')
 };
 
-// TABS do perfil
+// TABS do perfil (sem alterações)
 function setupPerfilTabs() {
     const tabServicos = document.getElementById('tab-servicos');
     const tabHorarios = document.getElementById('tab-horarios');
@@ -86,7 +86,7 @@ function setupPerfilTabs() {
 }
 window.addEventListener('DOMContentLoaded', setupPerfilTabs);
 
-// Inicialização
+// Inicialização (sem alterações)
 async function inicializar() {
     try {
         const firebaseConfig = await import('./firebase-config.js');
@@ -559,4 +559,4 @@ window.abrirPerfilProfissional = abrirPerfilProfissional;
 window.editarProfissional = editarProfissional;
 window.excluirProfissional = excluirProfissional;
 
-window.addEventListener("DOMContentLoaded", inicializar);
+window.addEventListener("DOMContentLoaded", inicializa
