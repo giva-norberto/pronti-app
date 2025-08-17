@@ -4,22 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Minha Agenda</title>
-
-    <!-- Fontes e Ícones -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Estilos -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
-    <!-- O menu lateral padronizado será carregado aqui -->
     <div id="sidebar-placeholder"></div>
-
-    <!-- Conteúdo Principal da Página -->
     <main class="main-content">
         <div class="page-header">
             <h1>Minha Agenda</h1>
@@ -29,23 +22,30 @@
             </a>
         </div>
 
-        <div class="filtros-agenda" id="filtros-agenda">
-            <div class="filtro-item">
-                <label for="data-agenda">Data</label>
-                <input type="date" id="data-agenda" class="filtro-input">
-            </div>
+        <!-- Botões de navegação -->
+        <div class="filtros-agenda" id="filtros-agenda" style="gap: 10px;">
+            <button id="btn-agenda-futura" class="btn btn-outline active"><i class="fa-solid fa-calendar-day"></i> Agenda Futura</button>
+            <button id="btn-historico" class="btn btn-outline"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</button>
+            
+            <!-- Filtro de profissional, só para dono -->
             <div class="filtro-item" id="filtro-profissional-item">
                 <label for="filtro-profissional">Profissional</label>
                 <select id="filtro-profissional" class="filtro-select"></select>
             </div>
-            <!-- NOVO: filtro histórico/próximos -->
-            <div class="filtro-item" id="visualizacao-item">
-                <label for="tipo-visualizacao">Visualizar</label>
-                <select id="tipo-visualizacao" class="filtro-select">
-                  <option value="futuros">Próximos</option>
-                  <option value="historico">Histórico</option>
-                </select>
+        </div>
+
+        <!-- Filtros de data para histórico -->
+        <div id="filtros-historico" style="display:none; margin: 16px 0;">
+            <div class="filtro-item">
+                <label for="data-inicial">De:</label>
+                <input type="date" id="data-inicial" class="filtro-input">
             </div>
+            <div class="filtro-item">
+                <label for="data-final">Até:</label>
+                <input type="date" id="data-final" class="filtro-input">
+            </div>
+            <button id="btn-aplicar-historico" class="btn btn-secondary"><i class="fa-solid fa-filter"></i> Aplicar</button>
+            <button id="btn-mes-atual" class="btn btn-light"><i class="fa-solid fa-calendar"></i> Mês Atual</button>
         </div>
         
         <div id="lista-agendamentos" class="dashboard-cards">
@@ -65,7 +65,6 @@
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script>
     // Carregamento dinâmico do menu lateral
     document.addEventListener("DOMContentLoaded", function() {
@@ -88,25 +87,7 @@
       }
     });
     </script>
-    
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="agenda.js" type="module"></script>
-    <script>
-    // Adaptar exibição do filtro de profissional e botão de novo agendamento conforme perfil
-    // O script agenda.js já faz o controle do filtro de profissional via JS
-    // Aqui, só escondemos o botão "Novo Agendamento" para funcionário, se necessário.
-    // Exemplo de ajuste adicional (opcional, se for regra de negócio):
-    /*
-    document.addEventListener("DOMContentLoaded", function() {
-        // Supondo que o perfil do usuário já está disponível em window.perfilUsuario
-        if (window.perfilUsuario === "funcionario") {
-            const filtroProfissionalItem = document.getElementById('filtro-profissional-item');
-            if (filtroProfissionalItem) filtroProfissionalItem.style.display = "none";
-            const btnNovoAgendamento = document.getElementById('btn-novo-agendamento');
-            if (btnNovoAgendamento) btnNovoAgendamento.style.display = "none";
-        }
-    });
-    */
-    </script>
 </body>
 </html>
