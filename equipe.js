@@ -1,7 +1,7 @@
 // ======================================================================
-//                          EQUIPE.JS
-//          VERSÃO COMPLETA E CORRIGIDA
-//          Implementa dias Ativo/Inativo e criação com dias desativados.
+//                          EQUIPE.JS
+//           VERSÃO COMPLETA E CORRIGIDA
+//           Implementa dias Ativo/Inativo e criação com dias desativados.
 // ======================================================================
 
 // Variáveis globais
