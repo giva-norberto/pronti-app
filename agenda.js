@@ -1,7 +1,7 @@
 /**
  * agenda.js
- * Gerencia a exibição e manipulação de agendamentos para o empresário logado.
- * Inclui filtros por data e profissional, e ações de status.
+ * Gerencia a exibição e manipulação de agendamentos para o empresário logado e para o funcionário.
+ * Inclui filtros por data e profissional (para o dono), ações de status e adaptação para o perfil do usuário.
  * Utiliza a estrutura de subcoleção: 'empresarios/{empresaId}/agendamentos'.
  * Firebase Modular v10+
  */
@@ -27,25 +27,22 @@ const btnModalConfirmar = document.getElementById("btn-modal-confirmar");
 const btnModalCancelar = document.getElementById("btn-modal-cancelar");
 
 let empresaId = null;
+let perfilUsuario = "dono"; // "dono" ou "funcionario"
+let meuUid = null; // UID do usuário autenticado
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
-/**
- * Exibe uma notificação toast na tela.
- * @param {string} texto - A mensagem a ser exibida.
- * @param {string} cor - A cor de fundo do toast.
- */
 function mostrarToast(texto, cor = '#38bdf8') {
   if (typeof Toastify !== "undefined") {
     Toastify({
       text: texto,
       duration: 4000,
       gravity: "top",
-      position: "center", // <-- ALTERAÇÃO AQUI
+      position: "center",
       style: { 
         background: cor, 
         color: "white",
-        borderRadius: "8px" // Sugestão: adicione cantos arredondados
+        borderRadius: "8px"
       }
     }).showToast();
   } else {
@@ -53,11 +50,6 @@ function mostrarToast(texto, cor = '#38bdf8') {
   }
 }
 
-/**
- * Exibe um modal de confirmação personalizado.
- * @param {string} mensagem - A pergunta de confirmação.
- * @returns {Promise<boolean>} - Resolve como true (confirmado) ou false (cancelado).
- */
 function mostrarConfirmacao(mensagem) {
   if (!modal || !modalMensagem || !btnModalConfirmar || !btnModalCancelar) {
       return Promise.resolve(window.confirm(mensagem));
@@ -78,14 +70,13 @@ function mostrarConfirmacao(mensagem) {
 
 // --- LÓGICA PRINCIPAL DA PÁGINA ---
 
-/**
- * Ponto de entrada: verifica a autenticação do usuário e inicia a página.
- */
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    meuUid = user.uid;
     try {
-      empresaId = await getEmpresaIdDoDono(user.uid);
+      empresaId = await getEmpresaIdDoDonoOuFuncionario(user.uid);
       if (empresaId) {
+        perfilUsuario = await checarTipoUsuario(user.uid, empresaId);
         await inicializarPaginaAgenda();
       } else {
         exibirMensagemDeErro("Empresa não encontrada para este usuário.");
@@ -100,14 +91,40 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 /**
- * Busca o ID do documento da empresa com base no UID do dono.
- * @param {string} uid - O ID do usuário (dono).
+ * Busca o ID do documento da empresa com base no UID do dono ou de um profissional.
+ * @param {string} uid - O ID do usuário.
  * @returns {Promise<string|null>} O ID do documento da empresa ou null.
  */
-async function getEmpresaIdDoDono(uid) {
-  const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-  const snapshot = await getDocs(q);
-  return snapshot.empty ? null : snapshot.docs[0].id;
+async function getEmpresaIdDoDonoOuFuncionario(uid) {
+  // Primeiro, tenta como dono
+  let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+  let snapshot = await getDocs(q);
+  if (!snapshot.empty) return snapshot.docs[0].id;
+  // Tenta como funcionário (busca empresas onde esteja cadastrado como profissional)
+  q = query(collection(db, "empresarios"));
+  snapshot = await getDocs(q);
+  for (const docEmp of snapshot.docs) {
+    const profSnap = await getDocs(
+      query(collection(db, "empresarios", docEmp.id, "profissionais"), where("__name__", "==", uid))
+    );
+    if (!profSnap.empty) return docEmp.id;
+  }
+  return null;
+}
+
+/**
+ * Checa se o usuário é dono ou funcionário na empresa.
+ * @param {string} uid 
+ * @param {string} empresaId 
+ * @returns {Promise<"dono"|"funcionario">}
+ */
+async function checarTipoUsuario(uid, empresaId) {
+  const docEmp = await getDocs(
+    query(collection(db, "empresarios"), where("donoId", "==", uid), where("__name__", "==", empresaId))
+  );
+  if (!docEmp.empty) return "dono";
+  // Se não é dono, é funcionário
+  return "funcionario";
 }
 
 /**
@@ -117,7 +134,14 @@ async function inicializarPaginaAgenda() {
     if(inputDataEl) {
         inputDataEl.value = new Date().toISOString().split("T")[0];
     }
-    await popularFiltroProfissionais();
+
+    if (perfilUsuario === "dono") {
+      await popularFiltroProfissionais();
+      if (filtroProfissionalEl) filtroProfissionalEl.style.display = "";
+    } else {
+      if (filtroProfissionalEl) filtroProfissionalEl.style.display = "none";
+    }
+
     configurarListenersDeAcao();
     await carregarAgendamentos();
     if(inputDataEl) inputDataEl.addEventListener("change", carregarAgendamentos);
@@ -142,12 +166,19 @@ async function popularFiltroProfissionais() {
 
 /**
  * Carrega os agendamentos do Firestore e os renderiza na tela, com base nos filtros.
+ * Para funcionário, mostra apenas os seus.
  */
 async function carregarAgendamentos() {
   if (!listaAgendamentosDiv) return;
   
   const dataSelecionada = inputDataEl ? inputDataEl.value : new Date().toISOString().split("T")[0];
-  const profissionalId = filtroProfissionalEl ? filtroProfissionalEl.value : 'todos';
+  let profissionalId = "todos";
+  if (perfilUsuario === "dono") {
+    profissionalId = filtroProfissionalEl ? filtroProfissionalEl.value : 'todos';
+  } else {
+    profissionalId = meuUid;
+  }
+
   listaAgendamentosDiv.innerHTML = `<p>A carregar agendamentos...</p>`;
   
   try {
@@ -171,7 +202,6 @@ async function carregarAgendamentos() {
 
     agendamentos.forEach(ag => {
       const cardElement = document.createElement('div');
-      // Adiciona a classe 'card--agenda' para o estilo colorido
       cardElement.className = 'card card--agenda';
       cardElement.setAttribute('data-id', ag.id);
       
@@ -182,10 +212,12 @@ async function carregarAgendamentos() {
           <p><i class="fa-solid fa-user-tie"></i> <strong>Profissional:</strong> ${ag.profissionalNome || "Não informado"}</p>
           <p><i class="fa-solid fa-clock"></i> <strong>Hora:</strong> ${ag.horario || "Não informada"}</p>
         </div>
-        <div class="card-actions">
-          <button class="btn btn-nao-compareceu" data-id="${ag.id}"><i class="fa-solid fa-user-clock"></i> Não Compareceu</button>
-          <button class="btn btn-cancelar" data-id="${ag.id}"><i class="fa-solid fa-ban"></i> Cancelar</button>
-        </div>
+        ${perfilUsuario === "dono" || (ag.profissionalId === meuUid)
+          ? `<div class="card-actions">
+              <button class="btn btn-nao-compareceu" data-id="${ag.id}"><i class="fa-solid fa-user-clock"></i> Não Compareceu</button>
+              <button class="btn btn-cancelar" data-id="${ag.id}"><i class="fa-solid fa-ban"></i> Cancelar</button>
+            </div>` : ""
+        }
       `;
       listaAgendamentosDiv.appendChild(cardElement);
     });
