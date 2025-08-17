@@ -103,6 +103,14 @@
         </main>
     </div>
 
+    <!-- Bottom Navigation para Mobile -->
+    <nav class="bottom-nav-vitrine" style="display: none;">
+      <button class="ativo" data-menu="informacoes">📋<span style="font-size:0.78em;font-weight:400;">Info</span></button>
+      <button data-menu="agendamento">📅<span style="font-size:0.78em;font-weight:400;">Agendar</span></button>
+      <button data-menu="visualizacao">📋<span style="font-size:0.78em;font-weight:400;">Meus</span></button>
+      <button data-menu="perfil">👤<span style="font-size:0.78em;font-weight:400;">Perfil</span></button>
+    </nav>
+
     <div id="custom-confirm-modal" class="modal-overlay">
         <div class="modal-box">
             <h3 id="modal-titulo">Confirmar Ação</h3>
@@ -153,15 +161,18 @@
     <!-- Menu SPA real: troca de tela e disparo de renderização -->
     <script>
       document.addEventListener("DOMContentLoaded", function() {
+        // Sidebar navigation (desktop/tablet)
         document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                // Troca visual
                 document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
                 btn.classList.add('ativo');
+                // Sincroniza o menu inferior em mobile
+                document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
+                const btnMobile = document.querySelector('.bottom-nav-vitrine button[data-menu="' + btn.dataset.menu + '"]');
+                if (btnMobile) btnMobile.classList.add('ativo');
                 document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
                 const tela = document.getElementById('menu-' + btn.dataset.menu);
                 tela.classList.add('ativo');
-                // Dispara função de renderização/fetch para cada tela separadamente
                 if(btn.dataset.menu === "informacoes") {
                     if(window.renderInformacoes) window.renderInformacoes();
                 } else if(btn.dataset.menu === "agendamento") {
@@ -173,6 +184,44 @@
                 }
             });
         });
+
+        // Bottom navigation SPA (mobile)
+        function toggleNavs() {
+          if(window.innerWidth <= 900) {
+            document.querySelector('.bottom-nav-vitrine').style.display = "flex";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "none";
+          } else {
+            document.querySelector('.bottom-nav-vitrine').style.display = "none";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "";
+          }
+        }
+        toggleNavs();
+        window.addEventListener('resize', toggleNavs);
+
+        document.querySelectorAll('.bottom-nav-vitrine button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
+                btn.classList.add('ativo');
+                // Sincroniza o menu lateral no desktop
+                document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
+                const btnSidebar = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + btn.dataset.menu + '"]');
+                if (btnSidebar) btnSidebar.classList.add('ativo');
+                // Troca o conteúdo
+                document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
+                const tela = document.getElementById('menu-' + btn.dataset.menu);
+                tela.classList.add('ativo');
+                if(btn.dataset.menu === "informacoes") {
+                    if(window.renderInformacoes) window.renderInformacoes();
+                } else if(btn.dataset.menu === "agendamento") {
+                    if(window.renderAgendamento) window.renderAgendamento();
+                } else if(btn.dataset.menu === "visualizacao") {
+                    if(window.renderVisualizacao) window.renderVisualizacao();
+                } else if(btn.dataset.menu === "perfil") {
+                    if(window.renderPerfil) window.renderPerfil();
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
       });
     </script>
 
@@ -180,17 +229,19 @@
     <script>
       document.addEventListener("DOMContentLoaded", function() {
         const profissionaisContainer = document.getElementById('lista-profissionais');
-        profissionaisContainer.addEventListener('click', function(e) {
-          const card = e.target.closest('.card-profissional');
-          if (!card) return;
-          document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
-          card.classList.add('selecionado');
-          window.state = window.state || {};
-          window.state.agendamento = window.state.agendamento || {};
-          window.state.agendamento.profissionalId = card.dataset.id;
-          // Quando selecionar, pode disparar fetch de serviços/horários aqui
-          if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
-        });
+        if (profissionaisContainer) {
+          profissionaisContainer.addEventListener('click', function(e) {
+            const card = e.target.closest('.card-profissional');
+            if (!card) return;
+            document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
+            card.classList.add('selecionado');
+            window.state = window.state || {};
+            window.state.agendamento = window.state.agendamento || {};
+            window.state.agendamento.profissionalId = card.dataset.id;
+            // Quando selecionar, pode disparar fetch de serviços/horários aqui
+            if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
+          });
+        }
       });
     </script>
 
