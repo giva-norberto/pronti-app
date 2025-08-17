@@ -407,6 +407,7 @@ function adicionarEventListeners() {
     });
 }
 
+// ==================== CORRIGIDO: Caminho correto do upload da foto ====================
 async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -425,11 +426,16 @@ async function adicionarProfissional() {
     const fotoFile = elementos.fotoProfissional.files[0];
     if (fotoFile) {
         try {
-            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+            const uid = auth.currentUser.uid; // OU o uid do profissional se preferir
+            const hoje = new Date();
+            const mes = hoje.toISOString().slice(0, 7); // "2025-08"
+            const ext = fotoFile.name.split('.').pop();
+            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${uid}/${mes}.${ext}`);
             await uploadBytes(storageRef, fotoFile);
             fotoURL = await getDownloadURL(storageRef);
         } catch (error) {
             console.error("Erro no upload da foto:", error);
+            alert("Erro ao fazer upload da foto. Verifique se você já fez upload neste mês.");
         }
     }
 
@@ -479,6 +485,7 @@ async function editarProfissional(profissionalId) {
     }
 }
 
+// ==================== CORRIGIDO: Caminho correto do upload da foto ====================
 async function salvarEdicaoProfissional(profissionalId) {
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -489,11 +496,16 @@ async function salvarEdicaoProfissional(profissionalId) {
     const fotoFile = elementos.fotoProfissional.files[0];
     if (fotoFile) {
         try {
-            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+            const uid = auth.currentUser.uid; // OU o uid do profissional se preferir
+            const hoje = new Date();
+            const mes = hoje.toISOString().slice(0, 7); // "2025-08"
+            const ext = fotoFile.name.split('.').pop();
+            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${uid}/${mes}.${ext}`);
             await uploadBytes(storageRef, fotoFile);
             fotoURL = await getDownloadURL(storageRef);
         } catch (error) {
             console.error("Erro no upload da foto:", error);
+            alert("Erro ao fazer upload da foto. Verifique se você já fez upload neste mês.");
         }
     }
 
