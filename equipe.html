@@ -20,9 +20,22 @@
                     ➕ Adicionar Profissional
                 </button>
                 <button id="btn-cancelar-equipe" class="btn btn-secondary" type="button">
-                    ❌ Cancelar
+                    ❌ Voltar
                 </button>
             </div>
+
+            <!-- ====================================================== -->
+            <!--      NOVA SEÇÃO DE CONVITE ACRESCENTADA AQUI         -->
+            <!-- ====================================================== -->
+            <div class="invite-section">
+                <h2>✉️ Convidar por Link</h2>
+                <p>A forma mais fácil de adicionar um membro. Gere um link e envie para o profissional. Ele se cadastra com o Google e é adicionado à sua equipe automaticamente.</p>
+                <button id="btn-gerar-convite" class="btn btn-primary" type="button">
+                    🔗 Gerar Link de Convite
+                </button>
+            </div>
+            <!-- ====================================================== -->
+            
             <div id="lista-profissionais-painel" class="equipe-grid">
                 <!-- Profissionais renderizados pelo JS -->
             </div>
@@ -185,6 +198,6 @@
         }
     });
     </script>
-    <script src="equipe.js"></script>
+    <script type="module" src="equipe.js"></script>
 </body>
 </html>
