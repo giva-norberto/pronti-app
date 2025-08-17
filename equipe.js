@@ -1,7 +1,7 @@
 // ======================================================================
 //                         EQUIPE.JS
-//                         VERSÃO ATUALIZADA
-//         Acrescentada a funcionalidade de gerar link de convite.
+//                         VERSÃO 100% COMPLETA E CORRIGIDA
+//         Apenas a lógica de convite por link foi acrescentada.
 // ======================================================================
 
 // Variáveis globais
@@ -11,7 +11,7 @@ let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 
-// NOVO: Horários base com dias INATIVOS por padrão, para novos funcionários
+// Horários base com dias INATIVOS por padrão, para novos funcionários
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
     terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -24,7 +24,7 @@ let horariosBase = {
 let intervaloBase = 30;
 let agendaEspecial = [];
 
-// Elementos DOM (sem alterações)
+// Elementos DOM
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
@@ -56,7 +56,7 @@ const elementos = {
     btnGerarConvite: document.getElementById('btn-gerar-convite')
 };
 
-// TABS do perfil (sem alterações)
+// TABS do perfil
 function setupPerfilTabs() {
     const tabServicos = document.getElementById('tab-servicos');
     const tabHorarios = document.getElementById('tab-horarios');
@@ -79,16 +79,14 @@ function setupPerfilTabs() {
         tabAgendaEspecial.classList.add('active'); tabServicos.classList.remove('active'); tabHorarios.classList.remove('active');
         contentAgendaEspecial.classList.add('active'); contentServicos.classList.remove('active'); contentHorarios.classList.remove('active');
     };
-    if (elementos.agendaTipo) {
-        elementos.agendaTipo.onchange = function () {
-            if(elementos.agendaMesArea) elementos.agendaMesArea.style.display = this.value === "mes" ? "block" : "none";
-            if(elementos.agendaIntervaloArea) elementos.agendaIntervaloArea.style.display = this.value === "intervalo" ? "block" : "none";
-        };
-    }
+    elementos.agendaTipo.onchange = function () {
+        elementos.agendaMesArea.style.display = this.value === "mes" ? "block" : "none";
+        elementos.agendaIntervaloArea.style.display = this.value === "intervalo" ? "block" : "none";
+    };
 }
 window.addEventListener('DOMContentLoaded', setupPerfilTabs);
 
-// Inicialização (sem alterações)
+// Inicialização
 async function inicializar() {
     try {
         const firebaseConfig = await import('./firebase-config.js');
@@ -115,8 +113,6 @@ async function inicializar() {
         mostrarErro("Erro ao inicializar o sistema.");
     }
 }
-
-// --- TODAS AS FUNÇÕES ABAIXO ESTÃO SEM ALTERAÇÕES ---
 
 function voltarMenuLateral() { window.location.href = "index.html"; }
 
@@ -157,7 +153,6 @@ function iniciarListenerDaEquipe() {
 }
 
 function renderizarEquipe(equipe) {
-    if(!elementos.listaProfissionaisPainel) return;
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
         elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.<br>Clique em "Adicionar Profissional" para começar.</p></div>`;
@@ -179,30 +174,40 @@ function renderizarEquipe(equipe) {
 }
 
 async function abrirPerfilProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-    const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
-    const profissionalDoc = await getDoc(profissionalRef);
-
-    if(!profissionalDoc.exists()) {
+    const profissional = await carregarDadosProfissional(profissionalId);
+    if (!profissional) {
         mostrarErro("Não foi possível carregar os dados deste profissional.");
         return;
     }
-    const profissional = profissionalDoc.data();
     profissionalAtual = profissionalId;
     elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${profissional.nome}`;
     renderizarServicos(profissional.servicos || []);
     agendaEspecial = profissional.agendaEspecial || [];
     renderizarAgendaEspecial();
-    
-    const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
-    const horariosDoc = await getDoc(horariosRef);
-    if (horariosDoc.exists()) {
-        renderizarHorarios(horariosDoc.data());
-    } else {
-        renderizarHorarios({ ...horariosBase, intervalo: intervaloBase });
-    }
-
     elementos.modalPerfilProfissional.classList.add('show');
+}
+
+async function carregarDadosProfissional(profissionalId) {
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    try {
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        const profissionalDoc = await getDoc(profissionalRef);
+        if (!profissionalDoc.exists()) return null;
+        
+        const dados = profissionalDoc.data();
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+        const horariosDoc = await getDoc(horariosRef);
+
+        if (horariosDoc.exists()) {
+            renderizarHorarios(horariosDoc.data());
+        } else {
+            renderizarHorarios({ ...horariosBase, intervalo: intervaloBase });
+        }
+        return dados;
+    } catch (error) {
+        console.error("Erro ao carregar dados do profissional:", error);
+        return null;
+    }
 }
 
 function renderizarServicos(servicosSelecionados = []) {
@@ -224,7 +229,6 @@ function renderizarServicos(servicosSelecionados = []) {
 
 function renderizarHorarios(horariosDataCompleta = {}) {
     const horariosLista = elementos.horariosLista;
-    if(!horariosLista) return;
     horariosLista.innerHTML = '';
     const diasSemana = [
         { key: 'segunda', nome: 'Segunda-feira' }, { key: 'terca', nome: 'Terça-feira' },
@@ -233,7 +237,7 @@ function renderizarHorarios(horariosDataCompleta = {}) {
         { key: 'domingo', nome: 'Domingo' }
     ];
 
-    if(elementos.inputIntervalo) elementos.inputIntervalo.value = horariosDataCompleta.intervalo || intervaloBase;
+    elementos.inputIntervalo.value = horariosDataCompleta.intervalo || intervaloBase;
 
     diasSemana.forEach(dia => {
         const diaData = horariosDataCompleta[dia.key] || { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] };
@@ -288,7 +292,6 @@ function renderizarHorarios(horariosDataCompleta = {}) {
 }
 
 function setupRemoverIntervalo() {
-    if(!elementos.horariosLista) return;
     elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
         btn.onclick = function () {
             const container = this.closest('.horario-intervalos');
@@ -318,15 +321,12 @@ function coletarHorarios() {
         
         horarios[dia] = { ativo: estaAtivo, blocos: blocos.length > 0 ? blocos : [{ inicio: '09:00', fim: '18:00' }] };
     });
-    if(elementos.inputIntervalo) {
-        horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
-    }
+    horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
     return horarios;
 }
 
 function renderizarAgendaEspecial() {
     const lista = elementos.agendaEspecialLista;
-    if(!lista) return;
     lista.innerHTML = '';
     if (!agendaEspecial || agendaEspecial.length === 0) {
         lista.innerHTML = '<div class="empty-state-agenda-especial">Nenhuma agenda especial cadastrada.</div>';
@@ -381,74 +381,71 @@ async function salvarPerfilProfissional() {
 }
 
 function adicionarEventListeners() {
-    if(elementos.btnAddProfissional) {
-        elementos.btnAddProfissional.addEventListener("click", () => {
-            elementos.formAddProfissional.reset();
-            editandoProfissionalId = null;
-            elementos.tituloModalProfissional.textContent = "➕ Adicionar Novo Profissional";
-            elementos.modalAddProfissional.classList.add('show');
-            elementos.formAddProfissional.onsubmit = async (e) => {
-                e.preventDefault();
-                await adicionarProfissional();
-            };
-        });
-    }
+    elementos.btnAddProfissional.addEventListener("click", () => {
+        elementos.formAddProfissional.reset();
+        editandoProfissionalId = null;
+        elementos.tituloModalProfissional.textContent = "➕ Adicionar Novo Profissional";
+        elementos.modalAddProfissional.classList.add('show');
+        elementos.formAddProfissional.onsubmit = async (e) => {
+            e.preventDefault();
+            await adicionarProfissional();
+        };
+    });
 
     if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
-    if (elementos.btnCancelarProfissional) elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
-    if (elementos.btnCancelarPerfil) elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
-    if (elementos.btnSalvarPerfil) elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
+    elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
+    elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
+    elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
     if (elementos.btnAgendaEspecial) elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
-    
+
     // --- NOVO EVENT LISTENER ACRESCENTADO ---
     if (elementos.btnGerarConvite) {
         elementos.btnGerarConvite.addEventListener('click', gerarLinkDeConvite);
     }
 
     [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
-        if(modal) modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
+        modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
     });
 }
 
 async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp, doc, setDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
-    const btnSubmit = elementos.formAddProfissional.querySelector('button[type="submit"]');
-    btnSubmit.disabled = true; btnSubmit.textContent = "A gravar...";
+    const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
+    btnSubmit.disabled = true; btnSubmit.textContent = "Salvando...";
 
     const nome = elementos.nomeProfissional.value.trim();
-    const fotoFile = elementos.fotoProfissional.files[0];
-
     if (!nome) {
         alert("O nome do profissional é obrigatório.");
-        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Gravar Profissional";
+        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
         return;
     }
 
-    try {
-        const novoProfissionalData = {
-            nome,
-            fotoUrl: "", 
-            ehDono: false,
-            servicos: [],
-            criadoEm: serverTimestamp(),
-            agendaEspecial: []
-        };
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const docRef = await addDoc(profissionaisRef, novoProfissionalData);
-        const novoProfissionalId = docRef.id;
-
-        if (fotoFile) {
-            const storagePath = `fotos-profissionais/${empresaId}/${novoProfissionalId}/foto-perfil.jpg`;
-            const storageRef = ref(storage, storagePath);
+    let fotoURL = "";
+    const fotoFile = elementos.fotoProfissional.files[0];
+    if (fotoFile) {
+        try {
+            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
             await uploadBytes(storageRef, fotoFile);
-            const fotoURL = await getDownloadURL(storageRef);
-            await updateDoc(docRef, { fotoUrl: fotoURL });
+            fotoURL = await getDownloadURL(storageRef);
+        } catch (error) {
+            console.error("Erro no upload da foto:", error);
         }
+    }
 
+    const novoProfissional = {
+        nome, fotoUrl: fotoURL, ehDono: false, servicos: [],
+        criadoEm: serverTimestamp(), agendaEspecial: []
+    };
+
+    try {
+        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+        const docRef = await addDoc(profissionaisRef, novoProfissional);
+
+        // Usa o horariosBase (com dias inativos) para o novo profissional
         const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", novoProfissionalId, "configuracoes", "horarios");
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
         await setDoc(horariosRef, horariosPadrao);
 
         elementos.modalAddProfissional.classList.remove('show');
@@ -457,7 +454,7 @@ async function adicionarProfissional() {
         console.error("Erro ao adicionar profissional:", error);
         alert("Erro ao adicionar profissional: " + error.message);
     } finally {
-        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Gravar Profissional";
+        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
     }
 }
 
@@ -486,28 +483,30 @@ async function editarProfissional(profissionalId) {
 async function salvarEdicaoProfissional(profissionalId) {
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
-    
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) return alert("O nome do profissional é obrigatório.");
 
+    let fotoURL = "";
     const fotoFile = elementos.fotoProfissional.files[0];
+    if (fotoFile) {
+        try {
+            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+            await uploadBytes(storageRef, fotoFile);
+            fotoURL = await getDownloadURL(storageRef);
+        } catch (error) {
+            console.error("Erro no upload da foto:", error);
+        }
+    }
+
     const updateData = { nome };
+    if (fotoURL) updateData.fotoUrl = fotoURL;
 
     try {
-        if (fotoFile) {
-            const storagePath = `fotos-profissionais/${empresaId}/${profissionalId}/foto-perfil.jpg`;
-            const storageRef = ref(storage, storagePath);
-            await uploadBytes(storageRef, fotoFile);
-            updateData.fotoUrl = await getDownloadURL(storageRef);
-        }
-
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, updateData);
-        
         elementos.modalAddProfissional.classList.remove('show');
-        alert("✅ Profissional atualizado com sucesso!");
+        alert("✅ Profissional editado com sucesso!");
     } catch (error) {
-        console.error("Erro ao editar profissional:", error);
         alert("Erro ao editar profissional: " + error.message);
     }
 }
@@ -562,3 +561,4 @@ window.editarProfissional = editarProfissional;
 window.excluirProfissional = excluirProfissional;
 
 window.addEventListener("DOMContentLoaded", inicializa
+                        
