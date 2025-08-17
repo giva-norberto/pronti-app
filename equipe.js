@@ -1,7 +1,7 @@
 // ======================================================================
-//                      EQUIPE.JS
-//                      VERSÃO 100% COMPLETA E CORRIGIDA
-//                      Apenas a lógica de upload de fotos foi alterada.
+//                         EQUIPE.JS
+//                         VERSÃO ATUALIZADA
+//         Acrescentada a funcionalidade de gerar link de convite.
 // ======================================================================
 
 // Variáveis globais
@@ -11,7 +11,7 @@ let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 
-// NOVO: Horários base com dias INATIVOS por padrão, para novos funcionários
+// Horários base com dias INATIVOS por padrão, para novos funcionários
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
     terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -24,7 +24,7 @@ let horariosBase = {
 let intervaloBase = 30;
 let agendaEspecial = [];
 
-// Elementos DOM (sem alterações)
+// Elementos DOM
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
@@ -51,7 +51,9 @@ const elementos = {
     agendaFim: document.getElementById('agenda-fim'),
     btnAgendaEspecial: document.getElementById('btn-agenda-especial'),
     agendaEspecialLista: document.getElementById('agenda-especial-lista'),
-    inputIntervalo: document.getElementById('intervalo-atendimento')
+    inputIntervalo: document.getElementById('intervalo-atendimento'),
+    // --- NOVO ELEMENTO ACRESCENTADO ---
+    btnGerarConvite: document.getElementById('btn-gerar-convite')
 };
 
 // TABS do perfil (sem alterações)
@@ -113,6 +115,8 @@ async function inicializar() {
         mostrarErro("Erro ao inicializar o sistema.");
     }
 }
+
+// --- TODAS AS FUNÇÕES ABAIXO ESTÃO SEM ALTERAÇÕES ---
 
 function voltarMenuLateral() { window.location.href = "index.html"; }
 
@@ -395,6 +399,11 @@ function adicionarEventListeners() {
     if (elementos.btnCancelarPerfil) elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
     if (elementos.btnSalvarPerfil) elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
     if (elementos.btnAgendaEspecial) elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
+    
+    // --- NOVO EVENT LISTENER ACRESCENTADO ---
+    if (elementos.btnGerarConvite) {
+        elementos.btnGerarConvite.addEventListener('click', gerarLinkDeConvite);
+    }
 
     [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
         if(modal) modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
@@ -402,7 +411,7 @@ function adicionarEventListeners() {
 }
 
 // ======================================================================
-// CORREÇÃO: Lógica de upload de fotos
+// Lógica de upload de fotos (sem alterações)
 // ======================================================================
 async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -421,7 +430,6 @@ async function adicionarProfissional() {
     }
 
     try {
-        // 1. Cria o documento do profissional primeiro, com fotoUrl vazia
         const novoProfissionalData = {
             nome,
             fotoUrl: "", 
@@ -434,18 +442,14 @@ async function adicionarProfissional() {
         const docRef = await addDoc(profissionaisRef, novoProfissionalData);
         const novoProfissionalId = docRef.id;
 
-        // 2. Se houver uma foto, faz o upload e depois atualiza o documento
         if (fotoFile) {
             const storagePath = `fotos-profissionais/${empresaId}/${novoProfissionalId}/foto-perfil.jpg`;
             const storageRef = ref(storage, storagePath);
             await uploadBytes(storageRef, fotoFile);
             const fotoURL = await getDownloadURL(storageRef);
-
-            // Atualiza o documento que acabámos de criar com a URL da foto
             await updateDoc(docRef, { fotoUrl: fotoURL });
         }
 
-        // 3. Cria os horários padrão para o novo profissional
         const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", novoProfissionalId, "configuracoes", "horarios");
         await setDoc(horariosRef, horariosPadrao);
@@ -469,7 +473,6 @@ async function editarProfissional(profissionalId) {
             const dados = profissionalDoc.data();
             elementos.formAddProfissional.reset();
             elementos.nomeProfissional.value = dados.nome || "";
-            // A pré-visualização da imagem pode ser adicionada aqui se desejar
             elementos.tituloModalProfissional.textContent = "✏️ Editar Profissional";
             editandoProfissionalId = profissionalId;
             elementos.modalAddProfissional.classList.add('show');
@@ -494,7 +497,6 @@ async function salvarEdicaoProfissional(profissionalId) {
     const updateData = { nome };
 
     try {
-        // Se uma nova foto foi selecionada, faz o upload e adiciona a URL aos dados a atualizar
         if (fotoFile) {
             const storagePath = `fotos-profissionais/${empresaId}/${profissionalId}/foto-perfil.jpg`;
             const storageRef = ref(storage, storagePath);
@@ -530,6 +532,32 @@ function mostrarErro(mensagem) {
         elementos.listaProfissionaisPainel.innerHTML = `<div class="error-message"><h4>❌ Erro</h4><p>${mensagem}</p></div>`;
     }
 }
+
+// --- NOVA FUNÇÃO ACRESCENTADA ---
+/**
+ * Gera e copia o link de convite para a área de transferência.
+ */
+async function gerarLinkDeConvite() {
+    // Reutilizamos a variável global 'empresaId' que já foi carregada na inicialização.
+    if (!empresaId) {
+        alert("Não foi possível identificar sua empresa para gerar o convite.");
+        return;
+    }
+
+    try {
+        // Cria o link de convite completo
+        const inviteLink = `https://pronti-app.vercel.app/convite.html?empresaId=${empresaId}`;
+
+        // Copia o link para a área de transferência do navegador
+        await navigator.clipboard.writeText(inviteLink);
+        alert("Link de convite copiado para a área de transferência!\n\nEnvie para seu funcionário.");
+
+    } catch (error) {
+        console.error('Erro ao gerar o link de convite: ', error);
+        alert("Ocorreu um erro ao gerar o link.");
+    }
+}
+
 
 // Tornar funções globais para uso no HTML (onclick)
 window.abrirPerfilProfissional = abrirPerfilProfissional;
