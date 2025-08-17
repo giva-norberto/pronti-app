@@ -3,9 +3,6 @@
 
 import { auth, provider, db } from './vitrini-firebase.js';
 
-// ======================================================================
-// ALTERAÇÃO: Importa as funções de persistência
-// =====================================================================
 import { 
     onAuthStateChanged, 
     signInWithPopup, 
@@ -20,7 +17,8 @@ import {
 import {
     doc,
     setDoc,
-    getDoc
+    getDoc,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { showAlert } from './vitrini-utils.js';
@@ -30,8 +28,12 @@ import { showAlert } from './vitrini-utils.js';
  * @param {Function} callback - A função a ser executada quando o estado de auth mudar.
  */
 export function setupAuthListener(callback) {
+    if (typeof onAuthStateChanged !== "function") {
+        console.error("Firebase Auth não carregado corretamente.");
+        return;
+    }
     onAuthStateChanged(auth, (user) => {
-        if (callback && typeof callback === 'function') {
+        if (typeof callback === 'function') {
             callback(user);
         }
     });
@@ -92,9 +94,15 @@ export async function fazerLogin() {
                     }
                     if (telefone && telefone.trim()) {
                         telefone = telefone.trim();
-                        break;
+                        // Validação simples de telefone (apenas números, 9 a 15 dígitos)
+                        if (/^\d{9,15}$/.test(telefone.replace(/\D/g, ""))) {
+                            break;
+                        } else {
+                            await showAlert("Telefone inválido", "Digite apenas números. Exemplo: 11999998888");
+                        }
+                    } else {
+                        await showAlert("Telefone obrigatório", "Você precisa informar um telefone para continuar.");
                     }
-                    await showAlert("Telefone obrigatório", "Você precisa informar um telefone para continuar.");
                 }
             } else {
                 telefone = user.phoneNumber || (clienteDocSnap.exists() ? clienteDocSnap.data().telefone : "");
@@ -106,7 +114,7 @@ export async function fazerLogin() {
                 email: user.email,
                 telefone: telefone,
                 google: true,
-                atualizadoEm: new Date()
+                atualizadoEm: serverTimestamp()
             }, { merge: true });
 
             // Opcional: Atualiza também o displayName no auth se desejar
@@ -120,7 +128,7 @@ export async function fazerLogin() {
                 email: user.email,
                 telefone: user.phoneNumber || (clienteDocSnap.exists() ? clienteDocSnap.data().telefone : ""),
                 google: true,
-                atualizadoEm: new Date()
+                atualizadoEm: serverTimestamp()
             }, { merge: true });
         }
 
@@ -165,7 +173,7 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
             email,
             telefone,
             google: false,
-            criadoEm: new Date()
+            criadoEm: serverTimestamp()
         }, { merge: true });
 
         return result.user;
