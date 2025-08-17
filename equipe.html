@@ -59,6 +59,7 @@
                     <small style="color: #7f8c8d; margin-top: 5px; display: block;">
                         Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
                     </small>
+                    <img id="preview-foto-profissional" src="" alt="Pré-visualização da foto" style="display:none; margin-top:8px; max-width:80px; border-radius:6px;">
                 </div>
                 <div class="form-actions">
                     <button type="button" id="btn-cancelar-profissional" class="btn btn-secondary">
@@ -153,6 +154,28 @@
         </div>
     </div>
 
+    <script>
+    // Pré-visualização da foto do profissional (UX aprimorado)
+    document.addEventListener('DOMContentLoaded', function() {
+        const fotoInput = document.getElementById('foto-profissional');
+        const preview = document.getElementById('preview-foto-profissional');
+        if(fotoInput && preview) {
+            fotoInput.addEventListener('change', function() {
+                if(this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                } else {
+                    preview.src = "";
+                    preview.style.display = 'none';
+                }
+            });
+        }
+    });
+    </script>
     <script src="equipe.js"></script>
 </body>
 </html>
