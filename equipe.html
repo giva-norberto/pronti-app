@@ -4,28 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciamento de Equipe</title>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="equipe.css">
-    <!-- ACRESCENTADO: Estilos para a nova seção de convite -->
-    <style>
-        .invite-section {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .invite-section h2 {
-            margin-top: 0;
-            color: #343a40;
-        }
-        .invite-section p {
-            color: #6c757d;
-            max-width: 500px;
-            margin: 10px auto 20px auto;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -36,40 +15,31 @@
         <div class="content">
             <div class="actions">
                 <h2>Minha Equipe</h2>
-                <button id="btn-add-profissional" class="btn btn-success" type="button">
+                <button id="btn-add-profissional" class="btn btn-success">
                     ➕ Adicionar Profissional
                 </button>
-                <button id="btn-cancelar-equipe" class="btn btn-secondary" type="button">
-                    ❌ Voltar
+                <button id="btn-cancelar-equipe" class="btn btn-secondary">
+                    ❌ Cancelar
+                </button>
+                <!-- Botão de convite de funcionário -->
+                <button id="btn-convite" class="btn btn-primary">
+                    📩 Convidar Funcionário
                 </button>
             </div>
-
-            <!-- ====================================================== -->
-            <!--      NOVA SEÇÃO DE CONVITE ACRESCENTADA AQUI         -->
-            <!-- ====================================================== -->
-            <div class="invite-section">
-                <h2>✉️ Convidar por Link</h2>
-                <p>A forma mais fácil de adicionar um membro. Gere um link e envie para o profissional. Ele se cadastra com o Google e é adicionado à sua equipe automaticamente.</p>
-                <button id="btn-gerar-convite" class="btn btn-primary" type="button">
-                    🔗 Gerar Link de Convite
-                </button>
-            </div>
-            <!-- ====================================================== -->
-
             <div id="lista-profissionais-painel" class="equipe-grid">
                 <!-- Profissionais renderizados pelo JS -->
             </div>
         </div>
     </div>
 
-    <!-- Modal Adicionar/Editar Profissional (INTOCÁVEL) -->
-    <div id="modal-add-profissional" class="modal" style="display:none;">
+    <!-- Modal Adicionar/Editar Profissional -->
+    <div id="modal-add-profissional" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="titulo-modal-profissional">➕ Adicionar Novo Profissional</h2>
                 <p>Preencha os dados do membro da equipe</p>
             </div>
-            <form id="form-add-profissional" autocomplete="off">
+            <form id="form-add-profissional">
                 <div class="form-group">
                     <label for="nome-profissional">Nome Completo *</label>
                     <input 
@@ -79,7 +49,6 @@
                         class="form-control" 
                         placeholder="Digite o nome completo do profissional"
                         required
-                        autocomplete="off"
                     >
                 </div>
                 <div class="form-group">
@@ -90,12 +59,10 @@
                         name="foto" 
                         class="form-control"
                         accept="image/*"
-                        aria-describedby="foto-ajuda"
                     >
-                    <small id="foto-ajuda" style="color: #7f8c8d; margin-top: 5px; display: block;">
+                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
                         Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
                     </small>
-                    <img id="preview-foto-profissional" src="" alt="Pré-visualização da foto" style="display:none; margin-top:8px; max-width:80px; border-radius:6px;">
                 </div>
                 <div class="form-actions">
                     <button type="button" id="btn-cancelar-profissional" class="btn btn-secondary">
@@ -109,28 +76,29 @@
         </div>
     </div>
 
-    <!-- Modal Perfil do Profissional (INTOCÁVEL) -->
-    <div id="modal-perfil-profissional" class="modal" style="display:none;">
+    <!-- Modal Perfil do Profissional (com abas) -->
+    <div id="modal-perfil-profissional" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
                 <p>Configure os serviços e horários de atendimento</p>
             </div>
-            <div class="tabs" role="tablist">
-                <button id="tab-servicos" class="tab-btn active" type="button" role="tab" aria-selected="true">Serviços</button>
-                <button id="tab-horarios" class="tab-btn" type="button" role="tab" aria-selected="false">Horários & Intervalos</button>
-                <button id="tab-agenda-especial" class="tab-btn" type="button" role="tab" aria-selected="false">Agenda Especial</button>
+            <div class="tabs">
+                <button id="tab-servicos" class="tab-btn active">Serviços</button>
+                <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
+                <button id="tab-agenda-especial" class="tab-btn">Agenda Especial</button>
             </div>
-            <div id="tab-content-servicos" class="tab-content active" role="tabpanel">
+            <div id="tab-content-servicos" class="tab-content active">
                 <h3>🛠️ Serviços Disponíveis</h3>
                 <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
                 <div id="servicos-lista" class="servicos-grid">
                     <!-- Serviços serão carregados aqui -->
                 </div>
             </div>
-            <div id="tab-content-horarios" class="tab-content" role="tabpanel" style="display:none;">
+            <div id="tab-content-horarios" class="tab-content">
                 <h3>🕐 Horários de Atendimento</h3>
                 <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos de trabalho para cada dia da semana:</p>
+                <!-- Campo de intervalo de atendimento incluído -->
                 <div class="form-group">
                     <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
                     <input 
@@ -149,7 +117,7 @@
                     <!-- Horários serão carregados aqui -->
                 </div>
             </div>
-            <div id="tab-content-agenda-especial" class="tab-content" role="tabpanel" style="display:none;">
+            <div id="tab-content-agenda-especial" class="tab-content">
                 <h3>📅 Agenda Especial</h3>
                 <p style="color: #7f8c8d; margin-bottom: 10px;">
                     Libere a agenda do profissional em um mês ou intervalo específico.
@@ -189,35 +157,6 @@
         </div>
     </div>
 
-    <script>
-    // Pré-visualização da foto do profissional (INTOCÁVEL)
-    document.addEventListener('DOMContentLoaded', function() {
-        const fotoInput = document.getElementById('foto-profissional');
-        const preview = document.getElementById('preview-foto-profissional');
-        if(fotoInput && preview) {
-            fotoInput.addEventListener('change', function() {
-                if(this.files && this.files[0]) {
-                    if(this.files[0].size > 5 * 1024 * 1024) { // 5MB
-                        alert('A foto excede o tamanho máximo de 5MB.');
-                        this.value = "";
-                        preview.src = "";
-                        preview.style.display = 'none';
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
-                    };
-                    reader.readAsDataURL(this.files[0]);
-                } else {
-                    preview.src = "";
-                    preview.style.display = 'none';
-                }
-            });
-        }
-    });
-    </script>
-    <script type="module" src="equipe.js"></script>
+    <script src="equipe.js"></script>
 </body>
 </html>
