@@ -14,7 +14,6 @@
     <!-- Estilos -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
 </head>
 <body>
     <!-- O menu lateral padronizado será carregado aqui -->
@@ -22,22 +21,20 @@
 
     <!-- Conteúdo Principal da Página -->
     <main class="main-content">
-        
         <div class="page-header">
             <h1>Minha Agenda</h1>
-            <a href="novo-agendamento.html" class="btn btn-primary">
+            <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
                 <i class="fa-solid fa-plus"></i>
                 Novo Agendamento
             </a>
         </div>
 
-        <!-- REVISÃO: Adicionadas labels para acessibilidade e clareza -->
-        <div class="filtros-agenda">
+        <div class="filtros-agenda" id="filtros-agenda">
             <div class="filtro-item">
                 <label for="data-agenda">Data</label>
                 <input type="date" id="data-agenda" class="filtro-input">
             </div>
-            <div class="filtro-item">
+            <div class="filtro-item" id="filtro-profissional-item">
                 <label for="filtro-profissional">Profissional</label>
                 <select id="filtro-profissional" class="filtro-select"></select>
             </div>
@@ -62,6 +59,7 @@
 
     <!-- SCRIPTS -->
     <script>
+    // Carregamento dinâmico do menu lateral
     document.addEventListener("DOMContentLoaded", function() {
       const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
       if (sidebarPlaceholder) {
@@ -85,5 +83,22 @@
     
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="agenda.js" type="module"></script>
+    <script>
+    // Adaptar exibição do filtro de profissional e botão de novo agendamento conforme perfil
+    // O script agenda.js já faz o controle do filtro de profissional via JS
+    // Aqui, só escondemos o botão "Novo Agendamento" para funcionário, se necessário.
+    // Exemplo de ajuste adicional (opcional, se for regra de negócio):
+    /*
+    document.addEventListener("DOMContentLoaded", function() {
+        // Supondo que o perfil do usuário já está disponível em window.perfilUsuario
+        if (window.perfilUsuario === "funcionario") {
+            const filtroProfissionalItem = document.getElementById('filtro-profissional-item');
+            if (filtroProfissionalItem) filtroProfissionalItem.style.display = "none";
+            const btnNovoAgendamento = document.getElementById('btn-novo-agendamento');
+            if (btnNovoAgendamento) btnNovoAgendamento.style.display = "none";
+        }
+    });
+    */
+    </script>
 </body>
 </html>
