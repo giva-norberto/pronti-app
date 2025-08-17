@@ -283,6 +283,7 @@ function renderizarHorarios(horariosDataCompleta = {}) {
 }
 
 function setupRemoverIntervalo() {
+    if(!elementos.horariosLista) return;
     elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
         btn.onclick = function () {
             const container = this.closest('.horario-intervalos');
@@ -312,7 +313,9 @@ function coletarHorarios() {
         
         horarios[dia] = { ativo: estaAtivo, blocos: blocos.length > 0 ? blocos : [{ inicio: '09:00', fim: '18:00' }] };
     });
-    horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
+    if(elementos.inputIntervalo) {
+        horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
+    }
     return horarios;
 }
 
