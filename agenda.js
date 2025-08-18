@@ -1,6 +1,9 @@
 /**
  * agenda.js - Mostra agendamentos do dia ao abrir, agenda da semana só ao clicar no botão
- * Pronti - Simples, sem duplicidade, respeita horários dos profissionais
+ * Não mostra agendamentos cancelados em hoje/futuro, só no histórico (datas passadas)
+ * Datas da semana sempre corretas (segunda a domingo)
+ * Interface limpa, sem duplicidade
+ * Pronti
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -209,6 +212,8 @@ async function carregarAgendamentosDia() {
   }
 
   const hojeISO = inputSemana.value; // yyyy-mm-dd
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
   try {
     const ref = collection(db, "empresarios", empresaId, "agendamentos");
     const constraints = [where("data", "==", hojeISO)];
@@ -216,14 +221,28 @@ async function carregarAgendamentosDia() {
     const q = query(ref, ...constraints, orderBy("horario"));
     const snapshot = await getDocs(q);
 
-    if (snapshot.empty) {
+    const ags = [];
+    snapshot.forEach(doc => {
+      const ag = doc.data();
+      // Não mostra cancelados se a data for hoje ou futura
+      if (
+        (ag.status === "cancelado" || ag.status === "cancelado_pelo_gestor")
+      ) {
+        // Data do agendamento
+        const [ano, mes, dia] = ag.data.split("-");
+        const dataAg = new Date(`${ano}-${mes}-${dia}T00:00:00`);
+        if (dataAg >= hoje) return;
+      }
+      ags.push(ag);
+    });
+
+    if (ags.length === 0) {
       listaAgendamentosDiv.innerHTML = `<p>Nenhum agendamento encontrado para hoje.</p>`;
       return;
     }
 
     listaAgendamentosDiv.innerHTML = '';
-    snapshot.forEach(doc => {
-      const ag = doc.data();
+    ags.forEach(ag => {
       let statusLabel = "<span class='status-label status-ativo'>Ativo</span>";
       if (ag.status === "cancelado_pelo_gestor" || ag.status === "cancelado") statusLabel = "<span class='status-label status-cancelado'>Cancelado</span>";
       else if (ag.status === "nao_compareceu") statusLabel = "<span class='status-label status-falta'>Falta</span>";
@@ -271,6 +290,9 @@ async function carregarAgendamentosSemana() {
   }
 
   const { inicioISO, fimISO } = getWeekRange(inputSemana.value);
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+
   try {
     const ref = collection(db, "empresarios", empresaId, "agendamentos");
     const constraints = [
@@ -281,14 +303,27 @@ async function carregarAgendamentosSemana() {
     const q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
     const snapshot = await getDocs(q);
 
-    if (snapshot.empty) {
+    const ags = [];
+    snapshot.forEach(doc => {
+      const ag = doc.data();
+      // Não mostra cancelados se a data for hoje ou futura
+      if (
+        (ag.status === "cancelado" || ag.status === "cancelado_pelo_gestor")
+      ) {
+        const [ano, mes, dia] = ag.data.split("-");
+        const dataAg = new Date(`${ano}-${mes}-${dia}T00:00:00`);
+        if (dataAg >= hoje) return;
+      }
+      ags.push(ag);
+    });
+
+    if (ags.length === 0) {
       listaAgendamentosDiv.innerHTML = `<p>Nenhum agendamento encontrado para esta semana.</p>`;
       return;
     }
 
     listaAgendamentosDiv.innerHTML = '';
-    snapshot.forEach(doc => {
-      const ag = doc.data();
+    ags.forEach(ag => {
       let statusLabel = "<span class='status-label status-ativo'>Ativo</span>";
       if (ag.status === "cancelado_pelo_gestor" || ag.status === "cancelado") statusLabel = "<span class='status-label status-cancelado'>Cancelado</span>";
       else if (ag.status === "nao_compareceu") statusLabel = "<span class='status-label status-falta'>Falta</span>";
@@ -332,12 +367,76 @@ function preencherCamposMesAtual() {
   if (dataFinalEl) dataFinalEl.value = ultimoDia.toISOString().split('T')[0];
 }
 async function carregarAgendamentosHistorico() {
-  // ... sua lógica para o histórico, igual ao padrão anterior
+  if (!listaAgendamentosDiv) return;
+  listaAgendamentosDiv.innerHTML = `<p>A carregar histórico...</p>`;
+
+  let profissionalId = "todos";
+  if (perfilUsuario === "dono") {
+    profissionalId = filtroProfissionalEl ? filtroProfissionalEl.value : 'todos';
+  } else {
+    profissionalId = meuUid;
+  }
+
+  const dataIni = dataInicialEl ? dataInicialEl.value : "";
+  const dataFim = dataFinalEl ? dataFinalEl.value : "";
+  if (!dataIni || !dataFim) {
+    listaAgendamentosDiv.innerHTML = `<p>Selecione o período do histórico.</p>`;
+    return;
+  }
+  try {
+    const ref = collection(db, "empresarios", empresaId, "agendamentos");
+    const constraints = [
+      where("data", ">=", dataIni),
+      where("data", "<=", dataFim)
+    ];
+    if (profissionalId !== 'todos') constraints.push(where("profissionalId", "==", profissionalId));
+    const q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      listaAgendamentosDiv.innerHTML = `<p>Nenhum agendamento encontrado no histórico.</p>`;
+      return;
+    }
+
+    listaAgendamentosDiv.innerHTML = '';
+    snapshot.forEach(doc => {
+      const ag = doc.data();
+      let statusLabel = "<span class='status-label status-ativo'>Ativo</span>";
+      if (ag.status === "cancelado_pelo_gestor" || ag.status === "cancelado") statusLabel = "<span class='status-label status-cancelado'>Cancelado</span>";
+      else if (ag.status === "nao_compareceu") statusLabel = "<span class='status-label status-falta'>Falta</span>";
+      else if (ag.status === "realizado") statusLabel = "<span class='status-label status-realizado'>Realizado</span>";
+      let dataFormatada = ag.data;
+      if (ag.data && ag.data.length === 10) {
+        const [ano, mes, dia] = ag.data.split("-");
+        dataFormatada = `${dia}/${mes}/${ano}`;
+      }
+      const cardElement = document.createElement('div');
+      cardElement.className = 'card card--agenda';
+      cardElement.innerHTML = `
+        <div class="card-title">${ag.servicoNome || 'Serviço não informado'}</div>
+        <div class="card-info">
+          <p><i class="fa-solid fa-user"></i> <strong>Cliente:</strong> ${ag.clienteNome || "Não informado"}</p>
+          <p><i class="fa-solid fa-user-tie"></i> <strong>Profissional:</strong> ${ag.profissionalNome || "Não informado"}</p>
+          <p>
+            <i class="fa-solid fa-calendar-day"></i>
+            <span class="card-agenda-dia">${dataFormatada}</span>
+            <i class="fa-solid fa-clock"></i>
+            <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
+          </p>
+          <p><i class="fa-solid fa-info-circle"></i> <strong>Status:</strong> ${statusLabel}</p>
+        </div>
+      `;
+      listaAgendamentosDiv.appendChild(cardElement);
+    });
+  } catch (error) {
+    exibirMensagemDeErro("Ocorreu um erro ao carregar o histórico.");
+    console.error(error);
+  }
 }
 
 // ----------- AÇÕES (CANCELAR, NÃO COMPARECEU) -----------
 function configurarListenersDeAcao() {
-  // ... igual ao padrão anterior
+  // Implemente igual ao padrão anterior caso queira permitir ações nos cards
 }
 
 // ----------- ERRO -----------
