@@ -1,12 +1,12 @@
 /**
  * agenda.js - Revisado (Pronti)
- * - A tela principal sempre mostra o campo de data (filtro) com a data atual por padrão.
- * - O usuário pode alterar a data para qualquer dia futuro.
- * - O filtro funciona independente de disponibilidade.
- * - O modo histórico continua funcionando normalmente.
- * - Filtros de profissional só para dono.
- * - Mensagens de erro amigáveis.
- * - Compatível com Firebase Modular v10+.
+ * - Exibe agenda da semana (exibe data e hora em cada card)
+ * - Botões de modo alinhados e visuais conforme padrão Pronti
+ * - Campo de semana sempre mostra segunda desta semana por padrão
+ * - Histórico funciona normalmente
+ * - Filtros de profissional só para dono
+ * - Mensagens de erro amigáveis
+ * - Compatível com Firebase Modular v10+
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -21,26 +21,31 @@ const auth = getAuth(app);
 
 // DOM
 const listaAgendamentosDiv = document.getElementById("lista-agendamentos");
-const inputDataEl = document.getElementById("data-agenda");
 const filtroProfissionalEl = document.getElementById("filtro-profissional");
 const modal = document.getElementById("modal-confirmacao");
 const modalMensagem = document.getElementById("modal-mensagem");
 const btnModalConfirmar = document.getElementById("btn-modal-confirmar");
 const btnModalCancelar = document.getElementById("btn-modal-cancelar");
 
-const btnAgendaFutura = document.getElementById("btn-agenda-futura");
+const btnAgendaSemana = document.getElementById("btn-agenda-semana");
 const btnHistorico = document.getElementById("btn-historico");
 const filtrosHistoricoDiv = document.getElementById("filtros-historico");
 const dataInicialEl = document.getElementById("data-inicial");
 const dataFinalEl = document.getElementById("data-final");
 const btnAplicarHistorico = document.getElementById("btn-aplicar-historico");
 const btnMesAtual = document.getElementById("btn-mes-atual");
-const filtroDataFuturaDiv = document.getElementById("filtro-data-futura"); // <div> que envolve o input de data
+const filtroSemanaDiv = document.getElementById("filtro-semana");
+const inputSemana = document.getElementById("data-semana");
+const semanaInicioEl = document.getElementById("semana-inicio");
+const semanaFimEl = document.getElementById("semana-fim");
+const btnSemanaAnterior = document.getElementById('btn-semana-anterior');
+const btnSemanaAtual = document.getElementById('btn-semana-atual');
+const btnSemanaProxima = document.getElementById('btn-semana-proxima');
 
 let empresaId = null;
 let perfilUsuario = "dono";
 let meuUid = null;
-let modoAgenda = "futura"; // "futura" ou "historico"
+let modoAgenda = "semana"; // "semana" ou "historico"
 
 // Utilitários
 function mostrarToast(texto, cor = '#38bdf8') {
@@ -135,33 +140,53 @@ async function inicializarPaginaAgenda() {
     if (filtroProfItem) filtroProfItem.style.display = "none";
   }
 
-  // Sempre mostra o campo de data (filtro) com a data atual
-  if (inputDataEl) inputDataEl.value = new Date().toISOString().split("T")[0];
-  if (filtroDataFuturaDiv) filtroDataFuturaDiv.style.display = "";
+  // Sempre mostra o campo de semana (segunda da semana atual por padrão)
+  if (inputSemana && !inputSemana.value) {
+    const hoje = new Date();
+    const day = hoje.getDay() || 7;
+    hoje.setDate(hoje.getDate() - day + 1);
+    inputSemana.value = hoje.toISOString().split('T')[0];
+  }
+  atualizarLegendaSemana();
 
-  ativarModoAgenda("futura");
+  ativarModoAgenda("semana");
 
   // Listeners padrão
-  if (btnAgendaFutura) btnAgendaFutura.addEventListener("click", () => ativarModoAgenda("futura"));
+  if (btnAgendaSemana) btnAgendaSemana.addEventListener("click", () => ativarModoAgenda("semana"));
   if (btnHistorico) btnHistorico.addEventListener("click", () => ativarModoAgenda("historico"));
   if (filtroProfissionalEl) filtroProfissionalEl.addEventListener("change", carregarAgendamentos);
-  if (inputDataEl) inputDataEl.addEventListener("change", carregarAgendamentos);
+  if (inputSemana) inputSemana.addEventListener("change", () => {
+    atualizarLegendaSemana();
+    carregarAgendamentos();
+  });
   if (btnAplicarHistorico) btnAplicarHistorico.addEventListener("click", carregarAgendamentos);
   if (btnMesAtual) btnMesAtual.addEventListener("click", () => {
     preencherCamposMesAtual();
     carregarAgendamentos();
   });
 
+  // Navegação semana
+  if (btnSemanaAnterior) btnSemanaAnterior.addEventListener("click", () => mudarSemana(-1));
+  if (btnSemanaProxima) btnSemanaProxima.addEventListener("click", () => mudarSemana(1));
+  if (btnSemanaAtual) btnSemanaAtual.addEventListener("click", () => {
+    const hoje = new Date();
+    const day = hoje.getDay() || 7;
+    hoje.setDate(hoje.getDate() - day + 1);
+    inputSemana.value = hoje.toISOString().split('T')[0];
+    atualizarLegendaSemana();
+    carregarAgendamentos();
+  });
+
   configurarListenersDeAcao();
 }
 
-// ----------- MODO AGENDA (FUTURA/HISTÓRICO) -----------
+// ----------- MODO AGENDA (SEMANA/HISTÓRICO) -----------
 function ativarModoAgenda(modo) {
   modoAgenda = modo;
-  if (btnAgendaFutura) btnAgendaFutura.classList.toggle("active", modo === "futura");
+  if (btnAgendaSemana) btnAgendaSemana.classList.toggle("active", modo === "semana");
   if (btnHistorico) btnHistorico.classList.toggle("active", modo === "historico");
   if (filtrosHistoricoDiv) filtrosHistoricoDiv.style.display = (modo === "historico") ? "" : "none";
-  if (filtroDataFuturaDiv) filtroDataFuturaDiv.style.display = (modo === "futura") ? "" : "none";
+  if (filtroSemanaDiv) filtroSemanaDiv.style.display = (modo === "semana") ? "" : "none";
   carregarAgendamentos();
   if (modo === "historico") preencherCamposMesAtual();
 }
@@ -181,6 +206,36 @@ async function popularFiltroProfissionais() {
   }
 }
 
+// ----------- AGENDA DA SEMANA -----------
+function getWeekRange(dateStr) {
+  const date = new Date(dateStr);
+  const day = date.getDay() || 7;
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - day + 1);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
+  return { monday, sunday, inicio: fmt(monday), fim: fmt(sunday), inicioISO: monday.toISOString().split('T')[0], fimISO: sunday.toISOString().split('T')[0] };
+}
+function atualizarLegendaSemana() {
+  if (inputSemana && inputSemana.value) {
+    const { inicio, fim } = getWeekRange(inputSemana.value);
+    if (semanaInicioEl) semanaInicioEl.textContent = inicio;
+    if (semanaFimEl) semanaFimEl.textContent = fim;
+  } else {
+    if (semanaInicioEl) semanaInicioEl.textContent = '';
+    if (semanaFimEl) semanaFimEl.textContent = '';
+  }
+}
+function mudarSemana(delta) {
+  if (!inputSemana.value) return;
+  const dataAtual = new Date(inputSemana.value);
+  dataAtual.setDate(dataAtual.getDate() + (delta * 7));
+  inputSemana.value = dataAtual.toISOString().split('T')[0];
+  atualizarLegendaSemana();
+  carregarAgendamentos();
+}
+
 // ----------- AGENDAMENTOS -----------
 async function carregarAgendamentos() {
   if (!listaAgendamentosDiv) return;
@@ -198,12 +253,12 @@ async function carregarAgendamentos() {
     let q, snapshot;
     const constraints = [];
 
-    if (modoAgenda === "futura") {
-      // Agenda Futura: sempre pega a data do campo de filtro (default: hoje)
-      const dataRef = inputDataEl ? inputDataEl.value : new Date().toISOString().split("T")[0];
-      constraints.push(where("data", "==", dataRef));
+    if (modoAgenda === "semana") {
+      // Agenda da Semana: pega todos os agendamentos de segunda a domingo
+      const { inicioISO, fimISO } = getWeekRange(inputSemana.value);
+      constraints.push(where("data", ">=", inicioISO), where("data", "<=", fimISO));
       if (profissionalId !== 'todos') constraints.push(where("profissionalId", "==", profissionalId));
-      q = query(ref, ...constraints, orderBy("horario"));
+      q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
     } else {
       // Histórico: entre data inicial/final, todos status
       const dataIni = dataInicialEl ? dataInicialEl.value : "";
@@ -237,21 +292,33 @@ async function carregarAgendamentos() {
       else if (ag.status === "nao_compareceu") statusLabel = "<span class='status-label status-falta'>Falta</span>";
       else if (ag.status === "realizado") statusLabel = "<span class='status-label status-realizado'>Realizado</span>";
 
+      // Data formatada DD/MM/AAAA
+      let dataFormatada = ag.data;
+      if (ag.data && ag.data.length === 10) {
+        const [ano, mes, dia] = ag.data.split("-");
+        dataFormatada = `${dia}/${mes}/${ano}`;
+      }
+
       cardElement.innerHTML = `
         <div class="card-title">${ag.servicoNome || 'Serviço não informado'}</div>
         <div class="card-info">
           <p><i class="fa-solid fa-user"></i> <strong>Cliente:</strong> ${ag.clienteNome || "Não informado"}</p>
           <p><i class="fa-solid fa-user-tie"></i> <strong>Profissional:</strong> ${ag.profissionalNome || "Não informado"}</p>
-          <p><i class="fa-solid fa-clock"></i> <strong>Hora:</strong> ${ag.horario || "Não informada"}</p>
+          <p>
+            <i class="fa-solid fa-calendar-day"></i>
+            <span class="card-agenda-dia">${dataFormatada}</span>
+            <i class="fa-solid fa-clock"></i>
+            <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
+          </p>
           <p><i class="fa-solid fa-info-circle"></i> <strong>Status:</strong> ${statusLabel}</p>
         </div>
         ${
-          (perfilUsuario === "dono" || (ag.profissionalId === meuUid)) && ag.status === "ativo" && modoAgenda === "futura"
+          (perfilUsuario === "dono" || (ag.profissionalId === meuUid)) && ag.status === "ativo" && modoAgenda === "semana"
             ? `<div class="card-actions">
-                <button class="btn btn-outline btn-nao-compareceu" data-id="${ag.id}">
-                  <i class="fa-solid fa-user-clock"></i> Não Compareceu
+                <button class="btn btn-nao-compareceu" data-id="${ag.id}">
+                  <i class="fa-solid fa-user-xmark"></i> Não Compareceu
                 </button>
-                <button class="btn btn-outline btn-cancelar" data-id="${ag.id}">
+                <button class="btn btn-cancelar" data-id="${ag.id}">
                   <i class="fa-solid fa-ban"></i> Cancelar
                 </button>
               </div>`
