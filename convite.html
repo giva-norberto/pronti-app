@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convite de Equipe - Pronti</title>
     <style>
-        /* Estilos para um visual limpo e focado */
+        /* Seus estilos originais foram mantidos, sem alterações */
         :root {
             --cor-fundo: #f3f4f6;
             --cor-branco: #fff;
@@ -33,7 +33,7 @@
             margin: 15px;
         }
         .invite-container h1 {
-            font-size: 1.8em; /* Ajuste para melhor visualização em mobile */
+            font-size: 1.8em;
             color: var(--cor-primaria);
             margin-bottom: 10px;
         }
@@ -74,14 +74,14 @@
         #status-message {
             margin-top: 20px;
             font-weight: 500;
-            min-height: 20px; /* Evita que o layout pule */
+            min-height: 20px;
         }
         .success-message { color: #28a745; }
         .error-message { color: #dc3545; }
     </style>
 </head>
 <body>
-    <div class="invite-container">
+    <div id="invite-box" class="invite-container">
         <h1>Convite para a Equipe</h1>
         <p>Você foi convidado para se juntar a uma equipe no Pronti. Para aceitar, entre com a sua conta do Google.</p>
         <button id="btn-aceitar-convite" class="btn-google">
@@ -92,70 +92,66 @@
     </div>
 
     <script type="module">
-        // 1. IMPORTS DO FIREBASE
+        // MODIFICADO: Importações simplificadas para o plano 100% frontend
         import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-        // A importação do 'auth' virá do seu arquivo de configuração central
-        import { auth } from './vitrini-firebase.js'; // Verifique se o caminho para seu arquivo de config está correto
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        // ATENÇÃO: Verifique se o caminho para sua configuração do Firebase está correto
+        import { auth, db } from './firebase-config.js'; 
 
-        // 2. INICIALIZAÇÃO E SELEÇÃO DE ELEMENTOS
-        const functions = getFunctions(auth.app, 'southamerica-east1'); // IMPORTANTE: Verifique se 'southamerica-east1' é a sua região
         const btnAceitar = document.getElementById('btn-aceitar-convite');
         const statusMessage = document.getElementById('status-message');
-
-        // Função para mostrar mensagens de status
-        const setStatus = (message, type = 'info') => {
-            statusMessage.textContent = message;
-            statusMessage.className = ''; // Limpa classes anteriores
-            if (type === 'error') {
-                statusMessage.classList.add('error-message');
-            } else if (type === 'success') {
-                statusMessage.classList.add('success-message');
-            }
-        };
+        const inviteBox = document.getElementById('invite-box');
 
         btnAceitar.addEventListener('click', async () => {
             btnAceitar.disabled = true;
-            setStatus("Aguarde, processando seu login...");
+            statusMessage.textContent = "Aguarde, abrindo o login do Google...";
 
-            // 3. PEGA O TOKEN DO LINK (URL)
+            // MODIFICADO: Lógica agora usa 'empresaId' em vez de 'token'
             const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
+            const empresaId = urlParams.get('empresaId');
 
-            if (!token) {
-                setStatus("Link de convite inválido ou ausente.", 'error');
+            if (!empresaId) {
+                statusMessage.textContent = "❌ Erro: Link de convite inválido. O ID da empresa não foi encontrado.";
+                statusMessage.className = 'error-message';
                 btnAceitar.disabled = false;
                 return;
             }
 
-            // 4. FAZ O LOGIN COM O GOOGLE
             const provider = new GoogleAuthProvider();
             try {
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
 
-                setStatus("Login realizado. Finalizando seu cadastro na equipe...");
+                statusMessage.textContent = "Autenticação concluída. Criando seu perfil pendente...";
 
-                // 5. CHAMA A CLOUD FUNCTION SEGURA NO BACKEND
-                const aceitarConvite = httpsCallable(functions, 'aceitarConvite');
-                const response = await aceitarConvite({ token: token });
+                // MODIFICADO: O próprio script agora cria o perfil pendente no Firestore
+                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+                
+                await setDoc(profissionalRef, {
+                    nome: user.displayName,
+                    email: user.email,
+                    fotoUrl: user.photoURL,
+                    uid: user.uid,
+                    status: 'pendente', // Status chave da sua ideia!
+                    criadoEm: serverTimestamp()
+                }, { merge: true });
 
-                if (response.data.success) {
-                    setStatus("Bem-vindo(a)! Redirecionando para seu perfil...", 'success');
-                    
-                    // 6. REDIRECIONA PARA A PÁGINA DE PERFIL APÓS SUCESSO
-                    window.location.href = './perfil.html'; // Verifique se o nome da sua página de perfil está correto
-                } else {
-                    throw new Error(response.data.error || "Não foi possível validar seu convite.");
-                }
+                // MODIFICADO: E também cria o mapa do usuário
+                const mapaUsuarioRef = doc(db, "mapaUsuarios", user.uid);
+                await setDoc(mapaUsuarioRef, { empresaId: empresaId });
+
+                // MODIFICADO: Mensagem final de sucesso
+                inviteBox.innerHTML = `
+                    <h1>⏳ Quase lá!</h1>
+                    <p style="color: #28a745; font-weight: bold;">Seu cadastro foi enviado para aprovação!</p>
+                    <p>O gestor da equipe foi notificado e precisa ativar sua conta para que você possa acessar o sistema.</p>
+                    <p>Você já pode fechar esta página.</p>
+                `;
 
             } catch (error) {
                 console.error("Erro ao aceitar convite:", error);
-                if (error.code === 'auth/popup-closed-by-user') {
-                    setStatus("Você fechou a janela de login. Tente novamente.", 'info');
-                } else {
-                    setStatus(error.message, 'error');
-                }
+                statusMessage.textContent = "❌ Ocorreu um erro. Tente novamente.";
+                statusMessage.className = 'error-message';
                 btnAceitar.disabled = false;
             }
         });
