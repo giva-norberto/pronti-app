@@ -537,3 +537,115 @@ textarea.form-input:focus {
         align-self: center;
     }
 }
+/* ... (mantém o restante do seu CSS acima) */
+
+/* ==================================================
+   FILTROS AGENDA - ALINHAMENTO E PROPORÇÃO
+   ================================================== */
+.filtros-agenda {
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+#filtro-profissional-item {
+    min-width: 190px;
+}
+
+#filtro-data-futura {
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+    max-width: 210px;
+    margin-bottom: 0;
+}
+
+#filtro-data-futura label {
+    font-size: 0.98rem;
+    font-weight: 500;
+    color: var(--cor-texto-claro);
+    margin-bottom: 4px;
+}
+
+#data-agenda {
+    min-width: 130px;
+    max-width: 200px;
+    font-size: 1rem;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+#data-agenda:focus {
+    border-color: var(--cor-primaria);
+    outline: none;
+}
+
+.btn,
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 9px;
+    border: 2px solid transparent;
+    font-size: 1.03rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.19s;
+    outline: none;
+}
+
+.btn-outline {
+    background: #fff;
+    color: var(--cor-primaria);
+    border: 2px solid var(--cor-primaria);
+}
+.btn-outline.active,
+.btn-outline:active,
+.btn-outline:focus {
+    background: linear-gradient(90deg, var(--cor-secundaria) 60%, var(--cor-primaria) 100%);
+    color: #fff;
+    border-color: var(--cor-primaria);
+    box-shadow: 0 2px 12px 0 rgba(79,172,254,0.13);
+}
+
+.btn-primary {
+    background: var(--cor-primaria);
+    color: #fff;
+    border: none;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+    background: #2795e6;
+    color: #fff;
+}
+
+/* Filtros históricos (alinhar com agenda) */
+#filtros-historico .filtro-item {
+    min-width: 145px;
+    margin-right: 10px;
+}
+#filtros-historico .btn {
+    margin-bottom: 0;
+}
+
+/* ==================================================
+   RESPONSIVIDADE DOS FILTROS
+   ================================================== */
+@media (max-width: 900px) {
+    .filtros-agenda {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    #filtro-data-futura {
+        min-width: unset;
+        max-width: unset;
+    }
+}
