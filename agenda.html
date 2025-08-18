@@ -25,40 +25,48 @@
             </a>
         </div>
 
-        <!-- Filtros principais -->
+        <!-- Filtros principais REVISADOS -->
         <div class="filtros-agenda" id="filtros-agenda">
-            <!-- Área esquerda: Modo e Profissional -->
-            <div style="display:flex;gap:10px;align-items:flex-end;flex:1;">
+            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap: wrap;">
+                
+                <!-- Botões de Modo -->
                 <button id="btn-agenda-semana" class="btn btn-outline active">
                     <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
                 </button>
                 <button id="btn-historico" class="btn btn-outline">
                     <i class="fa-solid fa-clock-rotate-left"></i> Histórico
                 </button>
+
+                <!-- Filtros da Semana (agora junto aos botões ) -->
+                <div id="filtros-semana-container" style="display:flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="filtro-item">
+                        <label for="data-semana">Data</label>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <input type="date" id="data-semana" class="filtro-input">
+                            <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtro de Profissional -->
                 <div class="filtro-item" id="filtro-profissional-item">
                     <label for="filtro-profissional">Profissional</label>
                     <select id="filtro-profissional" class="filtro-select"></select>
                 </div>
             </div>
-            <!-- Área direita: Semana (+ seta próxima) -->
-            <div style="display:flex;flex-direction:column;align-items:flex-end;min-width:210px;">
-                <div class="filtro-item" id="filtro-semana" style="align-items:flex-end;">
-                    <label for="data-semana">Semana</label>
-                    <div style="display:flex;align-items:center;gap:5px;">
-                        <input type="date" id="data-semana" class="filtro-input">
-                        <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                    <small id="legenda-semana" style="margin-top:2px;font-size:0.95em;">
-                        Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
-                    </small>
-                </div>
-            </div>
         </div>
 
-        <!-- Filtros de data para histórico -->
-        <div id="filtros-historico" style="display:none; margin: 16px 0;">
+        <!-- Legenda da semana -->
+        <div id="legenda-container" style="margin: 8px 0; font-size: 0.9em; color: #555;">
+             <small id="legenda-semana">
+                Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
+            </small>
+        </div>
+
+        <!-- Filtros de data para histórico (continua escondido por padrão) -->
+        <div id="filtros-historico" style="display:none; margin: 16px 0; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
             <div class="filtro-item">
                 <label for="data-inicial">De:</label>
                 <input type="date" id="data-inicial" class="filtro-input">
@@ -77,27 +85,6 @@
         
         <!-- Lista de agendamentos -->
         <div id="lista-agendamentos" class="dashboard-cards">
-            <!-- Exemplo de card de agendamento da semana -->
-            <!--
-            <div class="card card--agenda">
-                <div class="card-title">Escova</div>
-                <div class="card-info">
-                    <p><b>Cliente:</b> GIVANILDO SILVA</p>
-                    <p><b>Profissional:</b> GIVANILDO SILVA</p>
-                    <p>
-                        <i class="fa-solid fa-calendar-day"></i>
-                        <span class="card-agenda-dia">18/08/2025</span>
-                        <i class="fa-solid fa-clock"></i>
-                        <span class="card-agenda-hora">10:45</span>
-                    </p>
-                    <p><b>Status:</b> <span class="status-label status-ativo">Ativo</span></p>
-                </div>
-                <div class="card-actions">
-                    <button class="btn btn-nao-compareceu"><i class="fa-solid fa-user-xmark"></i> Não Compareceu</button>
-                    <button class="btn btn-cancelar"><i class="fa-solid fa-ban"></i> Cancelar</button>
-                </div>
-            </div>
-            -->
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
     </main>
@@ -114,81 +101,308 @@
         </div>
     </div>
 
-    <!-- Carregamento dinâmico do menu lateral e lógica da semana -->
-    <script>
-    // Função para calcular a semana (segunda a domingo) a partir de uma data
-    function getWeekRange(dateStr) {
-        const date = new Date(dateStr);
-        const day = date.getDay() || 7; // 1 (segunda) - 7 (domingo)
-        const monday = new Date(date);
-        monday.setDate(date.getDate() - day + 1);
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        const fmt = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
-        return { monday, sunday, inicio: fmt(monday), fim: fmt(sunday) };
-    }
-
-    document.addEventListener("DOMContentLoaded", function() {
-      // Carregamento do menu lateral
-      const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-      if (sidebarPlaceholder) {
-        fetch('menu-lateral.html')
-          .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-          .then(html => {
-            sidebarPlaceholder.innerHTML = html;
-            const activeLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
-            if (activeLink) {
-                document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-                activeLink.classList.add('active');
-            }
-          })
-          .catch(error => {
-            console.error('Erro ao carregar o menu lateral:', error);
-            sidebarPlaceholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar menu.</p>';
-          });
-      }
-
-      // Atualiza legenda didática da semana (mostrando agendamentos de ... a ...)
-      const inputSemana = document.getElementById('data-semana');
-      const semanaInicioEl = document.getElementById('semana-inicio');
-      const semanaFimEl = document.getElementById('semana-fim');
-      function atualizarLegendaSemana() {
-          if (inputSemana && inputSemana.value) {
-              const { inicio, fim } = getWeekRange(inputSemana.value);
-              semanaInicioEl.textContent = inicio;
-              semanaFimEl.textContent = fim;
-          } else {
-              semanaInicioEl.textContent = '';
-              semanaFimEl.textContent = '';
-          }
-      }
-      if (inputSemana) {
-        inputSemana.addEventListener("change", atualizarLegendaSemana);
-        atualizarLegendaSemana(); // Inicializa ao abrir
-      }
-
-      // Só seta para frente (próxima semana)
-      const btnSemanaProxima = document.getElementById('btn-semana-proxima');
-      if (btnSemanaProxima) btnSemanaProxima.addEventListener('click', () => {
-        if (!inputSemana.value) return;
-        const dataAtual = new Date(inputSemana.value);
-        dataAtual.setDate(dataAtual.getDate() + 7);
-        inputSemana.value = dataAtual.toISOString().split('T')[0];
-        atualizarLegendaSemana();
-        // Aqui, pode-se disparar um fetch de agendamentos da semana, se desejar
-      });
-
-      // Inicializa campo de semana para hoje (segunda-feira atual)
-      if (inputSemana && !inputSemana.value) {
-          const hoje = new Date();
-          const day = hoje.getDay() || 7;
-          hoje.setDate(hoje.getDate() - day + 1);
-          inputSemana.value = hoje.toISOString().split('T')[0];
-          atualizarLegendaSemana();
-      }
-    });
-    </script>
+    <!-- SCRIPTS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="agenda.js" type="module"></script>
+    
+    <!-- SCRIPT DE INICIALIZAÇÃO DA PÁGINA (menu, etc. ) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          // Carregamento do menu lateral
+          const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
+          if (sidebarPlaceholder) {
+            fetch('menu-lateral.html')
+              .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
+              .then(html => {
+                sidebarPlaceholder.innerHTML = html;
+                const activeLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
+                if (activeLink) {
+                    document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
+                    activeLink.classList.add('active');
+                }
+              })
+              .catch(error => {
+                console.error('Erro ao carregar o menu lateral:', error);
+                sidebarPlaceholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar menu.</p>';
+              });
+          }
+        });
+    </script>
+
+    <!-- SCRIPT PRINCIPAL DA AGENDA (agenda.js) -->
+    <script type="module">
+        /**
+         * agenda.js - Pronti (Versão Final Revisada)
+         * - Filtra APENAS agendamentos com status 'ativo' para a data atual e futuras.
+         * - O modo Histórico continua mostrando todos os status.
+         * - Layout dos filtros foi limpo e reorganizado.
+         */
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { firebaseConfig } from "./firebase-config.js";
+
+        // Firebase
+        const app = initializeApp(firebaseConfig );
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // DOM Elements
+        const listaAgendamentosDiv = document.getElementById("lista-agendamentos");
+        const filtroProfissionalEl = document.getElementById("filtro-profissional");
+        const btnAgendaSemana = document.getElementById("btn-agenda-semana");
+        const btnHistorico = document.getElementById("btn-historico");
+        const filtrosSemanaContainer = document.getElementById("filtros-semana-container");
+        const inputDataSemana = document.getElementById("data-semana");
+        const semanaInicioEl = document.getElementById("semana-inicio");
+        const semanaFimEl = document.getElementById("semana-fim");
+        const btnSemanaProxima = document.getElementById('btn-semana-proxima');
+        const legendaContainer = document.getElementById("legenda-container");
+        const filtrosHistoricoDiv = document.getElementById("filtros-historico");
+        const dataInicialEl = document.getElementById("data-inicial");
+        const dataFinalEl = document.getElementById("data-final");
+        const btnAplicarHistorico = document.getElementById("btn-aplicar-historico");
+        const btnMesAtual = document.getElementById("btn-mes-atual");
+
+        let empresaId = null;
+        let perfilUsuario = "dono";
+        let meuUid = null;
+        let modoAgenda = "semana";
+
+        // ----------- UTILITÁRIOS -----------
+        function mostrarToast(texto, cor = '#38bdf8') {
+            if (typeof Toastify !== "undefined") {
+                Toastify({ text: texto, duration: 4000, gravity: "top", position: "center", style: { background: cor, color: "white", borderRadius: "8px" } }).showToast();
+            } else {
+                alert(texto);
+            }
+        }
+        function formatarDataISO(data) { return data.toISOString().split('T')[0]; }
+        function formatarDataBrasileira(dataISO) {
+            if (!dataISO || dataISO.length !== 10) return dataISO;
+            const [ano, mes, dia] = dataISO.split("-");
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        // ----------- LÓGICA DE DATAS -----------
+        function getPeriodoSemana(dataBaseStr) {
+            const inicio = new Date(dataBaseStr + 'T00:00:00Z');
+            const fim = new Date(inicio);
+            const diaDaSemana = inicio.getUTCDay();
+            const diasAteSabado = 6 - diaDaSemana;
+            fim.setUTCDate(inicio.getUTCDate() + diasAteSabado);
+            return { inicioISO: formatarDataISO(inicio), fimISO: formatarDataISO(fim) };
+        }
+
+        function atualizarLegendaSemana() {
+            if (inputDataSemana.value && semanaInicioEl && semanaFimEl) {
+                const { inicioISO, fimISO } = getPeriodoSemana(inputDataSemana.value);
+                semanaInicioEl.textContent = formatarDataBrasileira(inicioISO);
+                semanaFimEl.textContent = formatarDataBrasileira(fimISO);
+            }
+        }
+
+        // ----------- AUTENTICAÇÃO E PERFIL -----------
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) return window.location.href = "login.html";
+            meuUid = user.uid;
+            try {
+                empresaId = await getEmpresaIdDoDonoOuFuncionario(user.uid);
+                if (empresaId) {
+                    perfilUsuario = await checarTipoUsuario(user.uid, empresaId);
+                    await inicializarPaginaAgenda();
+                } else {
+                    exibirMensagemDeErro("Empresa não encontrada.");
+                }
+            } catch (error) {
+                exibirMensagemDeErro("Ocorreu um erro ao iniciar a página.");
+                console.error("Erro na inicialização:", error);
+            }
+        });
+
+        async function getEmpresaIdDoDonoOuFuncionario(uid) {
+            let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+            let snapshot = await getDocs(q);
+            if (!snapshot.empty) return snapshot.docs[0].id;
+            q = query(collection(db, "empresarios"));
+            snapshot = await getDocs(q);
+            for (const docEmp of snapshot.docs) {
+                const profSnap = await getDocs(query(collection(db, "empresarios", docEmp.id, "profissionais"), where("__name__", "==", uid)));
+                if (!profSnap.empty) return docEmp.id;
+            }
+            return null;
+        }
+
+        async function checarTipoUsuario(uid, empresaId) {
+            const docEmp = await getDocs(query(collection(db, "empresarios"), where("donoId", "==", uid), where("__name__", "==", empresaId)));
+            return docEmp.empty ? "funcionario" : "dono";
+        }
+
+        // ----------- INICIALIZAÇÃO DA PÁGINA -----------
+        async function inicializarPaginaAgenda() {
+            if (perfilUsuario === "dono") {
+                await popularFiltroProfissionais();
+            } else {
+                document.getElementById("filtro-profissional-item").style.display = "none";
+            }
+            inputDataSemana.value = formatarDataISO(new Date());
+            configurarListeners();
+            ativarModoAgenda('semana');
+        }
+
+        function configurarListeners() {
+            btnAgendaSemana.addEventListener("click", () => ativarModoAgenda("semana"));
+            btnHistorico.addEventListener("click", () => ativarModoAgenda("historico"));
+            filtroProfissionalEl.addEventListener("change", carregarAgendamentosConformeModo);
+            inputDataSemana.addEventListener("change", carregarAgendamentosConformeModo);
+            btnSemanaProxima.addEventListener("click", () => {
+                const dataAtual = new Date(inputDataSemana.value + 'T00:00:00Z');
+                dataAtual.setUTCDate(dataAtual.getUTCDate() + 7);
+                inputDataSemana.value = formatarDataISO(dataAtual);
+                carregarAgendamentosConformeModo();
+            });
+            btnAplicarHistorico.addEventListener("click", carregarAgendamentosHistorico);
+            btnMesAtual.addEventListener("click", () => {
+                preencherCamposMesAtual();
+                carregarAgendamentosHistorico();
+            });
+        }
+
+        function carregarAgendamentosConformeModo() {
+            if (modoAgenda === 'semana') {
+                carregarAgendamentosSemana();
+            } else if (modoAgenda === 'historico') {
+                // Não faz nada, espera o botão aplicar
+            }
+        }
+
+        function ativarModoAgenda(modo) {
+            modoAgenda = modo;
+            filtrosSemanaContainer.style.display = (modo === 'semana') ? 'flex' : 'none';
+            legendaContainer.style.display = (modo === 'semana') ? 'block' : 'none';
+            filtrosHistoricoDiv.style.display = (modo === 'historico') ? 'flex' : 'none';
+            btnAgendaSemana.classList.toggle("active", modo === "semana");
+            btnHistorico.classList.toggle("active", modo === "historico");
+            
+            if (modo === 'semana') {
+                carregarAgendamentosSemana();
+            } else {
+                listaAgendamentosDiv.innerHTML = `<p>Selecione um período e clique em "Aplicar" para ver o histórico.</p>`;
+            }
+        }
+
+        // ----------- FILTRO PROFISSIONAL -----------
+        async function popularFiltroProfissionais() {
+            try {
+                const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+                filtroProfissionalEl.innerHTML = '<option value="todos">Todos os Profissionais</option>';
+                snapshot.forEach(doc => {
+                    filtroProfissionalEl.appendChild(new Option(doc.data().nome, doc.id));
+                });
+            } catch (error) {
+                mostrarToast("Erro ao buscar profissionais.", "#ef4444");
+            }
+        }
+
+        // ----------- CARREGAMENTO DE AGENDAMENTOS -----------
+        async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico = false) {
+            listaAgendamentosDiv.innerHTML = `<p>Carregando agendamentos...</p>`;
+            try {
+                const ref = collection(db, "empresarios", empresaId, "agendamentos");
+                
+                // Adiciona o filtro de status 'ativo' se não for histórico
+                if (!isHistorico) {
+                    constraints.push(where("status", "==", "ativo"));
+                }
+
+                const q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) {
+                    listaAgendamentosDiv.innerHTML = `<p>${mensagemVazio}</p>`;
+                    return;
+                }
+                exibirCardsAgendamento(snapshot.docs, isHistorico);
+            } catch (error) {
+                exibirMensagemDeErro("Ocorreu um erro ao carregar os agendamentos.");
+                console.error(error);
+            }
+        }
+
+        function exibirCardsAgendamento(docs, isHistorico) {
+            listaAgendamentosDiv.innerHTML = '';
+            docs.forEach(doc => {
+                const ag = { id: doc.id, ...doc.data() };
+
+                let statusLabel = "<span class='status-label status-ativo'>Ativo</span>";
+                if (isHistorico) { // Só mostra outros status se for histórico
+                    if (ag.status === "cancelado_pelo_gestor" || ag.status === "cancelado") statusLabel = "<span class='status-label status-cancelado'>Cancelado</span>";
+                    else if (ag.status === "nao_compareceu") statusLabel = "<span class='status-label status-falta'>Falta</span>";
+                    else if (ag.status === "realizado") statusLabel = "<span class='status-label status-realizado'>Realizado</span>";
+                }
+                
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card card--agenda';
+                cardElement.innerHTML = `
+                    <div class="card-title">${ag.servicoNome || 'Serviço não informado'}</div>
+                    <div class="card-info">
+                        <p><b>Cliente:</b> ${ag.clienteNome || "Não informado"}</p>
+                        <p><b>Profissional:</b> ${ag.profissionalNome || "Não informado"}</p>
+                        <p>
+                            <i class="fa-solid fa-calendar-day"></i>
+                            <span class="card-agenda-dia">${formatarDataBrasileira(ag.data)}</span>
+                            <i class="fa-solid fa-clock"></i>
+                            <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
+                        </p>
+                        <p><b>Status:</b> ${statusLabel}</p>
+                    </div>`;
+                listaAgendamentosDiv.appendChild(cardElement);
+            });
+            if (listaAgendamentosDiv.childElementCount === 0) {
+                listaAgendamentosDiv.innerHTML = `<p>Nenhum agendamento encontrado para os critérios selecionados.</p>`;
+            }
+        }
+
+        // ----------- MODOS DE CARREGAMENTO ESPECÍFICOS -----------
+        function carregarAgendamentosSemana() {
+            atualizarLegendaSemana();
+            const { inicioISO, fimISO } = getPeriodoSemana(inputDataSemana.value);
+            const constraints = [where("data", ">=", inicioISO), where("data", "<=", fimISO)];
+            const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
+            if (profissionalId !== 'todos') {
+                constraints.push(where("profissionalId", "==", profissionalId));
+            }
+            buscarEExibirAgendamentos(constraints, "Nenhum agendamento ativo para esta semana.");
+        }
+
+        function carregarAgendamentosHistorico() {
+            const dataIni = dataInicialEl.value;
+            const dataFim = dataFinalEl.value;
+            if (!dataIni || !dataFim) {
+                mostrarToast("Por favor, selecione as datas de início e fim.", "#ef4444");
+                return;
+            }
+            const constraints = [where("data", ">=", dataIni), where("data", "<=", dataFim)];
+            const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
+            if (profissionalId !== 'todos') {
+                constraints.push(where("profissionalId", "==", profissionalId));
+            }
+            buscarEExibirAgendamentos(constraints, "Nenhum agendamento encontrado no histórico para este período.", true);
+        }
+
+        // ----------- FUNÇÕES AUXILIARES -----------
+        function preencherCamposMesAtual() {
+            const hoje = new Date();
+            const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+            const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+            if(dataInicialEl) dataInicialEl.value = formatarDataISO(primeiroDia);
+            if(dataFinalEl) dataFinalEl.value = formatarDataISO(ultimoDia);
+        }
+
+        function exibirMensagemDeErro(mensagem) {
+            if (listaAgendamentosDiv) {
+                listaAgendamentosDiv.innerHTML = `<p style='color: #ef4444; text-align: center;'>${mensagem}</p>`;
+            }
+        }
+    </script>
 </body>
 </html>
