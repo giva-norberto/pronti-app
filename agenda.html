@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Minha Agenda</title>
+    <!-- Google Fonts e Font Awesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS do Pronti -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
     <div id="sidebar-placeholder"></div>
     <main class="main-content">
+        <!-- Cabeçalho da página -->
         <div class="page-header">
             <h1>Minha Agenda</h1>
             <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
@@ -22,22 +25,29 @@
             </a>
         </div>
 
-        <!-- Botões de navegação -->
-        <div class="filtros-agenda" id="filtros-agenda" style="gap: 10px;">
-            <button id="btn-agenda-futura" class="btn btn-outline active"><i class="fa-solid fa-calendar-day"></i> Agenda Futura</button>
-            <button id="btn-historico" class="btn btn-outline"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</button>
-            
-            <!-- Filtro de profissional, só para dono -->
+        <!-- Filtros principais (modo agenda/histórico, profissional, data) -->
+        <div class="filtros-agenda" id="filtros-agenda">
+            <!-- Botões alternância de modo -->
+            <button id="btn-agenda-futura" class="btn btn-outline active">
+                <i class="fa-solid fa-calendar-day"></i> Agenda Futura
+            </button>
+            <button id="btn-historico" class="btn btn-outline">
+                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+            </button>
+            <!-- Filtro de profissional (mostrado só para dono) -->
             <div class="filtro-item" id="filtro-profissional-item">
                 <label for="filtro-profissional">Profissional</label>
                 <select id="filtro-profissional" class="filtro-select"></select>
             </div>
-        </div>
-
-        <!-- Campo de data para Futura (sempre visível no modo agenda) -->
-        <div class="filtro-item" id="filtro-data-futura" style="margin: 16px 0;">
-            <label for="data-agenda">Data</label>
-            <input type="date" id="data-agenda" class="filtro-input">
+            <!-- Campo de data para Agenda Futura -->
+            <div class="filtro-item" id="filtro-data-futura">
+                <label for="data-agenda">Data</label>
+                <input type="date" id="data-agenda" class="filtro-input">
+                <!-- Legenda didática para data escolhida -->
+                <small id="legenda-data">
+                  Mostrando agendamentos para: <span id="texto-data-legenda"></span>
+                </small>
+            </div>
         </div>
 
         <!-- Filtros de data para histórico -->
@@ -50,10 +60,15 @@
                 <label for="data-final">Até:</label>
                 <input type="date" id="data-final" class="filtro-input">
             </div>
-            <button id="btn-aplicar-historico" class="btn btn-secondary"><i class="fa-solid fa-filter"></i> Aplicar</button>
-            <button id="btn-mes-atual" class="btn btn-light"><i class="fa-solid fa-calendar"></i> Mês Atual</button>
+            <button id="btn-aplicar-historico" class="btn btn-secondary">
+                <i class="fa-solid fa-filter"></i> Aplicar
+            </button>
+            <button id="btn-mes-atual" class="btn btn-light">
+                <i class="fa-solid fa-calendar"></i> Mês Atual
+            </button>
         </div>
         
+        <!-- Lista de agendamentos -->
         <div id="lista-agendamentos" class="dashboard-cards">
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
@@ -71,9 +86,10 @@
         </div>
     </div>
 
+    <!-- Carregamento dinâmico do menu lateral -->
     <script>
-    // Carregamento dinâmico do menu lateral
     document.addEventListener("DOMContentLoaded", function() {
+      // Lógica do menu lateral
       const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
       if (sidebarPlaceholder) {
         fetch('menu-lateral.html')
@@ -90,6 +106,23 @@
             console.error('Erro ao carregar o menu lateral:', error);
             sidebarPlaceholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar menu.</p>';
           });
+      }
+
+      // Atualiza legenda didática da data (mostrando agendamentos para...)
+      const inputDataEl = document.getElementById('data-agenda');
+      const legendaDataEl = document.getElementById('texto-data-legenda');
+      function atualizarLegendaData() {
+          if (inputDataEl && legendaDataEl && inputDataEl.value) {
+              const [ano, mes, dia] = inputDataEl.value.split("-");
+              legendaDataEl.textContent = `${dia}/${mes}/${ano}`;
+          } else if (legendaDataEl) {
+              legendaDataEl.textContent = '';
+          }
+      }
+      if(inputDataEl){
+        inputDataEl.addEventListener("change", atualizarLegendaData);
+        document.addEventListener("DOMContentLoaded", atualizarLegendaData);
+        atualizarLegendaData(); // Inicializa ao abrir
       }
     });
     </script>
