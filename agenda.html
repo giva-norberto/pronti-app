@@ -25,38 +25,34 @@
             </a>
         </div>
 
-        <!-- Filtros principais (modo agenda da semana/histórico, profissional, semana) -->
+        <!-- Filtros principais -->
         <div class="filtros-agenda" id="filtros-agenda">
-            <!-- Botões alternância de modo -->
-            <button id="btn-agenda-semana" class="btn btn-outline active">
-                <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
-            </button>
-            <button id="btn-historico" class="btn btn-outline">
-                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
-            </button>
-            <!-- Filtro de profissional (mostrado só para dono) -->
-            <div class="filtro-item" id="filtro-profissional-item">
-                <label for="filtro-profissional">Profissional</label>
-                <select id="filtro-profissional" class="filtro-select"></select>
+            <!-- Área esquerda: Modo e Profissional -->
+            <div style="display:flex;gap:10px;align-items:flex-end;flex:1;">
+                <button id="btn-agenda-semana" class="btn btn-outline active">
+                    <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
+                </button>
+                <button id="btn-historico" class="btn btn-outline">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+                </button>
+                <div class="filtro-item" id="filtro-profissional-item">
+                    <label for="filtro-profissional">Profissional</label>
+                    <select id="filtro-profissional" class="filtro-select"></select>
+                </div>
             </div>
-            <!-- Campo de semana para Agenda da Semana -->
-            <div class="filtro-item" id="filtro-semana">
-                <label for="data-semana">Semana</label>
-                <input type="date" id="data-semana" class="filtro-input">
-                <!-- Legenda didática para semana escolhida -->
-                <small id="legenda-semana">
-                  Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
-                </small>
-                <div style="margin-top:4px;display:flex;gap:6px;">
-                    <button id="btn-semana-anterior" class="btn btn-light" title="Semana anterior">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <button id="btn-semana-atual" class="btn btn-light" title="Esta semana">
-                        <i class="fa-solid fa-calendar-day"></i>
-                    </button>
-                    <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
+            <!-- Área direita: Semana (+ seta próxima) -->
+            <div style="display:flex;flex-direction:column;align-items:flex-end;min-width:210px;">
+                <div class="filtro-item" id="filtro-semana" style="align-items:flex-end;">
+                    <label for="data-semana">Semana</label>
+                    <div style="display:flex;align-items:center;gap:5px;">
+                        <input type="date" id="data-semana" class="filtro-input">
+                        <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <small id="legenda-semana" style="margin-top:2px;font-size:0.95em;">
+                        Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
+                    </small>
                 </div>
             </div>
         </div>
@@ -171,30 +167,18 @@
         atualizarLegendaSemana(); // Inicializa ao abrir
       }
 
-      // Botões de navegação de semana
-      function mudarSemana(delta) {
+      // Só seta para frente (próxima semana)
+      const btnSemanaProxima = document.getElementById('btn-semana-proxima');
+      if (btnSemanaProxima) btnSemanaProxima.addEventListener('click', () => {
         if (!inputSemana.value) return;
         const dataAtual = new Date(inputSemana.value);
-        dataAtual.setDate(dataAtual.getDate() + (delta * 7));
+        dataAtual.setDate(dataAtual.getDate() + 7);
         inputSemana.value = dataAtual.toISOString().split('T')[0];
         atualizarLegendaSemana();
-        // Aqui, você pode disparar um fetch de agendamentos da semana, se desejar
-      }
-      const btnSemanaAnterior = document.getElementById('btn-semana-anterior');
-      const btnSemanaAtual = document.getElementById('btn-semana-atual');
-      const btnSemanaProxima = document.getElementById('btn-semana-proxima');
-      if (btnSemanaAnterior) btnSemanaAnterior.addEventListener('click', () => mudarSemana(-1));
-      if (btnSemanaProxima) btnSemanaProxima.addEventListener('click', () => mudarSemana(1));
-      if (btnSemanaAtual) btnSemanaAtual.addEventListener('click', () => {
-          // Vai para a segunda-feira da semana atual
-          const hoje = new Date();
-          const day = hoje.getDay() || 7;
-          hoje.setDate(hoje.getDate() - day + 1);
-          inputSemana.value = hoje.toISOString().split('T')[0];
-          atualizarLegendaSemana();
+        // Aqui, pode-se disparar um fetch de agendamentos da semana, se desejar
       });
 
-      // Inicializa campo de semana para hoje
+      // Inicializa campo de semana para hoje (segunda-feira atual)
       if (inputSemana && !inputSemana.value) {
           const hoje = new Date();
           const day = hoje.getDay() || 7;
