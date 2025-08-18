@@ -143,10 +143,16 @@ export async function verificarAcesso() {
                     
                     // =======================================================
                     // CORREÇÃO FINAL APLICADA AQUI
-                    // A linha de redirecionamento foi REMOVIDA para evitar
-                    // o loop infinito. Agora, a função apenas retorna os
-                    // dados, permitindo que o script da página (dashboard.js)
-                    // continue sua execução normalmente.
+                    // Redireciona para a página correta ('dashboard.html') e
+                    // previne o loop infinito verificando se o usuário
+                    // já está na página de destino.
+                    // =======================================================
+                    const targetPage = 'dashboard.html'; // Nome correto do arquivo do dashboard
+                    const currentPage = window.location.pathname.split('/').pop();
+
+                    if (currentPage !== targetPage) {
+                        window.location.href = targetPage;
+                    }
                     // =======================================================
 
                     return resolve({ user, empresaId: empresaDoc.id, perfil: empresaDoc.data(), isOwner: true });
