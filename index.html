@@ -15,88 +15,125 @@
 <div id="sidebar-placeholder"></div>
 
 <main class="main-content">
-  <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
-  <div class="dashboard-welcome-center">
-    <h1>Bom dia, <span id="nome-usuario">Usuário</span>!</h1>
-    <p>Pronto para gerenciar seu dia?</p>
-  </div>
+ <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
+ <div class="dashboard-welcome-center">
+   <h1>Bom dia, <span id="nome-usuario">Usuário</span>!</h1>
+   <p>Pronto para gerenciar seu dia?</p>
+ </div>
 
-  <!-- AÇÕES PRINCIPAIS -->
-  <div class="dashboard-main-actions">
-    <a href="index.html" class="action-card">
-        <i class="fa-solid fa-chart-line"></i>
-        <span>Painel Inteligente</span>
-    </a>
-    <a href="agenda.html" class="action-card">
-        <i class="fa-solid fa-calendar-check"></i>
-        <span>Agenda</span>
-    </a>
-    <a href="servicos.html" class="action-card">
-        <i class="fa-solid fa-scissors"></i>
-        <span>Serviços</span>
-    </a>
-  </div>
+ <!-- AÇÕES PRINCIPAIS -->
+ <div class="dashboard-main-actions">
+   <a href="dashboard.html" class="action-card">
+       <i class="fa-solid fa-chart-line"></i>
+       <span>Painel Inteligente</span>
+   </a>
+   <a href="agenda.html" class="action-card">
+       <i class="fa-solid fa-calendar-check"></i>
+       <span>Agenda</span>
+   </a>
+   <!-- ID para controlar a visibilidade deste cartão (mantido para o menu) -->
+   <a href="servicos.html" class="action-card" id="acao-servicos">
+       <i class="fa-solid fa-scissors"></i>
+       <span>Serviços</span>
+   </a>
+ </div>
 
-  <!-- BOTÃO DE STATUS -->
-  <button class="status-button">Ver status de hoje</button>
+ <!-- BOTÃO DE STATUS -->
+ <button class="status-button">Ver status de hoje</button>
 </main>
 
 <!-- SCRIPT PRINCIPAL UNIFICADO -->
 <script type="module">
     // 1. Importações dos módulos Firebase
-    // ADICIONADO: signOut para a funcionalidade de logout
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    
-    // ATENÇÃO: Verifique se o nome do seu arquivo de config está correto
     import { auth } from "./vitrini-firebase.js"; 
+    import { verificarAcesso } from "./userService.js";
 
-    // 2. Lógica de Autenticação e Nome do Usuário
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
 
-    onAuthStateChanged(auth, (user) => {
+    // 2. Lógica de Autenticação e Roteamento por Permissão
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // Usuário está logado.
-            const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
-            if (nomeUsuarioSpan) {
-                nomeUsuarioSpan.textContent = primeiroNome;
+            try {
+                // Chama o "porteiro" para saber quem está logado.
+                const { perfil, isOwner } = await verificarAcesso();
+
+                // ======================================================================
+                //                  LÓGICA DE ROTEAMENTO APLICADA AQUI
+                // ======================================================================
+                // Se o usuário NÃO for o dono, redireciona para a agenda e para a execução.
+                if (!isOwner) {
+                    window.location.href = 'agenda.html';
+                    return; // Impede que o resto do script desta página seja executado.
+                }
+                // ======================================================================
+
+                // Se for o dono, a página continua a carregar normalmente.
+                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+                if (nomeUsuarioSpan) {
+                    nomeUsuarioSpan.textContent = primeiroNome;
+                }
+
+                // Carrega o menu e aplica as permissões (agora apenas para o dono).
+                await carregarMenuEControlarAcesso(isOwner);
+
+            } catch (error) {
+                console.log("Verificação de acesso em andamento:", error.message);
             }
         } else {
-            // Usuário não está logado, redireciona para o login.
             window.location.href = 'login.html';
         }
     });
 
-    // 3. Carregamento Dinâmico do Menu Lateral e Lógica de Logout
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          
-          // Destaca o item "Início"
-          const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
-          if (homeLink) {
-            document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-            homeLink.classList.add('active');
-          }
+    // 3. Carregamento Dinâmico do Menu Lateral e Lógica de Permissões
+    async function carregarMenuEControlarAcesso(isOwner) {
+        try {
+            const response = await fetch('menu-lateral.html');
+            if (!response.ok) throw new Error('Erro ao carregar menu.');
+            
+            const html = await response.text();
+            document.getElementById('sidebar-placeholder').innerHTML = html;
+            
+            // --- DESTAQUE DO LINK ATIVO ---
+            const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
+            if (homeLink) {
+                document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
+                homeLink.classList.add('active');
+            }
 
-          // --- LÓGICA DE LOGOUT ADICIONADA AQUI ---
-          // Esta parte só roda DEPOIS que o menu foi carregado.
-          const btnLogout = document.getElementById('btn-logout');
-          if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-              signOut(auth).then(() => {
-                console.log('Logout bem-sucedido.');
-                // Redireciona para a página de login após o logout.
-                window.location.href = 'login.html';
-              }).catch((error) => {
-                console.error('Erro ao fazer logout:', error);
-              });
-            });
-          }
-        })
-        .catch(error => console.error(error));
-    });
+            // --- LÓGICA DE LOGOUT ---
+            const btnLogout = document.getElementById('btn-logout');
+            if (btnLogout) {
+                btnLogout.addEventListener('click', () => {
+                    signOut(auth).then(() => {
+                        window.location.href = 'login.html';
+                    }).catch((error) => {
+                        console.error('Erro ao fazer logout:', error);
+                    });
+                });
+            }
+
+            // A lógica de permissões para o menu lateral continua aqui,
+            // garantindo que o menu carregado também seja filtrado.
+            if (!isOwner) {
+                console.log("Usuário não é dono. Aplicando restrições de menu.");
+
+                // Esconde os links do menu lateral
+                // ATENÇÃO: Certifique-se de que os seus links em 'menu-lateral.html'
+                // tenham os IDs corretos para que esta lógica funcione.
+                const menuEquipe = document.getElementById('menu-equipe');
+                if (menuEquipe) menuEquipe.style.display = 'none';
+
+                const menuServicos = document.getElementById('menu-servicos');
+                if (menuServicos) menuServicos.style.display = 'none';
+                
+                // Adicione aqui outros menus que devam ser escondidos para funcionários...
+            }
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
 </script>
 
 </body>
