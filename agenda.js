@@ -1,11 +1,10 @@
 /**
- * agenda.js - Pronti (Revisado e Corrigido)
- * - Foco exclusivo nos filtros e na correção do erro reportado.
+ * agenda.js - Pronti (Versão Final Corrigida)
+ * - Totalmente compatível com o HTML fornecido, sem necessidade de alterações no layout.
+ * - Corrige o erro de inicialização e respeita os IDs dos elementos existentes.
  * - Ao abrir: Mostra agendamentos do dia atual.
- * - Botão "Hoje": Filtra pelo dia atual.
- * - Botão "Agenda da Semana": Mostra da data selecionada até o próximo sábado.
- * - Botão "Histórico": Abre os filtros de período.
- * - Sem lógicas de agenda adicionais, respeitando o sistema existente.
+ * - Botões "Agenda da Semana" e "Histórico" gerenciam a visualização dos filtros.
+ * - A lógica de datas e filtros foi refinada para ser mais clara e robusta.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -18,15 +17,16 @@ const app = initializeApp(firebaseConfig );
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// DOM Elements
+// DOM Elements (IDs correspondem ao HTML fornecido)
 const listaAgendamentosDiv = document.getElementById("lista-agendamentos");
 const filtroProfissionalEl = document.getElementById("filtro-profissional");
-const btnHoje = document.getElementById("btn-hoje");
 const btnAgendaSemana = document.getElementById("btn-agenda-semana");
 const btnHistorico = document.getElementById("btn-historico");
-const filtroDataContainer = document.getElementById("filtro-data-container");
-const inputData = document.getElementById("data-filtro"); // ID corrigido
-const legendaPeriodoEl = document.getElementById("legenda-periodo");
+const filtroSemanaDiv = document.getElementById("filtro-semana");
+const inputDataSemana = document.getElementById("data-semana");
+const semanaInicioEl = document.getElementById("semana-inicio");
+const semanaFimEl = document.getElementById("semana-fim");
+const btnSemanaProxima = document.getElementById('btn-semana-proxima');
 const filtrosHistoricoDiv = document.getElementById("filtros-historico");
 const dataInicialEl = document.getElementById("data-inicial");
 const dataFinalEl = document.getElementById("data-final");
@@ -36,7 +36,7 @@ const btnMesAtual = document.getElementById("btn-mes-atual");
 let empresaId = null;
 let perfilUsuario = "dono";
 let meuUid = null;
-let modoAgenda = "dia";
+let modoAgenda = "semana"; // Inicia no modo semana, mas carrega o dia atual primeiro
 
 // ----------- UTILITÁRIOS -----------
 function mostrarToast(texto, cor = '#38bdf8') {
@@ -53,15 +53,13 @@ function formatarDataBrasileira(dataISO) {
     return `${dia}/${mes}/${ano}`;
 }
 
-// ----------- LÓGICA DE DATAS (Semana até Sábado) -----------
-function getSemanaAteSabado(dataBase) {
-    const inicio = new Date(dataBase);
-    inicio.setUTCHours(0, 0, 0, 0);
-
+// ----------- LÓGICA DE DATAS -----------
+function getPeriodoSemana(dataBaseStr) {
+    const inicio = new Date(dataBaseStr + 'T00:00:00Z'); // Use T00:00:00Z para consistência
     const fim = new Date(inicio);
     const diaDaSemana = inicio.getUTCDay(); // 0 (Domingo) a 6 (Sábado)
     const diasAteSabado = 6 - diaDaSemana;
-    fim.setUTCDate(inicio.getUTCDate() + (diasAteSabado >= 0 ? diasAteSabado : 6)); // Se for domingo, vai até o próximo sábado
+    fim.setUTCDate(inicio.getUTCDate() + diasAteSabado);
 
     return {
         inicioISO: formatarDataISO(inicio),
@@ -69,17 +67,11 @@ function getSemanaAteSabado(dataBase) {
     };
 }
 
-function atualizarLegendaPeriodo() {
-    if (!legendaPeriodoEl || !inputData.value) return;
-    const dataBase = new Date(inputData.value + 'T00:00:00Z');
-
-    if (modoAgenda === 'dia') {
-        legendaPeriodoEl.textContent = `Mostrando agendamentos para ${formatarDataBrasileira(inputData.value)}`;
-    } else if (modoAgenda === 'semana') {
-        const { inicioISO, fimISO } = getSemanaAteSabado(dataBase);
-        legendaPeriodoEl.textContent = `Mostrando de ${formatarDataBrasileira(inicioISO)} até ${formatarDataBrasileira(fimISO)}`;
-    } else {
-        legendaPeriodoEl.textContent = '';
+function atualizarLegendaSemana() {
+    if (inputDataSemana && inputDataSemana.value && semanaInicioEl && semanaFimEl) {
+        const { inicioISO, fimISO } = getPeriodoSemana(inputDataSemana.value);
+        semanaInicioEl.textContent = formatarDataBrasileira(inicioISO);
+        semanaFimEl.textContent = formatarDataBrasileira(fimISO);
     }
 }
 
@@ -93,7 +85,7 @@ onAuthStateChanged(auth, async (user) => {
             perfilUsuario = await checarTipoUsuario(user.uid, empresaId);
             await inicializarPaginaAgenda();
         } else {
-            exibirMensagemDeErro("Empresa não encontrada para este usuário.");
+            exibirMensagemDeErro("Empresa não encontrada.");
         }
     } catch (error) {
         exibirMensagemDeErro("Ocorreu um erro ao iniciar a página.");
@@ -123,29 +115,34 @@ async function checarTipoUsuario(uid, empresaId) {
 async function inicializarPaginaAgenda() {
     if (perfilUsuario === "dono") {
         await popularFiltroProfissionais();
-        document.getElementById("filtro-profissional-item").style.display = "";
+        filtroProfissionalEl.style.display = "";
     } else {
-        document.getElementById("filtro-profissional-item").style.display = "none";
+        const filtroItem = document.getElementById("filtro-profissional-item");
+        if(filtroItem) filtroItem.style.display = "none";
     }
 
-    // Garante que o elemento existe antes de definir o valor
-    if (inputData) {
-        inputData.value = formatarDataISO(new Date());
-    }
-
+    // Define a data inicial para hoje
+    inputDataSemana.value = formatarDataISO(new Date());
+    
     configurarListeners();
-    ativarModoAgenda("dia");
+    ativarModoAgenda('semana'); // Ativa o modo semana visualmente
+    carregarAgendamentosDia(); // Mas carrega os dados do DIA ATUAL primeiro
 }
 
 function configurarListeners() {
-    btnHoje.addEventListener("click", () => {
-        if (inputData) inputData.value = formatarDataISO(new Date());
-        ativarModoAgenda("dia");
-    });
     btnAgendaSemana.addEventListener("click", () => ativarModoAgenda("semana"));
     btnHistorico.addEventListener("click", () => ativarModoAgenda("historico"));
+    
     filtroProfissionalEl.addEventListener("change", carregarAgendamentosConformeModo);
-    if (inputData) inputData.addEventListener("change", carregarAgendamentosConformeModo);
+    inputDataSemana.addEventListener("change", carregarAgendamentosConformeModo);
+    
+    btnSemanaProxima.addEventListener("click", () => {
+        const dataAtual = new Date(inputDataSemana.value + 'T00:00:00Z');
+        dataAtual.setUTCDate(dataAtual.getUTCDate() + 7);
+        inputDataSemana.value = formatarDataISO(dataAtual);
+        carregarAgendamentosConformeModo();
+    });
+
     btnAplicarHistorico.addEventListener("click", carregarAgendamentosHistorico);
     btnMesAtual.addEventListener("click", () => {
         preencherCamposMesAtual();
@@ -154,24 +151,30 @@ function configurarListeners() {
 }
 
 function carregarAgendamentosConformeModo() {
-    if (modoAgenda === 'dia') carregarAgendamentosDia();
-    else if (modoAgenda === 'semana') carregarAgendamentosSemana();
+    if (modoAgenda === 'semana') {
+        carregarAgendamentosSemana();
+    } else if (modoAgenda === 'historico') {
+        carregarAgendamentosHistorico();
+    }
 }
 
 function ativarModoAgenda(modo) {
     modoAgenda = modo;
-    filtroDataContainer.style.display = (modo === 'dia' || modo === 'semana') ? 'flex' : 'none';
-    filtrosHistoricoDiv.style.display = modo === 'historico' ? 'flex' : 'none';
-    btnHoje.classList.toggle("active", modo === "dia");
+
+    // Controle de visibilidade dos filtros
+    filtroSemanaDiv.style.display = (modo === 'semana') ? '' : 'none';
+    filtrosHistoricoDiv.style.display = (modo === 'historico') ? 'flex' : 'none';
+
+    // Controle visual dos botões
     btnAgendaSemana.classList.toggle("active", modo === "semana");
     btnHistorico.classList.toggle("active", modo === "historico");
 
-    if (modo === 'dia') carregarAgendamentosDia();
-    else if (modo === 'semana') carregarAgendamentosSemana();
-    else if (modo === 'historico') {
+    // Carrega os dados correspondentes ao modo ativado
+    if (modo === 'semana') {
+        carregarAgendamentosSemana();
+    } else if (modo === 'historico') {
         preencherCamposMesAtual();
         listaAgendamentosDiv.innerHTML = `<p>Selecione um período e clique em "Aplicar" para ver o histórico.</p>`;
-        if(legendaPeriodoEl) legendaPeriodoEl.textContent = '';
     }
 }
 
@@ -220,19 +223,30 @@ function exibirCardsAgendamento(docs) {
         if (ag.status === "cancelado_pelo_gestor" || ag.status === "cancelado") statusLabel = "<span class='status-label status-cancelado'>Cancelado</span>";
         else if (ag.status === "nao_compareceu") statusLabel = "<span class='status-label status-falta'>Falta</span>";
         else if (ag.status === "realizado") statusLabel = "<span class='status-label status-realizado'>Realizado</span>";
+        
         const cardElement = document.createElement('div');
         cardElement.className = 'card card--agenda';
+        // O HTML do card é mantido exatamente como no seu exemplo, sem alterações de layout.
         cardElement.innerHTML = `
             <div class="card-title">${ag.servicoNome || 'Serviço não informado'}</div>
             <div class="card-info">
-                <p><i class="fa-solid fa-user"></i> <strong>Cliente:</strong> ${ag.clienteNome || "Não informado"}</p>
-                <p><i class="fa-solid fa-user-tie"></i> <strong>Profissional:</strong> ${ag.profissionalNome || "Não informado"}</p>
+                <p><b>Cliente:</b> ${ag.clienteNome || "Não informado"}</p>
+                <p><b>Profissional:</b> ${ag.profissionalNome || "Não informado"}</p>
                 <p>
-                    <i class="fa-solid fa-calendar-day"></i> <span class="card-agenda-dia">${formatarDataBrasileira(ag.data)}</span>
-                    <i class="fa-solid fa-clock"></i> <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
+                    <i class="fa-solid fa-calendar-day"></i>
+                    <span class="card-agenda-dia">${formatarDataBrasileira(ag.data)}</span>
+                    <i class="fa-solid fa-clock"></i>
+                    <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
                 </p>
-                <p><i class="fa-solid fa-info-circle"></i> <strong>Status:</strong> ${statusLabel}</p>
+                <p><b>Status:</b> ${statusLabel}</p>
+            </div>
+            <div class="card-actions">
+                <!-- Botões de ação podem ser adicionados aqui se necessário -->
             </div>`;
+        // Remove o div de ações se estiver vazio para não ocupar espaço
+        if (cardElement.querySelector('.card-actions').innerHTML.trim() === '') {
+            cardElement.querySelector('.card-actions').remove();
+        }
         listaAgendamentosDiv.appendChild(cardElement);
     });
     if (listaAgendamentosDiv.childElementCount === 0) {
@@ -240,21 +254,21 @@ function exibirCardsAgendamento(docs) {
     }
 }
 
+// ----------- MODOS DE CARREGAMENTO ESPECÍFICOS -----------
 function carregarAgendamentosDia() {
-    atualizarLegendaPeriodo();
-    const dataSelecionada = inputData.value;
+    atualizarLegendaSemana();
+    const dataSelecionada = inputDataSemana.value;
     const constraints = [where("data", "==", dataSelecionada)];
     const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
     if (profissionalId !== 'todos') {
         constraints.push(where("profissionalId", "==", profissionalId));
     }
-    buscarEExibirAgendamentos(constraints, `Nenhum agendamento para ${formatarDataBrasileira(dataSelecionada)}.`);
+    buscarEExibirAgendamentos(constraints, `Nenhum agendamento para hoje.`);
 }
 
 function carregarAgendamentosSemana() {
-    atualizarLegendaPeriodo();
-    const dataBase = new Date(inputData.value + 'T00:00:00Z');
-    const { inicioISO, fimISO } = getSemanaAteSabado(dataBase);
+    atualizarLegendaSemana();
+    const { inicioISO, fimISO } = getPeriodoSemana(inputDataSemana.value);
     const constraints = [where("data", ">=", inicioISO), where("data", "<=", fimISO)];
     const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
     if (profissionalId !== 'todos') {
