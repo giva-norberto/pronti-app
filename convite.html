@@ -1,38 +1,46 @@
-
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convite de Equipe - Pronti</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
     <style>
         /* Estilos para um visual limpo e focado */
+        :root {
+            --cor-fundo: #f3f4f6;
+            --cor-branco: #fff;
+            --cor-primaria: #4f46e5;
+            --cor-texto-leve: #6b7280;
+            --sombra-elevada: 0 4px 12px rgba(0,0,0,0.1);
+        }
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: var(--cor-fundo, #f3f4f6);
-            font-family: sans-serif;
+            margin: 0;
+            background-color: var(--cor-fundo);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             text-align: center;
         }
         .invite-container {
-            background-color: var(--cor-branco, #fff);
+            background-color: var(--cor-branco);
             padding: 40px 30px;
             border-radius: 12px;
-            box-shadow: var(--sombra-elevada, 0 4px 12px rgba(0,0,0,0.1));
+            box-shadow: var(--sombra-elevada);
             width: 100%;
             max-width: 450px;
+            margin: 15px;
         }
         .invite-container h1 {
-            font-size: 2em;
-            color: var(--cor-primaria, #4f46e5);
+            font-size: 1.8em; /* Ajuste para melhor visualização em mobile */
+            color: var(--cor-primaria);
             margin-bottom: 10px;
         }
         .invite-container p {
-            color: var(--cor-texto-leve, #6b7280);
+            color: var(--cor-texto-leve);
             margin-bottom: 30px;
-            font-size: 1.1em;
+            font-size: 1.05em;
             line-height: 1.5;
         }
         .btn-google {
@@ -42,16 +50,16 @@
             gap: 12px;
             width: 100%;
             padding: 14px;
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: 600;
             color: #333;
-            background-color: var(--cor-branco, #fff);
+            background-color: var(--cor-branco);
             border: 1px solid #ccc;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
         }
-        .btn-google:hover {
+        .btn-google:hover:not(:disabled) {
             background-color: #f8f8f8;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
@@ -63,6 +71,13 @@
             width: 24px;
             height: 24px;
         }
+        #status-message {
+            margin-top: 20px;
+            font-weight: 500;
+            min-height: 20px; /* Evita que o layout pule */
+        }
+        .success-message { color: #28a745; }
+        .error-message { color: #dc3545; }
     </style>
 </head>
 <body>
@@ -73,30 +88,42 @@
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Ícone do Google">
             <span>Aceitar com o Google</span>
         </button>
-        <p id="status-message" style="margin-top: 20px; color: var(--cor-primaria, #4f46e5);"></p>
+        <p id="status-message"></p>
     </div>
 
     <script type="module">
         // 1. IMPORTS DO FIREBASE
         import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { auth, db } from './vitrini-firebase.js';
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+        // A importação do 'auth' e 'db' virá do seu arquivo de configuração central
+        import { auth } from './vitrini-firebase.js'; // Verifique se o caminho está correto
 
-        // 2. SELEÇÃO DOS ELEMENTOS
+        // 2. INICIALIZAÇÃO E SELEÇÃO DE ELEMENTOS
+        const functions = getFunctions(auth.app, 'southamerica-east1'); // IMPORTANTE: Coloque a sua região aqui
         const btnAceitar = document.getElementById('btn-aceitar-convite');
         const statusMessage = document.getElementById('status-message');
 
+        // Função para mostrar mensagens de status
+        const setStatus = (message, type = 'info') => {
+            statusMessage.textContent = message;
+            statusMessage.className = ''; // Limpa classes anteriores
+            if (type === 'error') {
+                statusMessage.classList.add('error-message');
+            } else if (type === 'success') {
+                statusMessage.classList.add('success-message');
+            }
+        };
+
         btnAceitar.addEventListener('click', async () => {
             btnAceitar.disabled = true;
-            statusMessage.textContent = "Processando seu login...";
+            setStatus("Aguarde, processando seu login...");
 
-            // 3. PEGA O ID DA EMPRESA DO LINK (URL)
+            // 3. PEGA O TOKEN DO LINK (URL) - ESTA É A MUDANÇA DE SEGURANÇA
             const urlParams = new URLSearchParams(window.location.search);
-            const empresaId = urlParams.get('empresaId');
+            const token = urlParams.get('token');
 
-            if (!empresaId) {
-                alert("Link de convite inválido ou expirado.");
-                statusMessage.textContent = "Erro: Link inválido.";
+            if (!token) {
+                setStatus("Link de convite inválido ou ausente.", 'error');
                 btnAceitar.disabled = false;
                 return;
             }
@@ -104,33 +131,36 @@
             // 4. FAZ O LOGIN COM O GOOGLE
             const provider = new GoogleAuthProvider();
             try {
+                // O login abre um pop-up para o usuário
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
 
-                statusMessage.textContent = "Criando seu perfil profissional...";
+                setStatus("Login realizado. Finalizando seu cadastro na equipe...");
 
-                // 5. CRIA O PERFIL DO FUNCIONÁRIO NO FIRESTORE
-                // O caminho é construído dinamicamente para a empresa e o funcionário corretos.
-                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
-                
-                // Salva os dados do Google e o UID, como sugerido por si.
-                // Usamos { merge: true } para não apagar dados se o perfil já existir.
-                await setDoc(profissionalRef, {
-                    nome: user.displayName,
-                    email: user.email,
-                    fotoUrl: user.photoURL,
-                    uid: user.uid, // ESSENCIAL para as regras de segurança
-                    ativo: true // Define o profissional como ativo por padrão
-                }, { merge: true });
+                // 5. CHAMA A CLOUD FUNCTION PARA VALIDAR O TOKEN E CRIAR O PERFIL
+                // Esta é a parte segura que roda no servidor do Firebase.
+                const aceitarConvite = httpsCallable(functions, 'aceitarConvite');
+                const response = await aceitarConvite({ token: token });
 
-                // 6. REDIRECIONA PARA A PÁGINA DE PERFIL
-                alert("Bem-vindo à equipe! Por favor, complete suas informações de perfil.");
-                window.location.href = './perfil.html';
+                if (response.data.success) {
+                    setStatus("Bem-vindo(a)! Redirecionando para seu perfil...", 'success');
+                    
+                    // 6. REDIRECIONA PARA A PÁGINA DE PERFIL
+                    // A página de perfil usará o 'onAuthStateChanged' para pegar os dados do usuário logado.
+                    window.location.href = './perfil.html';
+                } else {
+                    // Erro retornado pela Cloud Function (ex: token inválido, expirado)
+                    throw new Error(response.data.error || "Não foi possível validar seu convite.");
+                }
 
             } catch (error) {
                 console.error("Erro ao aceitar convite:", error);
-                alert("Ocorreu um erro ao tentar entrar. Por favor, tente novamente.");
-                statusMessage.textContent = "";
+                // Trata erros comuns de forma mais amigável
+                if (error.code === 'auth/popup-closed-by-user') {
+                    setStatus("Você fechou a janela de login. Tente novamente.", 'info');
+                } else {
+                    setStatus(error.message, 'error');
+                }
                 btnAceitar.disabled = false;
             }
         });
