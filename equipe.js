@@ -1,11 +1,8 @@
 // ======================================================================
 //                          EQUIPE.JS
-//        VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
-//                (100% Frontend, Sem Cloud Functions)
+//      VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
+//          (100% Frontend, Sem Cloud Functions)
 // ======================================================================
-
-// REMOVIDO: A importação de Cloud Functions não é mais necessária para este plano.
-// import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 // Variáveis globais
 let db, auth, storage;
@@ -27,7 +24,7 @@ let horariosBase = {
 let intervaloBase = 30;
 let agendaEspecial = [];
 
-// Elementos DOM (sem alterações)
+// Elementos DOM
 const elementos = {
     btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
@@ -58,7 +55,7 @@ const elementos = {
     btnConvite: document.getElementById('btn-convite')
 };
 
-// TABS do perfil (sem alterações)
+// TABS do perfil
 function setupPerfilTabs() {
     const tabServicos = document.getElementById('tab-servicos');
     const tabHorarios = document.getElementById('tab-horarios');
@@ -90,7 +87,7 @@ function setupPerfilTabs() {
 }
 window.addEventListener('DOMContentLoaded', setupPerfilTabs);
 
-// Inicialização (sem alterações)
+// Inicialização
 async function inicializar() {
     try {
         const firebaseConfig = await import('./firebase-config.js');
@@ -103,7 +100,7 @@ async function inicializar() {
                 empresaId = await getEmpresaIdDoDono(user.uid);
                 if (empresaId) {
                     await carregarServicos();
-                    iniciarListenerDaEquipe();
+                    iniciarListenerDaEquipe(); // Esta função foi corrigida
                     adicionarEventListeners();
                 } else {
                     mostrarErro("Não foi possível identificar a sua empresa. Verifique se seu usuário é o dono de uma empresa no banco de dados.");
@@ -145,20 +142,47 @@ async function carregarServicos() {
     }
 }
 
-function iniciarListenerDaEquipe() {
-    import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
-    .then(({ collection, onSnapshot, query }) => {
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        onSnapshot(query(profissionaisRef), (snapshot) => {
-            const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderizarEquipe(equipe);
-        }, (error) => console.error("Erro no listener da equipe:", error));
-    });
-}
+// ======================================================================
+//              CORREÇÃO CIRÚRGICA APLICADA NESTA FUNÇÃO
+// ======================================================================
+// Esta função agora busca o nome correto do dono na coleção 'usuarios'
+// e o corrige na lista da equipe antes de renderizar na tela.
+async function iniciarListenerDaEquipe() {
+    const { collection, onSnapshot, query, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
+    // 1. Buscar o ID do dono no documento da empresa
+    const empresaRef = doc(db, "empresarios", empresaId);
+    const empresaSnap = await getDoc(empresaRef);
+    if (!empresaSnap.exists()) {
+        console.error("Empresa não encontrada, não foi possível corrigir o nome do dono.");
+        return;
+    }
+    const donoId = empresaSnap.data().donoId;
+
+    // 2. Buscar o nome correto do dono na coleção 'usuarios'
+    let nomeCorretoDono = 'Dono'; // Nome padrão caso não encontre
+    const donoUsuarioRef = doc(db, "usuarios", donoId);
+    const donoUsuarioSnap = await getDoc(donoUsuarioRef);
+    if (donoUsuarioSnap.exists() && donoUsuarioSnap.data().nome) {
+        nomeCorretoDono = donoUsuarioSnap.data().nome;
+    }
+
+    // 3. Iniciar o listener da equipe (como antes)
+    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+    onSnapshot(query(profissionaisRef), (snapshot) => {
+        const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // 4. Encontrar o dono na lista e corrigir o nome antes de renderizar
+        const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
+        if (donoNaEquipe) {
+            donoNaEquipe.nome = nomeCorretoDono;
+        }
+        
+        renderizarEquipe(equipe);
+    }, (error) => console.error("Erro no listener da equipe:", error));
+}
 // ======================================================================
-//    MODIFICADO: Lógica de renderização para lidar com status 'pendente'.
-// ======================================================================
+
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
@@ -169,20 +193,17 @@ function renderizarEquipe(equipe) {
         const div = document.createElement("div");
         div.className = "profissional-card";
         
-        // Se o profissional estiver pendente, adiciona uma classe para estilizar (ex: fundo amarelo)
         if (profissional.status === 'pendente') {
-            div.classList.add('pendente'); // Você pode criar um estilo .pendente {} no seu CSS
+            div.classList.add('pendente');
         }
 
         let botoesDeAcao = '';
         if (profissional.status === 'pendente') {
-            // Botões específicos para quem está pendente
             botoesDeAcao = `
                 <button class="btn btn-success" onclick="ativarFuncionario('${profissional.id}')">✅ Ativar</button>
                 <button class="btn btn-danger" onclick="recusarFuncionario('${profissional.id}')">❌ Recusar</button>
             `;
         } else {
-            // Botões para funcionários já ativos
             botoesDeAcao = `
                 <button class="btn btn-profile" onclick="abrirPerfilProfissional('${profissional.id}')">👤 Perfil</button>
                 <button class="btn btn-edit" onclick="editarProfissional('${profissional.id}')">✏️ Editar</button>
@@ -435,9 +456,6 @@ function adicionarEventListeners() {
     }
 }
 
-// ======================================================================
-// MODIFICADO: Função de convite simplificada para o plano 100% frontend.
-// ======================================================================
 async function gerarLinkDeConvite() {
     if (!empresaId) {
         alert("Erro: Não foi possível identificar a sua empresa para gerar o convite.");
@@ -487,7 +505,7 @@ async function adicionarProfissional() {
         fotoUrl: fotoURL,
         ehDono: false,
         servicos: [],
-        status: 'ativo', // Adicionado para manter a consistência com o novo fluxo
+        status: 'ativo',
         criadoEm: serverTimestamp(),
         agendaEspecial: []
     };
@@ -575,9 +593,6 @@ async function excluirProfissional(profissionalId) {
     }
 }
 
-// ======================================================================
-// ADICIONADO: Novas funções para ativar e recusar funcionários pendentes.
-// ======================================================================
 async function ativarFuncionario(profissionalId) {
     if (!confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.")) return;
 
@@ -585,10 +600,9 @@ async function ativarFuncionario(profissionalId) {
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, {
-            status: 'ativo' // A mágica acontece aqui!
+            status: 'ativo'
         });
         alert("✅ Profissional ativado com sucesso!");
-        // O listener do Firebase (iniciarListenerDaEquipe) vai atualizar a tela automaticamente.
     } catch (error) {
         console.error("Erro ao ativar profissional:", error);
         alert("❌ Erro ao ativar profissional.");
@@ -598,8 +612,6 @@ async function ativarFuncionario(profissionalId) {
 async function recusarFuncionario(profissionalId) {
     if (!confirm("Tem certeza que deseja recusar e excluir este cadastro pendente? Esta ação não pode ser desfeita.")) return;
     
-    // Recusar um funcionário é o mesmo que excluir o cadastro dele.
-    // Reutilizamos a sua função 'excluirProfissional' que já é segura.
     await excluirProfissional(profissionalId); 
 }
 
@@ -611,8 +623,6 @@ function mostrarErro(mensagem) {
 window.abrirPerfilProfissional = abrirPerfilProfissional;
 window.editarProfissional = editarProfissional;
 window.excluirProfissional = excluirProfissional;
-
-// ADICIONADO: Expondo as novas funções globalmente para os botões 'onclick'.
 window.ativarFuncionario = ativarFuncionario;
 window.recusarFuncionario = recusarFuncionario;
 
