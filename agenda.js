@@ -1,11 +1,11 @@
 /**
- * agenda.js REVISIONADO PRONTI PADRÃO
- * - Agenda Futura: mostra agendamentos ativos de hoje em diante.
- * - Histórico: mostra todos agendamentos (qualquer status) em um período customizável (por padrão, mês atual).
- * - Botões alternam visão e mostram/escondem filtros de data.
- * - Filtro de profissional para dono.
- * - Firebase Modular v10+
- * - Tratamento de erros e feedback padrão Pronti
+ * agenda.js - Revisado para Pronti
+ * - Ao abrir, já mostra agendamentos do dia atual.
+ * - Botões "Agenda Futura" e "Histórico" alternam as visões.
+ * - Histórico permite filtro de datas (por padrão, mês atual).
+ * - Filtro de profissional só para dono.
+ * - Mensagens de erro amigáveis.
+ * - Compatível com Firebase Modular v10+.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -36,11 +36,11 @@ const btnAplicarHistorico = document.getElementById("btn-aplicar-historico");
 const btnMesAtual = document.getElementById("btn-mes-atual");
 
 let empresaId = null;
-let perfilUsuario = "dono"; // "dono" ou "funcionario"
+let perfilUsuario = "dono";
 let meuUid = null;
 let modoAgenda = "futura"; // "futura" ou "historico"
 
-// UTILITÁRIOS
+// UTILITÁRIOS PADRÃO PRONTI
 function mostrarToast(texto, cor = '#38bdf8') {
   if (typeof Toastify !== "undefined") {
     Toastify({
@@ -133,11 +133,13 @@ async function inicializarPaginaAgenda() {
     if (filtroProfItem) filtroProfItem.style.display = "none";
   }
 
-  // Botões agenda futura e histórico
+  // Já começa mostrando agenda do dia de hoje
+  if (inputDataEl) inputDataEl.value = new Date().toISOString().split("T")[0];
+  ativarModoAgenda("futura");
+
+  // Listeners padrão
   if (btnAgendaFutura) btnAgendaFutura.addEventListener("click", () => ativarModoAgenda("futura"));
   if (btnHistorico) btnHistorico.addEventListener("click", () => ativarModoAgenda("historico"));
-
-  // Listeners filtros
   if (filtroProfissionalEl) filtroProfissionalEl.addEventListener("change", carregarAgendamentos);
   if (inputDataEl) inputDataEl.addEventListener("change", carregarAgendamentos);
   if (btnAplicarHistorico) btnAplicarHistorico.addEventListener("click", carregarAgendamentos);
@@ -147,21 +149,20 @@ async function inicializarPaginaAgenda() {
   });
 
   configurarListenersDeAcao();
-
-  // Inicializa visão padrão
-  ativarModoAgenda("futura");
 }
 
 // ----------- MODO AGENDA (FUTURA/HISTÓRICO) -----------
 function ativarModoAgenda(modo) {
   modoAgenda = modo;
-  // Visual do botão
   if (btnAgendaFutura) btnAgendaFutura.classList.toggle("active", modo === "futura");
   if (btnHistorico) btnHistorico.classList.toggle("active", modo === "historico");
   if (filtrosHistoricoDiv) filtrosHistoricoDiv.style.display = (modo === "historico") ? "" : "none";
-  if (inputDataEl) inputDataEl.style.display = (modo === "futura") ? "" : "none";
-  carregarAgendamentos();
+  if (inputDataEl) {
+    inputDataEl.style.display = (modo === "futura") ? "" : "none";
+    if (modo === "futura") inputDataEl.value = new Date().toISOString().split("T")[0];
+  }
   if (modo === "historico") preencherCamposMesAtual();
+  carregarAgendamentos();
 }
 
 // ----------- FILTRO PROFISSIONAL -----------
@@ -197,14 +198,13 @@ async function carregarAgendamentos() {
     const constraints = [];
 
     if (modoAgenda === "futura") {
-      // Agenda Futura: ativos a partir de hoje
-      const hoje = new Date();
-      const dataHoje = hoje.toISOString().split("T")[0];
-      constraints.push(where("data", ">=", dataHoje), where("status", "==", "ativo"));
+      // Agenda Futura: ativos a partir da data selecionada (padrão: hoje)
+      const dataRef = inputDataEl ? inputDataEl.value : new Date().toISOString().split("T")[0];
+      constraints.push(where("data", ">=", dataRef), where("status", "==", "ativo"));
       if (profissionalId !== 'todos') constraints.push(where("profissionalId", "==", profissionalId));
       q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
     } else {
-      // Histórico: entre data inicial e final, todos status
+      // Histórico: entre data inicial/final, todos status
       const dataIni = dataInicialEl ? dataInicialEl.value : "";
       const dataFim = dataFinalEl ? dataFinalEl.value : "";
       if (!dataIni || !dataFim) {
@@ -261,7 +261,6 @@ async function carregarAgendamentos() {
     });
   } catch (error) {
     let mensagemExtra = "";
-    // Indica se é erro de índice do Firestore
     if (error.code && error.code === "failed-precondition" && error.message && error.message.includes("index")) {
       mensagemExtra = "<br>É necessário criar um índice composto no Firestore. Veja o console para detalhes.";
     }
