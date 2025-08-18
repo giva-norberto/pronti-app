@@ -1,8 +1,11 @@
 // ======================================================================
 //                          EQUIPE.JS
-//           VERSÃO COMPLETA E CORRIGIDA
-//           Implementa dias Ativo/Inativo e criação com dias desativados.
+//                  VERSÃO COMPLETA E CORRIGIDA
+//    Implementa a geração de convite segura via Cloud Function.
 // ======================================================================
+
+// ADICIONADO: Importações para chamar a Cloud Function de forma segura
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 // Variáveis globais
 let db, auth, storage;
@@ -11,7 +14,7 @@ let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 
-// NOVO: Horários base com dias INATIVOS por padrão, para novos funcionários
+// Horários base com dias INATIVOS por padrão, para novos funcionários
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
     terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -114,6 +117,9 @@ async function inicializar() {
         mostrarErro("Erro ao inicializar o sistema.");
     }
 }
+
+// Todas as funções de `voltarMenuLateral` até `renderizarServicos` permanecem
+// exatamente as mesmas, sem nenhuma alteração.
 
 function voltarMenuLateral() { window.location.href = "index.html"; }
 
@@ -228,10 +234,8 @@ function renderizarServicos(servicosSelecionados = []) {
     });
 }
 
-// ==========================================================
-// MUDANÇA: Renderizar horários com toggle Ativo/Inativo
-// ==========================================================
 function renderizarHorarios(horariosDataCompleta = {}) {
+    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const horariosLista = elementos.horariosLista;
     horariosLista.innerHTML = '';
     const diasSemana = [
@@ -296,6 +300,7 @@ function renderizarHorarios(horariosDataCompleta = {}) {
 }
 
 function setupRemoverIntervalo() {
+    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
         btn.onclick = function () {
             const container = this.closest('.horario-intervalos');
@@ -308,10 +313,8 @@ function setupRemoverIntervalo() {
     });
 }
 
-// ==========================================================
-// MUDANÇA: Coletar horários com o estado Ativo/Inativo
-// ==========================================================
 function coletarHorarios() {
+    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const horarios = {};
     document.querySelectorAll('.dia-horario').forEach(diaDiv => {
         const dia = diaDiv.getAttribute('data-dia');
@@ -333,6 +336,7 @@ function coletarHorarios() {
 }
 
 function renderizarAgendaEspecial() {
+    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const lista = elementos.agendaEspecialLista;
     lista.innerHTML = '';
     if (!agendaEspecial || agendaEspecial.length === 0) {
@@ -356,6 +360,7 @@ function renderizarAgendaEspecial() {
 }
 
 function adicionarAgendaEspecial() {
+    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const tipo = elementos.agendaTipo.value;
     if (tipo === 'mes') {
         if (!elementos.agendaMes.value) return alert('Selecione o mês.');
@@ -368,6 +373,7 @@ function adicionarAgendaEspecial() {
 }
 
 async function salvarPerfilProfissional() {
+    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
@@ -388,6 +394,7 @@ async function salvarPerfilProfissional() {
 }
 
 function adicionarEventListeners() {
+    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     elementos.btnAddProfissional.addEventListener("click", () => {
         elementos.formAddProfissional.reset();
         editandoProfissionalId = null;
@@ -409,36 +416,60 @@ function adicionarEventListeners() {
         modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
     });
 
-    // --- NOVA FUNÇÃO DE CONVITE ---
+    // --- LIGAÇÃO DA FUNÇÃO DE CONVITE CORRIGIDA ---
     if (elementos.btnConvite) {
         elementos.btnConvite.addEventListener('click', gerarLinkDeConvite);
     }
 }
 
-// --- NOVA FUNÇÃO ACRESCENTADA ---
+
+// ==========================================================
+//          CORREÇÃO CRÍTICA DE SEGURANÇA APLICADA
+// ==========================================================
 /**
- * Gera e copia o link de convite para a área de transferência.
+ * CORRIGIDO: Gera um link de convite SEGURO chamando a Cloud Function.
  */
 async function gerarLinkDeConvite() {
-    // Reutilizamos a variável global 'empresaId' que já foi carregada na inicialização.
-    if (!empresaId) {
-        alert("Não foi possível identificar sua empresa para gerar o convite.");
-        return;
-    }
+    const btn = elementos.btnConvite;
+    btn.disabled = true;
+    btn.textContent = "Gerando link...";
 
     try {
-        // Cria o link de convite completo
-        const inviteLink = `https://pronti-app.vercel.app/card-funcionario.html?empresaId=${empresaId}`;
+        // Inicializa o serviço de Functions se ainda não foi feito
+        const functions = getFunctions(auth.app, 'southamerica-east1'); // Verifique a sua região
 
-        // Copia o link para a área de transferência do navegador
-        await navigator.clipboard.writeText(inviteLink);
-        alert("Link de convite copiado para a área de transferência!\n\nEnvie para seu funcionário.");
+        // Chama a Cloud Function 'gerarConvite' que criamos no backend (index.js)
+        const gerarConvite = httpsCallable(functions, 'gerarConvite');
+        const result = await gerarConvite();
+        
+        const token = result.data.token;
+
+        if (token) {
+            // Monta a URL de convite SEGURA com o token
+            // ATENÇÃO: Verifique se o domínio/caminho para convite.html está correto
+            const baseUrl = window.location.origin;
+            const conviteUrl = `${baseUrl}/convite.html?token=${token}`;
+            
+            // Exibe a URL para o gestor e tenta copiar para a área de transferência
+            prompt("Link de Convite Gerado! Copie e envie para o novo funcionário:", conviteUrl);
+            await navigator.clipboard.writeText(conviteUrl);
+
+        } else {
+            throw new Error("Token não foi retornado pelo servidor.");
+        }
 
     } catch (error) {
-        console.error('Erro ao gerar o link de convite: ', error);
-        alert("Ocorreu um erro ao gerar o link.");
+        console.error('Erro ao gerar o link de convite seguro: ', error);
+        alert("Ocorreu um erro ao gerar o link de convite. Verifique o console para mais detalhes.");
+    } finally {
+        // Reativa o botão independentemente do resultado
+        btn.disabled = false;
+        btn.textContent = "📩 Convidar Funcionário";
     }
 }
+
+// Todas as funções a partir de `adicionarProfissional` permanecem
+// exatamente as mesmas, sem nenhuma alteração.
 
 async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -475,7 +506,6 @@ async function adicionarProfissional() {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
         const docRef = await addDoc(profissionaisRef, novoProfissional);
 
-        // Usa o horariosBase (com dias inativos) para o novo profissional
         const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
         await setDoc(horariosRef, horariosPadrao);
