@@ -1,9 +1,10 @@
 /**
- * agenda.js - Revisado para Pronti
- * - Ao abrir, já mostra agendamentos do dia atual.
- * - Botões "Agenda Futura" e "Histórico" alternam as visões.
- * - Histórico permite filtro de datas (por padrão, mês atual).
- * - Filtro de profissional só para dono.
+ * agenda.js - Revisado (Pronti)
+ * - A tela principal sempre mostra o campo de data (filtro) com a data atual por padrão.
+ * - O usuário pode alterar a data para qualquer dia futuro.
+ * - O filtro funciona independente de disponibilidade.
+ * - O modo histórico continua funcionando normalmente.
+ * - Filtros de profissional só para dono.
  * - Mensagens de erro amigáveis.
  * - Compatível com Firebase Modular v10+.
  */
@@ -34,13 +35,14 @@ const dataInicialEl = document.getElementById("data-inicial");
 const dataFinalEl = document.getElementById("data-final");
 const btnAplicarHistorico = document.getElementById("btn-aplicar-historico");
 const btnMesAtual = document.getElementById("btn-mes-atual");
+const filtroDataFuturaDiv = document.getElementById("filtro-data-futura"); // <div> que envolve o input de data
 
 let empresaId = null;
 let perfilUsuario = "dono";
 let meuUid = null;
 let modoAgenda = "futura"; // "futura" ou "historico"
 
-// UTILITÁRIOS PADRÃO PRONTI
+// Utilitários
 function mostrarToast(texto, cor = '#38bdf8') {
   if (typeof Toastify !== "undefined") {
     Toastify({
@@ -133,8 +135,10 @@ async function inicializarPaginaAgenda() {
     if (filtroProfItem) filtroProfItem.style.display = "none";
   }
 
-  // Já começa mostrando agenda do dia de hoje
+  // Sempre mostra o campo de data (filtro) com a data atual
   if (inputDataEl) inputDataEl.value = new Date().toISOString().split("T")[0];
+  if (filtroDataFuturaDiv) filtroDataFuturaDiv.style.display = "";
+
   ativarModoAgenda("futura");
 
   // Listeners padrão
@@ -157,12 +161,9 @@ function ativarModoAgenda(modo) {
   if (btnAgendaFutura) btnAgendaFutura.classList.toggle("active", modo === "futura");
   if (btnHistorico) btnHistorico.classList.toggle("active", modo === "historico");
   if (filtrosHistoricoDiv) filtrosHistoricoDiv.style.display = (modo === "historico") ? "" : "none";
-  if (inputDataEl) {
-    inputDataEl.style.display = (modo === "futura") ? "" : "none";
-    if (modo === "futura") inputDataEl.value = new Date().toISOString().split("T")[0];
-  }
-  if (modo === "historico") preencherCamposMesAtual();
+  if (filtroDataFuturaDiv) filtroDataFuturaDiv.style.display = (modo === "futura") ? "" : "none";
   carregarAgendamentos();
+  if (modo === "historico") preencherCamposMesAtual();
 }
 
 // ----------- FILTRO PROFISSIONAL -----------
@@ -198,11 +199,11 @@ async function carregarAgendamentos() {
     const constraints = [];
 
     if (modoAgenda === "futura") {
-      // Agenda Futura: ativos a partir da data selecionada (padrão: hoje)
+      // Agenda Futura: sempre pega a data do campo de filtro (default: hoje)
       const dataRef = inputDataEl ? inputDataEl.value : new Date().toISOString().split("T")[0];
-      constraints.push(where("data", ">=", dataRef), where("status", "==", "ativo"));
+      constraints.push(where("data", "==", dataRef));
       if (profissionalId !== 'todos') constraints.push(where("profissionalId", "==", profissionalId));
-      q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
+      q = query(ref, ...constraints, orderBy("horario"));
     } else {
       // Histórico: entre data inicial/final, todos status
       const dataIni = dataInicialEl ? dataInicialEl.value : "";
