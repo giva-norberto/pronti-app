@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro/Perfil Funcionário</title>
+    <link rel="stylesheet" href="modal-perfil-profissional.css">
+</head>
+<body>
+    <div id="modal-perfil-profissional" class="modal">
+      <!-- ... mesmo conteúdo do seu modal-perfil-profissional.html ... -->
+      <!-- Certifique-se de ter os elementos com os mesmos IDs usados no JS -->
+    </div>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { abrirModalPerfilProfissional, buscarTodosServicosDaEmpresa, inicializarModalPerfil } from "./modal-perfil-profissional.js";
+      import { firebaseConfig } from "./firebase-config.js";
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // Pega empresaId da URL (?empresaId=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const empresaId = urlParams.get('empresaId');
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user || !empresaId) {
+          window.location.href = "login.html";
+          return;
+        }
+        inicializarModalPerfil();
+
+        // Busca dados do próprio funcionário
+        const profRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+        const profSnap = await getDoc(profRef);
+        if (!profSnap.exists()) {
+          // Se não existir, pode criar um objeto default ou forçar o preenchimento
+          abrirModalPerfilProfissional(
+            { id: user.uid, nome: user.displayName || "", servicos: [], horarios: {} },
+            await buscarTodosServicosDaEmpresa(db, empresaId),
+            db,
+            empresaId
+          );
+        } else {
+          abrirModalPerfilProfissional(
+            { id: user.uid, ...profSnap.data() },
+            await buscarTodosServicosDaEmpresa(db, empresaId),
+            db,
+            empresaId
+          );
+        }
+      });
+    </script>
+</body>
+</html>
