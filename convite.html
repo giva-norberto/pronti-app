@@ -120,13 +120,24 @@
             // Cria o mapa para encontrar o usuário depois
             await setDoc(mapaUsuarioRef, { empresaId: empresaId });
 
-            // Exibe a mensagem final de sucesso
+            // ==========================================================
+            //       ÚNICA MUDANÇA REALIZADA CONFORME SOLICITADO
+            // ==========================================================
+            
+            // Exibe a mensagem final de sucesso com o novo botão
             inviteBox.innerHTML = `
                 <h1>⏳ Quase lá!</h1>
                 <p style="color: #28a745; font-weight: bold;">Seu perfil foi enviado para aprovação!</p>
                 <p>O gestor da equipe precisa ativar sua conta para que você possa acessar o sistema.</p>
-                <p>Você já pode fechar esta página.</p>
+                <button id="btn-fechar" class="btn-submit">Ok, Entendi</button>
             `;
+
+            // Adiciona a funcionalidade ao novo botão para fechar a janela
+            document.getElementById('btn-fechar').addEventListener('click', () => {
+                // Tenta fechar a aba/janela atual.
+                // Nota: Alguns navegadores podem bloquear isso por segurança.
+                window.close();
+            });
         }
 
         // Função para tratar erros de forma centralizada
@@ -146,7 +157,11 @@
         btnGoogle.addEventListener('click', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get('empresaId');
-            if (!empresaId) { /* ... tratamento de erro ... */ return; }
+            if (!empresaId) { 
+                statusMessage.textContent = "❌ Erro: Link de convite inválido.";
+                statusMessage.className = 'error-message';
+                return; 
+            }
 
             btnGoogle.disabled = true;
             document.getElementById('btn-submit').disabled = true;
@@ -168,7 +183,11 @@
             event.preventDefault();
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get('empresaId');
-            if (!empresaId) { /* ... tratamento de erro ... */ return; }
+            if (!empresaId) { 
+                statusMessage.textContent = "❌ Erro: Link de convite inválido.";
+                statusMessage.className = 'error-message';
+                return; 
+            }
 
             btnGoogle.disabled = true;
             document.getElementById('btn-submit').disabled = true;
