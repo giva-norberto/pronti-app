@@ -30,7 +30,10 @@ function _renderizarServicos() {
     }
 
     // Pega os IDs dos serviços que o profissional já tem
-    const servicosSelecionadosIds = new Set(estado.profissionalAtual.servicos.map(s => s.id || s)); // Suporta objeto ou string
+    const servicosSelecionadosIds = new Set(
+        (estado.profissionalAtual.servicos || [])
+            .map(s => typeof s === "object" ? (s.id || s._id) : s) // Suporta objeto ou string
+    );
 
     estado.todosOsServicos.forEach(servico => {
         const div = document.createElement("div");
@@ -94,7 +97,9 @@ function fecharModal() {
     estado.profissionalAtual = null; // Limpa o estado para a próxima abertura
 }
 
-/** Salva as alterações de serviços e horários no Firebase. */
+/** Salva as alterações de serviços e horários no Firebase.
+    Só faz update quando o usuário clica no botão de salvar!
+*/
 async function salvarPerfil() {
     if (!estado.db || !estado.empresaId || !estado.profissionalAtual) {
         alert("❌ Erro: Dados insuficientes para salvar.");
@@ -136,7 +141,7 @@ async function salvarPerfil() {
         alert("❌ Erro ao salvar perfil: " + error.message);
     } finally {
         btnSalvar.disabled = false;
-        btnSalvar.textContent = 'Guardar Alterações';
+        btnSalvar.textContent = 'Salvar Configurações';
     }
 }
 
