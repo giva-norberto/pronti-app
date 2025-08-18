@@ -91,9 +91,9 @@
     </div>
 
     <script type="module">
-        // Importa todas as funções de autenticação que vamos usar
+        // Importa todas as funções de autenticação e firestore que vamos usar
         import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { auth, db } from './firebase-config.js'; // Verifique o caminho para sua config
 
         const btnGoogle = document.getElementById('btn-google-login');
@@ -101,9 +101,34 @@
         const statusMessage = document.getElementById('status-message');
         const inviteBox = document.getElementById('invite-box');
 
-        // Função reutilizável para criar o perfil pendente, evitando repetição de código
+        // ======================================================================
+        //                  CORREÇÃO CIRÚRGICA APLICADA AQUI
+        // ======================================================================
+        // Nova função "inteligente" que verifica se o usuário já existe
+        // antes de criar um novo perfil, quebrando o loop de aprovação.
+        async function processInviteAcceptance(user, empresaId) {
+            statusMessage.textContent = "Autenticação OK. Verificando seu perfil...";
+
+            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+            const profissionalSnap = await getDoc(profissionalRef);
+
+            if (profissionalSnap.exists()) {
+                // Se o usuário já existe, não faz nada, apenas informa e redireciona.
+                inviteBox.innerHTML = `
+                    <h1>✅ Você já faz parte da equipe!</h1>
+                    <p>Seu perfil já está cadastrado. Você será redirecionado para a tela de login para acessar o sistema.</p>
+                `;
+                setTimeout(() => { window.location.href = 'login.html'; }, 4000); // Redireciona após 4 segundos
+            } else {
+                // Se o usuário é novo, cria o perfil pendente.
+                await createPendingProfile(user, empresaId);
+            }
+        }
+        // ======================================================================
+
+        // Função reutilizável para criar o perfil pendente
         async function createPendingProfile(user, empresaId) {
-            statusMessage.textContent = "Autenticação OK. Criando seu perfil pendente...";
+            statusMessage.textContent = "Verificação OK. Criando seu perfil pendente...";
             
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
             const mapaUsuarioRef = doc(db, "mapaUsuarios", user.uid);
@@ -120,11 +145,7 @@
             // Cria o mapa para encontrar o usuário depois
             await setDoc(mapaUsuarioRef, { empresaId: empresaId });
 
-            // ==========================================================
-            //       ÚNICA MUDANÇA REALIZADA CONFORME SOLICITADO
-            // ==========================================================
-            
-            // Exibe a mensagem final de sucesso com o novo botão
+            // Exibe a mensagem final de sucesso
             inviteBox.innerHTML = `
                 <h1>⏳ Quase lá!</h1>
                 <p style="color: #28a745; font-weight: bold;">Seu perfil foi enviado para aprovação!</p>
@@ -132,10 +153,7 @@
                 <button id="btn-fechar" class="btn-submit">Ok, Entendi</button>
             `;
 
-            // Adiciona a funcionalidade ao novo botão para fechar a janela
             document.getElementById('btn-fechar').addEventListener('click', () => {
-                // Tenta fechar a aba/janela atual.
-                // Nota: Alguns navegadores podem bloquear isso por segurança.
                 window.close();
             });
         }
@@ -153,8 +171,8 @@
             statusMessage.className = 'error-message';
         }
 
-        // Evento para o botão do Google
-        btnGoogle.addEventListener('click', async () => {
+        // Função genérica para lidar com o login e chamar o processamento do convite
+        async function handleLogin(loginFunction) {
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get('empresaId');
             if (!empresaId) { 
@@ -167,43 +185,34 @@
             document.getElementById('btn-submit').disabled = true;
             statusMessage.textContent = "Aguarde...";
 
-            const provider = new GoogleAuthProvider();
             try {
-                const result = await signInWithPopup(auth, provider);
-                await createPendingProfile(result.user, empresaId);
+                const user = await loginFunction();
+                await processInviteAcceptance(user, empresaId); // Chama a nova função inteligente
             } catch (error) {
                 handleError(error);
                 btnGoogle.disabled = false;
                 document.getElementById('btn-submit').disabled = false;
             }
+        }
+
+        // Evento para o botão do Google
+        btnGoogle.addEventListener('click', () => {
+            handleLogin(async () => {
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                return result.user;
+            });
         });
 
         // Evento para o formulário de E-mail/Senha
-        formEmail.addEventListener('submit', async (event) => {
+        formEmail.addEventListener('submit', (event) => {
             event.preventDefault();
-            const urlParams = new URLSearchParams(window.location.search);
-            const empresaId = urlParams.get('empresaId');
-            if (!empresaId) { 
-                statusMessage.textContent = "❌ Erro: Link de convite inválido.";
-                statusMessage.className = 'error-message';
-                return; 
-            }
-
-            btnGoogle.disabled = true;
-            document.getElementById('btn-submit').disabled = true;
-            statusMessage.textContent = "Verificando...";
-
-            const email = document.getElementById('email').value;
-            const senha = document.getElementById('senha').value;
-            
-            try {
+            handleLogin(async () => {
+                const email = document.getElementById('email').value;
+                const senha = document.getElementById('senha').value;
                 const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-                await createPendingProfile(userCredential.user, empresaId);
-            } catch (error) {
-                handleError(error);
-                btnGoogle.disabled = false;
-                document.getElementById('btn-submit').disabled = false;
-            }
+                return userCredential.user;
+            });
         });
     </script>
 </body>
