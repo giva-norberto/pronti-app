@@ -95,11 +95,11 @@
         // 1. IMPORTS DO FIREBASE
         import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-        // A importação do 'auth' e 'db' virá do seu arquivo de configuração central
-        import { auth } from './vitrini-firebase.js'; // Verifique se o caminho está correto
+        // A importação do 'auth' virá do seu arquivo de configuração central
+        import { auth } from './vitrini-firebase.js'; // Verifique se o caminho para seu arquivo de config está correto
 
         // 2. INICIALIZAÇÃO E SELEÇÃO DE ELEMENTOS
-        const functions = getFunctions(auth.app, 'southamerica-east1'); // IMPORTANTE: Coloque a sua região aqui
+        const functions = getFunctions(auth.app, 'southamerica-east1'); // IMPORTANTE: Verifique se 'southamerica-east1' é a sua região
         const btnAceitar = document.getElementById('btn-aceitar-convite');
         const statusMessage = document.getElementById('status-message');
 
@@ -118,7 +118,7 @@
             btnAceitar.disabled = true;
             setStatus("Aguarde, processando seu login...");
 
-            // 3. PEGA O TOKEN DO LINK (URL) - ESTA É A MUDANÇA DE SEGURANÇA
+            // 3. PEGA O TOKEN DO LINK (URL)
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('token');
 
@@ -131,31 +131,26 @@
             // 4. FAZ O LOGIN COM O GOOGLE
             const provider = new GoogleAuthProvider();
             try {
-                // O login abre um pop-up para o usuário
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
 
                 setStatus("Login realizado. Finalizando seu cadastro na equipe...");
 
-                // 5. CHAMA A CLOUD FUNCTION PARA VALIDAR O TOKEN E CRIAR O PERFIL
-                // Esta é a parte segura que roda no servidor do Firebase.
+                // 5. CHAMA A CLOUD FUNCTION SEGURA NO BACKEND
                 const aceitarConvite = httpsCallable(functions, 'aceitarConvite');
                 const response = await aceitarConvite({ token: token });
 
                 if (response.data.success) {
                     setStatus("Bem-vindo(a)! Redirecionando para seu perfil...", 'success');
                     
-                    // 6. REDIRECIONA PARA A PÁGINA DE PERFIL
-                    // A página de perfil usará o 'onAuthStateChanged' para pegar os dados do usuário logado.
-                    window.location.href = './perfil.html';
+                    // 6. REDIRECIONA PARA A PÁGINA DE PERFIL APÓS SUCESSO
+                    window.location.href = './perfil.html'; // Verifique se o nome da sua página de perfil está correto
                 } else {
-                    // Erro retornado pela Cloud Function (ex: token inválido, expirado)
                     throw new Error(response.data.error || "Não foi possível validar seu convite.");
                 }
 
             } catch (error) {
                 console.error("Erro ao aceitar convite:", error);
-                // Trata erros comuns de forma mais amigável
                 if (error.code === 'auth/popup-closed-by-user') {
                     setStatus("Você fechou a janela de login. Tente novamente.", 'info');
                 } else {
