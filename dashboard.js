@@ -1,12 +1,11 @@
 // ======================================================================
-//                       DASHBOARD.JS (REVISADO)
-//          Usa o "porteiro" centralizado para controle de acesso
-//               e preserva toda a lógica de negócio
+//                       DASHBOARD.JS (VERSÃO FINAL)
+//          Inclui o "porteiro" de acesso e a notificação de trial
 // ======================================================================
 
-// MODIFICADO: Removemos as importações antigas e adicionamos apenas o 'verificarAcesso'.
-import { verificarAcesso } from "./userService.js";
-import { showCustomAlert } from "./custom-alert.js"; // Mantido, caso use em outro lugar.
+// MODIFICADO: Adicionamos 'checkUserStatus' para a notificação do trial
+import { verificarAcesso, checkUserStatus } from "./userService.js"; 
+import { showCustomAlert } from "./custom-alert.js";
 
 // Seus imports originais do Firebase e da IA (mantidos)
 import { db, auth } from "./firebase-config.js";
@@ -17,7 +16,7 @@ import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 // Total de horários disponíveis no dia (mantido)
 const totalSlots = 20;
 
-// --- FUNÇÕES DE LÓGICA E DADOS (NENHUMA ALTERAÇÃO AQUI) ---
+// --- FUNÇÕES DE LÓGICA E DADOS (NENHUMA ALTERAÇÃO) ---
 
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
@@ -84,7 +83,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     return dataInicial;
 }
 
-// --- FUNÇÕES DE CÁLCULO (NENHUMA ALTERAÇÃO AQUI) ---
+// --- FUNÇÕES DE CÁLCULO (NENHUMA ALTERAÇÃO) ---
 
 function calcularServicosDestaque(agsDoDia) {
     const servicosContados = agsDoDia.reduce((acc, ag) => {
@@ -125,7 +124,7 @@ function calcularSugestaoIA(agsDoDia) {
 }
 
 
-// --- FUNÇÕES DE RENDERIZAÇÃO (NENHUMA ALTERAÇÃO AQUI) ---
+// --- FUNÇÕES DE RENDERIZAÇÃO (NENHUMA ALTERAÇÃO) ---
 
 function preencherAgendaDoDia(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
@@ -199,7 +198,7 @@ function preencherResumoInteligente(resumoInteligente) {
 
 // --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD (sem alterações) ---
 
-async function preencherDashboard(user, dataSelecionada, empresaId) { // Adicionado empresaId como parâmetro
+async function preencherDashboard(user, dataSelecionada, empresaId) {
     if (!empresaId) {
         alert("ID da Empresa não encontrado.");
         return;
@@ -244,29 +243,40 @@ function debounce(fn, delay) {
 
 // --- INICIALIZAÇÃO E EVENTOS ---
 
-// ======================================================================
-// MODIFICADO: Todo o bloco de inicialização foi substituído
-// por este, mais simples e seguro, que usa nosso "porteiro".
-// ======================================================================
 window.addEventListener("DOMContentLoaded", async () => {
     try {
-        // 1. Chama o "porteiro". Ele cuida de tudo: login, status, trial, redirecionamento.
-        const { user, perfil, empresaId } = await verificarAcesso();
+        // 1. Chama o "porteiro". Ele cuida de tudo.
+        const { user, perfil, empresaId, isOwner } = await verificarAcesso();
 
-        // 2. Se o código chegou aqui, o acesso foi PERMITIDO.
-        // O usuário é um dono ou um funcionário ativo.
         console.log("Acesso ao Dashboard liberado para:", perfil.nome);
 
-        // 3. Inicia a lógica do dashboard, passando os dados que o porteiro já nos deu.
+        // 2. Inicia a lógica principal do dashboard.
         iniciarDashboard(user, empresaId);
+
+        // ==========================================================
+        // ADICIONADO: Lógica para exibir a notificação do trial
+        // Só exibe para o dono da empresa.
+        // ==========================================================
+        if (isOwner) {
+            const status = await checkUserStatus();
+            if (status.isTrialActive && status.trialEndDate) {
+                const banner = document.getElementById('trial-notification-banner');
+                if (banner) {
+                   const dataFinal = status.trialEndDate.toLocaleDateString('pt-BR');
+                   banner.innerHTML = `🎉 Bem-vindo! Seu período de teste gratuito está ativo e termina em <strong>${dataFinal}</strong>.`;
+                   banner.style.display = 'block';
+                }
+            }
+        }
 
     } catch (error) {
         // Se o acesso foi negado, o usuário já foi redirecionado.
-        // O catch impede que o resto do código tente executar e gere erros.
         console.error("Acesso ao Dashboard bloqueado pelo porteiro:", error.message);
+        // ADICIONADO: Redirecionamento de segurança caso algo dê muito errado.
+        window.location.href = 'login.html';
     }
     
-    // O restante do seu código de eventos que não depende do usuário pode ficar aqui
+    // Seu código de evento original (mantido)
     const btnVoltar = document.getElementById('btn-voltar');
     if (btnVoltar) {
         btnVoltar.addEventListener('click', () => {
@@ -275,7 +285,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// MODIFICADO: A função agora recebe 'empresaId' para não precisar buscar de novo.
+// Função para encapsular a lógica original do dashboard (sem alterações)
 async function iniciarDashboard(user, empresaId) {
     const filtroData = document.getElementById("filtro-data");
     
@@ -290,9 +300,9 @@ async function iniciarDashboard(user, empresaId) {
     if (filtroData) {
         filtroData.value = dataInicial;
         filtroData.addEventListener("change", debounce(() => {
-            preencherDashboard(user, filtroData.value, empresaId); // Passa o empresaId
+            preencherDashboard(user, filtroData.value, empresaId);
         }, 300));
     }
 
-    await preencherDashboard(user, dataInicial, empresaId); // Passa o empresaId
+    await preencherDashboard(user, dataInicial, empresaId);
 }
