@@ -141,21 +141,30 @@ export async function verificarAcesso() {
                 if (empresaDoc) {
                     console.log("Debug (verificarAcesso): Usuário identificado como DONO. Acesso permitido.");
                     
-                    // =======================================================
-                    // CORREÇÃO FINAL APLICADA AQUI
-                    // Redireciona para a página correta ('dashboard.html') e
-                    // previne o loop infinito verificando se o usuário
-                    // já está na página de destino.
-                    // =======================================================
-                    const targetPage = 'dashboard.html'; // Nome correto do arquivo do dashboard
+                    const targetPage = 'dashboard.html';
                     const currentPage = window.location.pathname.split('/').pop();
 
-                    if (currentPage !== targetPage) {
+                    if (currentPage !== targetPage && !currentPage.includes('login')) {
                         window.location.href = targetPage;
+                    }
+
+                    // =======================================================
+                    // CORREÇÃO PARA O NOME UNDEFINED
+                    // Buscamos o nome do usuário na coleção 'usuarios' e o
+                    // adicionamos ao objeto de perfil que será enviado para o dashboard.
+                    // =======================================================
+                    const empresaData = empresaDoc.data();
+                    const userDocRef = doc(db, "usuarios", user.uid);
+                    const userDocSnap = await getDoc(userDocRef);
+
+                    if (userDocSnap.exists() && userDocSnap.data().nome) {
+                        empresaData.nome = userDocSnap.data().nome;
+                    } else {
+                        empresaData.nome = user.displayName || user.email; // Fallback
                     }
                     // =======================================================
 
-                    return resolve({ user, empresaId: empresaDoc.id, perfil: empresaDoc.data(), isOwner: true });
+                    return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true });
                 }
 
                 // Se não é o dono, checa se é um FUNCIONÁRIO
@@ -165,7 +174,7 @@ export async function verificarAcesso() {
 
                 if (!mapaSnap.exists()) {
                     console.log("Debug (verificarAcesso): Usuário não encontrado no mapaUsuarios. Redirecionando para perfil/onboarding.");
-                    window.location.href = 'perfil.html'; // Ou 'criar-empresa.html'
+                    window.location.href = 'perfil.html';
                     return reject(new Error("Usuário novo, precisa criar empresa."));
                 }
                 
@@ -185,7 +194,6 @@ export async function verificarAcesso() {
 
             } catch (error) {
                 console.error("Debug (verificarAcesso): Erro final no bloco try/catch:", error);
-                // Não redireciona aqui para podermos ver o erro no console sem causar um loop
                 return reject(error);
             }
         });
