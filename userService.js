@@ -43,7 +43,6 @@ async function getEmpresaDocPorDono(uid) {
         return querySnapshot.docs[0];
     } catch (error) {
         console.error("Debug (getEmpresaDocPorDono): ERRO na busca por empresa do dono:", error);
-        // Lança o erro para que a função que chamou (verificarAcesso) saiba que falhou.
         throw error;
     }
 }
@@ -52,7 +51,7 @@ async function getEmpresaDocPorDono(uid) {
 
 /**
  * Garante que um documento para o usuário exista na coleção 'usuarios' e que
- * seu período de trial tenha sido iniciado. Usa a data do servidor para segurança.
+ * seu período de trial tenha sido iniciado.
  */
 export async function ensureUserAndTrialDoc() {
     const user = auth.currentUser;
@@ -80,7 +79,6 @@ export async function ensureUserAndTrialDoc() {
 
 /**
  * Verifica o status de assinatura e trial do usuário logado.
- * Retorna um objeto com { hasActivePlan, isTrialActive, trialEndDate }
  */
 export async function checkUserStatus() {
     const safeReturn = { hasActivePlan: false, isTrialActive: false, trialEndDate: null };
@@ -119,14 +117,12 @@ export async function checkUserStatus() {
 }
 
 /**
- * Função "Porteiro": A função mais importante. Verifica o acesso a páginas protegidas.
- * Redireciona usuários não autorizados.
- * Se o acesso for permitido, retorna os dados do usuário/empresa.
+ * Função "Porteiro": Verifica o acesso e redireciona se necessário.
  */
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe(); // Executa o listener apenas uma vez
+            unsubscribe(); 
 
             if (!user) {
                 window.location.href = 'login.html';
@@ -136,23 +132,25 @@ export async function verificarAcesso() {
             console.log(`Debug (verificarAcesso): Iniciado para o usuário UID: ${user.uid}`);
 
             try {
+                const currentPage = window.location.pathname.split('/').pop();
+
                 // Checa se é o DONO
                 const empresaDoc = await getEmpresaDocPorDono(user.uid);
                 if (empresaDoc) {
                     console.log("Debug (verificarAcesso): Usuário identificado como DONO. Acesso permitido.");
                     
+                    // =======================================================
+                    //              CORREÇÃO CIRÚRGICA APLICADA AQUI
+                    // =======================================================
+                    // Se estivermos na página de login, redirecionamos e
+                    // REJEITAMOS a promessa para parar o loop imediatamente.
                     const targetPage = 'dashboard.html';
-                    const currentPage = window.location.pathname.split('/').pop();
-
-                    if (currentPage !== targetPage && !currentPage.includes('login')) {
+                    if (currentPage !== targetPage && currentPage.includes('login')) {
                         window.location.href = targetPage;
+                        return reject(new Error(`Redirecionando para ${targetPage}...`));
                     }
+                    // =======================================================
 
-                    // =======================================================
-                    // CORREÇÃO PARA O NOME UNDEFINED
-                    // Buscamos o nome do usuário na coleção 'usuarios' e o
-                    // adicionamos ao objeto de perfil que será enviado para o dashboard.
-                    // =======================================================
                     const empresaData = empresaDoc.data();
                     const userDocRef = doc(db, "usuarios", user.uid);
                     const userDocSnap = await getDoc(userDocRef);
@@ -160,36 +158,38 @@ export async function verificarAcesso() {
                     if (userDocSnap.exists() && userDocSnap.data().nome) {
                         empresaData.nome = userDocSnap.data().nome;
                     } else {
-                        empresaData.nome = user.displayName || user.email; // Fallback
+                        empresaData.nome = user.displayName || user.email;
                     }
-                    // =======================================================
-
+                    
+                    // Se não redirecionamos, resolvemos a promessa com os dados do usuário.
                     return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true });
                 }
 
                 // Se não é o dono, checa se é um FUNCIONÁRIO
-                console.log("Debug (verificarAcesso): Usuário não é dono. Verificando mapaUsuarios...");
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
 
                 if (!mapaSnap.exists()) {
-                    console.log("Debug (verificarAcesso): Usuário não encontrado no mapaUsuarios. Redirecionando para perfil/onboarding.");
                     window.location.href = 'perfil.html';
                     return reject(new Error("Usuário novo, precisa criar empresa."));
                 }
                 
                 const empresaId = mapaSnap.data().empresaId;
-                console.log(`Debug (verificarAcesso): Usuário mapeado para empresaId: ${empresaId}. Verificando status...`);
                 const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
                 const profissionalSnap = await getDoc(profissionalRef);
 
                 if (!profissionalSnap.exists() || profissionalSnap.data().status !== 'ativo') {
-                    console.log("Debug (verificarAcesso): Funcionário pendente ou não encontrado. Redirecionando para aguardando.");
                     window.location.href = 'aguardando.html';
                     return reject(new Error("Acesso pendente de aprovação."));
                 }
 
-                console.log("Debug (verificarAcesso): Usuário identificado como FUNCIONÁRIO ATIVO. Acesso permitido.");
+                // Se funcionário está ativo, redireciona para o dashboard dele
+                const targetPage = 'dashboard-funcionario.html'; // <- Verifique se este é o nome correto
+                 if (currentPage !== targetPage && currentPage.includes('login')) {
+                    window.location.href = targetPage;
+                    return reject(new Error(`Redirecionando para ${targetPage}...`));
+                }
+
                 return resolve({ user, perfil: profissionalSnap.data(), empresaId, isOwner: false });
 
             } catch (error) {
