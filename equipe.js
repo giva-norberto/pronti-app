@@ -52,7 +52,6 @@ const elementos = {
     btnAgendaEspecial: document.getElementById('btn-agenda-especial'),
     agendaEspecialLista: document.getElementById('agenda-especial-lista'),
     inputIntervalo: document.getElementById('intervalo-atendimento'),
-    // Elemento para o botão de convite (adicione no HTML: <button id="btn-convite">Convidar Funcionário</button>)
     btnConvite: document.getElementById('btn-convite')
 };
 
@@ -429,7 +428,7 @@ async function gerarLinkDeConvite() {
 
     try {
         // Cria o link de convite completo
-        const inviteLink = `https://pronti-app.vercel.app/convite.html?empresaId=${empresaId}`;
+        const inviteLink = `https://pronti-app.vercel.app/card-funcionario.html?empresaId=${empresaId}`;
 
         // Copia o link para a área de transferência do navegador
         await navigator.clipboard.writeText(inviteLink);
