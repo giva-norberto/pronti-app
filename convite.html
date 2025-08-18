@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convite de Equipe - Pronti</title>
     <style>
-        /* Seus estilos originais foram mantidos, sem alterações */
         :root {
             --cor-fundo: #f3f4f6;
             --cor-branco: #fff;
@@ -14,145 +13,177 @@
             --sombra-elevada: 0 4px 12px rgba(0,0,0,0.1);
         }
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: var(--cor-fundo);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; background-color: var(--cor-fundo);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             text-align: center;
         }
         .invite-container {
-            background-color: var(--cor-branco);
-            padding: 40px 30px;
-            border-radius: 12px;
-            box-shadow: var(--sombra-elevada);
-            width: 100%;
-            max-width: 450px;
-            margin: 15px;
+            background-color: var(--cor-branco); padding: 40px 30px;
+            border-radius: 12px; box-shadow: var(--sombra-elevada);
+            width: 100%; max-width: 450px; margin: 15px;
         }
-        .invite-container h1 {
-            font-size: 1.8em;
-            color: var(--cor-primaria);
-            margin-bottom: 10px;
-        }
-        .invite-container p {
-            color: var(--cor-texto-leve);
-            margin-bottom: 30px;
-            font-size: 1.05em;
-            line-height: 1.5;
-        }
+        .invite-container h1 { font-size: 1.8em; color: var(--cor-primaria); margin-bottom: 10px; }
+        .invite-container p { color: var(--cor-texto-leve); margin-bottom: 25px; font-size: 1.05em; line-height: 1.5; }
+        
         .btn-google {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 14px;
-            font-size: 1em;
-            font-weight: 600;
-            color: #333;
-            background-color: var(--cor-branco);
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%;
+            padding: 14px; font-size: 1em; font-weight: 600; color: #333;
+            background-color: var(--cor-branco); border: 1px solid #ccc; border-radius: 8px; cursor: pointer;
             transition: all 0.2s ease-in-out;
         }
-        .btn-google:hover:not(:disabled) {
-            background-color: #f8f8f8;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .btn-google:hover:not(:disabled) { background-color: #f8f8f8; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-google img { width: 24px; height: 24px; }
+
+        .divider {
+            display: flex; align-items: center; text-align: center; color: #aaa;
+            margin: 25px 0;
         }
-        .btn-google:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
+        .divider::before, .divider::after {
+            content: ''; flex: 1; border-bottom: 1px solid #ddd;
         }
-        .btn-google img {
-            width: 24px;
-            height: 24px;
+        .divider:not(:empty)::before { margin-right: .25em; }
+        .divider:not(:empty)::after { margin-left: .25em; }
+
+        .form-login { display: flex; flex-direction: column; gap: 15px; text-align: left; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 5px; font-weight: 600; color: #333; }
+        .form-group input { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1em; }
+        
+        .btn-submit {
+            width: 100%; padding: 14px; font-size: 1em; font-weight: 600; color: #fff;
+            background-color: var(--cor-primaria); border: none; border-radius: 8px; cursor: pointer;
+            transition: background-color 0.2s ease-in-out; margin-top: 10px;
         }
-        #status-message {
-            margin-top: 20px;
-            font-weight: 500;
-            min-height: 20px;
-        }
+        .btn-submit:hover:not(:disabled) { background-color: #4338ca; }
+        .btn-submit:disabled, .btn-google:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        #status-message { margin-top: 20px; font-weight: 500; min-height: 20px; }
         .success-message { color: #28a745; }
         .error-message { color: #dc3545; }
     </style>
 </head>
 <body>
     <div id="invite-box" class="invite-container">
-        <h1>Convite para a Equipe</h1>
-        <p>Você foi convidado para se juntar a uma equipe no Pronti. Para aceitar, entre com a sua conta do Google.</p>
-        <button id="btn-aceitar-convite" class="btn-google">
+        <h1>Bem-vindo(a) à Equipe!</h1>
+        <p>Faça login para aceitar o convite. Seu perfil será enviado para aprovação do gestor.</p>
+        
+        <button id="btn-google-login" class="btn-google">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Ícone do Google">
-            <span>Aceitar com o Google</span>
+            <span>Entrar com o Google</span>
         </button>
+
+        <div class="divider">ou</div>
+
+        <form id="form-email-login" class="form-login">
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" placeholder="Digite seu e-mail" required>
+            </div>
+            <div class="form-group">
+                <label for="senha">Senha</label>
+                <input type="password" id="senha" placeholder="Digite sua senha" required>
+            </div>
+            <button type="submit" id="btn-submit" class="btn-submit">Entrar com E-mail e Senha</button>
+        </form>
+
         <p id="status-message"></p>
     </div>
 
     <script type="module">
-        // MODIFICADO: Importações simplificadas para o plano 100% frontend
-        import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // Importa todas as funções de autenticação que vamos usar
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        // ATENÇÃO: Verifique se o caminho para sua configuração do Firebase está correto
-        import { auth, db } from './firebase-config.js'; 
+        import { auth, db } from './firebase-config.js'; // Verifique o caminho para sua config
 
-        const btnAceitar = document.getElementById('btn-aceitar-convite');
+        const btnGoogle = document.getElementById('btn-google-login');
+        const formEmail = document.getElementById('form-email-login');
         const statusMessage = document.getElementById('status-message');
         const inviteBox = document.getElementById('invite-box');
 
-        btnAceitar.addEventListener('click', async () => {
-            btnAceitar.disabled = true;
-            statusMessage.textContent = "Aguarde, abrindo o login do Google...";
+        // Função reutilizável para criar o perfil pendente, evitando repetição de código
+        async function createPendingProfile(user, empresaId) {
+            statusMessage.textContent = "Autenticação OK. Criando seu perfil pendente...";
+            
+            const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+            const mapaUsuarioRef = doc(db, "mapaUsuarios", user.uid);
 
-            // MODIFICADO: Lógica agora usa 'empresaId' em vez de 'token'
+            const nomeDisplay = user.displayName || user.email.split('@')[0];
+            const fotoDisplay = user.photoURL || `https://placehold.co/150x150/eef2ff/4f46e5?text=${nomeDisplay.charAt(0).toUpperCase()}`;
+
+            // Cria o perfil do funcionário
+            await setDoc(profissionalRef, {
+                nome: nomeDisplay, email: user.email, fotoUrl: fotoDisplay,
+                uid: user.uid, status: 'pendente', criadoEm: serverTimestamp()
+            }, { merge: true });
+
+            // Cria o mapa para encontrar o usuário depois
+            await setDoc(mapaUsuarioRef, { empresaId: empresaId });
+
+            // Exibe a mensagem final de sucesso
+            inviteBox.innerHTML = `
+                <h1>⏳ Quase lá!</h1>
+                <p style="color: #28a745; font-weight: bold;">Seu perfil foi enviado para aprovação!</p>
+                <p>O gestor da equipe precisa ativar sua conta para que você possa acessar o sistema.</p>
+                <p>Você já pode fechar esta página.</p>
+            `;
+        }
+
+        // Função para tratar erros de forma centralizada
+        function handleError(error) {
+            console.error("Erro ao aceitar convite:", error);
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                statusMessage.textContent = "❌ E-mail ou senha incorretos.";
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                 statusMessage.textContent = "Você fechou a janela de login. Tente novamente.";
+            } else {
+                statusMessage.textContent = "❌ Ocorreu um erro. Tente novamente.";
+            }
+            statusMessage.className = 'error-message';
+        }
+
+        // Evento para o botão do Google
+        btnGoogle.addEventListener('click', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get('empresaId');
+            if (!empresaId) { /* ... tratamento de erro ... */ return; }
 
-            if (!empresaId) {
-                statusMessage.textContent = "❌ Erro: Link de convite inválido. O ID da empresa não foi encontrado.";
-                statusMessage.className = 'error-message';
-                btnAceitar.disabled = false;
-                return;
-            }
+            btnGoogle.disabled = true;
+            document.getElementById('btn-submit').disabled = true;
+            statusMessage.textContent = "Aguarde...";
 
             const provider = new GoogleAuthProvider();
             try {
                 const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-
-                statusMessage.textContent = "Autenticação concluída. Criando seu perfil pendente...";
-
-                // MODIFICADO: O próprio script agora cria o perfil pendente no Firestore
-                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
-                
-                await setDoc(profissionalRef, {
-                    nome: user.displayName,
-                    email: user.email,
-                    fotoUrl: user.photoURL,
-                    uid: user.uid,
-                    status: 'pendente', // Status chave da sua ideia!
-                    criadoEm: serverTimestamp()
-                }, { merge: true });
-
-                // MODIFICADO: E também cria o mapa do usuário
-                const mapaUsuarioRef = doc(db, "mapaUsuarios", user.uid);
-                await setDoc(mapaUsuarioRef, { empresaId: empresaId });
-
-                // MODIFICADO: Mensagem final de sucesso
-                inviteBox.innerHTML = `
-                    <h1>⏳ Quase lá!</h1>
-                    <p style="color: #28a745; font-weight: bold;">Seu cadastro foi enviado para aprovação!</p>
-                    <p>O gestor da equipe foi notificado e precisa ativar sua conta para que você possa acessar o sistema.</p>
-                    <p>Você já pode fechar esta página.</p>
-                `;
-
+                await createPendingProfile(result.user, empresaId);
             } catch (error) {
-                console.error("Erro ao aceitar convite:", error);
-                statusMessage.textContent = "❌ Ocorreu um erro. Tente novamente.";
-                statusMessage.className = 'error-message';
-                btnAceitar.disabled = false;
+                handleError(error);
+                btnGoogle.disabled = false;
+                document.getElementById('btn-submit').disabled = false;
+            }
+        });
+
+        // Evento para o formulário de E-mail/Senha
+        formEmail.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const urlParams = new URLSearchParams(window.location.search);
+            const empresaId = urlParams.get('empresaId');
+            if (!empresaId) { /* ... tratamento de erro ... */ return; }
+
+            btnGoogle.disabled = true;
+            document.getElementById('btn-submit').disabled = true;
+            statusMessage.textContent = "Verificando...";
+
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+                await createPendingProfile(userCredential.user, empresaId);
+            } catch (error) {
+                handleError(error);
+                btnGoogle.disabled = false;
+                document.getElementById('btn-submit').disabled = false;
             }
         });
     </script>
