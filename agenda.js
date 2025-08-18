@@ -38,8 +38,6 @@ const filtroSemanaDiv = document.getElementById("filtro-semana");
 const inputSemana = document.getElementById("data-semana");
 const semanaInicioEl = document.getElementById("semana-inicio");
 const semanaFimEl = document.getElementById("semana-fim");
-const btnSemanaAnterior = document.getElementById('btn-semana-anterior');
-const btnSemanaAtual = document.getElementById('btn-semana-atual');
 const btnSemanaProxima = document.getElementById('btn-semana-proxima');
 
 let empresaId = null;
@@ -165,17 +163,8 @@ async function inicializarPaginaAgenda() {
     carregarAgendamentos();
   });
 
-  // Navegação semana
-  if (btnSemanaAnterior) btnSemanaAnterior.addEventListener("click", () => mudarSemana(-1));
+  // Seta só para próxima semana
   if (btnSemanaProxima) btnSemanaProxima.addEventListener("click", () => mudarSemana(1));
-  if (btnSemanaAtual) btnSemanaAtual.addEventListener("click", () => {
-    const hoje = new Date();
-    const day = hoje.getDay() || 7;
-    hoje.setDate(hoje.getDate() - day + 1);
-    inputSemana.value = hoje.toISOString().split('T')[0];
-    atualizarLegendaSemana();
-    carregarAgendamentos();
-  });
 
   configurarListenersDeAcao();
 }
