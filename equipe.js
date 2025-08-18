@@ -1,11 +1,11 @@
 // ======================================================================
 //                          EQUIPE.JS
-//                  VERSÃO COMPLETA E CORRIGIDA
-//    Implementa a geração de convite segura via Cloud Function.
+//        VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
+//                (100% Frontend, Sem Cloud Functions)
 // ======================================================================
 
-// ADICIONADO: Importações para chamar a Cloud Function de forma segura
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+// REMOVIDO: A importação de Cloud Functions não é mais necessária para este plano.
+// import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
 // Variáveis globais
 let db, auth, storage;
@@ -118,9 +118,6 @@ async function inicializar() {
     }
 }
 
-// Todas as funções de `voltarMenuLateral` até `renderizarServicos` permanecem
-// exatamente as mesmas, sem nenhuma alteração.
-
 function voltarMenuLateral() { window.location.href = "index.html"; }
 
 async function getEmpresaIdDoDono(uid) {
@@ -159,23 +156,47 @@ function iniciarListenerDaEquipe() {
     });
 }
 
+// ======================================================================
+//    MODIFICADO: Lógica de renderização para lidar com status 'pendente'.
+// ======================================================================
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
-        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.<br>Clique em "Adicionar Profissional" para começar.</p></div>`;
+        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.<br>Clique em "Adicionar Profissional" ou "Convidar Funcionário" para começar.</p></div>`;
         return;
     }
     equipe.forEach(profissional => {
         const div = document.createElement("div");
         div.className = "profissional-card";
-        div.innerHTML = `
-            <div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
-            <div class="profissional-info"><span class="profissional-nome">${profissional.nome}</span><span class="profissional-status">${profissional.ehDono ? 'Dono' : 'Funcionário'}</span></div>
-            <div class="profissional-actions">
+        
+        // Se o profissional estiver pendente, adiciona uma classe para estilizar (ex: fundo amarelo)
+        if (profissional.status === 'pendente') {
+            div.classList.add('pendente'); // Você pode criar um estilo .pendente {} no seu CSS
+        }
+
+        let botoesDeAcao = '';
+        if (profissional.status === 'pendente') {
+            // Botões específicos para quem está pendente
+            botoesDeAcao = `
+                <button class="btn btn-success" onclick="ativarFuncionario('${profissional.id}')">✅ Ativar</button>
+                <button class="btn btn-danger" onclick="recusarFuncionario('${profissional.id}')">❌ Recusar</button>
+            `;
+        } else {
+            // Botões para funcionários já ativos
+            botoesDeAcao = `
                 <button class="btn btn-profile" onclick="abrirPerfilProfissional('${profissional.id}')">👤 Perfil</button>
                 <button class="btn btn-edit" onclick="editarProfissional('${profissional.id}')">✏️ Editar</button>
                 ${!profissional.ehDono ? `<button class="btn btn-danger" onclick="excluirProfissional('${profissional.id}')">🗑️ Excluir</button>` : ""}
-            </div>`;
+            `;
+        }
+
+        div.innerHTML = `
+            <div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
+            <div class="profissional-info">
+                <span class="profissional-nome">${profissional.nome}</span>
+                <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário')}</span>
+            </div>
+            <div class="profissional-actions">${botoesDeAcao}</div>`;
         elementos.listaProfissionaisPainel.appendChild(div);
     });
 }
@@ -235,7 +256,6 @@ function renderizarServicos(servicosSelecionados = []) {
 }
 
 function renderizarHorarios(horariosDataCompleta = {}) {
-    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const horariosLista = elementos.horariosLista;
     horariosLista.innerHTML = '';
     const diasSemana = [
@@ -300,7 +320,6 @@ function renderizarHorarios(horariosDataCompleta = {}) {
 }
 
 function setupRemoverIntervalo() {
-    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
         btn.onclick = function () {
             const container = this.closest('.horario-intervalos');
@@ -314,7 +333,6 @@ function setupRemoverIntervalo() {
 }
 
 function coletarHorarios() {
-    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const horarios = {};
     document.querySelectorAll('.dia-horario').forEach(diaDiv => {
         const dia = diaDiv.getAttribute('data-dia');
@@ -336,7 +354,6 @@ function coletarHorarios() {
 }
 
 function renderizarAgendaEspecial() {
-    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const lista = elementos.agendaEspecialLista;
     lista.innerHTML = '';
     if (!agendaEspecial || agendaEspecial.length === 0) {
@@ -360,7 +377,6 @@ function renderizarAgendaEspecial() {
 }
 
 function adicionarAgendaEspecial() {
-    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const tipo = elementos.agendaTipo.value;
     if (tipo === 'mes') {
         if (!elementos.agendaMes.value) return alert('Selecione o mês.');
@@ -373,7 +389,6 @@ function adicionarAgendaEspecial() {
 }
 
 async function salvarPerfilProfissional() {
-    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
@@ -394,7 +409,6 @@ async function salvarPerfilProfissional() {
 }
 
 function adicionarEventListeners() {
-    // ... (Esta função continua exatamente igual, sem NENHUMA alteração)
     elementos.btnAddProfissional.addEventListener("click", () => {
         elementos.formAddProfissional.reset();
         editandoProfissionalId = null;
@@ -416,60 +430,31 @@ function adicionarEventListeners() {
         modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
     });
 
-    // --- LIGAÇÃO DA FUNÇÃO DE CONVITE CORRIGIDA ---
     if (elementos.btnConvite) {
         elementos.btnConvite.addEventListener('click', gerarLinkDeConvite);
     }
 }
 
-
-// ==========================================================
-//          CORREÇÃO CRÍTICA DE SEGURANÇA APLICADA
-// ==========================================================
-/**
- * CORRIGIDO: Gera um link de convite SEGURO chamando a Cloud Function.
- */
+// ======================================================================
+// MODIFICADO: Função de convite simplificada para o plano 100% frontend.
+// ======================================================================
 async function gerarLinkDeConvite() {
-    const btn = elementos.btnConvite;
-    btn.disabled = true;
-    btn.textContent = "Gerando link...";
+    if (!empresaId) {
+        alert("Erro: Não foi possível identificar a sua empresa para gerar o convite.");
+        return;
+    }
+
+    const baseUrl = window.location.origin;
+    const conviteUrl = `${baseUrl}/convite.html?empresaId=${empresaId}`;
 
     try {
-        // Inicializa o serviço de Functions se ainda não foi feito
-        const functions = getFunctions(auth.app, 'southamerica-east1'); // Verifique a sua região
-
-        // Chama a Cloud Function 'gerarConvite' que criamos no backend (index.js)
-        const gerarConvite = httpsCallable(functions, 'gerarConvite');
-        const result = await gerarConvite();
-        
-        const token = result.data.token;
-
-        if (token) {
-            // Monta a URL de convite SEGURA com o token
-            // ATENÇÃO: Verifique se o domínio/caminho para convite.html está correto
-            const baseUrl = window.location.origin;
-            const conviteUrl = `${baseUrl}/convite.html?token=${token}`;
-            
-            // Exibe a URL para o gestor e tenta copiar para a área de transferência
-            prompt("Link de Convite Gerado! Copie e envie para o novo funcionário:", conviteUrl);
-            await navigator.clipboard.writeText(conviteUrl);
-
-        } else {
-            throw new Error("Token não foi retornado pelo servidor.");
-        }
-
-    } catch (error) {
-        console.error('Erro ao gerar o link de convite seguro: ', error);
-        alert("Ocorreu um erro ao gerar o link de convite. Verifique o console para mais detalhes.");
-    } finally {
-        // Reativa o botão independentemente do resultado
-        btn.disabled = false;
-        btn.textContent = "📩 Convidar Funcionário";
+        await navigator.clipboard.writeText(conviteUrl);
+        alert("Link de convite copiado para a área de transferência!\n\nEnvie para o novo funcionário.");
+    } catch (err) {
+        console.error('Falha ao copiar: ', err);
+        prompt("Não foi possível copiar automaticamente. Por favor, copie o link abaixo:", conviteUrl);
     }
 }
-
-// Todas as funções a partir de `adicionarProfissional` permanecem
-// exatamente as mesmas, sem nenhuma alteração.
 
 async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -498,8 +483,13 @@ async function adicionarProfissional() {
     }
 
     const novoProfissional = {
-        nome, fotoUrl: fotoURL, ehDono: false, servicos: [],
-        criadoEm: serverTimestamp(), agendaEspecial: []
+        nome,
+        fotoUrl: fotoURL,
+        ehDono: false,
+        servicos: [],
+        status: 'ativo', // Adicionado para manter a consistência com o novo fluxo
+        criadoEm: serverTimestamp(),
+        agendaEspecial: []
     };
 
     try {
@@ -585,6 +575,34 @@ async function excluirProfissional(profissionalId) {
     }
 }
 
+// ======================================================================
+// ADICIONADO: Novas funções para ativar e recusar funcionários pendentes.
+// ======================================================================
+async function ativarFuncionario(profissionalId) {
+    if (!confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.")) return;
+
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    try {
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        await updateDoc(profissionalRef, {
+            status: 'ativo' // A mágica acontece aqui!
+        });
+        alert("✅ Profissional ativado com sucesso!");
+        // O listener do Firebase (iniciarListenerDaEquipe) vai atualizar a tela automaticamente.
+    } catch (error) {
+        console.error("Erro ao ativar profissional:", error);
+        alert("❌ Erro ao ativar profissional.");
+    }
+}
+
+async function recusarFuncionario(profissionalId) {
+    if (!confirm("Tem certeza que deseja recusar e excluir este cadastro pendente? Esta ação não pode ser desfeita.")) return;
+    
+    // Recusar um funcionário é o mesmo que excluir o cadastro dele.
+    // Reutilizamos a sua função 'excluirProfissional' que já é segura.
+    await excluirProfissional(profissionalId); 
+}
+
 function mostrarErro(mensagem) {
     elementos.listaProfissionaisPainel.innerHTML = `<div class="error-message"><h4>❌ Erro</h4><p>${mensagem}</p></div>`;
 }
@@ -593,5 +611,9 @@ function mostrarErro(mensagem) {
 window.abrirPerfilProfissional = abrirPerfilProfissional;
 window.editarProfissional = editarProfissional;
 window.excluirProfissional = excluirProfissional;
+
+// ADICIONADO: Expondo as novas funções globalmente para os botões 'onclick'.
+window.ativarFuncionario = ativarFuncionario;
+window.recusarFuncionario = recusarFuncionario;
 
 window.addEventListener("DOMContentLoaded", inicializar);
