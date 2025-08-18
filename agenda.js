@@ -1,9 +1,9 @@
 /**
- * agenda.js - Mostra agendamentos do dia ao abrir, agenda da semana só ao clicar no botão
- * Não mostra agendamentos cancelados em hoje/futuro, só no histórico (datas passadas)
- * Datas da semana sempre corretas (segunda a domingo)
- * Interface limpa, sem duplicidade
- * Pronti
+ * agenda.js - Pronti
+ * - Ao abrir: mostra apenas agendamentos do dia atual (sem cancelados de hoje/futuro).
+ * - Ao clicar em "Agenda da Semana": mostra semana, mas só exibe cancelados se forem de datas passadas.
+ * - Histórico: mostra tudo, inclusive cancelados.
+ * - Datas da semana sempre corretas (segunda a domingo).
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -214,6 +214,7 @@ async function carregarAgendamentosDia() {
   const hojeISO = inputSemana.value; // yyyy-mm-dd
   const hoje = new Date();
   hoje.setHours(0,0,0,0);
+
   try {
     const ref = collection(db, "empresarios", empresaId, "agendamentos");
     const constraints = [where("data", "==", hojeISO)];
@@ -228,7 +229,6 @@ async function carregarAgendamentosDia() {
       if (
         (ag.status === "cancelado" || ag.status === "cancelado_pelo_gestor")
       ) {
-        // Data do agendamento
         const [ano, mes, dia] = ag.data.split("-");
         const dataAg = new Date(`${ano}-${mes}-${dia}T00:00:00`);
         if (dataAg >= hoje) return;
@@ -306,13 +306,14 @@ async function carregarAgendamentosSemana() {
     const ags = [];
     snapshot.forEach(doc => {
       const ag = doc.data();
+      const [ano, mes, dia] = ag.data.split("-");
+      const dataAg = new Date(`${ano}-${mes}-${dia}T00:00:00`);
       // Não mostra cancelados se a data for hoje ou futura
       if (
-        (ag.status === "cancelado" || ag.status === "cancelado_pelo_gestor")
+        (ag.status === "cancelado" || ag.status === "cancelado_pelo_gestor") &&
+        dataAg >= hoje
       ) {
-        const [ano, mes, dia] = ag.data.split("-");
-        const dataAg = new Date(`${ano}-${mes}-${dia}T00:00:00`);
-        if (dataAg >= hoje) return;
+        return;
       }
       ags.push(ag);
     });
