@@ -808,3 +808,80 @@ textarea.form-input { min-height: 80px; }
     background: linear-gradient(135deg, #2193b0, #6dd5ed);
     color: #fff;
 }
+/* Header gradiente igual equipe */
+.perfil-header-gradient {
+    background: linear-gradient(90deg, #4facfe 10%, #00f2fe 100%);
+    padding: 34px 0 20px 0;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 2px 12px 0 #4facfe18;
+    margin-bottom: 0;
+    text-align: center;
+}
+.perfil-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    max-width: 650px;
+    margin: 0 auto;
+}
+.perfil-header-icon {
+    font-size: 2.8rem;
+    background: #fff;
+    border-radius: 50%;
+    padding: 10px 16px;
+    color: #4facfe;
+    box-shadow: 0 4px 16px #00f2fe21;
+}
+.perfil-header-content h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    margin: 0;
+    color: #fff;
+    text-shadow: 0 2px 8px #00f2fe18;
+    letter-spacing: -1px;
+}
+.perfil-header-desc {
+    font-size: 1.09rem;
+    margin-top: 5px;
+    color: #e0f7fa;
+    font-weight: 500;
+}
+
+/* Card centralizado elevado */
+.perfil-card {
+    max-width: 540px;
+    margin: -40px auto 0 auto;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px 0 rgba(80,100,150,0.13);
+    padding: 38px 38px 24px 38px;
+    border: none;
+    position: relative;
+    z-index: 2;
+}
+
+/* Botão principal com gradiente */
+.perfil-card .btn-primary, .perfil-card .btn.btn-primary {
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
+    color: #fff;
+    border-radius: 9px;
+    font-size: 1.07rem;
+    font-weight: bold;
+    padding: 13px 34px;
+    transition: background .18s, box-shadow .18s;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.07);
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 auto;
+}
+.perfil-card .btn-primary:hover {
+    background: linear-gradient(90deg, #2193b0, #6dd5ed);
+}
+
+@media (max-width: 700px) {
+    .perfil-header-content { flex-direction: column; gap: 10px; }
+    .perfil-card { padding: 14px 4vw 20px 4vw; }
+}
