@@ -16,6 +16,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
+import { verificarAcesso } from "./userService.js"; // ADICIONADO
 
 // Medida de segurança: Verifica se os serviços do Firebase foram inicializados corretamente.
 if (!app || !db || !auth || !storage) {
@@ -46,8 +47,20 @@ window.addEventListener('DOMContentLoaded', () => {
   let currentUser;
   let empresaId = null;
 
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
+      // --- VERIFICAÇÃO DE PAPEL DO USUÁRIO ---
+      try {
+        const acesso = await verificarAcesso();
+        if (acesso.role !== "dono") {
+          // Se não é dono, redireciona para perfil do funcionário ou agenda
+          window.location.href = "perfil-funcionario.html"; // ou "agenda.html"
+          return;
+        }
+      } catch (e) {
+        window.location.href = 'login.html';
+        return;
+      }
       currentUser = user;
       verificarOuCriarEmpresa(user.uid);
       adicionarListenersDeEvento();
