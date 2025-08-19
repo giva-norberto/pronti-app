@@ -5,10 +5,11 @@
  * - Modo "Semana" mostra do dia selecionado até domingo (nunca dias anteriores).
  * - Histórico pega qualquer período.
  * - Toda manipulação de data é local.
+ * - [ATUALIZAÇÃO] Cards agora trazem botão "Ausência" (Não Compareceu) para agendamentos com status 'ativo'.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -140,6 +141,29 @@ function configurarListeners() {
         preencherCamposMesAtual();
         carregarAgendamentosHistorico();
     });
+
+    // Delegação para botão de ausência (não compareceu)
+    listaAgendamentosDiv.addEventListener('click', async (e) => {
+        const btnAusencia = e.target.closest('.btn-ausencia');
+        if (btnAusencia) {
+            const agendamentoId = btnAusencia.dataset.id;
+            if (confirm("Marcar ausência deste cliente? Isso ficará registrado no histórico.")) {
+                await marcarNaoCompareceu(agendamentoId);
+            }
+        }
+    });
+}
+
+// ----------- FUNÇÃO PARA MARCAR AUSÊNCIA -----------
+async function marcarNaoCompareceu(agendamentoId) {
+    try {
+        const agRef = doc(db, "empresarios", empresaId, "agendamentos", agendamentoId);
+        await updateDoc(agRef, { status: "nao_compareceu" });
+        mostrarToast("Agendamento marcado como ausência.", "#f59e42");
+        carregarAgendamentosConformeModo();
+    } catch (error) {
+        mostrarToast("Erro ao marcar ausência.", "#ef4444");
+    }
 }
 
 function carregarAgendamentosConformeModo() {
@@ -222,7 +246,18 @@ function exibirCardsAgendamento(docs, isHistorico) {
                     <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
                 </p>
                 <p><b>Status:</b> ${statusLabel}</p>
-            </div>`;
+            </div>
+            ${
+                // Só mostra o botão "Ausência" se for status ativo E não estiver no histórico
+                (!isHistorico && ag.status === 'ativo') ? `
+                <div class="card-actions">
+                    <button class="btn-ausencia" data-id="${ag.id}" title="Marcar ausência">
+                        <i class="fa-solid fa-user-slash"></i> Ausência
+                    </button>
+                </div>
+                ` : ''
+            }
+        `;
         listaAgendamentosDiv.appendChild(cardElement);
     });
     if (listaAgendamentosDiv.childElementCount === 0) {
