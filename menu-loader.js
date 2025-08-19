@@ -7,7 +7,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     const acesso = await verificarAcesso();
 
     let sidebarHTML = '';
-    if (acesso.isOwner) {
+    // Dono ou Intermediário: menu completo
+    if (acesso.isOwner || acesso.isIntermediario) {
       sidebarHTML = `
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">Pronti</div>
@@ -25,6 +26,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       </aside>
       `;
     } else {
+      // Funcionário: menu restrito, mesmo visual
       sidebarHTML = `
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">Pronti</div>
