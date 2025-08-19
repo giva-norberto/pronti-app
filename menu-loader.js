@@ -1,12 +1,13 @@
 import { verificarAcesso } from './userservice.js';
 
 document.addEventListener("DOMContentLoaded", async function () {
-  let sidebarHTML = '';
+  const placeholder = document.getElementById('sidebar-placeholder');
+  if (!placeholder) return;
   try {
     const acesso = await verificarAcesso();
 
+    let sidebarHTML = '';
     if (acesso.isOwner) {
-      // MENU DO DONO
       sidebarHTML = `
       <aside class="sidebar" id="sidebar">
         <a href="dashboard.html" class="sidebar-brand">Pronti</a>
@@ -25,7 +26,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       </aside>
       `;
     } else {
-      // MENU DO FUNCIONÁRIO
       sidebarHTML = `
       <aside class="sidebar" id="sidebar">
         <a href="index.html" class="sidebar-brand">Pronti</a>
@@ -40,9 +40,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       </aside>
       `;
     }
-
-    // Insere menu no topo do body
-    document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
+    placeholder.innerHTML = sidebarHTML;
 
     // Ativa link atual
     const links = document.querySelectorAll('.sidebar-links a');
@@ -62,9 +60,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         signOut(getAuth()).then(() => window.location.href = "login.html");
       });
     };
-
   } catch (err) {
-    // Não mostra menu se não autenticado
+    placeholder.innerHTML = '';
     console.warn('Sidebar não carregada:', err);
   }
 });
