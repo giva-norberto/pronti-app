@@ -15,18 +15,18 @@
     </div>
 </aside>
 <!-- ======================================================================
-                      CORREÇÃO APLICADA AQUI
+                      CORREÇÃO DEFINITIVA APLICADA AQUI
    ======================================================================
-   O bloco <style> foi restaurado, mas as regras foram tornadas mais 
-   específicas (usando o #sidebar) para garantir que não sejam 
-   sobrescritas pelo style.css principal.
+   Foram adicionadas diretivas '!important' às regras de estilo chave
+   para garantir que o menu tenha sempre a mesma aparência em todas as
+   páginas, resolvendo o conflito de CSS de uma vez por todas.
    ====================================================================== -->
 <style>
 #sidebar {
   width: 240px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%) !important;
   min-height: 100vh;
-  color: #fff;
+  color: #fff !important;
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
   position: fixed;
   left: 0; top: 0; bottom: 0;
@@ -39,7 +39,7 @@
 #sidebar .sidebar-brand {
   font-size: 2rem;
   font-weight: bold;
-  color: #fff;
+  color: #fff !important;
   text-decoration: none;
   letter-spacing: 2px;
   padding: 24px 24px 12px 24px;
@@ -48,12 +48,12 @@
 }
 #sidebar .sidebar-links a {
   display: block;
-  background: #fff;
-  color: #22223b;
+  background: #fff !important;
+  color: #22223b !important;
   font-weight: 500;
   border-radius: 12px;
   margin-bottom: 10px;
-  box-shadow: none;
+  box-shadow: none !important;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   padding: 14px 0;
   text-align: center;
@@ -61,23 +61,23 @@
   letter-spacing: 0.01em;
 }
 #sidebar .sidebar-links a.active {
-  background: #6366f1;
-  color: #fff;
+  background: #6366f1 !important;
+  color: #fff !important;
   font-weight: bold;
-  box-shadow: 2px 4px 0 0 #ff3e7f;
+  box-shadow: 2px 4px 0 0 #ff3e7f !important;
   border-radius: 12px;
 }
 #sidebar .sidebar-links a:hover:not(.active) {
-  background: #f6f8fa;
-  color: #4f46e5;
+  background: #f6f8fa !important;
+  color: #4f46e5 !important;
 }
 #sidebar .sidebar-footer {
   margin-top: auto;
   padding: 24px 32px;
 }
 #sidebar .btn-logout {
-  background: #fff;
-  color: #4f46e5;
+  background: #fff !important;
+  color: #4f46e5 !important;
   border: none;
   padding: 10px 24px;
   border-radius: 5px;
@@ -86,8 +86,8 @@
   transition: background 0.2s, color 0.2s;
 }
 #sidebar .btn-logout:hover {
-  background: #4f46e5;
-  color: #fff;
+  background: #4f46e5 !important;
+  color: #fff !important;
   border: 1px solid #fff;
 }
 
