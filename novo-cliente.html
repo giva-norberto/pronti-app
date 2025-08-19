@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Novo Agendamento</title>
+    <title>Pronti - Novo Cliente</title>
 
     <!-- Fontes e Ícones -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,53 +23,41 @@
     <main class="main-content">
         
         <div class="page-header">
-            <h1>Novo Agendamento</h1>
-            <a href="agenda.html" class="btn">
+            <h1>Novo Cliente</h1>
+            <a href="clientes.html" class="btn">
                 <i class="fa-solid fa-arrow-left"></i>
-                Voltar para Agenda
+                Voltar para Clientes
             </a>
         </div>
         
-        <!-- O formulário agora usa a classe .card para um visual consistente -->
-        <form id="form-agendamento" class="card" autocomplete="off">
-            <div class="card-info" style="padding: 24px;"> <!-- Usamos card-info para o padding padrão -->
+        <form id="form-cliente" class="card" autocomplete="off">
+            <div class="card-info" style="padding: 24px;">
                 <div class="form-group">
-                    <label for="cliente">Nome do Cliente:</label>
-                    <input type="text" id="cliente" name="cliente" required class="form-input">
+                    <label for="nome">Nome Completo:</label>
+                    <input type="text" id="nome" name="nome" required class="form-input">
                 </div>
                 <div class="form-group">
-                    <label for="servico">1. Escolha o Serviço:</label>
-                    <select id="servico" name="servico" required class="form-select">
-                        <option value="">Selecione um serviço</option>
-                    </select>
+                    <label for="telefone">Telefone:</label>
+                    <input type="tel" id="telefone" name="telefone" required class="form-input" placeholder="(99) 99999-9999">
                 </div>
                 <div class="form-group">
-                    <label for="profissional">2. Escolha o Profissional:</label>
-                    <select id="profissional" name="profissional" required class="form-select" disabled>
-                        <option value="">Primeiro, selecione um serviço</option>
-                    </select>
+                    <label for="email">E-mail:</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="exemplo@email.com">
                 </div>
                 <div class="form-group">
-                    <label for="dia">3. Escolha o Dia:</label>
-                    <input type="date" id="dia" name="dia" required class="form-input">
-                </div>
-                <div class="form-group">
-                    <label>4. Escolha o Horário Disponível:</label>
-                    <div id="grade-horarios">
-                        <p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>
-                    </div>
-                    <input type="hidden" id="horario-final" name="horario-final">
+                    <label for="observacoes">Observações:</label>
+                    <textarea id="observacoes" name="observacoes" class="form-input" rows="3"></textarea>
                 </div>
             </div>
             <div class="card-actions">
-                 <button type="submit" class="btn btn-primary">Salvar Agendamento</button>
+                 <button type="submit" class="btn btn-primary">Salvar Cliente</button>
             </div>
         </form>
     </main>
 
     <!-- SCRIPTS -->
     <script>
-    // Carrega o menu lateral e destaca o link da agenda
+    // Carrega o menu lateral e destaca o link de clientes
     document.addEventListener("DOMContentLoaded", function() {
       const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
       if (sidebarPlaceholder) {
@@ -77,7 +65,7 @@
           .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
           .then(html => {
             sidebarPlaceholder.innerHTML = html;
-            const activeLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
+            const activeLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
             if (activeLink) {
                 document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
                 activeLink.classList.add('active');
@@ -92,6 +80,6 @@
     </script>
     
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="novo-agendamento.js" type="module"></script>
+    <script src="novo-cliente.js" type="module"></script>
 </body>
 </html>
