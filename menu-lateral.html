@@ -14,13 +14,6 @@
         <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
 </aside>
-<!-- ======================================================================
-                      CORREÇÃO DEFINITIVA APLICADA AQUI
-   ======================================================================
-   Foram adicionadas diretivas '!important' às regras de estilo chave
-   para garantir que o menu tenha sempre a mesma aparência em todas as
-   páginas, resolvendo o conflito de CSS de uma vez por todas.
-   ====================================================================== -->
 <style>
 #sidebar {
   width: 240px;
@@ -96,7 +89,7 @@
   #sidebar {
     width: 100%;
     min-height: auto;
-    position: static; /* Deixa de ser fixo na lateral */
+    position: static;
     flex-direction: column;
     padding: 10px 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -112,28 +105,27 @@
   }
   #sidebar .sidebar-links {
     display: flex;
-    flex-direction: row; /* Coloca os links lado a lado */
-    overflow-x: auto; /* Permite rolar horizontalmente */
-    padding: 0 15px 10px 15px; /* Adiciona espaçamento lateral */
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0 15px 10px 15px;
     justify-content: flex-start;
   }
-  /* Esconde a barra de rolagem para um visual mais limpo */
   #sidebar .sidebar-links::-webkit-scrollbar {
     display: none;
   }
   #sidebar .sidebar-links {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   #sidebar .sidebar-links a {
-    flex: 0 0 auto; /* Impede que os botões encolham */
+    flex: 0 0 auto;
     margin-bottom: 0;
-    margin-right: 10px; /* Espaço entre os botões */
+    margin-right: 10px;
     padding: 10px 15px;
-    white-space: nowrap; /* Impede que o texto quebre a linha */
+    white-space: nowrap;
   }
   #sidebar .sidebar-footer {
-    display: none; /* Esconde o botão de sair para economizar espaço */
+    display: none;
   }
 }
 </style>
@@ -144,10 +136,25 @@ document.addEventListener("DOMContentLoaded", function() {
   const current = window.location.pathname.split('/').pop().toLowerCase();
   links.forEach(link => {
     let href = link.getAttribute('href').split('?')[0].toLowerCase();
-    // Condição especial para o index.html ser ativo na raiz do site
     if (href === current || (href === 'index.html' && (current === '' || current === 'index.html'))) {
       link.classList.add('active');
     }
   });
+});
+</script>
+<script type="module">
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+document.addEventListener("DOMContentLoaded", function() {
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", async function() {
+      try {
+        await signOut(getAuth());
+        window.location.href = "login.html";
+      } catch (e) {
+        alert("Erro ao sair: " + e.message);
+      }
+    });
+  }
 });
 </script>
