@@ -4,82 +4,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Novo Cliente</title>
-
-    <!-- Fontes e Ícones -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Estilos -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        .main-content {
+            margin-left: 270px;
+            padding: 36px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .form-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+            padding: 32px;
+            margin-top: 20px;
+            max-width: 450px;
+            width: 100%;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-group input {
+            font-size: 1rem;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            width: 100%;
+        }
+        .btn-submit {
+            width: 100%;
+            margin-top: 20px;
+        }
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0;
+                padding: 24px 15px;
+            }
+        }
+    </style>
+    <!-- Firebase CDN (V9 Modular) -->
+    <script type="module">
+      // Mova esse bloco para um arquivo separado se preferir
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      // ATENÇÃO: substitua pelos seus dados reais!
+      const firebaseConfig = {
+        apiKey: "SUA_API_KEY",
+        authDomain: "SEU_DOMINIO",
+        projectId: "SEU_PROJECT_ID",
+        storageBucket: "SEU_BUCKET",
+        messagingSenderId: "SEU_SENDER_ID",
+        appId: "SEU_APP_ID"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      // Função para mostrar Toast
+      function showToast(msg, cor = "#38bdf8") {
+        Toastify({ text: msg, duration: 3500, gravity: "top", position: "center", style: { background: cor } }).showToast();
+      }
+
+      // Espera autenticação (ou remove se não usar auth)
+      onAuthStateChanged(auth, function(user) {
+        // Se precisar exigir login, descomente:
+        // if (!user) window.location.href = "login.html";
+      });
+
+      // Salvando cliente no Firestore
+      document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("form-cliente");
+        if (form) {
+          form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const nome = document.getElementById("nome-cliente").value.trim();
+            const telefone = document.getElementById("telefone-cliente").value.trim();
+            const email = document.getElementById("email-cliente").value.trim();
+            if (!nome) {
+              showToast("Preencha o nome do cliente!", "#ef4444");
+              return;
+            }
+            try {
+              // Se você precisa do ID da empresa, recupere pelo usuário logado
+              // Exemplo: const empresaId = user.uid (ou outro método do seu projeto)
+              // Aqui salva em "clientes" raiz. Ajuste para "empresarios/{empresaId}/clientes" se for o caso:
+              await addDoc(collection(db, "clientes"), {
+                nome,
+                telefone,
+                email,
+                criadoEm: new Date().toISOString()
+              });
+              showToast("Cliente salvo com sucesso!", "#22c55e");
+              form.reset();
+              setTimeout(() => window.location.href = "clientes.html", 1500);
+            } catch (error) {
+              showToast("Erro ao salvar cliente!", "#ef4444");
+              console.error(error);
+            }
+          });
+        }
+      });
+    </script>
 </head>
 <body>
-    <!-- O menu lateral padronizado será carregado aqui -->
-    <div id="sidebar-placeholder"></div>
+<aside class="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <nav class="sidebar-links">
+        <a href="dashboard.html"><span>Dashboard</span></a>
+        <a href="servicos.html"><span>Serviços</span></a>
+        <a href="agenda.html"><span>Agenda</span></a>
+        <a href="clientes.html"><span>Clientes</span></a>
+        <a href="equipe.html"><span>Equipe</span></a>
+        <a href="perfil.html"><span>Meu Perfil</span></a>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
+</aside>
 
-    <!-- Conteúdo Principal da Página -->
-    <main class="main-content">
-        
-        <div class="page-header">
-            <h1>Novo Cliente</h1>
-            <a href="clientes.html" class="btn">
-                <i class="fa-solid fa-arrow-left"></i>
-                Voltar para Clientes
-            </a>
+<main class="main-content">
+    <h1>Cadastrar Novo Cliente</h1>
+    <p>Preencha os dados do novo cliente.</p>
+    <form id="form-cliente" class="form-card" autocomplete="off">
+        <div class="form-group">
+            <label for="nome-cliente">Nome Completo:</label>
+            <input type="text" id="nome-cliente" name="nome-cliente" required>
         </div>
-        
-        <form id="form-cliente" class="card" autocomplete="off">
-            <div class="card-info" style="padding: 24px;">
-                <div class="form-group">
-                    <label for="nome">Nome Completo:</label>
-                    <input type="text" id="nome" name="nome" required class="form-input">
-                </div>
-                <div class="form-group">
-                    <label for="telefone">Telefone:</label>
-                    <input type="tel" id="telefone" name="telefone" required class="form-input" placeholder="(99) 99999-9999">
-                </div>
-                <div class="form-group">
-                    <label for="email">E-mail:</label>
-                    <input type="email" id="email" name="email" class="form-input" placeholder="exemplo@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="observacoes">Observações:</label>
-                    <textarea id="observacoes" name="observacoes" class="form-input" rows="3"></textarea>
-                </div>
-            </div>
-            <div class="card-actions">
-                 <button type="submit" class="btn btn-primary">Salvar Cliente</button>
-            </div>
-        </form>
-    </main>
+        <div class="form-group">
+            <label for="telefone-cliente">Telefone:</label>
+            <input type="tel" id="telefone-cliente" name="telefone-cliente" placeholder="(XX) XXXXX-XXXX">
+        </div>
+        <div class="form-group">
+            <label for="email-cliente">Email:</label>
+            <input type="email" id="email-cliente" name="email-cliente">
+        </div>
+        <button type="submit" class="btn-submit">Salvar Cliente</button>
+    </form>
+</main>
 
-    <!-- SCRIPTS -->
-    <script>
-    // Carrega o menu lateral e destaca o link de clientes
+<script>
+    // Script para destacar o link ativo na sidebar
     document.addEventListener("DOMContentLoaded", function() {
-      const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-      if (sidebarPlaceholder) {
-        fetch('menu-lateral.html')
-          .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-          .then(html => {
-            sidebarPlaceholder.innerHTML = html;
-            const activeLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
-            if (activeLink) {
-                document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-                activeLink.classList.add('active');
-            }
-          })
-          .catch(error => {
-            console.error('Erro ao carregar o menu lateral:', error);
-            sidebarPlaceholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar menu.</p>';
-          });
-      }
+        const currentPage = window.location.pathname.split('/').pop();
+        const links = document.querySelectorAll('.sidebar-links a');
+        links.forEach(link => link.classList.remove('active'));
+        const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
+        if (clientesLink && (currentPage.includes('clientes') || currentPage.includes('novo-cliente'))) {
+            clientesLink.classList.add('active');
+        }
     });
-    </script>
-    
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="novo-cliente.js" type="module"></script>
+</script>
+
 </body>
 </html>
