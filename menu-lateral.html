@@ -14,9 +14,6 @@
     </div>
 </aside>
 <style>
-body {
-  background: #f8f9fd;
-}
 .sidebar {
   width: 240px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -29,7 +26,6 @@ body {
   display: flex;
   flex-direction: column;
   padding-top: 24px;
-  font-family: 'Inter', Arial, sans-serif;
 }
 .sidebar-brand {
   font-size: 2rem;
@@ -107,7 +103,6 @@ body {
   color: #fff;
   border: 2px solid #fff;
 }
-
 @media (max-width: 900px) {
   .sidebar {
     width: 100vw;
@@ -150,7 +145,7 @@ body {
 <script>
 // Ativa o link correto no menu
 document.addEventListener("DOMContentLoaded", function() {
-  const links = document.querySelectorAll('#sidebar .sidebar-links a');
+  const links = document.querySelectorAll('.sidebar-links a');
   const current = window.location.pathname.split('/').pop().toLowerCase();
   links.forEach(link => {
     let href = link.getAttribute('href').split('?')[0].toLowerCase();
@@ -162,7 +157,6 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 <script type="module">
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-// Função robusta: sempre aplica o logout
 function ativarLogout() {
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
@@ -181,4 +175,5 @@ if (document.readyState === "loading") {
 } else {
   ativarLogout();
 }
+window.ativarLogout = ativarLogout; // Permite reusar em páginas que carregam este menu via fetch
 </script>
