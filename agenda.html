@@ -15,6 +15,25 @@
 </head>
 <body>
     <div id="sidebar-placeholder"></div>
+    <script>
+        // Inclusão dinâmica do menu lateral e destaque do menu de agenda
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('menu-lateral.html')
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('sidebar-placeholder').innerHTML = html;
+                    // Destaca o item de agenda após inclusão do menu
+                    const links = document.querySelectorAll('.sidebar-links a');
+                    links.forEach(link => link.classList.remove('active'));
+                    const agendaLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
+                    if (agendaLink) {
+                        agendaLink.classList.add('active');
+                    }
+                    // Ativar botão sair, se necessário (caso menu-lateral.html não ative internamente)
+                    if (window.ativarLogout) window.ativarLogout();
+                });
+        });
+    </script>
     <main class="main-content">
         <!-- Cabeçalho da página -->
         <div class="page-header">
