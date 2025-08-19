@@ -5,7 +5,6 @@
 
 // Imports do Firebase
 import {
-    getFirestore,
     collection,
     query,
     where,
@@ -18,36 +17,22 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Verifique o nome do seu arquivo de configuração
 import { db, auth } from './firebase-config.js'; // Ajuste o caminho se necessário
 
-// --- Funções Auxiliares (internas do módulo) ---
+// --- Funções Auxiliares ---
 
 /**
  * Função auxiliar para encontrar o documento da empresa associado a um dono.
  */
 async function getEmpresaDocPorDono(uid) {
-    if (!uid) {
-        console.log("Debug (getEmpresaDocPorDono): Função chamada sem UID.");
-        return null;
-    }
-    console.log(`Debug (getEmpresaDocPorDono): Procurando empresa com donoId = ${uid}`);
-    try {
-        const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            console.log("Debug (getEmpresaDocPorDono): A busca por empresa do dono não encontrou resultados.");
-            return null;
-        }
-        console.log("Debug (getEmpresaDocPorDono): Empresa do dono encontrada!");
-        return querySnapshot.docs[0];
-    } catch (error) {
-        console.error("Debug (getEmpresaDocPorDono): ERRO na busca por empresa do dono:", error);
-        throw error;
-    }
+    if (!uid) return null;
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+    return querySnapshot.docs[0];
 }
 
-// --- Funções Exportadas (para serem usadas em outras partes do app) ---
+// --- Funções Exportadas ---
 
 /**
  * Garante que um documento para o usuário exista na coleção 'usuarios' e que
@@ -67,15 +52,12 @@ export async function ensureUserAndTrialDoc() {
             trialStart: serverTimestamp(),
             isPremium: false
         });
-        console.log("Documento de usuário e trial criados.");
     } else if (!userSnap.data().trialStart) {
         await updateDoc(userRef, {
             trialStart: serverTimestamp()
         });
-        console.log("Campo trialStart adicionado ao usuário existente.");
     }
 }
-
 
 /**
  * Verifica o status de assinatura e trial do usuário logado.
@@ -101,7 +83,7 @@ export async function checkUserStatus() {
             const startDate = new Date(userData.trialStart.seconds * 1000);
             const endDate = new Date(startDate);
             endDate.setDate(startDate.getDate() + trialDurationDays);
-            
+
             trialEndDate = endDate;
 
             if (endDate > new Date()) {
@@ -111,14 +93,13 @@ export async function checkUserStatus() {
         return { hasActivePlan, isTrialActive, trialEndDate };
 
     } catch (error) {
-        console.error("ERRO no checkUserStatus:", error);
         return safeReturn;
     }
 }
 
 /**
- * Função "Porteiro": Verifica o acesso e retorna o tipo de usuário e dados.
- * Dono: acesso total. Funcionário: acesso restrito. 
+ * Verifica o acesso do usuário e retorna seu papel para montagem dinâmica do menu.
+ * Não faz redirecionamentos automáticos (exceto login).
  */
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
@@ -130,13 +111,10 @@ export async function verificarAcesso() {
                 return reject(new Error("Usuário não autenticado."));
             }
 
-            console.log(`Debug (verificarAcesso): Iniciado para o usuário UID: ${user.uid}`);
-
             try {
                 // 1. Checa se é o DONO
                 const empresaDoc = await getEmpresaDocPorDono(user.uid);
                 if (empresaDoc) {
-                    console.log("Debug (verificarAcesso): Usuário identificado como DONO. Acesso permitido.");
                     const empresaData = empresaDoc.data();
                     const userDocRef = doc(db, "usuarios", user.uid);
                     const userDocSnap = await getDoc(userDocRef);
@@ -146,8 +124,7 @@ export async function verificarAcesso() {
                     } else {
                         empresaData.nome = user.displayName || user.email;
                     }
-                    
-                    // Resolve como dono
+
                     return resolve({
                         user,
                         empresaId: empresaDoc.id,
@@ -157,36 +134,29 @@ export async function verificarAcesso() {
                     });
                 }
 
-                // 2. Se não é o dono, checa se é um FUNCIONÁRIO
+                // 2. Checa se é FUNCIONÁRIO
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
 
-                if (!mapaSnap.exists()) {
-                    window.location.href = 'perfil.html';
-                    return reject(new Error("Usuário novo, precisa criar empresa."));
+                if (mapaSnap.exists()) {
+                    const empresaId = mapaSnap.data().empresaId;
+                    const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+                    const profissionalSnap = await getDoc(profissionalRef);
+
+                    if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
+                        return resolve({
+                            user,
+                            perfil: profissionalSnap.data(),
+                            empresaId,
+                            isOwner: false,
+                            role: "funcionario"
+                        });
+                    }
                 }
-                
-                const empresaId = mapaSnap.data().empresaId;
-                // Busca o profissional na subcoleção "profissionais" da empresa
-                const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
-                const profissionalSnap = await getDoc(profissionalRef);
 
-                if (!profissionalSnap.exists() || profissionalSnap.data().status !== 'ativo') {
-                    window.location.href = 'aguardando.html';
-                    return reject(new Error("Acesso pendente de aprovação."));
-                }
-
-                // Resolve como funcionário ativo
-                return resolve({
-                    user,
-                    perfil: profissionalSnap.data(),
-                    empresaId,
-                    isOwner: false,
-                    role: "funcionario"
-                });
-
+                // 3. Não é dono nem funcionário aprovado
+                return reject(new Error("Usuário sem acesso a empresa ou não aprovado."));
             } catch (error) {
-                console.error("Debug (verificarAcesso): Erro final no bloco try/catch:", error);
                 return reject(error);
             }
         });
