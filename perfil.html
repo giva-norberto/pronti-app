@@ -8,8 +8,31 @@
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <style>
+        body.is-loading {visibility:hidden;opacity:0;transition:opacity 0.3s;}
+        #sidebar-placeholder {float:left;width:250px;min-width:250px;height:100vh;}
+        .main-content {margin-left:250px;padding:32px 24px 24px 24px;min-height:100vh;box-sizing:border-box;width:calc(100% - 250px);}
+        @media (max-width:1200px){
+            .main-content {margin-left:0;width:100%;padding:24px;}
+            #sidebar-placeholder{float:none;width:100%;height:auto;min-width:unset;}
+        }
+        .card#form-perfil {
+            max-width: 800px;
+            margin: 32px auto 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            padding: 32px 24px;
+        }
+        /* Garante responsividade do formulário e alinhamento dos botões */
+        @media (max-width: 700px) {
+            .card#form-perfil {
+                padding: 16px 6vw;
+            }
+        }
+    </style>
 </head>
-<body>
+<body class="is-loading">
     <!-- Menu lateral carregado dinamicamente -->
     <div id="sidebar-placeholder"></div>
 
@@ -83,8 +106,12 @@
             document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
             activeLink.classList.add('active');
           }
+          document.body.classList.remove('is-loading');
         })
-        .catch(error => console.error('Erro ao carregar o menu lateral:', error));
+        .catch(error => {
+          console.error('Erro ao carregar o menu lateral:', error);
+          document.body.classList.remove('is-loading');
+        });
 
       // Lógica dos botões da UI
       document.getElementById('btn-upload-logo').onclick = () => document.getElementById('logoNegocio').click();
