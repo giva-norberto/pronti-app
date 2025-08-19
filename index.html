@@ -31,7 +31,6 @@
        <i class="fa-solid fa-calendar-check"></i>
        <span>Agenda</span>
    </a>
-   <!-- ID para controlar a visibilidade deste cartão (mantido para o menu) -->
    <a href="servicos.html" class="action-card" id="acao-servicos">
        <i class="fa-solid fa-scissors"></i>
        <span>Serviços</span>
@@ -47,46 +46,31 @@
     // 1. Importações dos módulos Firebase
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js"; 
-    import { verificarAcesso } from "./userService.js";
+    // A verificação de acesso foi removida desta página para resolver o conflito.
+    // A página de login (login.js) agora é a única responsável pelo roteamento.
 
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
 
-    // 2. Lógica de Autenticação e Roteamento por Permissão
-    onAuthStateChanged(auth, async (user) => {
+    // 2. Lógica de Autenticação e Nome do Usuário
+    onAuthStateChanged(auth, (user) => {
         if (user) {
-            try {
-                // Chama o "porteiro" para saber quem está logado.
-                const { perfil, isOwner } = await verificarAcesso();
-
-                // ======================================================================
-                //                  LÓGICA DE ROTEAMENTO APLICADA AQUI
-                // ======================================================================
-                // Se o usuário NÃO for o dono, redireciona para a agenda e para a execução.
-                if (!isOwner) {
-                    window.location.href = 'agenda.html';
-                    return; // Impede que o resto do script desta página seja executado.
-                }
-                // ======================================================================
-
-                // Se for o dono, a página continua a carregar normalmente.
-                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
-                if (nomeUsuarioSpan) {
-                    nomeUsuarioSpan.textContent = primeiroNome;
-                }
-
-                // Carrega o menu e aplica as permissões (agora apenas para o dono).
-                await carregarMenuEControlarAcesso(isOwner);
-
-            } catch (error) {
-                console.log("Verificação de acesso em andamento:", error.message);
+            // Usuário está logado.
+            // Apenas exibe o nome, assumindo que o login.js já verificou a permissão
+            // e só enviou o dono para esta página.
+            const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
+            if (nomeUsuarioSpan) {
+                nomeUsuarioSpan.textContent = primeiroNome;
             }
+            // Carrega o menu do dono.
+            carregarMenu(); 
         } else {
+            // Usuário não está logado, redireciona para o login.
             window.location.href = 'login.html';
         }
     });
 
-    // 3. Carregamento Dinâmico do Menu Lateral e Lógica de Permissões
-    async function carregarMenuEControlarAcesso(isOwner) {
+    // 3. Carregamento Dinâmico do Menu Lateral e Lógica de Logout
+    async function carregarMenu() {
         try {
             const response = await fetch('menu-lateral.html');
             if (!response.ok) throw new Error('Erro ao carregar menu.');
@@ -112,24 +96,8 @@
                     });
                 });
             }
-
-            // A lógica de permissões para o menu lateral continua aqui,
-            // garantindo que o menu carregado também seja filtrado.
-            if (!isOwner) {
-                console.log("Usuário não é dono. Aplicando restrições de menu.");
-
-                // Esconde os links do menu lateral
-                // ATENÇÃO: Certifique-se de que os seus links em 'menu-lateral.html'
-                // tenham os IDs corretos para que esta lógica funcione.
-                const menuEquipe = document.getElementById('menu-equipe');
-                if (menuEquipe) menuEquipe.style.display = 'none';
-
-                const menuServicos = document.getElementById('menu-servicos');
-                if (menuServicos) menuServicos.style.display = 'none';
-                
-                // Adicione aqui outros menus que devam ser escondidos para funcionários...
-            }
-
+            // A lógica de esconder menus foi removida daqui, pois esta página
+            // agora é exclusivamente para o dono.
         } catch (error) {
             console.error(error);
         }
