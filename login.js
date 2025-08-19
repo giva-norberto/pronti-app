@@ -1,76 +1,50 @@
 // ======================================================================
 //                          LOGIN.JS (Corrigido)
-//       Versão com controle de loop para evitar travamentos
+//       Versão simplificada para resolver o conflito de login
 // ======================================================================
 
 import { onAuthStateChanged, signInWithPopup, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth, provider } from "./vitrini-firebase.js"; 
-import { ensureUserAndTrialDoc, verificarAcesso } from "./userService.js";
-
-// Flag para garantir que a lógica de login/redirecionamento rode apenas uma vez
-let isHandlingLogin = false;
-
-/**
- * Centraliza o processo pós-login, chamando o "porteiro" para redirecionar.
- */
-async function handleSuccessfulLogin(user) {
-    // Se já estamos a processar um login, não faz nada para evitar loops
-    if (isHandlingLogin) return;
-    isHandlingLogin = true;
-
-    try {
-        // Garante que o documento do usuário e o trial existam
-        await ensureUserAndTrialDoc();
-        // Chama o "porteiro" que irá fazer o redirecionamento
-        await verificarAcesso();
-    } catch (error) {
-        // ======================================================================
-        //                      CORREÇÃO APLICADA AQUI
-        // ======================================================================
-        // Se verificarAcesso rejeitar, é porque iniciou um redirecionamento.
-        // A página vai descarregar, então o loop é quebrado.
-        // Não fazemos mais nada aqui para evitar reiniciar o processo de login.
-        console.log("Processo de login interrompido para redirecionamento:", error.message);
-        // A linha "isHandlingLogin = false" foi REMOVIDA daqui.
-    }
-}
+// A verificação de acesso foi removida desta página para evitar conflitos.
+// import { ensureUserAndTrialDoc, verificarAcesso } from "./userService.js";
 
 window.addEventListener('DOMContentLoaded', () => {
-    // Assumindo que os IDs dos seus elementos são estes. Se forem diferentes, ajuste aqui.
     const btnLoginGoogle = document.getElementById('btn-login-google');
     const loginForm = document.getElementById('login-form');
     const loginStatusDiv = document.getElementById('login-status');
 
-    setPersistence(auth, browserLocalPersistence)
-        .then(() => {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    console.log("Usuário detectado. Iniciando verificação de acesso...");
-                    handleSuccessfulLogin(user);
-                } else {
-                    console.log("Nenhum usuário logado.");
-                    // Libera a trava se o usuário deslogar, permitindo um novo login.
-                    isHandlingLogin = false; 
-                }
-            });
-        })
-        .catch((err) => {
-            console.error('Erro ao definir persistência do login:', err);
-        });
+    // ======================================================================
+    //                      CORREÇÃO APLICADA AQUI
+    // ======================================================================
+    // O listener onAuthStateChanged foi simplificado. Ele agora apenas verifica
+    // se um usuário já tem uma sessão ativa e o redireciona, sem fazer
+    // a verificação de acesso complexa, que agora é responsabilidade do index.html.
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Se o usuário já está logado (ex: voltou para a página de login),
+            // envia-o para a página principal para ser roteado corretamente.
+            console.log("Sessão de usuário ativa encontrada, redirecionando...");
+            window.location.href = 'index.html';
+        }
+    });
+    // ======================================================================
 
     // Lógica do Login com Google
     if (btnLoginGoogle) {
         btnLoginGoogle.addEventListener('click', async () => {
             btnLoginGoogle.disabled = true;
+            if(loginStatusDiv) loginStatusDiv.textContent = "";
+
             try {
                 await signInWithPopup(auth, provider);
-                // O onAuthStateChanged acima vai detetar a mudança e fazer o resto.
+                // SUCESSO! Redireciona para a página principal, que fará a verificação.
+                window.location.href = 'index.html';
             } catch (error) {
                 console.error("Erro no login com Google:", error);
                 if (loginStatusDiv && error.code !== 'auth/popup-closed-by-user') {
                     loginStatusDiv.textContent = 'Não foi possível fazer login com o Google.';
                 }
-                btnLoginGoogle.disabled = false; // Reativa o botão em caso de erro.
+                btnLoginGoogle.disabled = false;
             }
         });
     }
@@ -79,6 +53,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+            if(loginStatusDiv) loginStatusDiv.textContent = "";
+
             const submitButton = loginForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
 
@@ -87,7 +63,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // O onAuthStateChanged acima vai detetar a mudança e fazer o resto.
+                // SUCESSO! Redireciona para a página principal, que fará a verificação.
+                window.location.href = 'index.html';
             } catch (error) {
                 console.error("Erro no login manual:", error.code);
                  if (loginStatusDiv) {
@@ -97,7 +74,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         loginStatusDiv.textContent = 'Ocorreu um erro. Tente novamente.';
                     }
                  }
-                submitButton.disabled = false; // Reativa o botão em caso de erro.
+                submitButton.disabled = false;
             }
         });
     }
