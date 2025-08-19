@@ -7,7 +7,6 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CORREÇÃO DE SEGURANÇA APLICADA -->
     <style>
         body.is-loading {
             visibility: hidden;
@@ -15,7 +14,6 @@
             transition: opacity 0.3s ease-in-out;
         }
     </style>
-    <!-- FIM SEGURANÇA -->
 </head>
 <body class="dashboard-body is-loading">
 
@@ -49,57 +47,14 @@
  <button class="status-button">Ver status de hoje</button>
 </main>
 
-<!-- SCRIPT PRINCIPAL UNIFICADO -->
+<!-- SCRIPT PARA MENU LATERAL BONITO E AUTENTICAÇÃO -->
 <script type="module">
-    // 1. Importações dos módulos Firebase
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js";
     import { verificarAcesso } from "./userService.js";
 
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
 
-    // Função para gerar o menu HTML conforme o tipo de usuário
-    function gerarMenuLateral(tipoUsuario) {
-        if (tipoUsuario === "dono") {
-            return `
-                <aside class="sidebar" id="sidebar">
-                    <a href="index.html" class="sidebar-brand">Pronti</a>
-                    <hr />
-                    <nav class="sidebar-links">
-                        <a href="index.html"><span>🏠</span> Início</a>
-                        <a href="dashboard.html"><span>📊</span> Dashboard</a>
-                        <a href="servicos.html"><span>🛠️</span> Serviços</a>
-                        <a href="agenda.html"><span>📅</span> Agenda</a>
-                        <a href="clientes.html"><span>👤</span> Clientes</a>
-                        <a href="equipe.html"><span>👥</span> Equipe</a>
-                        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-                    </nav>
-                    <div class="sidebar-footer">
-                        <button id="btn-logout" class="btn-logout">Sair</button>
-                    </div>
-                </aside>
-            `;
-        } else if (tipoUsuario === "funcionario") {
-            return `
-                <aside class="sidebar" id="sidebar">
-                    <a href="index.html" class="sidebar-brand">Pronti</a>
-                    <hr />
-                    <nav class="sidebar-links">
-                        <a href="agenda.html"><span>📅</span> Agenda</a>
-                        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-                    </nav>
-                    <div class="sidebar-footer">
-                        <button id="btn-logout" class="btn-logout">Sair</button>
-                    </div>
-                </aside>
-            `;
-        } else {
-            // fallback para segurança: não mostra nada
-            return "";
-        }
-    }
-
-    // Função para destacar o link ativo
     function destacarLinkAtivo() {
         const links = document.querySelectorAll('.sidebar-links a');
         let current = window.location.pathname.split('/').pop().toLowerCase();
@@ -116,7 +71,6 @@
         });
     }
 
-    // Função para ativar o logout
     function ativarLogout() {
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
@@ -130,17 +84,13 @@
         }
     }
 
-    // 2. Lógica de Autenticação e Roteamento por Permissão
+    // Carrega menu lateral bonito e aplica perfil/permissão
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
-                // Chama o "porteiro" para saber quem está logado.
                 const { perfil, isOwner } = await verificarAcesso();
 
-                // Define o tipo de usuário
-                const tipoUsuario = isOwner ? 'dono' : 'funcionario';
-
-                // Redirecionamento seguro: funcionário não acessa tela do dono (index)
+                // Funcionário não pode acessar index, redireciona:
                 if (!isOwner) {
                     window.location.replace('agenda.html');
                     return;
@@ -152,22 +102,19 @@
                     nomeUsuarioSpan.textContent = primeiroNome;
                 }
 
-                // Carrega o menu lateral correto
-                document.getElementById('sidebar-placeholder').innerHTML = gerarMenuLateral(tipoUsuario);
-
-                // Destaca o link ativo no menu lateral
-                destacarLinkAtivo();
-
-                // Ativa o logout
-                ativarLogout();
-
-                // Exibe a página
-                document.body.classList.remove('is-loading');
+                // Carrega o menu lateral bonito
+                fetch('menu-lateral.html')
+                    .then(res => res.text())
+                    .then(html => {
+                        document.getElementById('sidebar-placeholder').innerHTML = html;
+                        destacarLinkAtivo();
+                        ativarLogout();
+                        document.body.classList.remove('is-loading');
+                    });
             } catch (error) {
                 console.log("Verificação de acesso interrompida:", error.message);
             }
         } else {
-            // Usuário não está logado, redireciona para o login.
             window.location.replace('login.html');
         }
     });
