@@ -9,23 +9,16 @@ const auth = getAuth(app);
 
 /**
  * Retorna o perfil do usuário autenticado e suas permissões (isOwner, isIntermediario)
- * 
- * - isOwner: true se for dono da empresa (empresa.donoId === uid)
- * - isIntermediario: true se papel do membro for 'intermediario'
- * 
- * @returns { perfil, isOwner, isIntermediario }
  */
 export async function verificarAcesso() {
   const user = auth.currentUser;
   if (!user) throw new Error("Usuário não autenticado");
 
-  // 1. Procurar empresa onde sou dono
+  // 1. DONO
   const empresasDono = await getDocs(
     query(collection(db, "empresarios"), where("donoId", "==", user.uid))
   );
   if (!empresasDono.empty) {
-    // Usuário é dono
-    console.debug("Debug (verificarAcesso): Usuário identificado como DONO.");
     return {
       perfil: {
         nome: user.displayName || "Usuário",
@@ -39,25 +32,20 @@ export async function verificarAcesso() {
     };
   }
 
-  // 2. Procurar empresa onde sou funcionário/intermediário (busca por array de equipe)
-  // ATENÇÃO: ajuste o nome do campo conforme seu banco (pode ser 'equipeUids' ou 'equipe')
+  // 2. FUNCIONÁRIO/INTERMEDIARIO (testa existencia do campo equipe)
   const empresasEquipe = await getDocs(
     query(collection(db, "empresarios"), where("equipe", "array-contains", user.uid))
   );
 
   if (!empresasEquipe.empty) {
-    // Agora identificando o papel detalhado:
+    // Identifica papel
     const empresaData = empresasEquipe.docs[0].data();
-
-    // Supondo array 'equipeDetalhes' com objetos {uid, papel, ...}
-    // Se não tiver 'equipeDetalhes', pode estar tudo em 'equipe' como objetos, ajuste conforme necessário!
-    const equipeDetalhes = empresaData.equipeDetalhes || (empresaData.equipe && Array.isArray(empresaData.equipe) && typeof empresaData.equipe[0] === 'object' ? empresaData.equipe : []);
-    const membro = equipeDetalhes.find(m => m.uid === user.uid);
-
-    const papel = membro?.papel || 'funcionario';
-
-    console.debug("Debug (verificarAcesso): Usuário identificado como FUNCIONÁRIO/INTERMEDIARIO.", papel);
-
+    // Se seu campo equipe for só array de UIDs, não terá papel/intermediário
+    let papel = 'funcionario';
+    if (Array.isArray(empresaData.equipeDetalhes)) {
+      const membro = empresaData.equipeDetalhes.find(m => m.uid === user.uid);
+      if (membro && membro.papel) papel = membro.papel;
+    }
     return {
       perfil: {
         nome: user.displayName || "Usuário",
@@ -71,7 +59,6 @@ export async function verificarAcesso() {
     };
   }
 
-  // 3. Sem vínculo válido
-  console.debug("Debug (verificarAcesso): Usuário não tem vínculo com empresa.");
+  // 3. Sem vínculo
   throw new Error("Usuário não vinculado a nenhuma empresa.");
 }
