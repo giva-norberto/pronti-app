@@ -3,123 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Perfil e Configurações - Pronti</title>
+    <title>Meu Perfil e Configurações - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones -->
+    <!-- FontAwesome (opcional, para ícones dos botões de link) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
-        body.is-loading {visibility:hidden;opacity:0;transition:opacity 0.3s;}
-        #sidebar-placeholder {float:left;width:250px;min-width:250px;height:100vh;}
-        .main-content {margin-left:250px;padding:32px 24px 24px 24px;min-height:100vh;box-sizing:border-box;width:calc(100% - 250px);}
-        @media (max-width:1200px){
-            .main-content {margin-left:0;width:100%;padding:24px;}
-            #sidebar-placeholder{float:none;width:100%;height:auto;min-width:unset;}
-        }
-        .card#form-perfil {
-            max-width: 540px;
-            margin: 32px auto 0 auto;
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-            padding: 32px 24px;
-        }
-        .form-group {margin-bottom: 20px;}
-        .form-group label {font-weight:600;margin-bottom:6px;display:block;}
-        .form-group input {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 7px;
-            font-size: 1rem;
-            background:#f8fafc;
-        }
-        .form-actions {
-            display: flex; gap: 12px; justify-content: flex-end; margin-top: 18px;
-        }
-        .btn {
-            background: linear-gradient(90deg, #38bdf8 0%, #2457e3 100%);
-            color: #fff;
-            font-weight: 600;
-            border: none;
-            border-radius: 7px;
-            padding: 10px 32px;
-            font-size: 1.05rem;
-            box-shadow: 0 1px 6px 0 #e0e7ef;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .btn:hover {background: linear-gradient(90deg, #2457e3 0%, #38bdf8 100%);}
-        .perfil-title {font-size: 1.35rem; font-weight:700; margin-bottom:16px; color: #22223b;}
-        .perfil-section {margin-bottom:32px;}
-        /* Responsividade */
-        @media (max-width: 700px) {
-            .card#form-perfil {padding: 18px 6vw;}
-        }
+    /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande */
+    .logo-upload-container img#logo-preview {
+        max-width: 120px;
+        max-height: 120px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+        background: #eef2ff;
+        box-shadow: 0 1px 4px #0001;
+        display: block;
+        margin: 0;
+    }
+    /* Responsivo para telas menores */
+    @media (max-width: 600px) {
+      .logo-upload-container img#logo-preview {
+        max-width: 92vw;
+        max-height: 80px;
+      }
+    }
     </style>
 </head>
-<body class="is-loading">
-    <!-- Menu lateral carregado dinamicamente -->
+<body>
+    <!-- Menu lateral incluso dinamicamente -->
     <div id="sidebar-placeholder"></div>
 
     <main class="main-content">
-        <form id="form-perfil" class="card" autocomplete="off">
-            <div class="perfil-title">Meu Perfil</div>
-            <div class="perfil-section">
-                <div class="form-group">
-                    <label for="nome">Nome Completo</label>
-                    <input type="text" id="nome" name="nome" autocomplete="name" required>
+        <div class="form-card">
+            <div class="header-section">
+                <div class="header-content">
+                    <h1 id="main-title">Meu Perfil e Configurações</h1>
+                    <p>Defina aqui todas as informações do seu negócio.</p>
                 </div>
-                <div class="form-group">
-                    <label for="email">E-mail</label>
-                    <input type="email" id="email" name="email" autocomplete="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="telefone">Telefone</label>
-                    <input type="tel" id="telefone" name="telefone" placeholder="(XX) XXXXX-XXXX">
-                </div>
-                <div class="form-group">
-                    <label for="senha">Nova Senha <span style="font-weight:400;font-size:.97em;">(deixe em branco para não alterar)</span></label>
-                    <input type="password" id="senha" name="senha" autocomplete="new-password">
+                <div class="header-actions">
+                    <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">Abrir Minha Vitrine</a>
                 </div>
             </div>
-            <div class="form-actions">
-                <button type="submit" class="btn">Salvar Alterações</button>
-            </div>
-        </form>
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script>
-      // Carrega sidebar padrão via AJAX
-      document.addEventListener("DOMContentLoaded", function() {
-        fetch('menu-lateral.html')
-          .then(res => res.text())
-          .then(html => {
-            document.getElementById('sidebar-placeholder').innerHTML = html;
-            // Destaca o link 'Meu Perfil'
-            const links = document.querySelectorAll('.sidebar-links a');
-            links.forEach(link => link.classList.remove('active'));
-            const perfilLink = document.querySelector('.sidebar-links a[href=\"perfil.html\"]');
-            if (perfilLink) perfilLink.classList.add('active');
-            document.body.classList.remove('is-loading');
-          })
-          .catch(error => {
-            console.error('Erro ao carregar o menu lateral:', error);
-            document.body.classList.remove('is-loading');
-          });
-      });
 
-      // Exemplo de toast ao salvar
-      document.getElementById('form-perfil').addEventListener('submit', function(e) {
-        e.preventDefault();
-        Toastify({
-          text: "Perfil salvo com sucesso!",
-          duration: 3000,
-          gravity: "top",
-          position: "right",
-          style: { background: "#22c55e", color: "#fff" }
-        }).showToast();
-      });
+            <form id="form-perfil">
+                <div class="form-section">
+                    <h3>Informações do Negócio</h3>
+                    <div class="form-group">
+                        <label for="nomeNegocio">Nome do Negócio</label>
+                        <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
+                    </div>
+                    <div class="form-group" id="container-link-vitrine" style="display: none;">
+                        <label>Link da sua Vitrine Pública</label>
+                        <div class="vitrine-link-container">
+                            <div class="vitrine-url" id="url-vitrine-display"></div>
+                            <div class="vitrine-actions">
+                                <button type="button" id="btn-copiar-link" class="btn-copy">Copiar</button>
+                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">Abrir</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
+                        <div class="logo-upload-container">
+                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
+                            <div class="logo-upload-actions">
+                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
+                                <button type="button" id="btn-upload-logo" class="btn-upload">Escolher Arquivo</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="descricao">Descrição Curta</label>
+                        <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    
+    <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
+        <!-- O conteúdo do seu modal vai aqui dentro -->
+    </div>
+    <script>
+    // Inclusão dinâmica do menu lateral e destaque do menu de perfil
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Destaca o item de perfil após inclusão do menu
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
+          if (perfilLink) {
+              perfilLink.classList.add('active');
+          }
+        });
+    });
     </script>
+    <script src="perfil.js" type="module"></script>
 </body>
 </html>
