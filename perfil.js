@@ -73,6 +73,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
       console.log("[DEBUG] Buscando empresa do dono:", uid);
 
+      // Coleção 'empresarios' — troque para 'empresas' se esse for o nome correto no seu Firestore!
       const empresariosRef = collection(db, "empresarios");
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
@@ -127,6 +128,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
     if (elements.logoPreview && dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
 
+    if (!empresaId) return; // segurança extra
     const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
     if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
     if (elements.btnAbrirVitrine) {
