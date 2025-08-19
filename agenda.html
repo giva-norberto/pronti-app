@@ -19,24 +19,83 @@
             transition: opacity 0.3s;
         }
         #sidebar-placeholder {
+            width: 250px;
+            min-width: 250px;
             float: left;
             height: 100vh;
         }
         main.main-content {
-            margin-left: 240px;
-            padding: 32px 24px 24px 24px;
+            margin-left: 250px;
+            padding: 40px 24px 24px 24px;
             min-height: 100vh;
             box-sizing: border-box;
+            width: calc(100% - 250px);
+            background: var(--cor-fundo-app);
         }
         @media (max-width: 900px) {
             #sidebar-placeholder {
                 float: none;
                 width: 100%;
                 height: auto;
+                min-width: unset;
             }
             main.main-content {
                 margin-left: 0;
-                padding-top: 120px;
+                width: 100%;
+                padding: 24px 8px 80px 8px;
+                min-width: 0;
+            }
+        }
+        /* Filtros agenda layout e responsividade */
+        .filtros-agenda {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            background: none;
+            padding: 0;
+        }
+        .filtros-agenda > div {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .filtro-item {
+            min-width: 120px;
+            max-width: 220px;
+        }
+        .filtro-input,
+        .filtro-select {
+            min-width: 110px;
+            max-width: 170px;
+            font-size: 0.98rem;
+            padding: 7px 9px;
+            border-radius: 7px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            transition: border 0.2s;
+        }
+        .filtro-input:focus,
+        .filtro-select:focus {
+            border: 1.5px solid var(--cor-primaria);
+            outline: none;
+        }
+        @media (max-width: 900px) {
+            .filtros-agenda {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .filtros-agenda > div {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            .filtro-item {
+                min-width: 0;
+                max-width: 100%;
             }
         }
     </style>
@@ -53,10 +112,9 @@
             </a>
         </div>
 
-        <!-- Filtros principais REVISADOS -->
+        <!-- Filtros principais -->
         <div class="filtros-agenda" id="filtros-agenda">
-            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap: wrap;">
-                
+            <div>
                 <!-- Botões de Modo -->
                 <button id="btn-agenda-semana" class="btn btn-outline active">
                     <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
@@ -65,7 +123,7 @@
                     <i class="fa-solid fa-clock-rotate-left"></i> Histórico
                 </button>
 
-                <!-- Filtros da Semana (agora junto aos botões ) -->
+                <!-- Filtros da Semana -->
                 <div id="filtros-semana-container" style="display:flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
                     <div class="filtro-item">
                         <label for="data-semana">Data</label>
@@ -93,7 +151,7 @@
             </small>
         </div>
 
-        <!-- Filtros de data para histórico (continua escondido por padrão) -->
+        <!-- Filtros de data para histórico -->
         <div id="filtros-historico" style="display:none; margin: 16px 0; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
             <div class="filtro-item">
                 <label for="data-inicial">De:</label>
@@ -131,7 +189,6 @@
 
     <!-- SCRIPTS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    
     <!-- MENU LATERAL DINÂMICO -->
     <script>
         // Inclusão dinâmica do menu lateral e destaque do menu de agenda
@@ -154,12 +211,9 @@
                 });
         });
     </script>
-
     <!-- SCRIPT PRINCIPAL DA AGENDA (agenda.js inline para exemplo, pode ser externo) -->
     <script type="module">
         // ... (Seu script agenda.js permanece igual ao que você enviou)
-        // Nenhuma alteração estrutural necessária aqui para o padrão novo,
-        // pois toda a lógica já está correta e atrelada ao DOM carregado.
     </script>
 </body>
 </html>
