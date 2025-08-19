@@ -1,180 +1,137 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciamento de Equipe</title>
-    <link rel="stylesheet" href="equipe.css">
+    <title>Meu Perfil e Configurações - Pronti IA</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <!-- FontAwesome (opcional, para ícones dos botões de link) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+    /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande */
+    .logo-upload-container img#logo-preview {
+        max-width: 120px;
+        max-height: 120px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+        background: #eef2ff;
+        box-shadow: 0 1px 4px #0001;
+        display: block;
+        margin: 0;
+    }
+    /* Responsivo para telas menores */
+    @media (max-width: 600px) {
+      .logo-upload-container img#logo-preview {
+        max-width: 92vw;
+        max-height: 80px;
+      }
+    }
+    /* Regras para integração do menu lateral */
+    #sidebar-placeholder {
+        float: left;
+        width: 250px;
+        min-width: 250px;
+        height: 100vh;
+    }
+    .main-content {
+        margin-left: 250px;
+        padding: 32px 24px 24px 24px;
+        min-height: 100vh;
+        box-sizing: border-box;
+        width: calc(100% - 250px);
+    }
+    @media (max-width:1200px){
+        .main-content {margin-left:0;width:100%;padding:24px;}
+        #sidebar-placeholder{float:none;width:100%;height:auto;min-width:unset;}
+    }
+    </style>
 </head>
 <body>
-    <!-- Menu lateral dinâmico -->
+    <!-- Menu lateral incluso dinamicamente -->
     <div id="sidebar-placeholder"></div>
-    <main class="main-content">
-        <div class="container">
-            <div class="header">
-                <h1>👥 Gerenciamento de Equipe</h1>
-                <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
-            </div>
-            <div class="content">
-                <div class="actions">
-                    <h2>Minha Equipe</h2>
-                    <button id="btn-add-profissional" class="btn btn-success" type="button">
-                        ➕ Adicionar Profissional
-                    </button>
-                    <button id="btn-cancelar-equipe" class="btn btn-secondary" type="button">
-                        ❌ Voltar
-                    </button>
-                    <button id="btn-convite" class="btn btn-primary" type="button">
-                        📩 Convidar Funcionário
-                    </button>
-                </div>
-                <div id="lista-profissionais-painel" class="equipe-grid">
-                    <!-- Profissionais renderizados pelo JS -->
-                </div>
-            </div>
-        </div>
-    </main>
 
-    <!-- Modal Adicionar/Editar Profissional -->
-    <div id="modal-add-profissional" class="modal" aria-hidden="true">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="titulo-modal-profissional">➕ Adicionar Novo Profissional</h2>
-                <p>Preencha os dados do membro da equipe</p>
-            </div>
-            <form id="form-add-profissional" autocomplete="off">
-                <div class="form-group">
-                    <label for="nome-profissional">Nome Completo *</label>
-                    <input 
-                        type="text" 
-                        id="nome-profissional" 
-                        name="nome" 
-                        class="form-control" 
-                        placeholder="Digite o nome completo do profissional"
-                        required
-                    >
+    <main class="main-content">
+        <div class="form-card">
+            <div class="header-section">
+                <div class="header-content">
+                    <h1 id="main-title">Meu Perfil e Configurações</h1>
+                    <p>Defina aqui todas as informações do seu negócio.</p>
                 </div>
-                <div class="form-group">
-                    <label for="foto-profissional">Foto do Profissional</label>
-                    <input 
-                        type="file" 
-                        id="foto-profissional" 
-                        name="foto" 
-                        class="form-control"
-                        accept="image/*"
-                    >
-                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
-                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
-                    </small>
+                <div class="header-actions">
+                    <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">
+                        <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
+                    </a>
+                </div>
+            </div>
+
+            <form id="form-perfil">
+                <div class="form-section">
+                    <h3>Informações do Negócio</h3>
+                    <div class="form-group">
+                        <label for="nomeNegocio">Nome do Negócio</label>
+                        <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
+                    </div>
+                    <div class="form-group" id="container-link-vitrine" style="display: none;">
+                        <label>Link da sua Vitrine Pública</label>
+                        <div class="vitrine-link-container">
+                            <div class="vitrine-url" id="url-vitrine-display"></div>
+                            <div class="vitrine-actions">
+                                <button type="button" id="btn-copiar-link" class="btn-copy">
+                                    <i class="fa-regular fa-copy"></i> Copiar
+                                </button>
+                                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
+                        <div class="logo-upload-container">
+                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
+                            <div class="logo-upload-actions">
+                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
+                                <button type="button" id="btn-upload-logo" class="btn-upload">
+                                    <i class="fa-regular fa-image"></i> Escolher Arquivo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="descricao">Descrição Curta</label>
+                        <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
+                    </div>
                 </div>
                 <div class="form-actions">
-                    <button type="button" id="btn-cancelar-profissional" class="btn btn-secondary">
-                        ❌ Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-success btn-submit">
-                        💾 Salvar Profissional
-                    </button>
+                    <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
                 </div>
             </form>
         </div>
+    </main>
+    
+    <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
+        <!-- O conteúdo do seu modal vai aqui dentro -->
     </div>
-
-    <!-- Modal Perfil do Profissional (com abas) -->
-    <div id="modal-perfil-profissional" class="modal" aria-hidden="true">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
-                <p>Configure os serviços e horários de atendimento</p>
-            </div>
-            <nav class="tabs" aria-label="Abas do perfil do profissional">
-                <button id="tab-servicos" class="tab-btn active" type="button">Serviços</button>
-                <button id="tab-horarios" class="tab-btn" type="button">Horários & Intervalos</button>
-                <button id="tab-agenda-especial" class="tab-btn" type="button">Agenda Especial</button>
-            </nav>
-            <div id="tab-content-servicos" class="tab-content active">
-                <h3>🛠️ Serviços Disponíveis</h3>
-                <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
-                <div id="servicos-lista" class="servicos-grid">
-                    <!-- Serviços serão carregados aqui -->
-                </div>
-            </div>
-            <div id="tab-content-horarios" class="tab-content" hidden>
-                <h3>🕐 Horários de Atendimento</h3>
-                <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos de trabalho para cada dia da semana:</p>
-                <div class="form-group">
-                    <label for="intervalo-atendimento">Intervalo de Atendimento (min):</label>
-                    <input 
-                        type="number" 
-                        id="intervalo-atendimento" 
-                        name="intervalo-atendimento"
-                        class="form-control"
-                        min="5" 
-                        max="180" 
-                        step="5" 
-                        value="30"
-                        style="width:100px; margin-bottom:12px;"
-                    >
-                </div>
-                <div id="horarios-lista" class="horarios-grid">
-                    <!-- Horários serão carregados aqui -->
-                </div>
-            </div>
-            <div id="tab-content-agenda-especial" class="tab-content" hidden>
-                <h3>📅 Agenda Especial</h3>
-                <p style="color: #7f8c8d; margin-bottom: 10px;">
-                    Libere a agenda do profissional em um mês ou intervalo específico.
-                </p>
-                <div class="agenda-especial-area">
-                    <form id="form-agenda-especial" autocomplete="off">
-                        <label for="agenda-tipo">Tipo:</label>
-                        <select id="agenda-tipo" class="form-control" style="margin-bottom:10px;">
-                            <option value="mes">Mês</option>
-                            <option value="intervalo">Intervalo de datas</option>
-                        </select>
-                        <div id="agenda-mes-area" style="display:block;">
-                            <label for="agenda-mes">Mês:</label>
-                            <input type="month" id="agenda-mes" class="form-control">
-                        </div>
-                        <div id="agenda-intervalo-area" style="display:none;">
-                            <label for="agenda-inicio">De:</label>
-                            <input type="date" id="agenda-inicio" class="form-control">
-                            <label for="agenda-fim">Até:</label>
-                            <input type="date" id="agenda-fim" class="form-control">
-                        </div>
-                        <button type="button" id="btn-agenda-especial" class="btn btn-success" style="margin-top:12px;">
-                            💾 Liberar Agenda
-                        </button>
-                    </form>
-                    <div id="agenda-especial-lista" style="margin-top:18px;"></div>
-                </div>
-            </div>
-            <div class="form-actions">
-                <button type="button" id="btn-cancelar-perfil" class="btn btn-secondary">
-                    ❌ Cancelar
-                </button>
-                <button type="button" id="btn-salvar-perfil" class="btn btn-success">
-                    💾 Salvar Configurações
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="equipe.js"></script>
     <script>
-        // Carregar menu lateral (caso precise garantir)
-        document.addEventListener("DOMContentLoaded", function() {
-            fetch('menu-lateral.html')
-                .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-                .then(html => {
-                    document.getElementById('sidebar-placeholder').innerHTML = html;
-                    document.body.classList.remove('is-loading');
-                })
-                .catch(error => {
-                    console.error('Erro ao carregar o menu lateral:', error);
-                    document.body.classList.remove('is-loading');
-                });
+    // Inclusão dinâmica do menu lateral e destaque do menu de perfil
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Destaca o item de perfil após inclusão do menu
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
+          if (perfilLink) {
+              perfilLink.classList.add('active');
+          }
         });
+    });
     </script>
+    <script src="perfil.js" type="module"></script>
 </body>
 </html>
