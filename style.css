@@ -1012,3 +1012,76 @@ main.main-content, .main-content {
         max-width: 100%;
     }
 }
+.card--cliente {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px #21213b0d;
+  padding: 18px 18px 0 18px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  max-width: 340px;
+  flex: 1 1 240px;
+}
+.card-content {
+  flex: 1;
+}
+.card-title {
+  color: #22223b;
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+.card-info p {
+  margin: 0 0 4px 0;
+  color: #555;
+  font-size: 0.97em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.card-actions {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0 12px 0;
+  margin-top: 10px;
+  border-top: 1px solid #f1f1f6;
+  background: #f8fafc;
+  border-radius: 0 0 14px 14px;
+  justify-content: flex-start;
+}
+.btn-edit {
+  background: #fff;
+  color: #6366f1;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-edit:hover {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+.btn-remove {
+  background: #fff;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-remove:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
