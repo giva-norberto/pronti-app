@@ -1,10 +1,18 @@
 /* RESET E GERAL */
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* 
+   CORREÇÃO: 
+   Para não atrapalhar a padronização do seu sistema, 
+   troque 'Poppins' por 'Inter' no font-family do body. 
+   Assim, o visual ficará igual ao restante do sistema.
+*/
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', Arial, sans-serif;
     background-color: #f0f2f5;
     color: #333;
 }
+
 .container {
     max-width: 1200px;
     margin: 20px auto;
