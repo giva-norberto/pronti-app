@@ -7,7 +7,6 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <!-- ====================================================================== -->
     <!--                      CORREÇÃO DE SEGURANÇA APLICADA                      -->
     <!-- ====================================================================== -->
@@ -22,7 +21,6 @@
     </style>
     <!-- ====================================================================== -->
 </head>
-<!-- A página começa com a classe 'is-loading' para ficar oculta -->
 <body class="dashboard-body is-loading">
 
 <!-- Sidebar (menu lateral) incluso dinamicamente -->
@@ -59,11 +57,82 @@
 <script type="module">
     // 1. Importações dos módulos Firebase
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { auth } from "./vitrini-firebase.js"; 
-    // A verificação de acesso foi restaurada para esta página ser o "porteiro".
+    import { auth } from "./vitrini-firebase.js";
     import { verificarAcesso } from "./userService.js";
 
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
+
+    // Função para gerar o menu HTML conforme o tipo de usuário
+    function gerarMenuLateral(tipoUsuario) {
+        if (tipoUsuario === "dono") {
+            return `
+                <aside class="sidebar" id="sidebar">
+                    <a href="index.html" class="sidebar-brand">Pronti</a>
+                    <hr />
+                    <nav class="sidebar-links">
+                        <a href="index.html"><span>🏠</span> Início</a>
+                        <a href="dashboard.html"><span>📊</span> Dashboard</a>
+                        <a href="servicos.html"><span>🛠️</span> Serviços</a>
+                        <a href="agenda.html"><span>📅</span> Agenda</a>
+                        <a href="clientes.html"><span>👤</span> Clientes</a>
+                        <a href="equipe.html"><span>👥</span> Equipe</a>
+                        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
+                    </nav>
+                    <div class="sidebar-footer">
+                        <button id="btn-logout" class="btn-logout">Sair</button>
+                    </div>
+                </aside>
+            `;
+        } else if (tipoUsuario === "funcionario") {
+            return `
+                <aside class="sidebar" id="sidebar">
+                    <a href="index.html" class="sidebar-brand">Pronti</a>
+                    <hr />
+                    <nav class="sidebar-links">
+                        <a href="agenda.html"><span>📅</span> Agenda</a>
+                        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
+                    </nav>
+                    <div class="sidebar-footer">
+                        <button id="btn-logout" class="btn-logout">Sair</button>
+                    </div>
+                </aside>
+            `;
+        } else {
+            // fallback para segurança: não mostra nada
+            return "";
+        }
+    }
+
+    // Função para destacar o link ativo
+    function destacarLinkAtivo() {
+        const links = document.querySelectorAll('.sidebar-links a');
+        let current = window.location.pathname.split('/').pop().toLowerCase();
+        links.forEach(link => link.classList.remove('active'));
+        links.forEach(link => {
+            let href = link.getAttribute('href').split('?')[0].toLowerCase();
+            if (
+                href === current ||
+                (href.replace('.html', '') === current.replace('.html', '')) ||
+                (href === 'index.html' && (current === '' || current === 'index.html'))
+            ) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    // Função para ativar o logout
+    function ativarLogout() {
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    window.location.replace('login.html');
+                }).catch((error) => {
+                    console.error('Erro ao fazer logout:', error);
+                });
+            });
+        }
+    }
 
     // 2. Lógica de Autenticação e Roteamento por Permissão
     onAuthStateChanged(auth, async (user) => {
@@ -72,27 +141,33 @@
                 // Chama o "porteiro" para saber quem está logado.
                 const { perfil, isOwner } = await verificarAcesso();
 
-                // Se o usuário NÃO for o dono, redireciona para a agenda.
+                // Define o tipo de usuário
+                const tipoUsuario = isOwner ? 'dono' : 'funcionario';
+
+                // Redirecionamento seguro: funcionário não acessa tela do dono (index)
                 if (!isOwner) {
-                    window.location.replace('agenda.html'); // .replace() é melhor para não criar histórico
-                    return; // Impede que o resto do script desta página seja executado.
+                    window.location.replace('agenda.html');
+                    return;
                 }
-                
-                // Se for o dono, a página continua a carregar normalmente.
+
+                // Saudação personalizada
                 const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
                 if (nomeUsuarioSpan) {
                     nomeUsuarioSpan.textContent = primeiroNome;
                 }
 
-                // Carrega o menu do dono.
-                await carregarMenuEControlarAcesso();
+                // Carrega o menu lateral correto
+                document.getElementById('sidebar-placeholder').innerHTML = gerarMenuLateral(tipoUsuario);
 
-                // Apenas depois de confirmar que é o dono, a página se torna visível.
+                // Destaca o link ativo no menu lateral
+                destacarLinkAtivo();
+
+                // Ativa o logout
+                ativarLogout();
+
+                // Exibe a página
                 document.body.classList.remove('is-loading');
-
             } catch (error) {
-                // Se verificarAcesso rejeitar (ex: durante um redirecionamento do login),
-                // o erro é capturado aqui e a página não continua a carregar.
                 console.log("Verificação de acesso interrompida:", error.message);
             }
         } else {
@@ -100,38 +175,6 @@
             window.location.replace('login.html');
         }
     });
-
-    // 3. Carregamento Dinâmico do Menu Lateral (agora apenas para o dono)
-    async function carregarMenuEControlarAcesso() {
-        try {
-            const response = await fetch('menu-lateral.html');
-            if (!response.ok) throw new Error('Erro ao carregar menu.');
-            
-            const html = await response.text();
-            document.getElementById('sidebar-placeholder').innerHTML = html;
-            
-            // --- DESTAQUE DO LINK ATIVO ---
-            const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
-            if (homeLink) {
-                document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-                homeLink.classList.add('active');
-            }
-
-            // --- LÓGICA DE LOGOUT ---
-            const btnLogout = document.getElementById('btn-logout');
-            if (btnLogout) {
-                btnLogout.addEventListener('click', () => {
-                    signOut(auth).then(() => {
-                        window.location.replace('login.html');
-                    }).catch((error) => {
-                        console.error('Erro ao fazer logout:', error);
-                    });
-                });
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    }
 </script>
 
 </body>
