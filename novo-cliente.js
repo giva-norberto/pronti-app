@@ -1,27 +1,27 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
 
-// Inicialização do Firebase
+// Sua config do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
+  authDomain: "pronti-app-37c6e.firebaseapp.com",
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.appspot.com",
+  messagingSenderId: "736700619274",
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
+};
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Seletores do DOM
 const formNovoCliente = document.getElementById('form-cliente');
 const inputNome = document.getElementById('nome-cliente');
 const inputTelefone = document.getElementById('telefone-cliente');
 const inputEmail = document.getElementById('email-cliente');
 const btnSalvar = formNovoCliente ? formNovoCliente.querySelector('.btn-submit') : null;
 
-let empresaId = null;
-
-/**
- * Exibe um toast de feedback para o usuário.
- * @param {string} texto - Mensagem a ser exibida.
- * @param {string} cor - Cor de fundo do toast.
- */
 function mostrarToast(texto, cor) {
   if (typeof Toastify !== "undefined") {
     Toastify({
@@ -36,10 +36,14 @@ function mostrarToast(texto, cor) {
   }
 }
 
-/**
- * Inicializa os listeners e lógica do formulário de novo cliente.
- */
-function inicializarPaginaNovoCliente() {
+async function getEmpresaIdDoDono(uid) {
+  const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
+  const snapshot = await getDocs(empresQ);
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].id;
+}
+
+function inicializarPaginaNovoCliente(empresaId) {
   if (!formNovoCliente || !inputNome || !btnSalvar) {
     console.log("Algum elemento não foi encontrado no DOM.");
     return;
@@ -69,7 +73,6 @@ function inicializarPaginaNovoCliente() {
         return;
       }
 
-      // Salva o cliente na subcoleção 'clientes' da empresa do usuário autenticado
       const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
       await addDoc(clientesCollection, {
         nome,
@@ -82,7 +85,7 @@ function inicializarPaginaNovoCliente() {
       formNovoCliente.reset();
       setTimeout(() => {
         window.location.href = "clientes.html";
-      }, 1500);
+      }, 1200);
     } catch (error) {
       console.error("Erro ao cadastrar cliente:", error);
       mostrarToast("Erro ao cadastrar cliente.", "#ef4444");
@@ -93,24 +96,12 @@ function inicializarPaginaNovoCliente() {
   });
 }
 
-/**
- * Busca o ID da empresa associada ao usuário logado.
- * @param {string} uid - UID do usuário autenticado.
- * @returns {Promise<string|null>}
- */
-async function getEmpresaIdDoDono(uid) {
-  const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
-  const snapshot = await getDocs(empresQ);
-  if (snapshot.empty) return null;
-  return snapshot.docs[0].id;
-}
-
 // Garante autenticação e inicializa o app
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    empresaId = await getEmpresaIdDoDono(user.uid);
+    const empresaId = await getEmpresaIdDoDono(user.uid);
     if (empresaId) {
-      inicializarPaginaNovoCliente();
+      inicializarPaginaNovoCliente(empresaId);
     } else if (formNovoCliente) {
       formNovoCliente.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este usuário.</p>";
     }
