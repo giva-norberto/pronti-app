@@ -21,7 +21,7 @@ export async function verificarAcesso() {
 
   // 1. Procurar empresa onde sou dono
   const empresasDono = await getDocs(
-    query(collection(db, "empresas"), where("donoId", "==", user.uid))
+    query(collection(db, "empresarios"), where("donoId", "==", user.uid))
   );
   if (!empresasDono.empty) {
     // Usuário é dono
@@ -42,7 +42,7 @@ export async function verificarAcesso() {
   // 2. Procurar empresa onde sou funcionário/intermediário (busca por array de equipe)
   // ATENÇÃO: ajuste o nome do campo conforme seu banco (pode ser 'equipeUids' ou 'equipe')
   const empresasEquipe = await getDocs(
-    query(collection(db, "empresas"), where("equipe", "array-contains", user.uid))
+    query(collection(db, "empresarios"), where("equipe", "array-contains", user.uid))
   );
 
   if (!empresasEquipe.empty) {
