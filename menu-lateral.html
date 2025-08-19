@@ -15,7 +15,14 @@
     </div>
 </aside>
 <style>
-.sidebar {
+/* ======================================================================
+                      CORREÇÃO APLICADA AQUI
+   ======================================================================
+   As regras de estilo foram tornadas mais específicas (usando o #sidebar)
+   para garantir que elas não sejam sobrescritas pelo style.css principal,
+   resolvendo a inconsistência de aparência entre as páginas.
+   ====================================================================== */
+#sidebar {
   width: 240px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
   min-height: 100vh;
@@ -29,7 +36,7 @@
   justify-content: flex-start;
   padding-top: 20px;
 }
-.sidebar-brand {
+#sidebar .sidebar-brand {
   font-size: 2rem;
   font-weight: bold;
   color: #fff;
@@ -39,7 +46,7 @@
   display: block;
   margin-bottom: 10px;
 }
-.sidebar-links a {
+#sidebar .sidebar-links a {
   display: block;
   background: #fff;
   color: #22223b;
@@ -53,22 +60,22 @@
   text-decoration: none;
   letter-spacing: 0.01em;
 }
-.sidebar-links a.active {
+#sidebar .sidebar-links a.active {
   background: #6366f1;
   color: #fff;
   font-weight: bold;
   box-shadow: 2px 4px 0 0 #ff3e7f;
   border-radius: 12px;
 }
-.sidebar-links a:hover:not(.active) {
+#sidebar .sidebar-links a:hover:not(.active) {
   background: #f6f8fa;
   color: #4f46e5;
 }
-.sidebar-footer {
+#sidebar .sidebar-footer {
   margin-top: auto;
   padding: 24px 32px;
 }
-.btn-logout {
+#sidebar .btn-logout {
   background: #fff;
   color: #4f46e5;
   border: none;
@@ -78,7 +85,7 @@
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
-.btn-logout:hover {
+#sidebar .btn-logout:hover {
   background: #4f46e5;
   color: #fff;
   border: 1px solid #fff;
@@ -86,67 +93,59 @@
 
 /* CORREÇÃO PARA CELULAR */
 @media (max-width: 900px) {
-  .sidebar {
+  #sidebar {
     width: 100%;
     min-height: auto;
-    position: static;
+    position: static; /* Deixa de ser fixo na lateral */
     flex-direction: column;
     padding: 10px 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
-  .sidebar-brand {
+  #sidebar .sidebar-brand {
     font-size: 1.5rem;
     padding: 10px 15px;
     margin-bottom: 5px;
     text-align: left;
   }
-  .sidebar hr {
+  #sidebar hr {
     display: none;
   }
-  .sidebar-links {
+  #sidebar .sidebar-links {
     display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 0 15px 10px 15px;
+    flex-direction: row; /* Coloca os links lado a lado */
+    overflow-x: auto; /* Permite rolar horizontalmente */
+    padding: 0 15px 10px 15px; /* Adiciona espaçamento lateral */
     justify-content: flex-start;
   }
-  .sidebar-links::-webkit-scrollbar {
+  /* Esconde a barra de rolagem para um visual mais limpo */
+  #sidebar .sidebar-links::-webkit-scrollbar {
     display: none;
   }
-  .sidebar-links {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  #sidebar .sidebar-links {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
-  .sidebar-links a {
-    flex: 0 0 auto;
+  #sidebar .sidebar-links a {
+    flex: 0 0 auto; /* Impede que os botões encolham */
     margin-bottom: 0;
-    margin-right: 10px;
+    margin-right: 10px; /* Espaço entre os botões */
     padding: 10px 15px;
-    white-space: nowrap;
+    white-space: nowrap; /* Impede que o texto quebre a linha */
   }
-  .sidebar-footer {
-    display: none;
+  #sidebar .sidebar-footer {
+    display: none; /* Esconde o botão de sair para economizar espaço */
   }
 }
 </style>
 <script>
-// Marca automaticamente o link ativo do menu lateral de acordo com a página aberta
+// Ativa o link correto no menu
 document.addEventListener("DOMContentLoaded", function() {
-  const links = document.querySelectorAll('.sidebar-links a');
-  // Pega o nome do arquivo atual ou rota final (ex: agenda.html ou agenda)
-  let current = window.location.pathname.split('/').pop().toLowerCase();
-
-  // Remove qualquer ativo antes de adicionar o correto
-  links.forEach(link => link.classList.remove('active'));
-
+  const links = document.querySelectorAll('#sidebar .sidebar-links a');
+  const current = window.location.pathname.split('/').pop().toLowerCase();
   links.forEach(link => {
     let href = link.getAttribute('href').split('?')[0].toLowerCase();
-    // Aceita tanto agenda.html quanto /agenda e index.html ou raiz
-    if (
-      href === current ||
-      (href.replace('.html', '') === current.replace('.html', '')) ||
-      (href === 'index.html' && (current === '' || current === 'index.html'))
-    ) {
+    // Condição especial para o index.html ser ativo na raiz do site
+    if (href === current || (href === 'index.html' && (current === '' || current === 'index.html'))) {
       link.classList.add('active');
     }
   });
