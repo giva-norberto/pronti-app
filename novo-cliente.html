@@ -5,129 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Novo Cliente</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <style>
-        /* Estilos específicos para esta página. Recomenda-se movê-los para o style.css principal */
-        .main-content {
-            margin-left: 270px; /* Espaço para a nova sidebar de 250px + 20px de margem */
-            padding: 36px 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .form-card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-            padding: 32px;
-            margin-top: 20px;
-            max-width: 450px;
-            width: 100%;
-        }
-        .form-group {
-            margin-bottom: 18px;
-        }
-        .form-group label {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .form-group input {
-            font-size: 1rem;
-            padding: 12px 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            width: 100%;
-        }
-        .btn-submit {
-            width: 100%;
-            margin-top: 20px;
-        }
-        @media (max-width: 900px) {
-            .main-content {
-                margin-left: 0;
-                padding: 24px 15px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 </head>
 <body>
+    <!-- Sidebar padronizada será carregada via AJAX -->
+    <div id="sidebar-placeholder"></div>
 
-<!-- ========================================================== -->
-<!-- COMPONENTE DA BARRA LATERAL (SIDEBAR) UNIFICADA          -->
-<!-- ========================================================== -->
-<aside class="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <nav class="sidebar-links">
-        <a href="dashboard.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            <span>Dashboard</span>
-        </a>
-        <a href="servicos.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-            <span>Serviços</span>
-        </a>
-        <a href="agenda.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <span>Agenda</span>
-        </a>
-        <a href="clientes.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span>Clientes</span>
-        </a>
-        <a href="equipe.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <span>Equipe</span>
-        </a>
-        <a href="perfil.html">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>Meu Perfil</span>
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
-
-<main class="main-content">
-    <h1>Cadastrar Novo Cliente</h1>
-    <p>Preencha os dados do novo cliente.</p>
-    <form id="form-cliente" class="form-card" autocomplete="off">
-        <div class="form-group">
-            <label for="nome-cliente">Nome Completo:</label>
-            <input type="text" id="nome-cliente" name="nome-cliente" required>
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Novo Cliente</h1>
+            <a href="clientes.html" class="btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Voltar para Clientes
+            </a>
         </div>
-        <div class="form-group">
-            <label for="telefone-cliente">Telefone:</label>
-            <input type="tel" id="telefone-cliente" name="telefone-cliente" placeholder="(XX) XXXXX-XXXX">
-        </div>
-        <div class="form-group">
-            <label for="email-cliente">Email:</label>
-            <input type="email" id="email-cliente" name="email-cliente">
-        </div>
-        <button type="submit" class="btn-submit">Salvar Cliente</button>
-    </form>
-</main>
+        <form id="form-cliente" class="card" autocomplete="off">
+            <div class="card-info" style="padding: 24px;">
+                <div class="form-group">
+                    <label for="nome-cliente">Nome Completo:</label>
+                    <input type="text" id="nome-cliente" name="nome-cliente" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="telefone-cliente">Telefone:</label>
+                    <input type="tel" id="telefone-cliente" name="telefone-cliente" class="form-input" placeholder="(XX) XXXXX-XXXX">
+                </div>
+                <div class="form-group">
+                    <label for="email-cliente">Email:</label>
+                    <input type="email" id="email-cliente" name="email-cliente" class="form-input">
+                </div>
+            </div>
+            <div class="card-actions">
+                <button type="submit" class="btn btn-primary btn-submit">Salvar Cliente</button>
+            </div>
+        </form>
+    </main>
 
-<script>
-    // Script para destacar o link ativo na sidebar
-    document.addEventListener("DOMContentLoaded", function() {
-        const currentPage = window.location.pathname.split('/').pop();
-        const links = document.querySelectorAll('.sidebar-links a');
-        
-        // Remove a classe 'active' de todos os links primeiro
-        links.forEach(link => link.classList.remove('active'));
-        
-        // Adiciona a classe 'active' ao link que corresponde à página de clientes
-        const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
-        if (clientesLink && (currentPage.includes('clientes') || currentPage.includes('novo-cliente'))) {
-            clientesLink.classList.add('active');
-        }
-    });
-</script>
-<script src="novo-cliente.js" type="module"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module" src="novo-cliente.js"></script>
+    <script>
+      // Carrega a sidebar padronizada e destaca o link de Clientes
+      document.addEventListener("DOMContentLoaded", function() {
+        fetch('menu-lateral.html')
+          .then(res => res.text())
+          .then(html => {
+            document.getElementById('sidebar-placeholder').innerHTML = html;
+            // Destaca o link de clientes
+            const links = document.querySelectorAll('.sidebar-links a');
+            links.forEach(link => link.classList.remove('active'));
+            const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
+            if (clientesLink) clientesLink.classList.add('active');
+            // Se houver função de logout global
+            if (window.ativarLogout) window.ativarLogout();
+          });
+      });
+    </script>
 </body>
 </html>
