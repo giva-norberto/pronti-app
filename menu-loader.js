@@ -1,68 +1,77 @@
-import { verificarAcesso } from './userService.js';
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { firebaseConfig } from "./firebase-config.js";
 
-document.addEventListener("DOMContentLoaded", async function () {
-  const placeholder = document.getElementById('sidebar-placeholder');
-  if (!placeholder) return;
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-  try {
-    const acesso = await verificarAcesso();
+/**
+ * Retorna o perfil do usuário autenticado e suas permissões (isOwner, isIntermediario)
+ * 
+ * - isOwner: true se for dono da empresa (empresa.donoId === uid)
+ * - isIntermediario: true se papel do membro for 'intermediario'
+ * 
+ * @returns { perfil, isOwner, isIntermediario }
+ */
+export async function verificarAcesso() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Usuário não autenticado");
 
-    let sidebarHTML = '';
-    if (acesso.isOwner || acesso.isIntermediario) {
-      // DONO ou INTERMEDIÁRIO: menu completo
-      sidebarHTML = `
-        <aside class="sidebar" id="sidebar">
-          <div class="sidebar-brand">Pronti</div>
-          <nav class="sidebar-links">
-            <a href="dashboard.html"><span>🏠</span> Início</a>
-            <a href="servicos.html"><span>🛠️</span> Serviços</a>
-            <a href="agenda.html"><span>📅</span> Agenda</a>
-            <a href="clientes.html"><span>👤</span> Clientes</a>
-            <a href="equipe.html"><span>👥</span> Equipe</a>
-            <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-          </nav>
-          <div class="sidebar-footer">
-            <button id="btn-logout" class="btn-logout" aria-label="Sair">Sair</button>
-          </div>
-        </aside>
-      `;
-    } else {
-      // FUNCIONÁRIO: menu restrito
-      sidebarHTML = `
-        <aside class="sidebar" id="sidebar">
-          <div class="sidebar-brand">Pronti</div>
-          <nav class="sidebar-links">
-            <a href="agenda.html"><span>📅</span> Agenda</a>
-            <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-          </nav>
-          <div class="sidebar-footer">
-            <button id="btn-logout" class="btn-logout" aria-label="Sair">Sair</button>
-          </div>
-        </aside>
-      `;
-    }
-    placeholder.innerHTML = sidebarHTML;
-
-    // Ativa o link atual
-    const links = document.querySelectorAll('.sidebar-links a');
-    const current = window.location.pathname.split('/').pop().toLowerCase();
-    links.forEach(link => {
-      let href = link.getAttribute('href').split('?')[0].toLowerCase();
-      if (href === current || (href === 'index.html' && (current === '' || current === 'index.html'))) {
-        link.classList.add('active');
-      }
-    });
-
-    // Logout handler
-    document.getElementById('btn-logout').onclick = function () {
-      localStorage.clear();
-      sessionStorage.clear();
-      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js').then(({ getAuth, signOut }) => {
-        signOut(getAuth()).then(() => window.location.href = "login.html");
-      });
+  // 1. Procurar empresa onde sou dono
+  const empresasDono = await getDocs(
+    query(collection(db, "empresas"), where("donoId", "==", user.uid))
+  );
+  if (!empresasDono.empty) {
+    // Usuário é dono
+    console.debug("Debug (verificarAcesso): Usuário identificado como DONO.");
+    return {
+      perfil: {
+        nome: user.displayName || "Usuário",
+        email: user.email,
+        uid: user.uid,
+        fotoUrl: user.photoURL || "",
+        status: "ativo"
+      },
+      isOwner: true,
+      isIntermediario: false
     };
-  } catch (err) {
-    placeholder.innerHTML = '';
-    console.warn('Sidebar não carregada:', err);
   }
-});
+
+  // 2. Procurar empresa onde sou funcionário/intermediário (busca por array de equipe)
+  // ATENÇÃO: ajuste o nome do campo conforme seu banco (pode ser 'equipeUids' ou 'equipe')
+  const empresasEquipe = await getDocs(
+    query(collection(db, "empresas"), where("equipe", "array-contains", user.uid))
+  );
+
+  if (!empresasEquipe.empty) {
+    // Agora identificando o papel detalhado:
+    const empresaData = empresasEquipe.docs[0].data();
+
+    // Supondo array 'equipeDetalhes' com objetos {uid, papel, ...}
+    // Se não tiver 'equipeDetalhes', pode estar tudo em 'equipe' como objetos, ajuste conforme necessário!
+    const equipeDetalhes = empresaData.equipeDetalhes || (empresaData.equipe && Array.isArray(empresaData.equipe) && typeof empresaData.equipe[0] === 'object' ? empresaData.equipe : []);
+    const membro = equipeDetalhes.find(m => m.uid === user.uid);
+
+    const papel = membro?.papel || 'funcionario';
+
+    console.debug("Debug (verificarAcesso): Usuário identificado como FUNCIONÁRIO/INTERMEDIARIO.", papel);
+
+    return {
+      perfil: {
+        nome: user.displayName || "Usuário",
+        email: user.email,
+        uid: user.uid,
+        fotoUrl: user.photoURL || "",
+        status: "ativo"
+      },
+      isOwner: false,
+      isIntermediario: papel === 'intermediario'
+    };
+  }
+
+  // 3. Sem vínculo válido
+  console.debug("Debug (verificarAcesso): Usuário não tem vínculo com empresa.");
+  throw new Error("Usuário não vinculado a nenhuma empresa.");
+}
