@@ -761,3 +761,50 @@ textarea.form-input { min-height: 80px; }
     background: #2193b0;
     color: #fff;
 }
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 22px;
+    margin-bottom: 36px;
+    padding-top: 18px;
+    flex-wrap: wrap;
+}
+.page-header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--cor-texto-escuro);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+.page-header .subtitle {
+    color: var(--cor-texto-claro);
+    font-size: 1.07rem;
+    font-weight: 500;
+    margin: 0;
+}
+#btn-abrir-vitrine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
+    color: #fff !important;
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    font-size: 1rem;
+    padding: 9px 22px;
+    transition: background .18s, box-shadow .18s;
+    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.08);
+    text-decoration: none;
+}
+#btn-abrir-vitrine:hover,
+#btn-abrir-vitrine:focus {
+    background: linear-gradient(135deg, #2193b0, #6dd5ed);
+    color: #fff;
+}
