@@ -144,7 +144,9 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 <script type="module">
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-document.addEventListener("DOMContentLoaded", function() {
+
+// Use defer para garantir que o DOM esteja pronto mesmo em páginas SPA ou carregamento assíncrono
+function ativarLogout() {
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
     btnLogout.addEventListener("click", async function() {
@@ -156,5 +158,12 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
   }
-});
+}
+
+// Garanta que roda mesmo que o DOM já esteja carregado
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", ativarLogout);
+} else {
+  ativarLogout();
+}
 </script>
