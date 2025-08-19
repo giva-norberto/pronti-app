@@ -104,30 +104,9 @@
     <!-- SCRIPTS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     
-    <!-- SCRIPT DE INICIALIZAÇÃO DA PÁGINA (menu, etc. ) -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-          // Carregamento do menu lateral
-          const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-          if (sidebarPlaceholder) {
-            fetch('menu-lateral.html')
-              .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-              .then(html => {
-                sidebarPlaceholder.innerHTML = html;
-                const activeLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
-                if (activeLink) {
-                    document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-                    activeLink.classList.add('active');
-                }
-              })
-              .catch(error => {
-                console.error('Erro ao carregar o menu lateral:', error);
-                sidebarPlaceholder.innerHTML = '<p style="color:red; padding: 20px;">Erro ao carregar menu.</p>';
-              });
-          }
-        });
-    </script>
-
+    <!-- MENU LATERAL DINÂMICO -->
+    <script type="module" src="menu-loader.js"></script>
+    
     <!-- SCRIPT PRINCIPAL DA AGENDA (agenda.js) -->
     <script type="module">
         /**
