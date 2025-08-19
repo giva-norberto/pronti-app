@@ -3,135 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Perfil e Configurações - Pronti</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones -->
+    <title>Pronti - Minha Agenda</title>
+    <!-- Google Fonts e Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS do Pronti -->
+    <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <style>
-        body.is-loading {visibility:hidden;opacity:0;transition:opacity 0.3s;}
-        #sidebar-placeholder {float:left;width:250px;min-width:250px;height:100vh;}
-        .main-content {margin-left:250px;padding:32px 24px 24px 24px;min-height:100vh;box-sizing:border-box;width:calc(100% - 250px);}
-        @media (max-width:1200px){
-            .main-content {margin-left:0;width:100%;padding:24px;}
-            #sidebar-placeholder{float:none;width:100%;height:auto;min-width:unset;}
-        }
-        .card#form-perfil {
-            max-width: 800px;
-            margin: 32px auto 0 auto;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-            padding: 32px 24px;
-        }
-        /* Garante responsividade do formulário e alinhamento dos botões */
-        @media (max-width: 700px) {
-            .card#form-perfil {
-                padding: 16px 6vw;
-            }
-        }
-    </style>
 </head>
-<body class="is-loading">
-    <!-- Menu lateral carregado dinamicamente -->
+<body>
     <div id="sidebar-placeholder"></div>
-
     <main class="main-content">
         <div class="page-header">
-            <h1>Meu Perfil e Configurações</h1>
-            <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn btn-primary" style="display: none;">
-                <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
+            <h1>Minha Agenda</h1>
+            <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
+                <i class="fa-solid fa-plus"></i>
+                Novo Agendamento
             </a>
         </div>
 
-        <!-- O formulário agora usa a classe .card para um visual consistente -->
-        <form id="form-perfil" class="card">
-            <div class="card-info" style="padding: 24px;">
-                <div class="form-section">
-                    <h3>Informações do Negócio</h3>
-                    <div class="form-group">
-                        <label for="nomeNegocio">Nome do Negócio</label>
-                        <input type="text" id="nomeNegocio" class="form-input" placeholder="Ex: Barbearia do João" required>
-                    </div>
-                    <div class="form-group" id="container-link-vitrine" style="display: none;">
-                        <label>Link da sua Vitrine Pública</label>
-                        <div class="vitrine-link-container">
-                            <div class="vitrine-url" id="url-vitrine-display"></div>
-                            <div class="vitrine-actions">
-                                <button type="button" id="btn-copiar-link" class="btn btn-sucesso">
-                                    <i class="fa-regular fa-copy"></i> Copiar
-                                </button>
-                                <a href="#" target="_blank" class="btn btn-edit" id="btn-abrir-vitrine-inline">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
-                        <div class="logo-upload-container">
-                            <img id="logo-preview" src="https://placehold.co/100x100/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
-                            <div class="logo-upload-actions">
-                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                                <button type="button" id="btn-upload-logo" class="btn btn-aviso">
-                                    <i class="fa-regular fa-image"></i> Escolher Arquivo
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="descricao">Descrição Curta</label>
-                        <textarea id="descricao" rows="3" class="form-input" placeholder="Uma breve descrição do seu negócio."></textarea>
-                    </div>
+        <!-- FILTROS PRINCIPAIS (SEMANA/HISTÓRICO, PROFISSIONAL, SEMANA) -->
+        <div class="filtros-agenda" id="filtros-agenda">
+            <!-- Botões de alternância -->
+            <button id="btn-agenda-semana" class="btn btn-outline">
+                <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
+            </button>
+            <button id="btn-historico" class="btn btn-outline">
+                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+            </button>
+            <!-- Profissional (visível só para dono) -->
+            <div class="filtro-item" id="filtro-profissional-item">
+                <label for="filtro-profissional">Profissional</label>
+                <select id="filtro-profissional" class="filtro-select"></select>
+            </div>
+            <!-- Semana (mas inicia buscando apenas o dia) -->
+            <div class="filtro-item" id="filtro-semana">
+                <label for="data-semana">Data</label>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <button id="btn-semana-anterior" class="btn btn-light" title="Dia anterior">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <input type="date" id="data-semana" class="filtro-input">
+                    <button id="btn-semana-proxima" class="btn btn-light" title="Próximo dia">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>
-            <div class="card-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fa-solid fa-floppy-disk"></i> Salvar Todas as Configurações
-                </button>
+        </div>
+
+        <!-- Legenda da semana -->
+        <div id="legenda-container" style="margin: 8px 0; font-size: 0.9em; color: #555;">
+            <small id="legenda-semana">
+                Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
+            </small>
+        </div>
+
+        <!-- Filtros de histórico -->
+        <div id="filtros-historico" style="display:none; margin: 16px 0; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="filtro-item">
+                <label for="data-inicial">De:</label>
+                <input type="date" id="data-inicial" class="filtro-input">
             </div>
-        </form>
+            <div class="filtro-item">
+                <label for="data-final">Até:</label>
+                <input type="date" id="data-final" class="filtro-input">
+            </div>
+            <button id="btn-aplicar-historico" class="btn btn-secondary">
+                <i class="fa-solid fa-filter"></i> Aplicar
+            </button>
+            <button id="btn-mes-atual" class="btn btn-light">
+                <i class="fa-solid fa-calendar"></i> Mês Atual
+            </button>
+        </div>
+
+        <!-- Lista de agendamentos -->
+        <div id="lista-agendamentos" class="dashboard-cards">
+            <p id="agendamentos-placeholder">A carregar agendamentos...</p>
+        </div>
     </main>
-    
-    <!-- Scripts -->
-    <script>
-    // Inclusão dinâmica do menu lateral e destaque do menu de perfil
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          const activeLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
-          if (activeLink) {
-            document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-            activeLink.classList.add('active');
-          }
-          document.body.classList.remove('is-loading');
-        })
-        .catch(error => {
-          console.error('Erro ao carregar o menu lateral:', error);
-          document.body.classList.remove('is-loading');
+
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div id="modal-confirmacao" class="modal-overlay">
+        <div class="modal-card">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
+            <div class="modal-botoes">
+                <button id="btn-modal-cancelar" class="btn">Cancelar</button>
+                <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module">
+    // Função utilitária para formatar datas em yyyy-mm-dd no fuso local
+    function formatarDataISO(data) {
+        const off = data.getTimezoneOffset();
+        const dataLocal = new Date(data.getTime() - (off*60*1000));
+        return dataLocal.toISOString().split('T')[0];
+    }
+
+    // Inicialização dos filtros
+    document.addEventListener('DOMContentLoaded', () => {
+        // Preenche o input de data com o dia atual (local, não UTC)
+        const inputDataSemana = document.getElementById('data-semana');
+        if (inputDataSemana) {
+            inputDataSemana.value = formatarDataISO(new Date());
+        }
+
+        // Ao carregar, busca só o dia selecionado
+        if (typeof carregarAgendamentosDia === "function") {
+            carregarAgendamentosDia();
+        }
+
+        // Troca de datas
+        document.getElementById('btn-semana-anterior').addEventListener('click', () => {
+            const data = new Date(inputDataSemana.value);
+            data.setDate(data.getDate() - 1);
+            inputDataSemana.value = formatarDataISO(data);
+            if (typeof carregarAgendamentosDia === "function") carregarAgendamentosDia();
+        });
+        document.getElementById('btn-semana-proxima').addEventListener('click', () => {
+            const data = new Date(inputDataSemana.value);
+            data.setDate(data.getDate() + 1);
+            inputDataSemana.value = formatarDataISO(data);
+            if (typeof carregarAgendamentosDia === "function") carregarAgendamentosDia();
+        });
+        inputDataSemana.addEventListener('change', () => {
+            if (typeof carregarAgendamentosDia === "function") carregarAgendamentosDia();
         });
 
-      // Lógica dos botões da UI
-      document.getElementById('btn-upload-logo').onclick = () => document.getElementById('logoNegocio').click();
-      
-      const btnCopiar = document.getElementById('btn-copiar-link');
-      if (btnCopiar) {
-        btnCopiar.onclick = function() {
-          const url = document.getElementById('url-vitrine-display').innerText;
-          if (!url) return;
-          navigator.clipboard.writeText(url).then(() => {
-            btnCopiar.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
-            setTimeout(() => {
-              btnCopiar.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar';
-            }, 1500);
-          });
-        };
-      }
+        // Botão Agenda da Semana: só busca a semana quando clicar!
+        document.getElementById('btn-agenda-semana').addEventListener('click', () => {
+            if (typeof carregarAgendamentosSemana === "function") carregarAgendamentosSemana();
+        });
     });
     </script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="perfil.js" type="module"></script>
+    <script type="module" src="agenda.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('menu-lateral.html')
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('sidebar-placeholder').innerHTML = html;
+                    const links = document.querySelectorAll('.sidebar-links a');
+                    links.forEach(link => link.classList.remove('active'));
+                    const agendaLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
+                    if (agendaLink) agendaLink.classList.add('active');
+                    if (window.ativarLogout) window.ativarLogout();
+                });
+        });
+    </script>
 </body>
 </html>
