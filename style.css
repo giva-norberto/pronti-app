@@ -653,3 +653,111 @@ textarea.form-input { min-height: 80px; }
     background: linear-gradient(135deg, #2193b0, #6dd5ed);
     color: #fff;
 }
+/* Cabeçalho do perfil */
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 22px;
+    margin-bottom: 36px;
+    padding-top: 18px;
+    flex-wrap: wrap;
+}
+.page-header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--cor-texto-escuro);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+.page-header .subtitle {
+    color: var(--cor-texto-claro);
+    font-size: 1.07rem;
+    font-weight: 500;
+    margin: 0;
+}
+#btn-abrir-vitrine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--cor-primaria), var(--cor-secundaria));
+    color: #fff !important;
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    font-size: 1rem;
+    padding: 9px 22px;
+    transition: background .18s, box-shadow .18s;
+    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.08);
+    text-decoration: none;
+}
+#btn-abrir-vitrine:hover,
+#btn-abrir-vitrine:focus {
+    background: linear-gradient(135deg, #2193b0, #6dd5ed);
+    color: #fff;
+}
+
+/* Vitrine - campo de link e botões */
+.vitrine-link-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f7fafc;
+    padding: 10px 10px 10px 14px;
+    border-radius: 8px;
+    border: 1.5px solid #e5e7eb;
+}
+.vitrine-url {
+    border: none;
+    padding: 9px 10px;
+    background: #f0f2f5;
+    color: #312e81;
+    font-size: 1rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-grow: 1;
+    border-radius: 6px;
+    font-family: 'Inter', Arial, sans-serif;
+    margin-right: 0;
+}
+.vitrine-actions {
+    display: flex;
+    gap: 6px;
+}
+.vitrine-actions .btn {
+    padding: 7px 14px;
+    font-size: .97rem;
+    border-radius: 7px;
+    font-weight: 700;
+    border: none;
+    background: var(--cor-primaria);
+    color: #fff;
+    transition: background .17s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: unset;
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.06);
+    white-space: nowrap;
+    line-height: 1;
+}
+.vitrine-actions .btn-edit {
+    background: var(--cor-secundaria);
+    color: #22223b;
+}
+.vitrine-actions .btn-edit:hover {
+    background: #e0f7fa;
+}
+.vitrine-actions .btn i {
+    font-size: 1.05em;
+    margin-right: 3px;
+}
+.vitrine-actions .btn:active {
+    background: #2193b0;
+    color: #fff;
+}
