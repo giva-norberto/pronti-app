@@ -15,16 +15,12 @@
             transition: opacity 0.3s;
         }
         /* Garante que o main fique ao lado da sidebar */
-        body, html {
-            min-height: 100vh;
-            margin: 0;
-        }
         #sidebar-placeholder {
             float: left;
             height: 100vh;
         }
         main {
-            margin-left: 240px; /* largura padrão da sidebar */
+            margin-left: 240px; /* ajuste conforme a largura do seu menu */
             padding: 32px 24px 24px 24px;
             min-height: 100vh;
             box-sizing: border-box;
@@ -37,7 +33,7 @@
             }
             main {
                 margin-left: 0;
-                padding-top: 120px; /* se a sidebar virar topo */
+                padding-top: 120px;
             }
         }
     </style>
@@ -59,7 +55,44 @@
         <div id="trial-notification-banner" class="trial-banner" style="display: none;"></div>
 
         <div class="dashboard-cards">
-            <!-- ...seus cards... (igual já está) -->
+
+            <div class="card card-agenda">
+                <h3><i class="icon-calendar"></i> Agenda do Dia</h3>
+                <div id="agenda-resultado" class="card-body"></div>
+            </div>
+
+            <div class="card card-servico">
+                <h3><i class="icon-star"></i> Serviço em Destaque</h3>
+                <div id="servico-destaque" class="card-body">Nenhum</div>
+            </div>
+
+            <div class="card card-profissional">
+                <h3><i class="icon-user"></i> Profissional do Dia</h3>
+                <div class="card-body">
+                    <div id="prof-destaque-nome">Nenhum profissional</div>
+                    <div id="prof-destaque-qtd">hoje</div>
+                </div>
+            </div>
+
+            <div class="card card-resumo">
+                <h3><i class="icon-clipboard"></i> Resumo do Dia</h3>
+                <div class="card-body">
+                    <div><strong>Total de Agendamentos:</strong> <span id="total-agendamentos-dia">0</span></div>
+                    <div><strong>Faturamento Estimado:</strong> <span id="faturamento-previsto">R$0,00</span></div>
+                    <div><strong>Ocupação:</strong> <span id="percentual-ocupacao">0%</span></div>
+                </div>
+            </div>
+
+            <div class="card card-ia">
+                <h3><i class="icon-robot"></i> Sugestão Inteligente</h3>
+                <div id="ia-sugestao" class="card-body">Mensagem IA</div>
+            </div>
+
+            <div class="card card-resumo-inteligente">
+                <h3><i class="icon-lightbulb"></i> Resumo Inteligente</h3>
+                <div id="resumo-inteligente" class="card-body"></div>
+            </div>
+
         </div>
     </main>
     <script type="module" src="dashboard.js"></script>
