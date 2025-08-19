@@ -1,4 +1,4 @@
-import { verificarAcesso } from './userservice.js';
+import { verificarAcesso } from './userService.js';
 
 document.addEventListener("DOMContentLoaded", async function () {
   const placeholder = document.getElementById('sidebar-placeholder');
