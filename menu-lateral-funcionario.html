@@ -85,7 +85,7 @@
   .sidebar {
     width: 100%;
     min-height: auto;
-    position: static; /* Deixa de ser fixo na lateral */
+    position: static;
     flex-direction: column;
     padding: 10px 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -101,28 +101,27 @@
   }
   .sidebar-links {
     display: flex;
-    flex-direction: row; /* Coloca os links lado a lado */
-    overflow-x: auto; /* Permite rolar horizontalmente */
-    padding: 0 15px 10px 15px; /* Adiciona espaçamento lateral */
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0 15px 10px 15px;
     justify-content: flex-start;
   }
-  /* Esconde a barra de rolagem para um visual mais limpo */
   .sidebar-links::-webkit-scrollbar {
     display: none;
   }
   .sidebar-links {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
   .sidebar-links a {
-    flex: 0 0 auto; /* Impede que os botões encolham */
+    flex: 0 0 auto;
     margin-bottom: 0;
-    margin-right: 10px; /* Espaço entre os botões */
+    margin-right: 10px;
     padding: 10px 15px;
-    white-space: nowrap; /* Impede que o texto quebre a linha */
+    white-space: nowrap;
   }
   .sidebar-footer {
-    display: none; /* Esconde o botão de sair para economizar espaço */
+    display: none;
   }
 }
 </style>
@@ -140,7 +139,6 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 });
 </script>
-
 <script type="module">
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 document.addEventListener("DOMContentLoaded", function() {
