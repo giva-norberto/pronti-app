@@ -2,7 +2,6 @@
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links">
-        <!-- Menus visíveis apenas para o funcionário -->
         <a href="agenda.html"><span>📅</span> Agenda</a>
         <a href="equipe.html"><span>👥</span> Equipe</a>
         <a href="perfil-funcionario.html"><span>🙍‍♂️</span> Meu Perfil</a>
@@ -139,5 +138,22 @@ document.addEventListener("DOMContentLoaded", function() {
       link.classList.add('active');
     }
   });
+});
+</script>
+
+<script type="module">
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+document.addEventListener("DOMContentLoaded", function() {
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", async function() {
+      try {
+        await signOut(getAuth());
+        window.location.href = "login.html";
+      } catch (e) {
+        alert("Erro ao sair: " + e.message);
+      }
+    });
+  }
 });
 </script>
