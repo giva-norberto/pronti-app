@@ -1,65 +1,114 @@
-<!-- ... cabeçalho e sidebar ... -->
-<main class="main-content">
-    <div class="page-header">
-        <h1>Minha Agenda</h1>
-        <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
-            <i class="fa-solid fa-plus"></i>
-            Novo Agendamento
-        </a>
-    </div>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Minha Agenda</title>
+    <!-- Google Fonts e Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS do Pronti -->
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+    <div id="sidebar-placeholder"></div>
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Minha Agenda</h1>
+            <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
+                <i class="fa-solid fa-plus"></i>
+                Novo Agendamento
+            </a>
+        </div>
 
-    <!-- Filtros principais -->
-    <div class="filtros-agenda" id="filtros-agenda">
-        <button id="btn-agenda-semana" class="btn btn-outline active">
-            <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
-        </button>
-        <button id="btn-historico" class="btn btn-outline">
-            <i class="fa-solid fa-clock-rotate-left"></i> Histórico
-        </button>
-        <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-            <div class="filtro-item">
-                <label for="data-semana">Data</label>
+        <!-- FILTROS PRINCIPAIS (SEMANA/HISTÓRICO, PROFISSIONAL, SEMANA) -->
+        <div class="filtros-agenda" id="filtros-agenda">
+            <!-- Botões de alternância -->
+            <button id="btn-agenda-semana" class="btn btn-outline active">
+                <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
+            </button>
+            <button id="btn-historico" class="btn btn-outline">
+                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+            </button>
+            <!-- Profissional (visível só para dono) -->
+            <div class="filtro-item" id="filtro-profissional-item">
+                <label for="filtro-profissional">Profissional</label>
+                <select id="filtro-profissional" class="filtro-select"></select>
+            </div>
+            <!-- Semana -->
+            <div class="filtro-item" id="filtro-semana">
+                <label for="data-semana">Semana</label>
                 <div style="display:flex; align-items:center; gap:5px;">
+                    <button id="btn-semana-anterior" class="btn btn-light" title="Semana anterior">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <button id="btn-semana-atual" class="btn btn-light" title="Esta semana">
+                        <i class="fa-solid fa-calendar-day"></i>
+                    </button>
                     <input type="date" id="data-semana" class="filtro-input">
                     <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
                         <i class="fa-solid fa-arrow-right"></i>
                     </button>
                 </div>
+                <small id="legenda-semana" style="margin-top:2px;font-size:0.95em;">
+                    Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
+                </small>
             </div>
-            <div class="filtro-item" id="filtro-profissional-item">
-                <label for="filtro-profissional">Profissional</label>
-                <select id="filtro-profissional" class="filtro-select"></select>
+        </div>
+
+        <!-- FILTROS HISTÓRICO -->
+        <div id="filtros-historico" style="display:none; margin: 16px 0; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="filtro-item">
+                <label for="data-inicial">De:</label>
+                <input type="date" id="data-inicial" class="filtro-input">
+            </div>
+            <div class="filtro-item">
+                <label for="data-final">Até:</label>
+                <input type="date" id="data-final" class="filtro-input">
+            </div>
+            <button id="btn-aplicar-historico" class="btn btn-secondary">
+                <i class="fa-solid fa-filter"></i> Aplicar
+            </button>
+            <button id="btn-mes-atual" class="btn btn-light">
+                <i class="fa-solid fa-calendar"></i> Mês Atual
+            </button>
+        </div>
+
+        <!-- Lista de agendamentos -->
+        <div id="lista-agendamentos" class="dashboard-cards">
+            <p id="agendamentos-placeholder">A carregar agendamentos...</p>
+        </div>
+    </main>
+
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div id="modal-confirmacao" class="modal-overlay">
+        <div class="modal-card">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Você tem certeza que deseja continuar?</p>
+            <div class="modal-botoes">
+                <button id="btn-modal-cancelar" class="btn">Cancelar</button>
+                <button id="btn-modal-confirmar" class="btn btn-remove">Sim, Excluir</button>
             </div>
         </div>
     </div>
-
-    <!-- Legenda -->
-    <div id="legenda-container" style="margin: 8px 0; font-size: 0.9em; color: #555;">
-        <small id="legenda-semana">
-            Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
-        </small>
-    </div>
-
-    <!-- Filtros de histórico -->
-    <div id="filtros-historico" style="display:none; margin: 16px 0; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-        <div class="filtro-item">
-            <label for="data-inicial">De:</label>
-            <input type="date" id="data-inicial" class="filtro-input">
-        </div>
-        <div class="filtro-item">
-            <label for="data-final">Até:</label>
-            <input type="date" id="data-final" class="filtro-input">
-        </div>
-        <button id="btn-aplicar-historico" class="btn btn-secondary">
-            <i class="fa-solid fa-filter"></i> Aplicar
-        </button>
-        <button id="btn-mes-atual" class="btn btn-light">
-            <i class="fa-solid fa-calendar"></i> Mês Atual
-        </button>
-    </div>
-
-    <!-- Lista de agendamentos -->
-    <div id="lista-agendamentos" class="dashboard-cards">
-        <p id="agendamentos-placeholder">A carregar agendamentos...</p>
-    </div>
-</main>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="module" src="agenda.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('menu-lateral.html')
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('sidebar-placeholder').innerHTML = html;
+                    const links = document.querySelectorAll('.sidebar-links a');
+                    links.forEach(link => link.classList.remove('active'));
+                    const agendaLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
+                    if (agendaLink) agendaLink.classList.add('active');
+                    if (window.ativarLogout) window.ativarLogout();
+                });
+        });
+    </script>
+</body>
+</html>
