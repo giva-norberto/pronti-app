@@ -118,6 +118,7 @@ export async function checkUserStatus() {
 
 /**
  * Função "Porteiro": Verifica o acesso e redireciona se necessário.
+ * Agora, se for funcionário ativo, redireciona para agenda.html!
  */
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
@@ -139,17 +140,12 @@ export async function verificarAcesso() {
                 if (empresaDoc) {
                     console.log("Debug (verificarAcesso): Usuário identificado como DONO. Acesso permitido.");
                     
-                    // =======================================================
-                    //              CORREÇÃO CIRÚRGICA APLICADA AQUI
-                    // =======================================================
-                    // Se estivermos na página de login, redirecionamos e
-                    // REJEITAMOS a promessa para parar o loop imediatamente.
+                    // Redirecionamento para dashboard do dono, caso necessário
                     const targetPage = 'dashboard.html';
                     if (currentPage !== targetPage && currentPage.includes('login')) {
                         window.location.href = targetPage;
                         return reject(new Error(`Redirecionando para ${targetPage}...`));
                     }
-                    // =======================================================
 
                     const empresaData = empresaDoc.data();
                     const userDocRef = doc(db, "usuarios", user.uid);
@@ -161,7 +157,7 @@ export async function verificarAcesso() {
                         empresaData.nome = user.displayName || user.email;
                     }
                     
-                    // Se não redirecionamos, resolvemos a promessa com os dados do usuário.
+                    // Resolve como dono
                     return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true });
                 }
 
@@ -183,13 +179,14 @@ export async function verificarAcesso() {
                     return reject(new Error("Acesso pendente de aprovação."));
                 }
 
-                // Se funcionário está ativo, redireciona para o dashboard dele
-                const targetPage = 'dashboard-funcionario.html'; // <- Verifique se este é o nome correto
-                 if (currentPage !== targetPage && currentPage.includes('login')) {
+                // Se funcionário está ativo, redireciona para a agenda dele!
+                const targetPage = 'agenda.html'; // <- O funcionário sempre cai na agenda
+                if (currentPage !== targetPage) {
                     window.location.href = targetPage;
                     return reject(new Error(`Redirecionando para ${targetPage}...`));
                 }
 
+                // Resolve como funcionário ativo
                 return resolve({ user, perfil: profissionalSnap.data(), empresaId, isOwner: false });
 
             } catch (error) {
