@@ -100,7 +100,9 @@ body.dashboard-body {
     margin-left: 250px;
     padding: 40px;
     width: calc(100% - 250px);
+    min-height: 100vh;
     box-sizing: border-box;
+    background: var(--cor-fundo-app);
 }
 
 /* Centraliza o conteúdo só no dashboard */
@@ -263,6 +265,27 @@ body.dashboard-body {
     padding-top: 14px;
 }
 
+/* ========== PERFIL FORM ========== */
+.card#form-perfil {
+    max-width: 800px;
+    margin: 32px auto 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    padding: 32px 24px;
+    width: 100%;
+}
+@media (max-width: 900px) {
+    .card#form-perfil {
+        padding: 20px 8px;
+    }
+}
+@media (max-width: 600px) {
+    .card#form-perfil {
+        padding: 12px 2vw;
+    }
+}
+
 /* ========== STATUS LABELS ========== */
 .status-label {
     display: inline-block;
@@ -307,6 +330,49 @@ textarea.form-input:focus {
     box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.3);
 }
 
+/* Vitrine e logo do perfil */
+.vitrine-link-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #f9fafb;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+.vitrine-url {
+    border: none;
+    padding: 8px 12px;
+    background: #f0f2f5;
+    color: #312e81;
+    font-size: 1rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-grow: 1;
+    border-radius: 6px;
+}
+.vitrine-actions {
+    display: flex;
+    gap: 5px;
+}
+.logo-upload-container {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    background-color: #f9fafb;
+}
+.logo-upload-container img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 14px;
+    border: none;
+    background: #eef2ff;
+}
+
 /* ========== MODAIS ========== */
 .modal-overlay {
     display: none;
@@ -327,6 +393,12 @@ textarea.form-input:focus {
         margin-left: 0;
         width: 100%;
         padding: 24px;
+    }
+    #sidebar-placeholder {
+        float: none;
+        width: 100%;
+        height: auto;
+        min-width: unset;
     }
 }
 @media (max-width: 992px) {
@@ -380,42 +452,4 @@ textarea.form-input:focus {
         padding-left: 10px; padding-right: 10px;
     }
     .card-title { padding-top: 10px; padding-bottom: 8px; font-size: 0.97rem; }
-}
-/* ... outros media queries e componentes ... */
-#sidebar-placeholder {
-  width: 250px;
-  min-width: 250px;
-  float: left;
-  height: 100vh;
-}
-
-.main-content {
-  margin-left: 250px;
-  padding: 32px 24px 24px 24px;
-  width: calc(100% - 250px);
-  min-height: 100vh;
-  box-sizing: border-box;
-}
-
-@media (max-width: 1200px) {
-  .main-content {
-    margin-left: 0;
-    width: 100%;
-    padding: 24px;
-  }
-  #sidebar-placeholder {
-    float: none;
-    width: 100%;
-    height: auto;
-    min-width: unset;
-  }
-}
-
-.card#form-perfil {
-  max-width: 800px;
-  margin: 32px auto 0 auto;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-  padding: 32px 24px;
 }
