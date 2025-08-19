@@ -42,7 +42,12 @@ function mostrarToast(texto, cor = '#38bdf8') {
         alert(texto);
     }
 }
-function formatarDataISO(data) { return data.toISOString().split('T')[0]; }
+function formatarDataISO(data) { 
+    // Sempre no fuso local!
+    const off = data.getTimezoneOffset();
+    const dataLocal = new Date(data.getTime() - (off*60*1000));
+    return dataLocal.toISOString().split('T')[0];
+}
 function formatarDataBrasileira(dataISO) {
     if (!dataISO || dataISO.length !== 10) return dataISO;
     const [ano, mes, dia] = dataISO.split("-");
@@ -51,12 +56,19 @@ function formatarDataBrasileira(dataISO) {
 
 // ----------- LÓGICA DE DATAS -----------
 function getPeriodoSemana(dataBaseStr) {
-    const inicio = new Date(dataBaseStr + 'T00:00:00Z');
+    // Calcula segunda a domingo no fuso local
+    const [ano, mes, dia] = dataBaseStr.split('-').map(Number);
+    const inicio = new Date(ano, mes - 1, dia);
     const fim = new Date(inicio);
-    const diaDaSemana = inicio.getUTCDay();
-    const diasAteSabado = 6 - diaDaSemana;
-    fim.setUTCDate(inicio.getUTCDate() + diasAteSabado);
-    return { inicioISO: formatarDataISO(inicio), fimISO: formatarDataISO(fim) };
+    const diaDaSemana = inicio.getDay(); // 0=domingo, 1=segunda,...
+    // Volta para segunda-feira
+    inicio.setDate(inicio.getDate() - ((diaDaSemana + 6) % 7));
+    // Avança até domingo
+    fim.setDate(inicio.getDate() + 6);
+    return { 
+        inicioISO: formatarDataISO(inicio), 
+        fimISO: formatarDataISO(fim) 
+    };
 }
 
 function atualizarLegendaSemana() {
@@ -109,6 +121,7 @@ async function inicializarPaginaAgenda() {
     } else {
         document.getElementById("filtro-profissional-item").style.display = "none";
     }
+    // Sempre inicializa com o dia de hoje no fuso local
     inputDataSemana.value = formatarDataISO(new Date());
     configurarListeners();
     ativarModoAgenda('semana');
@@ -120,8 +133,9 @@ function configurarListeners() {
     filtroProfissionalEl.addEventListener("change", carregarAgendamentosConformeModo);
     inputDataSemana.addEventListener("change", carregarAgendamentosConformeModo);
     btnSemanaProxima.addEventListener("click", () => {
-        const dataAtual = new Date(inputDataSemana.value + 'T00:00:00Z');
-        dataAtual.setUTCDate(dataAtual.getUTCDate() + 7);
+        const [ano, mes, dia] = inputDataSemana.value.split('-').map(Number);
+        const dataAtual = new Date(ano, mes - 1, dia);
+        dataAtual.setDate(dataAtual.getDate() + 7);
         inputDataSemana.value = formatarDataISO(dataAtual);
         carregarAgendamentosConformeModo();
     });
