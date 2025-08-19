@@ -1,6 +1,6 @@
 /* ==================================================
-   CONFIGURAÇÕES GLOBAIS E VARIÁVEIS
-   ================================================== */
+    CONFIGURAÇÕES GLOBAIS E VARIÁVEIS
+    ================================================== */
 :root {
     --cor-primaria: #4facfe;
     --cor-secundaria: #00f2fe;
@@ -26,6 +26,84 @@ body {
 body.dashboard-body {
     background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
     color: #fff;
+}
+
+/* ==================================================
+   SIDEBAR (MENU LATERAL)
+   ================================================== */
+/* ======================================================================
+                      CORREÇÃO APLICADA AQUI
+   ======================================================================
+   As regras de layout (posição, tamanho) foram mantidas para que o menu
+   apareça, mas as regras de cor e fundo que causavam o conflito
+   com o menu-lateral.html foram REMOVIDAS.
+   ====================================================================== */
+.sidebar {
+    width: 250px;
+    /* A propriedade 'background' foi removida daqui para evitar conflito. */
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 20px;
+    z-index: 100;
+    transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease;
+    box-sizing: border-box;
+}
+/* Altera o fundo do sidebar APENAS na página do dashboard */
+.dashboard-body .sidebar {
+    background: transparent;
+}
+.sidebar-brand {
+    font-size: 1.85rem;
+    font-weight: 700;
+    margin-bottom: 26px;
+    color: white;
+    text-decoration: none;
+    text-align: center;
+}
+.sidebar-links {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-grow: 1;
+}
+.sidebar-links a {
+    /* A propriedade 'color' foi removida daqui. */
+    text-decoration: none;
+    padding: 13px 18px;
+    border-radius: 10px;
+    transition: background 0.2s;
+    font-weight: 500;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sidebar-links a.active,
+.sidebar-links a:hover {
+    /* A propriedade 'background' foi removida daqui. */
+}
+.sidebar-footer {
+    margin-top: 24px;
+}
+.btn-logout {
+    background: none;
+    border: none;
+    color: white;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    width: 100%;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.btn-logout:hover {
+    background: rgba(255,255,255,0.15);
 }
 
 /* ==================================================
@@ -764,4 +842,4 @@ textarea.form-input:focus {
         font-size: 0.97rem;
     }
 }
-/* ... continua com seus outros @media ... */
+/* ... continua com seus outros @media ...
