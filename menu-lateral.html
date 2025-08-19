@@ -133,15 +133,20 @@
 // Marca automaticamente o link ativo do menu lateral de acordo com a página aberta
 document.addEventListener("DOMContentLoaded", function() {
   const links = document.querySelectorAll('.sidebar-links a');
-  const current = window.location.pathname.split('/').pop().toLowerCase();
+  // Pega o nome do arquivo atual ou rota final (ex: agenda.html ou agenda)
+  let current = window.location.pathname.split('/').pop().toLowerCase();
 
   // Remove qualquer ativo antes de adicionar o correto
   links.forEach(link => link.classList.remove('active'));
 
   links.forEach(link => {
     let href = link.getAttribute('href').split('?')[0].toLowerCase();
-    // Ativa se a URL bate ou se está na raiz/index.html
-    if (href === current || (href === 'index.html' && (current === '' || current === 'index.html'))) {
+    // Aceita tanto agenda.html quanto /agenda e index.html ou raiz
+    if (
+      href === current ||
+      (href.replace('.html', '') === current.replace('.html', '')) ||
+      (href === 'index.html' && (current === '' || current === 'index.html'))
+    ) {
       link.classList.add('active');
     }
   });
