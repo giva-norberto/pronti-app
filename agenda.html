@@ -16,6 +16,7 @@
 <body>
     <div id="sidebar-placeholder"></div>
     <main class="main-content">
+        <!-- Cabeçalho da página -->
         <div class="page-header">
             <h1>Minha Agenda</h1>
             <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
@@ -24,42 +25,41 @@
             </a>
         </div>
 
-        <!-- FILTROS PRINCIPAIS (SEMANA/HISTÓRICO, PROFISSIONAL, SEMANA) -->
+        <!-- Filtros principais -->
         <div class="filtros-agenda" id="filtros-agenda">
-            <!-- Botões de alternância -->
+            <!-- Botões de alternância de modo -->
             <button id="btn-agenda-semana" class="btn btn-outline active">
                 <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
             </button>
             <button id="btn-historico" class="btn btn-outline">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
-            <!-- Profissional (visível só para dono) -->
-            <div class="filtro-item" id="filtro-profissional-item">
-                <label for="filtro-profissional">Profissional</label>
-                <select id="filtro-profissional" class="filtro-select"></select>
-            </div>
-            <!-- Semana -->
-            <div class="filtro-item" id="filtro-semana">
-                <label for="data-semana">Semana</label>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <button id="btn-semana-anterior" class="btn btn-light" title="Semana anterior">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <button id="btn-semana-atual" class="btn btn-light" title="Esta semana">
-                        <i class="fa-solid fa-calendar-day"></i>
-                    </button>
-                    <input type="date" id="data-semana" class="filtro-input">
-                    <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
+            <!-- Filtros de semana (container esperado pelo JS!) -->
+            <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+                <div class="filtro-item">
+                    <label for="data-semana">Data</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="date" id="data-semana" class="filtro-input">
+                        <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
                 </div>
-                <small id="legenda-semana" style="margin-top:2px;font-size:0.95em;">
-                    Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
-                </small>
+                <div class="filtro-item" id="filtro-profissional-item">
+                    <label for="filtro-profissional">Profissional</label>
+                    <select id="filtro-profissional" class="filtro-select"></select>
+                </div>
             </div>
         </div>
 
-        <!-- FILTROS HISTÓRICO -->
+        <!-- Legenda da semana -->
+        <div id="legenda-container" style="margin: 8px 0; font-size: 0.9em; color: #555;">
+            <small id="legenda-semana">
+                Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
+            </small>
+        </div>
+
+        <!-- Filtros de histórico -->
         <div id="filtros-historico" style="display:none; margin: 16px 0; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
             <div class="filtro-item">
                 <label for="data-inicial">De:</label>
