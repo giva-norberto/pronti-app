@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
-        body.is-loading {visibility:hidden;opacity:0;transition:opacity 0.3s;}
-        #sidebar-placeholder {float:left;width:250px;min-width:250px;height:100vh;}
-        .main-content {margin-left:250px;padding:32px 24px 24px 24px;min-height:100vh;box-sizing:border-box;width:calc(100% - 250px);}
+        body.is-loading {visibility: hidden; opacity: 0; transition: opacity 0.3s;}
+        #sidebar-placeholder {float: left; width: 250px; min-width: 250px; height: 100vh;}
+        .main-content {margin-left: 250px; padding: 32px 24px 24px 24px; min-height: 100vh; box-sizing: border-box; width: calc(100% - 250px);}
         @media (max-width:1200px){
             .main-content {margin-left:0;width:100%;padding:24px;}
             #sidebar-placeholder{float:none;width:100%;height:auto;min-width:unset;}
@@ -24,18 +24,21 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.06);
             padding: 32px 24px;
         }
-        /* Garante responsividade do formulário e alinhamento dos botões */
         @media (max-width: 700px) {
             .card#form-perfil {
                 padding: 16px 6vw;
             }
         }
     </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body class="is-loading">
     <!-- Menu lateral carregado dinamicamente -->
     <div id="sidebar-placeholder"></div>
-
     <main class="main-content">
         <div class="page-header">
             <h1>Meu Perfil e Configurações</h1>
@@ -43,7 +46,6 @@
                 <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
             </a>
         </div>
-
         <form id="form-perfil" class="card">
             <div class="card-info" style="padding: 24px;">
                 <div class="form-section">
@@ -91,46 +93,159 @@
             </div>
         </form>
     </main>
-    
-    <!-- Scripts -->
+    <!-- Toastify -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <!-- Menu lateral dinâmico e controles -->
     <script>
-    // Inclusão dinâmica do menu lateral e destaque do menu de perfil
     document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-          const activeLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
-          if (activeLink) {
-            document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
-            activeLink.classList.add('active');
-          }
-          document.body.classList.remove('is-loading');
-        })
-        .catch(error => {
-          console.error('Erro ao carregar o menu lateral:', error);
-          document.body.classList.remove('is-loading');
+        // Carrega menu lateral
+        fetch('menu-lateral.html')
+            .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
+            .then(html => {
+                document.getElementById('sidebar-placeholder').innerHTML = html;
+                const activeLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
+                if (activeLink) {
+                    document.querySelectorAll('.sidebar-links a.active').forEach(link => link.classList.remove('active'));
+                    activeLink.classList.add('active');
+                }
+                document.body.classList.remove('is-loading');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar o menu lateral:', error);
+                document.body.classList.remove('is-loading');
+            });
+
+        // Botão para upload de logo
+        document.getElementById('btn-upload-logo').onclick = () => document.getElementById('logoNegocio').click();
+        document.getElementById('logoNegocio').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('logo-preview').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         });
 
-      // Lógica dos botões da UI
-      document.getElementById('btn-upload-logo').onclick = () => document.getElementById('logoNegocio').click();
-      
-      const btnCopiar = document.getElementById('btn-copiar-link');
-      if (btnCopiar) {
-        btnCopiar.onclick = function() {
-          const url = document.getElementById('url-vitrine-display').innerText;
-          if (!url) return;
-          navigator.clipboard.writeText(url).then(() => {
-            btnCopiar.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
-            setTimeout(() => {
-              btnCopiar.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar';
-            }, 1500);
-          });
-        };
-      }
+        // Copiar link da vitrine
+        const btnCopiar = document.getElementById('btn-copiar-link');
+        if (btnCopiar) {
+            btnCopiar.onclick = function() {
+                const url = document.getElementById('url-vitrine-display').innerText;
+                if (!url) return;
+                navigator.clipboard.writeText(url).then(() => {
+                    btnCopiar.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+                    setTimeout(() => {
+                        btnCopiar.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar';
+                    }, 1500);
+                });
+            };
+        }
     });
     </script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="perfil.js" type="module"></script>
+    <script type="module">
+    // === Firebase Configuração e controles de perfil ===
+    // Troque por suas configs:
+    const firebaseConfig = {
+        apiKey: "SUA_API_KEY",
+        authDomain: "SEU_DOMINIO.firebaseapp.com",
+        projectId: "SEU_ID",
+        storageBucket: "SEU_BUCKET.appspot.com",
+        messagingSenderId: "SEU_ID",
+        appId: "SEU_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let userId = null;
+    let empresaId = null;
+    let logoUrl = "";
+
+    // Estado inicial: esconde botões/links
+    document.getElementById('container-link-vitrine').style.display = "none";
+    document.getElementById('btn-abrir-vitrine').style.display = "none";
+
+    // Verifica login e carrega dados
+    auth.onAuthStateChanged(async user => {
+        if (!user) {
+            window.location.href = "login.html";
+            return;
+        }
+        userId = user.uid;
+
+        // Busca empresa do dono
+        const snap = await db.collection("empresas").where("donoId", "==", userId).limit(1).get();
+        if (!snap.empty) {
+            const doc = snap.docs[0];
+            empresaId = doc.id;
+            const dados = doc.data();
+
+            document.getElementById('nomeNegocio').value = dados.nomeFantasia || "";
+            document.getElementById('descricao').value = dados.descricao || "";
+            if (dados.logoUrl) {
+                document.getElementById('logo-preview').src = dados.logoUrl;
+                logoUrl = dados.logoUrl;
+            }
+            // Link da vitrine
+            if (doc.id) {
+                const url = `${window.location.origin.replace(/\/painel.*/,'')}/v/${doc.id}`;
+                document.getElementById('url-vitrine-display').innerText = url;
+                document.getElementById('btn-abrir-vitrine').href = url;
+                document.getElementById('btn-abrir-vitrine').style.display = "";
+                document.getElementById('btn-abrir-vitrine-inline').href = url;
+                document.getElementById('container-link-vitrine').style.display = "";
+            }
+        }
+    });
+
+    // Salvar perfil
+    document.getElementById("form-perfil").addEventListener("submit", async function(e){
+        e.preventDefault();
+        if (!userId) return;
+
+        const nomeFantasia = document.getElementById('nomeNegocio').value.trim();
+        const descricao = document.getElementById('descricao').value.trim();
+
+        // Upload do logo se houver novo
+        const fileInput = document.getElementById('logoNegocio');
+        let novaLogoUrl = logoUrl;
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const storageRef = storage.ref().child(`logos/${userId}_${Date.now()}`);
+            await storageRef.put(file);
+            novaLogoUrl = await storageRef.getDownloadURL();
+        }
+
+        // Atualiza Firestore
+        if (empresaId) {
+            await db.collection("empresas").doc(empresaId).update({
+                nomeFantasia,
+                descricao,
+                logoUrl: novaLogoUrl
+            });
+        } else {
+            // Cria nova empresa (caso raro)
+            const novo = await db.collection("empresas").add({
+                donoId: userId,
+                nomeFantasia,
+                descricao,
+                logoUrl: novaLogoUrl,
+                criadaEm: new Date()
+            });
+            empresaId = novo.id;
+        }
+
+        Toastify({
+            text: "Perfil salvo com sucesso!",
+            duration: 3500,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#4caf50",
+        }).showToast();
+    });
+    </script>
 </body>
 </html>
