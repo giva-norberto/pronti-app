@@ -4,106 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Minha Agenda</title>
-    <!-- Google Fonts e Font Awesome -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CSS do Pronti -->
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <style>
-        body.is-loading {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        #sidebar-placeholder {
-            width: 250px;
-            min-width: 250px;
-            float: left;
-            height: 100vh;
-        }
-        main.main-content {
-            margin-left: 250px;
-            padding: 40px 24px 24px 24px;
-            min-height: 100vh;
-            box-sizing: border-box;
-            width: calc(100% - 250px);
-            background: var(--cor-fundo-app);
-        }
-        @media (max-width: 900px) {
-            #sidebar-placeholder {
-                float: none;
-                width: 100%;
-                height: auto;
-                min-width: unset;
-            }
-            main.main-content {
-                margin-left: 0;
-                width: 100%;
-                padding: 24px 8px 80px 8px;
-                min-width: 0;
-            }
-        }
-        /* Filtros agenda layout e responsividade */
-        .filtros-agenda {
-            display: flex;
-            align-items: flex-end;
-            gap: 16px;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-            background: none;
-            padding: 0;
-        }
-        .filtros-agenda > div {
-            display: flex;
-            gap: 10px;
-            align-items: flex-end;
-            flex-wrap: wrap;
-        }
-        .filtro-item {
-            min-width: 120px;
-            max-width: 220px;
-        }
-        .filtro-input,
-        .filtro-select {
-            min-width: 110px;
-            max-width: 170px;
-            font-size: 0.98rem;
-            padding: 7px 9px;
-            border-radius: 7px;
-            border: 1px solid #d1d5db;
-            background: #fff;
-            transition: border 0.2s;
-        }
-        .filtro-input:focus,
-        .filtro-select:focus {
-            border: 1.5px solid var(--cor-primaria);
-            outline: none;
-        }
-        @media (max-width: 900px) {
-            .filtros-agenda {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-            }
-            .filtros-agenda > div {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-            }
-            .filtro-item {
-                min-width: 0;
-                max-width: 100%;
-            }
-        }
-    </style>
 </head>
 <body class="is-loading">
     <div id="sidebar-placeholder"></div>
     <main class="main-content">
-        <!-- Cabeçalho da página -->
         <div class="page-header">
             <h1>Minha Agenda</h1>
             <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
@@ -114,44 +22,34 @@
 
         <!-- Filtros principais -->
         <div class="filtros-agenda" id="filtros-agenda">
-            <div>
-                <!-- Botões de Modo -->
-                <button id="btn-agenda-semana" class="btn btn-outline active">
-                    <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
-                </button>
-                <button id="btn-historico" class="btn btn-outline">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Histórico
-                </button>
-
-                <!-- Filtros da Semana -->
-                <div id="filtros-semana-container" style="display:flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
-                    <div class="filtro-item">
-                        <label for="data-semana">Data</label>
-                        <div style="display:flex; align-items:center; gap:5px;">
-                            <input type="date" id="data-semana" class="filtro-input">
-                            <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
-                                <i class="fa-solid fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
+            <button id="btn-agenda-semana" class="btn btn-outline active">
+                <i class="fa-solid fa-calendar-week"></i> Agenda da Semana
+            </button>
+            <button id="btn-historico" class="btn btn-outline">
+                <i class="fa-solid fa-clock-rotate-left"></i> Histórico
+            </button>
+            <div class="filtro-item">
+                <label for="data-semana">Data</label>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <input type="date" id="data-semana" class="filtro-input">
+                    <button id="btn-semana-proxima" class="btn btn-light" title="Próxima semana">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </div>
-
-                <!-- Filtro de Profissional -->
-                <div class="filtro-item" id="filtro-profissional-item">
-                    <label for="filtro-profissional">Profissional</label>
-                    <select id="filtro-profissional" class="filtro-select"></select>
-                </div>
+            </div>
+            <div class="filtro-item" id="filtro-profissional-item">
+                <label for="filtro-profissional">Profissional</label>
+                <select id="filtro-profissional" class="filtro-select"></select>
             </div>
         </div>
 
-        <!-- Legenda da semana -->
         <div id="legenda-container" style="margin: 8px 0; font-size: 0.9em; color: #555;">
-             <small id="legenda-semana">
+            <small id="legenda-semana">
                 Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
             </small>
         </div>
 
-        <!-- Filtros de data para histórico -->
+        <!-- Filtros de histórico -->
         <div id="filtros-historico" style="display:none; margin: 16px 0; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
             <div class="filtro-item">
                 <label for="data-inicial">De:</label>
@@ -168,8 +66,7 @@
                 <i class="fa-solid fa-calendar"></i> Mês Atual
             </button>
         </div>
-        
-        <!-- Lista de agendamentos -->
+
         <div id="lista-agendamentos" class="dashboard-cards">
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
@@ -186,34 +83,22 @@
             </div>
         </div>
     </div>
-
-    <!-- SCRIPTS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <!-- MENU LATERAL DINÂMICO -->
+    <script type="module" src="agenda.js"></script>
     <script>
-        // Inclusão dinâmica do menu lateral e destaque do menu de agenda
         document.addEventListener("DOMContentLoaded", function() {
             fetch('menu-lateral.html')
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('sidebar-placeholder').innerHTML = html;
-                    // Destaca o item de agenda após inclusão do menu
                     const links = document.querySelectorAll('.sidebar-links a');
                     links.forEach(link => link.classList.remove('active'));
                     const agendaLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
-                    if (agendaLink) {
-                        agendaLink.classList.add('active');
-                    }
-                    // Ativar botão sair, se necessário (caso menu-lateral.html não ative internamente)
+                    if (agendaLink) agendaLink.classList.add('active');
                     if (window.ativarLogout) window.ativarLogout();
-                    // Libera o carregamento visual após menu pronto
                     document.body.classList.remove('is-loading');
                 });
         });
-    </script>
-    <!-- SCRIPT PRINCIPAL DA AGENDA (agenda.js inline para exemplo, pode ser externo) -->
-    <script type="module">
-        // ... (Seu script agenda.js permanece igual ao que você enviou)
     </script>
 </body>
 </html>
