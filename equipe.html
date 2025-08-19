@@ -5,33 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciamento de Equipe</title>
     <link rel="stylesheet" href="equipe.css">
+    <!-- Adicionado o style.css para consistência geral -->
+    <link href="style.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>👥 Gerenciamento de Equipe</h1>
-            <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
-        </div>
-        <div class="content">
-            <div class="actions">
-                <h2>Minha Equipe</h2>
-                <button id="btn-add-profissional" class="btn btn-success">
-                    ➕ Adicionar Profissional
-                </button>
-                <button id="btn-cancelar-equipe" class="btn btn-secondary">
-                    ❌ Cancelar
-                </button>
-                <!-- Botão de convite de funcionário 
-                     ATENÇÃO: O JS DEVE GERAR O LINK PARA card-funcionario.html?empresaId=... -->
-                <button id="btn-convite" class="btn btn-primary">
-                    📩 Convidar Funcionário
-                </button>
+    <!-- ======================================================================
+                          CORREÇÃO APLICADA AQUI
+       ======================================================================
+       O placeholder para o menu dinâmico foi adicionado.
+       ====================================================================== -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="header">
+                <h1>👥 Gerenciamento de Equipe</h1>
+                <p>Gerencie sua equipe de profissionais de forma simples e eficiente</p>
             </div>
-            <div id="lista-profissionais-painel" class="equipe-grid">
-                <!-- Profissionais renderizados pelo JS -->
+            <div class="content">
+                <div class="actions">
+                    <h2>Minha Equipe</h2>
+                    <button id="btn-add-profissional" class="btn btn-success">
+                        ➕ Adicionar Profissional
+                    </button>
+                    <button id="btn-cancelar-equipe" class="btn btn-secondary">
+                        ❌ Voltar
+                    </button>
+                    <button id="btn-convite" class="btn btn-primary">
+                        📩 Convidar Funcionário
+                    </button>
+                </div>
+                <div id="lista-profissionais-painel" class="equipe-grid">
+                    <!-- Profissionais renderizados pelo JS -->
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- Modal Adicionar/Editar Profissional -->
     <div id="modal-add-profissional" class="modal">
@@ -158,6 +167,12 @@
         </div>
     </div>
 
-  <script type="module" src="equipe.js"></script>
+    <!-- ======================================================================
+                          CORREÇÃO APLICADA AQUI
+       ======================================================================
+       O menu dinâmico agora é carregado pelo menu-loader.js.
+       ====================================================================== -->
+    <script type="module" src="menu-loader.js"></script>
+    <script type="module" src="equipe.js"></script>
 </body>
 </html>
