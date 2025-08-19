@@ -10,32 +10,30 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (acesso.isOwner) {
       sidebarHTML = `
       <aside class="sidebar" id="sidebar">
-        <a href="dashboard.html" class="sidebar-brand">Pronti</a>
-        <hr />
+        <div class="sidebar-brand">Pronti</div>
         <nav class="sidebar-links">
           <a href="dashboard.html"><span>🏠</span> Início</a>
+          <a href="servicos.html"><span>🛠️</span> Serviços</a>
           <a href="agenda.html"><span>📅</span> Agenda</a>
-          <a href="servicos.html"><span>🛎️</span> Serviços</a>
-          <a href="profissionais.html"><span>👥</span> Equipe</a>
           <a href="clientes.html"><span>👤</span> Clientes</a>
-          <a href="configuracoes.html"><span>⚙️</span> Configurações</a>
+          <a href="equipe.html"><span>👥</span> Equipe</a>
+          <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
         </nav>
         <div class="sidebar-footer">
-          <button id="btn-logout" class="btn-logout">Sair</button>
+          <button id="btn-logout" class="btn-logout" aria-label="Sair">Sair</button>
         </div>
       </aside>
       `;
     } else {
       sidebarHTML = `
       <aside class="sidebar" id="sidebar">
-        <a href="index.html" class="sidebar-brand">Pronti</a>
-        <hr />
+        <div class="sidebar-brand">Pronti</div>
         <nav class="sidebar-links">
           <a href="agenda.html"><span>📅</span> Agenda</a>
           <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
         </nav>
         <div class="sidebar-footer">
-          <button id="btn-logout" class="btn-logout">Sair</button>
+          <button id="btn-logout" class="btn-logout" aria-label="Sair">Sair</button>
         </div>
       </aside>
       `;
