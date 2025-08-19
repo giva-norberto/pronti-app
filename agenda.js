@@ -1,8 +1,10 @@
 /**
- * agenda.js - Pronti (Versão Nota 10)
- * - Filtra APENAS agendamentos com status 'ativo' para a data atual e futuras.
- * - O modo Histórico continua mostrando todos os status.
- * - Lógica adaptada para funcionar com o novo layout de filtros.
+ * agenda.js - Pronti (Versão Revisada)
+ * - Agora possui três modos: Dia, Semana, Histórico.
+ * - Modo "Dia" mostra só agendamentos do dia selecionado.
+ * - Modo "Semana" mostra do dia selecionado até domingo (nunca dias anteriores).
+ * - Histórico pega qualquer período.
+ * - Toda manipulação de data é local.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -18,6 +20,7 @@ const auth = getAuth(app);
 // DOM Elements
 const listaAgendamentosDiv = document.getElementById("lista-agendamentos");
 const filtroProfissionalEl = document.getElementById("filtro-profissional");
+const btnAgendaDia = document.getElementById("btn-agenda-dia");
 const btnAgendaSemana = document.getElementById("btn-agenda-semana");
 const btnHistorico = document.getElementById("btn-historico");
 const inputDataSemana = document.getElementById("data-semana");
@@ -32,7 +35,7 @@ const btnMesAtual = document.getElementById("btn-mes-atual");
 let empresaId = null;
 let perfilUsuario = "dono";
 let meuUid = null;
-let modoAgenda = "semana";
+let modoAgenda = "dia"; // Padrão: dia
 
 // ----------- UTILITÁRIOS -----------
 function mostrarToast(texto, cor = '#38bdf8') {
@@ -43,7 +46,6 @@ function mostrarToast(texto, cor = '#38bdf8') {
     }
 }
 function formatarDataISO(data) { 
-    // Sempre no fuso local!
     const off = data.getTimezoneOffset();
     const dataLocal = new Date(data.getTime() - (off*60*1000));
     return dataLocal.toISOString().split('T')[0];
@@ -55,25 +57,19 @@ function formatarDataBrasileira(dataISO) {
 }
 
 // ----------- LÓGICA DE DATAS -----------
-function getPeriodoSemana(dataBaseStr) {
-    // Calcula segunda a domingo no fuso local
+function getFimSemana(dataBaseStr) {
+    // Retorna o domingo da semana do dia selecionado
     const [ano, mes, dia] = dataBaseStr.split('-').map(Number);
     const inicio = new Date(ano, mes - 1, dia);
-    const fim = new Date(inicio);
     const diaDaSemana = inicio.getDay(); // 0=domingo, 1=segunda,...
-    // Volta para segunda-feira
-    inicio.setDate(inicio.getDate() - ((diaDaSemana + 6) % 7));
-    // Avança até domingo
-    fim.setDate(inicio.getDate() + 6);
-    return { 
-        inicioISO: formatarDataISO(inicio), 
-        fimISO: formatarDataISO(fim) 
-    };
+    // Dias até domingo
+    const diasAteDomingo = 7 - diaDaSemana;
+    const fim = new Date(inicio);
+    fim.setDate(inicio.getDate() + diasAteDomingo - 1);
+    return formatarDataISO(fim);
 }
-
-function atualizarLegendaSemana() {
-    if (legendaSemana && inputDataSemana.value) {
-        const { inicioISO, fimISO } = getPeriodoSemana(inputDataSemana.value);
+function atualizarLegendaSemana(inicioISO, fimISO) {
+    if (legendaSemana) {
         legendaSemana.innerHTML = `Mostrando de <strong>${formatarDataBrasileira(inicioISO)}</strong> a <strong>${formatarDataBrasileira(fimISO)}</strong>`;
     }
 }
@@ -121,13 +117,13 @@ async function inicializarPaginaAgenda() {
     } else {
         document.getElementById("filtro-profissional-item").style.display = "none";
     }
-    // Sempre inicializa com o dia de hoje no fuso local
     inputDataSemana.value = formatarDataISO(new Date());
     configurarListeners();
-    ativarModoAgenda('semana');
+    ativarModoAgenda('dia');
 }
 
 function configurarListeners() {
+    btnAgendaDia.addEventListener("click", () => ativarModoAgenda("dia"));
     btnAgendaSemana.addEventListener("click", () => ativarModoAgenda("semana"));
     btnHistorico.addEventListener("click", () => ativarModoAgenda("historico"));
     filtroProfissionalEl.addEventListener("change", carregarAgendamentosConformeModo);
@@ -151,13 +147,16 @@ function carregarAgendamentosConformeModo() {
         carregarAgendamentosSemana();
     } else if (modoAgenda === 'historico') {
         carregarAgendamentosHistorico();
+    } else {
+        carregarAgendamentosDiaAtual();
     }
 }
 
 function ativarModoAgenda(modo) {
     modoAgenda = modo;
-    document.getElementById("filtros-semana-container").style.display = (modo === 'semana') ? 'flex' : 'none';
+    document.getElementById("filtros-semana-container").style.display = (modo === 'semana' || modo === 'dia') ? 'flex' : 'none';
     filtrosHistoricoDiv.style.display = (modo === 'historico') ? 'flex' : 'none';
+    btnAgendaDia.classList.toggle("active", modo === "dia");
     btnAgendaSemana.classList.toggle("active", modo === "semana");
     btnHistorico.classList.toggle("active", modo === "historico");
     carregarAgendamentosConformeModo();
@@ -201,7 +200,7 @@ function exibirCardsAgendamento(docs, isHistorico) {
 
         // Se não for histórico, mostra apenas status 'ativo'
         if (!isHistorico && ag.status !== 'ativo') {
-            return; // Pula para o próximo agendamento
+            return;
         }
 
         let statusLabel = "<span class='status-label status-ativo'>Ativo</span>";
@@ -231,18 +230,35 @@ function exibirCardsAgendamento(docs, isHistorico) {
     }
 }
 
-// ----------- MODOS DE CARREGAMENTO ESPECÍFICOS -----------
-function carregarAgendamentosSemana() {
-    atualizarLegendaSemana();
-    const { inicioISO, fimISO } = getPeriodoSemana(inputDataSemana.value);
-    const constraints = [where("data", ">=", inicioISO), where("data", "<=", fimISO)];
+// ----------- MODO DIA (NOVO) -----------
+function carregarAgendamentosDiaAtual() {
+    const diaSelecionado = inputDataSemana.value;
+    atualizarLegendaSemana(diaSelecionado, diaSelecionado);
+    const constraints = [where("data", "==", diaSelecionado)];
     const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
     if (profissionalId !== 'todos') {
         constraints.push(where("profissionalId", "==", profissionalId));
     }
-    buscarEExibirAgendamentos(constraints, "Nenhum agendamento ativo para esta semana.");
+    buscarEExibirAgendamentos(constraints, "Nenhum agendamento ativo para este dia.");
 }
 
+// ----------- MODO SEMANA (ajustado: só do dia selecionado em diante) -----------
+function carregarAgendamentosSemana() {
+    const diaSelecionado = inputDataSemana.value;
+    const fimISO = getFimSemana(diaSelecionado);
+    atualizarLegendaSemana(diaSelecionado, fimISO);
+    const constraints = [
+        where("data", ">=", diaSelecionado),
+        where("data", "<=", fimISO)
+    ];
+    const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
+    if (profissionalId !== 'todos') {
+        constraints.push(where("profissionalId", "==", profissionalId));
+    }
+    buscarEExibirAgendamentos(constraints, "Nenhum agendamento ativo para este período.");
+}
+
+// ----------- MODO HISTÓRICO -----------
 function carregarAgendamentosHistorico() {
     const dataIni = dataInicialEl.value;
     const dataFim = dataFinalEl.value;
@@ -250,12 +266,12 @@ function carregarAgendamentosHistorico() {
         mostrarToast("Por favor, selecione as datas de início e fim.", "#ef4444");
         return;
     }
+    atualizarLegendaSemana(dataIni, dataFim);
     const constraints = [where("data", ">=", dataIni), where("data", "<=", dataFim)];
     const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
     if (profissionalId !== 'todos') {
         constraints.push(where("profissionalId", "==", profissionalId));
     }
-    // O 'true' no final indica que é histórico, então todos os status devem ser mostrados
     buscarEExibirAgendamentos(constraints, "Nenhum agendamento encontrado no histórico para este período.", true);
 }
 
