@@ -117,13 +117,13 @@ export async function checkUserStatus() {
 }
 
 /**
- * Função "Porteiro": Verifica o acesso e redireciona se necessário.
- * Agora, se for funcionário ativo, redireciona para agenda.html!
+ * Função "Porteiro": Verifica o acesso e retorna o tipo de usuário e dados.
+ * Dono: acesso total. Funcionário: acesso restrito. 
  */
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe(); 
+            unsubscribe();
 
             if (!user) {
                 window.location.href = 'login.html';
@@ -133,20 +133,10 @@ export async function verificarAcesso() {
             console.log(`Debug (verificarAcesso): Iniciado para o usuário UID: ${user.uid}`);
 
             try {
-                const currentPage = window.location.pathname.split('/').pop();
-
-                // Checa se é o DONO
+                // 1. Checa se é o DONO
                 const empresaDoc = await getEmpresaDocPorDono(user.uid);
                 if (empresaDoc) {
                     console.log("Debug (verificarAcesso): Usuário identificado como DONO. Acesso permitido.");
-                    
-                    // Redirecionamento para dashboard do dono, caso necessário
-                    const targetPage = 'dashboard.html';
-                    if (currentPage !== targetPage && currentPage.includes('login')) {
-                        window.location.href = targetPage;
-                        return reject(new Error(`Redirecionando para ${targetPage}...`));
-                    }
-
                     const empresaData = empresaDoc.data();
                     const userDocRef = doc(db, "usuarios", user.uid);
                     const userDocSnap = await getDoc(userDocRef);
@@ -158,10 +148,16 @@ export async function verificarAcesso() {
                     }
                     
                     // Resolve como dono
-                    return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true });
+                    return resolve({
+                        user,
+                        empresaId: empresaDoc.id,
+                        perfil: empresaData,
+                        isOwner: true,
+                        role: "dono"
+                    });
                 }
 
-                // Se não é o dono, checa se é um FUNCIONÁRIO
+                // 2. Se não é o dono, checa se é um FUNCIONÁRIO
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
 
@@ -171,6 +167,7 @@ export async function verificarAcesso() {
                 }
                 
                 const empresaId = mapaSnap.data().empresaId;
+                // Busca o profissional na subcoleção "profissionais" da empresa
                 const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
                 const profissionalSnap = await getDoc(profissionalRef);
 
@@ -179,15 +176,14 @@ export async function verificarAcesso() {
                     return reject(new Error("Acesso pendente de aprovação."));
                 }
 
-                // Se funcionário está ativo, redireciona para a agenda dele!
-                const targetPage = 'agenda.html'; // <- O funcionário sempre cai na agenda
-                if (currentPage !== targetPage) {
-                    window.location.href = targetPage;
-                    return reject(new Error(`Redirecionando para ${targetPage}...`));
-                }
-
                 // Resolve como funcionário ativo
-                return resolve({ user, perfil: profissionalSnap.data(), empresaId, isOwner: false });
+                return resolve({
+                    user,
+                    perfil: profissionalSnap.data(),
+                    empresaId,
+                    isOwner: false,
+                    role: "funcionario"
+                });
 
             } catch (error) {
                 console.error("Debug (verificarAcesso): Erro final no bloco try/catch:", error);
