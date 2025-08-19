@@ -7,9 +7,23 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- ====================================================================== -->
+    <!--                      CORREÇÃO DE SEGURANÇA APLICADA                      -->
+    <!-- ====================================================================== -->
+    <!-- Este estilo esconde a página até que o script verifique quem é o usuário,
+         impedindo que um funcionário veja a tela do dono por um instante. -->
+    <style>
+        body.is-loading {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+    <!-- ====================================================================== -->
 </head>
-<!-- Adicionada a classe "dashboard-body" para aplicar o estilo especial -->
-<body class="dashboard-body">
+<!-- A página começa com a classe 'is-loading' para ficar oculta -->
+<body class="dashboard-body is-loading">
 
 <!-- Sidebar (menu lateral) incluso dinamicamente -->
 <div id="sidebar-placeholder"></div>
@@ -46,31 +60,49 @@
     // 1. Importações dos módulos Firebase
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js"; 
-    // A verificação de acesso foi removida desta página para resolver o conflito.
-    // A página de login (login.js) agora é a única responsável pelo roteamento.
+    // A verificação de acesso foi restaurada para esta página ser o "porteiro".
+    import { verificarAcesso } from "./userService.js";
 
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
 
-    // 2. Lógica de Autenticação e Nome do Usuário
-    onAuthStateChanged(auth, (user) => {
+    // 2. Lógica de Autenticação e Roteamento por Permissão
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // Usuário está logado.
-            // Apenas exibe o nome, assumindo que o login.js já verificou a permissão
-            // e só enviou o dono para esta página.
-            const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
-            if (nomeUsuarioSpan) {
-                nomeUsuarioSpan.textContent = primeiroNome;
+            try {
+                // Chama o "porteiro" para saber quem está logado.
+                const { perfil, isOwner } = await verificarAcesso();
+
+                // Se o usuário NÃO for o dono, redireciona para a agenda.
+                if (!isOwner) {
+                    window.location.replace('agenda.html'); // .replace() é melhor para não criar histórico
+                    return; // Impede que o resto do script desta página seja executado.
+                }
+                
+                // Se for o dono, a página continua a carregar normalmente.
+                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+                if (nomeUsuarioSpan) {
+                    nomeUsuarioSpan.textContent = primeiroNome;
+                }
+
+                // Carrega o menu do dono.
+                await carregarMenuEControlarAcesso();
+
+                // Apenas depois de confirmar que é o dono, a página se torna visível.
+                document.body.classList.remove('is-loading');
+
+            } catch (error) {
+                // Se verificarAcesso rejeitar (ex: durante um redirecionamento do login),
+                // o erro é capturado aqui e a página não continua a carregar.
+                console.log("Verificação de acesso interrompida:", error.message);
             }
-            // Carrega o menu do dono.
-            carregarMenu(); 
         } else {
             // Usuário não está logado, redireciona para o login.
-            window.location.href = 'login.html';
+            window.location.replace('login.html');
         }
     });
 
-    // 3. Carregamento Dinâmico do Menu Lateral e Lógica de Logout
-    async function carregarMenu() {
+    // 3. Carregamento Dinâmico do Menu Lateral (agora apenas para o dono)
+    async function carregarMenuEControlarAcesso() {
         try {
             const response = await fetch('menu-lateral.html');
             if (!response.ok) throw new Error('Erro ao carregar menu.');
@@ -90,14 +122,12 @@
             if (btnLogout) {
                 btnLogout.addEventListener('click', () => {
                     signOut(auth).then(() => {
-                        window.location.href = 'login.html';
+                        window.location.replace('login.html');
                     }).catch((error) => {
                         console.error('Erro ao fazer logout:', error);
                     });
                 });
             }
-            // A lógica de esconder menus foi removida daqui, pois esta página
-            // agora é exclusivamente para o dono.
         } catch (error) {
             console.error(error);
         }
