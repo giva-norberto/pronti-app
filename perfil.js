@@ -1,6 +1,6 @@
 // ======================================================================
 //                          PERFIL.JS
-//      Gerencia o perfil do negócio e os dados da empresa.
+//      Gerencia o perfil do negócio e os dados da empresa
 //      (Função de equipe REMOVIDA desta tela.)
 // ======================================================================
 
