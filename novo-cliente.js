@@ -7,14 +7,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const formNovoCliente = document.getElementById('form-cliente');
-const inputNome = document.getElementById('nome-cliente');
-const inputTelefone = document.getElementById('telefone-cliente');
-const inputEmail = document.getElementById('email-cliente');
-const btnSalvar = formNovoCliente ? formNovoCliente.querySelector('.btn-submit') : null;
-
-let empresaId = null;
-
+// Função genérica para mostrar toast (ou alert fallback)
 function mostrarToast(texto, cor) {
   if (typeof Toastify !== "undefined") {
     Toastify({
@@ -29,7 +22,22 @@ function mostrarToast(texto, cor) {
   }
 }
 
-function inicializarPaginaNovoCliente() {
+// Busca o ID da empresa pelo dono autenticado
+async function getEmpresaIdDoDono(uid) {
+  const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
+  const snapshot = await getDocs(empresQ);
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].id;
+}
+
+// Inicializa listeners e submissão do formulário
+function inicializarPaginaNovoCliente(empresaId) {
+  const formNovoCliente = document.getElementById('form-cliente');
+  const inputNome = document.getElementById('nome-cliente');
+  const inputTelefone = document.getElementById('telefone-cliente');
+  const inputEmail = document.getElementById('email-cliente');
+  const btnSalvar = formNovoCliente ? formNovoCliente.querySelector('.btn-submit') : null;
+
   if (!formNovoCliente || !inputNome || !btnSalvar) {
     console.log("Algum elemento não foi encontrado no DOM.");
     return;
@@ -46,14 +54,14 @@ function inicializarPaginaNovoCliente() {
       const email = inputEmail ? inputEmail.value.trim() : "";
 
       if (!nome) {
-        mostrarToast("O nome do cliente é obrigatório.", "var(--cor-perigo)");
+        mostrarToast("O nome do cliente é obrigatório.", "#ef4444");
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Cliente";
         return;
       }
 
       if (!empresaId) {
-        mostrarToast("Empresa não encontrada para este usuário!", "var(--cor-perigo)");
+        mostrarToast("Empresa não encontrada para este usuário!", "#ef4444");
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Cliente";
         return;
@@ -64,14 +72,17 @@ function inicializarPaginaNovoCliente() {
         nome,
         telefone,
         email,
-        criadoEm: new Date()
+        criadoEm: new Date().toISOString()
       });
 
-      mostrarToast("Cliente cadastrado com sucesso!", "var(--cor-sucesso)");
+      mostrarToast("Cliente cadastrado com sucesso!", "#22c55e");
       formNovoCliente.reset();
+      setTimeout(() => {
+        window.location.href = "clientes.html";
+      }, 1200);
     } catch (error) {
       console.error("Erro ao cadastrar cliente:", error);
-      mostrarToast("Erro ao cadastrar cliente.", "var(--cor-perigo)");
+      mostrarToast("Erro ao cadastrar cliente.", "#ef4444");
     } finally {
       btnSalvar.disabled = false;
       btnSalvar.textContent = "Salvar Cliente";
@@ -79,20 +90,15 @@ function inicializarPaginaNovoCliente() {
   });
 }
 
-async function getEmpresaIdDoDono(uid) {
-  const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
-  const snapshot = await getDocs(empresQ);
-  if (snapshot.empty) return null;
-  return snapshot.docs[0].id;
-}
-
+// Monitora autenticação e inicia o fluxo
 onAuthStateChanged(auth, async (user) => {
+  const formNovoCliente = document.getElementById('form-cliente');
   if (user) {
-    empresaId = await getEmpresaIdDoDono(user.uid);
+    const empresaId = await getEmpresaIdDoDono(user.uid);
     if (empresaId) {
-      inicializarPaginaNovoCliente();
+      inicializarPaginaNovoCliente(empresaId);
     } else if (formNovoCliente) {
-      formNovoCliente.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este utilizador.</p>";
+      formNovoCliente.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este usuário.</p>";
     }
   } else {
     window.location.href = 'login.html';
