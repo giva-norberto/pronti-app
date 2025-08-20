@@ -142,38 +142,3 @@
   }
 }
 </style>
-<script>
-// Ativa o link correto no menu
-document.addEventListener("DOMContentLoaded", function() {
-  const links = document.querySelectorAll('.sidebar-links a');
-  const current = window.location.pathname.split('/').pop().toLowerCase();
-  links.forEach(link => {
-    let href = link.getAttribute('href').split('?')[0].toLowerCase();
-    if (href === current || (href === 'index.html' && (current === '' || current === 'index.html'))) {
-      link.classList.add('active');
-    }
-  });
-});
-</script>
-<script type="module">
-import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-function ativarLogout() {
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout) {
-    btnLogout.addEventListener("click", async function() {
-      try {
-        await signOut(getAuth());
-        window.location.href = "login.html";
-      } catch (e) {
-        alert("Erro ao sair: " + e.message);
-      }
-    });
-  }
-}
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", ativarLogout);
-} else {
-  ativarLogout();
-}
-window.ativarLogout = ativarLogout; // Permite reusar em páginas que carregam este menu via fetch
-</script>
