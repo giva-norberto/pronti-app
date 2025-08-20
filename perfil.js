@@ -189,11 +189,14 @@ window.addEventListener('DOMContentLoaded', () => {
       // Edição (empresa já criada): pode atualizar logo
       const logoFile = elements.logoInput && elements.logoInput.files[0];
       if (logoFile) {
-        const storagePath = `logos/${uid}/logo`;
+        const storagePath = `logos/${uid}/logo`; // Sempre o UID do usuário autenticado
         const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+        // Log para depuração:
+        console.log("Iniciando upload de logo para:", storagePath, "UID:", uid);
         try {
           dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
           if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl;
+          console.log("Logo salva com sucesso em:", dadosEmpresa.logoUrl);
         } catch (uploadError) {
           alert("Falha no upload da logo: " + (uploadError.message || uploadError));
           console.error("Erro no upload da logo:", uploadError);
