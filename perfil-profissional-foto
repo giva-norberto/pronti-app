@@ -1,5 +1,5 @@
 // ======================================================================
-//                 perfil-profissional-foto - VERSÃO COMPLETA
+//                 perfil-profissional-foto - VERSÃO SIMPLIFICADA
 //                 Gestão de perfil e foto do profissional
 // ======================================================================
 
@@ -8,9 +8,9 @@ import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/fireba
 import { db, storage } from './firebase-config.js'; // Ajuste o caminho se necessário
 
 /**
- * Função para renderizar a foto do profissional e permitir alteração
+ * Renderiza a foto do profissional e permite alteração.
  * @param {string} fotoUrl - URL atual da foto do profissional
- * @param {function} onTrocarFoto - Callback chamado ao selecionar nova foto
+ * @param {(file: File) => Promise<void>} onTrocarFoto - Callback ao selecionar nova foto
  */
 export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
     const fotoContainer = document.getElementById('perfil-profissional-foto-container');
@@ -20,14 +20,16 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
         <img id="perfil-profissional-foto" 
              src="${fotoUrl || 'https://placehold.co/80x80?text=User'}" 
              alt="Foto do profissional"
-             style="width:80px;border-radius:50%;margin-bottom:10px;">
+             style="width:80px;border-radius:50%;margin-bottom:10px;object-fit:cover;">
         <br>
         <input type="file" id="input-foto-profissional" accept="image/*" style="display:none;">
         <button type="button" id="btn-trocar-foto-profissional">Trocar foto</button>
+        <span id="status-foto-profissional" style="display:block; margin-top:5px; color:#888; font-size:0.9em"></span>
     `;
 
     const btnTrocar = document.getElementById('btn-trocar-foto-profissional');
     const inputFoto = document.getElementById('input-foto-profissional');
+    const statusSpan = document.getElementById('status-foto-profissional');
 
     btnTrocar.onclick = () => inputFoto.click();
 
@@ -35,31 +37,51 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Visualização local imediata
+        // Validação simples (opcional)
+        if (!file.type.startsWith('image/')) {
+            statusSpan.textContent = "Arquivo inválido, escolha uma imagem.";
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            statusSpan.textContent = "Imagem muito grande (máx. 5MB).";
+            return;
+        }
+
+        // Preview local imediato
         const reader = new FileReader();
         reader.onload = function(ev) {
             document.getElementById('perfil-profissional-foto').src = ev.target.result;
         };
         reader.readAsDataURL(file);
 
+        // Feedback visual
+        statusSpan.textContent = "Enviando imagem...";
+
         // Chama callback de upload/salvar
         if (onTrocarFoto) {
-            await onTrocarFoto(file);
+            const url = await onTrocarFoto(file);
+            if (url) {
+                statusSpan.textContent = "Foto atualizada!";
+            } else {
+                statusSpan.textContent = "Erro ao enviar foto.";
+            }
         }
     };
 }
 
 /**
- * Função para fazer upload da foto do profissional e atualizar Firestore
+ * Faz upload da foto do profissional e atualiza Firestore.
  * @param {File} file - Arquivo de imagem selecionado
  * @param {string} empresaId - ID da empresa
- * @param {string} profissionalId - UID do profissional
+ * @param {string} profissionalId - ID do profissional
+ * @returns {Promise<string|null>} - URL da imagem ou null em caso de erro
  */
 export async function uploadFotoProfissional(file, empresaId, profissionalId) {
     if (!file || !empresaId || !profissionalId) return null;
-
     try {
-        const storageRef = ref(storage, `profissionais/${empresaId}/${profissionalId}/${file.name}`);
+        // Caminho organizado (nome de arquivo único por timestamp)
+        const nomeUnico = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+        const storageRef = ref(storage, `profissionais/${empresaId}/${profissionalId}/${nomeUnico}`);
         await uploadBytes(storageRef, file);
 
         const url = await getDownloadURL(storageRef);
