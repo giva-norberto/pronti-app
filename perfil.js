@@ -39,7 +39,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let currentUser;
   let empresaId = null;
-  let isNovoCadastro = false; // Para controle do fluxo
+  let isNovoCadastro = false;
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -79,7 +79,7 @@ window.addEventListener('DOMContentLoaded', () => {
         isNovoCadastro = false;
         const dadosEmpresa = empresaDoc.data();
         preencherFormulario(dadosEmpresa);
-        mostrarCamposExtras(); // Mostra logo, links, etc
+        mostrarCamposExtras();
       }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -97,13 +97,11 @@ window.addEventListener('DOMContentLoaded', () => {
       elements.linkVitrineMenu.style.opacity = '0.5';
       elements.linkVitrineMenu.href = '#';
     }
-    // Esconde campos de logo no cadastro inicial
     if (elements.logoInput) elements.logoInput.parentElement.style.display = "none";
     if (elements.logoPreview) elements.logoPreview.style.display = "none";
     if (elements.btnUploadLogo) elements.btnUploadLogo.style.display = "none";
   }
 
-  // Mostra campos de logo e links
   function mostrarCamposExtras() {
     if (elements.logoInput) elements.logoInput.parentElement.style.display = "";
     if (elements.logoPreview) elements.logoPreview.style.display = "";
@@ -167,8 +165,8 @@ window.addEventListener('DOMContentLoaded', () => {
         ehDono: true
       };
 
-      // Cadastro inicial: não envia logo
       if (!empresaId) {
+        // Cadastro inicial: NÃO tenta enviar logo!
         const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
         empresaId = novaEmpresaRef.id;
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
@@ -185,7 +183,6 @@ window.addEventListener('DOMContentLoaded', () => {
         isNovoCadastro = false;
         await verificarOuCriarEmpresa(uid);
         mostrarCamposExtras();
-        // Opcional: não redirecionar, apenas recarregar dados e liberar edição, ou use location.reload() se preferir recarregar a página inteira.
         return;
       }
 
@@ -195,6 +192,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const storagePath = `logos/${uid}/logo`;
         const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
         dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
+        // Atualiza o preview da logo imediatamente após upload
+        if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl;
       } else if (empresaId) {
         const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
         if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
@@ -203,7 +202,7 @@ window.addEventListener('DOMContentLoaded', () => {
       await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
       await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
       alert("Perfil atualizado com sucesso!");
-      await verificarOuCriarEmpresa(uid); // Atualiza dados na tela após edição
+      await verificarOuCriarEmpresa(uid);
       mostrarCamposExtras();
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
