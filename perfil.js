@@ -1,255 +1,228 @@
 import {
-  getFirestore, doc, getDoc, setDoc, addDoc, collection,
-  query, where, getDocs
+    getFirestore, doc, getDoc, setDoc, addDoc, collection,
+    query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  getStorage, ref, uploadBytes, getDownloadURL
+    getStorage, ref, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import {
-  getAuth, onAuthStateChanged, signOut
+    getAuth, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 import { verificarAcesso } from "./userService.js";
 
+// Garante que os serviços do Firebase foram inicializados
 if (!app || !db || !auth || !storage) {
-  console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
-  throw new Error("Firebase não inicializado. Verifique firebase-config.js");
+    console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
+    throw new Error("Firebase não inicializado.");
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const elements = {
-    h1Titulo: document.getElementById('main-title'),
-    form: document.getElementById('form-perfil'),
-    nomeNegocioInput: document.getElementById('nomeNegocio'),
-    descricaoInput: document.getElementById('descricao'),
-    logoInput: document.getElementById('logoNegocio'),
-    logoPreview: document.getElementById('logo-preview'),
-    btnUploadLogo: document.getElementById('btn-upload-logo'),
-    btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
-    btnCopiarLink: document.getElementById('btn-copiar-link'),
-    containerLinkVitrine: document.getElementById('container-link-vitrine'),
-    urlVitrineEl: document.getElementById('url-vitrine-display'),
-    btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
-    btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
-    linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
-    btnLogout: document.getElementById('btn-logout'),
-    msgFree: document.getElementById('mensagem-free')
-  };
+    // Mapeamento dos elementos do DOM para fácil acesso
+    const elements = {
+        h1Titulo: document.getElementById('main-title'),
+        form: document.getElementById('form-perfil'),
+        nomeNegocioInput: document.getElementById('nomeNegocio'),
+        descricaoInput: document.getElementById('descricao'),
+        logoInput: document.getElementById('logoNegocio'),
+        logoPreview: document.getElementById('logo-preview'),
+        btnUploadLogo: document.getElementById('btn-upload-logo'),
+        btnSalvar: document.querySelector('#form-perfil button[type="submit"]'),
+        btnCopiarLink: document.getElementById('btn-copiar-link'),
+        containerLinkVitrine: document.getElementById('container-link-vitrine'),
+        urlVitrineEl: document.getElementById('url-vitrine-display'),
+        btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
+        btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
+        linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
+        btnLogout: document.getElementById('btn-logout'),
+        msgFree: document.getElementById('mensagem-free')
+    };
 
-  let currentUser;
-  let empresaId = null;
-  let isNovoCadastro = false;
+    let currentUser;
+    let empresaId = null;
 
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser = user;
-      try {
-        const acesso = await verificarAcesso();
-        if (acesso.role && acesso.role !== "dono") {
-          window.location.href = "perfil-funcionario.html";
-          return;
-        }
-      } catch (e) {
-        if (e.message !== 'primeiro_acesso') {
-          window.location.href = 'login.html';
-          return;
-        }
-      }
-      await verificarOuCriarEmpresa(user.uid);
-      adicionarListenersDeEvento();
-    } else {
-      window.location.href = 'login.html';
-    }
-  });
-
-  async function verificarOuCriarEmpresa(uid) {
-    try {
-      const empresariosRef = collection(db, "empresarios");
-      const q = query(empresariosRef, where("donoId", "==", uid));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) {
-        empresaId = null;
-        isNovoCadastro = true;
-        atualizarTelaParaNovoPerfil();
-      } else {
-        const empresaDoc = snapshot.docs[0];
-        empresaId = empresaDoc.id;
-        isNovoCadastro = false;
-        const dadosEmpresa = empresaDoc.data();
-        preencherFormulario(dadosEmpresa);
-        mostrarCamposExtras();
-      }
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      alert("Erro ao carregar dados do perfil: " + error.message);
-    }
-  }
-
-  function atualizarTelaParaNovoPerfil() {
-    if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
-    if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'none';
-    if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
-    if (elements.linkVitrineMenu) {
-      elements.linkVitrineMenu.classList.add('disabled');
-      elements.linkVitrineMenu.style.pointerEvents = 'none';
-      elements.linkVitrineMenu.style.opacity = '0.5';
-      elements.linkVitrineMenu.href = '#';
-    }
-    if (elements.logoInput) elements.logoInput.parentElement.style.display = "none";
-    if (elements.logoPreview) elements.logoPreview.style.display = "none";
-    if (elements.btnUploadLogo) elements.btnUploadLogo.style.display = "none";
-  }
-
-  function mostrarCamposExtras() {
-    if (elements.logoInput) elements.logoInput.parentElement.style.display = "";
-    if (elements.logoPreview) elements.logoPreview.style.display = "";
-    if (elements.btnUploadLogo) elements.btnUploadLogo.style.display = "";
-    if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
-    if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'inline-flex';
-    if (elements.linkVitrineMenu) {
-      elements.linkVitrineMenu.classList.remove('disabled');
-      elements.linkVitrineMenu.style.pointerEvents = 'auto';
-      elements.linkVitrineMenu.style.opacity = '1';
-    }
-  }
-
-  function preencherFormulario(dadosEmpresa) {
-    if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
-    if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
-    if (elements.logoPreview && dadosEmpresa.logoUrl) {
-      elements.logoPreview.src = dadosEmpresa.logoUrl;
-    }
-
-    if (!empresaId) return;
-    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-    if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
-    if (elements.btnAbrirVitrine) {
-      elements.btnAbrirVitrine.href = urlCompleta;
-      elements.btnAbrirVitrine.style.display = 'inline-flex';
-    }
-    if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
-    if (elements.linkVitrineMenu) {
-      elements.linkVitrineMenu.href = urlCompleta;
-      elements.linkVitrineMenu.classList.remove('disabled');
-      elements.linkVitrineMenu.style.pointerEvents = 'auto';
-      elements.linkVitrineMenu.style.opacity = '1';
-    }
-    if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
-  }
-
-  async function handleFormSubmit(event) {
-    event.preventDefault();
-    if (elements.btnSalvar) {
-      elements.btnSalvar.disabled = true;
-      elements.btnSalvar.textContent = 'Salvando...';
-    }
-    try {
-      const uid = currentUser?.uid;
-      if (!uid) throw new Error("Usuário não autenticado.");
-
-      const nomeNegocio = elements.nomeNegocioInput ? elements.nomeNegocioInput.value.trim() : '';
-      if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
-
-      const dadosEmpresa = {
-        nomeFantasia: nomeNegocio,
-        descricao: elements.descricaoInput ? elements.descricaoInput.value.trim() : '',
-        donoId: uid
-      };
-
-      const dadosProfissional = {
-        uid: uid,
-        nome: currentUser.displayName || nomeNegocio,
-        fotoUrl: currentUser.photoURL || "",
-        ehDono: true
-      };
-
-      if (!empresaId) {
-        // Cadastro inicial: NÃO tenta enviar logo!
-        const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-        empresaId = novaEmpresaRef.id;
-        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
-
-        // Mensagem de sucesso com período grátis
-        if (elements.msgFree) {
-          elements.msgFree.textContent = "Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!";
-          elements.msgFree.style.display = "block";
+    // Listener principal de autenticação
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            // Verifica se o utilizador tem permissão para estar nesta página
+            try {
+                const acesso = await verificarAcesso();
+                if (acesso.role && acesso.role !== "dono") {
+                    window.location.href = "perfil-funcionario.html";
+                    return;
+                }
+            } catch (e) {
+                // Se for o primeiro acesso, permite continuar para criar a empresa
+                if (e.message !== 'primeiro_acesso') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+            await carregarDadosDaPagina(user.uid);
+            adicionarListenersDeEvento();
         } else {
-          alert("Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!");
+            window.location.href = 'login.html';
         }
+    });
 
-        // Após salvar, recarrega os dados para mostrar logo, links, etc.
-        isNovoCadastro = false;
-        await verificarOuCriarEmpresa(uid);
-        mostrarCamposExtras();
-        return;
-      }
+    // --- FUNÇÕES PRINCIPAIS ---
 
-      // Edição (empresa já criada): pode atualizar logo
-      const logoFile = elements.logoInput && elements.logoInput.files[0];
-      if (logoFile) {
-        const storagePath = `logos/${uid}/logo`; // Sempre o UID do usuário autenticado
-        const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-        // Log para depuração:
-        console.log("Iniciando upload de logo para:", storagePath, "UID:", uid);
+    async function carregarDadosDaPagina(uid) {
         try {
-          dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
-          if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl;
-          console.log("Logo salva com sucesso em:", dadosEmpresa.logoUrl);
-        } catch (uploadError) {
-          alert("Falha no upload da logo: " + (uploadError.message || uploadError));
-          console.error("Erro no upload da logo:", uploadError);
-          throw uploadError; // Não atualizar Firestore se upload falhar
+            const empresariosRef = collection(db, "empresarios");
+            const q = query(empresariosRef, where("donoId", "==", uid));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                // Cenário: Novo utilizador, ainda não tem empresa
+                empresaId = null;
+                atualizarTelaParaNovoPerfil();
+            } else {
+                // Cenário: Utilizador existente, carrega dados da empresa
+                const empresaDoc = snapshot.docs[0];
+                empresaId = empresaDoc.id;
+                const dadosEmpresa = empresaDoc.data();
+                preencherFormulario(dadosEmpresa);
+                mostrarCamposExtras();
+            }
+        } catch (error) {
+            console.error("Erro ao carregar dados:", error);
+            alert("Erro ao carregar dados do perfil: " + error.message);
         }
-      } else if (empresaId) {
-        const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
-        if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
-      }
-
-      await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
-      await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
-      alert("Perfil atualizado com sucesso!");
-      await verificarOuCriarEmpresa(uid);
-      mostrarCamposExtras();
-    } catch (error) {
-      console.error("Erro ao salvar perfil:", error);
-      alert("Ocorreu um erro ao salvar: " + error.message);
-    } finally {
-      if (elements.btnSalvar) {
-        elements.btnSalvar.disabled = false;
-        elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
-      }
     }
-  }
+    
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        if (elements.btnSalvar) {
+            elements.btnSalvar.disabled = true;
+            elements.btnSalvar.textContent = 'A salvar...';
+        }
+        try {
+            const uid = currentUser?.uid;
+            if (!uid) throw new Error("Utilizador não autenticado.");
 
-  function adicionarListenersDeEvento() {
-    if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
-    if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
-    if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput && elements.logoInput.click());
-    if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
-      if (elements.logoInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => { if (elements.logoPreview) elements.logoPreview.src = e.target.result; };
-        reader.readAsDataURL(elements.logoInput.files[0]);
-      }
-    });
-    if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
-      try { await signOut(auth); window.location.href = 'login.html'; }
-      catch (error) { console.error("Erro no logout:", error); alert("Ocorreu um erro ao sair."); }
-    });
-  }
+            const nomeNegocio = elements.nomeNegocioInput?.value.trim();
+            if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-  function copiarLink() {
-    if (!empresaId) {
-      alert("Salve seu perfil para gerar o link.");
-      return;
+            const dadosEmpresa = {
+                nomeFantasia: nomeNegocio,
+                descricao: elements.descricaoInput?.value.trim() || '',
+                donoId: uid
+            };
+
+            if (empresaId) {
+                // --- LÓGICA DE EDIÇÃO ---
+                const logoFile = elements.logoInput?.files[0];
+                if (logoFile) {
+                    console.log("A tentar fazer o upload da logo...");
+                    const storagePath = `logos/${uid}/logo`;
+                    const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+                    try {
+                        dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
+                        console.log("Upload bem-sucedido:", dadosEmpresa.logoUrl);
+                    } catch (uploadError) {
+                        console.error("ERRO NO UPLOAD:", uploadError);
+                        alert(`Falha no upload da logo. Isto é geralmente um problema de permissão (CORS ou Chave de API). Verifique o guia no Canvas e as configurações no Google Cloud. Erro: ${uploadError.message}`);
+                        throw uploadError; // Pára a execução para não salvar dados inconsistentes
+                    }
+                }
+                
+                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+                alert("Perfil atualizado com sucesso!");
+
+            } else {
+                // --- LÓGICA DE NOVO CADASTRO ---
+                const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+                empresaId = novaEmpresaRef.id;
+                
+                const dadosProfissional = {
+                    uid: uid,
+                    nome: currentUser.displayName || nomeNegocio,
+                    fotoUrl: currentUser.photoURL || "",
+                    ehDono: true
+                };
+                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
+
+                // CORREÇÃO: Lógica do card de uso gratuito restaurada
+                if (elements.msgFree) {
+                    elements.msgFree.textContent = "Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!";
+                    elements.msgFree.style.display = "block";
+                } else {
+                    alert("Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!");
+                }
+                
+                // Recarrega os dados na página para refletir o novo estado
+                await carregarDadosDaPagina(uid);
+            }
+
+        } catch (error) {
+            console.error("Erro ao salvar perfil:", error);
+            if (!error.message.includes("Falha no upload")) {
+                alert("Ocorreu um erro ao salvar: " + error.message);
+            }
+        } finally {
+            if (elements.btnSalvar) {
+                elements.btnSalvar.disabled = false;
+                elements.btnSalvar.textContent = 'Salvar Configurações';
+            }
+        }
     }
-    const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-    navigator.clipboard.writeText(urlCompleta).then(() => {
-      alert("Link da vitrine copiado!");
-    }, () => {
-      alert("Falha ao copiar o link.");
-    });
-  }
+
+    // --- FUNÇÕES DE UI E EVENTOS ---
+
+    function adicionarListenersDeEvento() {
+        if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
+        if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
+        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput?.click());
+        if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
+            const file = elements.logoInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { if (elements.logoPreview) elements.logoPreview.src = e.target.result; };
+                reader.readAsDataURL(file);
+            }
+        });
+        if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
+            try { await signOut(auth); window.location.href = 'login.html'; }
+            catch (error) { console.error("Erro no logout:", error); }
+        });
+    }
+
+    function atualizarTelaParaNovoPerfil() {
+        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
+        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, document.getElementById('logo-section')];
+        camposExtras.forEach(el => { if(el) el.style.display = 'none'; });
+    }
+
+    function mostrarCamposExtras() {
+        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, document.getElementById('logo-section')];
+        camposExtras.forEach(el => { if(el) el.style.display = ''; });
+    }
+
+    function preencherFormulario(dadosEmpresa) {
+        if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+        if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
+        if (elements.logoPreview && dadosEmpresa.logoUrl) {
+            elements.logoPreview.src = dadosEmpresa.logoUrl;
+        }
+
+        if (!empresaId) return;
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
+        if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
+        if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+        if (elements.linkVitrineMenu) elements.linkVitrineMenu.href = urlCompleta;
+    }
+
+    function copiarLink() {
+        if (!empresaId) return;
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        navigator.clipboard.writeText(urlCompleta).then(() => {
+            alert("Link da vitrine copiado!");
+        }, () => {
+            alert("Falha ao copiar o link.");
+        });
+    }
 });
