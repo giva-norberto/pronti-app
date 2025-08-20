@@ -22,6 +22,35 @@
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
         }
+
+        /* CARD DE BOAS-VINDAS PARA NOVO USUÁRIO */
+        .primeiro-acesso-card {
+            max-width: 400px;
+            margin: 80px auto;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px #0002;
+            background: #fff;
+            text-align: center;
+        }
+        .primeiro-acesso-card h2 {
+            color: #0056b3;
+            margin-bottom: 16px;
+        }
+        .primeiro-acesso-card p {
+            font-size: 17px;
+            margin-bottom: 28px;
+        }
+        .primeiro-acesso-card button {
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 28px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="dashboard-body is-loading">
@@ -29,15 +58,15 @@
 <!-- Sidebar (menu lateral) incluso dinamicamente -->
 <div id="sidebar-placeholder"></div>
 
-<main class="main-content">
+<main class="main-content" id="main-content">
  <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
- <div class="dashboard-welcome-center">
+ <div class="dashboard-welcome-center" id="dashboard-welcome-center">
    <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
    <p>Pronto para gerenciar seu dia?</p>
  </div>
 
  <!-- AÇÕES PRINCIPAIS -->
- <div class="dashboard-main-actions">
+ <div class="dashboard-main-actions" id="dashboard-main-actions">
    <a href="dashboard.html" class="action-card">
        <i class="fa-solid fa-chart-line"></i>
        <span>Painel Inteligente</span>
@@ -60,10 +89,13 @@
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js";
-    import { verificarAcesso } from "./userService.js";
+    import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
+    const mainContent = document.getElementById("main-content");
+    const dashboardWelcome = document.getElementById("dashboard-welcome-center");
+    const dashboardActions = document.getElementById("dashboard-main-actions");
 
     function destacarLinkAtivo() {
         const links = document.querySelectorAll('.sidebar-links a');
@@ -105,10 +137,29 @@
         }
     }
 
+    function mostrarPrimeiroAcessoCard() {
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="primeiro-acesso-card">
+                    <h2>Seja bem-vindo ao Pronti!</h2>
+                    <p>Você ainda não está vinculado a nenhuma empresa.<br>
+                    Comece agora criando sua própria empresa para usar o Pronti!</p>
+                    <button id="btn-criar-empresa">Criar minha empresa</button>
+                </div>
+            `;
+            document.body.classList.remove('is-loading');
+            document.getElementById("btn-criar-empresa").addEventListener("click", () => {
+                window.location.href = "criar-empresa.html";
+            });
+        }
+    }
+
     // Carrega menu lateral bonito e aplica perfil/permissão
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
+                await ensureUserAndTrialDoc(); // Garante sempre o doc do usuário
+
                 const { perfil, isOwner } = await verificarAcesso();
 
                 // Funcionário não pode acessar index, redireciona:
@@ -136,7 +187,12 @@
                         document.body.classList.remove('is-loading');
                     });
             } catch (error) {
-                console.log("Verificação de acesso interrompida:", error.message);
+                if (error.message === "primeiro_acesso") {
+                    mostrarPrimeiroAcessoCard();
+                } else {
+                    console.log("Verificação de acesso interrompida:", error.message);
+                    window.location.replace('login.html');
+                }
             }
         } else {
             window.location.replace('login.html');
