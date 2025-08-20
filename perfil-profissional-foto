@@ -1,5 +1,17 @@
-// Componente/função para exibir e alterar foto do profissional no modal de perfil
+// ======================================================================
+//                 perfil-profissional-foto - VERSÃO COMPLETA
+//                 Gestão de perfil e foto do profissional
+// ======================================================================
 
+import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { db, storage } from './firebase-config.js'; // Ajuste o caminho se necessário
+
+/**
+ * Função para renderizar a foto do profissional e permitir alteração
+ * @param {string} fotoUrl - URL atual da foto do profissional
+ * @param {function} onTrocarFoto - Callback chamado ao selecionar nova foto
+ */
 export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
     const fotoContainer = document.getElementById('perfil-profissional-foto-container');
     if (!fotoContainer) return;
@@ -19,18 +31,46 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
 
     btnTrocar.onclick = () => inputFoto.click();
 
-    inputFoto.onchange = (e) => {
+    inputFoto.onchange = async (e) => {
         const file = e.target.files[0];
-        if (file && onTrocarFoto) {
-            onTrocarFoto(file); // Delega para função de upload/salvar
-        }
-        // Visualiza localmente (opcional)
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                document.getElementById('perfil-profissional-foto').src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        // Visualização local imediata
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('perfil-profissional-foto').src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Chama callback de upload/salvar
+        if (onTrocarFoto) {
+            await onTrocarFoto(file);
         }
     };
+}
+
+/**
+ * Função para fazer upload da foto do profissional e atualizar Firestore
+ * @param {File} file - Arquivo de imagem selecionado
+ * @param {string} empresaId - ID da empresa
+ * @param {string} profissionalId - UID do profissional
+ */
+export async function uploadFotoProfissional(file, empresaId, profissionalId) {
+    if (!file || !empresaId || !profissionalId) return null;
+
+    try {
+        const storageRef = ref(storage, `profissionais/${empresaId}/${profissionalId}/${file.name}`);
+        await uploadBytes(storageRef, file);
+
+        const url = await getDownloadURL(storageRef);
+
+        // Atualiza URL da foto no Firestore
+        const profDocRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        await updateDoc(profDocRef, { fotoUrl: url });
+
+        return url;
+    } catch (error) {
+        console.error("Erro ao enviar foto do profissional:", error);
+        return null;
+    }
 }
