@@ -2,9 +2,7 @@
   {
     "origin": [
       "https://pronti-app.vercel.app",
-      "https://pronti.vercel.app",
-      "https://meu-projeto.replit.dev",
-      "http://localhost:3000"
+      "https://pronti.vercel.app"
     ],
     "method": [
       "GET",
