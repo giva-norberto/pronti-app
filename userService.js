@@ -143,19 +143,32 @@ export async function verificarAcesso() {
                     const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
                     const profissionalSnap = await getDoc(profissionalRef);
 
-                    if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
-                        return resolve({
-                            user,
-                            perfil: profissionalSnap.data(),
-                            empresaId,
-                            isOwner: false,
-                            role: "funcionario"
-                        });
+                    if (profissionalSnap.exists()) {
+                        if (profissionalSnap.data().status === 'ativo') {
+                            return resolve({
+                                user,
+                                perfil: profissionalSnap.data(),
+                                empresaId,
+                                isOwner: false,
+                                role: "funcionario"
+                            });
+                        } else {
+                            // Profissional existe, mas não está ativo (aguardando aprovação)
+                            return reject(new Error("aguardando_aprovacao"));
+                        }
                     }
                 }
 
-                // 3. Não é dono nem funcionário aprovado
-                return reject(new Error("Usuário sem acesso a empresa ou não aprovado."));
+                // 3. Usuário existe em 'usuarios' mas não tem empresa nem vínculo como funcionário
+                const userDocRef = doc(db, "usuarios", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    // Usuário existe, mas não foi vinculado a nenhuma empresa
+                    return reject(new Error("primeiro_acesso"));
+                }
+
+                // Caso extremo: usuário nem existe nos usuários
+                return reject(new Error("usuario_invalido"));
             } catch (error) {
                 return reject(error);
             }
