@@ -20,7 +20,6 @@
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
         }
-
         /* CARD DE BOAS-VINDAS APERFEIÇOADO */
         .primeiro-acesso-card {
             max-width: 400px;
@@ -40,11 +39,12 @@
             color: #2563eb;
             font-weight: 700;
             font-size: 1.34rem;
-            margin-bottom: 28px;
+            margin-bottom: 18px;
             letter-spacing: 0.01em;
         }
         .primeiro-acesso-card p {
-            font-size: 17px;
+            font-size: 16px;
+            color: #6b7a90;
             margin-bottom: 28px;
         }
         .primeiro-acesso-card .primeiro-btn {
@@ -65,6 +65,9 @@
         .primeiro-acesso-card .primeiro-btn:last-child {
             margin-bottom: 0;
             background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%);
+        }
+        .primeiro-acesso-card .primeiro-btn i {
+            margin-right: 8px;
         }
         .primeiro-acesso-card .primeiro-btn:hover {
             background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
@@ -104,7 +107,6 @@
  <button class="status-button">Ver status de hoje</button>
 </main>
 
-<!-- SCRIPT PARA MENU LATERAL BONITO E AUTENTICAÇÃO -->
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js";
@@ -113,8 +115,6 @@
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
-    const dashboardWelcome = document.getElementById("dashboard-welcome-center");
-    const dashboardActions = document.getElementById("dashboard-main-actions");
 
     function destacarLinkAtivo() {
         const links = document.querySelectorAll('.sidebar-links a');
@@ -169,19 +169,18 @@
             `;
             document.body.classList.remove('is-loading');
             document.getElementById("btn-perfil").addEventListener("click", () => {
-                window.location.replace("perfil.html"); // Troque pelo caminho real do perfil se necessário
+                window.location.replace("perfil.html"); // Ajuste para sua página de perfil
             });
             document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                window.location.replace("cadastro-empresa.html"); // Troque pelo caminho real do cadastro de empresa se necessário
+                window.location.replace("perfil.html?criarEmpresa=1"); // Ajuste para sua tela de cadastro da empresa
             });
         }
     }
 
-    // Carrega menu lateral bonito e aplica perfil/permissão
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
-                await ensureUserAndTrialDoc(); // Garante sempre o doc do usuário
+                await ensureUserAndTrialDoc();
 
                 const { perfil, isOwner } = await verificarAcesso();
 
