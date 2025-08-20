@@ -3,13 +3,14 @@
     "origin": [
       "https://pronti-app.vercel.app",
       "https://pronti.vercel.app",
-      "https://*.replit.dev",
+      "https://meu-projeto.replit.dev",
       "http://localhost:3000"
     ],
     "method": [
       "GET",
       "POST",
       "PUT",
+      "DELETE",
       "OPTIONS"
     ],
     "responseHeader": [
