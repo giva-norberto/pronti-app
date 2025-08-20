@@ -42,7 +42,6 @@ window.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
-      // Só impede acesso de funcionário, mas NÃO redireciona dono em primeiro acesso
       try {
         const acesso = await verificarAcesso();
         if (acesso.role && acesso.role !== "dono") {
@@ -50,7 +49,6 @@ window.addEventListener('DOMContentLoaded', () => {
           return;
         }
       } catch (e) {
-        // Se erro for 'primeiro_acesso', deixa o dono na tela! (protege contra loop)
         if (e.message !== 'primeiro_acesso') {
           window.location.href = 'login.html';
           return;
@@ -134,12 +132,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const dadosEmpresa = {
         nomeFantasia: nomeNegocio,
         descricao: elements.descricaoInput ? elements.descricaoInput.value.trim() : '',
-        donoId: uid // ESSENCIAL!
+        donoId: uid
       };
 
-      // INCLUIR O CAMPO UID DO DONO NO SUBDOCUMENTO PROFISSIONAIS
       const dadosProfissional = {
-        uid: uid, // <--- INCLUSÃO AQUI!
+        uid: uid, // ESSENCIAL para sempre salvar o uid, inclusive para o dono!
         nome: currentUser.displayName || nomeNegocio,
         fotoUrl: currentUser.photoURL || "",
         ehDono: true
@@ -160,12 +157,11 @@ window.addEventListener('DOMContentLoaded', () => {
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Perfil atualizado com sucesso!");
       } else {
-        // CRIA a empresa e VÍNCULO do donoId!
         const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
         empresaId = novaEmpresaRef.id;
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Seu negócio foi cadastrado com sucesso!");
-        window.location.replace("index.html"); // Volta para dashboard, agora será reconhecido como dono!
+        window.location.replace("index.html");
       }
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
