@@ -500,6 +500,7 @@ async function adicionarProfissional() {
         }
     }
 
+    // Acrescentado o campo uid: "" para profissionais adicionados pelo dono (ativação futura)
     const novoProfissional = {
         nome,
         fotoUrl: fotoURL,
@@ -507,7 +508,8 @@ async function adicionarProfissional() {
         servicos: [],
         status: 'ativo',
         criadoEm: serverTimestamp(),
-        agendaEspecial: []
+        agendaEspecial: [],
+        uid: "" // <- Será preenchido quando o funcionário ativar
     };
 
     try {
