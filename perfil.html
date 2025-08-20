@@ -31,14 +31,12 @@
         display: block;
         margin: 0;
     }
-    /* Responsivo para telas menores */
     @media (max-width: 600px) {
       .logo-upload-container img#logo-preview {
         max-width: 92vw;
         max-height: 80px;
       }
     }
-    /* Regras para integração do menu lateral */
     #sidebar-placeholder {
         float: left;
         width: 250px;
@@ -53,12 +51,10 @@
         width: calc(100% - 250px);
         background: #f6f8fa;
     }
-    /* Responsivo: Sidebar vira topo */
     @media (max-width:1200px){
         .main-content {margin-left:0;width:100%;padding:24px;}
         #sidebar-placeholder{float:none;width:100%;height:auto;min-width:unset;}
     }
-    /* Card de formulário */
     .form-card {
         background: #fff;
         border-radius: 18px;
@@ -179,7 +175,6 @@
         text-align: right;
         margin-top: 24px;
     }
-    /* Vitrine link */
     .vitrine-link-container {
         display: flex;
         align-items: center;
@@ -201,7 +196,6 @@
         gap: 8px;
         align-items: center;
     }
-    /* Modal overlay básico */
     .modal-overlay {
         position: fixed;
         z-index: 1000;
@@ -211,7 +205,6 @@
         align-items: center;
         justify-content: center;
     }
-    /* Sidebar adaptação responsiva */
     @media (max-width: 900px) {
       #sidebar-placeholder {
         width: 100%;
@@ -312,6 +305,10 @@
           }, 10);
         });
     });
+
+    // PROTEÇÃO CONTRA LOOP: 
+    // No seu perfil.js, garanta que NUNCA redirecione para index.html se for dono e não tiver empresa.
+    // Apenas exiba o formulário normalmente!
     </script>
     <script src="perfil.js" type="module"></script>
 </body>
