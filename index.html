@@ -157,7 +157,7 @@
             `;
             document.body.classList.remove('is-loading');
             document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                // Libera o acesso ao menu e vai direto para o perfil do dono
+                // Vai para o perfil do dono sem loop!
                 window.location.replace("perfil.html");
             });
         }
@@ -168,6 +168,7 @@
             try {
                 await ensureUserAndTrialDoc();
 
+                // Importante: aqui não há loop, pois só mostra o card na ausência de vínculo de dono (primeiro_acesso)
                 const { perfil, isOwner } = await verificarAcesso();
 
                 // Funcionário não pode acessar index, redireciona:
@@ -196,6 +197,7 @@
                     });
             } catch (error) {
                 if (error.message === "primeiro_acesso") {
+                    // Só mostra o card e deixa o usuário ir para perfil.html
                     mostrarPrimeiroAcessoCard();
                 } else {
                     console.log("Verificação de acesso interrompida:", error.message);
