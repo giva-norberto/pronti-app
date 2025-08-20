@@ -137,7 +137,9 @@ window.addEventListener('DOMContentLoaded', () => {
         donoId: uid // ESSENCIAL!
       };
 
+      // INCLUIR O CAMPO UID DO DONO NO SUBDOCUMENTO PROFISSIONAIS
       const dadosProfissional = {
+        uid: uid, // <--- INCLUSÃO AQUI!
         nome: currentUser.displayName || nomeNegocio,
         fotoUrl: currentUser.photoURL || "",
         ehDono: true
