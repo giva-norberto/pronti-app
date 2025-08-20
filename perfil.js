@@ -34,7 +34,7 @@ window.addEventListener('DOMContentLoaded', () => {
     btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
     linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
     btnLogout: document.getElementById('btn-logout'),
-    msgFree: document.getElementById('mensagem-free') // Adicione um div com esse id no HTML!
+    msgFree: document.getElementById('mensagem-free')
   };
 
   let currentUser;
@@ -191,9 +191,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if (logoFile) {
         const storagePath = `logos/${uid}/logo`;
         const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-        dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
-        // Atualiza o preview da logo imediatamente após upload
-        if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl;
+        try {
+          dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
+          if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl;
+        } catch (uploadError) {
+          alert("Falha no upload da logo: " + (uploadError.message || uploadError));
+          console.error("Erro no upload da logo:", uploadError);
+          throw uploadError; // Não atualizar Firestore se upload falhar
+        }
       } else if (empresaId) {
         const empresaAtualSnap = await getDoc(doc(db, "empresarios", empresaId));
         if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
