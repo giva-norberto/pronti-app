@@ -33,11 +33,13 @@ window.addEventListener('DOMContentLoaded', () => {
     btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
     btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
     linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
-    btnLogout: document.getElementById('btn-logout')
+    btnLogout: document.getElementById('btn-logout'),
+    msgFree: document.getElementById('mensagem-free') // Adicione um div com esse id no HTML!
   };
 
   let currentUser;
   let empresaId = null;
+  let isNovoCadastro = false; // Para controle do fluxo
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -54,7 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
           return;
         }
       }
-      verificarOuCriarEmpresa(user.uid);
+      await verificarOuCriarEmpresa(user.uid);
       adicionarListenersDeEvento();
     } else {
       window.location.href = 'login.html';
@@ -69,12 +71,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
       if (snapshot.empty) {
         empresaId = null;
+        isNovoCadastro = true;
         atualizarTelaParaNovoPerfil();
       } else {
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
+        isNovoCadastro = false;
         const dadosEmpresa = empresaDoc.data();
         preencherFormulario(dadosEmpresa);
+        mostrarCamposExtras(); // Mostra logo, links, etc
       }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -92,12 +97,32 @@ window.addEventListener('DOMContentLoaded', () => {
       elements.linkVitrineMenu.style.opacity = '0.5';
       elements.linkVitrineMenu.href = '#';
     }
+    // Esconde campos de logo no cadastro inicial
+    if (elements.logoInput) elements.logoInput.parentElement.style.display = "none";
+    if (elements.logoPreview) elements.logoPreview.style.display = "none";
+    if (elements.btnUploadLogo) elements.btnUploadLogo.style.display = "none";
+  }
+
+  // Mostra campos de logo e links
+  function mostrarCamposExtras() {
+    if (elements.logoInput) elements.logoInput.parentElement.style.display = "";
+    if (elements.logoPreview) elements.logoPreview.style.display = "";
+    if (elements.btnUploadLogo) elements.btnUploadLogo.style.display = "";
+    if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = 'block';
+    if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'inline-flex';
+    if (elements.linkVitrineMenu) {
+      elements.linkVitrineMenu.classList.remove('disabled');
+      elements.linkVitrineMenu.style.pointerEvents = 'auto';
+      elements.linkVitrineMenu.style.opacity = '1';
+    }
   }
 
   function preencherFormulario(dadosEmpresa) {
     if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
     if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
-    if (elements.logoPreview && dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
+    if (elements.logoPreview && dadosEmpresa.logoUrl) {
+      elements.logoPreview.src = dadosEmpresa.logoUrl;
+    }
 
     if (!empresaId) return;
     const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
@@ -136,12 +161,35 @@ window.addEventListener('DOMContentLoaded', () => {
       };
 
       const dadosProfissional = {
-        uid: uid, // ESSENCIAL para sempre salvar o uid, inclusive para o dono!
+        uid: uid,
         nome: currentUser.displayName || nomeNegocio,
         fotoUrl: currentUser.photoURL || "",
         ehDono: true
       };
 
+      // Cadastro inicial: não envia logo
+      if (!empresaId) {
+        const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+        empresaId = novaEmpresaRef.id;
+        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
+
+        // Mensagem de sucesso com período grátis
+        if (elements.msgFree) {
+          elements.msgFree.textContent = "Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!";
+          elements.msgFree.style.display = "block";
+        } else {
+          alert("Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!");
+        }
+
+        // Após salvar, recarrega os dados para mostrar logo, links, etc.
+        isNovoCadastro = false;
+        await verificarOuCriarEmpresa(uid);
+        mostrarCamposExtras();
+        // Opcional: não redirecionar, apenas recarregar dados e liberar edição, ou use location.reload() se preferir recarregar a página inteira.
+        return;
+      }
+
+      // Edição (empresa já criada): pode atualizar logo
       const logoFile = elements.logoInput && elements.logoInput.files[0];
       if (logoFile) {
         const storagePath = `logos/${uid}/logo`;
@@ -152,17 +200,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if (empresaAtualSnap.exists()) dadosEmpresa.logoUrl = empresaAtualSnap.data().logoUrl || '';
       }
 
-      if (empresaId) {
-        await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
-        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
-        alert("Perfil atualizado com sucesso!");
-      } else {
-        const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-        empresaId = novaEmpresaRef.id;
-        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
-        alert("Seu negócio foi cadastrado com sucesso!");
-        window.location.replace("index.html");
-      }
+      await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+      await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
+      alert("Perfil atualizado com sucesso!");
+      await verificarOuCriarEmpresa(uid); // Atualiza dados na tela após edição
+      mostrarCamposExtras();
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
       alert("Ocorreu um erro ao salvar: " + error.message);
