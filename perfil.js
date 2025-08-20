@@ -123,9 +123,11 @@ window.addEventListener('DOMContentLoaded', () => {
                         dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
                         console.log("Upload bem-sucedido:", dadosEmpresa.logoUrl);
                     } catch (uploadError) {
+                        // CORREÇÃO: Mostra um alerta muito mais claro sobre o problema de permissão
                         console.error("ERRO NO UPLOAD:", uploadError);
                         alert(`Falha no upload da logo. Isto é geralmente um problema de permissão (CORS ou Chave de API). Verifique o guia no Canvas e as configurações no Google Cloud. Erro: ${uploadError.message}`);
-                        throw uploadError; // Pára a execução para não salvar dados inconsistentes
+                        // Pára a execução para não salvar dados inconsistentes e reativa o botão no 'finally'
+                        return; 
                     }
                 }
                 
@@ -159,9 +161,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
-            if (!error.message.includes("Falha no upload")) {
-                alert("Ocorreu um erro ao salvar: " + error.message);
-            }
+            alert("Ocorreu um erro ao salvar: " + error.message);
         } finally {
             if (elements.btnSalvar) {
                 elements.btnSalvar.disabled = false;
