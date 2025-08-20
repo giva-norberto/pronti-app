@@ -1,9 +1,3 @@
-// ======================================================================
-//                          PERFIL.JS
-//      Gerencia o perfil do negócio e os dados da empresa
-//      (Função de equipe REMOVIDA desta tela.)
-// ======================================================================
-
 import {
   getFirestore, doc, getDoc, setDoc, addDoc, collection,
   query, where, getDocs
@@ -16,9 +10,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
-import { verificarAcesso } from "./userService.js"; // ADICIONADO
+import { verificarAcesso } from "./userService.js";
 
-// Medida de segurança: Verifica se os serviços do Firebase foram inicializados corretamente.
 if (!app || !db || !auth || !storage) {
   console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
   throw new Error("Firebase não inicializado. Verifique firebase-config.js");
@@ -41,7 +34,6 @@ window.addEventListener('DOMContentLoaded', () => {
     btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
     linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
     btnLogout: document.getElementById('btn-logout')
-    // Equipe removida desta tela!
   };
 
   let currentUser;
@@ -49,19 +41,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      // --- VERIFICAÇÃO DE PAPEL DO USUÁRIO ---
+      currentUser = user;
+      // Só impede acesso de funcionário, mas NÃO redireciona dono em primeiro acesso
       try {
         const acesso = await verificarAcesso();
-        if (acesso.role !== "dono") {
-          // Se não é dono, redireciona para perfil do funcionário ou agenda
-          window.location.href = "perfil-funcionario.html"; // ou "agenda.html"
+        if (acesso.role && acesso.role !== "dono") {
+          window.location.href = "perfil-funcionario.html";
           return;
         }
       } catch (e) {
-        window.location.href = 'login.html';
-        return;
+        // Se erro for 'primeiro_acesso', deixa o dono na tela! (protege contra loop)
+        if (e.message !== 'primeiro_acesso') {
+          window.location.href = 'login.html';
+          return;
+        }
       }
-      currentUser = user;
       verificarOuCriarEmpresa(user.uid);
       adicionarListenersDeEvento();
     } else {
@@ -71,38 +65,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   async function verificarOuCriarEmpresa(uid) {
     try {
-      console.log("[DEBUG] Buscando empresa do dono:", uid);
-
-      // Coleção 'empresarios' — troque para 'empresas' se esse for o nome correto no seu Firestore!
       const empresariosRef = collection(db, "empresarios");
       const q = query(empresariosRef, where("donoId", "==", uid));
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        console.warn("[DEBUG] Nenhuma empresa encontrada. Criando nova empresa...");
-        empresaId = (await addDoc(collection(db, "empresarios"), {
-          nomeFantasia: "",
-          descricao: "",
-          donoId: uid,
-          logoUrl: ""
-        })).id;
-
-        // Cria registro do proprietário (como profissional) apenas para manter a consistência do Firestore,
-        // mas não mostra equipe nesta tela.
-        await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), {
-          nome: currentUser.displayName || "Proprietário",
-          fotoUrl: currentUser.photoURL || "",
-          ehDono: true
-        });
-
+        empresaId = null;
         atualizarTelaParaNovoPerfil();
       } else {
         const empresaDoc = snapshot.docs[0];
         empresaId = empresaDoc.id;
         const dadosEmpresa = empresaDoc.data();
-
-        console.log("[DEBUG] Empresa encontrada:", empresaId, dadosEmpresa);
-
         preencherFormulario(dadosEmpresa);
       }
     } catch (error) {
@@ -128,7 +101,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
     if (elements.logoPreview && dadosEmpresa.logoUrl) elements.logoPreview.src = dadosEmpresa.logoUrl;
 
-    if (!empresaId) return; // segurança extra
+    if (!empresaId) return;
     const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
     if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
     if (elements.btnAbrirVitrine) {
@@ -161,7 +134,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const dadosEmpresa = {
         nomeFantasia: nomeNegocio,
         descricao: elements.descricaoInput ? elements.descricaoInput.value.trim() : '',
-        donoId: uid
+        donoId: uid // ESSENCIAL!
       };
 
       const dadosProfissional = {
@@ -185,11 +158,12 @@ window.addEventListener('DOMContentLoaded', () => {
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Perfil atualizado com sucesso!");
       } else {
+        // CRIA a empresa e VÍNCULO do donoId!
         const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
         empresaId = novaEmpresaRef.id;
         await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional, { merge: true });
         alert("Seu negócio foi cadastrado com sucesso!");
-        window.location.reload();
+        window.location.replace("index.html"); // Volta para dashboard, agora será reconhecido como dono!
       }
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
