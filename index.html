@@ -8,9 +8,18 @@
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .dashboard-body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298); /* fundo azul gradiente */
+            min-height: 100vh;
+        }
+
         body.is-loading {
-            visibility: hidden;
             opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        body {
+            opacity: 1;
             transition: opacity 0.3s ease-in-out;
         }
     </style>
@@ -23,7 +32,7 @@
 <main class="main-content">
  <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
  <div class="dashboard-welcome-center">
-   <h1>Bom dia, <span id="nome-usuario">Usuário</span>!</h1>
+   <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
    <p>Pronto para gerenciar seu dia?</p>
  </div>
 
@@ -54,6 +63,7 @@
     import { verificarAcesso } from "./userService.js";
 
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
+    const saudacaoSpan = document.getElementById("saudacao");
 
     function destacarLinkAtivo() {
         const links = document.querySelectorAll('.sidebar-links a');
@@ -84,6 +94,17 @@
         }
     }
 
+    function definirSaudacao() {
+        const hora = new Date().getHours();
+        if (hora >= 5 && hora < 12) {
+            return "Bom dia";
+        } else if (hora >= 12 && hora < 18) {
+            return "Boa tarde";
+        } else {
+            return "Boa noite";
+        }
+    }
+
     // Carrega menu lateral bonito e aplica perfil/permissão
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -100,6 +121,9 @@
                 const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
                 if (nomeUsuarioSpan) {
                     nomeUsuarioSpan.textContent = primeiroNome;
+                }
+                if (saudacaoSpan) {
+                    saudacaoSpan.textContent = definirSaudacao();
                 }
 
                 // Carrega o menu lateral bonito
