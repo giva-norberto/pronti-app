@@ -1085,3 +1085,7 @@ main.main-content, .main-content {
   background: #fee2e2;
   color: #991b1b;
 }
+body.dashboard-body {
+    background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
+    color: #fff;
+}
