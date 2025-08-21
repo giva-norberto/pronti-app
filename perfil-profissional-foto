@@ -1,43 +1,51 @@
 // ======================================================================
-//                 perfil-profissional-foto - VERSÃO SIMPLIFICADA
-//                 Gestão de perfil e foto do profissional
+//              Módulo: perfil-profissional-foto
+//      Responsabilidade: Gerenciar a exibição, seleção e upload
+//                      da foto de perfil do profissional.
 // ======================================================================
 
 import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { db, storage } from './firebase-config.js'; // Ajuste o caminho se necessário
+import { db, storage } from './firebase-config.js'; // Verifique se o caminho para sua configuração do Firebase está correto.
 
 /**
- * Renderiza a foto do profissional e permite alteração.
- * @param {string} fotoUrl - URL atual da foto do profissional
- * @param {(file: File) => Promise<void>} onTrocarFoto - Callback ao selecionar nova foto
+ * Renderiza o componente de foto do profissional na tela e configura os eventos de clique e seleção.
+ * @param {string} fotoUrl - URL atual da foto do profissional (pode ser nula).
+ * @param {(file: File) => Promise<string|null>} onTrocarFoto - Função callback que será chamada com o novo arquivo de imagem para upload.
  */
 export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
     const fotoContainer = document.getElementById('perfil-profissional-foto-container');
-    if (!fotoContainer) return;
+    if (!fotoContainer) {
+        console.error("Elemento 'perfil-profissional-foto-container' não encontrado no DOM.");
+        return;
+    }
 
+    // Template HTML para o componente de foto
     fotoContainer.innerHTML = `
         <img id="perfil-profissional-foto" 
-             src="${fotoUrl || 'https://placehold.co/80x80?text=User'}" 
+             src="${fotoUrl || 'https://placehold.co/80x80/6366f1/white?text=Foto'}" 
              alt="Foto do profissional"
-             style="width:80px;border-radius:50%;margin-bottom:10px;object-fit:cover;">
+             style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; object-fit: cover; border: 2px solid #e5e7eb;">
         <br>
         <input type="file" id="input-foto-profissional" accept="image/*" style="display:none;">
-        <button type="button" id="btn-trocar-foto-profissional">Trocar foto</button>
-        <span id="status-foto-profissional" style="display:block; margin-top:5px; color:#888; font-size:0.9em"></span>
+        <button type="button" id="btn-trocar-foto-profissional" class="botao-secundario">Trocar foto</button>
+        <span id="status-foto-profissional" style="display: block; margin-top: 8px; color: #6b7280; font-size: 0.875em;"></span>
     `;
 
     const btnTrocar = document.getElementById('btn-trocar-foto-profissional');
     const inputFoto = document.getElementById('input-foto-profissional');
     const statusSpan = document.getElementById('status-foto-profissional');
+    const imgPreview = document.getElementById('perfil-profissional-foto');
 
+    // Abre o seletor de arquivos ao clicar no botão
     btnTrocar.onclick = () => inputFoto.click();
 
+    // Lida com a seleção de um novo arquivo
     inputFoto.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validação simples (opcional)
+        // Validações do arquivo
         if (!file.type.startsWith('image/')) {
             statusSpan.textContent = "Arquivo inválido, escolha uma imagem.";
             return;
@@ -47,52 +55,69 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto) {
             return;
         }
 
-        // Preview local imediato
+        // Gera e exibe uma prévia da imagem selecionada
         const reader = new FileReader();
-        reader.onload = function(ev) {
-            document.getElementById('perfil-profissional-foto').src = ev.target.result;
+        reader.onload = (event) => {
+            imgPreview.src = event.target.result;
         };
         reader.readAsDataURL(file);
 
-        // Feedback visual
         statusSpan.textContent = "Enviando imagem...";
 
-        // Chama callback de upload/salvar
+        // Chama a função de callback (passada como parâmetro) para fazer o upload
         if (onTrocarFoto) {
-            const url = await onTrocarFoto(file);
-            if (url) {
-                statusSpan.textContent = "Foto atualizada!";
-            } else {
-                statusSpan.textContent = "Erro ao enviar foto.";
+            try {
+                const url = await onTrocarFoto(file);
+                if (url) {
+                    statusSpan.textContent = "Foto atualizada com sucesso!";
+                } else {
+                    throw new Error("Callback de upload não retornou uma URL.");
+                }
+            } catch (error) {
+                console.error("Falha no callback onTrocarFoto:", error);
+                statusSpan.textContent = "Erro ao enviar a foto.";
+                // Reverte para a foto original em caso de erro
+                imgPreview.src = fotoUrl || 'https://placehold.co/80x80/6366f1/white?text=Foto';
             }
         }
     };
 }
 
 /**
- * Faz upload da foto do profissional e atualiza Firestore.
- * @param {File} file - Arquivo de imagem selecionado
- * @param {string} empresaId - ID da empresa
- * @param {string} profissionalId - ID do profissional
- * @returns {Promise<string|null>} - URL da imagem ou null em caso de erro
+ * Realiza o upload de um arquivo para o Firebase Storage e atualiza o documento correspondente no Firestore.
+ * @param {File} file - O arquivo de imagem a ser enviado.
+ * @param {string} empresaId - O ID da empresa (para organizar o caminho no Storage).
+ * @param {string} profissionalId - O ID do profissional (para organizar o caminho e localizar o documento no Firestore).
+ * @returns {Promise<string|null>} - A URL de download da imagem ou null em caso de erro.
  */
 export async function uploadFotoProfissional(file, empresaId, profissionalId) {
-    if (!file || !empresaId || !profissionalId) return null;
+    if (!file || !empresaId || !profissionalId) {
+        console.error("uploadFotoProfissional chamado com parâmetros inválidos.");
+        return null;
+    }
+
     try {
-        // Caminho organizado (nome de arquivo único por timestamp)
+        // **CORREÇÃO APLICADA AQUI**
+        // O caminho foi alterado de 'profissionais/...' para 'fotos-profissionais/...'
+        // para corresponder exatamente ao caminho definido nas suas Regras de Segurança do Storage.
         const nomeUnico = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
-        const storageRef = ref(storage, `profissionais/${empresaId}/${profissionalId}/${nomeUnico}`);
+        const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${nomeUnico}`);
+
+        // 1. Faz o upload do arquivo
         await uploadBytes(storageRef, file);
 
+        // 2. Obtém a URL pública do arquivo recém-enviado
         const url = await getDownloadURL(storageRef);
 
-        // Atualiza URL da foto no Firestore
+        // 3. Atualiza o campo 'fotoUrl' no documento do profissional no Firestore
         const profDocRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profDocRef, { fotoUrl: url });
 
+        console.log("Foto do profissional atualizada com sucesso no Firestore.");
         return url;
+
     } catch (error) {
-        console.error("Erro ao enviar foto do profissional:", error);
+        console.error("Erro detalhado ao enviar foto do profissional:", error);
         return null;
     }
 }
