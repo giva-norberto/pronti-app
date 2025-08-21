@@ -1,11 +1,11 @@
 // ======================================================================
 //              Módulo: perfil-profissional-foto
-//      Responsabilidade: Gerenciar a exibição, seleção e upload
-//                      da foto de perfil do profissional.
+//      Responsabilidade: Gerenciar a exibição, seleção, upload e
+//                      deleção da foto de perfil do profissional.
 // ======================================================================
 
-import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { db, storage } from './firebase-config.js'; // Verifique se o caminho para sua configuração do Firebase está correto.
 
 /**
@@ -119,5 +119,57 @@ export async function uploadFotoProfissional(file, empresaId, profissionalId) {
     } catch (error) {
         console.error("Erro detalhado ao enviar foto do profissional:", error);
         return null;
+    }
+}
+
+/**
+ * Deleta a foto de um profissional do Firebase Storage e remove a referência do Firestore.
+ * @param {string} empresaId - O ID da empresa do profissional.
+ * @param {string} profissionalId - O ID do profissional cuja foto será deletada.
+ * @returns {Promise<boolean>} - Retorna true se a operação for bem-sucedida, false caso contrário.
+ */
+export async function deletarFotoProfissional(empresaId, profissionalId) {
+    if (!empresaId || !profissionalId) {
+        console.error("deletarFotoProfissional chamado com parâmetros inválidos.");
+        return false;
+    }
+
+    const profDocRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+
+    try {
+        // 1. Pega os dados do profissional para encontrar a URL da foto atual
+        const docSnap = await getDoc(profDocRef);
+        if (!docSnap.exists() || !docSnap.data().fotoUrl) {
+            console.log("Profissional não encontrado ou já não possui foto.");
+            return true; // Considera sucesso se não há nada para deletar
+        }
+
+        const fotoUrl = docSnap.data().fotoUrl;
+
+        // 2. Cria uma referência para o arquivo no Storage a partir da URL
+        const fotoRef = ref(storage, fotoUrl);
+
+        // 3. Deleta o arquivo do Storage
+        await deleteObject(fotoRef);
+        console.log("Arquivo de foto deletado do Storage com sucesso.");
+
+        // 4. Remove o campo 'fotoUrl' do documento no Firestore
+        await updateDoc(profDocRef, {
+            fotoUrl: null // ou deleteField() se preferir remover o campo
+        });
+        console.log("URL da foto removida do Firestore.");
+
+        return true;
+
+    } catch (error) {
+        // Trata erros comuns, como o arquivo não existir mais no Storage
+        if (error.code === 'storage/object-not-found') {
+            console.warn("O arquivo de foto não foi encontrado no Storage, mas o Firestore será limpo.");
+            // Mesmo com erro, tenta limpar a referência no Firestore
+            await updateDoc(profDocRef, { fotoUrl: null });
+            return true;
+        }
+        console.error("Erro ao deletar foto do profissional:", error);
+        return false;
     }
 }
