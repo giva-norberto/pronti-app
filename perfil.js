@@ -109,7 +109,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
                 descricao: elements.descricaoInput?.value.trim() || '',
-                donoId: uid
+                donoId: uid,
+                plano: "free" // <-- INCLUSÃO CIRÚRGICA DO CAMPO FREE
             };
 
             if (empresaId) {
