@@ -429,7 +429,7 @@ async function salvarPerfilProfissional() {
     }
 }
 
-function adicionarEventListeners() {
+/*function adicionarEventListeners() {
     elementos.btnAddProfissional.addEventListener("click", () => {
         elementos.formAddProfissional.reset();
         editandoProfissionalId = null;
@@ -438,7 +438,7 @@ function adicionarEventListeners() {
         elementos.formAddProfissional.onsubmit = async (e) => {
             e.preventDefault();
             await adicionarProfissional();
-        };
+        };*/
     });
 
     if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
