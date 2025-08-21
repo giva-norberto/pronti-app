@@ -4,8 +4,8 @@
 //           (100% Frontend, Sem Cloud Functions)
 // ======================================================================
 
-// IMPORTAÇÕES - Adicionamos o módulo de gerenciamento de fotos aqui
-import { renderizarFotoProfissional, uploadFotoProfissional, deletarFotoProfissional } from './perfil-profissional-foto.js';
+// **OBSERVAÇÃO:** O módulo 'perfil-profissional-foto.js' foi mesclado
+// neste arquivo para resolver o erro de importação (404 Not Found).
 
 // Variáveis globais
 let db, auth, storage;
@@ -58,6 +58,163 @@ const elementos = {
     btnConvite: document.getElementById('btn-convite')
 };
 
+// ======================================================================
+//      INÍCIO DO CÓDIGO MESCLADO DE 'perfil-profissional-foto.js'
+// ======================================================================
+
+/**
+ * Renderiza o componente de foto do profissional na tela e configura os eventos.
+ * @param {string} fotoUrl - URL atual da foto do profissional (pode ser nula).
+ * @param {(file: File) => Promise<string|null>} onTrocarFoto - Callback para fazer o upload de uma nova foto.
+ * @param {() => Promise<boolean>} onDeletarFoto - Callback para deletar a foto existente.
+ */
+function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto) {
+    const fotoContainer = document.getElementById('perfil-profissional-foto-container');
+    if (!fotoContainer) {
+        console.error("Elemento 'perfil-profissional-foto-container' não encontrado no DOM.");
+        return;
+    }
+
+    const botaoDeletarHtml = fotoUrl ?
+        `<button type="button" id="btn-deletar-foto-profissional" class="botao-perigo">Remover foto</button>` :
+        '';
+
+    fotoContainer.innerHTML = `
+        <img id="perfil-profissional-foto" 
+             src="${fotoUrl || 'https://placehold.co/80x80/6366f1/white?text=Foto'}" 
+             alt="Foto do profissional"
+             style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; object-fit: cover; border: 2px solid #e5e7eb;">
+        <br>
+        <input type="file" id="input-foto-profissional" accept="image/*" style="display:none;">
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button type="button" id="btn-trocar-foto-profissional" class="botao-secundario">Trocar foto</button>
+            ${botaoDeletarHtml}
+        </div>
+        <span id="status-foto-profissional" style="display: block; margin-top: 8px; color: #6b7280; font-size: 0.875em;"></span>
+    `;
+
+    const btnTrocar = document.getElementById('btn-trocar-foto-profissional');
+    const inputFoto = document.getElementById('input-foto-profissional');
+    const statusSpan = document.getElementById('status-foto-profissional');
+    const imgPreview = document.getElementById('perfil-profissional-foto');
+    const btnDeletar = document.getElementById('btn-deletar-foto-profissional');
+
+    btnTrocar.onclick = () => inputFoto.click();
+
+    inputFoto.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            statusSpan.textContent = "Arquivo inválido, escolha uma imagem.";
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            statusSpan.textContent = "Imagem muito grande (máx. 5MB).";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => { imgPreview.src = event.target.result; };
+        reader.readAsDataURL(file);
+
+        statusSpan.textContent = "Enviando imagem...";
+
+        if (onTrocarFoto) {
+            try {
+                const url = await onTrocarFoto(file);
+                if (url) {
+                    statusSpan.textContent = "Foto atualizada com sucesso!";
+                    renderizarFotoProfissional(url, onTrocarFoto, onDeletarFoto);
+                } else {
+                    throw new Error("Callback de upload não retornou uma URL.");
+                }
+            } catch (error) {
+                console.error("Falha no callback onTrocarFoto:", error);
+                statusSpan.textContent = "Erro ao enviar a foto.";
+                imgPreview.src = fotoUrl || 'https://placehold.co/80x80/6366f1/white?text=Foto';
+            }
+        }
+    };
+
+    if (btnDeletar && onDeletarFoto) {
+        btnDeletar.onclick = async () => {
+            if (confirm("Tem certeza que deseja remover a foto de perfil?")) {
+                statusSpan.textContent = "Removendo foto...";
+                const sucesso = await onDeletarFoto();
+                if (sucesso) {
+                    statusSpan.textContent = "Foto removida.";
+                    imgPreview.src = 'https://placehold.co/80x80/6366f1/white?text=Foto';
+                    renderizarFotoProfissional(null, onTrocarFoto, onDeletarFoto);
+                } else {
+                    statusSpan.textContent = "Erro ao remover a foto.";
+                }
+            }
+        };
+    }
+}
+
+async function uploadFotoProfissional(file, empresaId, profissionalId) {
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+
+    if (!file || !empresaId || !profissionalId) {
+        console.error("uploadFotoProfissional chamado com parâmetros inválidos.");
+        return null;
+    }
+
+    try {
+        const nomeUnico = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+        const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${nomeUnico}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        const profDocRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+        await updateDoc(profDocRef, { fotoUrl: url });
+        return url;
+    } catch (error) {
+        console.error("Erro detalhado ao enviar foto do profissional:", error);
+        return null;
+    }
+}
+
+async function deletarFotoProfissional(empresaId, profissionalId) {
+    const { ref, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+    const { doc, getDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+
+    if (!empresaId || !profissionalId) {
+        console.error("deletarFotoProfissional chamado com parâmetros inválidos.");
+        return false;
+    }
+
+    const profDocRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
+
+    try {
+        const docSnap = await getDoc(profDocRef);
+        if (!docSnap.exists() || !docSnap.data().fotoUrl) {
+            return true;
+        }
+
+        const fotoUrl = docSnap.data().fotoUrl;
+        const fotoRef = ref(storage, fotoUrl);
+        await deleteObject(fotoRef);
+        
+        await updateDoc(profDocRef, { fotoUrl: null });
+        return true;
+    } catch (error) {
+        if (error.code === 'storage/object-not-found') {
+            await updateDoc(profDocRef, { fotoUrl: null });
+            return true;
+        }
+        console.error("Erro ao deletar foto do profissional:", error);
+        return false;
+    }
+}
+
+// ======================================================================
+//       FIM DO CÓDIGO MESCLADO DE 'perfil-profissional-foto.js'
+// ======================================================================
+
+
 // TABS do perfil
 function setupPerfilTabs() {
     const tabServicos = document.getElementById('tab-servicos');
@@ -103,7 +260,7 @@ async function inicializar() {
                 empresaId = await getEmpresaIdDoDono(user.uid);
                 if (empresaId) {
                     await carregarServicos();
-                    iniciarListenerDaEquipe(); // Esta função foi corrigida
+                    iniciarListenerDaEquipe();
                     adicionarEventListeners();
                 } else {
                     mostrarErro("Não foi possível identificar a sua empresa. Verifique se seu usuário é o dono de uma empresa no banco de dados.");
@@ -179,7 +336,7 @@ async function iniciarListenerDaEquipe() {
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
-        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.<br>Clique em "Adicionar Profissional" ou "Convidar Funcionário" para começar.</p></div>`;
+        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.<br>Clique em "Adicionar Profissional" para começar.</p></div>`;
         return;
     }
     equipe.forEach(profissional => {
@@ -215,9 +372,6 @@ function renderizarEquipe(equipe) {
     });
 }
 
-// ======================================================================
-//              FUNÇÃO MODIFICADA PARA INCLUIR FOTO
-// ======================================================================
 async function abrirPerfilProfissional(profissionalId) {
     const profissional = await carregarDadosProfissional(profissionalId);
     if (!profissional) {
@@ -227,8 +381,6 @@ async function abrirPerfilProfissional(profissionalId) {
     profissionalAtual = profissionalId;
     elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${profissional.nome}`;
 
-    // **NOVA LÓGICA DA FOTO INTEGRADA AQUI**
-    // Chamamos o renderizador do módulo de fotos, passando as funções de upload e delete
     renderizarFotoProfissional(
         profissional.fotoUrl,
         (file) => uploadFotoProfissional(file, empresaId, profissionalId),
@@ -240,7 +392,6 @@ async function abrirPerfilProfissional(profissionalId) {
     renderizarAgendaEspecial();
     elementos.modalPerfilProfissional.classList.add('show');
 }
-// ======================================================================
 
 async function carregarDadosProfissional(profissionalId) {
     const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -633,4 +784,4 @@ window.excluirProfissional = excluirProfissional;
 window.ativarFuncionario = ativarFuncionario;
 window.recusarFuncionario = recusarFuncionario;
 
-window.addEventListener("DOMContentLoaded", inicializar);
+window.addEventListener("DOMContentLoaded", inicializa
