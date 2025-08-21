@@ -1,8 +1,11 @@
 // ======================================================================
 //                          EQUIPE.JS
-//      VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
-//          (100% Frontend, Sem Cloud Functions)
+//        VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
+//           (100% Frontend, Sem Cloud Functions)
 // ======================================================================
+
+// IMPORTAÇÕES - Adicionamos o módulo de gerenciamento de fotos aqui
+import { renderizarFotoProfissional, uploadFotoProfissional, deletarFotoProfissional } from './perfil-profissional-foto.js';
 
 // Variáveis globais
 let db, auth, storage;
@@ -142,15 +145,9 @@ async function carregarServicos() {
     }
 }
 
-// ======================================================================
-//              CORREÇÃO CIRÚRGICA APLICADA NESTA FUNÇÃO
-// ======================================================================
-// Esta função agora busca o nome correto do dono na coleção 'usuarios'
-// e o corrige na lista da equipe antes de renderizar na tela.
 async function iniciarListenerDaEquipe() {
     const { collection, onSnapshot, query, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
-    // 1. Buscar o ID do dono no documento da empresa
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
     if (!empresaSnap.exists()) {
@@ -159,20 +156,17 @@ async function iniciarListenerDaEquipe() {
     }
     const donoId = empresaSnap.data().donoId;
 
-    // 2. Buscar o nome correto do dono na coleção 'usuarios'
-    let nomeCorretoDono = 'Dono'; // Nome padrão caso não encontre
+    let nomeCorretoDono = 'Dono';
     const donoUsuarioRef = doc(db, "usuarios", donoId);
     const donoUsuarioSnap = await getDoc(donoUsuarioRef);
     if (donoUsuarioSnap.exists() && donoUsuarioSnap.data().nome) {
         nomeCorretoDono = donoUsuarioSnap.data().nome;
     }
 
-    // 3. Iniciar o listener da equipe (como antes)
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
     onSnapshot(query(profissionaisRef), (snapshot) => {
         const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // 4. Encontrar o dono na lista e corrigir o nome antes de renderizar
         const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
         if (donoNaEquipe) {
             donoNaEquipe.nome = nomeCorretoDono;
@@ -181,7 +175,6 @@ async function iniciarListenerDaEquipe() {
         renderizarEquipe(equipe);
     }, (error) => console.error("Erro no listener da equipe:", error));
 }
-// ======================================================================
 
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
@@ -222,6 +215,9 @@ function renderizarEquipe(equipe) {
     });
 }
 
+// ======================================================================
+//              FUNÇÃO MODIFICADA PARA INCLUIR FOTO
+// ======================================================================
 async function abrirPerfilProfissional(profissionalId) {
     const profissional = await carregarDadosProfissional(profissionalId);
     if (!profissional) {
@@ -230,11 +226,21 @@ async function abrirPerfilProfissional(profissionalId) {
     }
     profissionalAtual = profissionalId;
     elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${profissional.nome}`;
+
+    // **NOVA LÓGICA DA FOTO INTEGRADA AQUI**
+    // Chamamos o renderizador do módulo de fotos, passando as funções de upload e delete
+    renderizarFotoProfissional(
+        profissional.fotoUrl,
+        (file) => uploadFotoProfissional(file, empresaId, profissionalId),
+        () => deletarFotoProfissional(empresaId, profissionalId)
+    );
+
     renderizarServicos(profissional.servicos || []);
     agendaEspecial = profissional.agendaEspecial || [];
     renderizarAgendaEspecial();
     elementos.modalPerfilProfissional.classList.add('show');
 }
+// ======================================================================
 
 async function carregarDadosProfissional(profissionalId) {
     const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -500,7 +506,6 @@ async function adicionarProfissional() {
         }
     }
 
-    // Acrescentado o campo uid: "" para profissionais adicionados pelo dono (ativação futura)
     const novoProfissional = {
         nome,
         fotoUrl: fotoURL,
@@ -509,7 +514,7 @@ async function adicionarProfissional() {
         status: 'ativo',
         criadoEm: serverTimestamp(),
         agendaEspecial: [],
-        uid: "" // <- Será preenchido quando o funcionário ativar
+        uid: ""
     };
 
     try {
