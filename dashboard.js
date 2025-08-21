@@ -3,20 +3,14 @@
 //          Inclui o "porteiro" de acesso e a notificação de trial
 // ======================================================================
 
-// MODIFICADO: Adicionamos 'checkUserStatus' para a notificação do trial
 import { verificarAcesso, checkUserStatus } from "./userService.js"; 
 import { showCustomAlert } from "./custom-alert.js";
-
-// Seus imports originais do Firebase e da IA (mantidos)
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-// Total de horários disponíveis no dia (mantido)
 const totalSlots = 20;
-
-// --- FUNÇÕES DE LÓGICA E DADOS (NENHUMA ALTERAÇÃO) ---
 
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
@@ -83,8 +77,6 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     return dataInicial;
 }
 
-// --- FUNÇÕES DE CÁLCULO (NENHUMA ALTERAÇÃO) ---
-
 function calcularServicosDestaque(agsDoDia) {
     const servicosContados = agsDoDia.reduce((acc, ag) => {
         const nome = ag.servicoNome || "N/A";
@@ -122,9 +114,6 @@ function calcularSugestaoIA(agsDoDia) {
         return "O dia está movimentado! Prepare-se para um dia produtivo.";
     }
 }
-
-
-// --- FUNÇÕES DE RENDERIZAÇÃO (NENHUMA ALTERAÇÃO) ---
 
 function preencherAgendaDoDia(agsDoDia) {
     const agendaContainer = document.getElementById("agenda-resultado");
@@ -195,9 +184,6 @@ function preencherResumoInteligente(resumoInteligente) {
     el.innerHTML = resumoHtml;
 }
 
-
-// --- FUNÇÃO PRINCIPAL PARA PREENCHER O DASHBOARD (sem alterações) ---
-
 async function preencherDashboard(user, dataSelecionada, empresaId) {
     if (!empresaId) {
         alert("ID da Empresa não encontrado.");
@@ -208,6 +194,9 @@ async function preencherDashboard(user, dataSelecionada, empresaId) {
         const agQuery = query(agCollection, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
         const agSnap = await getDocs(agQuery);
         const agsDoDia = agSnap.docs.map(doc => doc.data());
+
+        // LOGS PARA AJUDAR NA VALIDAÇÃO DOS CARDS
+        console.log('Agendamentos do dia:', agsDoDia);
 
         preencherAgendaDoDia(agsDoDia);
         preencherCardServico(calcularServicosDestaque(agsDoDia));
@@ -220,9 +209,12 @@ async function preencherDashboard(user, dataSelecionada, empresaId) {
                 inicio: ag.inicio || `${ag.data}T${ag.horario}:00`,
                 fim: ag.fim || `${ag.data}T${ag.horarioFim || ag.horario}:00`,
                 cliente: ag.cliente ? ag.cliente : (ag.clienteNome || "Cliente"),
-                servico: ag.servico ? ag.servico : (ag.servicoNome || "Serviço")
+                servico: ag.servico ? ag.servico : (ag.servicoNome || "Serviço"),
+                preco: ag.servicoPreco ? Number(ag.servicoPreco) : 0 // importante: garantir o campo de preço
             }))
         );
+        console.log('Resumo Inteligente:', resumoInteligente);
+
         preencherResumoInteligente(resumoInteligente);
 
     } catch (error) {
@@ -230,8 +222,6 @@ async function preencherDashboard(user, dataSelecionada, empresaId) {
         alert("Ocorreu um erro ao carregar os dados do dashboard.");
     }
 }
-
-// --- FUNÇÃO DE DEBOUNCE (sem alterações) ---
 
 function debounce(fn, delay) {
     let timer = null;
@@ -241,42 +231,36 @@ function debounce(fn, delay) {
     };
 }
 
-// --- INICIALIZAÇÃO E EVENTOS ---
-
 window.addEventListener("DOMContentLoaded", async () => {
     try {
-        // 1. Chama o "porteiro". Ele cuida de tudo.
         const { user, perfil, empresaId, isOwner } = await verificarAcesso();
 
         console.log("Acesso ao Dashboard liberado para:", perfil.nome);
 
-        // 2. Inicia a lógica principal do dashboard.
         iniciarDashboard(user, empresaId);
 
-        // ==========================================================
-        // ADICIONADO: Lógica para exibir a notificação do trial
-        // Só exibe para o dono da empresa.
-        // ==========================================================
+        // NOTIFICAÇÃO DO TRIAL COM DIAS RESTANTES
         if (isOwner) {
             const status = await checkUserStatus();
             if (status.isTrialActive && status.trialEndDate) {
                 const banner = document.getElementById('trial-notification-banner');
                 if (banner) {
-                   const dataFinal = status.trialEndDate.toLocaleDateString('pt-BR');
-                   banner.innerHTML = `🎉 Bem-vindo! Seu período de teste gratuito está ativo e termina em <strong>${dataFinal}</strong>.`;
-                   banner.style.display = 'block';
+                    const hoje = new Date();
+                    const trialEnd = (status.trialEndDate instanceof Date) ? status.trialEndDate : new Date(status.trialEndDate);
+                    const diffTime = trialEnd - hoje;
+                    const diasRestantes = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                    const dataFinal = trialEnd.toLocaleDateString('pt-BR');
+                    banner.innerHTML = `🎉 Bem-vindo! Seu período de teste gratuito está ativo até <strong>${dataFinal}</strong> (${diasRestantes} dia${diasRestantes === 1 ? '' : 's'} restante${diasRestantes === 1 ? '' : 's'}).`;
+                    banner.style.display = 'block';
                 }
             }
         }
 
     } catch (error) {
-        // Se o acesso foi negado, o usuário já foi redirecionado.
         console.error("Acesso ao Dashboard bloqueado pelo porteiro:", error.message);
-        // ADICIONADO: Redirecionamento de segurança caso algo dê muito errado.
         window.location.href = 'login.html';
     }
     
-    // Seu código de evento original (mantido)
     const btnVoltar = document.getElementById('btn-voltar');
     if (btnVoltar) {
         btnVoltar.addEventListener('click', () => {
@@ -285,7 +269,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// Função para encapsular a lógica original do dashboard (sem alterações)
 async function iniciarDashboard(user, empresaId) {
     const filtroData = document.getElementById("filtro-data");
     
