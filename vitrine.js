@@ -4,6 +4,7 @@ import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, b
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
+// --- INICIALIZAÇÃO (sem alterações) ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
@@ -27,11 +28,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// --- CONFIGURAÇÃO DE EVENTOS ---
 function configurarEventosGerais() {
     document.querySelector('.sidebar-menu')?.addEventListener('click', handleMenuClick);
     document.querySelector('.bottom-nav-vitrine')?.addEventListener('click', handleMenuClick);
     document.getElementById('lista-profissionais').addEventListener('click', handleProfissionalClick);
     document.getElementById('lista-servicos').addEventListener('click', handleServicoClick);
+    // NOVO: Listener para o botão de prosseguir
+    document.getElementById('btn-prosseguir-data')?.addEventListener('click', handleProsseguirDataClick);
     document.getElementById('data-agendamento').addEventListener('change', handleDataChange);
     document.getElementById('grade-horarios').addEventListener('click', handleHorarioClick);
     document.getElementById('btn-login')?.addEventListener('click', fazerLogin);
@@ -42,6 +46,7 @@ function configurarEventosGerais() {
     document.getElementById('lista-agendamentos-visualizacao').addEventListener('click', handleCancelarClick);
 }
 
+// --- HANDLERS ---
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
@@ -84,9 +89,17 @@ async function handleProfissionalClick(e) {
     try {
         profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
         setAgendamento('profissional', profissional);
+        
+        // NOVO: Verifica se o profissional permite múltiplos serviços
+        const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
+        
         const servicosDoProfissional = (profissional.servicos || []).map(servicoId => state.todosOsServicos.find(servico => servico.id === servicoId)).filter(Boolean);
+        
         UI.mostrarContainerForm(true);
-        UI.renderizarServicos(servicosDoProfissional);
+        // NOVO: Informa a UI qual modo de renderização usar
+        UI.renderizarServicos(servicosDoProfissional, permiteMultiplos);
+        UI.configurarModoAgendamento(permiteMultiplos);
+
     } catch (error) {
         console.error("Erro ao buscar horários do profissional:", error);
         await UI.mostrarAlerta("Erro", "Não foi possível carregar os dados deste profissional.");
@@ -99,30 +112,71 @@ async function handleServicoClick(e) {
     const card = e.target.closest('.card-servico');
     if (!card) return;
 
-    // ================== CORREÇÃO APLICADA AQUI ==================
-    // Adiciona uma verificação para garantir que um profissional foi selecionado primeiro.
     if (!state.agendamento.profissional) {
         await UI.mostrarAlerta("Atenção", "Por favor, selecione um profissional antes de escolher um serviço.");
-        return; // Interrompe a execução da função para evitar o erro.
+        return;
     }
-    // ==========================================================
 
-    setAgendamento('data', null); setAgendamento('horario', null);
-    UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
+    const permiteMultiplos = state.agendamento.profissional.horarios?.permitirAgendamentoMultiplo || false;
     const servicoId = card.dataset.id;
-    const servico = state.todosOsServicos.find(s => s.id === servicoId);
-    setAgendamento('servico', servico);
-    UI.selecionarCard('servico', servicoId);
+
+    if (permiteMultiplos) {
+        // --- LÓGICA NOVA PARA MÚLTIPLOS SERVIÇOS ---
+        card.classList.toggle('selecionado');
+        const servicosSelecionadosIds = Array.from(document.querySelectorAll('.card-servico.selecionado')).map(el => el.dataset.id);
+        const servicosSelecionados = servicosSelecionadosIds.map(id => state.todosOsServicos.find(s => s.id === id));
+        setAgendamento('servicos', servicosSelecionados); // Guarda a lista de serviços
+        UI.atualizarResumoAgendamento(servicosSelecionados);
+    } else {
+        // --- LÓGICA ANTIGA E INTACTA PARA SERVIÇO ÚNICO ---
+        UI.selecionarCard('servico', servicoId);
+        setAgendamento('data', null); setAgendamento('horario', null);
+        UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
+        const servico = state.todosOsServicos.find(s => s.id === servicoId);
+        setAgendamento('servico', servico);
+        document.getElementById('data-e-horario-container').style.display = 'block';
+        UI.atualizarStatusData(true, 'A procurar a data mais próxima com vagas...');
+        try {
+            const primeiraDataDisponivel = await encontrarPrimeiraDataComSlots(state.empresaId, state.agendamento.profissional, servico.duracao);
+            if (primeiraDataDisponivel) {
+                const dataInput = document.getElementById('data-agendamento');
+                dataInput.value = primeiraDataDisponivel;
+                dataInput.disabled = false;
+                dataInput.dispatchEvent(new Event('change'));
+            } else {
+                UI.renderizarHorarios([], 'Nenhuma data disponível para este profissional nos próximos 3 meses.');
+                UI.atualizarStatusData(false);
+            }
+        } catch(error) {
+            console.error("Erro ao encontrar data disponível:", error);
+            await UI.mostrarAlerta("Erro", "Ocorreu um problema ao verificar a disponibilidade.");
+            UI.atualizarStatusData(false);
+        }
+    }
+}
+
+// NOVO: Handler para o botão "Escolher Data e Horário"
+async function handleProsseguirDataClick() {
+    const servicos = state.agendamento.servicos;
+    if (!servicos || servicos.length === 0) {
+        await UI.mostrarAlerta("Atenção", "Selecione pelo menos um serviço para continuar.");
+        return;
+    }
+    
+    document.getElementById('data-e-horario-container').style.display = 'block';
     UI.atualizarStatusData(true, 'A procurar a data mais próxima com vagas...');
+
+    const duracaoTotal = servicos.reduce((total, s) => total + s.duracao, 0);
+
     try {
-        const primeiraDataDisponivel = await encontrarPrimeiraDataComSlots(state.empresaId, state.agendamento.profissional, servico.duracao);
+        const primeiraDataDisponivel = await encontrarPrimeiraDataComSlots(state.empresaId, state.agendamento.profissional, duracaoTotal);
         if (primeiraDataDisponivel) {
             const dataInput = document.getElementById('data-agendamento');
             dataInput.value = primeiraDataDisponivel;
             dataInput.disabled = false;
             dataInput.dispatchEvent(new Event('change'));
         } else {
-            UI.renderizarHorarios([], 'Nenhuma data disponível para este profissional nos próximos 3 meses.');
+            UI.renderizarHorarios([], 'Nenhuma data disponível para os serviços selecionados nos próximos 3 meses.');
             UI.atualizarStatusData(false);
         }
     } catch(error) {
@@ -132,16 +186,26 @@ async function handleServicoClick(e) {
     }
 }
 
+
 async function handleDataChange(e) {
     setAgendamento('data', e.target.value); setAgendamento('horario', null);
     UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
-    const { profissional, servico, data } = state.agendamento;
-    if (!profissional || !servico || !data) return;
+    
+    const { profissional, servico, servicos, data } = state.agendamento;
+    const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
+    
+    // Calcula a duração total, seja de um serviço ou de vários
+    const duracaoTotal = permiteMultiplos 
+        ? servicos.reduce((total, s) => total + s.duracao, 0)
+        : servico.duracao;
+
+    if (!profissional || duracaoTotal === 0 || !data) return;
+
     UI.renderizarHorarios([], 'A calcular horários...');
     try {
         const todosAgendamentos = await buscarAgendamentosDoDia(state.empresaId, data);
         const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
-        const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, servico.duracao);
+        const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, duracaoTotal);
         UI.renderizarHorarios(slots);
     } catch (error) {
         console.error("Erro ao buscar agendamentos do dia:", error);
@@ -163,17 +227,40 @@ async function handleConfirmarAgendamento() {
         if (UI.abrirModalLogin) UI.abrirModalLogin(); 
         return;
     }
-    const { profissional, servico, data, horario } = state.agendamento;
-    if (!profissional || !servico || !data || !horario) {
-        await UI.mostrarAlerta("Informação Incompleta", "Por favor, selecione profissional, serviço, data e horário.");
+
+    const { profissional, servico, servicos, data, horario } = state.agendamento;
+    const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
+    
+    // Validação para os dois modos
+    const servicoValido = permiteMultiplos ? (servicos && servicos.length > 0) : servico;
+
+    if (!profissional || !servicoValido || !data || !horario) {
+        await UI.mostrarAlerta("Informação Incompleta", "Por favor, selecione profissional, serviço(s), data e horário.");
         return;
     }
+
     const btn = document.getElementById('btn-confirmar-agendamento');
     const textoOriginal = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'A agendar...';
     try {
-        await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
+        // NOVO: Cria um "serviço combinado" para salvar no Firebase
+        let servicoParaSalvar;
+        if (permiteMultiplos) {
+            servicoParaSalvar = {
+                id: servicos.map(s => s.id).join(','),
+                nome: servicos.map(s => s.nome).join(' + '),
+                duracao: servicos.reduce((total, s) => total + s.duracao, 0),
+                preco: servicos.reduce((total, s) => total + s.preco, 0)
+            };
+        } else {
+            servicoParaSalvar = servico;
+        }
+
+        const agendamentoParaSalvar = { ...state.agendamento, servico: servicoParaSalvar };
+
+        await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
+        
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
         await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
         resetarAgendamento();
