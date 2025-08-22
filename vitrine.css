@@ -1,4 +1,3 @@
-
 /* =============================================== */
 /* ESTILOS GERAIS E LAYOUT MODERNO                */
 /* =============================================== */
@@ -841,7 +840,7 @@ input[type="date"]:focus {
 
     input[type="date"] {
         padding: 12px;
-        font-size: 16px; /* Evita zoom no iOS */
+        font-size: 16px;
     }
 
     .btn-submit, #btn-confirmar-agendamento {
