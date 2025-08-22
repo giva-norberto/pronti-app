@@ -26,6 +26,9 @@ function minutesToTimeString(totalMinutes) {
 
 /**
  * Busca todos os agendamentos de uma empresa em uma data específica.
+ * @param {string} empresaId - O ID da empresa.
+ * @param {string} data - A data no formato "AAAA-MM-DD".
+ * @returns {Promise<Array>} Lista de agendamentos do dia.
  */
 export async function buscarAgendamentosDoDia(empresaId, data) {
     try {
@@ -46,11 +49,11 @@ export async function buscarAgendamentosDoDia(empresaId, data) {
 
 /**
  * Calcula os horários (slots) disponíveis para um agendamento.
+ * REFINADO: Não mostra horários passados se a data for hoje.
  */
 export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    // Usar 'Z' no final para tratar a data como UTC e evitar problemas de fuso horário
-    const dataObj = new Date(`${data}T12:00:00Z`); 
+    const dataObj = new Date(`${data}T12:00:00Z`); // Usar Z para tratar como UTC
     const nomeDia = diaDaSemana[dataObj.getUTCDay()];
 
     const diaDeTrabalho = horariosTrabalho?.[nomeDia];
@@ -68,11 +71,7 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
     });
 
     const hoje = new Date();
-    // Comparar as datas em UTC para garantir consistência
-    const ehHoje = hoje.getUTCFullYear() === dataObj.getUTCFullYear() &&
-                   hoje.getUTCMonth() === dataObj.getUTCMonth() &&
-                   hoje.getUTCDate() === dataObj.getUTCDate();
-                   
+    const ehHoje = hoje.toISOString().split('T')[0] === data;
     const minutosAgora = timeStringToMinutes(
         `${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`
     );
@@ -94,19 +93,19 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
                 slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
             }
             // Garante que o loop avance mesmo sem intervalo
-            slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico; 
+            slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico;
         }
     }
     return slotsDisponiveis;
 }
 
 /**
- * Tenta encontrar a próxima data com horários disponíveis.
+ * Tenta encontrar a próxima data com horários disponíveis, a partir de hoje.
  */
 export async function encontrarPrimeiraDataComSlots(empresaId, profissional, duracaoServico) {
     const hoje = new Date();
     for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
-        const dataAtual = new Date();
+        const dataAtual = new Date(hoje);
         dataAtual.setDate(hoje.getDate() + i);
         const dataString = dataAtual.toISOString().split('T')[0];
 
@@ -144,7 +143,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             status: 'ativo',
             criadoEm: serverTimestamp()
         });
-        // Mensagem removida para ser controlada pelo vitrine.js
+        // Mensagem e reload removidos para serem controlados pelo vitrine.js
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         throw new Error('Ocorreu um erro ao confirmar seu agendamento.');
@@ -181,14 +180,14 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
     } catch (error) {
         console.error("Erro ao buscar agendamentos do cliente:", error);
         if (error.code === 'failed-precondition' && error.message.includes("The query requires an index")) {
-            throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
+             throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
         }
         throw error;
     }
 }
 
 /**
- * Cancela um agendamento (muda o status). (REVISADO: SILENCIOSO)
+ * Cancela um agendamento (muda o status para 'cancelado'). (REVISADO: SILENCIOSO)
  */
 export async function cancelarAgendamento(empresaId, agendamentoId) {
     try {
