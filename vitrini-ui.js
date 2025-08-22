@@ -1,9 +1,17 @@
 /**
  * Mostra ou esconde o loader inicial da página.
+ * @param {boolean} mostrar - True para mostrar o loader, false para mostrar o conteúdo.
+ * @param {string} [mensagem] - Mensagem opcional para o loader.
  */
-export function toggleLoader(mostrar) {
-    document.getElementById('vitrine-loader').style.display = mostrar ? 'block' : 'none';
-    document.getElementById('vitrine-content').style.display = mostrar ? 'none' : 'grid';
+export function toggleLoader(mostrar, mensagem = 'A carregar informações do negócio...') {
+    const loader = document.getElementById('vitrine-loader');
+    if (loader && loader.querySelector('p')) {
+        loader.querySelector('p').textContent = mensagem;
+    }
+    if (loader) loader.style.display = mostrar ? 'block' : 'none';
+    
+    const content = document.getElementById('vitrine-content');
+    if(content) content.style.display = mostrar ? 'none' : 'grid';
 }
 
 /**
@@ -87,26 +95,20 @@ export function renderizarHorarios(slots, mensagem = '') {
 }
 
 /**
- * Atualiza a UI de autenticação (a função mais importante para o login).
+ * Atualiza a UI de autenticação.
  */
 export function atualizarUIdeAuth(user) {
-    const loginPromptAgendamento = document.getElementById('agendamento-login-prompt');
-    const loginPromptVisualizacao = document.getElementById('agendamentos-login-prompt');
     const userInfo = document.getElementById('user-info');
     const loginContainer = document.getElementById('btn-login-container');
     const agendamentosContainer = document.getElementById('botoes-agendamento');
-
+    
     if (user) {
-        if(loginPromptAgendamento) loginPromptAgendamento.style.display = 'none';
-        if(loginPromptVisualizacao) loginPromptVisualizacao.style.display = 'none';
         if(agendamentosContainer) agendamentosContainer.style.display = 'flex';
         if(userInfo) userInfo.style.display = 'block';
         if(loginContainer) loginContainer.style.display = 'none';
         document.getElementById('user-photo').src = user.photoURL || 'https://placehold.co/80x80/eef2ff/4f46e5?text=User';
         document.getElementById('user-name').textContent = user.displayName || 'Usuário';
     } else {
-        if(loginPromptAgendamento) loginPromptAgendamento.style.display = 'block';
-        if(loginPromptVisualizacao) loginPromptVisualizacao.style.display = 'block';
         if(agendamentosContainer) agendamentosContainer.style.display = 'none';
         if(userInfo) userInfo.style.display = 'none';
         if(loginContainer) loginContainer.style.display = 'block';
@@ -131,19 +133,22 @@ export function trocarAba(idDaAba) {
 }
 
 /**
- * Seleciona um card (profissional, serviço, horário).
+ * Seleciona um card e opcionalmente mostra um estado de 'loading'.
  */
-export function selecionarCard(tipo, id) {
+export function selecionarCard(tipo, id, isLoading = false) {
     const seletorMap = { profissional: '.card-profissional', servico: '.card-servico', horario: '.btn-horario' };
     const seletor = seletorMap[tipo];
     if (!seletor) return;
 
-    document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado'));
+    document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado', 'loading'));
 
     if (id) {
         const attribute = (tipo === 'horario') ? 'data-horario' : 'data-id';
         const element = document.querySelector(`${seletor}[${attribute}="${id}"]`);
-        if (element) element.classList.add('selecionado');
+        if (element) {
+            element.classList.add('selecionado');
+            if (isLoading) element.classList.add('loading');
+        }
     }
 }
 
@@ -160,14 +165,15 @@ export function mostrarContainerForm(mostrar) {
  */
 export function renderizarAgendamentosComoCards(agendamentos, modo) {
     const container = document.getElementById('lista-agendamentos-visualizacao');
+    if (!container) return;
     container.innerHTML = '';
     if (!agendamentos || agendamentos.length === 0) {
         container.innerHTML = `<p>Você não tem agendamentos ${modo === 'ativos' ? 'futuros' : 'passados'}.</p>`;
         return;
     }
-    agendamentos.sort((a, b) => new Date(a.data) - new Date(b.data));
+    agendamentos.sort((a, b) => new Date(`${a.data}T${a.horario}`) - new Date(`${b.data}T${b.horario}`));
     agendamentos.forEach(ag => {
-        const dataFormatada = new Date(`${ag.data}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const dataFormatada = new Date(`${ag.data}T12:00:00Z`).toLocaleDateString('pt-BR', { timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         container.innerHTML += `
             <div class="card-agendamento status-${ag.status || 'ativo'}">
                 <div class="agendamento-info">
@@ -180,3 +186,71 @@ export function renderizarAgendamentosComoCards(agendamentos, modo) {
         `;
     });
 }
+
+// ======================================================================
+//        FUNÇÕES DE REFINAMENTO (UX) ADICIONADAS
+// ======================================================================
+
+/**
+ * Limpa a seleção de um tipo de card.
+ */
+export function limparSelecao(tipo) {
+    selecionarCard(tipo, null);
+}
+
+/**
+ * Atualiza o status do input de data.
+ */
+export function atualizarStatusData(desabilitarInput, mensagemHorarios = '') {
+    const dataInput = document.getElementById('data-agendamento');
+    if(dataInput) dataInput.disabled = desabilitarInput;
+    renderizarHorarios([], mensagemHorarios);
+}
+
+/**
+ * Seleciona o filtro (Ativos/Histórico).
+ */
+export function selecionarFiltro(modo) {
+    document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('ativo'));
+    const btnId = modo === 'ativos' ? 'btn-ver-ativos' : 'btn-ver-historico';
+    const btn = document.getElementById(btnId);
+    if(btn) btn.classList.add('ativo');
+}
+
+/**
+ * Desabilita o botão de confirmar agendamento.
+ */
+export function desabilitarBotaoConfirmar() {
+    const btn = document.getElementById('btn-confirmar-agendamento');
+    if (btn) btn.disabled = true;
+}
+
+/**
+ * Habilita o botão de confirmar agendamento.
+ */
+export function habilitarBotaoConfirmar() {
+    const btn = document.getElementById('btn-confirmar-agendamento');
+    if (btn) btn.disabled = false;
+}
+
+/**
+ * Mostra/esconde a mensagem de login na tela de agendamento.
+ */
+export function toggleAgendamentoLoginPrompt(mostrar) {
+    const prompt = document.getElementById('agendamento-login-prompt');
+    if (prompt) prompt.style.display = mostrar ? 'block' : 'none';
+}
+
+/**
+ * Mostra a mensagem de login na aba "Meus Agendamentos".
+ */
+export function exibirMensagemDeLoginAgendamentos() {
+    const promptLogin = document.querySelector('#menu-visualizacao #agendamentos-login-prompt');
+    const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
+    const botoesFiltro = document.getElementById('botoes-agendamento');
+    if (promptLogin) promptLogin.style.display = 'block';
+    if (listaAgendamentos) listaAgendamentos.innerHTML = '';
+    if (botoesFiltro) botoesFiltro.style.display = 'none';
+}
+
+/**
