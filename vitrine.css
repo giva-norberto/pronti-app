@@ -1,62 +1,100 @@
+
 /* =============================================== */
-/* ESTILOS GERAIS E LAYOUT                         */
+/* ESTILOS GERAIS E LAYOUT MODERNO                */
 /* =============================================== */
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #F3F4F6;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #374151;
     margin: 0;
+    min-height: 100vh;
+    line-height: 1.6;
 }
 
 /* --- LAYOUT GRID PRINCIPAL --- */
 .vitrine-container {
     max-width: 1200px;
-    margin: 30px auto;
-    padding: 0 15px;
+    margin: 0 auto;
+    padding: 20px 15px;
     display: grid;
-    grid-template-columns: 280px 1fr; /* Sidebar e conteúdo */
+    grid-template-columns: 280px 1fr;
     gap: 30px;
     align-items: start;
+    min-height: 100vh;
 }
+
 .sidebar-vitrine {
-    width: 100%;
-    background-color: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     position: sticky;
-    top: 30px;
+    top: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
 .main-content-vitrine {
     width: 100%;
+    padding-bottom: 20px;
 }
-.menu-content { display: none; }
-.menu-content.ativo { display: block; }
+
+.menu-content { 
+    display: none; 
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.menu-content.ativo { 
+    display: block; 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* =============================================== */
-/* CABEÇALHO E MENU LATERAL                        */
+/* CABEÇALHO E MENU LATERAL MODERNO               */
 /* =============================================== */
 .header-vitrine {
     text-align: center;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #E5E7EB;
+    padding-bottom: 25px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid rgba(79, 70, 229, 0.1);
 }
+
 #logo-publico {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    border: 3px solid rgba(79, 70, 229, 0.2);
+    transition: transform 0.3s ease;
 }
+
+#logo-publico:hover {
+    transform: scale(1.05);
+}
+
 #nome-negocio-publico {
-    font-size: 1.4rem;
-    color: #111827;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1F2937;
     margin: 0;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
+
 .sidebar-menu .menu-btn {
     width: 100%;
-    padding: 12px 20px;
+    padding: 15px 20px;
     border: none;
     background: none;
     text-align: left;
@@ -64,485 +102,845 @@ body {
     font-weight: 600;
     color: #4B5563;
     cursor: pointer;
-    border-radius: 8px;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    margin-bottom: 5px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
 }
+
+.sidebar-menu .menu-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s;
+}
+
+.sidebar-menu .menu-btn:hover::before {
+    left: 100%;
+}
+
 .sidebar-menu .menu-btn:hover:not(.ativo) {
-    background-color: #F3F4F6;
+    background: rgba(79, 70, 229, 0.1);
+    transform: translateX(5px);
 }
+
 .sidebar-menu .menu-btn.ativo {
-    background-color: #4F46E5;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
     color: white;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    transform: translateX(5px);
 }
 
 /* =============================================== */
-/* CARDS E CONTEÚDO PRINCIPAL                      */
+/* CARDS E CONTEÚDO PRINCIPAL MODERNO             */
 /* =============================================== */
 .card {
-    background-color: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    margin-bottom: 20px;
-}
-.card h2 {
-    font-size: 1.5rem;
-    margin-top: 0;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #E5E7EB;
-}
-.form-group {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     margin-bottom: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.card h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(79, 70, 229, 0.1);
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.form-group {
+    margin-bottom: 30px;
+}
+
 .form-group label {
     display: block;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.1rem;
     color: #374151;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
+
 input[type="date"] {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #D1D5DB;
-    border-radius: 8px;
+    padding: 15px;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
     font-size: 1rem;
-    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+input[type="date"]:focus {
+    outline: none;
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 /* =============================================== */
-/* SELEÇÃO DE PROFISSIONAIS                        */
+/* SELEÇÃO DE PROFISSIONAIS MODERNA               */
 /* =============================================== */
 .profissionais-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 20px;
 }
+
 .card-profissional {
-    border: 2px solid #E5E7EB;
-    border-radius: 12px;
-    padding: 15px;
+    border: 2px solid rgba(229, 231, 235, 0.5);
+    border-radius: 16px;
+    padding: 20px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    background: #fff;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
 }
+
+.card-profissional::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.card-profissional:hover::before {
+    opacity: 1;
+}
+
 .card-profissional:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(79, 70, 229, 0.2);
     border-color: #A5B4FC;
 }
+
 .card-profissional.selecionado {
     border-color: #4F46E5;
-    background-color: #EEF2FF;
-    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.1);
-    transform: translateY(-3px);
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+    transform: translateY(-5px);
 }
+
 .card-profissional img {
-    width: 70px;
-    height: 70px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    border: 3px solid rgba(79, 70, 229, 0.2);
+    transition: transform 0.3s ease;
 }
+
+.card-profissional:hover img {
+    transform: scale(1.1);
+}
+
 .card-profissional span {
-    margin: 0;
     font-size: 1rem;
     font-weight: 600;
     color: #1F2937;
+    position: relative;
+    z-index: 1;
 }
+
 #agendamento-form-container {
     margin-top: 2rem;
-    border-top: 1px solid #E5E7EB;
+    border-top: 2px solid rgba(79, 70, 229, 0.1);
     padding-top: 2rem;
 }
 
 /* =============================================== */
-/* SELEÇÃO DE SERVIÇOS E HORÁRIOS                  */
+/* SELEÇÃO DE SERVIÇOS E HORÁRIOS MODERNA         */
 /* =============================================== */
 .servicos-container-cards {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
 }
+
 .card-servico {
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
-    border-radius: 10px;
-    padding: 15px;
+    background: rgba(249, 250, 251, 0.9);
+    border: 2px solid rgba(229, 231, 235, 0.5);
+    border-radius: 16px;
+    padding: 20px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
+    overflow: hidden;
 }
+
+.card-servico::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.card-servico:hover::before {
+    left: 100%;
+}
+
 .card-servico:hover {
     border-color: #C7D2FE;
-    background-color: #EEF2FF;
+    background: rgba(238, 242, 255, 0.9);
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.1);
 }
+
 .card-servico.selecionado {
     border-color: #4F46E5;
-    background-color: #4F46E5;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
     color: white;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
 }
-.servico-nome { font-weight: 600; }
-.servico-detalhes { font-size: 0.9rem; }
-.card-servico.selecionado .servico-detalhes { color: #E0E7FF; }
+
+.servico-nome { 
+    font-weight: 700; 
+    font-size: 1.1rem;
+}
+
+.servico-detalhes { 
+    font-size: 0.9rem; 
+    opacity: 0.8;
+}
+
+.card-servico.selecionado .servico-detalhes { 
+    color: rgba(255, 255, 255, 0.9); 
+}
 
 .horarios-container-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
 }
+
 .btn-horario {
-    background-color: white;
-    border: 1px solid #D1D5DB;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #D1D5DB;
     color: #4B5563;
-    padding: 10px;
-    border-radius: 8px;
+    padding: 15px 10px;
+    border-radius: 12px;
     cursor: pointer;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     font-weight: 600;
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
 }
-.btn-horario:hover:not(.selecionado) {
+
+.btn-horario::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+}
+
+.btn-horario:hover::before {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+}
+
+.btn-horario:hover {
+    color: white;
     border-color: #4F46E5;
-    color: #4F46E5;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
 }
+
+.btn-horario span {
+    position: relative;
+    z-index: 1;
+}
+
 .btn-horario.selecionado {
-    background-color: #4F46E5;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
     border-color: #4F46E5;
     color: white;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    transform: translateY(-3px);
 }
+
 .aviso-horarios {
     color: #6B7280;
     text-align: center;
-    padding: 10px;
+    padding: 20px;
+    font-style: italic;
 }
 
 /* =============================================== */
-/* BOTÕES DE AÇÃO E OUTROS                         */
+/* BOTÕES DE AÇÃO MODERNOS                        */
 /* =============================================== */
 .btn-submit {
-    background: linear-gradient(to right, #8B5CF6, #EC4899);
+    background: linear-gradient(135deg, #8B5CF6, #EC4899);
     color: white;
     border: none;
-    padding: 15px;
-    border-radius: 8px;
+    padding: 18px 25px;
+    border-radius: 12px;
     cursor: pointer;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     width: 100%;
     text-align: center;
     transition: all 0.3s ease;
     margin-top: 1rem;
+    position: relative;
+    overflow: hidden;
 }
+
+.btn-submit::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-submit:hover::before {
+    left: 100%;
+}
+
 .btn-submit:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
 }
+
 #btn-confirmar-agendamento {
-    background: #10B981;
+    background: linear-gradient(135deg, #10B981, #059669);
     color: white;
     border: none;
-    padding: 15px;
-    border-radius: 8px;
+    padding: 18px 25px;
+    border-radius: 12px;
     cursor: pointer;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     width: 100%;
     transition: all 0.3s ease;
     margin-top: 1rem;
+    position: relative;
+    overflow: hidden;
 }
+
+#btn-confirmar-agendamento::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+#btn-confirmar-agendamento:hover::before {
+    left: 100%;
+}
+
 #btn-confirmar-agendamento:hover:not(:disabled) {
-    background: #059669;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
+
 #btn-confirmar-agendamento:disabled {
     background: #E5E7EB;
     color: #9CA3AF;
     cursor: not-allowed;
     transform: none;
-}
-.btn-secondary {
-    /* Estilo para botões secundários, como 'Sair' */
+    box-shadow: none;
 }
 
 /* =============================================== */
-/* ABA "MEUS AGENDAMENTOS"                         */
+/* ABA "MEUS AGENDAMENTOS" MODERNA                */
 /* =============================================== */
 .botoes-agendamento {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 15px;
+    margin-bottom: 25px;
 }
+
 .botoes-agendamento .btn-toggle {
-    background: #F3F4F6;
-    border: 1px solid #E5E7EB;
-    padding: 10px;
+    background: rgba(243, 244, 246, 0.9);
+    border: 2px solid rgba(229, 231, 235, 0.5);
+    padding: 15px 20px;
     cursor: pointer;
     font-weight: 600;
     color: #6B7280;
-    transition: all 0.2s ease;
-    border-radius: 8px;
+    transition: all 0.3s ease;
+    border-radius: 12px;
     flex-grow: 1;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
 }
+
+.botoes-agendamento .btn-toggle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.botoes-agendamento .btn-toggle:hover::before {
+    left: 100%;
+}
+
 .botoes-agendamento .btn-toggle.ativo {
-    background: #4F46E5;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
     color: white;
     border-color: #4F46E5;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
 }
+
 .lista-agendamentos-resultado {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
 }
+
 .card-agendamento {
-    background-color: white;
-    border: 1px solid #E5E7EB;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 231, 235, 0.5);
     border-left: 5px solid #4F46E5;
-    border-radius: 8px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 25px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 20px;
+    transition: all 0.3s ease;
 }
-.card-agendamento.status-cancelado_pelo_cliente { border-left-color: #EF4444; }
-.card-agendamento.status-concluido { border-left-color: #10B981; }
+
+.card-agendamento:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.card-agendamento.status-cancelado_pelo_cliente { 
+    border-left-color: #EF4444; 
+}
+
+.card-agendamento.status-concluido { 
+    border-left-color: #10B981; 
+}
+
 .agendamento-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
+
 .agendamento-info strong {
-    margin: 0;
     font-size: 1.1rem;
+    font-weight: 700;
     color: #111827;
 }
+
 .agendamento-info span, .agendamento-info small {
-    margin: 0;
     color: #6B7280;
     font-size: 0.9rem;
 }
+
 .agendamento-acao .btn-cancelar {
-    background-color: #EF4444;
+    background: linear-gradient(135deg, #EF4444, #DC2626);
     color: white;
     border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
+    border-radius: 10px;
+    padding: 12px 20px;
     cursor: pointer;
     font-weight: 600;
-    transition: background-color 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
+
+.agendamento-acao .btn-cancelar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.agendamento-acao .btn-cancelar:hover::before {
+    left: 100%;
+}
+
 .agendamento-acao .btn-cancelar:hover {
-    background-color: #DC2626;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
 /* =============================================== */
-/* MODAL DE CONFIRMAÇÃO                            */
-/* =============================================== */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(17, 24, 39, 0.6);
-    display: none;
-    justify-content: center; align-items: center;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.modal-overlay.ativo {
-    display: flex;
-    opacity: 1;
-}
-.modal-box {
-    background-color: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    width: 90%; max-width: 400px;
-    text-align: center;
-    transform: translateY(20px) scale(0.95);
-    transition: transform 0.3s ease;
-}
-.modal-overlay.ativo .modal-box { transform: translateY(0) scale(1); }
-.modal-box h3 { margin-top: 0; margin-bottom: 15px; color: #111827; }
-.modal-box p { margin-bottom: 25px; color: #4B5563; line-height: 1.6; }
-.modal-botoes { display: flex; justify-content: center; gap: 15px; }
-.modal-botoes button { border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; }
-#modal-btn-confirmar { background-color: #EF4444; color: white; }
-#modal-btn-confirmar:hover { background-color: #DC2626; }
-#modal-btn-cancelar { background-color: #E5E7EB; color: #4B5563; }
-#modal-btn-cancelar:hover { background-color: #D1D5DB; }
-
-/* =============================================== */
-/* ABA DE INFORMAÇÕES - SERVIÇOS                   */
+/* ABA DE INFORMAÇÕES - SERVIÇOS MODERNA          */
 /* =============================================== */
 #info-servicos {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
 }
+
 .servico-info-item {
-    background-color: #F9FAFB;
-    border: 1px solid #E5E7EB;
-    border-radius: 8px;
-    padding: 15px 20px;
-    transition: all 0.2s ease;
+    background: rgba(249, 250, 251, 0.9);
+    border: 2px solid rgba(229, 231, 235, 0.5);
+    border-radius: 16px;
+    padding: 20px 25px;
+    transition: all 0.3s ease;
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-.servico-info-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-.servico-info-item strong { font-size: 1rem; font-weight: 600; color: #1F2937; }
-.servico-info-item span { color: #4F46E5; font-weight: 600; }
-
-/* =============================================== */
-/* RESPONSIVIDADE                                  */
-/* =============================================== */
-@media (max-width: 900px) {
-    .vitrine-container {
-        flex-direction: column;
-        margin: 15px auto;
-        gap: 20px;
-        display: flex;
-    }
-    .sidebar-vitrine {
-        width: 100%;
-        box-sizing: border-box;
-        position: static;
-    }
+    position: relative;
+    overflow: hidden;
 }
 
-/* ========================= */
-/* MELHORIAS ADICIONAIS      */
-/* ========================= */
-/* MENU HORIZONTAL FIXO */
-.menu-horizontal-vitrine {
-    width: 100%;
-    background: linear-gradient(90deg, #4F46E5 50%, #8B5CF6 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 2px 10px rgba(79,70,229,0.04);
-    position: sticky;
+.servico-info-item::before {
+    content: '';
+    position: absolute;
     top: 0;
-    left: 0;
-    z-index: 100;
-    min-height: 64px;
-}
-.menu-horizontal-vitrine .menu-btn {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 1.08rem;
-    font-weight: 600;
-    padding: 0 26px;
-    height: 64px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    border-bottom: 3px solid transparent;
-}
-.menu-horizontal-vitrine .menu-btn.ativo,
-.menu-horizontal-vitrine .menu-btn:focus {
-    background: rgba(255,255,255,0.12);
-    color: #ffffff;
-    border-bottom: 3px solid #EC4899;
-}
-.menu-horizontal-vitrine .menu-btn:hover:not(.ativo) {
-    background: rgba(255,255,255,0.08);
-    color: #EEF2FF;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+    transition: left 0.5s;
 }
 
-/* BLOCOS DE HORÁRIOS PARA AGENDAMENTO */
-.horarios-profissional-blocos {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-    gap: 18px;
-    margin-top: 24px;
-}
-.horario-bloco {
-    background: #F3F4F6;
-    border: 2px solid #E5E7EB;
-    border-radius: 10px;
-    padding: 18px 0 14px 0;
-    text-align: center;
-    font-weight: 600;
-    font-size: 1.08rem;
-    color: #4F46E5;
-    transition: border-color 0.18s, box-shadow 0.18s;
-    box-shadow: 0 1px 4px rgba(79,70,229,0.04);
-    cursor: pointer;
-}
-.horario-bloco.disponivel {
-    background: #ECFEFF;
-    border-color: #10B981;
-    color: #059669;
-}
-.horario-bloco.indisponivel {
-    background: #F9FAFB;
-    border-color: #E5E7EB;
-    color: #9CA3AF;
-    cursor: not-allowed;
-    opacity: 0.65;
-}
-.horario-bloco.selecionado {
-    border-color: #4F46E5;
-    background: #EEF2FF;
-    color: #4F46E5;
+.servico-info-item:hover::before {
+    left: 100%;
 }
 
-/* RESPONSIVO MENU HORIZONTAL E HORÁRIOS */
-@media (max-width: 900px) {
-    .menu-horizontal-vitrine { min-height: 54px; }
-    .menu-horizontal-vitrine .menu-btn { font-size: 0.98rem; padding: 0 10px; height: 54px;}
-    .horarios-profissional-blocos { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 10px;}
+.servico-info-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    border-color: #A5B4FC;
 }
-/* Bottom Navigation para Mobile */
-@media (max-width: 900px) {
-  .sidebar-vitrine {
-    display: none !important; /* Esconde sidebar em mobile */
-  }
-  .bottom-nav-vitrine {
-    display: flex;
+
+.servico-info-item strong { 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+    color: #1F2937; 
+}
+
+.servico-info-item span { 
+    color: #4F46E5; 
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* =============================================== */
+/* BOTTOM NAVIGATION MODERNA PARA MOBILE          */
+/* =============================================== */
+.bottom-nav-vitrine {
+    display: none;
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    background: #fff;
-    border-top: 1px solid #E5E7EB;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(229, 231, 235, 0.3);
     z-index: 1200;
-    height: 60px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
-  }
-  .bottom-nav-vitrine button {
+    height: 70px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.bottom-nav-vitrine button {
     flex: 1;
     border: none;
     background: none;
-    color: #6366f1;
-    font-size: 1.1rem;
+    color: #6B7280;
+    font-size: 0.9rem;
     font-weight: 600;
     padding: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s;
-    height: 60px;
+    transition: all 0.3s ease;
+    height: 70px;
     cursor: pointer;
-    border-bottom: 3px solid transparent;
-  }
-  .bottom-nav-vitrine button.ativo {
-    color: #EC4899;
-    border-bottom: 3px solid #EC4899;
-    background: #eef2ff;
-  }
-  .main-content-vitrine {
-    padding-bottom: 70px; /* Espaço para o menu não cobrir conteúdo */
-  }
+    position: relative;
+    gap: 4px;
+}
+
+.bottom-nav-vitrine button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.bottom-nav-vitrine button.ativo::before {
+    transform: scaleX(1);
+}
+
+.bottom-nav-vitrine button.ativo {
+    color: #4F46E5;
+    background: rgba(79, 70, 229, 0.05);
+}
+
+.bottom-nav-vitrine button:hover:not(.ativo) {
+    color: #4F46E5;
+    background: rgba(79, 70, 229, 0.03);
+}
+
+.bottom-nav-vitrine button span {
+    font-size: 0.75rem;
+    margin-top: 2px;
+}
+
+/* =============================================== */
+/* RESPONSIVIDADE MODERNA                         */
+/* =============================================== */
+@media (max-width: 900px) {
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-attachment: fixed;
+    }
+
+    .vitrine-container {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 15px;
+        gap: 20px;
+        min-height: 100vh;
+    }
+
+    .sidebar-vitrine {
+        display: none !important;
+    }
+
+    .bottom-nav-vitrine {
+        display: flex;
+    }
+
+    .main-content-vitrine {
+        padding-bottom: 90px;
+    }
+
+    .card {
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 16px;
+    }
+
+    .card h2 {
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+
+    .profissionais-container {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 15px;
+    }
+
+    .card-profissional {
+        padding: 15px;
+    }
+
+    .card-profissional img {
+        width: 60px;
+        height: 60px;
+    }
+
+    .horarios-container-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 12px;
+    }
+
+    .btn-horario {
+        padding: 12px 8px;
+        font-size: 0.9rem;
+    }
+
+    .card-agendamento {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 20px;
+    }
+
+    .agendamento-acao {
+        width: 100%;
+    }
+
+    .agendamento-acao .btn-cancelar {
+        width: 100%;
+        padding: 15px;
+    }
+
+    .botoes-agendamento {
+        gap: 10px;
+    }
+
+    .botoes-agendamento .btn-toggle {
+        padding: 12px 15px;
+        font-size: 0.9rem;
+    }
+
+    .form-group label {
+        font-size: 1rem;
+    }
+
+    input[type="date"] {
+        padding: 12px;
+        font-size: 16px; /* Evita zoom no iOS */
+    }
+
+    .btn-submit, #btn-confirmar-agendamento {
+        padding: 16px 20px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .vitrine-container {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 15px;
+    }
+
+    .profissionais-container {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+    }
+
+    .card-profissional {
+        padding: 12px;
+    }
+
+    .card-profissional img {
+        width: 50px;
+        height: 50px;
+    }
+
+    .card-profissional span {
+        font-size: 0.9rem;
+    }
+
+    .horarios-container-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 10px;
+    }
+
+    .btn-horario {
+        padding: 10px 6px;
+        font-size: 0.85rem;
+    }
+}
+
+/* =============================================== */
+/* ANIMAÇÕES E MICRO-INTERAÇÕES                   */
+/* =============================================== */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.card-profissional.selecionado {
+    animation: pulse 2s infinite;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #4F46E5;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
