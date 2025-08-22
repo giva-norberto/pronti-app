@@ -17,7 +17,6 @@
         background: #f6f8fa;
         margin: 0;
     }
-    /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande. */
     .logo-upload-container img#logo-preview {
         max-width: 120px;
         max-height: 120px;
@@ -205,6 +204,40 @@
         align-items: center;
         justify-content: center;
     }
+    /* CARD ESPECIAL DE BOAS-VINDAS */
+    #boas-vindas-apos-cadastro {
+        display: none;
+        margin: 20px auto 10px auto;
+        max-width: 380px;
+        background: #f4f8ff;
+        border-radius: 18px;
+        box-shadow: 0 2px 16px 0 #21213b0d;
+        padding: 32px 18px 24px 18px;
+        text-align: center;
+        position: relative;
+        z-index: 10;
+    }
+    #boas-vindas-apos-cadastro h2 {
+        font-size: 1.25em;
+        color: #2d3cbc;
+        font-weight: 700;
+        margin: 0 0 7px 0;
+    }
+    #boas-vindas-apos-cadastro p {
+        color: #444;
+        margin: 0 0 15px 0;
+    }
+    #boas-vindas-apos-cadastro button {
+        background: #6366f1;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        margin-top: 10px;
+    }
     /* CARD ESPECIAL DE CADASTRO SUCESSO */
     #mensagem-cadastro-sucesso {
         display: none;
@@ -259,7 +292,13 @@
                     </a>
                 </div>
             </div>
-            <!-- CARD ESPECIAL DE CADASTRO SUCESSO -->
+            <!-- CARD DE BOAS-VINDAS APÓS CADASTRO -->
+            <div id="boas-vindas-apos-cadastro">
+                <h2>Seja bem-vindo ao Pronti!</h2>
+                <p>Seu período <strong>FREE</strong> de <strong>15 dias grátis</strong> foi iniciado.</p>
+                <button id="fechar-boas-vindas">OK</button>
+            </div>
+            <!-- CARD ESPECIAL DE CADASTRO SUCESSO (opcional, pode remover se não usar) -->
             <div id="mensagem-cadastro-sucesso"></div>
             <!-- Card padrão do plano free -->
             <div id="mensagem-free" style="display:none; margin:20px auto; max-width:560px; background:#e0e7ff; color:#3730a3; border-radius:10px; padding:12px 18px; text-align:center; font-weight:bold;">
