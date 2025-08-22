@@ -88,7 +88,25 @@ async function handleProfissionalClick(e) {
     if (!card) return;
 
     resetarAgendamento();
-    UI.resetFormSelecoes();
+    // Revisado: Substituir pelo reset correto das seleções do formulário
+    if (typeof UI.resetFormSelecoes === "function") {
+        UI.resetFormSelecoes();
+    } else {
+        // fallback: limpa seleções de serviço, horário e oculta formulário
+        if (typeof UI.limparSelecao === "function") {
+            UI.limparSelecao('servico');
+            UI.limparSelecao('horario');
+        }
+        if (typeof UI.mostrarContainerForm === "function") {
+            UI.mostrarContainerForm(false);
+        }
+        if (typeof UI.renderizarServicos === "function") {
+            UI.renderizarServicos([]);
+        }
+        if (typeof UI.renderizarHorarios === "function") {
+            UI.renderizarHorarios([]);
+        }
+    }
 
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
