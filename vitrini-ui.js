@@ -254,3 +254,91 @@ export function exibirMensagemDeLoginAgendamentos() {
 }
 
 /**
+ * Força a abertura do modal de login.
+ */
+export function abrirModalLogin() {
+    const modal = document.getElementById('modal-auth-janela');
+    if (modal) {
+        document.getElementById('modal-auth-cadastro').style.display = 'none';
+        document.getElementById('modal-auth-login').style.display = 'block';
+        modal.style.display = 'flex';
+    }
+}
+
+/**
+ * Mostra um alerta com uma mensagem de sucesso, usando o modal customizado.
+ */
+export async function mostrarAlerta(titulo, mensagem) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('custom-confirm-modal');
+        const tituloEl = document.getElementById('modal-titulo');
+        const mensagemEl = document.getElementById('modal-mensagem');
+        const btnConfirmar = document.getElementById('modal-btn-confirmar');
+        const btnCancelar = document.getElementById('modal-btn-cancelar');
+
+        if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
+            alert(mensagem);
+            resolve();
+            return;
+        }
+
+        tituloEl.textContent = titulo;
+        mensagemEl.textContent = mensagem;
+        btnCancelar.style.display = 'none';
+        btnConfirmar.textContent = 'OK';
+        modal.style.display = 'flex';
+
+        const onConfirmar = () => {
+            modal.style.display = 'none';
+            btnCancelar.style.display = 'inline-block';
+            btnConfirmar.textContent = 'Confirmar';
+            resolve();
+        };
+
+        const novoBtnConfirmar = btnConfirmar.cloneNode(true);
+        btnConfirmar.parentNode.replaceChild(novoBtnConfirmar, btnConfirmar);
+        novoBtnConfirmar.addEventListener('click', onConfirmar, { once: true });
+    });
+}
+
+/**
+ * Mostra um modal de confirmação customizado (Sim/Não).
+ */
+export function mostrarConfirmacao(titulo, mensagem) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-confirm-modal');
+        const tituloEl = document.getElementById('modal-titulo');
+        const mensagemEl = document.getElementById('modal-mensagem');
+        const btnConfirmar = document.getElementById('modal-btn-confirmar');
+        const btnCancelar = document.getElementById('modal-btn-cancelar');
+
+        if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
+            resolve(confirm(mensagem));
+            return;
+        }
+
+        tituloEl.textContent = titulo;
+        mensagemEl.textContent = mensagem;
+        btnCancelar.style.display = 'inline-block';
+        btnConfirmar.textContent = 'Confirmar';
+        modal.style.display = 'flex';
+        
+        const onConfirmar = () => {
+            modal.style.display = 'none';
+            resolve(true);
+        };
+
+        const onCancelar = () => {
+            modal.style.display = 'none';
+            resolve(false);
+        };
+        
+        const novoBtnConfirmar = btnConfirmar.cloneNode(true);
+        btnConfirmar.parentNode.replaceChild(novoBtnConfirmar, btnConfirmar);
+        novoBtnConfirmar.addEventListener('click', onConfirmar, { once: true });
+        
+        const novoBtnCancelar = btnCancelar.cloneNode(true);
+        btnCancelar.parentNode.replaceChild(novoBtnCancelar, btnCancelar);
+        novoBtnCancelar.addEventListener('click', onCancelar, { once: true });
+    });
+}
