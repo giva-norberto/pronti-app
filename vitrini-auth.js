@@ -1,11 +1,15 @@
-// RESPONSABILIDADE: Interagir com o Firebase Authentication e
-// notificar a aplicação sobre mudanças no estado de login.
+// ======================================================================
+//          VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO
+//      Responsabilidade: Gerir o login, logout e o estado do
+//                      utilizador na vitrine.
+// ======================================================================
 
 import { auth, provider, db } from './vitrini-firebase.js';
 
 import { 
     onAuthStateChanged, 
-    signInWithPopup, 
+    signInWithRedirect, // <-- ALTERADO para ser compatível com telemóveis
+    getRedirectResult,  // <-- NOVO para processar o login após o redirecionamento
     signOut,
     setPersistence,
     browserLocalPersistence,
@@ -32,32 +36,53 @@ export function setupAuthListener(callback) {
         console.error("Firebase Auth não carregado corretamente.");
         return;
     }
+    
+    // Este listener continua a ser o principal para atualizar a UI
     onAuthStateChanged(auth, (user) => {
         if (typeof callback === 'function') {
             callback(user);
         }
     });
+
+    // ======================================================================
+    //   NOVO: LÓGICA PARA PROCESSAR O LOGIN APÓS O REDIRECIONAMENTO
+    // ======================================================================
+    // Isto é executado quando a página recarrega após o utilizador voltar do Google.
+    getRedirectResult(auth).then(async (result) => {
+        if (result && result.user) {
+            // Se o login foi bem-sucedido, executamos a sua lógica de verificação de dados aqui.
+            await garantirDadosCompletos(result.user);
+        }
+    }).catch(error => {
+        console.error("Erro ao obter resultado do redirecionamento:", error);
+    });
 }
 
 /**
- * Inicia o processo de login com o popup do Google e garante a persistência.
- * Se faltar telefone ou nome, pede antes de prosseguir e salva no Firestore.
- * BLOQUEIA o login caso não informe telefone.
+ * Inicia o processo de login com o Google usando o método de redirecionamento.
  */
 export async function fazerLogin() {
     try {
         await setPersistence(auth, browserLocalPersistence);
+        // Apenas inicia o redirecionamento. O resto da lógica acontece no 'getRedirectResult'.
+        await signInWithRedirect(auth, provider);
+    } catch (error) {
+        console.error("Erro ao iniciar o login com redirecionamento:", error);
+        await showAlert("Erro no Login", "Não foi possível iniciar o processo de login.");
+    }
+}
 
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-
-        // Verifica se falta telefone (ou nome, se desejar)
+/**
+ * Função extraída da sua lógica original para verificar e completar os dados do utilizador.
+ * @param {object} user - O objeto do utilizador do Firebase Auth.
+ */
+async function garantirDadosCompletos(user) {
+    try {
         let telefoneFaltando = !user.phoneNumber;
         let nomeFaltando = !user.displayName;
         let telefone = '';
         let nome = '';
 
-        // Busca no Firestore para complementar, caso o Firebase Auth não tenha telefone
         const empresaId = getEmpresaIdFromUrl();
         const clienteDocRef = doc(db, `empresarios/${empresaId}/clientes/${user.uid}`);
         const clienteDocSnap = await getDoc(clienteDocRef);
@@ -67,14 +92,11 @@ export async function fazerLogin() {
             if (dados.nome) nomeFaltando = false;
         }
 
-        // Se faltar telefone ou nome, pede via prompt (ou pode fazer modal customizado)
         if (telefoneFaltando || nomeFaltando) {
-            // Prompt simples, pode trocar por modal customizado na UI
             if (nomeFaltando) {
-                nome = prompt("Informe seu nome completo:");
+                nome = prompt("Informe o seu nome completo:");
                 if (!nome) {
-                    await showAlert("Nome obrigatório", "Seu nome é necessário para concluir o cadastro.");
-                    // Se cancelar nome, faz logout e bloqueia login
+                    await showAlert("Nome obrigatório", "O seu nome é necessário para concluir o cadastro.");
                     await signOut(auth);
                     return;
                 }
@@ -83,32 +105,28 @@ export async function fazerLogin() {
             }
 
             if (telefoneFaltando) {
-                // Loop até informar telefone válido ou cancelar (cancela faz logout!)
                 while (true) {
-                    telefone = prompt("Informe seu telefone (WhatsApp):");
+                    telefone = prompt("Informe o seu telefone (WhatsApp):");
                     if (telefone === null) {
-                        await showAlert("Telefone obrigatório", "Você precisa informar um telefone para continuar.");
-                        // Faz logout e bloqueia login
+                        await showAlert("Telefone obrigatório", "Você precisa de informar um telefone para continuar.");
                         await signOut(auth);
                         return;
                     }
                     if (telefone && telefone.trim()) {
                         telefone = telefone.trim();
-                        // Validação simples de telefone (apenas números, 9 a 15 dígitos)
                         if (/^\d{9,15}$/.test(telefone.replace(/\D/g, ""))) {
                             break;
                         } else {
                             await showAlert("Telefone inválido", "Digite apenas números. Exemplo: 11999998888");
                         }
                     } else {
-                        await showAlert("Telefone obrigatório", "Você precisa informar um telefone para continuar.");
+                        await showAlert("Telefone obrigatório", "Você precisa de informar um telefone para continuar.");
                     }
                 }
             } else {
                 telefone = user.phoneNumber || (clienteDocSnap.exists() ? clienteDocSnap.data().telefone : "");
             }
 
-            // Atualiza no Firestore
             await setDoc(clienteDocRef, {
                 nome: nome,
                 email: user.email,
@@ -117,12 +135,10 @@ export async function fazerLogin() {
                 atualizadoEm: serverTimestamp()
             }, { merge: true });
 
-            // Opcional: Atualiza também o displayName no auth se desejar
             if (nomeFaltando) {
                 await updateProfile(user, { displayName: nome });
             }
         } else {
-            // Já tem tudo, só garante doc no Firestore (merge)
             await setDoc(clienteDocRef, {
                 nome: user.displayName,
                 email: user.email,
@@ -131,33 +147,29 @@ export async function fazerLogin() {
                 atualizadoEm: serverTimestamp()
             }, { merge: true });
         }
-
     } catch (error) {
-        console.error("Erro no login:", error.message);
-        if (error.code !== 'auth/popup-closed-by-user') {
-            await showAlert("Erro no Login", "Não foi possível fazer o login. Por favor, tente novamente.");
-        }
+        console.error("Erro ao garantir dados completos do utilizador:", error);
     }
 }
 
+
 /**
- * Realiza login com email e senha.
+ * Realiza login com email e senha. (FUNÇÃO ORIGINAL MANTIDA)
  */
 export async function loginComEmailSenha(email, senha) {
     try {
         await setPersistence(auth, browserLocalPersistence);
         const result = await signInWithEmailAndPassword(auth, email, senha);
-        // O listener 'onAuthStateChanged' cuidará da UI
         return result.user;
     } catch (error) {
         console.error("Erro no login por email/senha:", error);
-        await showAlert("Erro no Login", "Email ou senha inválidos, ou erro ao acessar sua conta.");
+        await showAlert("Erro no Login", "Email ou senha inválidos, ou erro ao aceder à sua conta.");
         throw error;
     }
 }
 
 /**
- * Realiza cadastro com email, senha, nome e telefone.
+ * Realiza cadastro com email, senha, nome e telefone. (FUNÇÃO ORIGINAL MANTIDA)
  */
 export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
     try {
@@ -165,7 +177,6 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
         const result = await createUserWithEmailAndPassword(auth, email, senha);
         await updateProfile(result.user, { displayName: nome });
 
-        // Salva dados no Firestore
         const empresaId = getEmpresaIdFromUrl();
         const clienteDocRef = doc(db, `empresarios/${empresaId}/clientes/${result.user.uid}`);
         await setDoc(clienteDocRef, {
@@ -187,12 +198,11 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
 }
 
 /**
- * Inicia o processo de logout do usuário.
+ * Inicia o processo de logout do usuário. (FUNÇÃO ORIGINAL MANTIDA)
  */
 export async function fazerLogout() {
     try {
         await signOut(auth);
-        // O listener 'onAuthStateChanged' cuidará de atualizar a UI.
     } catch (error) {
         console.error("Erro no logout:", error);
         await showAlert("Erro", "Ocorreu um erro ao tentar sair da conta.");
@@ -200,7 +210,7 @@ export async function fazerLogout() {
 }
 
 /**
- * Utilitário: busca empresaId da URL (?empresa=xxxx)
+ * Utilitário: busca empresaId da URL (?empresa=xxxx) (FUNÇÃO ORIGINAL MANTIDA)
  */
 function getEmpresaIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
