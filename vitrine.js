@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         UI.renderizarProfissionais(state.listaProfissionais);
         
         configurarEventosGerais();
-        setupAuthListener(handleUserAuthStateChange);
+        setupAuthListener(handleUserAuthStateChange); // garante login persistente
 
         UI.toggleLoader(false);
 
@@ -52,7 +52,7 @@ function configurarEventosGerais() {
     document.getElementById('grade-horarios').addEventListener('click', handleHorarioClick);
     document.getElementById('btn-login')?.addEventListener('click', fazerLogin);
     document.getElementById('modal-auth-btn-google')?.addEventListener('click', fazerLogin);
-    document.getElementById('btn-logout').addEventListener('click', fazerLogout);
+    document.getElementById('btn-logout')?.addEventListener('click', fazerLogout);
     document.getElementById('btn-confirmar-agendamento').addEventListener('click', handleConfirmarAgendamento);
     document.getElementById('botoes-agendamento').addEventListener('click', handleFiltroAgendamentos);
     document.getElementById('lista-agendamentos-visualizacao').addEventListener('click', handleCancelarClick);
@@ -63,8 +63,8 @@ function configurarEventosGerais() {
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
-    
-    // Somente atualiza prompts quando realmente for necessário
+
+    // Atualiza visualização de agendamentos apenas se estiver na aba correta
     if (user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
         handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
     }
@@ -72,26 +72,21 @@ function handleUserAuthStateChange(user) {
 
 function handleMenuClick(e) {
     const menuButton = e.target.closest('[data-menu]');
-    if (menuButton) {
-        const menuKey = menuButton.getAttribute('data-menu');
-        
-        UI.trocarAba(`menu-${menuKey}`);
+    if (!menuButton) return;
 
-        // Visualização de agendamentos requer login
-        if (menuKey === 'visualizacao') {
-            if (state.currentUser) {
-                handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
-            } else {
-                if (UI.exibirMensagemDeLoginAgendamentos) {
-                    UI.exibirMensagemDeLoginAgendamentos();
-                }
-            }
-        }
+    const menuKey = menuButton.getAttribute('data-menu');
+    UI.trocarAba(`menu-${menuKey}`);
 
-        // Aba "agendar" não exige login até tentar confirmar
-        if (menuKey === 'agendar') {
-            UI.toggleAgendamentoLoginPrompt(false);
+    if (menuKey === 'visualizacao') {
+        if (state.currentUser) {
+            handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+        } else {
+            if (UI.exibirMensagemDeLoginAgendamentos) UI.exibirMensagemDeLoginAgendamentos();
         }
+    }
+
+    if (menuKey === 'agendar') {
+        UI.toggleAgendamentoLoginPrompt(false);
     }
 }
 
@@ -144,7 +139,6 @@ async function handleServicoClick(e) {
     setAgendamento('servico', servico);
     
     UI.selecionarCard('servico', servicoId);
-    
     UI.atualizarStatusData(true, 'A procurar a data mais próxima com vagas...');
 
     try {
@@ -223,11 +217,10 @@ async function handleConfirmarAgendamento() {
         UI.limparSelecao('servico');
         UI.limparSelecao('horario');
         UI.mostrarContainerForm(false);
-        btn.disabled = false;
-        btn.textContent = textoOriginal;
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         UI.showAlert("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
+    } finally {
         btn.disabled = false;
         btn.textContent = textoOriginal;
     }
@@ -255,29 +248,30 @@ async function handleFiltroAgendamentos(e) {
 
 async function handleCancelarClick(e) {
     const btnCancelar = e.target.closest('.btn-cancelar');
-    if (btnCancelar) {
-        if (!state.currentUser) {
-            UI.showAlert("Login Necessário", "Você precisa fazer login para cancelar um agendamento.", "info");
-            if (UI.abrirModalLogin) UI.abrirModalLogin(); 
-            return;
-        }
+    if (!btnCancelar) return;
 
-        const agendamentoId = btnCancelar.dataset.id;
-        const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
-        
-        if (confirmou) {
-            btnCancelar.disabled = true;
-            btnCancelar.textContent = "A cancelar...";
-            try {
-                await cancelarAgendamento(state.empresaId, agendamentoId);
-                UI.showAlert("Sucesso", "Agendamento cancelado com sucesso!");
-                handleFiltroAgendamentos({ target: document.querySelector('#botoes-agendamento .btn-toggle.ativo') });
-            } catch (error) {
-                console.error("Erro ao cancelar agendamento:", error);
-                UI.showAlert("Erro", `Não foi possível cancelar o agendamento. ${error.message}`);
-                btnCancelar.disabled = false;
-                btnCancelar.textContent = "Cancelar";
-            }
-        }
+    if (!state.currentUser) {
+        UI.showAlert("Login Necessário", "Você precisa fazer login para cancelar um agendamento.", "info");
+        if (UI.abrirModalLogin) UI.abrirModalLogin(); 
+        return;
+    }
+
+    const agendamentoId = btnCancelar.dataset.id;
+    const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
+    
+    if (!confirmou) return;
+
+    btnCancelar.disabled = true;
+    btnCancelar.textContent = "A cancelar...";
+    try {
+        await cancelarAgendamento(state.empresaId, agendamentoId);
+        UI.showAlert("Sucesso", "Agendamento cancelado com sucesso!");
+        handleFiltroAgendamentos({ target: document.querySelector('#botoes-agendamento .btn-toggle.ativo') });
+    } catch (error) {
+        console.error("Erro ao cancelar agendamento:", error);
+        UI.showAlert("Erro", `Não foi possível cancelar o agendamento. ${error.message}`);
+    } finally {
+        btnCancelar.disabled = false;
+        btnCancelar.textContent = "Cancelar";
     }
 }
