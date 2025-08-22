@@ -1,9 +1,8 @@
 // ======================================================================
-//        VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO (REVISADO E CORRIGIDO)
+//        VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO (REVISADO)
 // ======================================================================
 
 import { auth, provider, db } from './vitrini-firebase.js';
-import { state, setCurrentUser } from './vitrini-state.js';
 import { 
     onAuthStateChanged, 
     signInWithPopup,
@@ -16,16 +15,23 @@ import {
     createUserWithEmailAndPassword,
     updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+    doc,
+    setDoc,
+    getDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 import { showAlert } from './vitrini-utils.js';
 
 // ======================================================================
-// GARANTE PERSISTÊNCIA DE LOGIN
+//   GARANTE PERSISTÊNCIA DE LOGIN (executa logo no início)
 // ======================================================================
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 // ======================================================================
-// MODAL DE DADOS EXTRAS
+//   FUNÇÃO DO MODAL DE DADOS EXTRAS
 // ======================================================================
 function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
     return new Promise((resolve, reject) => {
@@ -45,6 +51,7 @@ function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
 
         nomeInput.value = dadosAtuais.nome || '';
         telefoneInput.value = dadosAtuais.telefone || '';
+        
         if(nomeInput.value) { telefoneInput.focus(); } else { nomeInput.focus(); }
 
         const aoSubmeter = (e) => {
@@ -77,22 +84,50 @@ function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
 }
 
 // ======================================================================
-// UTILITÁRIOS
+//   LÓGICA PRINCIPAL DE AUTENTICAÇÃO
 // ======================================================================
+
 function isMobile() {
     return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 }
 
-function getEmpresaIdFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('empresa');
-    if (id) localStorage.setItem("empresaId", id);
-    return id || localStorage.getItem("empresaId");
+/**
+ * Listener principal: garante que currentUser seja atualizado corretamente.
+ */
+export function setupAuthListener(callback) {
+    getRedirectResult(auth)
+        .catch(error => console.error("Erro no redirect result:", error))
+        .finally(() => {
+            onAuthStateChanged(auth, async (user) => {
+                if(user) {
+                    await garantirDadosCompletos(user);
+                }
+                if (typeof callback === 'function') {
+                    callback(user);
+                }
+            });
+        });
 }
 
-// ======================================================================
-// Garante que o usuário tenha dados completos no Firestore
-// ======================================================================
+/**
+ * Executa login Google apenas quando realmente necessário (ex: agendar).
+ */
+export async function fazerLogin() {
+    try {
+        if (isMobile()) {
+            await signInWithRedirect(auth, provider);
+        } else {
+            const result = await signInWithPopup(auth, provider);
+            if (result && result.user) {
+                await garantirDadosCompletos(result.user);
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao iniciar o login:", error);
+        await showAlert("Erro no Login", "Não foi possível iniciar o processo de login.");
+    }
+}
+
 async function garantirDadosCompletos(user) {
     try {
         const empresaId = getEmpresaIdFromUrl();
@@ -105,85 +140,45 @@ async function garantirDadosCompletos(user) {
         const clienteDocSnap = await getDoc(clienteDocRef);
         const dadosCliente = clienteDocSnap.exists() ? clienteDocSnap.data() : {};
 
+        const nomeFaltando = !user.displayName && !dadosCliente.nome;
+        const telefoneFaltando = !user.phoneNumber && !dadosCliente.telefone;
+
         let nome = user.displayName || dadosCliente.nome || '';
         let telefone = user.phoneNumber || dadosCliente.telefone || '';
-
-        const nomeFaltando = !nome;
-        const telefoneFaltando = !telefone;
 
         if (nomeFaltando || telefoneFaltando) {
             try {
                 const dadosDoModal = await pedirDadosAdicionaisModal({ nome, telefone });
                 nome = dadosDoModal.nome;
                 telefone = dadosDoModal.telefone;
-            } catch (err) {
+            } catch (error) {
                 await showAlert("Cadastro incompleto", "É necessário preencher os seus dados para continuar.");
-                return;
+                return; 
             }
         }
-
+        
         if (nomeFaltando && nome) {
             await updateProfile(user, { displayName: nome });
         }
-
+        
         await setDoc(clienteDocRef, {
             nome: nome.trim(),
             email: user.email,
-            telefone,
+            telefone: telefone,
             google: true,
             criadoEm: dadosCliente.criadoEm || serverTimestamp(),
             ultimoLoginEm: serverTimestamp()
         }, { merge: true });
-
-        // Atualiza o state global
-        setCurrentUser(user);
-
+        
     } catch (error) {
         console.error("Erro ao garantir dados completos do utilizador:", error);
         await showAlert("Erro de Perfil", "Houve um problema ao salvar os dados do seu perfil.");
     }
 }
 
-// ======================================================================
-// LISTENER DE AUTENTICAÇÃO
-// ======================================================================
-export function setupAuthListener(callback) {
-    getRedirectResult(auth)
-        .then(async (result) => {
-            if (result?.user) {
-                await garantirDadosCompletos(result.user);
-            }
-        })
-        .catch(console.error)
-        .finally(() => {
-            onAuthStateChanged(auth, async (user) => {
-                if (user) await garantirDadosCompletos(user);
-                if (typeof callback === 'function') callback(user);
-            });
-        });
-}
-
-// ======================================================================
-// FUNÇÕES DE LOGIN / LOGOUT
-// ======================================================================
-export async function fazerLogin() {
-    try {
-        if (isMobile()) {
-            await signInWithRedirect(auth, provider);
-        } else {
-            const result = await signInWithPopup(auth, provider);
-            if (result?.user) await garantirDadosCompletos(result.user);
-        }
-    } catch (error) {
-        console.error("Erro ao iniciar o login:", error);
-        await showAlert("Erro no Login", "Não foi possível iniciar o processo de login.");
-    }
-}
-
 export async function loginComEmailSenha(email, senha) {
     try {
         const result = await signInWithEmailAndPassword(auth, email, senha);
-        await garantirDadosCompletos(result.user);
         return result.user;
     } catch (error) {
         console.error("Erro no login por email/senha:", error);
@@ -196,12 +191,13 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
     try {
         const result = await createUserWithEmailAndPassword(auth, email, senha);
         await updateProfile(result.user, { displayName: nome });
+
         const empresaId = getEmpresaIdFromUrl();
         const clienteDocRef = doc(db, `empresarios/${empresaId}/clientes/${result.user.uid}`);
         await setDoc(clienteDocRef, {
             nome, email, telefone, google: false, criadoEm: serverTimestamp()
         }, { merge: true });
-        await garantirDadosCompletos(result.user);
+
         return result.user;
     } catch (error) {
         console.error("Erro no cadastro:", error);
@@ -215,9 +211,15 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
 export async function fazerLogout() {
     try {
         await signOut(auth);
-        setCurrentUser(null);
     } catch (error) {
         console.error("Erro no logout:", error);
         await showAlert("Erro", "Ocorreu um erro ao tentar sair da conta.");
     }
+}
+
+function getEmpresaIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('empresa');
+    if (id) localStorage.setItem("empresaId", id);
+    return id || localStorage.getItem("empresaId");
 }
