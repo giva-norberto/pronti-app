@@ -98,6 +98,15 @@ async function handleProfissionalClick(e) {
 async function handleServicoClick(e) {
     const card = e.target.closest('.card-servico');
     if (!card) return;
+
+    // ================== CORREÇÃO APLICADA AQUI ==================
+    // Adiciona uma verificação para garantir que um profissional foi selecionado primeiro.
+    if (!state.agendamento.profissional) {
+        await UI.mostrarAlerta("Atenção", "Por favor, selecione um profissional antes de escolher um serviço.");
+        return; // Interrompe a execução da função para evitar o erro.
+    }
+    // ==========================================================
+
     setAgendamento('data', null); setAgendamento('horario', null);
     UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
     const servicoId = card.dataset.id;
