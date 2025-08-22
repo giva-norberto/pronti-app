@@ -10,79 +10,34 @@ export function toggleLoader(mostrar, mensagem = 'A carregar informações do ne
 }
 
 /**
- * Preenche os dados iniciais da empresa, incluindo as novas informações de contato.
+ * Preenche os dados iniciais da empresa.
  */
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
-    // --- Preenche o cabeçalho ---
     document.getElementById('logo-publico').src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
     document.getElementById('nome-negocio-publico').textContent = dadosEmpresa.nomeFantasia || "Nome do Negócio";
-
-    // --- Preenche a aba "Informações" ---
     document.getElementById('info-negocio').innerHTML = `<p>${dadosEmpresa.descricao || "Descrição não informada."}</p>`;
-    
     const servicosContainer = document.getElementById('info-servicos');
     if (todosOsServicos && todosOsServicos.length > 0) {
-        servicosContainer.innerHTML = todosOsServicos.map(s => `
-            <div class="servico-info-item">
-                <strong>${s.nome}</strong>
-                <span>R$ ${s.preco.toFixed(2)} (${s.duracao} min)</span>
-            </div>
-        `).join('');
+        servicosContainer.innerHTML = todosOsServicos.map(s => `<div class="servico-info-item"><strong>${s.nome}</strong><span>R$ ${s.preco.toFixed(2)} (${s.duracao} min)</span></div>`).join('');
     } else {
         servicosContainer.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
     }
-
-    // --- ATUALIZADO: Preenche a nova secção de Contato e Localização ---
     const contatoContainer = document.getElementById('info-contato');
     let htmlContato = '';
-
-    // Endereço e Mapa
     if (dadosEmpresa.localizacao) {
-        htmlContato += `
-            <div class="info-item">
-                <strong>Endereço:</strong>
-                <p>${dadosEmpresa.localizacao}</p>
-            </div>
-            <div class="info-item">
-                <strong>Localização:</strong>
-                <div id="map-container" style="width: 100%; height: 250px; border-radius: 12px; background-color: #eef2ff; margin-top: 10px; overflow: hidden; border: 1px solid #e0e7ff;">
-                    <iframe
-                        src="https://maps.google.com/maps?q=${encodeURIComponent(dadosEmpresa.localizacao)}&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                        width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
-                </div>
-            </div>
-        `;
+        htmlContato += `<div class="info-item"><strong>Endereço:</strong><p>${dadosEmpresa.localizacao}</p></div><div class="info-item"><strong>Localização:</strong><div id="map-container" style="width: 100%; height: 250px; border-radius: 12px; background-color: #eef2ff; margin-top: 10px; overflow: hidden; border: 1px solid #e0e7ff;"><iframe src="https://maps.google.com/maps?q=${encodeURIComponent(dadosEmpresa.localizacao)}&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div></div>`;
     }
-
-    // Horário de Funcionamento
     if (dadosEmpresa.horarioFuncionamento) {
-        htmlContato += `
-            <div class="info-item">
-                <strong>Horário de Atendimento:</strong>
-                <p style="white-space: pre-wrap;">${dadosEmpresa.horarioFuncionamento}</p>
-            </div>
-        `;
+        htmlContato += `<div class="info-item"><strong>Horário de Atendimento:</strong><p style="white-space: pre-wrap;">${dadosEmpresa.horarioFuncionamento}</p></div>`;
     }
-
-    // Chave PIX
     if (dadosEmpresa.chavePix) {
-        htmlContato += `
-            <div class="info-item">
-                <strong>PIX para Pagamento:</strong>
-                <p>${dadosEmpresa.chavePix}</p>
-            </div>
-        `;
+        htmlContato += `<div class="info-item"><strong>PIX para Pagamento:</strong><p>${dadosEmpresa.chavePix}</p></div>`;
     }
-
-    // Se nenhuma informação de contato foi adicionada
     if (htmlContato === '') {
         htmlContato = '<p>Nenhuma informação de contato adicional foi fornecida.</p>';
     }
-
     contatoContainer.innerHTML = htmlContato;
 }
-
 
 /**
  * Renderiza os cards dos profissionais.
@@ -95,32 +50,47 @@ export function renderizarProfissionais(profissionais) {
         return;
     }
     profissionais.forEach(p => {
-        container.innerHTML += `
-            <div class="card-profissional" data-id="${p.id}">
-                <img src="${p.fotoUrl || 'https://placehold.co/80x80/eef2ff/4f46e5?text=P'}" alt="${p.nome}">
-                <span>${p.nome}</span>
-            </div>
-        `;
+        container.innerHTML += `<div class="card-profissional" data-id="${p.id}"><img src="${p.fotoUrl || 'https://placehold.co/80x80/eef2ff/4f46e5?text=P'}" alt="${p.nome}"><span>${p.nome}</span></div>`;
     });
 }
 
 /**
- * Renderiza os cards de serviços.
+ * REVISADO: Renderiza os cards de serviços, adaptando para seleção única ou múltipla.
+ * @param {Array} servicos - Lista de serviços.
+ * @param {boolean} permiteMultiplos - Se o profissional permite múltiplos serviços.
  */
-export function renderizarServicos(servicos) {
+export function renderizarServicos(servicos, permiteMultiplos = false) {
     const container = document.getElementById('lista-servicos');
     container.innerHTML = '';
+    // Adiciona uma classe para estilização condicional
+    container.className = permiteMultiplos ? 'servicos-container-cards multi-select' : 'servicos-container-cards';
+
     if (!servicos || servicos.length === 0) {
         container.innerHTML = '<p>Este profissional não oferece serviços.</p>';
         return;
     }
+
     servicos.forEach(s => {
-        container.innerHTML += `
-            <div class="card-servico" data-id="${s.id}">
-                <span class="servico-nome">${s.nome}</span>
-                <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
-            </div>
-        `;
+        if (permiteMultiplos) {
+            // Renderiza como um <label> com um checkmark visual para seleção múltipla
+            container.innerHTML += `
+                <label class="card-servico card-checkbox" data-id="${s.id}">
+                    <div class="servico-info-multi">
+                        <span class="servico-nome">${s.nome}</span>
+                        <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
+                    </div>
+                    <span class="checkmark"></span>
+                </label>
+            `;
+        } else {
+            // Renderiza como <div> para seleção única (comportamento original)
+            container.innerHTML += `
+                <div class="card-servico" data-id="${s.id}">
+                    <span class="servico-nome">${s.nome}</span>
+                    <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
+                </div>
+            `;
+        }
     });
 }
 
@@ -189,13 +159,21 @@ export function selecionarCard(tipo, id, isLoading = false) {
     const seletor = seletorMap[tipo];
     if (!seletor) return;
 
-    document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado', 'loading'));
+    // A lógica para seleção múltipla é diferente, então não limpamos aqui.
+    if (tipo !== 'servico') {
+        document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado', 'loading'));
+    }
 
     if (id) {
         const attribute = (tipo === 'horario') ? 'data-horario' : 'data-id';
         const element = document.querySelector(`${seletor}[${attribute}="${id}"]`);
         if (element) {
-            element.classList.add('selecionado');
+            // Para seleção múltipla, usamos 'toggle' em vez de 'add'
+            if (document.querySelector('#lista-servicos.multi-select')) {
+                element.classList.toggle('selecionado');
+            } else {
+                element.classList.add('selecionado');
+            }
             if (isLoading) element.classList.add('loading');
         }
     }
@@ -320,26 +298,20 @@ export async function mostrarAlerta(titulo, mensagem) {
         const mensagemEl = document.getElementById('modal-mensagem');
         const btnConfirmar = document.getElementById('modal-btn-confirmar');
         const btnCancelar = document.getElementById('modal-btn-cancelar');
-
         if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
-            alert(mensagem);
-            resolve();
-            return;
+            alert(mensagem); resolve(); return;
         }
-
         tituloEl.textContent = titulo;
         mensagemEl.textContent = mensagem;
         btnCancelar.style.display = 'none';
         btnConfirmar.textContent = 'OK';
         modal.style.display = 'flex';
-
         const onConfirmar = () => {
             modal.style.display = 'none';
             btnCancelar.style.display = 'inline-block';
             btnConfirmar.textContent = 'Confirmar';
             resolve();
         };
-
         const novoBtnConfirmar = btnConfirmar.cloneNode(true);
         btnConfirmar.parentNode.replaceChild(novoBtnConfirmar, btnConfirmar);
         novoBtnConfirmar.addEventListener('click', onConfirmar, { once: true });
@@ -356,34 +328,40 @@ export function mostrarConfirmacao(titulo, mensagem) {
         const mensagemEl = document.getElementById('modal-mensagem');
         const btnConfirmar = document.getElementById('modal-btn-confirmar');
         const btnCancelar = document.getElementById('modal-btn-cancelar');
-
         if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
-            resolve(confirm(mensagem));
-            return;
+            resolve(confirm(mensagem)); return;
         }
-
         tituloEl.textContent = titulo;
         mensagemEl.textContent = mensagem;
         btnCancelar.style.display = 'inline-block';
         btnConfirmar.textContent = 'Confirmar';
         modal.style.display = 'flex';
-        
-        const onConfirmar = () => {
-            modal.style.display = 'none';
-            resolve(true);
-        };
-
-        const onCancelar = () => {
-            modal.style.display = 'none';
-            resolve(false);
-        };
-        
+        const onConfirmar = () => { modal.style.display = 'none'; resolve(true); };
+        const onCancelar = () => { modal.style.display = 'none'; resolve(false); };
         const novoBtnConfirmar = btnConfirmar.cloneNode(true);
         btnConfirmar.parentNode.replaceChild(novoBtnConfirmar, btnConfirmar);
         novoBtnConfirmar.addEventListener('click', onConfirmar, { once: true });
-        
         const novoBtnCancelar = btnCancelar.cloneNode(true);
         btnCancelar.parentNode.replaceChild(novoBtnCancelar, btnCancelar);
         novoBtnCancelar.addEventListener('click', onCancelar, { once: true });
     });
+}
+
+/**
+ * NOVO: Atualiza o resumo do agendamento (total de serviços, duração e preço).
+ */
+export function atualizarResumoAgendamento(servicosSelecionados) {
+    const container = document.getElementById('servicos-resumo-container');
+    const textoEl = document.getElementById('resumo-texto');
+
+    if (!container || !textoEl) return;
+
+    if (servicosSelecionados.length > 0) {
+        const duracaoTotal = servicosSelecionados.reduce((acc, s) => acc + s.duracao, 0);
+        const precoTotal = servicosSelecionados.reduce((acc, s) => acc + s.preco, 0);
+        textoEl.innerHTML = `<strong>Resumo:</strong> ${servicosSelecionados.length} serviço(s) | <strong>Duração:</strong> ${duracaoTotal} min | <strong>Total:</strong> R$ ${precoTotal.toFixed(2)}`;
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
 }
