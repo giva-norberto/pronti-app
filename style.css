@@ -1089,3 +1089,96 @@ body.dashboard-body {
     background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
     color: #fff;
 }
+/* =============================================== */
+/*         MODAL DE MENSAGENS "PRONTI"           */
+/* =============================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(30, 60, 114, 0.5);
+    backdrop-filter: blur(8px);
+    display: none; /* Começa escondido */
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeInModal 0.3s ease-out;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-box {
+    max-width: 400px;
+    width: 90%;
+    padding: 36px 28px 32px 28px;
+    border-radius: 22px;
+    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001;
+    background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%);
+    border: 1.5px solid #e3eafc;
+    text-align: center;
+    animation: slideInModal 0.4s ease-out;
+}
+
+@keyframes slideInModal {
+    from { transform: translateY(20px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.modal-box h3 {
+    color: #2563eb;
+    font-weight: 700;
+    font-size: 1.34rem;
+    margin-top: 0;
+    margin-bottom: 18px;
+    letter-spacing: 0.01em;
+}
+
+.modal-box p {
+    font-size: 16px;
+    color: #6b7a90;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.modal-botoes {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.modal-botoes button {
+    flex-grow: 1;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 0;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+#modal-btn-confirmar {
+    background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%);
+    color: #fff;
+    box-shadow: 0 2px 10px #2563eb22;
+}
+
+#modal-btn-confirmar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px #2563eb44;
+}
+
+#modal-btn-cancelar {
+    background-color: #e0e7ff;
+    color: #4338ca;
+}
+
+#modal-btn-cancelar:hover {
+    background-color: #c7d2fe;
+}
