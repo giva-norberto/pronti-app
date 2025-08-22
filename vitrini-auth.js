@@ -1,15 +1,15 @@
 // ======================================================================
-//          VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO
-//      Responsabilidade: Gerir o login, logout e o estado do
-//                      utilizador na vitrine.
+//        VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO (CORRIGIDO)
+//    Responsabilidade: Gerir o login, logout e o estado do
+//                        utilizador na vitrine.
 // ======================================================================
 
 import { auth, provider, db } from './vitrini-firebase.js';
 
 import { 
     onAuthStateChanged, 
-    signInWithRedirect, // <-- CORRETO para compatibilidade com telemóveis
-    getRedirectResult,  // <-- CORRETO para processar o login após o redirecionamento
+    signInWithRedirect,
+    getRedirectResult,
     signOut,
     setPersistence,
     browserLocalPersistence,
@@ -26,6 +26,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { showAlert } from './vitrini-utils.js';
+// NOVO: Importa a função que vai controlar o modal de dados do utilizador
+import { pedirDadosAdicionaisModal } from './vitrine-auth-modal.js';
 
 /**
  * Configura o listener que observa mudanças no estado de autenticação (login/logout).
@@ -37,21 +39,17 @@ export function setupAuthListener(callback) {
         return;
     }
     
-    // Este listener continua a ser o principal para atualizar a UI em tempo real
     onAuthStateChanged(auth, (user) => {
         if (typeof callback === 'function') {
             callback(user);
         }
     });
 
-    // ======================================================================
-    //     LÓGICA PARA PROCESSAR O LOGIN APÓS O REDIRECIONAMENTO
-    // ======================================================================
-    // Isto é executado uma vez quando a página recarrega após o utilizador voltar do Google.
     getRedirectResult(auth).then(async (result) => {
         if (result && result.user) {
-            // Se o login foi bem-sucedido, garantimos que os dados do perfil estão completos.
+            UI.toggleLoader(true, 'A finalizar o seu login...'); // Mostra um loader
             await garantirDadosCompletos(result.user);
+            UI.toggleLoader(false); // Esconde o loader
         }
     }).catch(error => {
         console.error("Erro ao obter resultado do redirecionamento:", error);
@@ -65,7 +63,6 @@ export function setupAuthListener(callback) {
 export async function fazerLogin() {
     try {
         await setPersistence(auth, browserLocalPersistence);
-        // Apenas inicia o redirecionamento. O resto da lógica acontece no 'getRedirectResult'.
         await signInWithRedirect(auth, provider);
     } catch (error) {
         console.error("Erro ao iniciar o login com redirecionamento:", error);
@@ -74,71 +71,44 @@ export async function fazerLogin() {
 }
 
 /**
- * Garante que o perfil do utilizador (tanto no Auth quanto no Firestore) tenha nome e telefone.
- * Pede ao utilizador para completar os dados se necessário.
+ * Garante que o perfil do utilizador tenha nome e telefone, usando um MODAL em vez de 'prompt'.
  * @param {object} user - O objeto do utilizador do Firebase Auth.
  */
 async function garantirDadosCompletos(user) {
     try {
         const empresaId = getEmpresaIdFromUrl();
         if (!empresaId) {
-            console.error("ID da empresa não encontrado na URL para salvar dados do cliente.");
-            await showAlert("Erro Crítico", "Não foi possível identificar a empresa. O seu perfil pode não ter sido salvo corretamente.");
+            await showAlert("Erro Crítico", "ID da empresa não encontrado. O seu perfil não foi salvo.");
             return;
         }
         
         const clienteDocRef = doc(db, `empresarios/${empresaId}/clientes/${user.uid}`);
         const clienteDocSnap = await getDoc(clienteDocRef);
+        const dadosCliente = clienteDocSnap.exists() ? clienteDocSnap.data() : {};
 
-        let dadosCliente = clienteDocSnap.exists() ? clienteDocSnap.data() : {};
-
-        let nomeFaltando = !user.displayName && !dadosCliente.nome;
-        let telefoneFaltando = !user.phoneNumber && !dadosCliente.telefone;
-
-        if (!nomeFaltando && !telefoneFaltando) {
-            // Se os dados já estão completos, apenas garante que o registro existe no Firestore.
-            await setDoc(clienteDocRef, {
-                nome: user.displayName || dadosCliente.nome,
-                email: user.email,
-                telefone: user.phoneNumber || dadosCliente.telefone,
-                google: true,
-                ultimoLoginEm: serverTimestamp()
-            }, { merge: true });
-            return; // Dados completos, não faz mais nada.
-        }
+        const nomeFaltando = !user.displayName && !dadosCliente.nome;
+        const telefoneFaltando = !user.phoneNumber && !dadosCliente.telefone;
 
         let nome = user.displayName || dadosCliente.nome || '';
         let telefone = user.phoneNumber || dadosCliente.telefone || '';
 
-        if (nomeFaltando) {
-            nome = prompt("Para continuar, por favor, informe o seu nome completo:");
-            if (!nome || !nome.trim()) {
-                await showAlert("Nome obrigatório", "O seu nome é necessário para concluir o cadastro. O login será cancelado.");
-                await signOut(auth);
+        // Se os dados estiverem faltando, chama o modal para o utilizador preencher
+        if (nomeFaltando || telefoneFaltando) {
+            try {
+                // Esta função (que você vai criar no passo 2) abre o modal e espera o resultado
+                const dadosDoModal = await pedirDadosAdicionaisModal({ nome, telefone });
+                nome = dadosDoModal.nome;
+                telefone = dadosDoModal.telefone;
+            } catch (error) {
+                // O utilizador fechou o modal ou cancelou
+                await showAlert("Cadastro incompleto", "É necessário preencher os seus dados para continuar.");
+                await signOut(auth); // Desloga o utilizador para não o deixar num estado incompleto
                 return;
             }
         }
-
-        if (telefoneFaltando) {
-            while (true) {
-                telefone = prompt("Ótimo! Agora, por favor, informe o seu melhor telefone (WhatsApp):");
-                if (telefone === null) { // Utilizador clicou em "Cancelar"
-                    await showAlert("Telefone obrigatório", "O telefone é necessário. O login será cancelado.");
-                    await signOut(auth);
-                    return;
-                }
-                const telefoneLimpo = telefone.replace(/\D/g, "");
-                if (/^\d{9,15}$/.test(telefoneLimpo)) {
-                    telefone = telefoneLimpo; // Salva apenas os números
-                    break;
-                } else {
-                    await showAlert("Telefone inválido", "Por favor, digite um telefone válido, apenas com números (Ex: 11999998888).");
-                }
-            }
-        }
         
-        // Atualiza o perfil no Firebase Auth (se necessário)
-        if (nomeFaltando) {
+        // Atualiza o perfil no Firebase Auth se o nome foi preenchido agora
+        if (nomeFaltando && nome) {
             await updateProfile(user, { displayName: nome });
         }
         
@@ -148,11 +118,11 @@ async function garantirDadosCompletos(user) {
             email: user.email,
             telefone: telefone,
             google: true,
-            criadoEm: dadosCliente.criadoEm || serverTimestamp(), // Mantém a data de criação original
+            criadoEm: dadosCliente.criadoEm || serverTimestamp(),
             ultimoLoginEm: serverTimestamp()
         }, { merge: true });
         
-        await showAlert("Sucesso!", "Seu cadastro foi concluído com sucesso.");
+        await showAlert("Sucesso!", "Login realizado e perfil atualizado com sucesso.");
 
     } catch (error) {
         console.error("Erro ao garantir dados completos do utilizador:", error);
@@ -160,6 +130,9 @@ async function garantirDadosCompletos(user) {
     }
 }
 
+// ======================================================================
+//   AS FUNÇÕES ABAIXO FORAM MANTIDAS SEM ALTERAÇÕES
+// ======================================================================
 
 /**
  * Realiza login com email e senha.
@@ -222,5 +195,5 @@ export async function fazerLogout() {
  */
 function getEmpresaIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('empresa'); // Removido "|| 'padrao'" para evitar salvar clientes em uma empresa padrão.
+    return params.get('empresa');
 }
