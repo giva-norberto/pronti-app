@@ -266,11 +266,44 @@
                 Plano atual: FREE
             </div>
             <form id="form-perfil">
+                <!-- ========================================================== -->
+                <!--           SECÇÃO UNIFICADA E COMPLETA                      -->
+                <!-- ========================================================== -->
                 <div class="form-section">
                     <h3>Informações do Negócio</h3>
                     <div class="form-group">
                         <label for="nomeNegocio">Nome do Negócio</label>
                         <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="descricao">Descrição Curta</label>
+                        <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="localizacao">Localização (Google Maps)</label>
+                        <input type="text" id="localizacao" placeholder="Ex: Rua das Flores, 123, São Paulo, SP">
+                        <small style="color:#666; font-size:0.85em;">Digite o endereço completo para exibição na vitrine.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="horarioFuncionamento">Horário de Funcionamento</label>
+                        <textarea id="horarioFuncionamento" rows="3" placeholder="Ex: Seg-Sex 09:00 - 18:00&#10;Sáb 09:00 - 14:00"></textarea>
+                        <small style="color:#666; font-size:0.85em;">Informe os dias e horários de atendimento para exibição na vitrine.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="chavePix">Chave PIX para Pagamentos (Opcional)</label>
+                        <input type="text" id="chavePix" placeholder="O seu email, telefone, CPF/CNPJ ou chave aleatória">
+                    </div>
+                    <div class="form-group">
+                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
+                        <div class="logo-upload-container">
+                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
+                            <div class="logo-upload-actions">
+                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
+                                <button type="button" id="btn-upload-logo" class="btn-upload">
+                                    <i class="fa-regular fa-image"></i> Escolher Arquivo
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group" id="container-link-vitrine" style="display: none;">
                         <label>Link da sua Vitrine Pública</label>
@@ -286,32 +319,15 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
-                        <div class="logo-upload-container">
-                            <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
-                            <div class="logo-upload-actions">
-                                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-                                <button type="button" id="btn-upload-logo" class="btn-upload">
-                                    <i class="fa-regular fa-image"></i> Escolher Arquivo
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="descricao">Descrição Curta</label>
-                        <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
-                    </div>
                 </div>
+                <!-- ========================================================== -->
+
                 <div class="form-actions">
                     <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
                 </div>
             </form>
         </div>
 
-        <!-- ========================================================== -->
-        <!--      CORREÇÃO: MODAL DE BOAS-VINDAS ADICIONADO AQUI      -->
-        <!-- ========================================================== -->
         <div id="modal-boas-vindas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index: 1000;">
             <div style="background:white; padding:40px; border-radius:12px; text-align:center; max-width: 400px; box-shadow: 0 5px 25px rgba(0,0,0,0.2);">
                 <h2 style="font-size: 48px; margin-bottom: 15px;">👋</h2>
@@ -329,13 +345,11 @@
         <!-- O conteúdo do seu modal vai aqui dentro -->
     </div>
     <script>
-    // Inclusão dinâmica do menu lateral e destaque do menu de perfil (mesmo se o menu já tem JS de active)
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Garante que só "perfil" fica ativo (mesmo se o menu já tem lógica de active)
           setTimeout(() => {
             const links = document.querySelectorAll('.sidebar-links a');
             links.forEach(link => link.classList.remove('active'));
@@ -344,10 +358,6 @@
           }, 10);
         });
     });
-
-    // PROTEÇÃO CONTRA LOOP: 
-    // No seu perfil.js, garanta que NUNCA redirecione para index.html se for dono e não tiver empresa.
-    // Apenas exiba o formulário normalmente!
     </script>
     <script src="perfil.js" type="module"></script>
 </body>
