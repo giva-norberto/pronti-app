@@ -64,16 +64,9 @@ function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
     
-    // ATUALIZADO: Garante que a mensagem de login na tela de agendamento também seja atualizada.
-    UI.toggleAgendamentoLoginPrompt(!user);
-
+    // Somente atualiza prompts quando realmente for necessário
     if (user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
         handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
-    }
-    if (!user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
-        if (UI.exibirMensagemDeLoginAgendamentos) {
-            UI.exibirMensagemDeLoginAgendamentos();
-        }
     }
 }
 
@@ -84,25 +77,23 @@ function handleMenuClick(e) {
         
         UI.trocarAba(`menu-${menuKey}`);
 
-        // ATUALIZADO: Mostra a mensagem de login se o usuário não estiver logado.
+        // Visualização de agendamentos requer login
         if (menuKey === 'visualizacao') {
             if (state.currentUser) {
                 handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
             } else {
                 if (UI.exibirMensagemDeLoginAgendamentos) {
                     UI.exibirMensagemDeLoginAgendamentos();
-                } else {
-                    console.warn("Função UI.exibirMensagemDeLoginAgendamentos não encontrada.");
                 }
             }
         }
-        // NOVO: ao entrar na aba de agendar, mostra prompt se não logado
+
+        // Aba "agendar" não exige login até tentar confirmar
         if (menuKey === 'agendar') {
-            UI.toggleAgendamentoLoginPrompt(!state.currentUser);
+            UI.toggleAgendamentoLoginPrompt(false);
         }
     }
 }
-
 
 async function handleProfissionalClick(e) {
     const card = e.target.closest('.card-profissional');
@@ -111,7 +102,7 @@ async function handleProfissionalClick(e) {
     resetarAgendamento();
     UI.limparSelecao('servico');
     UI.limparSelecao('horario');
-    UI.desabilitarBotaoConfirmar(); // Adicionado para robustez
+    UI.desabilitarBotaoConfirmar();
     UI.mostrarContainerForm(false);
     UI.renderizarServicos([]);
     UI.renderizarHorarios([]);
@@ -146,7 +137,7 @@ async function handleServicoClick(e) {
     setAgendamento('data', null);
     setAgendamento('horario', null);
     UI.limparSelecao('horario');
-    UI.desabilitarBotaoConfirmar(); // Adicionado para robustez
+    UI.desabilitarBotaoConfirmar();
     
     const servicoId = card.dataset.id;
     const servico = state.todosOsServicos.find(s => s.id === servicoId);
@@ -207,7 +198,6 @@ function handleHorarioClick(e) {
 }
 
 async function handleConfirmarAgendamento() {
-    // ATUALIZADO: Abre o modal de login em vez de mostrar um alert.
     if (!state.currentUser) {
         UI.showAlert("Login Necessário", "Você precisa fazer login para confirmar o agendamento.", "info");
         if (UI.abrirModalLogin) UI.abrirModalLogin(); 
@@ -227,7 +217,6 @@ async function handleConfirmarAgendamento() {
     
     try {
         await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
-        // Após agendar, pode resetar formulário, mostrar sucesso, etc.
         UI.showAlert("Sucesso", "Seu agendamento foi realizado com sucesso!");
         resetarAgendamento();
         UI.limparSelecao('profissional');
@@ -245,11 +234,15 @@ async function handleConfirmarAgendamento() {
 }
 
 async function handleFiltroAgendamentos(e) {
-    if (!e.target.matches('.btn-toggle') || !state.currentUser) return;
+    if (!e.target.matches('.btn-toggle')) return;
+    if (!state.currentUser) {
+        if (UI.exibirMensagemDeLoginAgendamentos) UI.exibirMensagemDeLoginAgendamentos();
+        return;
+    }
+
     const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
     
     UI.selecionarFiltro(modo);
-
     UI.renderizarAgendamentosComoCards([], 'Buscando agendamentos...');
     try {
         const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
@@ -263,9 +256,13 @@ async function handleFiltroAgendamentos(e) {
 async function handleCancelarClick(e) {
     const btnCancelar = e.target.closest('.btn-cancelar');
     if (btnCancelar) {
+        if (!state.currentUser) {
+            UI.showAlert("Login Necessário", "Você precisa fazer login para cancelar um agendamento.", "info");
+            if (UI.abrirModalLogin) UI.abrirModalLogin(); 
+            return;
+        }
+
         const agendamentoId = btnCancelar.dataset.id;
-        
-        // ATUALIZADO: Usa o modal de confirmação customizado.
         const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
         
         if (confirmou) {
