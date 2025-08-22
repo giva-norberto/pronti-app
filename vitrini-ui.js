@@ -1,22 +1,13 @@
 /**
  * Mostra ou esconde o loader inicial da página.
- * @param {boolean} mostrar - True para mostrar o loader, false para mostrar o conteúdo.
  */
-export function toggleLoader(mostrar, mensagem = 'A carregar informações do negócio...') {
-    const loader = document.getElementById('vitrine-loader');
-    if (loader && loader.querySelector('p')) {
-        loader.querySelector('p').textContent = mensagem;
-    }
-    if (loader) loader.style.display = mostrar ? 'block' : 'none';
-    
-    const content = document.getElementById('vitrine-content');
-    if(content) content.style.display = mostrar ? 'none' : 'grid';
+export function toggleLoader(mostrar) {
+    document.getElementById('vitrine-loader').style.display = mostrar ? 'block' : 'none';
+    document.getElementById('vitrine-content').style.display = mostrar ? 'none' : 'grid';
 }
 
 /**
- * Preenche o cabeçalho e a aba de informações com os dados da empresa e serviços.
- * @param {object} dadosEmpresa - Objeto com os dados da empresa.
- * @param {Array} todosOsServicos - Array com todos os serviços da empresa.
+ * Preenche os dados iniciais da empresa.
  */
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
     document.getElementById('logo-publico').src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
@@ -37,8 +28,7 @@ export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
 }
 
 /**
- * Renderiza os cards dos profissionais na tela.
- * @param {Array} profissionais - Lista de profissionais.
+ * Renderiza os cards dos profissionais.
  */
 export function renderizarProfissionais(profissionais) {
     const container = document.getElementById('lista-profissionais');
@@ -58,8 +48,7 @@ export function renderizarProfissionais(profissionais) {
 }
 
 /**
- * Renderiza os cards de serviços de um profissional.
- * @param {Array} servicos - Lista de serviços.
+ * Renderiza os cards de serviços.
  */
 export function renderizarServicos(servicos) {
     const container = document.getElementById('lista-servicos');
@@ -79,9 +68,7 @@ export function renderizarServicos(servicos) {
 }
 
 /**
- * Renderiza os botões de horários disponíveis.
- * @param {Array} slots - Lista de horários (strings "HH:MM").
- * @param {string} [mensagem] - Uma mensagem opcional para exibir (ex: "Carregando...").
+ * Renderiza os horários disponíveis.
  */
 export function renderizarHorarios(slots, mensagem = '') {
     const container = document.getElementById('grade-horarios');
@@ -100,21 +87,26 @@ export function renderizarHorarios(slots, mensagem = '') {
 }
 
 /**
- * Atualiza a interface de autenticação (mostra/esconde botões de login/logout).
- * @param {object|null} user - O objeto do usuário do Firebase Auth.
+ * Atualiza a UI de autenticação (a função mais importante para o login).
  */
 export function atualizarUIdeAuth(user) {
+    const loginPromptAgendamento = document.getElementById('agendamento-login-prompt');
+    const loginPromptVisualizacao = document.getElementById('agendamentos-login-prompt');
     const userInfo = document.getElementById('user-info');
     const loginContainer = document.getElementById('btn-login-container');
     const agendamentosContainer = document.getElementById('botoes-agendamento');
-    
+
     if (user) {
+        if(loginPromptAgendamento) loginPromptAgendamento.style.display = 'none';
+        if(loginPromptVisualizacao) loginPromptVisualizacao.style.display = 'none';
         if(agendamentosContainer) agendamentosContainer.style.display = 'flex';
         if(userInfo) userInfo.style.display = 'block';
         if(loginContainer) loginContainer.style.display = 'none';
         document.getElementById('user-photo').src = user.photoURL || 'https://placehold.co/80x80/eef2ff/4f46e5?text=User';
         document.getElementById('user-name').textContent = user.displayName || 'Usuário';
     } else {
+        if(loginPromptAgendamento) loginPromptAgendamento.style.display = 'block';
+        if(loginPromptVisualizacao) loginPromptVisualizacao.style.display = 'block';
         if(agendamentosContainer) agendamentosContainer.style.display = 'none';
         if(userInfo) userInfo.style.display = 'none';
         if(loginContainer) loginContainer.style.display = 'block';
@@ -124,8 +116,7 @@ export function atualizarUIdeAuth(user) {
 }
 
 /**
- * Troca a aba de conteúdo principal visível.
- * @param {string} idDaAba - O ID do elemento de conteúdo a ser mostrado.
+ * Troca a aba visível.
  */
 export function trocarAba(idDaAba) {
     const menuKey = idDaAba.replace('menu-', '');
@@ -140,46 +131,24 @@ export function trocarAba(idDaAba) {
 }
 
 /**
- * Adiciona ou remove a classe 'selecionado' de um card.
- * @param {'profissional'|'servico'|'horario'} tipo - O tipo de card.
- * @param {string} id - O ID do item a ser selecionado.
+ * Seleciona um card (profissional, serviço, horário).
  */
-export function selecionarCard(tipo, id, isLoading = false) {
-    const seletorMap = {
-        profissional: '.card-profissional',
-        servico: '.card-servico',
-        horario: '.btn-horario'
-    };
+export function selecionarCard(tipo, id) {
+    const seletorMap = { profissional: '.card-profissional', servico: '.card-servico', horario: '.btn-horario' };
     const seletor = seletorMap[tipo];
     if (!seletor) return;
 
-    document.querySelectorAll(seletor).forEach(c => {
-        c.classList.remove('selecionado', 'loading');
-    });
+    document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado'));
 
     if (id) {
         const attribute = (tipo === 'horario') ? 'data-horario' : 'data-id';
         const element = document.querySelector(`${seletor}[${attribute}="${id}"]`);
-        if (element) {
-            element.classList.add('selecionado');
-            if (isLoading) {
-                element.classList.add('loading');
-            }
-        }
+        if (element) element.classList.add('selecionado');
     }
 }
 
 /**
- * Limpa a seleção de um tipo de card.
- * @param {'profissional'|'servico'|'horario'} tipo
- */
-export function limparSelecao(tipo) {
-    selecionarCard(tipo, null);
-}
-
-/**
- * Mostra ou esconde a parte do formulário de agendamento.
- * @param {boolean} mostrar
+ * Mostra o container do formulário de agendamento.
  */
 export function mostrarContainerForm(mostrar) {
     const container = document.getElementById('agendamento-form-container');
@@ -187,43 +156,16 @@ export function mostrarContainerForm(mostrar) {
 }
 
 /**
- * Atualiza o campo de data e a mensagem de horários.
- * @param {boolean} desabilitarInput - Desabilita ou habilita o campo de data.
- * @param {string} mensagemHorarios - Mensagem para mostrar na grade de horários.
- */
-export function atualizarStatusData(desabilitarInput, mensagemHorarios = '') {
-    const dataInput = document.getElementById('data-agendamento');
-    if(dataInput) dataInput.disabled = desabilitarInput;
-    renderizarHorarios([], mensagemHorarios);
-}
-
-/**
- * Seleciona visualmente o filtro de agendamentos (Ativos vs. Histórico).
- * @param {'ativos'|'historico'} modo
- */
-export function selecionarFiltro(modo) {
-    document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('ativo'));
-    const btnId = modo === 'ativos' ? 'btn-ver-ativos' : 'btn-ver-historico';
-    const btn = document.getElementById(btnId);
-    if(btn) btn.classList.add('ativo');
-}
-
-/**
- * Renderiza os agendamentos de um cliente como cards.
- * @param {Array} agendamentos - Lista de agendamentos.
- * @param {'ativos'|'historico'} modo - Para saber se mostra o botão de cancelar.
+ * Renderiza os agendamentos do cliente.
  */
 export function renderizarAgendamentosComoCards(agendamentos, modo) {
     const container = document.getElementById('lista-agendamentos-visualizacao');
     container.innerHTML = '';
-
     if (!agendamentos || agendamentos.length === 0) {
         container.innerHTML = `<p>Você não tem agendamentos ${modo === 'ativos' ? 'futuros' : 'passados'}.</p>`;
         return;
     }
-
     agendamentos.sort((a, b) => new Date(a.data) - new Date(b.data));
-
     agendamentos.forEach(ag => {
         const dataFormatada = new Date(`${ag.data}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         container.innerHTML += `
@@ -237,111 +179,4 @@ export function renderizarAgendamentosComoCards(agendamentos, modo) {
             </div>
         `;
     });
-}
-
-// ======================================================================
-//        FUNÇÕES ADICIONADAS PARA CORRIGIR ERROS E MELHORAR UX
-// ======================================================================
-
-/**
- * Desabilita o botão de confirmar agendamento.
- */
-export function desabilitarBotaoConfirmar() {
-    const btn = document.getElementById('btn-confirmar-agendamento');
-    if (btn) {
-        btn.disabled = true;
-    }
-}
-
-/**
- * Habilita o botão de confirmar agendamento.
- */
-export function habilitarBotaoConfirmar() {
-    const btn = document.getElementById('btn-confirmar-agendamento');
-    if (btn) {
-        btn.disabled = false;
-    }
-}
-
-/**
- * Mostra ou esconde a mensagem de 'faça login' na tela principal de agendamento.
- */
-export function toggleAgendamentoLoginPrompt(mostrar) {
-    const prompt = document.getElementById('agendamento-login-prompt');
-    if (prompt) {
-        prompt.style.display = mostrar ? 'block' : 'none';
-    }
-}
-
-/**
- * Exibe a mensagem de 'faça login' na aba de agendamentos.
- */
-export function exibirMensagemDeLoginAgendamentos() {
-    const promptLogin = document.querySelector('#menu-visualizacao #agendamentos-login-prompt');
-    const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
-    const botoesFiltro = document.getElementById('botoes-agendamento');
-
-    if (promptLogin) promptLogin.style.display = 'block';
-    if (listaAgendamentos) listaAgendamentos.innerHTML = '';
-    if (botoesFiltro) botoesFiltro.style.display = 'none';
-}
-
-/**
- * Força a abertura do modal de login.
- */
-export function abrirModalLogin() {
-    const modal = document.getElementById('modal-auth-janela');
-    if (modal) {
-        document.getElementById('modal-auth-cadastro').style.display = 'none';
-        document.getElementById('modal-auth-login').style.display = 'block';
-        modal.style.display = 'flex';
-    }
-}
-
-/**
- * Mostra um modal de confirmação customizado.
- */
-export function mostrarConfirmacao(titulo, mensagem) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-confirm-modal');
-        const tituloEl = document.getElementById('modal-titulo');
-        const mensagemEl = document.getElementById('modal-mensagem');
-        const btnConfirmar = document.getElementById('modal-btn-confirmar');
-        const btnCancelar = document.getElementById('modal-btn-cancelar');
-
-        if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
-            resolve(confirm(mensagem));
-            return;
-        }
-
-        tituloEl.textContent = titulo;
-        mensagemEl.textContent = mensagem;
-        modal.style.display = 'flex';
-
-        const onConfirmar = () => {
-            modal.style.display = 'none';
-            resolve(true);
-            btnCancelar.removeEventListener('click', onCancelar);
-        };
-
-        const onCancelar = () => {
-            modal.style.display = 'none';
-            resolve(false);
-            btnConfirmar.removeEventListener('click', onConfirmar);
-        };
-
-        btnConfirmar.addEventListener('click', onConfirmar, { once: true });
-        btnCancelar.addEventListener('click', onCancelar, { once: true });
-    });
-}
-
-/**
- * Mostra um alerta simples ou customizado.
- * @param {string} titulo
- * @param {string} mensagem
- * @param {string} [tipo="info"]
- */
-export function showAlert(titulo, mensagem, tipo = "info") {
-    // Alerta simples - substitua por modal/toast customizado conforme desejado.
-    alert(`${titulo ? titulo + "\n\n" : ""}${mensagem}`);
 }
