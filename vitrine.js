@@ -96,6 +96,10 @@ function handleMenuClick(e) {
                 }
             }
         }
+        // NOVO: ao entrar na aba de agendar, mostra prompt se não logado
+        if (menuKey === 'agendar') {
+            UI.toggleAgendamentoLoginPrompt(!state.currentUser);
+        }
     }
 }
 
@@ -223,6 +227,15 @@ async function handleConfirmarAgendamento() {
     
     try {
         await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
+        // Após agendar, pode resetar formulário, mostrar sucesso, etc.
+        UI.showAlert("Sucesso", "Seu agendamento foi realizado com sucesso!");
+        resetarAgendamento();
+        UI.limparSelecao('profissional');
+        UI.limparSelecao('servico');
+        UI.limparSelecao('horario');
+        UI.mostrarContainerForm(false);
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         UI.showAlert("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
