@@ -187,10 +187,6 @@ export function renderizarAgendamentosComoCards(agendamentos, modo) {
     });
 }
 
-// ======================================================================
-//        FUNÇÕES DE REFINAMENTO (UX) ADICIONADAS
-// ======================================================================
-
 /**
  * Limpa a seleção de um tipo de card.
  */
