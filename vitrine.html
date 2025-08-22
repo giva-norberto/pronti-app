@@ -43,17 +43,29 @@
                     </div>
                     <div id="agendamento-form-container" style="display: none;">
                         <div class="form-group">
-                            <label>2. Escolha um serviço</label>
+                            <label id="label-servicos">2. Escolha o(s) serviço(s)</label>
                             <div id="lista-servicos" class="servicos-container-cards"></div>
+                            
+                            <!-- NOVO: Container para o resumo e botão de prosseguir (para múltiplos serviços) -->
+                            <div id="servicos-resumo-container" style="display: none; margin-top: 20px;">
+                                <div class="servicos-resumo">
+                                    <p id="resumo-texto"></p>
+                                </div>
+                                <button id="btn-prosseguir-data" class="btn-prosseguir">Escolher Data e Horário</button>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="data-agendamento">3. Escolha uma data</label>
-                            <input type="date" id="data-agendamento" required disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>4. Escolha um horário</label>
-                            <div id="grade-horarios" class="horarios-container-grid">
-                                <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
+                        
+                        <!-- NOVO: Container para agrupar data e horário -->
+                        <div id="data-e-horario-container" style="display:none;">
+                            <div class="form-group">
+                                <label for="data-agendamento">3. Escolha uma data</label>
+                                <input type="date" id="data-agendamento" required disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>4. Escolha um horário</label>
+                                <div id="grade-horarios" class="horarios-container-grid">
+                                    <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
+                                </div>
                             </div>
                         </div>
                         <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
@@ -71,7 +83,6 @@
                     <h2>Serviços Oferecidos</h2>
                     <div id="info-servicos"></div>
                 </div>
-                <!-- ATUALIZADO: Card de Contato agora tem a estrutura para as novas informações -->
                 <div class="card">
                     <h2>Contato e Localização</h2>
                     <div id="info-contato">
