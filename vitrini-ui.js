@@ -13,7 +13,6 @@ export function toggleLoader(mostrar, mensagem = 'A carregar informações do ne
     if(content) content.style.display = mostrar ? 'none' : 'grid';
 }
 
-
 /**
  * Preenche o cabeçalho e a aba de informações com os dados da empresa e serviços.
  * @param {object} dadosEmpresa - Objeto com os dados da empresa.
@@ -343,6 +342,6 @@ export function mostrarConfirmacao(titulo, mensagem) {
  * @param {string} [tipo="info"]
  */
 export function showAlert(titulo, mensagem, tipo = "info") {
-    // Alerta simples - você pode substituir por modal/toast customizado conforme necessário.
-    alert(`${titulo}\n\n${mensagem}`);
+    // Alerta simples - substitua por modal/toast customizado conforme desejado.
+    alert(`${titulo ? titulo + "\n\n" : ""}${mensagem}`);
 }
