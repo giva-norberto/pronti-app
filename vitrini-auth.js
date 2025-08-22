@@ -1,5 +1,5 @@
 // ======================================================================
-//        VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO (VERSÃO CORRIGIDA E AUTOSSUFICIENTE)
+//        VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO (REVISADO)
 // ======================================================================
 
 import { auth, provider, db } from './vitrini-firebase.js';
@@ -27,17 +27,15 @@ import {
 import { showAlert } from './vitrini-utils.js';
 
 // ======================================================================
-//   FUNÇÃO DO MODAL (agora dentro deste arquivo para evitar erros)
+//   GARANTE PERSISTÊNCIA DE LOGIN (executa logo no início)
 // ======================================================================
-/**
- * Abre um modal para pedir dados adicionais (nome, telefone) ao utilizador.
- * Retorna uma Promise que resolve com os dados preenchidos ou rejeita se o utilizador cancelar.
- * @param {object} dadosAtuais - Contém o nome e telefone que já temos para pré-preencher.
- * @returns {Promise<object>} - Uma promessa que resolve com { nome, telefone }.
- */
+setPersistence(auth, browserLocalPersistence).catch(console.error);
+
+// ======================================================================
+//   FUNÇÃO DO MODAL DE DADOS EXTRAS
+// ======================================================================
 function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
     return new Promise((resolve, reject) => {
-        // --- Conecte estes IDs com os elementos do seu HTML ---
         const modal = document.getElementById('modal-auth-janela'); 
         const form = document.getElementById('modal-auth-form-cadastro'); 
         const nomeInput = document.getElementById('modal-auth-cadastro-nome');
@@ -45,16 +43,13 @@ function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
         const btnSalvar = form.querySelector('button'); 
         const btnCancelar = document.getElementById('modal-auth-btn-to-login');
 
-        // Mostra a secção correta do modal e exibe-o
         document.getElementById('modal-auth-login').style.display = 'none';
         document.getElementById('modal-auth-cadastro').style.display = 'block';
         modal.style.display = 'flex';
         
-        // Altera os textos para "Completar Cadastro"
         modal.querySelector('#modal-auth-cadastro h2').textContent = 'Complete o seu Cadastro';
         btnSalvar.textContent = 'Salvar e Continuar';
 
-        // Pré-preenche os campos
         nomeInput.value = dadosAtuais.nome || '';
         telefoneInput.value = dadosAtuais.telefone || '';
         
@@ -94,39 +89,37 @@ function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
 // ======================================================================
 
 function isMobile() {
-    // Detecta mobile de forma robusta
     return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 }
 
+/**
+ * Listener simples: só avisa quem chamou, não força login nem modal.
+ */
 export function setupAuthListener(callback) {
-    if (typeof onAuthStateChanged !== "function") {
-        console.error("Firebase Auth não carregado corretamente.");
-        return;
-    }
-    
-    onAuthStateChanged(auth, (user) => {
-        if (typeof callback === 'function') {
-            callback(user);
-        }
-    });
-
-    // Sempre tenta capturar o resultado do redirect do login Google
-    getRedirectResult(auth).then(async (result) => {
-        if (result && result.user) {
-            await garantirDadosCompletos(result.user);
-        }
-    }).catch(error => {
-        console.error("Erro ao obter resultado do redirecionamento:", error);
-        showAlert("Erro de Login", `Ocorreu um erro ao finalizar o login: ${error.message}`);
-    });
+    // Primeiro processa resultado de redirect
+    getRedirectResult(auth)
+        .then(async (result) => {
+            if (result && result.user) {
+                await garantirDadosCompletos(result.user);
+            }
+        })
+        .catch(error => {
+            console.error("Erro ao obter resultado do redirecionamento:", error);
+        })
+        .finally(() => {
+            onAuthStateChanged(auth, (user) => {
+                if (typeof callback === 'function') {
+                    callback(user);
+                }
+            });
+        });
 }
 
 /**
- * Login Google - mobile usa Redirect, desktop usa Popup
+ * Executa login Google apenas quando realmente necessário (ex: agendar).
  */
 export async function fazerLogin() {
     try {
-        await setPersistence(auth, browserLocalPersistence);
         if (isMobile()) {
             await signInWithRedirect(auth, provider);
         } else {
@@ -145,7 +138,7 @@ async function garantirDadosCompletos(user) {
     try {
         const empresaId = getEmpresaIdFromUrl();
         if (!empresaId) {
-            await showAlert("Erro Crítico", "ID da empresa não encontrado. O seu perfil não foi salvo.");
+            await showAlert("Atenção", "Não foi possível identificar a empresa. Recarregue a página pelo link correto.");
             return;
         }
         
@@ -166,8 +159,7 @@ async function garantirDadosCompletos(user) {
                 telefone = dadosDoModal.telefone;
             } catch (error) {
                 await showAlert("Cadastro incompleto", "É necessário preencher os seus dados para continuar.");
-                await signOut(auth);
-                return;
+                return; // não força logout, só bloqueia até preencher
             }
         }
         
@@ -184,8 +176,6 @@ async function garantirDadosCompletos(user) {
             ultimoLoginEm: serverTimestamp()
         }, { merge: true });
         
-        await showAlert("Sucesso!", "Login realizado e perfil atualizado com sucesso.");
-
     } catch (error) {
         console.error("Erro ao garantir dados completos do utilizador:", error);
         await showAlert("Erro de Perfil", "Houve um problema ao salvar os dados do seu perfil.");
@@ -194,7 +184,6 @@ async function garantirDadosCompletos(user) {
 
 export async function loginComEmailSenha(email, senha) {
     try {
-        await setPersistence(auth, browserLocalPersistence);
         const result = await signInWithEmailAndPassword(auth, email, senha);
         return result.user;
     } catch (error) {
@@ -206,7 +195,6 @@ export async function loginComEmailSenha(email, senha) {
 
 export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
     try {
-        await setPersistence(auth, browserLocalPersistence);
         const result = await createUserWithEmailAndPassword(auth, email, senha);
         await updateProfile(result.user, { displayName: nome });
 
@@ -237,5 +225,7 @@ export async function fazerLogout() {
 
 function getEmpresaIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('empresa');
+    const id = params.get('empresa');
+    if (id) localStorage.setItem("empresaId", id);
+    return id || localStorage.getItem("empresaId");
 }
