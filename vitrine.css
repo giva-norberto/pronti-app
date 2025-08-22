@@ -1055,3 +1055,43 @@ html {
     background: linear-gradient(135deg, #f472b6, #a21caf);
     transform: scale(1.04);
 }
+.login-cover-card {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.97);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(79,70,229,0.13);
+    text-align: center;
+    padding: 32px 18px;
+    animation: fadeIn 0.3s;
+}
+.login-cover-card h2 {
+    color: #7C3AED;
+    font-size: 1.35rem;
+    margin-bottom: 10px;
+}
+.login-cover-card p {
+    color: #4B5563;
+    margin-bottom: 20px;
+}
+.btn-login-pronti {
+    background: linear-gradient(135deg, #8B5CF6, #EC4899);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 38px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    box-shadow: 0 2px 16px rgba(139,92,246,0.14);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+}
+.btn-login-pronti:hover {
+    background: linear-gradient(135deg, #EC4899, #8B5CF6);
+    transform: scale(1.04);
+}
