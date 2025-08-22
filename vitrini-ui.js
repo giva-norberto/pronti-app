@@ -56,13 +56,10 @@ export function renderizarProfissionais(profissionais) {
 
 /**
  * REVISADO: Renderiza os cards de serviços, adaptando para seleção única ou múltipla.
- * @param {Array} servicos - Lista de serviços.
- * @param {boolean} permiteMultiplos - Se o profissional permite múltiplos serviços.
  */
 export function renderizarServicos(servicos, permiteMultiplos = false) {
     const container = document.getElementById('lista-servicos');
     container.innerHTML = '';
-    // Adiciona uma classe para estilização condicional
     container.className = permiteMultiplos ? 'servicos-container-cards multi-select' : 'servicos-container-cards';
 
     if (!servicos || servicos.length === 0) {
@@ -72,18 +69,16 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
 
     servicos.forEach(s => {
         if (permiteMultiplos) {
-            // Renderiza como um <label> com um checkmark visual para seleção múltipla
             container.innerHTML += `
-                <label class="card-servico card-checkbox" data-id="${s.id}">
+                <div class="card-servico card-checkbox" data-id="${s.id}">
                     <div class="servico-info-multi">
                         <span class="servico-nome">${s.nome}</span>
                         <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
                     </div>
                     <span class="checkmark"></span>
-                </label>
+                </div>
             `;
         } else {
-            // Renderiza como <div> para seleção única (comportamento original)
             container.innerHTML += `
                 <div class="card-servico" data-id="${s.id}">
                     <span class="servico-nome">${s.nome}</span>
@@ -159,24 +154,18 @@ export function selecionarCard(tipo, id, isLoading = false) {
     const seletor = seletorMap[tipo];
     if (!seletor) return;
 
-    // A lógica para seleção múltipla é diferente, então não limpamos aqui.
-    if (tipo !== 'servico') {
-        document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado', 'loading'));
+    const element = document.querySelector(`${seletor}[data-${tipo === 'horario' ? 'horario' : 'id'}="${id}"]`);
+    if (!element) return;
+
+    if (tipo === 'servico' && element.closest('.multi-select')) {
+        element.classList.toggle('selecionado');
+    } else {
+        document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado'));
+        element.classList.add('selecionado');
     }
 
-    if (id) {
-        const attribute = (tipo === 'horario') ? 'data-horario' : 'data-id';
-        const element = document.querySelector(`${seletor}[${attribute}="${id}"]`);
-        if (element) {
-            // Para seleção múltipla, usamos 'toggle' em vez de 'add'
-            if (document.querySelector('#lista-servicos.multi-select')) {
-                element.classList.toggle('selecionado');
-            } else {
-                element.classList.add('selecionado');
-            }
-            if (isLoading) element.classList.add('loading');
-        }
-    }
+    if (isLoading) element.classList.add('loading');
+    else element.classList.remove('loading');
 }
 
 /**
@@ -218,7 +207,11 @@ export function renderizarAgendamentosComoCards(agendamentos, modo) {
  * Limpa a seleção de um tipo de card.
  */
 export function limparSelecao(tipo) {
-    selecionarCard(tipo, null);
+    const seletorMap = { profissional: '.card-profissional', servico: '.card-servico', horario: '.btn-horario' };
+    const seletor = seletorMap[tipo];
+    if (seletor) {
+        document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado'));
+    }
 }
 
 /**
@@ -348,12 +341,11 @@ export function mostrarConfirmacao(titulo, mensagem) {
 }
 
 /**
- * NOVO: Atualiza o resumo do agendamento (total de serviços, duração e preço).
+ * Atualiza o resumo do agendamento (total de serviços, duração e preço).
  */
 export function atualizarResumoAgendamento(servicosSelecionados) {
     const container = document.getElementById('servicos-resumo-container');
     const textoEl = document.getElementById('resumo-texto');
-
     if (!container || !textoEl) return;
 
     if (servicosSelecionados.length > 0) {
@@ -363,5 +355,24 @@ export function atualizarResumoAgendamento(servicosSelecionados) {
         container.style.display = 'block';
     } else {
         container.style.display = 'none';
+    }
+}
+
+/**
+ * NOVO: Configura a UI para o modo de agendamento (único ou múltiplo).
+ */
+export function configurarModoAgendamento(permiteMultiplos) {
+    const dataHorarioContainer = document.getElementById('data-e-horario-container');
+    const resumoContainer = document.getElementById('servicos-resumo-container');
+    const btnConfirmar = document.getElementById('btn-confirmar-agendamento');
+
+    if (permiteMultiplos) {
+        dataHorarioContainer.style.display = 'none';
+        resumoContainer.style.display = 'none'; // Começa escondido
+        btnConfirmar.style.display = 'none'; // Esconde o botão principal
+    } else {
+        dataHorarioContainer.style.display = 'none'; // Começa escondido até um serviço ser selecionado
+        resumoContainer.style.display = 'none';
+        btnConfirmar.style.display = 'block'; // Mostra o botão principal
     }
 }
