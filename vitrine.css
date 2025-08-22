@@ -1038,3 +1038,20 @@ html {
         margin: 0 4px;
     }
 }
+#custom-confirm-modal #modal-btn-confirmar {
+    background: linear-gradient(135deg, #a21caf, #f472b6);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 32px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-left: 10px;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(164,28,175,0.07);
+    transition: background 0.18s, transform 0.12s;
+}
+#custom-confirm-modal #modal-btn-confirmar:hover {
+    background: linear-gradient(135deg, #f472b6, #a21caf);
+    transform: scale(1.04);
+}
