@@ -1,7 +1,7 @@
 // ======================================================================
 //                          EQUIPE.JS
-//      VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
-//          (100% Frontend, Sem Cloud Functions)
+//          VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
+//             (100% Frontend, Sem Cloud Functions)
 // ======================================================================
 
 // Variáveis globais
@@ -52,7 +52,9 @@ const elementos = {
     btnAgendaEspecial: document.getElementById('btn-agenda-especial'),
     agendaEspecialLista: document.getElementById('agenda-especial-lista'),
     inputIntervalo: document.getElementById('intervalo-atendimento'),
-    btnConvite: document.getElementById('btn-convite')
+    btnConvite: document.getElementById('btn-convite'),
+    // --- NOVA FUNCIONALIDADE MAPEADA AQUI ---
+    permitirAgendamentoMultiplo: document.getElementById('permitir-agendamento-multiplo')
 };
 
 // TABS do perfil
@@ -100,7 +102,7 @@ async function inicializar() {
                 empresaId = await getEmpresaIdDoDono(user.uid);
                 if (empresaId) {
                     await carregarServicos();
-                    iniciarListenerDaEquipe(); // Esta função foi corrigida
+                    iniciarListenerDaEquipe();
                     adicionarEventListeners();
                 } else {
                     mostrarErro("Não foi possível identificar a sua empresa. Verifique se seu usuário é o dono de uma empresa no banco de dados.");
@@ -142,15 +144,9 @@ async function carregarServicos() {
     }
 }
 
-// ======================================================================
-//              CORREÇÃO CIRÚRGICA APLICADA NESTA FUNÇÃO
-// ======================================================================
-// Esta função agora busca o nome correto do dono na coleção 'usuarios'
-// e o corrige na lista da equipe antes de renderizar na tela.
 async function iniciarListenerDaEquipe() {
     const { collection, onSnapshot, query, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
 
-    // 1. Buscar o ID do dono no documento da empresa
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
     if (!empresaSnap.exists()) {
@@ -159,20 +155,17 @@ async function iniciarListenerDaEquipe() {
     }
     const donoId = empresaSnap.data().donoId;
 
-    // 2. Buscar o nome correto do dono na coleção 'usuarios'
-    let nomeCorretoDono = 'Dono'; // Nome padrão caso não encontre
+    let nomeCorretoDono = 'Dono';
     const donoUsuarioRef = doc(db, "usuarios", donoId);
     const donoUsuarioSnap = await getDoc(donoUsuarioRef);
     if (donoUsuarioSnap.exists() && donoUsuarioSnap.data().nome) {
         nomeCorretoDono = donoUsuarioSnap.data().nome;
     }
 
-    // 3. Iniciar o listener da equipe (como antes)
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
     onSnapshot(query(profissionaisRef), (snapshot) => {
         const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // 4. Encontrar o dono na lista e corrigir o nome antes de renderizar
         const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
         if (donoNaEquipe) {
             donoNaEquipe.nome = nomeCorretoDono;
@@ -181,7 +174,6 @@ async function iniciarListenerDaEquipe() {
         renderizarEquipe(equipe);
     }, (error) => console.error("Erro no listener da equipe:", error));
 }
-// ======================================================================
 
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
@@ -248,9 +240,18 @@ async function carregarDadosProfissional(profissionalId) {
         const horariosDoc = await getDoc(horariosRef);
 
         if (horariosDoc.exists()) {
-            renderizarHorarios(horariosDoc.data());
+            const horariosData = horariosDoc.data();
+            renderizarHorarios(horariosData);
+            // --- NOVA FUNCIONALIDADE: CARREGA O ESTADO DO CHECKBOX ---
+            if (elementos.permitirAgendamentoMultiplo) {
+                elementos.permitirAgendamentoMultiplo.checked = horariosData.permitirAgendamentoMultiplo || false;
+            }
         } else {
             renderizarHorarios({ ...horariosBase, intervalo: intervaloBase });
+            // --- NOVA FUNCIONALIDADE: DEFINE O ESTADO PADRÃO DO CHECKBOX ---
+            if (elementos.permitirAgendamentoMultiplo) {
+                elementos.permitirAgendamentoMultiplo.checked = false; // Padrão é desativado
+            }
         }
         return dados;
     } catch (error) {
@@ -371,6 +372,12 @@ function coletarHorarios() {
         horarios[dia] = { ativo: estaAtivo, blocos: blocos.length > 0 ? blocos : [{ inicio: '09:00', fim: '18:00' }] };
     });
     horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
+    
+    // --- NOVA FUNCIONALIDADE: COLETA O VALOR DO CHECKBOX ---
+    if (elementos.permitirAgendamentoMultiplo) {
+        horarios.permitirAgendamentoMultiplo = elementos.permitirAgendamentoMultiplo.checked;
+    }
+    
     return horarios;
 }
 
@@ -413,7 +420,7 @@ async function salvarPerfilProfissional() {
     const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
-        const horarios = coletarHorarios();
+        const horarios = coletarHorarios(); // Esta função agora inclui a nova opção
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
         await updateDoc(profissionalRef, { servicos: servicosSelecionados, agendaEspecial: agendaEspecial });
@@ -500,7 +507,6 @@ async function adicionarProfissional() {
         }
     }
 
-    // Acrescentado o campo uid: "" para profissionais adicionados pelo dono (ativação futura)
     const novoProfissional = {
         nome,
         fotoUrl: fotoURL,
@@ -509,7 +515,7 @@ async function adicionarProfissional() {
         status: 'ativo',
         criadoEm: serverTimestamp(),
         agendaEspecial: [],
-        uid: "" // <- Será preenchido quando o funcionário ativar
+        uid: ""
     };
 
     try {
