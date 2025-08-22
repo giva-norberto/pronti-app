@@ -1,15 +1,15 @@
 // ======================================================================
-//          VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO
-//      Responsabilidade: Gerir o login, logout e o estado do
-//                      utilizador na vitrine.
+//          VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO
+//      Responsabilidade: Gerir o login, logout e o estado do
+//                      utilizador na vitrine.
 // ======================================================================
 
 import { auth, provider, db } from './vitrini-firebase.js';
 
 import { 
     onAuthStateChanged, 
-    signInWithRedirect, // <-- ALTERADO para ser compatível com telemóveis
-    getRedirectResult,  // <-- NOVO para processar o login após o redirecionamento
+    signInWithRedirect, // <-- CORRETO para compatibilidade com telemóveis
+    getRedirectResult,  // <-- CORRETO para processar o login após o redirecionamento
     signOut,
     setPersistence,
     browserLocalPersistence,
@@ -37,7 +37,7 @@ export function setupAuthListener(callback) {
         return;
     }
     
-    // Este listener continua a ser o principal para atualizar a UI
+    // Este listener continua a ser o principal para atualizar a UI em tempo real
     onAuthStateChanged(auth, (user) => {
         if (typeof callback === 'function') {
             callback(user);
@@ -45,16 +45,17 @@ export function setupAuthListener(callback) {
     });
 
     // ======================================================================
-    //   NOVO: LÓGICA PARA PROCESSAR O LOGIN APÓS O REDIRECIONAMENTO
+    //     LÓGICA PARA PROCESSAR O LOGIN APÓS O REDIRECIONAMENTO
     // ======================================================================
-    // Isto é executado quando a página recarrega após o utilizador voltar do Google.
+    // Isto é executado uma vez quando a página recarrega após o utilizador voltar do Google.
     getRedirectResult(auth).then(async (result) => {
         if (result && result.user) {
-            // Se o login foi bem-sucedido, executamos a sua lógica de verificação de dados aqui.
+            // Se o login foi bem-sucedido, garantimos que os dados do perfil estão completos.
             await garantirDadosCompletos(result.user);
         }
     }).catch(error => {
         console.error("Erro ao obter resultado do redirecionamento:", error);
+        showAlert("Erro de Login", `Ocorreu um erro ao finalizar o login: ${error.message}`);
     });
 }
 
@@ -73,88 +74,95 @@ export async function fazerLogin() {
 }
 
 /**
- * Função extraída da sua lógica original para verificar e completar os dados do utilizador.
+ * Garante que o perfil do utilizador (tanto no Auth quanto no Firestore) tenha nome e telefone.
+ * Pede ao utilizador para completar os dados se necessário.
  * @param {object} user - O objeto do utilizador do Firebase Auth.
  */
 async function garantirDadosCompletos(user) {
     try {
-        let telefoneFaltando = !user.phoneNumber;
-        let nomeFaltando = !user.displayName;
-        let telefone = '';
-        let nome = '';
-
         const empresaId = getEmpresaIdFromUrl();
+        if (!empresaId) {
+            console.error("ID da empresa não encontrado na URL para salvar dados do cliente.");
+            await showAlert("Erro Crítico", "Não foi possível identificar a empresa. O seu perfil pode não ter sido salvo corretamente.");
+            return;
+        }
+        
         const clienteDocRef = doc(db, `empresarios/${empresaId}/clientes/${user.uid}`);
         const clienteDocSnap = await getDoc(clienteDocRef);
-        if (clienteDocSnap.exists()) {
-            const dados = clienteDocSnap.data();
-            if (dados.telefone) telefoneFaltando = false;
-            if (dados.nome) nomeFaltando = false;
+
+        let dadosCliente = clienteDocSnap.exists() ? clienteDocSnap.data() : {};
+
+        let nomeFaltando = !user.displayName && !dadosCliente.nome;
+        let telefoneFaltando = !user.phoneNumber && !dadosCliente.telefone;
+
+        if (!nomeFaltando && !telefoneFaltando) {
+            // Se os dados já estão completos, apenas garante que o registro existe no Firestore.
+            await setDoc(clienteDocRef, {
+                nome: user.displayName || dadosCliente.nome,
+                email: user.email,
+                telefone: user.phoneNumber || dadosCliente.telefone,
+                google: true,
+                ultimoLoginEm: serverTimestamp()
+            }, { merge: true });
+            return; // Dados completos, não faz mais nada.
         }
 
-        if (telefoneFaltando || nomeFaltando) {
-            if (nomeFaltando) {
-                nome = prompt("Informe o seu nome completo:");
-                if (!nome) {
-                    await showAlert("Nome obrigatório", "O seu nome é necessário para concluir o cadastro.");
+        let nome = user.displayName || dadosCliente.nome || '';
+        let telefone = user.phoneNumber || dadosCliente.telefone || '';
+
+        if (nomeFaltando) {
+            nome = prompt("Para continuar, por favor, informe o seu nome completo:");
+            if (!nome || !nome.trim()) {
+                await showAlert("Nome obrigatório", "O seu nome é necessário para concluir o cadastro. O login será cancelado.");
+                await signOut(auth);
+                return;
+            }
+        }
+
+        if (telefoneFaltando) {
+            while (true) {
+                telefone = prompt("Ótimo! Agora, por favor, informe o seu melhor telefone (WhatsApp):");
+                if (telefone === null) { // Utilizador clicou em "Cancelar"
+                    await showAlert("Telefone obrigatório", "O telefone é necessário. O login será cancelado.");
                     await signOut(auth);
                     return;
                 }
-            } else {
-                nome = user.displayName || (clienteDocSnap.exists() ? clienteDocSnap.data().nome : "");
-            }
-
-            if (telefoneFaltando) {
-                while (true) {
-                    telefone = prompt("Informe o seu telefone (WhatsApp):");
-                    if (telefone === null) {
-                        await showAlert("Telefone obrigatório", "Você precisa de informar um telefone para continuar.");
-                        await signOut(auth);
-                        return;
-                    }
-                    if (telefone && telefone.trim()) {
-                        telefone = telefone.trim();
-                        if (/^\d{9,15}$/.test(telefone.replace(/\D/g, ""))) {
-                            break;
-                        } else {
-                            await showAlert("Telefone inválido", "Digite apenas números. Exemplo: 11999998888");
-                        }
-                    } else {
-                        await showAlert("Telefone obrigatório", "Você precisa de informar um telefone para continuar.");
-                    }
+                const telefoneLimpo = telefone.replace(/\D/g, "");
+                if (/^\d{9,15}$/.test(telefoneLimpo)) {
+                    telefone = telefoneLimpo; // Salva apenas os números
+                    break;
+                } else {
+                    await showAlert("Telefone inválido", "Por favor, digite um telefone válido, apenas com números (Ex: 11999998888).");
                 }
-            } else {
-                telefone = user.phoneNumber || (clienteDocSnap.exists() ? clienteDocSnap.data().telefone : "");
             }
-
-            await setDoc(clienteDocRef, {
-                nome: nome,
-                email: user.email,
-                telefone: telefone,
-                google: true,
-                atualizadoEm: serverTimestamp()
-            }, { merge: true });
-
-            if (nomeFaltando) {
-                await updateProfile(user, { displayName: nome });
-            }
-        } else {
-            await setDoc(clienteDocRef, {
-                nome: user.displayName,
-                email: user.email,
-                telefone: user.phoneNumber || (clienteDocSnap.exists() ? clienteDocSnap.data().telefone : ""),
-                google: true,
-                atualizadoEm: serverTimestamp()
-            }, { merge: true });
         }
+        
+        // Atualiza o perfil no Firebase Auth (se necessário)
+        if (nomeFaltando) {
+            await updateProfile(user, { displayName: nome });
+        }
+        
+        // Salva os dados completos no Firestore
+        await setDoc(clienteDocRef, {
+            nome: nome.trim(),
+            email: user.email,
+            telefone: telefone,
+            google: true,
+            criadoEm: dadosCliente.criadoEm || serverTimestamp(), // Mantém a data de criação original
+            ultimoLoginEm: serverTimestamp()
+        }, { merge: true });
+        
+        await showAlert("Sucesso!", "Seu cadastro foi concluído com sucesso.");
+
     } catch (error) {
         console.error("Erro ao garantir dados completos do utilizador:", error);
+        await showAlert("Erro de Perfil", "Houve um problema ao salvar os dados do seu perfil.");
     }
 }
 
 
 /**
- * Realiza login com email e senha. (FUNÇÃO ORIGINAL MANTIDA)
+ * Realiza login com email e senha.
  */
 export async function loginComEmailSenha(email, senha) {
     try {
@@ -169,7 +177,7 @@ export async function loginComEmailSenha(email, senha) {
 }
 
 /**
- * Realiza cadastro com email, senha, nome e telefone. (FUNÇÃO ORIGINAL MANTIDA)
+ * Realiza cadastro com email, senha, nome e telefone.
  */
 export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
     try {
@@ -198,7 +206,7 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
 }
 
 /**
- * Inicia o processo de logout do usuário. (FUNÇÃO ORIGINAL MANTIDA)
+ * Inicia o processo de logout do usuário.
  */
 export async function fazerLogout() {
     try {
@@ -210,9 +218,9 @@ export async function fazerLogout() {
 }
 
 /**
- * Utilitário: busca empresaId da URL (?empresa=xxxx) (FUNÇÃO ORIGINAL MANTIDA)
+ * Utilitário: busca empresaId da URL (?empresa=xxxx)
  */
 function getEmpresaIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('empresa') || "padrao";
+    return params.get('empresa'); // Removido "|| 'padrao'" para evitar salvar clientes em uma empresa padrão.
 }
