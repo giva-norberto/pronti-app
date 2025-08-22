@@ -262,7 +262,7 @@ export function abrirModalLogin() {
 }
 
 /**
- * Mostra um alerta com uma mensagem de sucesso, usando o modal customizado.
+ * Mostra um alerta com uma mensagem, usando o modal customizado.
  */
 export async function mostrarAlerta(titulo, mensagem) {
     return new Promise(resolve => {
@@ -273,7 +273,7 @@ export async function mostrarAlerta(titulo, mensagem) {
         const btnCancelar = document.getElementById('modal-btn-cancelar');
 
         if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
-            alert(mensagem);
+            alert(mensagem); // Fallback caso o modal não exista
             resolve();
             return;
         }
@@ -309,7 +309,7 @@ export function mostrarConfirmacao(titulo, mensagem) {
         const btnCancelar = document.getElementById('modal-btn-cancelar');
 
         if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
-            resolve(confirm(mensagem));
+            resolve(confirm(mensagem)); // Fallback caso o modal não exista
             return;
         }
 
