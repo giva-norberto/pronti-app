@@ -26,9 +26,6 @@ function minutesToTimeString(totalMinutes) {
 
 /**
  * Busca todos os agendamentos de uma empresa em uma data específica.
- * @param {string} empresaId - O ID da empresa.
- * @param {string} data - A data no formato "AAAA-MM-DD".
- * @returns {Promise<Array>} Lista de agendamentos do dia.
  */
 export async function buscarAgendamentosDoDia(empresaId, data) {
     try {
@@ -48,7 +45,6 @@ export async function buscarAgendamentosDoDia(empresaId, data) {
 
 /**
  * Calcula os horários (slots) disponíveis para um agendamento.
- * REFINADO: Não mostra horários passados se a data for hoje.
  */
 export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
@@ -69,7 +65,6 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
         return { inicio, fim };
     });
 
-    // Para filtrar horários passados se for hoje
     const hoje = new Date();
     const ehHoje =
         hoje.getFullYear() === dataObj.getFullYear() &&
@@ -89,7 +84,6 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
                 slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio
             );
 
-            // REFINAMENTO: se hoje, só mostra horários futuros
             if (
                 !temConflito &&
                 (!ehHoje || slotAtualEmMinutos > minutosAgora)
@@ -103,9 +97,9 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
 }
 
 /**
- * Tenta encontrar a próxima data com horários disponíveis, a partir de hoje.
+ * Tenta encontrar a próxima data com horários disponíveis.
  */
-export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
+export async function encontrarPrimeiraDataComSlots(empresaId, profissional, duracaoServico) {
     const hoje = new Date();
     for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
         const dataAtual = new Date(hoje);
@@ -115,11 +109,7 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
         const agendamentos = await buscarAgendamentosDoDia(empresaId, dataString);
         const agendamentosProfissional = agendamentos.filter(ag => ag.profissionalId === profissional.id);
 
-        // Assumindo que o primeiro serviço da lista é representativo
-        // O ideal seria passar um serviço aqui, mas para uma busca inicial funciona
-        const duracaoTeste = 30; // Usamos uma duração padrão para procurar
-
-        const slots = calcularSlotsDisponiveis(dataString, agendamentosProfissional, profissional.horarios, duracaoTeste);
+        const slots = calcularSlotsDisponiveis(dataString, agendamentosProfissional, profissional.horarios, duracaoServico);
 
         if (slots.length > 0) {
             return dataString; // Encontrou! Retorna a data.
@@ -129,14 +119,14 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional) {
 }
 
 /**
- * Salva um novo agendamento no banco de dados.
+ * Salva um novo agendamento no banco de dados. (AGORA SILENCIOSA)
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
         await addDoc(agendamentosRef, {
             empresaId: empresaId,
-            clienteId: currentUser.uid,
+            clienteUid: currentUser.uid, // Alterado para uid para consistência
             clienteNome: currentUser.displayName,
             clienteFoto: currentUser.photoURL,
             profissionalId: agendamento.profissional.id,
@@ -150,17 +140,19 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             status: 'ativo',
             criadoEm: serverTimestamp()
         });
-        alert('Agendamento confirmado com sucesso!');
-        window.location.reload(); // Recarrega a página para limpar a seleção
+        
+        // LINHA REMOVIDA: A mensagem de sucesso foi retirada daqui.
+        // A responsabilidade da mensagem agora é 100% do 'vitrine.js'.
+
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
-        alert('Ocorreu um erro ao confirmar seu agendamento.');
+        // Lança o erro para que a função que chamou (handleConfirmarAgendamento) possa tratá-lo.
+        throw new Error('Ocorreu um erro ao confirmar seu agendamento.');
     }
 }
 
 /**
  * Busca os agendamentos de um cliente específico.
- * OBS: Caso consulte por mais de um campo (clienteId, status, data), Firestore exige índice composto!
  */
 export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) {
     if (!currentUser) return [];
@@ -170,18 +162,16 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
 
         let q;
         if (modo === 'ativos') {
-            // Precisa de índice composto: clienteId + status + data
             q = query(
                 agendamentosRef,
-                where("clienteId", "==", currentUser.uid),
+                where("clienteUid", "==", currentUser.uid),
                 where("status", "==", "ativo"),
                 where("data", ">=", hoje)
             );
         } else { // historico
-            // Precisa de índice composto: clienteId + data
             q = query(
                 agendamentosRef,
-                where("clienteId", "==", currentUser.uid),
+                where("clienteUid", "==", currentUser.uid),
                 where("data", "<", hoje)
             );
         }
@@ -190,16 +180,10 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         // Se erro de índice, mostra instrução clara para o dev/admin
-        if (
-            error.name === "FirebaseError" &&
-            error.message.includes("The query requires an index") &&
-            error.message.includes("firestore/indexes?create_composite=")
-        ) {
-            const link = error.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s"]+/)?.[0];
-            alert(
-                "Sua consulta precisa de um índice no Firestore.\n\n" +
-                (link ? `Clique para criar o índice:\n${link}\n\nDepois de criar, recarregue a página.` : "Copie o link do erro para criar o índice no Firebase.")
-            );
+        if (error.code === 'failed-precondition' && error.message.includes("The query requires an index")) {
+            console.error("ERRO DE ÍNDICE COMPOSTO NO FIRESTORE:", error.message);
+            // Lança um erro mais amigável para a UI
+            throw new Error("Ocorreu um erro ao buscar seus agendamentos. Pode ser necessário configurar o banco de dados.");
         }
         console.error("Erro ao buscar agendamentos do cliente:", error);
         return [];
@@ -207,18 +191,17 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
 }
 
 /**
- * Cancela um agendamento (muda o status para 'cancelado').
+ * Cancela um agendamento (muda o status). (AGORA SILENCIOSA)
  */
-export async function cancelarAgendamento(empresaId, agendamentoId, callback) {
+export async function cancelarAgendamento(empresaId, agendamentoId) {
     try {
         const agendamentoRef = doc(db, 'empresarios', empresaId, 'agendamentos', agendamentoId);
         await updateDoc(agendamentoRef, {
-            status: 'cancelado'
+            status: 'cancelado_pelo_cliente' // Mais específico
         });
-        alert("Agendamento cancelado.");
-        if (callback) callback();
+        // LINHA REMOVIDA: A mensagem de sucesso foi retirada daqui.
     } catch (error) {
         console.error("Erro ao cancelar agendamento:", error);
-        alert("Ocorreu um erro ao cancelar.");
+        throw new Error("Ocorreu um erro ao cancelar o agendamento.");
     }
 }
