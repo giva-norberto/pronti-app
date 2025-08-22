@@ -6,6 +6,7 @@ import { auth, provider, db } from './vitrini-firebase.js';
 
 import { 
     onAuthStateChanged, 
+    signInWithPopup,
     signInWithRedirect,
     getRedirectResult,
     signOut,
@@ -92,6 +93,11 @@ function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
 //   LÓGICA PRINCIPAL DE AUTENTICAÇÃO
 // ======================================================================
 
+function isMobile() {
+    // Detecta mobile de forma robusta
+    return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
 export function setupAuthListener(callback) {
     if (typeof onAuthStateChanged !== "function") {
         console.error("Firebase Auth não carregado corretamente.");
@@ -104,11 +110,10 @@ export function setupAuthListener(callback) {
         }
     });
 
+    // Sempre tenta capturar o resultado do redirect do login Google
     getRedirectResult(auth).then(async (result) => {
         if (result && result.user) {
-            // UI.toggleLoader(true, 'A finalizar o seu login...'); // Descomentar se tiver a função de loader
             await garantirDadosCompletos(result.user);
-            // UI.toggleLoader(false);
         }
     }).catch(error => {
         console.error("Erro ao obter resultado do redirecionamento:", error);
@@ -116,12 +121,22 @@ export function setupAuthListener(callback) {
     });
 }
 
+/**
+ * Login Google - mobile usa Redirect, desktop usa Popup
+ */
 export async function fazerLogin() {
     try {
         await setPersistence(auth, browserLocalPersistence);
-        await signInWithRedirect(auth, provider);
+        if (isMobile()) {
+            await signInWithRedirect(auth, provider);
+        } else {
+            const result = await signInWithPopup(auth, provider);
+            if (result && result.user) {
+                await garantirDadosCompletos(result.user);
+            }
+        }
     } catch (error) {
-        console.error("Erro ao iniciar o login com redirecionamento:", error);
+        console.error("Erro ao iniciar o login:", error);
         await showAlert("Erro no Login", "Não foi possível iniciar o processo de login.");
     }
 }
