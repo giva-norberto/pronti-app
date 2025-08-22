@@ -37,7 +37,9 @@ window.addEventListener('DOMContentLoaded', () => {
         linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
         btnLogout: document.getElementById('btn-logout'),
         msgFree: document.getElementById('mensagem-free'),
-        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso')
+        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
+        boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
+        btnFecharBoasVindas: document.getElementById('fechar-boas-vindas')
     };
 
     let currentUser;
@@ -168,7 +170,20 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
-                // Mensagem de cadastro gratuito (CARD ESPECIAL)
+                // Mensagem de boas-vindas após cadastro (CARD AZUL)
+                if (elements.boasVindasAposCadastro) {
+                    elements.boasVindasAposCadastro.style.display = "block";
+                    if (elements.btnFecharBoasVindas) {
+                        elements.btnFecharBoasVindas.onclick = () => {
+                            elements.boasVindasAposCadastro.style.display = "none";
+                        };
+                    }
+                    setTimeout(() => {
+                        elements.boasVindasAposCadastro.style.display = "none";
+                    }, 7000); // some após 7 segundos
+                }
+
+                // Mensagem de cadastro gratuito (CARD ESPECIAL VERDE - opcional, pode remover se não quiser as duas)
                 if (elements.msgCadastroSucesso) {
                     elements.msgCadastroSucesso.innerHTML = "Seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
                     elements.msgCadastroSucesso.style.display = "block";
@@ -179,14 +194,8 @@ window.addEventListener('DOMContentLoaded', () => {
                             elements.msgFree.style.display = "block";
                         }
                     }, 6000); // 6 segundos para sumir o card de sucesso inicial
-                } else if (elements.msgFree) {
-                    // fallback se não existir o card especial
-                    elements.msgFree.innerHTML = "Seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
-                    elements.msgFree.style.display = "block";
-                } else {
-                    alert("Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!");
                 }
-                
+
                 // Recarrega os dados na página para refletir o novo estado
                 await carregarDadosDaPagina(uid);
             }
@@ -231,6 +240,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         if (elements.msgCadastroSucesso) {
             elements.msgCadastroSucesso.style.display = "none";
+        }
+        if (elements.boasVindasAposCadastro) {
+            elements.boasVindasAposCadastro.style.display = "none";
         }
     }
 
