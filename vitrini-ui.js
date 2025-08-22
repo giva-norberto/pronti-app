@@ -1,25 +1,23 @@
 /**
  * Mostra ou esconde o loader inicial da página.
- * @param {boolean} mostrar - True para mostrar o loader, false para mostrar o conteúdo.
- * @param {string} [mensagem] - Mensagem opcional para o loader.
  */
 export function toggleLoader(mostrar, mensagem = 'A carregar informações do negócio...') {
     const loader = document.getElementById('vitrine-loader');
-    if (loader && loader.querySelector('p')) {
-        loader.querySelector('p').textContent = mensagem;
-    }
+    if (loader && loader.querySelector('p')) loader.querySelector('p').textContent = mensagem;
     if (loader) loader.style.display = mostrar ? 'block' : 'none';
-    
     const content = document.getElementById('vitrine-content');
     if(content) content.style.display = mostrar ? 'none' : 'grid';
 }
 
 /**
- * Preenche os dados iniciais da empresa.
+ * Preenche os dados iniciais da empresa, incluindo as novas informações de contato.
  */
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
+    // --- Preenche o cabeçalho ---
     document.getElementById('logo-publico').src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
     document.getElementById('nome-negocio-publico').textContent = dadosEmpresa.nomeFantasia || "Nome do Negócio";
+
+    // --- Preenche a aba "Informações" ---
     document.getElementById('info-negocio').innerHTML = `<p>${dadosEmpresa.descricao || "Descrição não informada."}</p>`;
     
     const servicosContainer = document.getElementById('info-servicos');
@@ -33,7 +31,58 @@ export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
     } else {
         servicosContainer.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
     }
+
+    // --- ATUALIZADO: Preenche a nova secção de Contato e Localização ---
+    const contatoContainer = document.getElementById('info-contato');
+    let htmlContato = '';
+
+    // Endereço e Mapa
+    if (dadosEmpresa.localizacao) {
+        htmlContato += `
+            <div class="info-item">
+                <strong>Endereço:</strong>
+                <p>${dadosEmpresa.localizacao}</p>
+            </div>
+            <div class="info-item">
+                <strong>Localização:</strong>
+                <div id="map-container" style="width: 100%; height: 250px; border-radius: 12px; background-color: #eef2ff; margin-top: 10px; overflow: hidden; border: 1px solid #e0e7ff;">
+                    <iframe
+                        src="https://maps.google.com/maps?q=${encodeURIComponent(dadosEmpresa.localizacao)}&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                        width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
+            </div>
+        `;
+    }
+
+    // Horário de Funcionamento
+    if (dadosEmpresa.horarioFuncionamento) {
+        htmlContato += `
+            <div class="info-item">
+                <strong>Horário de Atendimento:</strong>
+                <p style="white-space: pre-wrap;">${dadosEmpresa.horarioFuncionamento}</p>
+            </div>
+        `;
+    }
+
+    // Chave PIX
+    if (dadosEmpresa.chavePix) {
+        htmlContato += `
+            <div class="info-item">
+                <strong>PIX para Pagamento:</strong>
+                <p>${dadosEmpresa.chavePix}</p>
+            </div>
+        `;
+    }
+
+    // Se nenhuma informação de contato foi adicionada
+    if (htmlContato === '') {
+        htmlContato = '<p>Nenhuma informação de contato adicional foi fornecida.</p>';
+    }
+
+    contatoContainer.innerHTML = htmlContato;
 }
+
 
 /**
  * Renderiza os cards dos profissionais.
@@ -273,7 +322,7 @@ export async function mostrarAlerta(titulo, mensagem) {
         const btnCancelar = document.getElementById('modal-btn-cancelar');
 
         if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
-            alert(mensagem); // Fallback caso o modal não exista
+            alert(mensagem);
             resolve();
             return;
         }
@@ -309,7 +358,7 @@ export function mostrarConfirmacao(titulo, mensagem) {
         const btnCancelar = document.getElementById('modal-btn-cancelar');
 
         if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
-            resolve(confirm(mensagem)); // Fallback caso o modal não exista
+            resolve(confirm(mensagem));
             return;
         }
 
