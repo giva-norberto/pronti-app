@@ -1182,3 +1182,7 @@ body.dashboard-body {
 #modal-btn-cancelar:hover {
     background-color: #c7d2fe;
 }
+/* Correção de Contraste para o Modal de Mensagens */
+.modal-box p {
+  color: #374151; /* Torna o texto da mensagem mais escuro */
+}
