@@ -22,7 +22,6 @@
                 <h1 id="nome-negocio-publico">Nome do Negócio</h1>
             </div>
             <nav class="sidebar-menu">
-                <!-- ALTERADO: "Agendar" agora é o primeiro e o ativo por padrão -->
                 <button class="menu-btn ativo" data-menu="agendamento">Agendar</button>
                 <button class="menu-btn" data-menu="informacoes">Informações</button>
                 <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
@@ -31,7 +30,7 @@
         </aside>
 
         <main class="main-content-vitrine">
-            <!-- TELA: Agendamento (Agora é a primeira e ativa por padrão) -->
+            <!-- TELA: Agendamento -->
             <div id="menu-agendamento" class="menu-content ativo">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
@@ -72,9 +71,12 @@
                     <h2>Serviços Oferecidos</h2>
                     <div id="info-servicos"></div>
                 </div>
+                <!-- ATUALIZADO: Card de Contato agora tem a estrutura para as novas informações -->
                 <div class="card">
-                    <h2>Contato</h2>
-                    <div id="info-contato"></div>
+                    <h2>Contato e Localização</h2>
+                    <div id="info-contato">
+                        <!-- Os dados serão preenchidos aqui pelo vitrini-ui.js -->
+                    </div>
                 </div>
             </div>
             
@@ -112,7 +114,6 @@
 
     <!-- Bottom Navigation para Mobile -->
     <nav class="bottom-nav-vitrine">
-        <!-- ALTERADO: "Agendar" agora é o primeiro e o ativo por padrão -->
         <button class="ativo" data-menu="agendamento">📅<span>Agendar</span></button>
         <button data-menu="informacoes">📋<span>Info</span></button>
         <button data-menu="visualizacao">📋<span>Meus</span></button>
@@ -135,7 +136,6 @@
     <div id="modal-auth-janela" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
       <div style="background:white;padding:2rem 1.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0003;">
         <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
-        <!-- LOGIN -->
         <div id="modal-auth-login" class="modal-auth-step">
           <h2>Entrar</h2>
           <button type="button" class="modal-auth-btn" id="modal-auth-btn-google" style="width:100%;margin-bottom:1em;">Entrar com Google</button>
@@ -149,7 +149,6 @@
             <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
           </div>
         </div>
-        <!-- CADASTRO -->
         <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
           <h2>Criar Conta</h2>
           <form id="modal-auth-form-cadastro">
