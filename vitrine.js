@@ -50,7 +50,7 @@ function configurarEventosGerais() {
     document.getElementById('lista-servicos').addEventListener('click', handleServicoClick);
     document.getElementById('data-agendamento').addEventListener('change', handleDataChange);
     document.getElementById('grade-horarios').addEventListener('click', handleHorarioClick);
-    document.getElementById('btn-login')?.addEventListener('click', fazerLogin); 
+    document.getElementById('btn-login')?.addEventListener('click', fazerLogin);
     document.getElementById('modal-auth-btn-google')?.addEventListener('click', fazerLogin);
     document.getElementById('btn-logout').addEventListener('click', fazerLogout);
     document.getElementById('btn-confirmar-agendamento').addEventListener('click', handleConfirmarAgendamento);
@@ -63,11 +63,14 @@ function configurarEventosGerais() {
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
+    
+    // ATUALIZADO: Garante que a mensagem de login na tela de agendamento também seja atualizada.
+    UI.toggleAgendamentoLoginPrompt(!user);
 
-    if(user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
+    if (user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
         handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
     }
-    if(!user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
+    if (!user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
         if (UI.exibirMensagemDeLoginAgendamentos) {
             UI.exibirMensagemDeLoginAgendamentos();
         }
@@ -79,15 +82,15 @@ function handleMenuClick(e) {
     if (menuButton) {
         const menuKey = menuButton.getAttribute('data-menu');
         
-        // CORREÇÃO APLICADA AQUI: Passando o ID completo como era originalmente
         UI.trocarAba(`menu-${menuKey}`);
 
+        // ATUALIZADO: Mostra a mensagem de login se o usuário não estiver logado.
         if (menuKey === 'visualizacao') {
             if (state.currentUser) {
                 handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
             } else {
                 if (UI.exibirMensagemDeLoginAgendamentos) {
-                    UI.exibirMensagemDeLoginAgendamentos(); 
+                    UI.exibirMensagemDeLoginAgendamentos();
                 } else {
                     console.warn("Função UI.exibirMensagemDeLoginAgendamentos não encontrada.");
                 }
@@ -104,6 +107,7 @@ async function handleProfissionalClick(e) {
     resetarAgendamento();
     UI.limparSelecao('servico');
     UI.limparSelecao('horario');
+    UI.desabilitarBotaoConfirmar(); // Adicionado para robustez
     UI.mostrarContainerForm(false);
     UI.renderizarServicos([]);
     UI.renderizarHorarios([]);
@@ -138,7 +142,8 @@ async function handleServicoClick(e) {
     setAgendamento('data', null);
     setAgendamento('horario', null);
     UI.limparSelecao('horario');
-
+    UI.desabilitarBotaoConfirmar(); // Adicionado para robustez
+    
     const servicoId = card.dataset.id;
     const servico = state.todosOsServicos.find(s => s.id === servicoId);
     setAgendamento('servico', servico);
@@ -198,6 +203,7 @@ function handleHorarioClick(e) {
 }
 
 async function handleConfirmarAgendamento() {
+    // ATUALIZADO: Abre o modal de login em vez de mostrar um alert.
     if (!state.currentUser) {
         UI.showAlert("Login Necessário", "Você precisa fazer login para confirmar o agendamento.", "info");
         if (UI.abrirModalLogin) UI.abrirModalLogin(); 
@@ -246,6 +252,7 @@ async function handleCancelarClick(e) {
     if (btnCancelar) {
         const agendamentoId = btnCancelar.dataset.id;
         
+        // ATUALIZADO: Usa o modal de confirmação customizado.
         const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
         
         if (confirmou) {
