@@ -14,9 +14,11 @@ import * as UI from './vitrini-ui.js';
 // --- INICIALIZAÇÃO DA PÁGINA ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        UI.toggleLoader(true, "Carregando informações...");
+        UI.toggleLoader(true, "A carregar informações...");
 
         const empresaId = getEmpresaIdFromURL();
+        console.log("ID da Empresa extraído da URL:", empresaId); // Log de depuração
+
         if (!empresaId) {
             throw new Error("ID da Empresa não encontrado na URL. Verifique o link.");
         }
@@ -28,8 +30,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             getTodosServicosDaEmpresa(empresaId)
         ]);
 
+        console.log("Dados da empresa recebidos:", dados); // Log de depuração
+
         if (!dados) {
-            throw new Error("Empresa não encontrada ou indisponível. Verifique o link.");
+            // Este erro é frequentemente causado por regras de segurança que bloqueiam a leitura.
+            // Verifique as suas regras do Firestore para garantir que a coleção 'empresarios' pode ser lida publicamente.
+            throw new Error("Empresa não encontrada ou indisponível. Verifique o link ou as permissões de acesso.");
         }
         
         // Armazena os dados no estado global da aplicação
@@ -47,10 +53,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
         console.error("Erro fatal na inicialização:", error);
+        
+        let userMessage = error.message;
+        // Verifica se o erro é especificamente de permissão do Firebase
+        if (error.code === 'permission-denied' || (error.message && error.message.includes("permission"))) {
+            userMessage = "Não foi possível carregar os dados da empresa por falta de permissão. Verifique as regras de segurança do Firestore para garantir que a leitura pública da coleção 'empresarios' está permitida.";
+        }
+
         // Exibe uma mensagem de erro clara para o usuário final
         const loaderElement = document.getElementById("vitrine-loader");
         if (loaderElement) {
-            loaderElement.innerHTML = `<p style="color:red; text-align:center; padding: 20px;"><b>Ocorreu um erro:</b><br>${error.message}</p>`;
+            loaderElement.innerHTML = `<p style="color:red; text-align:center; padding: 20px;"><b>Ocorreu um erro:</b><br>${userMessage}</p>`;
         }
     } finally {
         UI.toggleLoader(false);
