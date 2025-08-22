@@ -22,31 +22,17 @@
                 <h1 id="nome-negocio-publico">Nome do Negócio</h1>
             </div>
             <nav class="sidebar-menu">
-                <button class="menu-btn ativo" data-menu="informacoes">Informações</button>
-                <button class="menu-btn" data-menu="agendamento">Agendar</button>
+                <!-- ALTERADO: "Agendar" agora é o primeiro e o ativo por padrão -->
+                <button class="menu-btn ativo" data-menu="agendamento">Agendar</button>
+                <button class="menu-btn" data-menu="informacoes">Informações</button>
                 <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
                 <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
             </nav>
         </aside>
 
         <main class="main-content-vitrine">
-            <!-- TELA: Informações -->
-            <div id="menu-informacoes" class="menu-content ativo">
-                <div class="card">
-                    <h2>Sobre o Negócio</h2>
-                    <div id="info-negocio"></div>
-                </div>
-                <div class="card">
-                    <h2>Serviços Oferecidos</h2>
-                    <div id="info-servicos"></div>
-                </div>
-                <div class="card">
-                    <h2>Contato</h2>
-                    <div id="info-contato"></div>
-                </div>
-            </div>
-            <!-- TELA: Agendamento -->
-            <div id="menu-agendamento" class="menu-content">
+            <!-- TELA: Agendamento (Agora é a primeira e ativa por padrão) -->
+            <div id="menu-agendamento" class="menu-content ativo">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
                     <div id="agendamento-login-prompt" style="display: none;">
@@ -75,6 +61,23 @@
                     </div>
                 </div>
             </div>
+
+            <!-- TELA: Informações -->
+            <div id="menu-informacoes" class="menu-content">
+                <div class="card">
+                    <h2>Sobre o Negócio</h2>
+                    <div id="info-negocio"></div>
+                </div>
+                <div class="card">
+                    <h2>Serviços Oferecidos</h2>
+                    <div id="info-servicos"></div>
+                </div>
+                <div class="card">
+                    <h2>Contato</h2>
+                    <div id="info-contato"></div>
+                </div>
+            </div>
+            
             <!-- TELA: Visualização de Agendamentos -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
@@ -89,6 +92,7 @@
                 </div>
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
+            
             <!-- TELA: Perfil -->
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
@@ -108,10 +112,11 @@
 
     <!-- Bottom Navigation para Mobile -->
     <nav class="bottom-nav-vitrine">
-      <button class="ativo" data-menu="informacoes">📋<span>Info</span></button>
-      <button data-menu="agendamento">📅<span>Agendar</span></button>
-      <button data-menu="visualizacao">📋<span>Meus</span></button>
-      <button data-menu="perfil">👤<span>Perfil</span></button>
+        <!-- ALTERADO: "Agendar" agora é o primeiro e o ativo por padrão -->
+        <button class="ativo" data-menu="agendamento">📅<span>Agendar</span></button>
+        <button data-menu="informacoes">📋<span>Info</span></button>
+        <button data-menu="visualizacao">📋<span>Meus</span></button>
+        <button data-menu="perfil">👤<span>Perfil</span></button>
     </nav>
 
     <!-- MODAL DE CONFIRMAÇÃO -->
@@ -161,59 +166,7 @@
       </div>
     </div>
     
-    <!-- SPA NAVIGATION/UX -->
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        function showMenu(menu) {
-          document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
-          document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
-          document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
-          let btnSide = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + menu + '"]');
-          let btnMob = document.querySelector('.bottom-nav-vitrine button[data-menu="' + menu + '"]');
-          let tela = document.getElementById('menu-' + menu);
-          if(btnSide) btnSide.classList.add('ativo');
-          if(btnMob) btnMob.classList.add('ativo');
-          if(tela) tela.classList.add('ativo');
-          if(menu === "informacoes" && window.renderInformacoes) window.renderInformacoes();
-          if(menu === "agendamento" && window.renderAgendamento) window.renderAgendamento();
-          if(menu === "visualizacao" && window.renderVisualizacao) window.renderVisualizacao();
-          if(menu === "perfil" && window.renderPerfil) window.renderPerfil();
-        }
-        // Sidebar navigation
-        document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
-          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); });
-        });
-        // Bottom navigation
-        function toggleNavs() {
-          if(window.innerWidth <= 900) {
-            document.querySelector('.bottom-nav-vitrine').style.display = "flex";
-            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "none";
-          } else {
-            document.querySelector('.bottom-nav-vitrine').style.display = "none";
-            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "";
-          }
-        }
-        toggleNavs();
-        window.addEventListener('resize', toggleNavs);
-
-        document.querySelectorAll('.bottom-nav-vitrine button').forEach(btn => {
-          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-        });
-
-        // Seleção de profissional visual (mobile e desktop)
-        document.getElementById('lista-profissionais').addEventListener('click', function(e) {
-          const card = e.target.closest('.card-profissional');
-          if (!card) return;
-          document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
-          card.classList.add('selecionado');
-          window.state = window.state || {};
-          window.state.agendamento = window.state.agendamento || {};
-          window.state.agendamento.profissionalId = card.dataset.id;
-          if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
-        });
-      });
-    </script>
-    <!-- SCRIPTS FUNCIONAIS DE BACKEND E UI (MÓDULOS DINÂMICOS) -->
+    <!-- SCRIPTS -->
     <script type="module" src="./vitrini-firebase.js"></script>
     <script type="module" src="./vitrini-utils.js"></script>
     <script type="module" src="./vitrini-profissionais.js"></script>
