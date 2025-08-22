@@ -672,3 +672,70 @@ input[type="date"]:focus {
 #modal-btn-cancelar:hover {
     background-color: #c7d2fe;
 }
+/* =============================================== */
+/* ESTILOS PARA SELEÇÃO MÚLTIPLA DE SERVIÇOS     */
+/* =============================================== */
+
+/* Transforma o card num 'label' para poder ser clicado */
+.card-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+/* O checkmark visual */
+.checkmark {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #D1D5DB;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Estilo do checkmark quando selecionado */
+.card-checkbox.selecionado .checkmark {
+    background-color: #fff;
+    border-color: #fff;
+}
+
+/* O "visto" que aparece dentro do checkmark */
+.card-checkbox.selecionado .checkmark::after {
+    content: '✔';
+    font-size: 16px;
+    color: #4F46E5;
+}
+
+/* Container do resumo */
+.servicos-resumo-container {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.servicos-resumo p {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 15px;
+}
+
+.btn-prosseguir {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    background: #4F46E5;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-prosseguir:hover {
+    background: #4338ca;
+}
