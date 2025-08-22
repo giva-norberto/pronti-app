@@ -1,4 +1,4 @@
-// O Maestro da Aplicação (Revisado e Confirmado)
+// O Maestro da Aplicação (Versão otimizada para Mobile)
 
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
@@ -7,7 +7,6 @@ import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
 // --- INICIALIZAÇÃO ---
-
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
@@ -33,46 +32,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         configurarEventosGerais();
         setupAuthListener(handleUserAuthStateChange);
 
-        UI.toggleLoader(false);
-
     } catch (error) {
         console.error("Erro fatal na inicialização:", error);
         document.getElementById("vitrine-loader").innerHTML = `<p style="color:red;">${error.message}</p>`;
+    } finally {
+        UI.toggleLoader(false);
     }
 });
 
-// --- CONFIGURAÇÃO DE EVENTOS ---
-
+// --- CONFIGURAÇÃO DE EVENTOS (Delegação centralizada) ---
 function configurarEventosGerais() {
-    document.querySelector('.sidebar-menu').addEventListener('click', handleMenuClick);
-    document.getElementById('lista-profissionais').addEventListener('click', handleProfissionalClick);
-    document.getElementById('lista-servicos').addEventListener('click', handleServicoClick);
-    document.getElementById('data-agendamento').addEventListener('change', handleDataChange);
-    document.getElementById('grade-horarios').addEventListener('click', handleHorarioClick);
-    document.getElementById('btn-login').addEventListener('click', fazerLogin);
-    document.getElementById('btn-logout').addEventListener('click', fazerLogout);
-    document.getElementById('btn-confirmar-agendamento').addEventListener('click', handleConfirmarAgendamento);
-    document.getElementById('botoes-agendamento').addEventListener('click', handleFiltroAgendamentos);
-    document.getElementById('lista-agendamentos-visualizacao').addEventListener('click', handleCancelarClick);
+    document.addEventListener('click', async (e) => {
+        try {
+            if (e.target.matches('.sidebar-menu .menu-btn')) handleMenuClick(e);
+            else if (e.target.closest('#lista-profissionais .card-profissional')) handleProfissionalClick(e);
+            else if (e.target.closest('#lista-servicos .card-servico')) handleServicoClick(e);
+            else if (e.target.closest('#grade-horarios .btn-horario')) handleHorarioClick(e);
+            else if (e.target.matches('#btn-login')) await fazerLogin();
+            else if (e.target.matches('#btn-logout')) await fazerLogout();
+            else if (e.target.matches('#btn-confirmar-agendamento')) await handleConfirmarAgendamento();
+            else if (e.target.matches('#botoes-agendamento .btn-toggle')) await handleFiltroAgendamentos(e);
+            else if (e.target.matches('#lista-agendamentos-visualizacao .btn-cancelar')) await handleCancelarClick(e);
+        } catch (err) {
+            console.error("Erro em evento:", err);
+        }
+    });
+
+    // debounce para input de data
+    let dataTimeout;
+    document.getElementById('data-agendamento').addEventListener('change', (e) => {
+        clearTimeout(dataTimeout);
+        dataTimeout = setTimeout(() => handleDataChange(e), 200);
+    });
 }
 
-// --- HANDLERS (As Funções que os Eventos Chamam) ---
-
+// --- HANDLERS ---
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
-    if(user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
+    if (user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
         handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
     }
 }
 
 function handleMenuClick(e) {
-    if (e.target.matches('.menu-btn')) {
-        const menuKey = e.target.getAttribute('data-menu');
-        UI.trocarAba(`menu-${menuKey}`);
-        if (menuKey === 'visualizacao' && state.currentUser) {
-            handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
-        }
+    const menuKey = e.target.getAttribute('data-menu');
+    UI.trocarAba(`menu-${menuKey}`);
+    if (menuKey === 'visualizacao' && state.currentUser) {
+        handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
     }
 }
 
@@ -81,25 +88,28 @@ async function handleProfissionalClick(e) {
     if (!card) return;
 
     resetarAgendamento();
-    UI.limparSelecao('servico');
-    UI.limparSelecao('horario');
-    UI.mostrarContainerForm(false);
-    UI.renderizarServicos([]);
-    UI.renderizarHorarios([]);
+    UI.resetFormSelecoes();
 
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
-    
-    profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
-    setAgendamento('profissional', profissional);
 
-    const servicosDoProfissional = (profissional.servicos || []).map(servicoId => 
-        state.todosOsServicos.find(servico => servico.id === servicoId)
-    ).filter(Boolean);
+    try {
+        UI.toggleLoader(true, "Carregando horários...");
+        profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
+        setAgendamento('profissional', profissional);
 
-    UI.selecionarCard('profissional', profissionalId);
-    UI.mostrarContainerForm(true);
-    UI.renderizarServicos(servicosDoProfissional);
+        const servicosDoProfissional = (profissional.servicos || [])
+            .map(id => state.todosOsServicos.find(s => s.id === id))
+            .filter(Boolean);
+
+        UI.selecionarCard('profissional', profissionalId);
+        UI.mostrarContainerForm(true);
+        UI.renderizarServicos(servicosDoProfissional);
+    } catch (err) {
+        console.error("Erro ao carregar profissional:", err);
+    } finally {
+        UI.toggleLoader(false);
+    }
 }
 
 async function handleServicoClick(e) {
@@ -113,20 +123,24 @@ async function handleServicoClick(e) {
     const servicoId = card.dataset.id;
     const servico = state.todosOsServicos.find(s => s.id === servicoId);
     setAgendamento('servico', servico);
-    
+
     UI.selecionarCard('servico', servicoId);
-    
-    UI.atualizarStatusData(true, 'A procurar a data mais próxima com vagas...');
+    UI.atualizarStatusData(true, 'Procurando data disponível...');
 
-    const primeiraDataDisponivel = await encontrarPrimeiraDataComSlots(state.empresaId, state.agendamento.profissional);
-
-    if (primeiraDataDisponivel) {
+    try {
+        const primeiraDataDisponivel = await encontrarPrimeiraDataComSlots(state.empresaId, state.agendamento.profissional);
         const dataInput = document.getElementById('data-agendamento');
-        dataInput.value = primeiraDataDisponivel;
-        dataInput.disabled = false;
-        dataInput.dispatchEvent(new Event('change')); // Dispara o evento para carregar os horários
-    } else {
-        UI.renderizarHorarios([], 'Nenhuma data disponível para este profissional nos próximos 3 meses.');
+
+        if (primeiraDataDisponivel) {
+            dataInput.value = primeiraDataDisponivel;
+            dataInput.disabled = false;
+            dataInput.dispatchEvent(new Event('change'));
+        } else {
+            UI.renderizarHorarios([], 'Nenhuma data disponível nos próximos 3 meses.');
+        }
+    } catch (err) {
+        console.error("Erro ao buscar datas:", err);
+        UI.renderizarHorarios([], 'Erro ao carregar datas.');
     }
 }
 
@@ -138,12 +152,17 @@ async function handleDataChange(e) {
     const { profissional, servico, data } = state.agendamento;
     if (!profissional || !servico || !data) return;
 
-    UI.renderizarHorarios([], 'A calcular horários...');
-    const todosAgendamentos = await buscarAgendamentosDoDia(state.empresaId, data);
-    const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
+    try {
+        UI.renderizarHorarios([], 'Carregando horários...');
+        const todosAgendamentos = await buscarAgendamentosDoDia(state.empresaId, data);
+        const agendamentosProfissional = todosAgendamentos.filter(ag => ag.profissionalId === profissional.id);
 
-    const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, servico.duracao);
-    UI.renderizarHorarios(slots);
+        const slots = calcularSlotsDisponiveis(data, agendamentosProfissional, profissional.horarios, servico.duracao);
+        UI.renderizarHorarios(slots);
+    } catch (err) {
+        console.error("Erro ao calcular horários:", err);
+        UI.renderizarHorarios([], 'Erro ao calcular horários.');
+    }
 }
 
 function handleHorarioClick(e) {
@@ -166,31 +185,46 @@ async function handleConfirmarAgendamento() {
     
     const btn = document.getElementById('btn-confirmar-agendamento');
     btn.disabled = true;
-    btn.textContent = 'A agendar...';
-    
-    await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
-    btn.textContent = 'Confirmar Agendamento'; // Em caso de erro, volta ao normal
+    btn.textContent = 'Agendando...';
+
+    try {
+        await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
+    } catch (err) {
+        console.error("Erro ao salvar agendamento:", err);
+    } finally {
+        btn.textContent = 'Confirmar Agendamento';
+        btn.disabled = false;
+    }
 }
 
 async function handleFiltroAgendamentos(e) {
     if (!e.target.matches('.btn-toggle')) return;
     const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
-    
-    UI.selecionarFiltro(modo);
 
-    UI.renderizarAgendamentosComoCards([], 'Buscando agendamentos...');
-    const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
-    UI.renderizarAgendamentosComoCards(agendamentos, modo);
+    UI.selecionarFiltro(modo);
+    UI.renderizarAgendamentosComoCards([], 'Buscando...');
+
+    try {
+        const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
+        UI.renderizarAgendamentosComoCards(agendamentos, modo);
+    } catch (err) {
+        console.error("Erro ao buscar agendamentos:", err);
+        UI.renderizarAgendamentosComoCards([], 'Erro ao carregar.');
+    }
 }
 
 async function handleCancelarClick(e) {
-    if (e.target.matches('.btn-cancelar')) {
-        const agendamentoId = e.target.dataset.id;
-        const confirmou = confirm("Tem certeza que deseja cancelar este agendamento?");
-        if (confirmou) {
-            await cancelarAgendamento(state.empresaId, agendamentoId, () => {
-                handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
-            });
-        }
+    const agendamentoId = e.target.dataset.id;
+    if (!agendamentoId) return;
+
+    const confirmou = confirm("Tem certeza que deseja cancelar este agendamento?");
+    if (!confirmou) return;
+
+    try {
+        await cancelarAgendamento(state.empresaId, agendamentoId, () => {
+            handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+        });
+    } catch (err) {
+        console.error("Erro ao cancelar:", err);
     }
 }
