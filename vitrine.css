@@ -943,3 +943,98 @@ html {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+/* =============================================== */
+/* MODAIS CUSTOMIZADOS - CENTRALIZADOS E MODERNOS  */
+/* =============================================== */
+#custom-confirm-modal {
+    display: none; /* ou flex quando ativo via JS */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+    background: rgba(31, 41, 55, 0.65); /* overlay escuro */
+    z-index: 9999;
+    transition: background 0.3s;
+}
+
+#custom-confirm-modal.flex {
+    display: flex;
+}
+
+#custom-confirm-modal .modal-content {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 8px 40px rgba(79,70,229,0.18);
+    padding: 36px 28px 28px 28px;
+    min-width: 320px;
+    max-width: 90vw;
+    text-align: center;
+    position: relative;
+    animation: fadeIn 0.25s;
+}
+
+#custom-confirm-modal h2,
+#custom-confirm-modal #modal-titulo {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #4F46E5;
+    margin-bottom: 18px;
+}
+
+#custom-confirm-modal p,
+#custom-confirm-modal #modal-mensagem {
+    font-size: 1.05rem;
+    color: #374151;
+    margin-bottom: 30px;
+}
+
+#custom-confirm-modal button {
+    background: linear-gradient(135deg, #8B5CF6, #EC4899);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0 10px;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+#custom-confirm-modal #modal-btn-cancelar {
+    background: #E5E7EB;
+    color: #4F46E5;
+}
+
+#custom-confirm-modal #modal-btn-cancelar:hover {
+    background: #F87171;
+    color: #fff;
+}
+
+#custom-confirm-modal #modal-btn-confirmar:hover {
+    background: #059669;
+}
+
+@media (max-width: 600px) {
+    #custom-confirm-modal .modal-content {
+        min-width: unset;
+        width: 92vw;
+        padding: 20px 8px 16px 8px;
+    }
+    #custom-confirm-modal h2,
+    #custom-confirm-modal #modal-titulo {
+        font-size: 1.05rem;
+    }
+    #custom-confirm-modal p,
+    #custom-confirm-modal #modal-mensagem {
+        font-size: 0.95rem;
+    }
+    #custom-confirm-modal button {
+        font-size: 0.95rem;
+        padding: 10px 15px;
+        margin: 0 4px;
+    }
+}
