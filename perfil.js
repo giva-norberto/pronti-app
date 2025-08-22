@@ -25,6 +25,11 @@ window.addEventListener('DOMContentLoaded', () => {
         form: document.getElementById('form-perfil'),
         nomeNegocioInput: document.getElementById('nomeNegocio'),
         descricaoInput: document.getElementById('descricao'),
+        // --- NOVOS CAMPOS MAPEADOS AQUI ---
+        localizacaoInput: document.getElementById('localizacao'),
+        horarioFuncionamentoInput: document.getElementById('horarioFuncionamento'),
+        chavePixInput: document.getElementById('chavePix'),
+        // ------------------------------------
         logoInput: document.getElementById('logoNegocio'),
         logoPreview: document.getElementById('logo-preview'),
         btnUploadLogo: document.getElementById('btn-upload-logo'),
@@ -123,8 +128,13 @@ window.addEventListener('DOMContentLoaded', () => {
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
                 descricao: elements.descricaoInput?.value.trim() || '',
+                // --- NOVOS CAMPOS ADICIONADOS AO SALVAR ---
+                localizacao: elements.localizacaoInput?.value.trim() || '',
+                horarioFuncionamento: elements.horarioFuncionamentoInput?.value.trim() || '',
+                chavePix: elements.chavePixInput?.value.trim() || '',
+                // -----------------------------------------
                 donoId: uid,
-                plano: "free" // <-- INCLUSÃO CIRÚRGICA DO CAMPO FREE
+                plano: "free"
             };
 
             if (empresaId) {
@@ -138,10 +148,8 @@ window.addEventListener('DOMContentLoaded', () => {
                         dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
                         console.log("Upload bem-sucedido:", dadosEmpresa.logoUrl);
                     } catch (uploadError) {
-                        // CORREÇÃO: Mostra um alerta muito mais claro sobre o problema de permissão
                         console.error("ERRO NO UPLOAD:", uploadError);
                         alert(`Falha no upload da logo. Isto é geralmente um problema de permissão (CORS ou Chave de API). Verifique o guia no Canvas e as configurações no Google Cloud. Erro: ${uploadError.message}`);
-                        // Pára a execução para não salvar dados inconsistentes e reativa o botão no 'finally'
                         return; 
                     }
                 }
@@ -149,7 +157,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
 
-                // Após editar, verifica e exibe mensagem do plano free
                 if (dadosEmpresa.plano === "free" && elements.msgFree) {
                     elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
                     elements.msgFree.style.display = "block";
@@ -170,7 +177,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
-                // Mensagem de boas-vindas após cadastro (CARD AZUL)
                 if (elements.boasVindasAposCadastro) {
                     elements.boasVindasAposCadastro.style.display = "block";
                     if (elements.btnFecharBoasVindas) {
@@ -180,10 +186,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                     setTimeout(() => {
                         elements.boasVindasAposCadastro.style.display = "none";
-                    }, 7000); // some após 7 segundos
+                    }, 7000);
                 }
 
-                // Mensagem de cadastro gratuito (CARD ESPECIAL VERDE - opcional, pode remover se não quiser as duas)
                 if (elements.msgCadastroSucesso) {
                     elements.msgCadastroSucesso.innerHTML = "Seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
                     elements.msgCadastroSucesso.style.display = "block";
@@ -193,10 +198,9 @@ window.addEventListener('DOMContentLoaded', () => {
                             elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
                             elements.msgFree.style.display = "block";
                         }
-                    }, 6000); // 6 segundos para sumir o card de sucesso inicial
+                    }, 6000);
                 }
 
-                // Recarrega os dados na página para refletir o novo estado
                 await carregarDadosDaPagina(uid);
             }
 
@@ -254,6 +258,13 @@ window.addEventListener('DOMContentLoaded', () => {
     function preencherFormulario(dadosEmpresa) {
         if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
         if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
+        
+        // --- PREENCHIMENTO DOS NOVOS CAMPOS ---
+        if (elements.localizacaoInput) elements.localizacaoInput.value = dadosEmpresa.localizacao || '';
+        if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
+        if (elements.chavePixInput) elements.chavePixInput.value = dadosEmpresa.chavePix || '';
+        // ------------------------------------
+
         if (elements.logoPreview && dadosEmpresa.logoUrl) {
             elements.logoPreview.src = dadosEmpresa.logoUrl;
         }
