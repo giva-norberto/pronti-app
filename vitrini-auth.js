@@ -1,7 +1,5 @@
 // ======================================================================
-//        VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO (CORRIGIDO)
-//    Responsabilidade: Gerir o login, logout e o estado do
-//                        utilizador na vitrine.
+//        VITRINI-AUTH.JS - MÓDULO DE AUTENTICAÇÃO (VERSÃO CORRIGIDA E AUTOSSUFICIENTE)
 // ======================================================================
 
 import { auth, provider, db } from './vitrini-firebase.js';
@@ -26,13 +24,75 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { showAlert } from './vitrini-utils.js';
-// NOVO: Importa a função que vai controlar o modal de dados do utilizador
-import { pedirDadosAdicionaisModal } from './vitrine-auth-modal.js';
+// REMOVIDO: A importação que causava o erro foi removida.
 
+// ======================================================================
+//   FUNÇÃO DO MODAL (agora dentro deste arquivo para evitar erros)
+// ======================================================================
 /**
- * Configura o listener que observa mudanças no estado de autenticação (login/logout).
- * @param {Function} callback - A função a ser executada quando o estado de auth mudar.
+ * Abre um modal para pedir dados adicionais (nome, telefone) ao utilizador.
+ * Retorna uma Promise que resolve com os dados preenchidos ou rejeita se o utilizador cancelar.
+ * @param {object} dadosAtuais - Contém o nome e telefone que já temos para pré-preencher.
+ * @returns {Promise<object>} - Uma promessa que resolve com { nome, telefone }.
  */
+function pedirDadosAdicionaisModal(dadosAtuais = { nome: '', telefone: '' }) {
+    return new Promise((resolve, reject) => {
+        // --- Conecte estes IDs com os elementos do seu HTML ---
+        const modal = document.getElementById('modal-auth-janela'); 
+        const form = document.getElementById('modal-auth-form-cadastro'); 
+        const nomeInput = document.getElementById('modal-auth-cadastro-nome');
+        const telefoneInput = document.getElementById('modal-auth-cadastro-telefone');
+        const btnSalvar = form.querySelector('button'); 
+        const btnCancelar = document.getElementById('modal-auth-btn-to-login');
+
+        // Mostra a secção correta do modal e exibe-o
+        document.getElementById('modal-auth-login').style.display = 'none';
+        document.getElementById('modal-auth-cadastro').style.display = 'block';
+        modal.style.display = 'flex';
+        
+        // Altera os textos para "Completar Cadastro"
+        modal.querySelector('#modal-auth-cadastro h2').textContent = 'Complete o seu Cadastro';
+        btnSalvar.textContent = 'Salvar e Continuar';
+
+        // Pré-preenche os campos
+        nomeInput.value = dadosAtuais.nome || '';
+        telefoneInput.value = dadosAtuais.telefone || '';
+        
+        if(nomeInput.value) { telefoneInput.focus(); } else { nomeInput.focus(); }
+
+        const aoSubmeter = (e) => {
+            e.preventDefault();
+            const nome = nomeInput.value.trim();
+            const telefoneLimpo = telefoneInput.value.replace(/\D/g, "");
+
+            if (!nome) { alert("Por favor, preencha o seu nome."); return; }
+            if (!/^\d{9,15}$/.test(telefoneLimpo)) { alert("Por favor, digite um telefone válido."); return; }
+
+            limparEventos();
+            modal.style.display = 'none';
+            resolve({ nome, telefone: telefoneLimpo });
+        };
+
+        const aoCancelar = () => {
+            limparEventos();
+            modal.style.display = 'none';
+            reject(new Error("O utilizador cancelou a operação."));
+        };
+
+        const limparEventos = () => {
+            form.removeEventListener('submit', aoSubmeter);
+            btnCancelar.removeEventListener('click', aoCancelar);
+        };
+
+        form.addEventListener('submit', aoSubmeter);
+        btnCancelar.addEventListener('click', aoCancelar);
+    });
+}
+
+// ======================================================================
+//   LÓGICA PRINCIPAL DE AUTENTICAÇÃO
+// ======================================================================
+
 export function setupAuthListener(callback) {
     if (typeof onAuthStateChanged !== "function") {
         console.error("Firebase Auth não carregado corretamente.");
@@ -47,9 +107,9 @@ export function setupAuthListener(callback) {
 
     getRedirectResult(auth).then(async (result) => {
         if (result && result.user) {
-            UI.toggleLoader(true, 'A finalizar o seu login...'); // Mostra um loader
+            // UI.toggleLoader(true, 'A finalizar o seu login...'); // Descomentar se tiver a função de loader
             await garantirDadosCompletos(result.user);
-            UI.toggleLoader(false); // Esconde o loader
+            // UI.toggleLoader(false);
         }
     }).catch(error => {
         console.error("Erro ao obter resultado do redirecionamento:", error);
@@ -57,9 +117,6 @@ export function setupAuthListener(callback) {
     });
 }
 
-/**
- * Inicia o processo de login com o Google usando o método de redirecionamento.
- */
 export async function fazerLogin() {
     try {
         await setPersistence(auth, browserLocalPersistence);
@@ -70,10 +127,6 @@ export async function fazerLogin() {
     }
 }
 
-/**
- * Garante que o perfil do utilizador tenha nome e telefone, usando um MODAL em vez de 'prompt'.
- * @param {object} user - O objeto do utilizador do Firebase Auth.
- */
 async function garantirDadosCompletos(user) {
     try {
         const empresaId = getEmpresaIdFromUrl();
@@ -92,27 +145,22 @@ async function garantirDadosCompletos(user) {
         let nome = user.displayName || dadosCliente.nome || '';
         let telefone = user.phoneNumber || dadosCliente.telefone || '';
 
-        // Se os dados estiverem faltando, chama o modal para o utilizador preencher
         if (nomeFaltando || telefoneFaltando) {
             try {
-                // Esta função (que você vai criar no passo 2) abre o modal e espera o resultado
                 const dadosDoModal = await pedirDadosAdicionaisModal({ nome, telefone });
                 nome = dadosDoModal.nome;
                 telefone = dadosDoModal.telefone;
             } catch (error) {
-                // O utilizador fechou o modal ou cancelou
                 await showAlert("Cadastro incompleto", "É necessário preencher os seus dados para continuar.");
-                await signOut(auth); // Desloga o utilizador para não o deixar num estado incompleto
+                await signOut(auth);
                 return;
             }
         }
         
-        // Atualiza o perfil no Firebase Auth se o nome foi preenchido agora
         if (nomeFaltando && nome) {
             await updateProfile(user, { displayName: nome });
         }
         
-        // Salva os dados completos no Firestore
         await setDoc(clienteDocRef, {
             nome: nome.trim(),
             email: user.email,
@@ -130,13 +178,6 @@ async function garantirDadosCompletos(user) {
     }
 }
 
-// ======================================================================
-//   AS FUNÇÕES ABAIXO FORAM MANTIDAS SEM ALTERAÇÕES
-// ======================================================================
-
-/**
- * Realiza login com email e senha.
- */
 export async function loginComEmailSenha(email, senha) {
     try {
         await setPersistence(auth, browserLocalPersistence);
@@ -149,9 +190,6 @@ export async function loginComEmailSenha(email, senha) {
     }
 }
 
-/**
- * Realiza cadastro com email, senha, nome e telefone.
- */
 export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
     try {
         await setPersistence(auth, browserLocalPersistence);
@@ -161,11 +199,7 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
         const empresaId = getEmpresaIdFromUrl();
         const clienteDocRef = doc(db, `empresarios/${empresaId}/clientes/${result.user.uid}`);
         await setDoc(clienteDocRef, {
-            nome,
-            email,
-            telefone,
-            google: false,
-            criadoEm: serverTimestamp()
+            nome, email, telefone, google: false, criadoEm: serverTimestamp()
         }, { merge: true });
 
         return result.user;
@@ -178,9 +212,6 @@ export async function cadastrarComEmailSenha(nome, email, senha, telefone) {
     }
 }
 
-/**
- * Inicia o processo de logout do usuário.
- */
 export async function fazerLogout() {
     try {
         await signOut(auth);
@@ -190,9 +221,6 @@ export async function fazerLogout() {
     }
 }
 
-/**
- * Utilitário: busca empresaId da URL (?empresa=xxxx)
- */
 function getEmpresaIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('empresa');
