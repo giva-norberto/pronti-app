@@ -1,4 +1,4 @@
-// O Maestro da Aplicação (Revisado e Confirmado)
+// O Maestro da Aplicação (Revisado e Corrigido)
 
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const empresaId = getEmpresaIdFromURL();
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
-        // Bloco de inicialização de dados foi mantido, pois está correto.
         const [dados, profissionais, todosServicos] = await Promise.all([
             getDadosEmpresa(empresaId),
             getProfissionaisDaEmpresa(empresaId),
@@ -45,19 +44,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- CONFIGURAÇÃO DE EVENTOS ---
 
 function configurarEventosGerais() {
-    // Adicionado listener também para a navegação mobile
     document.querySelector('.sidebar-menu')?.addEventListener('click', handleMenuClick);
     document.querySelector('.bottom-nav-vitrine')?.addEventListener('click', handleMenuClick);
-
     document.getElementById('lista-profissionais').addEventListener('click', handleProfissionalClick);
     document.getElementById('lista-servicos').addEventListener('click', handleServicoClick);
     document.getElementById('data-agendamento').addEventListener('change', handleDataChange);
     document.getElementById('grade-horarios').addEventListener('click', handleHorarioClick);
-    
-    // Listeners para o modal de autenticação
-    document.getElementById('btn-login')?.addEventListener('click', fazerLogin); // Para o botão principal
-    document.getElementById('modal-auth-btn-google')?.addEventListener('click', fazerLogin); // Para o botão no modal
-    
+    document.getElementById('btn-login')?.addEventListener('click', fazerLogin); 
+    document.getElementById('modal-auth-btn-google')?.addEventListener('click', fazerLogin);
     document.getElementById('btn-logout').addEventListener('click', fazerLogout);
     document.getElementById('btn-confirmar-agendamento').addEventListener('click', handleConfirmarAgendamento);
     document.getElementById('botoes-agendamento').addEventListener('click', handleFiltroAgendamentos);
@@ -70,33 +64,28 @@ function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
 
-    // Se o utilizador logar e já estiver na tela de agendamentos, busca os dados.
     if(user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
         handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
     }
-    // Se o utilizador deslogar e estiver na tela de agendamentos, mostra a mensagem de login.
     if(!user && document.getElementById('menu-visualizacao')?.classList.contains('ativo')) {
-        UI.exibirMensagemDeLoginAgendamentos();
+        if (UI.exibirMensagemDeLoginAgendamentos) {
+            UI.exibirMensagemDeLoginAgendamentos();
+        }
     }
 }
 
-/**
- * REVISADO: Função de clique no menu agora lida com o caso de utilizador não logado.
- */
 function handleMenuClick(e) {
     const menuButton = e.target.closest('[data-menu]');
     if (menuButton) {
         const menuKey = menuButton.getAttribute('data-menu');
-        UI.trocarAba(menuKey); // A função trocarAba no UI deve lidar com o id completo 'menu-...'
+        
+        // CORREÇÃO APLICADA AQUI: Passando o ID completo como era originalmente
+        UI.trocarAba(`menu-${menuKey}`);
 
-        // LÓGICA CORRIGIDA:
         if (menuKey === 'visualizacao') {
             if (state.currentUser) {
-                // Se o utilizador ESTÁ logado, busca os agendamentos.
                 handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
             } else {
-                // Se o utilizador NÃO ESTÁ logado, chama a função do UI para mostrar a mensagem.
-                // Lembre-se de adicionar a função 'exibirMensagemDeLoginAgendamentos' ao seu vitrini-ui.js
                 if (UI.exibirMensagemDeLoginAgendamentos) {
                     UI.exibirMensagemDeLoginAgendamentos(); 
                 } else {
@@ -122,8 +111,7 @@ async function handleProfissionalClick(e) {
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
     
-    // Adicionado um loader para feedback do utilizador
-    UI.selecionarCard('profissional', profissionalId, true); // O 'true' indica estado de loading
+    UI.selecionarCard('profissional', profissionalId, true);
 
     try {
         profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
@@ -131,7 +119,7 @@ async function handleProfissionalClick(e) {
 
         const servicosDoProfissional = (profissional.servicos || []).map(servicoId => 
             state.todosOsServicos.find(servico => servico.id === servicoId)
-        ).filter(Boolean); // filter(Boolean) remove quaisquer resultados nulos ou indefinidos.
+        ).filter(Boolean);
 
         UI.mostrarContainerForm(true);
         UI.renderizarServicos(servicosDoProfissional);
@@ -139,7 +127,7 @@ async function handleProfissionalClick(e) {
         console.error("Erro ao buscar horários do profissional:", error);
         UI.showAlert("Erro", "Não foi possível carregar os dados deste profissional.");
     } finally {
-        UI.selecionarCard('profissional', profissionalId, false); // Remove o estado de loading
+        UI.selecionarCard('profissional', profissionalId, false);
     }
 }
 
@@ -166,7 +154,7 @@ async function handleServicoClick(e) {
             const dataInput = document.getElementById('data-agendamento');
             dataInput.value = primeiraDataDisponivel;
             dataInput.disabled = false;
-            dataInput.dispatchEvent(new Event('change')); // Dispara o evento para carregar os horários
+            dataInput.dispatchEvent(new Event('change'));
         } else {
             UI.renderizarHorarios([], 'Nenhuma data disponível para este profissional nos próximos 3 meses.');
             UI.atualizarStatusData(false);
@@ -212,8 +200,7 @@ function handleHorarioClick(e) {
 async function handleConfirmarAgendamento() {
     if (!state.currentUser) {
         UI.showAlert("Login Necessário", "Você precisa fazer login para confirmar o agendamento.", "info");
-        // A função de UI deve ser inteligente para abrir o modal de login se necessário
-        UI.abrirModalLogin(); 
+        if (UI.abrirModalLogin) UI.abrirModalLogin(); 
         return;
     }
 
@@ -230,7 +217,6 @@ async function handleConfirmarAgendamento() {
     
     try {
         await salvarAgendamento(state.empresaId, state.currentUser, state.agendamento);
-        // O sucesso é tratado pelo listener 'onSnapshot' em 'salvarAgendamento'
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         UI.showAlert("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
@@ -259,18 +245,15 @@ async function handleCancelarClick(e) {
     const btnCancelar = e.target.closest('.btn-cancelar');
     if (btnCancelar) {
         const agendamentoId = btnCancelar.dataset.id;
-        // Substituído 'confirm' por um modal de confirmação mais elegante
+        
         const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
         
         if (confirmou) {
             btnCancelar.disabled = true;
             btnCancelar.textContent = "A cancelar...";
             try {
-                // A função de cancelar agora pode ser mais simples
                 await cancelarAgendamento(state.empresaId, agendamentoId);
                 UI.showAlert("Sucesso", "Agendamento cancelado com sucesso!");
-                // O listener do Firestore em 'buscarAgendamentosDoCliente' deve atualizar a UI automaticamente.
-                // Mas podemos forçar uma re-busca por segurança.
                 handleFiltroAgendamentos({ target: document.querySelector('#botoes-agendamento .btn-toggle.ativo') });
             } catch (error) {
                 console.error("Erro ao cancelar agendamento:", error);
