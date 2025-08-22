@@ -335,3 +335,14 @@ export function mostrarConfirmacao(titulo, mensagem) {
         btnCancelar.addEventListener('click', onCancelar, { once: true });
     });
 }
+
+/**
+ * Mostra um alerta simples ou customizado.
+ * @param {string} titulo
+ * @param {string} mensagem
+ * @param {string} [tipo="info"]
+ */
+export function showAlert(titulo, mensagem, tipo = "info") {
+    // Alerta simples - você pode substituir por modal/toast customizado conforme necessário.
+    alert(`${titulo}\n\n${mensagem}`);
+}
