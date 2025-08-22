@@ -2,209 +2,389 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-    <title>Agendamento Online - Salão de Beleza</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Agendamento Online</title>
     
     <link rel="stylesheet" href="vitrine-melhorado.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#4F46E5">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Agendamento">
+    <style>
+      /* Ajustes responsivos mobile modernos */
+      body {
+        font-family: 'Poppins', Arial, sans-serif;
+        background: #f6f8fa;
+        margin: 0;
+      }
+      .vitrine-container {
+        display: flex;
+        min-height: 100vh;
+        background: #f6f8fa;
+      }
+      .sidebar-vitrine {
+        width: 250px;
+        background: #fff;
+        box-shadow: 0 2px 16px 0 #21213b0d;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .header-vitrine {
+        padding: 2.5rem 1.5rem 1rem 1.5rem;
+        border-bottom: 1px solid #e0e7ff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .header-vitrine img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #e0e7ff;
+        object-fit: cover;
+        margin-bottom: 6px;
+      }
+      .header-vitrine h1 {
+        font-size: 1.22rem;
+        font-weight: 700;
+        color: #4f46e5;
+        margin: 0;
+        text-align: center;
+      }
+      .sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        padding: 1.8rem 1.5rem;
+      }
+      .sidebar-menu .menu-btn {
+        background: none;
+        border: none;
+        text-align: left;
+        padding: 10px 12px;
+        border-radius: 8px;
+        color: #555;
+        font-size: 1.07rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.18s, color 0.18s;
+      }
+      .sidebar-menu .menu-btn.ativo, .sidebar-menu .menu-btn:hover {
+        background: #e0e7ff;
+        color: #4f46e5;
+      }
+      .main-content-vitrine {
+        flex: 1;
+        padding: 36px 2vw 24px 2vw;
+        max-width: 900px;
+        margin: 0 auto;
+        min-height: 100vh;
+      }
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px 0 #21213b0d;
+        padding: 28px 20px 22px 20px;
+        margin-bottom: 18px;
+      }
+      .form-group {
+        margin-bottom: 18px;
+      }
+      .form-group label {
+        font-weight: 500;
+        color: #444;
+        margin-bottom: 5px;
+        display: block;
+      }
+      .profissionais-container, .servicos-container-cards, .horarios-container-grid {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .card-profissional, .card-servico, .btn-horario {
+        background: #f6f8fa;
+        border-radius: 10px;
+        padding: 12px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1em;
+        min-width: 80px;
+        transition: border 0.15s, background 0.15s;
+      }
+      .card-profissional.selecionado, .card-servico.selecionado, .btn-horario.selecionado {
+        border: 2px solid #6366f1;
+        background: #e0e7ff;
+      }
+      .btn-horario {
+        font-weight: 500;
+        min-width: 60px;
+        justify-content: center;
+        color: #3730a3;
+      }
+      #btn-confirmar-agendamento {
+        background: #6366f1;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 22px;
+        font-size: 1.07rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+        margin-top: 10px;
+      }
+      #btn-confirmar-agendamento:disabled {
+        background: #c7d2fe;
+        color: #888;
+        cursor: not-allowed;
+      }
+      .botoes-agendamento {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .btn-toggle {
+        background: #f3f4f6;
+        border: 1.5px solid #e0e7ff;
+        color: #6366f1;
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.18s, color 0.18s;
+      }
+      .btn-toggle.ativo, .btn-toggle:hover {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .card-agendamento {
+        background: #f6f8fa;
+        border-radius: 10px;
+        padding: 15px 12px;
+        margin-bottom: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+      .agendamento-info strong {
+        font-size: 1.1em;
+        color: #3730a3;
+      }
+      .agendamento-info span, .agendamento-info small {
+        display: block;
+        color: #555;
+        font-size: 0.97em;
+      }
+      .btn-cancelar {
+        background: #fee2e2;
+        color: #b91c1c;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 0.97em;
+        transition: background 0.15s;
+      }
+      .btn-cancelar:hover {
+        background: #fecaca;
+      }
+      @media (max-width: 950px) {
+        .vitrine-container {
+          flex-direction: column;
+        }
+        .sidebar-vitrine {
+          display: none;
+        }
+        .main-content-vitrine {
+          padding: 20px 3vw;
+          max-width: 100vw;
+        }
+      }
+      .bottom-nav-vitrine {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        background: #fff;
+        border-top: 1.5px solid #e0e7ff;
+        box-shadow: 0 -2px 12px #21213b0d;
+        z-index: 200;
+        justify-content: space-around;
+      }
+      .bottom-nav-vitrine button {
+        flex: 1;
+        background: none;
+        border: none;
+        padding: 10px 0 6px 0;
+        color: #6366f1;
+        font-size: 1.07em;
+        font-weight: 500;
+        text-align: center;
+        border-radius: 0;
+        transition: background 0.15s, color 0.15s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+      .bottom-nav-vitrine button.ativo, .bottom-nav-vitrine button:hover {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      @media (max-width: 950px) {
+        .bottom-nav-vitrine { display: flex; }
+      }
+      @media (min-width: 951px) {
+        .bottom-nav-vitrine { display: none !important; }
+      }
+      /* Acessibilidade para o modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        inset: 0;
+        background: rgba(60,65,100,0.19);
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.active {
+        display: flex;
+      }
+      .modal-box {
+        background: #fff;
+        border-radius: 10px;
+        padding: 22px 24px;
+        box-shadow: 0 2px 16px #21213b0d;
+        max-width: 90vw;
+        min-width: 320px;
+        text-align: center;
+        animation: fadeInDown 0.4s;
+      }
+      .modal-botoes {
+        display: flex;
+        gap: 18px;
+        margin-top: 16px;
+        justify-content: center;
+      }
+      .modal-botoes button {
+        min-width: 80px;
+        font-weight: 600;
+        font-size: 1em;
+        padding: 8px 0;
+        border-radius: 7px;
+        border: none;
+        cursor: pointer;
+        background: #e0e7ff;
+        color: #6366f1;
+      }
+      .modal-botoes button:hover {
+        background: #6366f1;
+        color: #fff;
+      }
+      @keyframes fadeInDown {
+        from { opacity:0; transform: translateY(-40px);}
+        to { opacity:1; transform: translateY(0);}
+      }
+    </style>
 </head>
 <body>
-    <div id="vitrine-loader" style="display: none;">
-        <p style="text-align: center; width: 100%; margin-top: 50px; color: white;">A carregar informações do negócio...</p>
+    <div id="vitrine-loader">
+        <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do negócio...</p>
     </div>
 
-    <div id="vitrine-content" class="vitrine-container">
+    <div id="vitrine-content" class="vitrine-container" style="display: none;">
         <aside class="sidebar-vitrine">
             <div class="header-vitrine">
-                <img id="logo-publico" src="https://placehold.co/100x100/4F46E5/ffffff?text=💇" alt="Logótipo do Negócio">
-                <h1 id="nome-negocio-publico">Salão de Beleza</h1>
+                <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
+                <h1 id="nome-negocio-publico">Nome do Negócio</h1>
             </div>
             <nav class="sidebar-menu">
-                <button class="menu-btn ativo" data-menu="informacoes">📋 Informações</button>
-                <button class="menu-btn" data-menu="agendamento">📅 Agendar</button>
-                <button class="menu-btn" data-menu="visualizacao">📋 Meus Agendamentos</button>
+                <button class="menu-btn ativo" data-menu="informacoes">Informações</button>
+                <button class="menu-btn" data-menu="agendamento">Agendar</button>
+                <button class="menu-btn" data-menu="visualizacao">Meus Agendamentos</button>
                 <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
             </nav>
         </aside>
 
         <main class="main-content-vitrine">
-            <!-- Tela de Informações -->
+            <!-- TELA: Informações -->
             <div id="menu-informacoes" class="menu-content ativo">
                 <div class="card">
-                    <h2>💼 Sobre o Negócio</h2>
-                    <div id="info-negocio">
-                        <p>Bem-vindo ao nosso salão de beleza! Oferecemos os melhores serviços de cabeleireiro, manicure e estética com profissionais qualificados e experientes.</p>
-                        <p>Nossa missão é realçar a sua beleza natural com técnicas modernas e produtos de alta qualidade.</p>
-                    </div>
+                    <h2>Sobre o Negócio</h2>
+                    <div id="info-negocio"></div>
                 </div>
                 <div class="card">
-                    <h2>✨ Serviços Oferecidos</h2>
-                    <div id="info-servicos">
-                        <div class="servico-info-item">
-                            <strong>💇‍♀️ Corte de Cabelo</strong>
-                            <span>R$ 50,00</span>
-                        </div>
-                        <div class="servico-info-item">
-                            <strong>💅 Manicure</strong>
-                            <span>R$ 30,00</span>
-                        </div>
-                        <div class="servico-info-item">
-                            <strong>🦶 Pedicure</strong>
-                            <span>R$ 35,00</span>
-                        </div>
-                        <div class="servico-info-item">
-                            <strong>🎨 Coloração</strong>
-                            <span>R$ 80,00</span>
-                        </div>
-                        <div class="servico-info-item">
-                            <strong>💆‍♀️ Tratamento Capilar</strong>
-                            <span>R$ 60,00</span>
-                        </div>
-                    </div>
+                    <h2>Serviços Oferecidos</h2>
+                    <div id="info-servicos"></div>
                 </div>
                 <div class="card">
-                    <h2>📞 Contato</h2>
-                    <div id="info-contato">
-                        <p><strong>📱 Telefone:</strong> (11) 99999-9999</p>
-                        <p><strong>📍 Endereço:</strong> Rua das Flores, 123 - Centro</p>
-                        <p><strong>🕒 Horário:</strong> Segunda a Sábado, 9h às 18h</p>
-                        <p><strong>📧 Email:</strong> contato@salaobeleza.com</p>
-                    </div>
+                    <h2>Contato</h2>
+                    <div id="info-contato"></div>
                 </div>
             </div>
-
-            <!-- Tela de Agendamento -->
+            <!-- TELA: Agendamento -->
             <div id="menu-agendamento" class="menu-content">
                 <div class="card">
-                    <h2>📅 Faça o seu Agendamento</h2>
-                    <div class="form-group">
-                        <label>1️⃣ Escolha um profissional</label>
-                        <div id="lista-profissionais" class="profissionais-container">
-                            <div class="card-profissional" data-id="1">
-                                <img src="https://placehold.co/80x80/F3F4F6/4F46E5?text=👩" alt="Ana">
-                                <span>Ana Silva</span>
-                            </div>
-                            <div class="card-profissional" data-id="2">
-                                <img src="https://placehold.co/80x80/F3F4F6/4F46E5?text=👨" alt="João">
-                                <span>João Santos</span>
-                            </div>
-                            <div class="card-profissional" data-id="3">
-                                <img src="https://placehold.co/80x80/F3F4F6/4F46E5?text=👩" alt="Maria">
-                                <span>Maria Costa</span>
-                            </div>
-                            <div class="card-profissional" data-id="4">
-                                <img src="https://placehold.co/80x80/F3F4F6/4F46E5?text=👨" alt="Carlos">
-                                <span>Carlos Lima</span>
-                            </div>
-                        </div>
+                    <h2>Faça o seu Agendamento</h2>
+                    <div id="agendamento-login-prompt" style="display: none;">
+                        <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
                     </div>
-                    <div id="agendamento-form-container">
+                    <div class="form-group">
+                        <label>1. Escolha um profissional</label>
+                        <div id="lista-profissionais" class="profissionais-container"></div>
+                    </div>
+                    <div id="agendamento-form-container" style="display: none;">
                         <div class="form-group">
-                            <label>2️⃣ Escolha um serviço</label>
-                            <div id="lista-servicos" class="servicos-container-cards">
-                                <div class="card-servico" data-id="1">
-                                    <div>
-                                        <div class="servico-nome">💇‍♀️ Corte de Cabelo</div>
-                                        <div class="servico-detalhes">Duração: 60min - R$ 50,00</div>
-                                    </div>
-                                </div>
-                                <div class="card-servico" data-id="2">
-                                    <div>
-                                        <div class="servico-nome">💅 Manicure</div>
-                                        <div class="servico-detalhes">Duração: 45min - R$ 30,00</div>
-                                    </div>
-                                </div>
-                                <div class="card-servico" data-id="3">
-                                    <div>
-                                        <div class="servico-nome">🦶 Pedicure</div>
-                                        <div class="servico-detalhes">Duração: 50min - R$ 35,00</div>
-                                    </div>
-                                </div>
-                                <div class="card-servico" data-id="4">
-                                    <div>
-                                        <div class="servico-nome">🎨 Coloração</div>
-                                        <div class="servico-detalhes">Duração: 120min - R$ 80,00</div>
-                                    </div>
-                                </div>
-                            </div>
+                            <label>2. Escolha um serviço</label>
+                            <div id="lista-servicos" class="servicos-container-cards"></div>
                         </div>
                         <div class="form-group">
-                            <label for="data-agendamento">3️⃣ Escolha uma data</label>
-                            <input type="date" id="data-agendamento" required>
+                            <label for="data-agendamento">3. Escolha uma data</label>
+                            <input type="date" id="data-agendamento" required disabled>
                         </div>
                         <div class="form-group">
-                            <label>4️⃣ Escolha um horário</label>
+                            <label>4. Escolha um horário</label>
                             <div id="grade-horarios" class="horarios-container-grid">
-                                <button class="btn-horario" data-horario="09:00"><span>09:00</span></button>
-                                <button class="btn-horario" data-horario="10:00"><span>10:00</span></button>
-                                <button class="btn-horario" data-horario="11:00"><span>11:00</span></button>
-                                <button class="btn-horario" data-horario="14:00"><span>14:00</span></button>
-                                <button class="btn-horario" data-horario="15:00"><span>15:00</span></button>
-                                <button class="btn-horario" data-horario="16:00"><span>16:00</span></button>
-                                <button class="btn-horario" data-horario="17:00"><span>17:00</span></button>
-                                <button class="btn-horario" data-horario="18:00"><span>18:00</span></button>
+                                <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
                             </div>
                         </div>
-                        <button id="btn-confirmar-agendamento">✅ Confirmar Agendamento</button>
+                        <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                     </div>
                 </div>
             </div>
-
-            <!-- Tela de Meus Agendamentos -->
+            <!-- TELA: Visualização de Agendamentos -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
-                    <h2>📋 Meus Agendamentos</h2>
-                    <div id="botoes-agendamento" class="botoes-agendamento">
-                        <button id="btn-ver-ativos" class="btn-toggle ativo">🟢 Ver Ativos</button>
-                        <button id="btn-ver-historico" class="btn-toggle">📚 Ver Histórico</button>
+                    <h2>Meus Agendamentos</h2>
+                    <div id="agendamentos-login-prompt" style="display: none;">
+                        <p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p>
+                    </div>
+                    <div id="botoes-agendamento" class="botoes-agendamento" style="display: none;">
+                        <button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button>
+                        <button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button>
                     </div>
                 </div>
-                <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado">
-                    <div class="card-agendamento">
-                        <div class="agendamento-info">
-                            <strong>💇‍♀️ Corte de Cabelo com Ana Silva</strong>
-                            <span>📅 25/12/2024 às 14:00</span>
-                            <small>🟢 Status: Agendado</small>
-                        </div>
-                        <div class="agendamento-acao">
-                            <button class="btn-cancelar" data-id="1">❌ Cancelar</button>
-                        </div>
-                    </div>
-                    <div class="card-agendamento">
-                        <div class="agendamento-info">
-                            <strong>💅 Manicure com Maria Costa</strong>
-                            <span>📅 28/12/2024 às 10:00</span>
-                            <small>🟢 Status: Agendado</small>
-                        </div>
-                        <div class="agendamento-acao">
-                            <button class="btn-cancelar" data-id="2">❌ Cancelar</button>
-                        </div>
-                    </div>
-                </div>
+                <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
-
-            <!-- Tela de Perfil -->
+            <!-- TELA: Perfil -->
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
-                    <h2>👤 Meu Perfil</h2>
+                    <h2>Meu Perfil</h2>
                     <div id="user-info" style="display: none;">
                         <img id="user-photo" src="" alt="Foto do Utilizador" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
                         <p id="user-name" style="font-weight: 600; font-size: 1.2rem;"></p>
-                        <button id="btn-logout" class="btn-secondary">🚪 Sair</button>
+                        <button id="btn-logout" class="btn-secondary">Sair</button>
                     </div>
                     <div id="btn-login-container">
-                        <button id="btn-login" class="btn-submit">🔐 Fazer Login com Google</button>
-                        <p style="text-align: center; margin-top: 15px; color: #6B7280; font-size: 0.9rem;">
-                            Faça login para agendar serviços e gerenciar seus agendamentos
-                        </p>
+                        <button id="btn-login" class="btn-submit">Fazer Login com Google</button>
                     </div>
                 </div>
             </div>
@@ -213,170 +393,124 @@
 
     <!-- Bottom Navigation para Mobile -->
     <nav class="bottom-nav-vitrine">
-        <button class="ativo" data-menu="informacoes">
-            <span style="font-size: 1.2rem;">📋</span>
-            <span>Info</span>
-        </button>
-        <button data-menu="agendamento">
-            <span style="font-size: 1.2rem;">📅</span>
-            <span>Agendar</span>
-        </button>
-        <button data-menu="visualizacao">
-            <span style="font-size: 1.2rem;">📋</span>
-            <span>Meus</span>
-        </button>
-        <button data-menu="perfil">
-            <span style="font-size: 1.2rem;">👤</span>
-            <span>Perfil</span>
-        </button>
+      <button class="ativo" data-menu="informacoes">📋<span style="font-size:0.78em;font-weight:400;">Info</span></button>
+      <button data-menu="agendamento">📅<span style="font-size:0.78em;font-weight:400;">Agendar</span></button>
+      <button data-menu="visualizacao">📋<span style="font-size:0.78em;font-weight:400;">Meus</span></button>
+      <button data-menu="perfil">👤<span style="font-size:0.78em;font-weight:400;">Perfil</span></button>
     </nav>
 
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p>
+            <div class="modal-botoes">
+                <button id="modal-btn-cancelar">Cancelar</button>
+                <button id="modal-btn-confirmar">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE AUTENTICAÇÃO -->
+    <div id="modal-auth-janela" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+      <div style="background:white;padding:2rem 1.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0003;">
+        <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
+        <!-- LOGIN -->
+        <div id="modal-auth-login" class="modal-auth-step">
+          <h2>Entrar</h2>
+          <button type="button" class="modal-auth-btn" id="modal-auth-btn-google" style="width:100%;margin-bottom:1em;">Entrar com Google</button>
+          <div style="text-align:center;color:#888;margin:8px 0;">ou</div>
+          <form id="modal-auth-form-login">
+            <input id="modal-auth-login-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-login-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:10px;">
+            <button class="modal-auth-btn" style="width:100%;">Entrar</button>
+          </form>
+          <div style="text-align:center;margin-top:10px;">
+            <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
+          </div>
+        </div>
+        <!-- CADASTRO -->
+        <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
+          <h2>Criar Conta</h2>
+          <form id="modal-auth-form-cadastro">
+            <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:6px;">
+            <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required style="width:100%;margin-bottom:10px;">
+            <button class="modal-auth-btn" style="width:100%;">Cadastrar</button>
+          </form>
+          <div style="text-align:center;margin-top:10px;">
+            <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- JS SPA/TELA/SELEÇÃO -->
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Configurar data mínima como hoje
-            const hoje = new Date().toISOString().split('T')[0];
-            document.getElementById('data-agendamento').min = hoje;
-
-            // Sidebar navigation (desktop/tablet)
-            document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    trocarMenu(btn.dataset.menu);
-                });
-            });
-
-            // Bottom navigation (mobile)
-            document.querySelectorAll('.bottom-nav-vitrine button').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    trocarMenu(btn.dataset.menu);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-            });
-
-            function trocarMenu(menu) {
-                // Atualizar sidebar
-                document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
-                const btnSidebar = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + menu + '"]');
-                if (btnSidebar) btnSidebar.classList.add('ativo');
-
-                // Atualizar bottom nav
-                document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
-                const btnMobile = document.querySelector('.bottom-nav-vitrine button[data-menu="' + menu + '"]');
-                if (btnMobile) btnMobile.classList.add('ativo');
-
-                // Trocar conteúdo
-                document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
-                const tela = document.getElementById('menu-' + menu);
-                if (tela) tela.classList.add('ativo');
-            }
-
-            // Seleção de profissionais
-            document.querySelectorAll('.card-profissional').forEach(card => {
-                card.addEventListener('click', function() {
-                    document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
-                    card.classList.add('selecionado');
-                    
-                    // Adicionar feedback visual
-                    card.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        card.style.transform = '';
-                    }, 150);
-                });
-            });
-
-            // Seleção de serviços
-            document.querySelectorAll('.card-servico').forEach(card => {
-                card.addEventListener('click', function() {
-                    document.querySelectorAll('.card-servico').forEach(c => c.classList.remove('selecionado'));
-                    card.classList.add('selecionado');
-                    
-                    // Adicionar feedback visual
-                    card.style.transform = 'translateX(10px)';
-                    setTimeout(() => {
-                        card.style.transform = '';
-                    }, 200);
-                });
-            });
-
-            // Seleção de horários
-            document.querySelectorAll('.btn-horario').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.btn-horario').forEach(b => b.classList.remove('selecionado'));
-                    btn.classList.add('selecionado');
-                    
-                    // Habilitar botão de confirmar
-                    document.getElementById('btn-confirmar-agendamento').disabled = false;
-                    
-                    // Adicionar feedback visual
-                    btn.style.transform = 'scale(0.9)';
-                    setTimeout(() => {
-                        btn.style.transform = '';
-                    }, 150);
-                });
-            });
-
-            // Botões de filtro de agendamentos
-            document.querySelectorAll('.btn-toggle').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('ativo'));
-                    btn.classList.add('ativo');
-                });
-            });
-
-            // Confirmar agendamento
-            document.getElementById('btn-confirmar-agendamento').addEventListener('click', function() {
-                const profissional = document.querySelector('.card-profissional.selecionado');
-                const servico = document.querySelector('.card-servico.selecionado');
-                const data = document.getElementById('data-agendamento').value;
-                const horario = document.querySelector('.btn-horario.selecionado');
-
-                if (!profissional || !servico || !data || !horario) {
-                    alert('Por favor, selecione todas as opções antes de confirmar.');
-                    return;
-                }
-
-                // Simular loading
-                this.innerHTML = '⏳ Agendando...';
-                this.disabled = true;
-
-                setTimeout(() => {
-                    alert('✅ Agendamento confirmado com sucesso!');
-                    this.innerHTML = '✅ Confirmar Agendamento';
-                    this.disabled = false;
-                    
-                    // Limpar seleções
-                    document.querySelectorAll('.selecionado').forEach(el => el.classList.remove('selecionado'));
-                    document.getElementById('data-agendamento').value = '';
-                }, 2000);
-            });
-
-            // Cancelar agendamento
-            document.querySelectorAll('.btn-cancelar').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
-                        const card = this.closest('.card-agendamento');
-                        card.style.transform = 'translateX(-100%)';
-                        card.style.opacity = '0';
-                        setTimeout(() => {
-                            card.remove();
-                        }, 300);
-                    }
-                });
-            });
-
-            // Adicionar efeitos de hover para touch devices
-            if ('ontouchstart' in window) {
-                document.querySelectorAll('.card-profissional, .card-servico, .btn-horario').forEach(el => {
-                    el.addEventListener('touchstart', function() {
-                        this.style.transform = 'scale(0.98)';
-                    });
-                    el.addEventListener('touchend', function() {
-                        setTimeout(() => {
-                            this.style.transform = '';
-                        }, 100);
-                    });
-                });
-            }
+      document.addEventListener("DOMContentLoaded", function() {
+        // SPA navigation
+        function showMenu(menu) {
+          document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
+          document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
+          document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
+          // ativa os botões
+          let btnSide = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + menu + '"]');
+          let btnMob = document.querySelector('.bottom-nav-vitrine button[data-menu="' + menu + '"]');
+          let tela = document.getElementById('menu-' + menu);
+          if(btnSide) btnSide.classList.add('ativo');
+          if(btnMob) btnMob.classList.add('ativo');
+          if(tela) tela.classList.add('ativo');
+          // dispara renderização custom para cada tela
+          if(menu === "informacoes" && window.renderInformacoes) window.renderInformacoes();
+          if(menu === "agendamento" && window.renderAgendamento) window.renderAgendamento();
+          if(menu === "visualizacao" && window.renderVisualizacao) window.renderVisualizacao();
+          if(menu === "perfil" && window.renderPerfil) window.renderPerfil();
+        }
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
+          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); });
         });
+        // Bottom navigation
+        function toggleNavs() {
+          if(window.innerWidth <= 950) {
+            document.querySelector('.bottom-nav-vitrine').style.display = "flex";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "none";
+          } else {
+            document.querySelector('.bottom-nav-vitrine').style.display = "none";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "";
+          }
+        }
+        toggleNavs();
+        window.addEventListener('resize', toggleNavs);
+
+        document.querySelectorAll('.bottom-nav-vitrine button').forEach(btn => {
+          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        });
+
+        // Seleção de profissional visual
+        document.getElementById('lista-profissionais').addEventListener('click', function(e) {
+          const card = e.target.closest('.card-profissional');
+          if (!card) return;
+          document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
+          card.classList.add('selecionado');
+          window.state = window.state || {};
+          window.state.agendamento = window.state.agendamento || {};
+          window.state.agendamento.profissionalId = card.dataset.id;
+          if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
+        });
+      });
     </script>
+
+    <!-- SCRIPTS FUNCIONAIS DE BACKEND E UI (MÓDULOS DINÂMICOS) -->
+    <script type="module" src="./vitrini-firebase.js"></script>
+    <script type="module" src="./vitrini-utils.js"></script>
+    <script type="module" src="./vitrini-profissionais.js"></script>
+    <script type="module" src="./vitrini-agendamento.js"></script>
+    <script type="module" src="./vitrini-state.js"></script>
+    <script type="module" src="./vitrini-ui.js"></script>
+    <script type="module" src="./vitrini-auth.js"></script>
+    <script type="module" src="./vitrine.js"></script>
+    <script type="module" src="./vitrine-auth-modal.js"></script>
 </body>
 </html>
