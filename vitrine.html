@@ -5,295 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Agendamento Online</title>
     
-    <link rel="stylesheet" href="vitrine-melhorado.css">
+    <link rel="stylesheet" href="vitrine.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-      /* Ajustes responsivos mobile modernos */
-      body {
-        font-family: 'Poppins', Arial, sans-serif;
-        background: #f6f8fa;
-        margin: 0;
-      }
-      .vitrine-container {
-        display: flex;
-        min-height: 100vh;
-        background: #f6f8fa;
-      }
-      .sidebar-vitrine {
-        width: 250px;
-        background: #fff;
-        box-shadow: 0 2px 16px 0 #21213b0d;
-        min-width: 200px;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .header-vitrine {
-        padding: 2.5rem 1.5rem 1rem 1.5rem;
-        border-bottom: 1px solid #e0e7ff;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-      }
-      .header-vitrine img {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: #e0e7ff;
-        object-fit: cover;
-        margin-bottom: 6px;
-      }
-      .header-vitrine h1 {
-        font-size: 1.22rem;
-        font-weight: 700;
-        color: #4f46e5;
-        margin: 0;
-        text-align: center;
-      }
-      .sidebar-menu {
-        display: flex;
-        flex-direction: column;
-        gap: 7px;
-        padding: 1.8rem 1.5rem;
-      }
-      .sidebar-menu .menu-btn {
-        background: none;
-        border: none;
-        text-align: left;
-        padding: 10px 12px;
-        border-radius: 8px;
-        color: #555;
-        font-size: 1.07rem;
-        cursor: pointer;
-        font-weight: 500;
-        transition: background 0.18s, color 0.18s;
-      }
-      .sidebar-menu .menu-btn.ativo, .sidebar-menu .menu-btn:hover {
-        background: #e0e7ff;
-        color: #4f46e5;
-      }
-      .main-content-vitrine {
-        flex: 1;
-        padding: 36px 2vw 24px 2vw;
-        max-width: 900px;
-        margin: 0 auto;
-        min-height: 100vh;
-      }
-      .card {
-        background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 2px 16px 0 #21213b0d;
-        padding: 28px 20px 22px 20px;
-        margin-bottom: 18px;
-      }
-      .form-group {
-        margin-bottom: 18px;
-      }
-      .form-group label {
-        font-weight: 500;
-        color: #444;
-        margin-bottom: 5px;
-        display: block;
-      }
-      .profissionais-container, .servicos-container-cards, .horarios-container-grid {
-        display: flex;
-        gap: 14px;
-        flex-wrap: wrap;
-      }
-      .card-profissional, .card-servico, .btn-horario {
-        background: #f6f8fa;
-        border-radius: 10px;
-        padding: 12px;
-        border: 2px solid transparent;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 1em;
-        min-width: 80px;
-        transition: border 0.15s, background 0.15s;
-      }
-      .card-profissional.selecionado, .card-servico.selecionado, .btn-horario.selecionado {
-        border: 2px solid #6366f1;
-        background: #e0e7ff;
-      }
-      .btn-horario {
-        font-weight: 500;
-        min-width: 60px;
-        justify-content: center;
-        color: #3730a3;
-      }
-      #btn-confirmar-agendamento {
-        background: #6366f1;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 22px;
-        font-size: 1.07rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.15s;
-        margin-top: 10px;
-      }
-      #btn-confirmar-agendamento:disabled {
-        background: #c7d2fe;
-        color: #888;
-        cursor: not-allowed;
-      }
-      .botoes-agendamento {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 18px;
-      }
-      .btn-toggle {
-        background: #f3f4f6;
-        border: 1.5px solid #e0e7ff;
-        color: #6366f1;
-        border-radius: 8px;
-        padding: 9px 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.18s, color 0.18s;
-      }
-      .btn-toggle.ativo, .btn-toggle:hover {
-        background: #e0e7ff;
-        color: #3730a3;
-      }
-      .card-agendamento {
-        background: #f6f8fa;
-        border-radius: 10px;
-        padding: 15px 12px;
-        margin-bottom: 9px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-      }
-      .agendamento-info strong {
-        font-size: 1.1em;
-        color: #3730a3;
-      }
-      .agendamento-info span, .agendamento-info small {
-        display: block;
-        color: #555;
-        font-size: 0.97em;
-      }
-      .btn-cancelar {
-        background: #fee2e2;
-        color: #b91c1c;
-        border: none;
-        border-radius: 8px;
-        padding: 8px 14px;
-        font-weight: 500;
-        cursor: pointer;
-        font-size: 0.97em;
-        transition: background 0.15s;
-      }
-      .btn-cancelar:hover {
-        background: #fecaca;
-      }
-      @media (max-width: 950px) {
-        .vitrine-container {
-          flex-direction: column;
-        }
-        .sidebar-vitrine {
-          display: none;
-        }
-        .main-content-vitrine {
-          padding: 20px 3vw;
-          max-width: 100vw;
-        }
-      }
-      .bottom-nav-vitrine {
-        display: flex;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100vw;
-        background: #fff;
-        border-top: 1.5px solid #e0e7ff;
-        box-shadow: 0 -2px 12px #21213b0d;
-        z-index: 200;
-        justify-content: space-around;
-      }
-      .bottom-nav-vitrine button {
-        flex: 1;
-        background: none;
-        border: none;
-        padding: 10px 0 6px 0;
-        color: #6366f1;
-        font-size: 1.07em;
-        font-weight: 500;
-        text-align: center;
-        border-radius: 0;
-        transition: background 0.15s, color 0.15s;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0;
-      }
-      .bottom-nav-vitrine button.ativo, .bottom-nav-vitrine button:hover {
-        background: #e0e7ff;
-        color: #3730a3;
-      }
-      @media (max-width: 950px) {
-        .bottom-nav-vitrine { display: flex; }
-      }
-      @media (min-width: 951px) {
-        .bottom-nav-vitrine { display: none !important; }
-      }
-      /* Acessibilidade para o modal */
-      .modal-overlay {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        inset: 0;
-        background: rgba(60,65,100,0.19);
-        align-items: center;
-        justify-content: center;
-      }
-      .modal-overlay.active {
-        display: flex;
-      }
-      .modal-box {
-        background: #fff;
-        border-radius: 10px;
-        padding: 22px 24px;
-        box-shadow: 0 2px 16px #21213b0d;
-        max-width: 90vw;
-        min-width: 320px;
-        text-align: center;
-        animation: fadeInDown 0.4s;
-      }
-      .modal-botoes {
-        display: flex;
-        gap: 18px;
-        margin-top: 16px;
-        justify-content: center;
-      }
-      .modal-botoes button {
-        min-width: 80px;
-        font-weight: 600;
-        font-size: 1em;
-        padding: 8px 0;
-        border-radius: 7px;
-        border: none;
-        cursor: pointer;
-        background: #e0e7ff;
-        color: #6366f1;
-      }
-      .modal-botoes button:hover {
-        background: #6366f1;
-        color: #fff;
-      }
-      @keyframes fadeInDown {
-        from { opacity:0; transform: translateY(-40px);}
-        to { opacity:1; transform: translateY(0);}
-      }
-    </style>
 </head>
 <body>
     <div id="vitrine-loader">
@@ -393,10 +108,10 @@
 
     <!-- Bottom Navigation para Mobile -->
     <nav class="bottom-nav-vitrine">
-      <button class="ativo" data-menu="informacoes">📋<span style="font-size:0.78em;font-weight:400;">Info</span></button>
-      <button data-menu="agendamento">📅<span style="font-size:0.78em;font-weight:400;">Agendar</span></button>
-      <button data-menu="visualizacao">📋<span style="font-size:0.78em;font-weight:400;">Meus</span></button>
-      <button data-menu="perfil">👤<span style="font-size:0.78em;font-weight:400;">Perfil</span></button>
+      <button class="ativo" data-menu="informacoes">📋<span>Info</span></button>
+      <button data-menu="agendamento">📅<span>Agendar</span></button>
+      <button data-menu="visualizacao">📋<span>Meus</span></button>
+      <button data-menu="perfil">👤<span>Perfil</span></button>
     </nav>
 
     <!-- MODAL DE CONFIRMAÇÃO -->
@@ -446,22 +161,19 @@
       </div>
     </div>
     
-    <!-- JS SPA/TELA/SELEÇÃO -->
+    <!-- SPA NAVIGATION/UX -->
     <script>
       document.addEventListener("DOMContentLoaded", function() {
-        // SPA navigation
         function showMenu(menu) {
           document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
           document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
           document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
-          // ativa os botões
           let btnSide = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + menu + '"]');
           let btnMob = document.querySelector('.bottom-nav-vitrine button[data-menu="' + menu + '"]');
           let tela = document.getElementById('menu-' + menu);
           if(btnSide) btnSide.classList.add('ativo');
           if(btnMob) btnMob.classList.add('ativo');
           if(tela) tela.classList.add('ativo');
-          // dispara renderização custom para cada tela
           if(menu === "informacoes" && window.renderInformacoes) window.renderInformacoes();
           if(menu === "agendamento" && window.renderAgendamento) window.renderAgendamento();
           if(menu === "visualizacao" && window.renderVisualizacao) window.renderVisualizacao();
@@ -473,7 +185,7 @@
         });
         // Bottom navigation
         function toggleNavs() {
-          if(window.innerWidth <= 950) {
+          if(window.innerWidth <= 900) {
             document.querySelector('.bottom-nav-vitrine').style.display = "flex";
             if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "none";
           } else {
@@ -488,7 +200,7 @@
           btn.addEventListener('click', function() { showMenu(btn.dataset.menu); window.scrollTo({ top: 0, behavior: 'smooth' }); });
         });
 
-        // Seleção de profissional visual
+        // Seleção de profissional visual (mobile e desktop)
         document.getElementById('lista-profissionais').addEventListener('click', function(e) {
           const card = e.target.closest('.card-profissional');
           if (!card) return;
@@ -501,7 +213,6 @@
         });
       });
     </script>
-
     <!-- SCRIPTS FUNCIONAIS DE BACKEND E UI (MÓDULOS DINÂMICOS) -->
     <script type="module" src="./vitrini-firebase.js"></script>
     <script type="module" src="./vitrini-utils.js"></script>
