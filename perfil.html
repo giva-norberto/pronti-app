@@ -17,6 +17,7 @@
         background: #f6f8fa;
         margin: 0;
     }
+    /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande. */
     .logo-upload-container img#logo-preview {
         max-width: 120px;
         max-height: 120px;
@@ -204,40 +205,6 @@
         align-items: center;
         justify-content: center;
     }
-    /* CARD ESPECIAL DE BOAS-VINDAS */
-    #boas-vindas-apos-cadastro {
-        display: none;
-        margin: 20px auto 10px auto;
-        max-width: 380px;
-        background: #f4f8ff;
-        border-radius: 18px;
-        box-shadow: 0 2px 16px 0 #21213b0d;
-        padding: 32px 18px 24px 18px;
-        text-align: center;
-        position: relative;
-        z-index: 10;
-    }
-    #boas-vindas-apos-cadastro h2 {
-        font-size: 1.25em;
-        color: #2d3cbc;
-        font-weight: 700;
-        margin: 0 0 7px 0;
-    }
-    #boas-vindas-apos-cadastro p {
-        color: #444;
-        margin: 0 0 15px 0;
-    }
-    #boas-vindas-apos-cadastro button {
-        background: #6366f1;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 18px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        margin-top: 10px;
-    }
     /* CARD ESPECIAL DE CADASTRO SUCESSO */
     #mensagem-cadastro-sucesso {
         display: none;
@@ -292,13 +259,7 @@
                     </a>
                 </div>
             </div>
-            <!-- CARD DE BOAS-VINDAS APÓS CADASTRO -->
-            <div id="boas-vindas-apos-cadastro">
-                <h2>Seja bem-vindo ao Pronti!</h2>
-                <p>Seu período <strong>FREE</strong> de <strong>15 dias grátis</strong> foi iniciado.</p>
-                <button id="fechar-boas-vindas">OK</button>
-            </div>
-            <!-- CARD ESPECIAL DE CADASTRO SUCESSO (opcional, pode remover se não usar) -->
+            <!-- CARD ESPECIAL DE CADASTRO SUCESSO -->
             <div id="mensagem-cadastro-sucesso"></div>
             <!-- Card padrão do plano free -->
             <div id="mensagem-free" style="display:none; margin:20px auto; max-width:560px; background:#e0e7ff; color:#3730a3; border-radius:10px; padding:12px 18px; text-align:center; font-weight:bold;">
@@ -347,6 +308,22 @@
                 </div>
             </form>
         </div>
+
+        <!-- ========================================================== -->
+        <!--      CORREÇÃO: MODAL DE BOAS-VINDAS ADICIONADO AQUI      -->
+        <!-- ========================================================== -->
+        <div id="modal-boas-vindas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index: 1000;">
+            <div style="background:white; padding:40px; border-radius:12px; text-align:center; max-width: 400px; box-shadow: 0 5px 25px rgba(0,0,0,0.2);">
+                <h2 style="font-size: 48px; margin-bottom: 15px;">👋</h2>
+                <h2 style="font-size: 24px; margin-bottom: 10px; color: #333;">Tudo pronto!</h2>
+                <p style="color: #666; margin-bottom: 25px;">O seu perfil de negócio foi configurado com sucesso.</p>
+                <p style="font-size: 16px;"><strong>Você ativou 15 dias de acesso total gratuito!</strong></p>
+                <button id="btn-ir-painel" style="width: 100%; padding: 15px; border: none; border-radius: 8px; background-color: #5b67f1; color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 25px;">
+                    Começar a Usar
+                </button>
+            </div>
+        </div>
+        
     </main>
     <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
         <!-- O conteúdo do seu modal vai aqui dentro -->
