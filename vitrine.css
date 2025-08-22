@@ -1,5 +1,5 @@
 /* =============================================== */
-/* ESTILOS GERAIS E LAYOUT MODERNO                */
+/* ESTILOS GERAIS E LAYOUT MODERNO             */
 /* =============================================== */
 * {
     box-sizing: border-box;
@@ -57,7 +57,7 @@ body {
 }
 
 /* =============================================== */
-/* CABEÇALHO E MENU LATERAL MODERNO               */
+/* CABEÇALHO E MENU LATERAL MODERNO            */
 /* =============================================== */
 .header-vitrine {
     text-align: center;
@@ -108,21 +108,6 @@ body {
     overflow: hidden;
 }
 
-.sidebar-menu .menu-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transition: left 0.5s;
-}
-
-.sidebar-menu .menu-btn:hover::before {
-    left: 100%;
-}
-
 .sidebar-menu .menu-btn:hover:not(.ativo) {
     background: rgba(79, 70, 229, 0.1);
     transform: translateX(5px);
@@ -136,7 +121,7 @@ body {
 }
 
 /* =============================================== */
-/* CARDS E CONTEÚDO PRINCIPAL MODERNO             */
+/* CARDS E CONTEÚDO PRINCIPAL MODERNO            */
 /* =============================================== */
 .card {
     background: rgba(255, 255, 255, 0.95);
@@ -197,7 +182,7 @@ input[type="date"]:focus {
 }
 
 /* =============================================== */
-/* SELEÇÃO DE PROFISSIONAIS MODERNA               */
+/* SELEÇÃO DE PROFISSIONAIS E SERVIÇOS           */
 /* =============================================== */
 .profissionais-container {
     display: grid;
@@ -214,24 +199,6 @@ input[type="date"]:focus {
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
-    position: relative;
-    overflow: hidden;
-}
-
-.card-profissional::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.card-profissional:hover::before {
-    opacity: 1;
 }
 
 .card-profissional:hover {
@@ -265,8 +232,6 @@ input[type="date"]:focus {
     font-size: 1rem;
     font-weight: 600;
     color: #1F2937;
-    position: relative;
-    z-index: 1;
 }
 
 #agendamento-form-container {
@@ -275,9 +240,6 @@ input[type="date"]:focus {
     padding-top: 2rem;
 }
 
-/* =============================================== */
-/* SELEÇÃO DE SERVIÇOS E HORÁRIOS MODERNA         */
-/* =============================================== */
 .servicos-container-cards {
     display: flex;
     flex-direction: column;
@@ -294,23 +256,6 @@ input[type="date"]:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.card-servico::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
-    transition: left 0.5s;
-}
-
-.card-servico:hover::before {
-    left: 100%;
 }
 
 .card-servico:hover {
@@ -358,28 +303,6 @@ input[type="date"]:focus {
     transition: all 0.3s ease;
     font-weight: 600;
     font-size: 1rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-horario::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: linear-gradient(135deg, #4F46E5, #7C3AED);
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    transform: translate(-50%, -50%);
-    z-index: 0;
-}
-
-.btn-horario:hover::before {
-    width: 100%;
-    height: 100%;
-    border-radius: 12px;
 }
 
 .btn-horario:hover {
@@ -387,11 +310,7 @@ input[type="date"]:focus {
     border-color: #4F46E5;
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
-}
-
-.btn-horario span {
-    position: relative;
-    z-index: 1;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
 }
 
 .btn-horario.selecionado {
@@ -410,45 +329,8 @@ input[type="date"]:focus {
 }
 
 /* =============================================== */
-/* BOTÕES DE AÇÃO MODERNOS                        */
+/* BOTÕES E AGENDAMENTOS                         */
 /* =============================================== */
-.btn-submit {
-    background: linear-gradient(135deg, #8B5CF6, #EC4899);
-    color: white;
-    border: none;
-    padding: 18px 25px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 700;
-    width: 100%;
-    text-align: center;
-    transition: all 0.3s ease;
-    margin-top: 1rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-submit::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.btn-submit:hover::before {
-    left: 100%;
-}
-
-.btn-submit:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
-}
-
 #btn-confirmar-agendamento {
     background: linear-gradient(135deg, #10B981, #059669);
     color: white;
@@ -461,23 +343,6 @@ input[type="date"]:focus {
     width: 100%;
     transition: all 0.3s ease;
     margin-top: 1rem;
-    position: relative;
-    overflow: hidden;
-}
-
-#btn-confirmar-agendamento::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-#btn-confirmar-agendamento:hover::before {
-    left: 100%;
 }
 
 #btn-confirmar-agendamento:hover:not(:disabled) {
@@ -493,9 +358,6 @@ input[type="date"]:focus {
     box-shadow: none;
 }
 
-/* =============================================== */
-/* ABA "MEUS AGENDAMENTOS" MODERNA                */
-/* =============================================== */
 .botoes-agendamento {
     display: flex;
     gap: 15px;
@@ -513,23 +375,6 @@ input[type="date"]:focus {
     border-radius: 12px;
     flex-grow: 1;
     text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.botoes-agendamento .btn-toggle::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
-    transition: left 0.5s;
-}
-
-.botoes-agendamento .btn-toggle:hover::before {
-    left: 100%;
 }
 
 .botoes-agendamento .btn-toggle.ativo {
@@ -589,7 +434,7 @@ input[type="date"]:focus {
     font-size: 0.9rem;
 }
 
-.agendamento-acao .btn-cancelar {
+.btn-cancelar { /* Movido de .agendamento-acao para ser mais genérico */
     background: linear-gradient(135deg, #EF4444, #DC2626);
     color: white;
     border: none;
@@ -598,32 +443,15 @@ input[type="date"]:focus {
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
 }
 
-.agendamento-acao .btn-cancelar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
-}
-
-.agendamento-acao .btn-cancelar:hover::before {
-    left: 100%;
-}
-
-.agendamento-acao .btn-cancelar:hover {
+.btn-cancelar:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
 /* =============================================== */
-/* ABA DE INFORMAÇÕES - SERVIÇOS MODERNA          */
+/* ABA DE INFORMAÇÕES                            */
 /* =============================================== */
 #info-servicos {
     display: flex;
@@ -640,23 +468,6 @@ input[type="date"]:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.servico-info-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
-    transition: left 0.5s;
-}
-
-.servico-info-item:hover::before {
-    left: 100%;
 }
 
 .servico-info-item:hover {
@@ -678,14 +489,12 @@ input[type="date"]:focus {
 }
 
 /* =============================================== */
-/* BOTTOM NAVIGATION MODERNA PARA MOBILE          */
+/* NAVEGAÇÃO MOBILE E RESPONSIVIDADE             */
 /* =============================================== */
 .bottom-nav-vitrine {
     display: none;
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 0; right: 0; bottom: 0;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     border-top: 1px solid rgba(229, 231, 235, 0.3);
@@ -695,38 +504,12 @@ input[type="date"]:focus {
 }
 
 .bottom-nav-vitrine button {
-    flex: 1;
-    border: none;
-    background: none;
-    color: #6B7280;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    height: 70px;
-    cursor: pointer;
-    position: relative;
-    gap: 4px;
-}
-
-.bottom-nav-vitrine button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(135deg, #4F46E5, #7C3AED);
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
-}
-
-.bottom-nav-vitrine button.ativo::before {
-    transform: scaleX(1);
+    flex: 1; border: none; background: none;
+    color: #6B7280; font-size: 0.9rem; font-weight: 600;
+    padding: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: all 0.3s ease; height: 70px;
+    cursor: pointer; position: relative; gap: 4px;
 }
 
 .bottom-nav-vitrine button.ativo {
@@ -734,364 +517,140 @@ input[type="date"]:focus {
     background: rgba(79, 70, 229, 0.05);
 }
 
-.bottom-nav-vitrine button:hover:not(.ativo) {
-    color: #4F46E5;
-    background: rgba(79, 70, 229, 0.03);
-}
-
 .bottom-nav-vitrine button span {
     font-size: 0.75rem;
     margin-top: 2px;
 }
 
-/* =============================================== */
-/* RESPONSIVIDADE MODERNA                         */
-/* =============================================== */
 @media (max-width: 900px) {
-    body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        background-attachment: fixed;
-    }
-
-    .vitrine-container {
-        display: flex;
-        flex-direction: column;
-        margin: 0;
-        padding: 15px;
-        gap: 20px;
-        min-height: 100vh;
-    }
-
-    .sidebar-vitrine {
-        display: none !important;
-    }
-
-    .bottom-nav-vitrine {
-        display: flex;
-    }
-
-    .main-content-vitrine {
-        padding-bottom: 90px;
-    }
-
-    .card {
-        padding: 20px;
-        margin-bottom: 20px;
-        border-radius: 16px;
-    }
-
-    .card h2 {
-        font-size: 1.4rem;
-        margin-bottom: 20px;
-    }
-
-    .profissionais-container {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 15px;
-    }
-
-    .card-profissional {
-        padding: 15px;
-    }
-
-    .card-profissional img {
-        width: 60px;
-        height: 60px;
-    }
-
-    .horarios-container-grid {
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        gap: 12px;
-    }
-
-    .btn-horario {
-        padding: 12px 8px;
-        font-size: 0.9rem;
-    }
-
-    .card-agendamento {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-        padding: 20px;
-    }
-
-    .agendamento-acao {
-        width: 100%;
-    }
-
-    .agendamento-acao .btn-cancelar {
-        width: 100%;
-        padding: 15px;
-    }
-
-    .botoes-agendamento {
-        gap: 10px;
-    }
-
-    .botoes-agendamento .btn-toggle {
-        padding: 12px 15px;
-        font-size: 0.9rem;
-    }
-
-    .form-group label {
-        font-size: 1rem;
-    }
-
-    input[type="date"] {
-        padding: 12px;
-        font-size: 16px;
-    }
-
-    .btn-submit, #btn-confirmar-agendamento {
-        padding: 16px 20px;
-        font-size: 16px;
-    }
+    body { background-attachment: fixed; }
+    .vitrine-container { display: flex; flex-direction: column; margin: 0; padding: 15px; gap: 20px; }
+    .sidebar-vitrine { display: none !important; }
+    .bottom-nav-vitrine { display: flex; }
+    .main-content-vitrine { padding-bottom: 90px; }
+    .card { padding: 20px; margin-bottom: 20px; border-radius: 16px; }
+    .card h2 { font-size: 1.4rem; margin-bottom: 20px; }
+    .profissionais-container { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+    .card-profissional { padding: 15px; }
+    .card-profissional img { width: 60px; height: 60px; }
+    .horarios-container-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 12px; }
+    .btn-horario { padding: 12px 8px; font-size: 0.9rem; }
+    .card-agendamento { flex-direction: column; align-items: flex-start; gap: 15px; padding: 20px; }
+    .agendamento-acao { width: 100%; }
+    .agendamento-acao .btn-cancelar { width: 100%; padding: 15px; }
+    .botoes-agendamento { gap: 10px; }
+    .botoes-agendamento .btn-toggle { padding: 12px 15px; font-size: 0.9rem; }
+    .form-group label { font-size: 1rem; }
+    input[type="date"] { padding: 12px; font-size: 16px; }
 }
 
 @media (max-width: 480px) {
-    .vitrine-container {
-        padding: 10px;
-    }
-
-    .card {
-        padding: 15px;
-    }
-
-    .profissionais-container {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 12px;
-    }
-
-    .card-profissional {
-        padding: 12px;
-    }
-
-    .card-profissional img {
-        width: 50px;
-        height: 50px;
-    }
-
-    .card-profissional span {
-        font-size: 0.9rem;
-    }
-
-    .horarios-container-grid {
-        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-        gap: 10px;
-    }
-
-    .btn-horario {
-        padding: 10px 6px;
-        font-size: 0.85rem;
-    }
+    .vitrine-container { padding: 10px; }
+    .card { padding: 15px; }
+    .profissionais-container { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; }
+    .card-profissional { padding: 12px; }
+    .card-profissional img { width: 50px; height: 50px; }
+    .card-profissional span { font-size: 0.9rem; }
+    .horarios-container-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; }
+    .btn-horario { padding: 10px 6px; font-size: 0.85rem; }
 }
 
 /* =============================================== */
-/* ANIMAÇÕES E MICRO-INTERAÇÕES                   */
+/* ANIMAÇÕES E ESTADOS DE LOADING                */
 /* =============================================== */
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
 .card-profissional.selecionado {
     animation: pulse 2s infinite;
 }
-
-@keyframes slideInUp {
-    from {
-        transform: translateY(30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+@keyframes pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3); }
+    50% { transform: scale(1.03); box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4); }
 }
-
-.card {
-    animation: slideInUp 0.6s ease-out;
-}
-
-/* Smooth scrolling */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Loading states */
-.loading {
-    opacity: 0.6;
-    pointer-events: none;
-    position: relative;
-}
-
 .loading::after {
     content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
+    top: 50%; left: 50%;
+    width: 20px; height: 20px;
     margin: -10px 0 0 -10px;
     border: 2px solid #4F46E5;
     border-radius: 50%;
     border-top-color: transparent;
     animation: spin 1s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+
 /* =============================================== */
-/* MODAIS CUSTOMIZADOS - CENTRALIZADOS E MODERNOS  */
+/* MODAL DE MENSAGENS "PRONTI" (VERSÃO FINAL)  */
 /* =============================================== */
-#custom-confirm-modal {
-    display: none; /* ou flex quando ativo via JS */
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
+    background: rgba(30, 60, 114, 0.6);
+    backdrop-filter: blur(8px);
+    display: none; /* Começa escondido */
     align-items: center;
     justify-content: center;
-    background: rgba(31, 41, 55, 0.65); /* overlay escuro */
     z-index: 9999;
-    transition: background 0.3s;
+    animation: fadeInModal 0.3s ease-out;
 }
-
-#custom-confirm-modal.flex {
-    display: flex;
-}
-
-#custom-confirm-modal .modal-content {
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 8px 40px rgba(79,70,229,0.18);
-    padding: 36px 28px 28px 28px;
-    min-width: 320px;
-    max-width: 90vw;
+@keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+.modal-box {
+    max-width: 400px;
+    width: 90%;
+    padding: 36px 28px 32px 28px;
+    border-radius: 22px;
+    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001;
+    background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%);
+    border: 1.5px solid #e3eafc;
     text-align: center;
-    position: relative;
-    animation: fadeIn 0.25s;
+    animation: slideInModal 0.4s ease-out;
 }
-
-#custom-confirm-modal h2,
-#custom-confirm-modal #modal-titulo {
-    font-size: 1.35rem;
+@keyframes slideInModal { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+.modal-box h3 {
+    color: #2563eb;
     font-weight: 700;
-    color: #4F46E5;
+    font-size: 1.34rem;
+    margin-top: 0;
     margin-bottom: 18px;
+    letter-spacing: 0.01em;
 }
-
-#custom-confirm-modal p,
-#custom-confirm-modal #modal-mensagem {
-    font-size: 1.05rem;
-    color: #374151;
+.modal-box p {
+    font-size: 16px;
+    color: #374151; /* Cor de texto escura para bom contraste */
     margin-bottom: 30px;
+    line-height: 1.5;
 }
-
-#custom-confirm-modal button {
-    background: linear-gradient(135deg, #8B5CF6, #EC4899);
-    color: #fff;
-    border: none;
-    padding: 12px 28px;
-    border-radius: 10px;
+.modal-botoes {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+.modal-botoes button {
+    flex-grow: 1;
     font-weight: 600;
-    font-size: 1rem;
-    margin: 0 10px;
-    transition: background 0.2s;
-    cursor: pointer;
-}
-
-#custom-confirm-modal #modal-btn-cancelar {
-    background: #E5E7EB;
-    color: #4F46E5;
-}
-
-#custom-confirm-modal #modal-btn-cancelar:hover {
-    background: #F87171;
-    color: #fff;
-}
-
-#custom-confirm-modal #modal-btn-confirmar:hover {
-    background: #059669;
-}
-
-@media (max-width: 600px) {
-    #custom-confirm-modal .modal-content {
-        min-width: unset;
-        width: 92vw;
-        padding: 20px 8px 16px 8px;
-    }
-    #custom-confirm-modal h2,
-    #custom-confirm-modal #modal-titulo {
-        font-size: 1.05rem;
-    }
-    #custom-confirm-modal p,
-    #custom-confirm-modal #modal-mensagem {
-        font-size: 0.95rem;
-    }
-    #custom-confirm-modal button {
-        font-size: 0.95rem;
-        padding: 10px 15px;
-        margin: 0 4px;
-    }
-}
-#custom-confirm-modal #modal-btn-confirmar {
-    background: linear-gradient(135deg, #a21caf, #f472b6);
-    color: #fff;
     border: none;
     border-radius: 8px;
-    padding: 12px 32px;
-    font-weight: 700;
+    padding: 13px 0;
     font-size: 1rem;
-    margin-left: 10px;
     cursor: pointer;
-    box-shadow: 0 2px 12px rgba(164,28,175,0.07);
-    transition: background 0.18s, transform 0.12s;
+    transition: all 0.2s ease-in-out;
 }
-#custom-confirm-modal #modal-btn-confirmar:hover {
-    background: linear-gradient(135deg, #f472b6, #a21caf);
-    transform: scale(1.04);
-}
-.login-cover-card {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255,255,255,0.97);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 30;
-    border-radius: 18px;
-    box-shadow: 0 8px 32px rgba(79,70,229,0.13);
-    text-align: center;
-    padding: 32px 18px;
-    animation: fadeIn 0.3s;
-}
-.login-cover-card h2 {
-    color: #7C3AED;
-    font-size: 1.35rem;
-    margin-bottom: 10px;
-}
-.login-cover-card p {
-    color: #4B5563;
-    margin-bottom: 20px;
-}
-.btn-login-pronti {
-    background: linear-gradient(135deg, #8B5CF6, #EC4899);
+#modal-btn-confirmar {
+    background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%);
     color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 14px 38px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    box-shadow: 0 2px 16px rgba(139,92,246,0.14);
-    cursor: pointer;
-    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 2px 10px #2563eb22;
 }
-.btn-login-pronti:hover {
-    background: linear-gradient(135deg, #EC4899, #8B5CF6);
-    transform: scale(1.04);
+#modal-btn-confirmar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px #2563eb44;
+}
+#modal-btn-cancelar {
+    background-color: #e0e7ff;
+    color: #4338ca;
+}
+#modal-btn-cancelar:hover {
+    background-color: #c7d2fe;
 }
