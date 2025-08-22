@@ -1216,9 +1216,10 @@ body.dashboard-body {
     width: 90%;
     padding: 36px 28px 32px 28px;
     border-radius: 22px;
-    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001;
-    background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%);
-    border: 1.5px solid #e3eafc;
+    /* REVISADO: Sombra mais forte e fundo sólido para garantir que não pareça transparente */
+    box-shadow: 0 10px 35px rgba(31, 38, 135, 0.2), 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: #f7fafd; /* Fundo sólido, copiado do gradiente original */
+    border: 1px solid #e3eafc;
     text-align: center;
     animation: slideInModal 0.4s ease-out;
 }
@@ -1239,7 +1240,7 @@ body.dashboard-body {
 
 .modal-box p {
     font-size: 16px;
-    color: #6b7a90; /* CORRIGIDO: Texto escuro e legível */
+    color: #4b5563; /* REVISADO: Cor de texto mais escura para melhor contraste */
     margin-bottom: 30px;
     line-height: 1.5;
 }
