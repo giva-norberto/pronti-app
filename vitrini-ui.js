@@ -2,10 +2,17 @@
  * Mostra ou esconde o loader inicial da página.
  * @param {boolean} mostrar - True para mostrar o loader, false para mostrar o conteúdo.
  */
-export function toggleLoader(mostrar) {
-    document.getElementById('vitrine-loader').style.display = mostrar ? 'block' : 'none';
-    document.getElementById('vitrine-content').style.display = mostrar ? 'none' : 'block';
+export function toggleLoader(mostrar, mensagem = 'A carregar informações do negócio...') {
+    const loader = document.getElementById('vitrine-loader');
+    if (loader && loader.querySelector('p')) {
+        loader.querySelector('p').textContent = mensagem;
+    }
+    if (loader) loader.style.display = mostrar ? 'block' : 'none';
+    
+    const content = document.getElementById('vitrine-content');
+    if(content) content.style.display = mostrar ? 'none' : 'grid';
 }
+
 
 /**
  * Preenche o cabeçalho e a aba de informações com os dados da empresa e serviços.
@@ -13,18 +20,21 @@ export function toggleLoader(mostrar) {
  * @param {Array} todosOsServicos - Array com todos os serviços da empresa.
  */
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
-    // Cabeçalho
     document.getElementById('logo-publico').src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
     document.getElementById('nome-negocio-publico').textContent = dadosEmpresa.nomeFantasia || "Nome do Negócio";
-
-    // Aba "Informações"
     document.getElementById('info-negocio').innerHTML = `<p>${dadosEmpresa.descricao || "Descrição não informada."}</p>`;
-    document.getElementById('info-servicos').innerHTML = todosOsServicos.map(s => `
-        <div class="servico-info-item">
-            <strong>${s.nome}</strong>
-            <span>(Duração: ${s.duracao} min, Preço: R$ ${s.preco.toFixed(2)})</span>
-        </div>
-    `).join('');
+    
+    const servicosContainer = document.getElementById('info-servicos');
+    if (todosOsServicos && todosOsServicos.length > 0) {
+        servicosContainer.innerHTML = todosOsServicos.map(s => `
+            <div class="servico-info-item">
+                <strong>${s.nome}</strong>
+                <span>R$ ${s.preco.toFixed(2)} (${s.duracao} min)</span>
+            </div>
+        `).join('');
+    } else {
+        servicosContainer.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
+    }
 }
 
 /**
@@ -95,27 +105,22 @@ export function renderizarHorarios(slots, mensagem = '') {
  * @param {object|null} user - O objeto do usuário do Firebase Auth.
  */
 export function atualizarUIdeAuth(user) {
-    const loginPromptAgendamento = document.getElementById('agendamento-login-prompt');
-    const loginPromptVisualizacao = document.getElementById('agendamentos-login-prompt');
     const userInfo = document.getElementById('user-info');
     const loginContainer = document.getElementById('btn-login-container');
     const agendamentosContainer = document.getElementById('botoes-agendamento');
-
+    
     if (user) {
-        loginPromptAgendamento.style.display = 'none';
-        loginPromptVisualizacao.style.display = 'none';
-        agendamentosContainer.style.display = 'flex';
-        userInfo.style.display = 'block';
-        loginContainer.style.display = 'none';
-        document.getElementById('user-photo').src = user.photoURL;
-        document.getElementById('user-name').textContent = user.displayName;
+        if(agendamentosContainer) agendamentosContainer.style.display = 'flex';
+        if(userInfo) userInfo.style.display = 'block';
+        if(loginContainer) loginContainer.style.display = 'none';
+        document.getElementById('user-photo').src = user.photoURL || 'https://placehold.co/80x80/eef2ff/4f46e5?text=User';
+        document.getElementById('user-name').textContent = user.displayName || 'Usuário';
     } else {
-        loginPromptAgendamento.style.display = 'block';
-        loginPromptVisualizacao.style.display = 'block';
-        agendamentosContainer.style.display = 'none';
-        userInfo.style.display = 'none';
-        loginContainer.style.display = 'block';
-        document.getElementById('lista-agendamentos-visualizacao').innerHTML = '';
+        if(agendamentosContainer) agendamentosContainer.style.display = 'none';
+        if(userInfo) userInfo.style.display = 'none';
+        if(loginContainer) loginContainer.style.display = 'block';
+        const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
+        if(listaAgendamentos) listaAgendamentos.innerHTML = '';
     }
 }
 
@@ -124,11 +129,15 @@ export function atualizarUIdeAuth(user) {
  * @param {string} idDaAba - O ID do elemento de conteúdo a ser mostrado.
  */
 export function trocarAba(idDaAba) {
+    const menuKey = idDaAba.replace('menu-', '');
     document.querySelectorAll('.menu-content').forEach(el => el.classList.remove('ativo'));
-    document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('ativo'));
+    document.querySelectorAll('[data-menu]').forEach(el => el.classList.remove('ativo'));
     
-    document.getElementById(idDaAba).classList.add('ativo');
-    document.querySelector(`.menu-btn[data-menu="${idDaAba.replace('menu-','')}"`).classList.add('ativo');
+    const tela = document.getElementById(idDaAba);
+    if(tela) tela.classList.add('ativo');
+
+    const botoes = document.querySelectorAll(`.menu-btn[data-menu="${menuKey}"], .bottom-nav-vitrine button[data-menu="${menuKey}"]`);
+    botoes.forEach(btn => btn.classList.add('ativo'));
 }
 
 /**
@@ -136,27 +145,27 @@ export function trocarAba(idDaAba) {
  * @param {'profissional'|'servico'|'horario'} tipo - O tipo de card.
  * @param {string} id - O ID do item a ser selecionado.
  */
-export function selecionarCard(tipo, id) {
-    let seletor;
-    switch(tipo) {
-        case 'profissional':
-            seletor = '.card-profissional';
-            break;
-        case 'servico':
-            seletor = '.card-servico';
-            break;
-        case 'horario':
-            seletor = '.btn-horario';
-            break;
-        default:
-            return;
-    }
-    document.querySelectorAll(seletor).forEach(c => c.classList.remove('selecionado'));
+export function selecionarCard(tipo, id, isLoading = false) {
+    const seletorMap = {
+        profissional: '.card-profissional',
+        servico: '.card-servico',
+        horario: '.btn-horario'
+    };
+    const seletor = seletorMap[tipo];
+    if (!seletor) return;
+
+    document.querySelectorAll(seletor).forEach(c => {
+        c.classList.remove('selecionado', 'loading');
+    });
+
     if (id) {
-        if (tipo === 'horario') {
-            document.querySelector(`${seletor}[data-horario="${id}"]`)?.classList.add('selecionado');
-        } else {
-            document.querySelector(`${seletor}[data-id="${id}"]`)?.classList.add('selecionado');
+        const attribute = (tipo === 'horario') ? 'data-horario' : 'data-id';
+        const element = document.querySelector(`${seletor}[${attribute}="${id}"]`);
+        if (element) {
+            element.classList.add('selecionado');
+            if (isLoading) {
+                element.classList.add('loading');
+            }
         }
     }
 }
@@ -174,7 +183,8 @@ export function limparSelecao(tipo) {
  * @param {boolean} mostrar
  */
 export function mostrarContainerForm(mostrar) {
-    document.getElementById('agendamento-form-container').style.display = mostrar ? 'block' : 'none';
+    const container = document.getElementById('agendamento-form-container');
+    if(container) container.style.display = mostrar ? 'block' : 'none';
 }
 
 /**
@@ -182,8 +192,9 @@ export function mostrarContainerForm(mostrar) {
  * @param {boolean} desabilitarInput - Desabilita ou habilita o campo de data.
  * @param {string} mensagemHorarios - Mensagem para mostrar na grade de horários.
  */
-export function atualizarStatusData(desabilitarInput, mensagemHorarios) {
-    document.getElementById('data-agendamento').disabled = desabilitarInput;
+export function atualizarStatusData(desabilitarInput, mensagemHorarios = '') {
+    const dataInput = document.getElementById('data-agendamento');
+    if(dataInput) dataInput.disabled = desabilitarInput;
     renderizarHorarios([], mensagemHorarios);
 }
 
@@ -194,7 +205,8 @@ export function atualizarStatusData(desabilitarInput, mensagemHorarios) {
 export function selecionarFiltro(modo) {
     document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('ativo'));
     const btnId = modo === 'ativos' ? 'btn-ver-ativos' : 'btn-ver-historico';
-    document.getElementById(btnId).classList.add('ativo');
+    const btn = document.getElementById(btnId);
+    if(btn) btn.classList.add('ativo');
 }
 
 /**
@@ -206,7 +218,7 @@ export function renderizarAgendamentosComoCards(agendamentos, modo) {
     const container = document.getElementById('lista-agendamentos-visualizacao');
     container.innerHTML = '';
 
-    if (agendamentos.length === 0) {
+    if (!agendamentos || agendamentos.length === 0) {
         container.innerHTML = `<p>Você não tem agendamentos ${modo === 'ativos' ? 'futuros' : 'passados'}.</p>`;
         return;
     }
@@ -216,14 +228,110 @@ export function renderizarAgendamentosComoCards(agendamentos, modo) {
     agendamentos.forEach(ag => {
         const dataFormatada = new Date(`${ag.data}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         container.innerHTML += `
-            <div class="card-agendamento">
+            <div class="card-agendamento status-${ag.status || 'ativo'}">
                 <div class="agendamento-info">
                     <strong>${ag.servicoNome}</strong>
                     <span>com ${ag.profissionalNome}</span>
                     <small>${dataFormatada} às ${ag.horario}</small>
                 </div>
-                ${modo === 'ativos' ? `<button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>` : ''}
+                ${(modo === 'ativos' && ag.status !== 'cancelado_pelo_cliente') ? `<button class="btn-cancelar" data-id="${ag.id}">Cancelar</button>` : ''}
             </div>
         `;
+    });
+}
+
+// ======================================================================
+//        FUNÇÕES ADICIONADAS PARA CORRIGIR ERROS E MELHORAR UX
+// ======================================================================
+
+/**
+ * Desabilita o botão de confirmar agendamento.
+ */
+export function desabilitarBotaoConfirmar() {
+    const btn = document.getElementById('btn-confirmar-agendamento');
+    if (btn) {
+        btn.disabled = true;
+    }
+}
+
+/**
+ * Habilita o botão de confirmar agendamento.
+ */
+export function habilitarBotaoConfirmar() {
+    const btn = document.getElementById('btn-confirmar-agendamento');
+    if (btn) {
+        btn.disabled = false;
+    }
+}
+
+/**
+ * Mostra ou esconde a mensagem de 'faça login' na tela principal de agendamento.
+ */
+export function toggleAgendamentoLoginPrompt(mostrar) {
+    const prompt = document.getElementById('agendamento-login-prompt');
+    if (prompt) {
+        prompt.style.display = mostrar ? 'block' : 'none';
+    }
+}
+
+/**
+ * Exibe a mensagem de 'faça login' na aba de agendamentos.
+ */
+export function exibirMensagemDeLoginAgendamentos() {
+    const promptLogin = document.querySelector('#menu-visualizacao #agendamentos-login-prompt');
+    const listaAgendamentos = document.getElementById('lista-agendamentos-visualizacao');
+    const botoesFiltro = document.getElementById('botoes-agendamento');
+
+    if (promptLogin) promptLogin.style.display = 'block';
+    if (listaAgendamentos) listaAgendamentos.innerHTML = '';
+    if (botoesFiltro) botoesFiltro.style.display = 'none';
+}
+
+/**
+ * Força a abertura do modal de login.
+ */
+export function abrirModalLogin() {
+    const modal = document.getElementById('modal-auth-janela');
+    if (modal) {
+        document.getElementById('modal-auth-cadastro').style.display = 'none';
+        document.getElementById('modal-auth-login').style.display = 'block';
+        modal.style.display = 'flex';
+    }
+}
+
+/**
+ * Mostra um modal de confirmação customizado.
+ */
+export function mostrarConfirmacao(titulo, mensagem) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-confirm-modal');
+        const tituloEl = document.getElementById('modal-titulo');
+        const mensagemEl = document.getElementById('modal-mensagem');
+        const btnConfirmar = document.getElementById('modal-btn-confirmar');
+        const btnCancelar = document.getElementById('modal-btn-cancelar');
+
+        if (!modal || !tituloEl || !mensagemEl || !btnConfirmar || !btnCancelar) {
+            resolve(confirm(mensagem));
+            return;
+        }
+
+        tituloEl.textContent = titulo;
+        mensagemEl.textContent = mensagem;
+        modal.style.display = 'flex';
+
+        const onConfirmar = () => {
+            modal.style.display = 'none';
+            resolve(true);
+            btnCancelar.removeEventListener('click', onCancelar);
+        };
+
+        const onCancelar = () => {
+            modal.style.display = 'none';
+            resolve(false);
+            btnConfirmar.removeEventListener('click', onConfirmar);
+        };
+
+        btnConfirmar.addEventListener('click', onConfirmar, { once: true });
+        btnCancelar.addEventListener('click', onCancelar, { once: true });
     });
 }
