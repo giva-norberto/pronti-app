@@ -79,6 +79,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 // Cenário: Novo utilizador, ainda não tem empresa
                 empresaId = null;
                 atualizarTelaParaNovoPerfil();
+                if (elements.msgFree) {
+                    elements.msgFree.style.display = "none";
+                }
             } else {
                 // Cenário: Utilizador existente, carrega dados da empresa
                 const empresaDoc = snapshot.docs[0];
@@ -86,6 +89,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 const dadosEmpresa = empresaDoc.data();
                 preencherFormulario(dadosEmpresa);
                 mostrarCamposExtras();
+
+                // EXIBE A MENSAGEM DE FREE SE O PLANO FOR FREE
+                if (dadosEmpresa.plano === "free" && elements.msgFree) {
+                    elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
+                    elements.msgFree.style.display = "block";
+                } else if (elements.msgFree) {
+                    elements.msgFree.style.display = "none";
+                }
             }
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -135,6 +146,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
 
+                // Após editar, verifica e exibe mensagem do plano free
+                if (dadosEmpresa.plano === "free" && elements.msgFree) {
+                    elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
+                    elements.msgFree.style.display = "block";
+                } else if (elements.msgFree) {
+                    elements.msgFree.style.display = "none";
+                }
+
             } else {
                 // --- LÓGICA DE NOVO CADASTRO ---
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
@@ -148,9 +167,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
-                // CORREÇÃO: Lógica do card de uso gratuito restaurada
+                // Mensagem de cadastro gratuito
                 if (elements.msgFree) {
-                    elements.msgFree.textContent = "Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!";
+                    elements.msgFree.innerHTML = "Seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
                     elements.msgFree.style.display = "block";
                 } else {
                     alert("Seu negócio foi cadastrado com sucesso! Você ganhou 15 dias grátis!");
@@ -195,6 +214,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
         const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, document.getElementById('logo-section')];
         camposExtras.forEach(el => { if(el) el.style.display = 'none'; });
+        if (elements.msgFree) {
+            elements.msgFree.style.display = "none";
+        }
     }
 
     function mostrarCamposExtras() {
