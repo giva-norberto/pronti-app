@@ -36,7 +36,8 @@ window.addEventListener('DOMContentLoaded', () => {
         btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
         linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
         btnLogout: document.getElementById('btn-logout'),
-        msgFree: document.getElementById('mensagem-free')
+        msgFree: document.getElementById('mensagem-free'),
+        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso')
     };
 
     let currentUser;
@@ -167,8 +168,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
-                // Mensagem de cadastro gratuito
-                if (elements.msgFree) {
+                // Mensagem de cadastro gratuito (CARD ESPECIAL)
+                if (elements.msgCadastroSucesso) {
+                    elements.msgCadastroSucesso.innerHTML = "Seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
+                    elements.msgCadastroSucesso.style.display = "block";
+                    setTimeout(() => {
+                        elements.msgCadastroSucesso.style.display = "none";
+                        if (elements.msgFree) {
+                            elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
+                            elements.msgFree.style.display = "block";
+                        }
+                    }, 6000); // 6 segundos para sumir o card de sucesso inicial
+                } else if (elements.msgFree) {
+                    // fallback se não existir o card especial
                     elements.msgFree.innerHTML = "Seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
                     elements.msgFree.style.display = "block";
                 } else {
@@ -216,6 +228,9 @@ window.addEventListener('DOMContentLoaded', () => {
         camposExtras.forEach(el => { if(el) el.style.display = 'none'; });
         if (elements.msgFree) {
             elements.msgFree.style.display = "none";
+        }
+        if (elements.msgCadastroSucesso) {
+            elements.msgCadastroSucesso.style.display = "none";
         }
     }
 
