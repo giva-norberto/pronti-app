@@ -1,27 +1,43 @@
+// ======================================================================
+//          VITRINE.JS - O Maestro da Aplicação
+//      Responsabilidade: Orquestrar o estado, os dados, a UI
+//      e as interações do utilizador na página da vitrine.
+// ======================================================================
+
+// --- MÓDULOS IMPORTADOS ---
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
 import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, buscarAgendamentosDoCliente, cancelarAgendamento, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
-// --- INICIALIZAÇÃO (sem alterações) ---
+// --- INICIALIZAÇÃO DA PÁGINA ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
         const empresaId = getEmpresaIdFromURL();
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
+
+        // Carrega os dados essenciais em paralelo para um carregamento mais rápido
         const [dados, profissionais, todosServicos] = await Promise.all([
             getDadosEmpresa(empresaId), getProfissionaisDaEmpresa(empresaId), getTodosServicosDaEmpresa(empresaId)
         ]);
+
         if (!dados) throw new Error("Empresa não encontrada.");
+        
+        // Armazena os dados no estado central da aplicação
         setEmpresa(empresaId, dados);
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
+        
+        // Renderiza a interface inicial com os dados carregados
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
         UI.renderizarProfissionais(state.listaProfissionais);
+        
         configurarEventosGerais();
         setupAuthListener(handleUserAuthStateChange);
         UI.toggleLoader(false);
+
     } catch (error) {
         console.error("Erro fatal na inicialização:", error.stack);
         document.getElementById("vitrine-loader").innerHTML = `<p style="text-align: center; color:red; padding: 20px;">${error.message}</p>`;
@@ -30,23 +46,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // --- CONFIGURAÇÃO DE EVENTOS ---
 function configurarEventosGerais() {
-    document.querySelector('.sidebar-menu')?.addEventListener('click', handleMenuClick);
-    document.querySelector('.bottom-nav-vitrine')?.addEventListener('click', handleMenuClick);
-    document.getElementById('lista-profissionais').addEventListener('click', handleProfissionalClick);
-    document.getElementById('lista-servicos').addEventListener('click', handleServicoClick);
-    // NOVO: Listener para o botão de prosseguir
-    document.getElementById('btn-prosseguir-data')?.addEventListener('click', handleProsseguirDataClick);
-    document.getElementById('data-agendamento').addEventListener('change', handleDataChange);
-    document.getElementById('grade-horarios').addEventListener('click', handleHorarioClick);
-    document.getElementById('btn-login')?.addEventListener('click', fazerLogin);
-    document.getElementById('modal-auth-btn-google')?.addEventListener('click', fazerLogin);
-    document.getElementById('btn-logout').addEventListener('click', fazerLogout);
-    document.getElementById('btn-confirmar-agendamento').addEventListener('click', handleConfirmarAgendamento);
-    document.getElementById('botoes-agendamento').addEventListener('click', handleFiltroAgendamentos);
-    document.getElementById('lista-agendamentos-visualizacao').addEventListener('click', handleCancelarClick);
+    // Função auxiliar para adicionar listeners de forma segura, evitando erros se um elemento não existir
+    const addSafeListener = (selector, event, handler, isQuerySelector = false) => {
+        const element = isQuerySelector ? document.querySelector(selector) : document.getElementById(selector);
+        if (element) {
+            element.addEventListener(event, handler);
+        }
+    };
+
+    addSafeListener('.sidebar-menu', 'click', handleMenuClick, true);
+    addSafeListener('.bottom-nav-vitrine', 'click', handleMenuClick, true);
+    addSafeListener('lista-profissionais', 'click', handleProfissionalClick);
+    addSafeListener('lista-servicos', 'click', handleServicoClick);
+    addSafeListener('btn-prosseguir-data', 'click', handleProsseguirDataClick);
+    addSafeListener('data-agendamento', 'change', handleDataChange);
+    addSafeListener('grade-horarios', 'click', handleHorarioClick);
+    addSafeListener('btn-login', 'click', fazerLogin);
+    addSafeListener('modal-auth-btn-google', 'click', fazerLogin);
+    addSafeListener('btn-logout', 'click', fazerLogout);
+    addSafeListener('btn-confirmar-agendamento', 'click', handleConfirmarAgendamento);
+    addSafeListener('botoes-agendamento', 'click', handleFiltroAgendamentos);
+    addSafeListener('lista-agendamentos-visualizacao', 'click', handleCancelarClick);
 }
 
 // --- HANDLERS ---
+
+/** Lida com a mudança de estado do utilizador (login/logout). */
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
@@ -62,6 +87,7 @@ function handleUserAuthStateChange(user) {
     }
 }
 
+/** Lida com o clique nos botões do menu para trocar de aba. */
 function handleMenuClick(e) {
     const menuButton = e.target.closest('[data-menu]');
     if (menuButton) {
@@ -77,26 +103,30 @@ function handleMenuClick(e) {
     }
 }
 
+/** Lida com a seleção de um profissional. */
 async function handleProfissionalClick(e) {
     const card = e.target.closest('.card-profissional');
     if (!card) return;
+
     resetarAgendamento();
     UI.limparSelecao('servico'); UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
     UI.mostrarContainerForm(false); UI.renderizarServicos([]); UI.renderizarHorarios([]);
+    
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
-    UI.selecionarCard('profissional', profissionalId, true);
+    UI.selecionarCard('profissional', profissionalId, true); // Mostra o feedback de carregamento
+
     try {
         profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
         setAgendamento('profissional', profissional);
         
-        // NOVO: Verifica se o profissional permite múltiplos serviços
+        // Verifica se o profissional permite agendamento de múltiplos serviços
         const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
         
         const servicosDoProfissional = (profissional.servicos || []).map(servicoId => state.todosOsServicos.find(servico => servico.id === servicoId)).filter(Boolean);
         
         UI.mostrarContainerForm(true);
-        // NOVO: Informa a UI qual modo de renderização usar
+        // Informa a UI qual modo de renderização usar (único vs. múltiplo)
         UI.renderizarServicos(servicosDoProfissional, permiteMultiplos);
         UI.configurarModoAgendamento(permiteMultiplos);
 
@@ -104,10 +134,11 @@ async function handleProfissionalClick(e) {
         console.error("Erro ao buscar horários do profissional:", error);
         await UI.mostrarAlerta("Erro", "Não foi possível carregar os dados deste profissional.");
     } finally {
-        UI.selecionarCard('profissional', profissionalId, false);
+        UI.selecionarCard('profissional', profissionalId, false); // Remove o feedback de carregamento
     }
 }
 
+/** Lida com a seleção de um ou mais serviços. */
 async function handleServicoClick(e) {
     const card = e.target.closest('.card-servico');
     if (!card) return;
@@ -121,14 +152,14 @@ async function handleServicoClick(e) {
     const servicoId = card.dataset.id;
 
     if (permiteMultiplos) {
-        // --- LÓGICA NOVA PARA MÚLTIPLOS SERVIÇOS ---
+        // --- LÓGICA PARA MÚLTIPLOS SERVIÇOS ---
         card.classList.toggle('selecionado');
         const servicosSelecionadosIds = Array.from(document.querySelectorAll('.card-servico.selecionado')).map(el => el.dataset.id);
         const servicosSelecionados = servicosSelecionadosIds.map(id => state.todosOsServicos.find(s => s.id === id));
-        setAgendamento('servicos', servicosSelecionados); // Guarda a lista de serviços
-        UI.atualizarResumoAgendamento(servicosSelecionados);
+        setAgendamento('servicos', servicosSelecionados); // Guarda a lista de serviços no estado
+        UI.atualizarResumoAgendamento(servicosSelecionados); // Atualiza o resumo na UI
     } else {
-        // --- LÓGICA ANTIGA E INTACTA PARA SERVIÇO ÚNICO ---
+        // --- LÓGICA PARA SERVIÇO ÚNICO (INTACTA) ---
         UI.selecionarCard('servico', servicoId);
         setAgendamento('data', null); setAgendamento('horario', null);
         UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
@@ -142,7 +173,7 @@ async function handleServicoClick(e) {
                 const dataInput = document.getElementById('data-agendamento');
                 dataInput.value = primeiraDataDisponivel;
                 dataInput.disabled = false;
-                dataInput.dispatchEvent(new Event('change'));
+                dataInput.dispatchEvent(new Event('change')); // Dispara o evento para carregar os horários
             } else {
                 UI.renderizarHorarios([], 'Nenhuma data disponível para este profissional nos próximos 3 meses.');
                 UI.atualizarStatusData(false);
@@ -155,7 +186,7 @@ async function handleServicoClick(e) {
     }
 }
 
-// NOVO: Handler para o botão "Escolher Data e Horário"
+/** Lida com o clique no botão "Escolher Data e Horário" no modo de múltiplos serviços. */
 async function handleProsseguirDataClick() {
     const servicos = state.agendamento.servicos;
     if (!servicos || servicos.length === 0) {
@@ -186,7 +217,7 @@ async function handleProsseguirDataClick() {
     }
 }
 
-
+/** Lida com a mudança de data no seletor. */
 async function handleDataChange(e) {
     setAgendamento('data', e.target.value); setAgendamento('horario', null);
     UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
@@ -213,6 +244,7 @@ async function handleDataChange(e) {
     }
 }
 
+/** Lida com a seleção de um horário. */
 function handleHorarioClick(e) {
     const btn = e.target.closest('.btn-horario');
     if (!btn || btn.disabled) return;
@@ -221,9 +253,10 @@ function handleHorarioClick(e) {
     UI.habilitarBotaoConfirmar();
 }
 
+/** Lida com a confirmação final do agendamento. */
 async function handleConfirmarAgendamento() {
     if (!state.currentUser) {
-        await UI.mostrarAlerta("Login Necessário", "Você precisa fazer login para confirmar o agendamento.");
+        await UI.mostrarAlerta("Login Necessário", "Você precisa de fazer login para confirmar o agendamento.");
         if (UI.abrirModalLogin) UI.abrirModalLogin(); 
         return;
     }
@@ -231,7 +264,7 @@ async function handleConfirmarAgendamento() {
     const { profissional, servico, servicos, data, horario } = state.agendamento;
     const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
     
-    // Validação para os dois modos
+    // Validação unificada para ambos os modos
     const servicoValido = permiteMultiplos ? (servicos && servicos.length > 0) : servico;
 
     if (!profissional || !servicoValido || !data || !horario) {
@@ -244,7 +277,7 @@ async function handleConfirmarAgendamento() {
     btn.disabled = true;
     btn.textContent = 'A agendar...';
     try {
-        // NOVO: Cria um "serviço combinado" para salvar no Firebase
+        // Cria um "serviço combinado" para salvar no Firebase se forem múltiplos
         let servicoParaSalvar;
         if (permiteMultiplos) {
             servicoParaSalvar = {
@@ -274,26 +307,28 @@ async function handleConfirmarAgendamento() {
     }
 }
 
+/** Lida com a filtragem de agendamentos (ativos vs. histórico). */
 async function handleFiltroAgendamentos(e) {
     if (!e.target.matches('.btn-toggle') || !state.currentUser) return;
     const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
     UI.selecionarFiltro(modo);
-    UI.renderizarAgendamentosComoCards([], 'Buscando agendamentos...');
+    UI.renderizarAgendamentosComoCards([], 'A buscar agendamentos...');
     try {
         const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
         UI.renderizarAgendamentosComoCards(agendamentos, modo);
     } catch (error) {
         console.error("Erro ao buscar agendamentos do cliente:", error);
-        await UI.mostrarAlerta("Erro de Busca", "Ocorreu um erro ao buscar seus agendamentos.");
-        UI.renderizarAgendamentosComoCards([], 'Não foi possível carregar seus agendamentos.');
+        await UI.mostrarAlerta("Erro de Busca", "Ocorreu um erro ao buscar os seus agendamentos.");
+        UI.renderizarAgendamentosComoCards([], 'Não foi possível carregar os seus agendamentos.');
     }
 }
 
+/** Lida com o clique para cancelar um agendamento. */
 async function handleCancelarClick(e) {
     const btnCancelar = e.target.closest('.btn-cancelar');
     if (btnCancelar) {
         const agendamentoId = btnCancelar.dataset.id;
-        const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
+        const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem a certeza de que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
         if (confirmou) {
             btnCancelar.disabled = true;
             btnCancelar.textContent = "A cancelar...";
