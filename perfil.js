@@ -226,25 +226,24 @@ window.addEventListener('DOMContentLoaded', () => {
                 reader.readAsDataURL(file);
             }
         });
+        
+        // ==========================================================
+        //      CORREÇÃO APLICADA AQUI
+        // ==========================================================
         if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
             try { 
-                localStorage.removeItem('empresaAtivaId'); // Limpa a seleção ao sair
+                // Limpa a "memória" da empresa ativa ao sair da conta
+                localStorage.removeItem('empresaAtivaId'); 
                 await signOut(auth); 
                 window.location.href = 'login.html'; 
             }
             catch (error) { console.error("Erro no logout:", error); }
         });
 
-        // ==========================================================
-        //      CORREÇÃO APLICADA AQUI
-        // ==========================================================
         if (elements.btnCriarNovaEmpresa) {
             elements.btnCriarNovaEmpresa.addEventListener('click', () => {
-                // Limpa a seleção da empresa ativa para entrar no modo de criação
                 localStorage.removeItem('empresaAtivaId');
-                empresaId = null; // Limpa a variável de estado atual
-                
-                // Limpa a tela para o registo de uma nova empresa, sem recarregar a página
+                empresaId = null; 
                 atualizarTelaParaNovoPerfil();
             });
         }
