@@ -4,7 +4,7 @@
 //      e as interações do utilizador na página da vitrine.
 // ======================================================================
 
-// --- MÓDULOS IMPORTADOS ---
+// --- MÓDulos IMPORTADOS ---
 import { state, setEmpresa, setProfissionais, setTodosOsServicos, setAgendamento, resetarAgendamento, setCurrentUser } from './vitrini-state.js';
 import { getEmpresaIdFromURL, getDadosEmpresa, getProfissionaisDaEmpresa, getHorariosDoProfissional, getTodosServicosDaEmpresa } from './vitrini-profissionais.js';
 import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, buscarAgendamentosDoCliente, cancelarAgendamento, encontrarPrimeiraDataComSlots } from './vitrini-agendamento.js';
@@ -225,7 +225,10 @@ async function handleDataChange(e) {
     UI.limparSelecao('horario');
     UI.desabilitarBotaoConfirmar();
     
+    // **LÓGICA UNIFICADA:** Lê sempre de 'servicos', eliminando a necessidade de 'servico' (singular).
     const { profissional, servicos, data } = state.agendamento;
+    
+    // Calcula a duração total a partir do array 'servicos'
     const duracaoTotal = servicos.reduce((total, s) => total + s.duracao, 0);
 
     if (!profissional || duracaoTotal === 0 || !data) return;
@@ -259,6 +262,7 @@ async function handleConfirmarAgendamento() {
         return;
     }
 
+    // **LÓGICA UNIFICADA:** Lê sempre de 'servicos'.
     const { profissional, servicos, data, horario } = state.agendamento;
     
     if (!profissional || !servicos || servicos.length === 0 || !data || !horario) {
@@ -271,7 +275,8 @@ async function handleConfirmarAgendamento() {
     btn.disabled = true;
     btn.textContent = 'A agendar...';
     try {
-        // Cria um "serviço combinado" para salvar no Firebase. Funciona para 1 ou mais serviços.
+        // A lógica de criar um "serviço combinado" agora é a única forma de salvar.
+        // Funciona para 1 ou mais serviços.
         const servicoParaSalvar = {
             id: servicos.map(s => s.id).join(','),
             nome: servicos.map(s => s.nome).join(' + '),
@@ -279,6 +284,7 @@ async function handleConfirmarAgendamento() {
             preco: servicos.reduce((total, s) => total + s.preco, 0)
         };
 
+        // Prepara o objeto final para salvar, garantindo que ele tenha a propriedade 'servico' (combinado).
         const agendamentoParaSalvar = { 
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
