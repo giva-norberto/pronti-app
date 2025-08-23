@@ -1,4 +1,5 @@
-// selecionar-empresa.js
+// selecionar-empresa.js - SÓ FAZ O FRONT DA SELEÇÃO, NÃO CHAMA verificarAcesso!
+
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection,
@@ -15,12 +16,10 @@ const btnLogout = document.getElementById('btn-logout');
 const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
 
 async function renderizarEmpresas(user) {
-  // Exibe o loader enquanto carrega
   loader.style.display = 'block';
   empresasGrid.innerHTML = '';
 
   try {
-    // Buscar empresas do usuário (dono)
     const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
     const querySnapshot = await getDocs(q);
 
@@ -31,7 +30,6 @@ async function renderizarEmpresas(user) {
       return;
     }
 
-    // Renderiza cada empresa como card
     empresasGrid.innerHTML = '';
     querySnapshot.forEach((doc) => {
       const empresa = doc.data();
@@ -42,7 +40,7 @@ async function renderizarEmpresas(user) {
         <div class="empresa-nome">${empresa.nomeFantasia || 'Empresa sem nome'}</div>
         <div style="font-size:0.95rem;color:#64748b;margin-top:6px;">${empresa.descricao || ''}</div>
       `;
-      card.onclick = () => selecionarEmpresa(doc.id, empresa.nomeFantasia || empresa.nome || empresa.descricao || 'Empresa');
+      card.onclick = () => selecionarEmpresa(doc.id);
       empresasGrid.appendChild(card);
     });
 
@@ -64,19 +62,16 @@ async function renderizarEmpresas(user) {
   }
 }
 
-function selecionarEmpresa(empresaId, nomeEmpresa) {
-  // Salva seleção e redireciona para painel (ajuste o destino conforme seu app)
+function selecionarEmpresa(empresaId) {
   localStorage.setItem('empresaAtivaId', empresaId);
-  window.location.href = 'painel.html'; // ajuste para a página principal do seu app
+  window.location.href = 'painel.html';
 }
 
-// Logout
 btnLogout.onclick = async () => {
   await signOut(auth);
   window.location.href = 'login.html';
 };
 
-// Detecta autenticação e inicializa
 onAuthStateChanged(auth, (user) => {
   if (user) {
     renderizarEmpresas(user);
