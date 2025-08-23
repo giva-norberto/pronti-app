@@ -359,6 +359,31 @@ export function atualizarResumoAgendamento(servicosSelecionados) {
 }
 
 /**
+ * NOVO: Atualiza o resumo final do agendamento (embaixo, antes do botão Confirmar Agendamento)
+ */
+export function atualizarResumoAgendamentoFinal() {
+    const agendamento = window.state?.agendamento || {};
+    const { servicos, data, horario } = agendamento;
+    const el = document.getElementById('resumo-agendamento-final');
+    if (!el) return;
+    if (!servicos || !data || !horario || servicos.length === 0) {
+        el.innerHTML = '';
+        return;
+    }
+    const total = servicos.reduce((soma, s) => soma + (s.preco || 0), 0);
+    const duracao = servicos.reduce((soma, s) => soma + (s.duracao || 0), 0);
+    el.innerHTML = `
+        <div class="resumo-agendamento">
+            <strong>Serviços:</strong> ${servicos.map(s => s.nome).join(" + ")}<br>
+            <strong>Duração:</strong> ${duracao} min<br>
+            <strong>Total:</strong> R$ ${total.toFixed(2)}<br>
+            <strong>Data:</strong> ${data} <strong>Horário:</strong> ${horario}
+        </div>
+        <hr>
+    `;
+}
+
+/**
  * NOVO: Configura a UI para o modo de agendamento (único ou múltiplo).
  */
 export function configurarModoAgendamento(permiteMultiplos) {
@@ -369,10 +394,10 @@ export function configurarModoAgendamento(permiteMultiplos) {
     if (permiteMultiplos) {
         dataHorarioContainer.style.display = 'none';
         resumoContainer.style.display = 'none'; // Começa escondido
-        btnConfirmar.style.display = 'none'; // Esconde o botão principal
+        if(btnConfirmar) btnConfirmar.style.display = 'block'; // Deixe SEMPRE display=block
     } else {
         dataHorarioContainer.style.display = 'none'; // Começa escondido até um serviço ser selecionado
         resumoContainer.style.display = 'none';
-        btnConfirmar.style.display = 'block'; // Mostra o botão principal
+        if(btnConfirmar) btnConfirmar.style.display = 'block';
     }
 }
