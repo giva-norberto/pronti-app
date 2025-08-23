@@ -401,3 +401,23 @@ export function configurarModoAgendamento(permiteMultiplos) {
         if(btnConfirmar) btnConfirmar.style.display = 'block';
     }
 }
+
+/**
+ * NOVO: Limpa toda a UI do agendamento, desmarcando seleções, escondendo containers
+ * e limpando resumos. Use após salvar ou resetar agendamento.
+ */
+export function limparUIAgendamento() {
+    limparSelecao('profissional');
+    limparSelecao('servico');
+    limparSelecao('horario');
+    // Esconde containers
+    const dataHorarioContainer = document.getElementById('data-e-horario-container');
+    if (dataHorarioContainer) dataHorarioContainer.style.display = 'none';
+    const resumoContainer = document.getElementById('servicos-resumo-container');
+    if (resumoContainer) resumoContainer.style.display = 'none';
+    // Limpa resumo final
+    const resumoFinal = document.getElementById('resumo-agendamento-final');
+    if (resumoFinal) resumoFinal.innerHTML = '';
+    // Desabilita botão
+    desabilitarBotaoConfirmar();
+}
