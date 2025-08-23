@@ -1,6 +1,6 @@
 // ======================================================================
 //                      USERSERVICE.JS
-//             VERSÃO FINAL CORRIGIDA E REVISADA
+//           VERSÃO FINAL COM LÓGICA MULTI-EMPRESA
 // ======================================================================
 
 // Imports do Firebase
@@ -22,21 +22,22 @@ import { db, auth } from './firebase-config.js'; // Ajuste o caminho se necessá
 // --- Funções Auxiliares ---
 
 /**
- * Função auxiliar para encontrar o documento da empresa associado a um dono.
+ * Função auxiliar para encontrar TODOS os documentos de empresa associados a um dono.
+ * @param {string} uid - O ID do dono.
+ * @returns {Promise<QuerySnapshot<DocumentData>>} - O resultado da query.
  */
-async function getEmpresaDocPorDono(uid) {
+async function getEmpresasDoDono(uid) {
     if (!uid) return null;
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return null;
-    return querySnapshot.docs[0];
+    return querySnapshot;
 }
 
 // --- Funções Exportadas ---
 
 /**
- * Garante que um documento para o usuário exista na coleção 'usuarios' e que
- * seu período de trial tenha sido iniciado.
+ * Garante que um documento para o utilizador exista na coleção 'usuarios' e que
+ * o seu período de trial tenha sido iniciado.
  */
 export async function ensureUserAndTrialDoc() {
     const user = auth.currentUser;
@@ -60,7 +61,7 @@ export async function ensureUserAndTrialDoc() {
 }
 
 /**
- * Verifica o status de assinatura e trial do usuário logado.
+ * Verifica o status de assinatura e trial do utilizador logado.
  */
 export async function checkUserStatus() {
     const safeReturn = { hasActivePlan: false, isTrialActive: false, trialEndDate: null };
@@ -98,8 +99,10 @@ export async function checkUserStatus() {
 }
 
 /**
- * Verifica o acesso do usuário e retorna seu papel para montagem dinâmica do menu.
- * Não faz redirecionamentos automáticos (exceto login).
+ * ======================================================================
+ * FUNÇÃO PRINCIPAL ATUALIZADA PARA MÚLTIPLAS EMPRESAS
+ * ======================================================================
+ * Verifica o acesso do utilizador e o redireciona com base no número de empresas que ele possui.
  */
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
@@ -108,33 +111,50 @@ export async function verificarAcesso() {
 
             if (!user) {
                 window.location.href = 'login.html';
-                return reject(new Error("Usuário não autenticado."));
+                return reject(new Error("Utilizador não autenticado."));
             }
 
             try {
-                // 1. Checa se é o DONO
-                const empresaDoc = await getEmpresaDocPorDono(user.uid);
-                if (empresaDoc) {
-                    const empresaData = empresaDoc.data();
-                    const userDocRef = doc(db, "usuarios", user.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-
-                    if (userDocSnap.exists() && userDocSnap.data().nome) {
-                        empresaData.nome = userDocSnap.data().nome;
+                // 1. Checa se é o DONO e conta quantas empresas ele tem
+                const empresasSnapshot = await getEmpresasDoDono(user.uid);
+                
+                if (empresasSnapshot && !empresasSnapshot.empty) {
+                    // O utilizador é dono de pelo menos uma empresa.
+                    
+                    if (empresasSnapshot.size > 1) {
+                        // --- CENÁRIO MULTI-EMPRESA ---
+                        // Se tem mais de uma empresa, redireciona para a tela de seleção.
+                        window.location.href = 'selecionar-empresa.html';
+                        return reject(new Error("Múltiplas empresas encontradas, a redirecionar para a seleção."));
+                    
                     } else {
-                        empresaData.nome = user.displayName || user.email;
-                    }
+                        // --- CENÁRIO EMPRESA ÚNICA ---
+                        // Se tem exatamente uma empresa, entra direto nela.
+                        const empresaDoc = empresasSnapshot.docs[0];
+                        const empresaId = empresaDoc.id;
+                        
+                        // Guarda a empresa ativa no localStorage para outras páginas usarem
+                        localStorage.setItem('empresaAtivaId', empresaId);
 
-                    return resolve({
-                        user,
-                        empresaId: empresaDoc.id,
-                        perfil: empresaData,
-                        isOwner: true,
-                        role: "dono"
-                    });
+                        const empresaData = empresaDoc.data();
+                        const userDocRef = doc(db, "usuarios", user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+
+                        empresaData.nome = userDocSnap.exists() && userDocSnap.data().nome 
+                            ? userDocSnap.data().nome 
+                            : (user.displayName || user.email);
+
+                        return resolve({
+                            user,
+                            empresaId: empresaId,
+                            perfil: empresaData,
+                            isOwner: true,
+                            role: "dono"
+                        });
+                    }
                 }
 
-                // 2. Checa se é FUNCIONÁRIO
+                // 2. Se não é dono, checa se é FUNCIONÁRIO
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
 
@@ -145,6 +165,8 @@ export async function verificarAcesso() {
 
                     if (profissionalSnap.exists()) {
                         if (profissionalSnap.data().status === 'ativo') {
+                             // Guarda a empresa ativa no localStorage para outras páginas usarem
+                            localStorage.setItem('empresaAtivaId', empresaId);
                             return resolve({
                                 user,
                                 perfil: profissionalSnap.data(),
@@ -153,22 +175,14 @@ export async function verificarAcesso() {
                                 role: "funcionario"
                             });
                         } else {
-                            // Profissional existe, mas não está ativo (aguardando aprovação)
                             return reject(new Error("aguardando_aprovacao"));
                         }
                     }
                 }
 
-                // 3. Usuário existe em 'usuarios' mas não tem empresa nem vínculo como funcionário
-                const userDocRef = doc(db, "usuarios", user.uid);
-                const userDocSnap = await getDoc(userDocRef);
-                if (userDocSnap.exists()) {
-                    // Usuário existe, mas não foi vinculado a nenhuma empresa
-                    return reject(new Error("primeiro_acesso"));
-                }
+                // 3. Se não é dono nem funcionário, é o PRIMEIRO ACESSO
+                return reject(new Error("primeiro_acesso"));
 
-                // Caso extremo: usuário nem existe nos usuários
-                return reject(new Error("usuario_invalido"));
             } catch (error) {
                 return reject(error);
             }
