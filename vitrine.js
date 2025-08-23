@@ -120,13 +120,11 @@ async function handleProfissionalClick(e) {
         profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
         setAgendamento('profissional', profissional);
         
-        // Verifica se o profissional permite agendamento de múltiplos serviços
         const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
         
         const servicosDoProfissional = (profissional.servicos || []).map(servicoId => state.todosOsServicos.find(servico => servico.id === servicoId)).filter(Boolean);
         
         UI.mostrarContainerForm(true);
-        // Informa a UI qual modo de renderização usar (único vs. múltiplo)
         UI.renderizarServicos(servicosDoProfissional, permiteMultiplos);
         UI.configurarModoAgendamento(permiteMultiplos);
 
@@ -150,21 +148,24 @@ async function handleServicoClick(e) {
 
     const permiteMultiplos = state.agendamento.profissional.horarios?.permitirAgendamentoMultiplo || false;
     const servicoId = card.dataset.id;
+    const servico = state.todosOsServicos.find(s => s.id === servicoId);
 
     if (permiteMultiplos) {
         // --- LÓGICA PARA MÚLTIPLOS SERVIÇOS ---
         card.classList.toggle('selecionado');
         const servicosSelecionadosIds = Array.from(document.querySelectorAll('.card-servico.selecionado')).map(el => el.dataset.id);
         const servicosSelecionados = servicosSelecionadosIds.map(id => state.todosOsServicos.find(s => s.id === id));
-        setAgendamento('servicos', servicosSelecionados); // Guarda a lista de serviços no estado
-        UI.atualizarResumoAgendamento(servicosSelecionados); // Atualiza o resumo na UI
+        setAgendamento('servicos', servicosSelecionados);
+        UI.atualizarResumoAgendamento(servicosSelecionados);
     } else {
-        // --- LÓGICA PARA SERVIÇO ÚNICO (INTACTA) ---
+        // --- LÓGICA UNIFICADA PARA SERVIÇO ÚNICO ---
         UI.selecionarCard('servico', servicoId);
         setAgendamento('data', null); setAgendamento('horario', null);
         UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
-        const servico = state.todosOsServicos.find(s => s.id === servicoId);
-        setAgendamento('servico', servico);
+        
+        // **CORREÇÃO:** Sempre usamos o array 'servicos', mesmo para um único item.
+        setAgendamento('servicos', [servico]); 
+        
         document.getElementById('data-e-horario-container').style.display = 'block';
         UI.atualizarStatusData(true, 'A procurar a data mais próxima com vagas...');
         try {
@@ -173,7 +174,7 @@ async function handleServicoClick(e) {
                 const dataInput = document.getElementById('data-agendamento');
                 dataInput.value = primeiraDataDisponivel;
                 dataInput.disabled = false;
-                dataInput.dispatchEvent(new Event('change')); // Dispara o evento para carregar os horários
+                dataInput.dispatchEvent(new Event('change'));
             } else {
                 UI.renderizarHorarios([], 'Nenhuma data disponível para este profissional nos próximos 3 meses.');
                 UI.atualizarStatusData(false);
@@ -222,13 +223,11 @@ async function handleDataChange(e) {
     setAgendamento('data', e.target.value); setAgendamento('horario', null);
     UI.limparSelecao('horario'); UI.desabilitarBotaoConfirmar();
     
-    const { profissional, servico, servicos, data } = state.agendamento;
-    const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
+    // **CORREÇÃO:** A lógica agora lê sempre de 'servicos', eliminando a necessidade de 'servico' (singular).
+    const { profissional, servicos, data } = state.agendamento;
     
-    // Calcula a duração total, seja de um serviço ou de vários
-    const duracaoTotal = permiteMultiplos 
-        ? servicos.reduce((total, s) => total + s.duracao, 0)
-        : servico.duracao;
+    // Calcula a duração total a partir do array 'servicos'
+    const duracaoTotal = servicos.reduce((total, s) => total + s.duracao, 0);
 
     if (!profissional || duracaoTotal === 0 || !data) return;
 
@@ -261,13 +260,11 @@ async function handleConfirmarAgendamento() {
         return;
     }
 
-    const { profissional, servico, servicos, data, horario } = state.agendamento;
-    const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
+    // **CORREÇÃO:** A lógica agora lê sempre de 'servicos'.
+    const { profissional, servicos, data, horario } = state.agendamento;
     
     // Validação unificada para ambos os modos
-    const servicoValido = permiteMultiplos ? (servicos && servicos.length > 0) : servico;
-
-    if (!profissional || !servicoValido || !data || !horario) {
+    if (!profissional || !servicos || servicos.length === 0 || !data || !horario) {
         await UI.mostrarAlerta("Informação Incompleta", "Por favor, selecione profissional, serviço(s), data e horário.");
         return;
     }
@@ -277,20 +274,21 @@ async function handleConfirmarAgendamento() {
     btn.disabled = true;
     btn.textContent = 'A agendar...';
     try {
-        // Cria um "serviço combinado" para salvar no Firebase se forem múltiplos
-        let servicoParaSalvar;
-        if (permiteMultiplos) {
-            servicoParaSalvar = {
-                id: servicos.map(s => s.id).join(','),
-                nome: servicos.map(s => s.nome).join(' + '),
-                duracao: servicos.reduce((total, s) => total + s.duracao, 0),
-                preco: servicos.reduce((total, s) => total + s.preco, 0)
-            };
-        } else {
-            servicoParaSalvar = servico;
-        }
+        // A lógica de criar um "serviço combinado" agora é a única forma de salvar.
+        const servicoParaSalvar = {
+            id: servicos.map(s => s.id).join(','),
+            nome: servicos.map(s => s.nome).join(' + '),
+            duracao: servicos.reduce((total, s) => total + s.duracao, 0),
+            preco: servicos.reduce((total, s) => total + s.preco, 0)
+        };
 
-        const agendamentoParaSalvar = { ...state.agendamento, servico: servicoParaSalvar };
+        // Prepara o objeto final para salvar, garantindo que ele tenha a propriedade 'servico' (combinado).
+        const agendamentoParaSalvar = { 
+            profissional: state.agendamento.profissional,
+            data: state.agendamento.data,
+            horario: state.agendamento.horario,
+            servico: servicoParaSalvar // Apenas o serviço combinado é salvo
+        };
 
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
         
