@@ -1,34 +1,33 @@
 // ======================================================================
-//        VITRINI-STATE.JS - GESTÃO CENTRAL DO ESTADO
+//          VITRINI-STATE.JS - O Cérebro da Vitrine
+//      Responsabilidade: Manter e gerenciar o estado global
+//                      da aplicação de forma centralizada.
 // ======================================================================
 
-// 'state' é a memória de curto prazo da aplicação, evitando variáveis globais.
+// O estado inicial da nossa aplicação.
 export const state = {
     empresaId: null,
-    dadosEmpresa: null,
-    listaProfissionais: [],   // Cache de profissionais da empresa
-    todosOsServicos: [],      // Cache de todos os serviços da empresa
-
-    // Estado do agendamento atual
+    dadosEmpresa: {},
+    listaProfissionais: [],
+    todosOsServicos: [],
+    currentUser: null,
     agendamento: {
         profissional: null,
-        servico: null,
+        // ==========================================================
+        //   CORREÇÃO PRINCIPAL APLICADA AQUI
+        //   - 'servico' (singular) foi trocado por 'servicos' (plural)
+        //   - Agora é um array para armazenar múltiplos serviços.
+        // ==========================================================
+        servicos: [],
         data: null,
         horario: null
-    },
-
-    // Usuário autenticado atualmente
-    currentUser: null
+    }
 };
 
-// ======================================================================
-// FUNÇÕES PARA MODIFICAR O ESTADO DE FORMA CONTROLADA
-// ======================================================================
-
 /**
- * Define a empresa atual e seus dados.
- * @param {string} id - ID da empresa.
- * @param {object} dados - Dados da empresa.
+ * Define os dados da empresa no estado.
+ * @param {string} id - O ID da empresa.
+ * @param {object} dados - Os dados do documento da empresa.
  */
 export function setEmpresa(id, dados) {
     state.empresaId = id;
@@ -36,52 +35,56 @@ export function setEmpresa(id, dados) {
 }
 
 /**
- * Atualiza a lista de profissionais.
- * @param {Array} profissionais
+ * Define a lista de profissionais no estado.
+ * @param {Array<object>} profissionais - A lista de profissionais.
  */
 export function setProfissionais(profissionais) {
     state.listaProfissionais = profissionais;
 }
 
 /**
- * Atualiza a lista de todos os serviços da empresa.
- * @param {Array} servicos
+ * Define a lista completa de todos os serviços oferecidos pela empresa.
+ * @param {Array<object>} servicos - A lista de todos os serviços.
  */
 export function setTodosOsServicos(servicos) {
     state.todosOsServicos = servicos;
 }
 
 /**
- * Atualiza um campo específico do agendamento atual.
- * @param {'profissional'|'servico'|'data'|'horario'} propriedade
- * @param {*} valor
+ * Define o usuário atualmente autenticado.
+ * @param {object|null} user - O objeto de usuário do Firebase Auth.
+ */
+export function setCurrentUser(user) {
+    state.currentUser = user;
+}
+
+/**
+ * Atualiza uma propriedade específica do objeto de agendamento.
+ * @param {string} propriedade - A chave a ser atualizada (ex: 'profissional', 'servicos').
+ * @param {*} valor - O novo valor para a propriedade.
  */
 export function setAgendamento(propriedade, valor) {
-    if (state.agendamento.hasOwnProperty(propriedade)) {
+    // Esta verificação agora permite a propriedade 'servicos'.
+    if (propriedade in state.agendamento) {
         state.agendamento[propriedade] = valor;
+        console.log(`Estado do agendamento atualizado:`, state.agendamento);
     } else {
-        console.warn(`Propriedade de agendamento inválida: ${propriedade}`);
+        // O erro que você viu não deve mais acontecer.
+        console.error(`Propriedade de agendamento inválida: ${propriedade}`);
     }
 }
 
 /**
- * Reseta o agendamento atual para os valores iniciais.
+ * Reseta o estado do agendamento para os valores iniciais, limpando as seleções.
  */
 export function resetarAgendamento() {
     state.agendamento = {
         profissional: null,
-        servico: null,
+        servicos: [], // Resetado para um array vazio
         data: null,
         horario: null
     };
-}
-
-/**
- * Define o usuário autenticado atual.
- * @param {object|null} user
- */
-export function setCurrentUser(user) {
-    state.currentUser = user;
+    console.log("Estado do agendamento resetado.");
 }
 
 /**
