@@ -55,7 +55,7 @@
                             </div>
                         </div>
                         
-                        <!-- NOVO: Container para agrupar data e horário -->
+                        <!-- NOVO: Container para agrupar data, horário e botão final -->
                         <div id="data-e-horario-container" style="display:none;">
                             <div class="form-group">
                                 <label for="data-agendamento">3. Escolha uma data</label>
@@ -67,8 +67,8 @@
                                     <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
                                 </div>
                             </div>
+                            <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                         </div>
-                        <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                     </div>
                 </div>
             </div>
@@ -145,38 +145,89 @@
 
     <!-- MODAL DE AUTENTICAÇÃO -->
     <div id="modal-auth-janela" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
-      <div style="background:white;padding:2rem 1.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0003;">
-        <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
-        <div id="modal-auth-login" class="modal-auth-step">
-          <h2>Entrar</h2>
-          <button type="button" class="modal-auth-btn" id="modal-auth-btn-google" style="width:100%;margin-bottom:1em;">Entrar com Google</button>
-          <div style="text-align:center;color:#888;margin:8px 0;">ou</div>
-          <form id="modal-auth-form-login">
-            <input id="modal-auth-login-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
-            <input id="modal-auth-login-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:10px;">
-            <button class="modal-auth-btn" style="width:100%;">Entrar</button>
-          </form>
-          <div style="text-align:center;margin-top:10px;">
-            <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
-          </div>
+        <div style="background:white;padding:2rem 1.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0003;">
+            <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
+            <div id="modal-auth-login" class="modal-auth-step">
+                <h2>Entrar</h2>
+                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google" style="width:100%;margin-bottom:1em;">Entrar com Google</button>
+                <div style="text-align:center;color:#888;margin:8px 0;">ou</div>
+                <form id="modal-auth-form-login">
+                    <input id="modal-auth-login-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:10px;">
+                    <button class="modal-auth-btn" style="width:100%;">Entrar</button>
+                </form>
+                <div style="text-align:center;margin-top:10px;">
+                    <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
+                </div>
+            </div>
+            <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
+                <h2>Criar Conta</h2>
+                <form id="modal-auth-form-cadastro">
+                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required style="width:100%;margin-bottom:10px;">
+                    <button class="modal-auth-btn" style="width:100%;">Cadastrar</button>
+                </form>
+                <div style="text-align:center;margin-top:10px;">
+                    <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
+                </div>
+            </div>
         </div>
-        <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
-          <h2>Criar Conta</h2>
-          <form id="modal-auth-form-cadastro">
-            <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required style="width:100%;margin-bottom:6px;">
-            <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
-            <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:6px;">
-            <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required style="width:100%;margin-bottom:10px;">
-            <button class="modal-auth-btn" style="width:100%;">Cadastrar</button>
-          </form>
-          <div style="text-align:center;margin-top:10px;">
-            <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
-          </div>
-        </div>
-      </div>
     </div>
     
     <!-- SCRIPTS -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        function showMenu(menu) {
+          document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
+          document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
+          document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
+          let btnSide = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + menu + '"]');
+          let btnMob = document.querySelector('.bottom-nav-vitrine button[data-menu="' + menu + '"]');
+          let tela = document.getElementById('menu-' + menu);
+          if(btnSide) btnSide.classList.add('ativo');
+          if(btnMob) btnMob.classList.add('ativo');
+          if(tela) tela.classList.add('ativo');
+          if(menu === "informacoes" && window.renderInformacoes) window.renderInformacoes();
+          if(menu === "agendamento" && window.renderAgendamento) window.renderAgendamento();
+          if(menu === "visualizacao" && window.renderVisualizacao) window.renderVisualizacao();
+          if(menu === "perfil" && window.renderPerfil) window.renderPerfil();
+        }
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
+          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); });
+        });
+        // Bottom navigation
+        function toggleNavs() {
+          if(window.innerWidth <= 900) {
+            document.querySelector('.bottom-nav-vitrine').style.display = "flex";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "none";
+          } else {
+            document.querySelector('.bottom-nav-vitrine').style.display = "none";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "";
+          }
+        }
+        toggleNavs();
+        window.addEventListener('resize', toggleNavs);
+
+        document.querySelectorAll('.bottom-nav-vitrine button').forEach(btn => {
+          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        });
+
+        // Seleção de profissional visual (mobile e desktop)
+        document.getElementById('lista-profissionais').addEventListener('click', function(e) {
+          const card = e.target.closest('.card-profissional');
+          if (!card) return;
+          document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
+          card.classList.add('selecionado');
+          window.state = window.state || {};
+          window.state.agendamento = window.state.agendamento || {};
+          window.state.agendamento.profissionalId = card.dataset.id;
+          if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
+        });
+      });
+    </script>
     <script type="module" src="./vitrini-firebase.js"></script>
     <script type="module" src="./vitrini-utils.js"></script>
     <script type="module" src="./vitrini-profissionais.js"></script>
