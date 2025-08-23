@@ -1,4 +1,4 @@
-  // ======================================================================
+// ======================================================================
 //                      USERSERVICE.JS
 //           VERSÃO FINAL COM LÓGICA MULTI-EMPRESA
 // ======================================================================
@@ -114,15 +114,23 @@ export async function verificarAcesso() {
                 return reject(new Error("Utilizador não autenticado."));
             }
 
+            // Adicionado log de depuração
+            console.log("--- Iniciando verificação de acesso para o utilizador:", user.uid, "---");
+
             try {
                 // 1. Checa se é o DONO e busca as suas empresas
                 const empresasSnapshot = await getEmpresasDoDono(user.uid);
                 
+                // Adicionado log de depuração crucial
+                console.log(`Foram encontradas ${empresasSnapshot ? empresasSnapshot.size : 0} empresas para este dono.`);
+
                 if (empresasSnapshot && !empresasSnapshot.empty) {
                     // O utilizador é dono de pelo menos uma empresa.
                     const currentPage = window.location.pathname.split('/').pop();
+                    console.log(`Número de empresas: ${empresasSnapshot.size}. Página atual: ${currentPage}`);
 
                     if (empresasSnapshot.size === 1) {
+                        console.log("Cenário: UMA empresa. A entrar diretamente.");
                         // --- CENÁRIO: UMA EMPRESA ---
                         // Entra direto no painel.
                         const empresaDoc = empresasSnapshot.docs[0];
@@ -142,11 +150,14 @@ export async function verificarAcesso() {
                         });
 
                     } else {
+                        console.log("Cenário: MÚLTIPLAS empresas. A verificar se uma empresa ativa já foi selecionada.");
                         // --- CENÁRIO: MÚLTIPLAS EMPRESAS ---
                         const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                        console.log("ID da empresa ativa no localStorage:", empresaAtivaId);
                         const empresaAtivaValida = empresasSnapshot.docs.some(doc => doc.id === empresaAtivaId);
 
                         if (empresaAtivaId && empresaAtivaValida) {
+                            console.log("Empresa ativa válida encontrada. A continuar a navegação.");
                             // Se já tem uma empresa ativa selecionada, continua.
                              const empresaDoc = empresasSnapshot.docs.find(doc => doc.id === empresaAtivaId);
                              const empresaData = empresaDoc.data();
@@ -155,8 +166,10 @@ export async function verificarAcesso() {
                              empresaData.nome = userDocSnap.exists() && userDocSnap.data().nome ? userDocSnap.data().nome : (user.displayName || user.email);
                              return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" });
                         } else {
+                            console.log("Nenhuma empresa ativa válida. A verificar se é necessário redirecionar.");
                             // Se não tem seleção, força a ida para a tela de seleção.
                             if (currentPage !== 'selecionar-empresa.html' && currentPage !== 'perfil.html') {
+                                console.log("Redirecionando para a tela de seleção...");
                                 window.location.href = 'selecionar-empresa.html';
                                 return reject(new Error("A redirecionar para a seleção de empresa."));
                             }
@@ -185,6 +198,7 @@ export async function verificarAcesso() {
                 }
 
                 // 3. Se não é dono nem funcionário, é o PRIMEIRO ACESSO
+                console.log("Cenário: PRIMEIRO ACESSO. Nenhum vínculo de dono ou funcionário encontrado.");
                 return reject(new Error("primeiro_acesso"));
 
             } catch (error) {
