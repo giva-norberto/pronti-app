@@ -9,6 +9,7 @@ import {
     updateDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { limparUIAgendamento } from './vitrini-ui.js'; // <-- ADICIONADO
 
 // --- Funções Auxiliares de Tempo ---
 function timeStringToMinutes(timeStr) {
@@ -123,6 +124,7 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 
 /**
  * Salva um novo agendamento no banco de dados. (REVISADO: SILENCIOSO)
+ * Após salvar, limpa e reseta a UI do agendamento.
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
@@ -143,6 +145,11 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             status: 'ativo',
             criadoEm: serverTimestamp()
         });
+
+        // Limpa e reseta a UI do agendamento após salvar
+        if (typeof limparUIAgendamento === "function") {
+            limparUIAgendamento();
+        }
         // Mensagem e reload removidos para serem controlados pelo vitrine.js
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
