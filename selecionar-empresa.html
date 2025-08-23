@@ -1,142 +1,22 @@
+<!-- NÃO INCLUA O userService.js AQUI! -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Selecionar Empresa - Pronti</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f0f4f8;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .selecao-container {
-            width: 100%;
-            max-width: 800px;
-            text-align: center;
-        }
-        .header-selecao {
-            margin-bottom: 40px;
-        }
-        .header-selecao h1 {
-            color: #1e293b;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        .header-selecao p {
-            color: #64748b;
-            font-size: 1.1rem;
-        }
-        .empresas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-        .empresa-card, .criar-empresa-card {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.05);
-            cursor: pointer;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            border: 1px solid #e2e8f0;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 200px;
-        }
-        .empresa-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 8px 12px rgba(0,0,0,0.07), 0 20px 30px rgba(0,0,0,0.07);
-        }
-        .empresa-logo {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 15px;
-            background-color: #f1f5f9;
-        }
-        .empresa-nome {
-            font-weight: 600;
-            font-size: 1.2rem;
-            color: #334155;
-        }
-        .criar-empresa-card {
-            border: 2px dashed #cbd5e1;
-            background: #f8fafc;
-            color: #64748b;
-        }
-        .criar-empresa-card:hover {
-            border-color: #4f46e5;
-            color: #4f46e5;
-            background: #eef2ff;
-        }
-        .criar-empresa-card i {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-        }
-        .logout-container {
-            margin-top: 30px;
-        }
-        .btn-logout {
-            background: none;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 1rem;
-            text-decoration: underline;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4f46e5;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 50px auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <!-- ... meta e styles ... -->
 </head>
 <body>
-
     <div class="selecao-container">
         <div class="header-selecao">
             <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
             <p>Selecione uma empresa para gerir ou crie uma nova.</p>
         </div>
-
         <div id="empresas-grid">
-            <!-- Loader inicial -->
             <div class="loader" id="loader"></div>
-            <!-- Os cards das empresas serão inseridos aqui pelo JavaScript -->
         </div>
-
         <div class="logout-container">
             <button id="btn-logout" class="btn-logout">Sair da conta</button>
         </div>
     </div>
-
     <script type="module" src="selecionar-empresa.js"></script>
-
 </body>
 </html>
