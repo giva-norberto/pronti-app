@@ -251,7 +251,8 @@ function handleHorarioClick(e) {
     if (!btn || btn.disabled) return;
     setAgendamento('horario', btn.dataset.horario);
     UI.selecionarCard('horario', btn.dataset.horario);
-    UI.habilitarBotaoConfirmar();
+    UI.atualizarResumoAgendamentoFinal(); // MOSTRA O RESUMO EMBAIXO
+    UI.habilitarBotaoConfirmar();         // HABILITA O BOTÃO
 }
 
 /** Lida com a confirmação final do agendamento. */
