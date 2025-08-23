@@ -235,13 +235,17 @@ window.addEventListener('DOMContentLoaded', () => {
             catch (error) { console.error("Erro no logout:", error); }
         });
 
-        // --- LÓGICA DO NOVO BOTÃO ADICIONADA AQUI ---
+        // ==========================================================
+        //      CORREÇÃO APLICADA AQUI
+        // ==========================================================
         if (elements.btnCriarNovaEmpresa) {
             elements.btnCriarNovaEmpresa.addEventListener('click', () => {
                 // Limpa a seleção da empresa ativa para entrar no modo de criação
                 localStorage.removeItem('empresaAtivaId');
-                // Recarrega a página, que agora abrirá com o formulário em branco
-                window.location.reload();
+                empresaId = null; // Limpa a variável de estado atual
+                
+                // Limpa a tela para o registo de uma nova empresa, sem recarregar a página
+                atualizarTelaParaNovoPerfil();
             });
         }
     }
