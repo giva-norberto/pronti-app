@@ -44,7 +44,9 @@ window.addEventListener('DOMContentLoaded', () => {
         msgFree: document.getElementById('mensagem-free'),
         msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
         boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
-        btnFecharBoasVindas: document.getElementById('fechar-boas-vindas')
+        btnFecharBoasVindas: document.getElementById('fechar-boas-vindas'),
+        // --- NOVO BOTÃO MAPEADO ---
+        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa')
     };
 
     let currentUser;
@@ -79,31 +81,36 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function carregarDadosDaPagina(uid) {
         try {
-            const empresariosRef = collection(db, "empresarios");
-            const q = query(empresariosRef, where("donoId", "==", uid));
-            const snapshot = await getDocs(q);
+            // Lógica alterada para usar o ID da empresa ativa do localStorage
+            empresaId = localStorage.getItem('empresaAtivaId');
 
-            if (snapshot.empty) {
-                // Cenário: Novo utilizador, ainda não tem empresa
-                empresaId = null;
+            if (!empresaId) {
+                // Cenário: Novo utilizador ou clicou em "Criar Nova Empresa"
                 atualizarTelaParaNovoPerfil();
                 if (elements.msgFree) {
                     elements.msgFree.style.display = "none";
                 }
             } else {
                 // Cenário: Utilizador existente, carrega dados da empresa
-                const empresaDoc = snapshot.docs[0];
-                empresaId = empresaDoc.id;
-                const dadosEmpresa = empresaDoc.data();
-                preencherFormulario(dadosEmpresa);
-                mostrarCamposExtras();
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const empresaDoc = await getDoc(empresaRef);
+                
+                if (empresaDoc.exists()) {
+                    const dadosEmpresa = empresaDoc.data();
+                    preencherFormulario(dadosEmpresa);
+                    mostrarCamposExtras();
 
-                // EXIBE A MENSAGEM DE FREE SE O PLANO FOR FREE
-                if (dadosEmpresa.plano === "free" && elements.msgFree) {
-                    elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
-                    elements.msgFree.style.display = "block";
-                } else if (elements.msgFree) {
-                    elements.msgFree.style.display = "none";
+                    // EXIBE A MENSAGEM DE FREE SE O PLANO FOR FREE
+                    if (dadosEmpresa.plano === "free" && elements.msgFree) {
+                        elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
+                        elements.msgFree.style.display = "block";
+                    } else if (elements.msgFree) {
+                        elements.msgFree.style.display = "none";
+                    }
+                } else {
+                    // Se o ID no localStorage for inválido, limpa e recarrega
+                    localStorage.removeItem('empresaAtivaId');
+                    window.location.reload();
                 }
             }
         } catch (error) {
@@ -128,41 +135,32 @@ window.addEventListener('DOMContentLoaded', () => {
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
                 descricao: elements.descricaoInput?.value.trim() || '',
-                // --- NOVOS CAMPOS ADICIONADOS AO SALVAR ---
                 localizacao: elements.localizacaoInput?.value.trim() || '',
                 horarioFuncionamento: elements.horarioFuncionamentoInput?.value.trim() || '',
                 chavePix: elements.chavePixInput?.value.trim() || '',
-                // -----------------------------------------
                 donoId: uid,
                 plano: "free"
             };
 
+            const logoFile = elements.logoInput?.files[0];
+            if (logoFile) {
+                console.log("A tentar fazer o upload da logo...");
+                const storagePath = `logos/${uid}/${Date.now()}-${logoFile.name}`; // Nome de ficheiro único
+                const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+                try {
+                    dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
+                    console.log("Upload bem-sucedido:", dadosEmpresa.logoUrl);
+                } catch (uploadError) {
+                    console.error("ERRO NO UPLOAD:", uploadError);
+                    alert(`Falha no upload da logo. Erro: ${uploadError.message}`);
+                    return; 
+                }
+            }
+            
             if (empresaId) {
                 // --- LÓGICA DE EDIÇÃO ---
-                const logoFile = elements.logoInput?.files[0];
-                if (logoFile) {
-                    console.log("A tentar fazer o upload da logo...");
-                    const storagePath = `logos/${uid}/logo`;
-                    const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
-                    try {
-                        dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
-                        console.log("Upload bem-sucedido:", dadosEmpresa.logoUrl);
-                    } catch (uploadError) {
-                        console.error("ERRO NO UPLOAD:", uploadError);
-                        alert(`Falha no upload da logo. Isto é geralmente um problema de permissão (CORS ou Chave de API). Verifique o guia no Canvas e as configurações no Google Cloud. Erro: ${uploadError.message}`);
-                        return; 
-                    }
-                }
-                
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
-
-                if (dadosEmpresa.plano === "free" && elements.msgFree) {
-                    elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
-                    elements.msgFree.style.display = "block";
-                } else if (elements.msgFree) {
-                    elements.msgFree.style.display = "none";
-                }
 
             } else {
                 // --- LÓGICA DE NOVO CADASTRO ---
@@ -177,6 +175,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
+                // Lógica do card de boas-vindas
                 if (elements.boasVindasAposCadastro) {
                     elements.boasVindasAposCadastro.style.display = "block";
                     if (elements.btnFecharBoasVindas) {
@@ -190,17 +189,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (elements.msgCadastroSucesso) {
-                    elements.msgCadastroSucesso.innerHTML = "Seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
+                    elements.msgCadastroSucesso.innerHTML = "O seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
                     elements.msgCadastroSucesso.style.display = "block";
                     setTimeout(() => {
                         elements.msgCadastroSucesso.style.display = "none";
-                        if (elements.msgFree) {
-                            elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
-                            elements.msgFree.style.display = "block";
-                        }
                     }, 6000);
                 }
-
+                
+                // Após criar, guarda o ID da nova empresa como ativa e recarrega
+                localStorage.setItem('empresaAtivaId', empresaId);
                 await carregarDadosDaPagina(uid);
             }
 
@@ -230,28 +227,40 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
         if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
-            try { await signOut(auth); window.location.href = 'login.html'; }
+            try { 
+                localStorage.removeItem('empresaAtivaId'); // Limpa a seleção ao sair
+                await signOut(auth); 
+                window.location.href = 'login.html'; 
+            }
             catch (error) { console.error("Erro no logout:", error); }
         });
+
+        // --- LÓGICA DO NOVO BOTÃO ADICIONADA AQUI ---
+        if (elements.btnCriarNovaEmpresa) {
+            elements.btnCriarNovaEmpresa.addEventListener('click', () => {
+                // Limpa a seleção da empresa ativa para entrar no modo de criação
+                localStorage.removeItem('empresaAtivaId');
+                // Recarrega a página, que agora abrirá com o formulário em branco
+                window.location.reload();
+            });
+        }
     }
 
     function atualizarTelaParaNovoPerfil() {
-        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie seu Perfil de Negócio";
-        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, document.getElementById('logo-section')];
+        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
+        if (elements.form) elements.form.reset(); // Limpa o formulário
+        if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
+
+        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine];
         camposExtras.forEach(el => { if(el) el.style.display = 'none'; });
-        if (elements.msgFree) {
-            elements.msgFree.style.display = "none";
-        }
-        if (elements.msgCadastroSucesso) {
-            elements.msgCadastroSucesso.style.display = "none";
-        }
-        if (elements.boasVindasAposCadastro) {
-            elements.boasVindasAposCadastro.style.display = "none";
-        }
+        
+        if (elements.msgFree) elements.msgFree.style.display = "none";
+        if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
+        if (elements.boasVindasAposCadastro) elements.boasVindasAposCadastro.style.display = "none";
     }
 
     function mostrarCamposExtras() {
-        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, document.getElementById('logo-section')];
+        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine];
         camposExtras.forEach(el => { if(el) el.style.display = ''; });
     }
 
@@ -259,11 +268,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
         if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
         
-        // --- PREENCHIMENTO DOS NOVOS CAMPOS ---
         if (elements.localizacaoInput) elements.localizacaoInput.value = dadosEmpresa.localizacao || '';
         if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
         if (elements.chavePixInput) elements.chavePixInput.value = dadosEmpresa.chavePix || '';
-        // ------------------------------------
 
         if (elements.logoPreview && dadosEmpresa.logoUrl) {
             elements.logoPreview.src = dadosEmpresa.logoUrl;
