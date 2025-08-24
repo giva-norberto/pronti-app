@@ -62,6 +62,7 @@ function renderizarDetalhesServicoVitrine(servico) {
  * Busca e carrega os serviços do Firebase para a vitrine.
  * Filtra apenas os serviços visíveis na vitrine.
  * Se profissionalId for fornecido, busca por profissional. Caso contrário, pela empresa.
+ * MULTIEMPRESA: empresaId deve ser passado corretamente pelo contexto de chamada.
  */
 export async function carregarServicosVitrine(empresaId, profissionalId = null) {
     try {
