@@ -22,12 +22,9 @@ function mostrarToast(texto, cor) {
   }
 }
 
-// Busca o ID da empresa pelo dono autenticado
-async function getEmpresaIdDoDono(uid) {
-  const empresQ = query(collection(db, "empresarios"), where("donoId", "==", uid));
-  const snapshot = await getDocs(empresQ);
-  if (snapshot.empty) return null;
-  return snapshot.docs[0].id;
+// MULTIEMPRESA: Obtém o empresaId da empresa ativa do localStorage
+function getEmpresaIdAtiva() {
+  return localStorage.getItem("empresaAtivaId") || null;
 }
 
 // Inicializa listeners e submissão do formulário
@@ -94,11 +91,12 @@ function inicializarPaginaNovoCliente(empresaId) {
 onAuthStateChanged(auth, async (user) => {
   const formNovoCliente = document.getElementById('form-cliente');
   if (user) {
-    const empresaId = await getEmpresaIdDoDono(user.uid);
+    // MULTIEMPRESA: usa empresa ativa
+    const empresaId = getEmpresaIdAtiva();
     if (empresaId) {
       inicializarPaginaNovoCliente(empresaId);
     } else if (formNovoCliente) {
-      formNovoCliente.innerHTML = "<p style='color:red;'>Não foi possível encontrar uma empresa associada a este usuário.</p>";
+      formNovoCliente.innerHTML = "<p style='color:red;'>Nenhuma empresa ativa selecionada.</p>";
     }
   } else {
     window.location.href = 'login.html';
