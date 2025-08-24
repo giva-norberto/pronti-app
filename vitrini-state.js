@@ -5,6 +5,7 @@
 // ======================================================================
 
 // O estado inicial da nossa aplicação.
+// MULTIEMPRESA: empresaId faz parte do estado e é sempre atualizado conforme o contexto.
 export const state = {
     empresaId: null,
     dadosEmpresa: {},
