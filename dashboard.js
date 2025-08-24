@@ -1,6 +1,7 @@
 // ======================================================================
 //                       DASHBOARD.JS (VERSÃO FINAL)
 //          Inclui o "porteiro" de acesso e a notificação de trial
+//          Revisado para multi-empresa: usa empresaId ativo do localStorage
 // ======================================================================
 
 import { verificarAcesso, checkUserStatus } from "./userService.js"; 
@@ -18,20 +19,14 @@ function timeStringToMinutes(timeStr) {
     return h * 60 + m;
 }
 
-async function getEmpresaId(user) {
-    try {
-        const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-            const empresaId = snap.docs[0].id;
-            localStorage.setItem("empresaId", empresaId);
-            return empresaId;
-        }
-        return localStorage.getItem("empresaId");
-    } catch (error) {
-        console.error("Erro ao buscar empresa:", error);
-        return localStorage.getItem("empresaId");
+// Obtém empresaId multi-empresa do localStorage
+function getEmpresaIdAtiva() {
+    const empresaId = localStorage.getItem("empresaAtivaId");
+    if (!empresaId) {
+        window.location.href = "selecionar-empresa.html";
+        throw new Error("Empresa não selecionada.");
     }
+    return empresaId;
 }
 
 async function buscarHorariosDoDono(empresaId) {
@@ -233,7 +228,9 @@ function debounce(fn, delay) {
 
 window.addEventListener("DOMContentLoaded", async () => {
     try {
-        const { user, perfil, empresaId, isOwner } = await verificarAcesso();
+        const { user, perfil, empresaId: _, isOwner } = await verificarAcesso();
+        // Sempre pega empresaId multi-empresa do localStorage:
+        const empresaId = getEmpresaIdAtiva();
 
         console.log("Acesso ao Dashboard liberado para:", perfil.nome);
 
