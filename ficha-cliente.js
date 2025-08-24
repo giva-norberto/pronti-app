@@ -6,8 +6,18 @@ import { app } from "./firebase-config.js";
 // INICIALIZAÇÃO
 const db = getFirestore(app);
 const auth = getAuth(app);
-const agendamentosCollection = collection(db, "agendamentos");
-const servicosCollection = collection(db, "servicos");
+
+// MULTIEMPRESA: Pega empresa ativa do localStorage
+const empresaId = localStorage.getItem("empresaAtivaId");
+if (!empresaId) {
+    alert("Nenhuma empresa ativa selecionada!");
+    window.location.href = "selecionar-empresa.html";
+    throw new Error("Nenhuma empresa ativa selecionada.");
+}
+
+// Coleções multiempresa
+const agendamentosCollection = collection(db, "empresarios", empresaId, "agendamentos");
+const servicosCollection = collection(db, "empresarios", empresaId, "servicos");
 
 // ELEMENTOS DA PÁGINA
 const nomeClienteTitulo = document.getElementById('nome-cliente-titulo');
