@@ -73,24 +73,28 @@
 <main class="main-content" id="main-content">
  <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
  <div class="dashboard-welcome-center" id="dashboard-welcome-center">
-   <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
-   <p>Pronto para gerenciar seu dia?</p>
+    <!-- ========================================================== -->
+    <!--      CORREÇÃO: TÍTULO DA EMPRESA ATIVA ADICIONADO AQUI     -->
+    <!-- ========================================================== -->
+    <h2 id="nome-empresa-ativa" style="color: #a7b3c4; font-size: 1.2rem; font-weight: 500; margin-bottom: 5px; min-height: 29px;"></h2>
+    <h1><span id="saudacao"></span>, <span id="nome-usuario">Utilizador</span>!</h1>
+    <p>Pronto para gerir o seu dia?</p>
  </div>
 
  <!-- AÇÕES PRINCIPAIS -->
  <div class="dashboard-main-actions" id="dashboard-main-actions">
-   <a href="dashboard.html" class="action-card">
-       <i class="fa-solid fa-chart-line"></i>
-       <span>Painel Inteligente</span>
-   </a>
-   <a href="agenda.html" class="action-card">
-       <i class="fa-solid fa-calendar-check"></i>
-       <span>Agenda</span>
-   </a>
-   <a href="servicos.html" class="action-card" id="acao-servicos">
-       <i class="fa-solid fa-scissors"></i>
-       <span>Serviços</span>
-   </a>
+  <a href="dashboard.html" class="action-card">
+   <i class="fa-solid fa-chart-line"></i>
+   <span>Painel Inteligente</span>
+  </a>
+  <a href="agenda.html" class="action-card">
+   <i class="fa-solid fa-calendar-check"></i>
+   <span>Agenda</span>
+  </a>
+  <a href="servicos.html" class="action-card" id="acao-servicos">
+   <i class="fa-solid fa-scissors"></i>
+   <span>Serviços</span>
+  </a>
  </div>
 
  <!-- BOTÃO DE STATUS -->
@@ -105,6 +109,10 @@
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
+    // ==========================================================
+    //      NOVO: Referência para o título da empresa
+    // ==========================================================
+    const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
     function destacarLinkAtivo() {
         const links = document.querySelectorAll('.sidebar-links a');
@@ -126,6 +134,8 @@
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
             btnLogout.addEventListener('click', () => {
+                // Limpa a empresa ativa ao fazer logout
+                localStorage.removeItem('empresaAtivaId');
                 signOut(auth).then(() => {
                     window.location.replace('login.html');
                 }).catch((error) => {
@@ -157,8 +167,9 @@
             `;
             document.body.classList.remove('is-loading');
             document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                // Vai para o perfil do dono sem loop!
-                window.location.replace("perfil.html");
+                // Limpa qualquer seleção antiga para garantir que está a criar uma nova
+                localStorage.removeItem('empresaAtivaId');
+                window.location.href = "perfil.html";
             });
         }
     }
@@ -168,17 +179,15 @@
             try {
                 await ensureUserAndTrialDoc();
 
-                // Importante: aqui não há loop, pois só mostra o card na ausência de vínculo de dono (primeiro_acesso)
                 const { perfil, isOwner } = await verificarAcesso();
 
-                // Funcionário não pode acessar index, redireciona:
                 if (!isOwner) {
                     window.location.replace('agenda.html');
                     return;
                 }
 
                 // Saudação personalizada
-                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Utilizador';
                 if (nomeUsuarioSpan) {
                     nomeUsuarioSpan.textContent = primeiroNome;
                 }
@@ -186,7 +195,14 @@
                     saudacaoSpan.textContent = definirSaudacao();
                 }
 
-                // Carrega o menu lateral bonito
+                // ==========================================================
+                //      CORREÇÃO: Exibe o nome da empresa ativa
+                // ==========================================================
+                if (nomeEmpresaSpan && perfil.nomeFantasia) {
+                    nomeEmpresaSpan.textContent = `A gerir: ${perfil.nomeFantasia}`;
+                }
+
+                // Carrega o menu lateral
                 fetch('menu-lateral.html')
                     .then(res => res.text())
                     .then(html => {
@@ -197,9 +213,8 @@
                     });
             } catch (error) {
                 if (error.message === "primeiro_acesso") {
-                    // Só mostra o card e deixa o usuário ir para perfil.html
                     mostrarPrimeiroAcessoCard();
-                } else {
+                } else if (!error.message.includes("A redirecionar")) { // Ignora o erro de redirecionamento
                     console.log("Verificação de acesso interrompida:", error.message);
                     window.location.replace('login.html');
                 }
