@@ -29,6 +29,11 @@ let empresaId = null;
 let servicosCache = [];
 let profissionaisCache = [];
 
+// --- MULTIEMPRESA: Pega empresaId da empresa ativa do localStorage ---
+function getEmpresaIdAtiva() {
+  return localStorage.getItem("empresaAtivaId") || null;
+}
+
 // --- FUNÇÕES UTILITÁRIAS ---
 function mostrarToast(texto, cor = '#38bdf8') {
   if (typeof Toastify !== "undefined") {
@@ -54,9 +59,10 @@ function minutesToTimeString(totalMinutes) {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     try {
-      empresaId = await getEmpresaIdDoDono(user.uid);
+      // MULTIEMPRESA: usa empresaId da empresa ativa do localStorage
+      empresaId = getEmpresaIdAtiva();
       if (empresaId) await inicializarFormulario();
-      else document.body.innerHTML = "<h1>Empresa não encontrada.</h1>";
+      else document.body.innerHTML = "<h1>Nenhuma empresa ativa selecionada.</h1>";
     } catch (error) {
       console.error("Erro na inicialização:", error);
       document.body.innerHTML = "<h1>Ocorreu um erro ao iniciar.</h1>";
@@ -66,11 +72,12 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-async function getEmpresaIdDoDono(uid) {
-  const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-  const snapshot = await getDocs(q);
-  return snapshot.empty ? null : snapshot.docs[0].id;
-}
+// --- (Não mais usado: função para buscar empresaId do dono) ---
+// async function getEmpresaIdDoDono(uid) {
+//   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+//   const snapshot = await getDocs(q);
+//   return snapshot.empty ? null : snapshot.docs[0].id;
+// }
 
 async function inicializarFormulario() {
     await carregarDadosIniciais();
