@@ -17,7 +17,15 @@ let isDono = false;
 let userUid = null;
 
 /**
+ * MULTIEMPRESA: Obtém o empresaId da empresa ativa do localStorage.
+ */
+function getEmpresaIdAtiva() {
+    return localStorage.getItem("empresaAtivaId") || null;
+}
+
+/**
  * Busca a empresa do usuário logado como dono OU na qual ele é profissional.
+ * (Mantido para lógica de permissão, mas empresaId principal vem do localStorage)
  */
 async function getEmpresaDoUsuario(uid) {
     // Dono
@@ -64,15 +72,21 @@ onAuthStateChanged(auth, async (user) => {
         return;
     }
     userUid = user.uid;
+
+    // MULTIEMPRESA: usa empresaId da empresa ativa, não da consulta
+    empresaId = getEmpresaIdAtiva();
+
+    // Para a lógica de permissão, ainda busca dados da empresa do usuário
     const empresa = await getEmpresaDoUsuario(user.uid);
-    if (!empresa) {
-        await showAlert("Atenção", "Empresa não encontrada. Complete seu cadastro.");
+
+    if (!empresaId) {
+        await showAlert("Atenção", "Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
         form.querySelector('button[type="submit"]').disabled = true;
         if (btnExcluir) btnExcluir.style.display = 'none';
         return;
     }
-    empresaId = empresa.id;
-    isDono = usuarioEDono(empresa, user.uid);
+
+    isDono = empresa && usuarioEDono(empresa, user.uid);
 
     servicoId = getIdFromUrl();
     if (servicoId) {
