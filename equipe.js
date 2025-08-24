@@ -53,7 +53,6 @@ const elementos = {
     agendaEspecialLista: document.getElementById('agenda-especial-lista'),
     inputIntervalo: document.getElementById('intervalo-atendimento'),
     btnConvite: document.getElementById('btn-convite'),
-    // --- NOVA FUNCIONALIDADE MAPEADA AQUI ---
     permitirAgendamentoMultiplo: document.getElementById('permitir-agendamento-multiplo')
 };
 
@@ -65,9 +64,7 @@ function setupPerfilTabs() {
     const contentServicos = document.getElementById('tab-content-servicos');
     const contentHorarios = document.getElementById('tab-content-horarios');
     const contentAgendaEspecial = document.getElementById('tab-content-agenda-especial');
-
     if (!tabServicos || !tabHorarios || !tabAgendaEspecial) return;
-
     tabServicos.onclick = () => {
         tabServicos.classList.add('active'); tabHorarios.classList.remove('active'); tabAgendaEspecial.classList.remove('active');
         contentServicos.classList.add('active'); contentHorarios.classList.remove('active'); contentAgendaEspecial.classList.remove('active');
@@ -99,14 +96,16 @@ async function inicializar() {
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                empresaId = await getEmpresaIdDoDono(user.uid);
-                if (empresaId) {
-                    await carregarServicos();
-                    iniciarListenerDaEquipe();
-                    adicionarEventListeners();
-                } else {
-                    mostrarErro("Não foi possível identificar a sua empresa. Verifique se seu usuário é o dono de uma empresa no banco de dados.");
+                // MULTIEMPRESA: PEGA empresaId do localStorage
+                empresaId = localStorage.getItem("empresaAtivaId");
+                if (!empresaId) {
+                    alert("Nenhuma empresa ativa selecionada!");
+                    window.location.href = "selecionar-empresa.html";
+                    return;
                 }
+                await carregarServicos();
+                iniciarListenerDaEquipe();
+                adicionarEventListeners();
             } else {
                 window.location.href = "login.html";
             }
@@ -118,19 +117,6 @@ async function inicializar() {
 }
 
 function voltarMenuLateral() { window.location.href = "index.html"; }
-
-async function getEmpresaIdDoDono(uid) {
-    const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-    const empresariosRef = collection(db, "empresarios");
-    const q = query(empresariosRef, where("donoId", "==", uid));
-    try {
-        const snapshot = await getDocs(q);
-        return snapshot.empty ? null : snapshot.docs[0].id;
-    } catch (error) {
-        console.error("Erro ao buscar empresa:", error);
-        return null;
-    }
-}
 
 async function carregarServicos() {
     const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -146,7 +132,6 @@ async function carregarServicos() {
 
 async function iniciarListenerDaEquipe() {
     const { collection, onSnapshot, query, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
     if (!empresaSnap.exists()) {
@@ -154,23 +139,19 @@ async function iniciarListenerDaEquipe() {
         return;
     }
     const donoId = empresaSnap.data().donoId;
-
     let nomeCorretoDono = 'Dono';
     const donoUsuarioRef = doc(db, "usuarios", donoId);
     const donoUsuarioSnap = await getDoc(donoUsuarioRef);
     if (donoUsuarioSnap.exists() && donoUsuarioSnap.data().nome) {
         nomeCorretoDono = donoUsuarioSnap.data().nome;
     }
-
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
     onSnapshot(query(profissionaisRef), (snapshot) => {
         const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
         const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
         if (donoNaEquipe) {
             donoNaEquipe.nome = nomeCorretoDono;
         }
-        
         renderizarEquipe(equipe);
     }, (error) => console.error("Erro no listener da equipe:", error));
 }
@@ -184,11 +165,7 @@ function renderizarEquipe(equipe) {
     equipe.forEach(profissional => {
         const div = document.createElement("div");
         div.className = "profissional-card";
-        
-        if (profissional.status === 'pendente') {
-            div.classList.add('pendente');
-        }
-
+        if (profissional.status === 'pendente') div.classList.add('pendente');
         let botoesDeAcao = '';
         if (profissional.status === 'pendente') {
             botoesDeAcao = `
@@ -234,23 +211,19 @@ async function carregarDadosProfissional(profissionalId) {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
         if (!profissionalDoc.exists()) return null;
-        
         const dados = profissionalDoc.data();
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
         const horariosDoc = await getDoc(horariosRef);
-
         if (horariosDoc.exists()) {
             const horariosData = horariosDoc.data();
             renderizarHorarios(horariosData);
-            // --- NOVA FUNCIONALIDADE: CARREGA O ESTADO DO CHECKBOX ---
             if (elementos.permitirAgendamentoMultiplo) {
                 elementos.permitirAgendamentoMultiplo.checked = horariosData.permitirAgendamentoMultiplo || false;
             }
         } else {
             renderizarHorarios({ ...horariosBase, intervalo: intervaloBase });
-            // --- NOVA FUNCIONALIDADE: DEFINE O ESTADO PADRÃO DO CHECKBOX ---
             if (elementos.permitirAgendamentoMultiplo) {
-                elementos.permitirAgendamentoMultiplo.checked = false; // Padrão é desativado
+                elementos.permitirAgendamentoMultiplo.checked = false;
             }
         }
         return dados;
@@ -293,12 +266,10 @@ function renderizarHorarios(horariosDataCompleta = {}) {
         const diaData = horariosDataCompleta[dia.key] || { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] };
         const estaAtivo = diaData.ativo;
         const blocos = diaData.blocos && diaData.blocos.length > 0 ? diaData.blocos : [{ inicio: '09:00', fim: '18:00' }];
-        
         const div = document.createElement('div');
         div.className = 'dia-horario';
         if (!estaAtivo) div.classList.add('inativo');
         div.setAttribute('data-dia', dia.key);
-
         div.innerHTML = `
             <div class="dia-header">
                 <label class="dia-nome">${dia.nome}</label>
@@ -368,16 +339,12 @@ function coletarHorarios() {
                 if (inicio && fim) blocos.push({ inicio, fim });
             });
         }
-        
         horarios[dia] = { ativo: estaAtivo, blocos: blocos.length > 0 ? blocos : [{ inicio: '09:00', fim: '18:00' }] };
     });
     horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
-    
-    // --- NOVA FUNCIONALIDADE: COLETA O VALOR DO CHECKBOX ---
     if (elementos.permitirAgendamentoMultiplo) {
         horarios.permitirAgendamentoMultiplo = elementos.permitirAgendamentoMultiplo.checked;
     }
-    
     return horarios;
 }
 
@@ -420,14 +387,11 @@ async function salvarPerfilProfissional() {
     const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
-        const horarios = coletarHorarios(); // Esta função agora inclui a nova opção
-
+        const horarios = coletarHorarios();
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
         await updateDoc(profissionalRef, { servicos: servicosSelecionados, agendaEspecial: agendaEspecial });
-
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
         await setDoc(horariosRef, horarios, { merge: true });
-
         elementos.modalPerfilProfissional.classList.remove('show');
         alert("✅ Perfil atualizado com sucesso!");
     } catch (error) {
@@ -468,10 +432,8 @@ async function gerarLinkDeConvite() {
         alert("Erro: Não foi possível identificar a sua empresa para gerar o convite.");
         return;
     }
-
     const baseUrl = window.location.origin;
     const conviteUrl = `${baseUrl}/convite.html?empresaId=${empresaId}`;
-
     try {
         await navigator.clipboard.writeText(conviteUrl);
         alert("Link de convite copiado para a área de transferência!\n\nEnvie para o novo funcionário.");
@@ -484,17 +446,14 @@ async function gerarLinkDeConvite() {
 async function adicionarProfissional() {
     const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
-
     const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
     btnSubmit.disabled = true; btnSubmit.textContent = "Salvando...";
-
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) {
         alert("O nome do profissional é obrigatório.");
         btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
         return;
     }
-
     let fotoURL = "";
     const fotoFile = elementos.fotoProfissional.files[0];
     if (fotoFile) {
@@ -506,7 +465,6 @@ async function adicionarProfissional() {
             console.error("Erro no upload da foto:", error);
         }
     }
-
     const novoProfissional = {
         nome,
         fotoUrl: fotoURL,
@@ -517,15 +475,12 @@ async function adicionarProfissional() {
         agendaEspecial: [],
         uid: ""
     };
-
     try {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
         const docRef = await addDoc(profissionaisRef, novoProfissional);
-
         const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
         await setDoc(horariosRef, horariosPadrao);
-
         elementos.modalAddProfissional.classList.remove('show');
         alert("✅ Profissional adicionado com sucesso!");
     } catch (error) {
@@ -563,7 +518,6 @@ async function salvarEdicaoProfissional(profissionalId) {
     const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) return alert("O nome do profissional é obrigatório.");
-
     let fotoURL = "";
     const fotoFile = elementos.fotoProfissional.files[0];
     if (fotoFile) {
@@ -575,10 +529,8 @@ async function salvarEdicaoProfissional(profissionalId) {
             console.error("Erro no upload da foto:", error);
         }
     }
-
     const updateData = { nome };
     if (fotoURL) updateData.fotoUrl = fotoURL;
-
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, updateData);
@@ -603,13 +555,10 @@ async function excluirProfissional(profissionalId) {
 
 async function ativarFuncionario(profissionalId) {
     if (!confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.")) return;
-
     const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
-        await updateDoc(profissionalRef, {
-            status: 'ativo'
-        });
+        await updateDoc(profissionalRef, { status: 'ativo' });
         alert("✅ Profissional ativado com sucesso!");
     } catch (error) {
         console.error("Erro ao ativar profissional:", error);
@@ -619,7 +568,6 @@ async function ativarFuncionario(profissionalId) {
 
 async function recusarFuncionario(profissionalId) {
     if (!confirm("Tem certeza que deseja recusar e excluir este cadastro pendente? Esta ação não pode ser desfeita.")) return;
-    
     await excluirProfissional(profissionalId); 
 }
 
@@ -634,4 +582,4 @@ window.excluirProfissional = excluirProfissional;
 window.ativarFuncionario = ativarFuncionario;
 window.recusarFuncionario = recusarFuncionario;
 
-window.addEventListener("DOMContentLoaded", inicializar);
+window.addEventListener("DOMContentLoaded", inicializar);    
