@@ -1,7 +1,11 @@
-// vitrini-auth.js
 import { auth, provider } from './vitrini-firebase.js';
 import { onAuthStateChanged, signInWithPopup, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { showAlert } from './vitrini-utils.js';
+
+// MULTIEMPRESA: função utilitária para obter empresaId ativa, disponível para quem precisar
+export function getEmpresaIdAtiva() {
+    return localStorage.getItem("empresaAtivaId") || null;
+}
 
 export function setupAuthListener(callback) {
     onAuthStateChanged(auth, user => {
