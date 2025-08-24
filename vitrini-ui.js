@@ -1,3 +1,7 @@
+// ======================================================================
+//          VITRINI-UI.JS - UI da Vitrine com suporte Multiempresa
+// ======================================================================
+
 /**
  * Mostra ou esconde o loader inicial da página.
  */
