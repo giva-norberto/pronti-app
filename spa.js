@@ -1,4 +1,9 @@
-// SPA menu logic
+// SPA menu logic com multiempresa (empresa ativa)
+// Obtém empresaId da empresa ativa do localStorage (multiempresa)
+function getEmpresaIdAtiva() {
+    return localStorage.getItem("empresaAtivaId") || null;
+}
+
 document.querySelectorAll('.dashboard-menu .menu-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.dashboard-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
@@ -20,6 +25,9 @@ document.querySelectorAll('.dashboard-menu .menu-btn').forEach(btn => {
 
 // -- Exemplo de renderização de profissionais (Gestão de Equipe) --
 function carregarEquipe() {
+    // Aqui você pode usar empresaId para buscar profissionais da empresa ativa
+    const empresaId = getEmpresaIdAtiva();
+    // Exemplo estático, substitua por consulta usando empresaId se necessário
     const equipe = [
         {id:'1',nome:'Maria',fotoUrl:'https://placehold.co/70x70?text=M'},
         {id:'2',nome:'João',fotoUrl:'https://placehold.co/70x70?text=J'},
@@ -44,6 +52,9 @@ function carregarEquipe() {
 
 // -- Exemplo de Agendamentos --
 function carregarAgendamentos() {
+    // Aqui você pode usar empresaId para buscar agendamentos da empresa ativa
+    const empresaId = getEmpresaIdAtiva();
+    // Exemplo estático, substitua por consulta usando empresaId se necessário
     const container = document.getElementById('conteudo-agendamentos');
     container.innerHTML = "<p>Carregando agendamentos...</p>";
     setTimeout(() => {
@@ -58,6 +69,9 @@ function carregarAgendamentos() {
 
 // -- Exemplo de Serviços --
 function carregarServicos() {
+    // Aqui você pode usar empresaId para buscar serviços da empresa ativa
+    const empresaId = getEmpresaIdAtiva();
+    // Exemplo estático, substitua por consulta usando empresaId se necessário
     const container = document.getElementById('conteudo-servicos');
     container.innerHTML = "<p>Carregando serviços...</p>";
     setTimeout(() => {
@@ -72,6 +86,9 @@ function carregarServicos() {
 
 // -- Exemplo de Perfil --
 function carregarPerfil() {
+    // Aqui você pode usar empresaId para buscar perfil da empresa ativa
+    const empresaId = getEmpresaIdAtiva();
+    // Exemplo estático, substitua por consulta usando empresaId se necessário
     const container = document.getElementById('conteudo-perfil');
     container.innerHTML = "<p>Carregando perfil...</p>";
     setTimeout(() => {
