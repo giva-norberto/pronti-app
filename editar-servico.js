@@ -1,8 +1,18 @@
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
+// MULTI-EMPRESA: sempre salva o serviço vinculado à empresa ativa do usuário
 const db = getFirestore(app);
-const servicosCollection = collection(db, "servicos");
+const empresaId = localStorage.getItem("empresaAtivaId");
+
+// Redirecionamento obrigatório se nenhuma empresa ativa está selecionada
+if (!empresaId) {
+  window.location.href = "selecionar-empresa.html";
+  throw new Error("Nenhuma empresa ativa selecionada.");
+}
+
+// Coleção de serviços fica aninhada sob a empresa ativa
+const servicosCollection = collection(db, "empresarios", empresaId, "servicos");
 const form = document.getElementById('form-servico');
 
 form.addEventListener('submit', async (event) => {
