@@ -1,4 +1,13 @@
 // RESPONSABILIDADE: Funções de utilidade geral, como modais e alertas.
+// MULTIEMPRESA: Função utilitária para obter o empresaId ativo, sem alterar a lógica existente.
+
+/**
+ * Recupera o ID da empresa ativa para contexto multiempresa.
+ * @returns {string|null}
+ */
+export function getEmpresaIdAtiva() {
+    return localStorage.getItem('empresaAtivaId') || null;
+}
 
 /**
  * Função principal que controla o modal, tornando-o visível e configurando seus botões.
