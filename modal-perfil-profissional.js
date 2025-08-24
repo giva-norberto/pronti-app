@@ -1,4 +1,3 @@
-// modal-perfil-profissional.js
 // Módulo para gerenciar o modal de edição do perfil de um profissional (serviços e horários).
 
 import { doc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
