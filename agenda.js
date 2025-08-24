@@ -6,6 +6,7 @@
  * - Histórico pega qualquer período.
  * - Toda manipulação de data é local.
  * - [ATUALIZAÇÃO] Cards agora trazem botão "Ausência" (Não Compareceu) para agendamentos com status 'ativo'.
+ * - [ATUALIZAÇÃO MULTI-EMPRESA] Sempre lê empresaAtivaId do localStorage, redireciona para seleção se não houver.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -17,6 +18,13 @@ import { firebaseConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig );
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// ----------- MULTI-EMPRESA: Checa empresa ativa -----------
+let empresaId = localStorage.getItem("empresaAtivaId");
+if (!empresaId) {
+    window.location.href = "selecionar-empresa.html";
+    throw new Error("Nenhuma empresa ativa encontrada.");
+}
 
 // DOM Elements
 const listaAgendamentosDiv = document.getElementById("lista-agendamentos");
@@ -33,7 +41,6 @@ const dataFinalEl = document.getElementById("data-final");
 const btnAplicarHistorico = document.getElementById("btn-aplicar-historico");
 const btnMesAtual = document.getElementById("btn-mes-atual");
 
-let empresaId = null;
 let perfilUsuario = "dono";
 let meuUid = null;
 let modoAgenda = "dia"; // Padrão: dia
@@ -80,33 +87,17 @@ onAuthStateChanged(auth, async (user) => {
     if (!user) return window.location.href = "login.html";
     meuUid = user.uid;
     try {
-        empresaId = await getEmpresaIdDoDonoOuFuncionario(user.uid);
-        if (empresaId) {
-            perfilUsuario = await checarTipoUsuario(user.uid, empresaId);
-            await inicializarPaginaAgenda();
-        } else {
-            exibirMensagemDeErro("Empresa não encontrada.");
-        }
+        // empresaId já foi lida do localStorage!
+        perfilUsuario = await checarTipoUsuario(user.uid, empresaId);
+        await inicializarPaginaAgenda();
     } catch (error) {
         exibirMensagemDeErro("Ocorreu um erro ao iniciar a página.");
         console.error("Erro na inicialização:", error);
     }
 });
 
-async function getEmpresaIdDoDonoOuFuncionario(uid) {
-    let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    let snapshot = await getDocs(q);
-    if (!snapshot.empty) return snapshot.docs[0].id;
-    q = query(collection(db, "empresarios"));
-    snapshot = await getDocs(q);
-    for (const docEmp of snapshot.docs) {
-        const profSnap = await getDocs(query(collection(db, "empresarios", docEmp.id, "profissionais"), where("__name__", "==", uid)));
-        if (!profSnap.empty) return docEmp.id;
-    }
-    return null;
-}
-
 async function checarTipoUsuario(uid, empresaId) {
+    // Confirma se é dono ou funcionário da empresa ativa
     const docEmp = await getDocs(query(collection(db, "empresarios"), where("donoId", "==", uid), where("__name__", "==", empresaId)));
     return docEmp.empty ? "funcionario" : "dono";
 }
