@@ -26,22 +26,20 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // LOG: UID do profissional
-    console.log('UID do usuário logado (profissionalId):', user.uid);
-    profissionalId = user.uid;
-
-    empresaId = await getEmpresaIdDoDono(user.uid);
-    // LOG: empresaId encontrado
-    console.log('ID da empresa encontrado (empresaId):', empresaId);
-
+    // MULTIEMPRESA: O empresaId sempre deve vir do localStorage
+    empresaId = localStorage.getItem('empresaAtivaId');
     if (!empresaId) {
-      alert("Empresa não encontrada. Verifique se o seu usuário está corretamente associado a uma empresa.");
-      console.error("Não foi possível encontrar o empresaId para o UID:", user.uid);
+      alert("Nenhuma empresa ativa selecionada!");
+      window.location.href = "selecionar-empresa.html";
       return;
     }
 
-    // Referência correta
+    // UID do profissional autenticado
+    profissionalId = user.uid;
+
+    // Referência correta do documento de horários
     horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId, "configuracoes", "horarios");
+
     // LOG: caminho completo da referência
     console.log('Caminho completo da referência do Firestore:', horariosRef.path);
 
@@ -56,16 +54,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (btnVoltar) btnVoltar.onclick = () => window.history.back();
   });
 });
-
-/**
- * Busca o ID da empresa do usuário logado (dono)
- */
-async function getEmpresaIdDoDono(uid) {
-  const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) return null;
-  return snapshot.docs[0].id;
-}
 
 /**
  * Carrega os horários do Firestore e preenche o formulário
