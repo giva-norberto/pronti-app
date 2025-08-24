@@ -15,6 +15,7 @@ import * as UI from './vitrini-ui.js';
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
+        // MULTIEMPRESA: empresaId da vitrine obtido SEMPRE da URL
         const empresaId = getEmpresaIdFromURL();
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
