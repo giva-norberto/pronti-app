@@ -1,4 +1,3 @@
-// vitrini-firebase.js
 // RESPONSABILIDADE: Criar e exportar as instâncias do Firebase, garantindo persistência de login.
 
 // 1. Importa os módulos necessários do Firebase
@@ -42,4 +41,9 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
   - Este módulo deve ser importado em todos os arquivos que dependem de autenticação, Firestore ou provider Google.
   - O bloco setPersistence(auth, browserLocalPersistence) garante que o login do usuário não se perca ao navegar ou recarregar a página.
   - Se precisar de logout, use: import { signOut } from "firebase/auth"; signOut(auth);
+
+  MULTIEMPRESA:
+  - NÃO é necessário alterar nada neste arquivo para multiempresa.
+  - O contexto multiempresa é controlado pelos módulos que consomem Firestore/Auth/Storage, 
+    sempre passando o empresaId correto. Mantenha este arquivo central e universal.
 */
