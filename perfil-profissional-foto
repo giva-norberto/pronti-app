@@ -9,6 +9,13 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gsta
 import { db, storage } from './firebase-config.js'; // Verifique se o caminho para sua configuração do Firebase está correto.
 
 /**
+ * MULTIEMPRESA: Obtém o empresaId da empresa ativa do localStorage.
+ */
+function getEmpresaIdAtiva() {
+    return localStorage.getItem("empresaAtivaId") || null;
+}
+
+/**
  * Renderiza o componente de foto do profissional na tela e configura os eventos.
  * @param {string} fotoUrl - URL atual da foto do profissional (pode ser nula).
  * @param {(file: File) => Promise<string|null>} onTrocarFoto - Callback para fazer o upload de uma nova foto.
@@ -116,6 +123,7 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
  * @returns {Promise<string|null>} - A URL de download da imagem ou null em caso de erro.
  */
 export async function uploadFotoProfissional(file, empresaId, profissionalId) {
+    // MULTIEMPRESA: empresaId vem do parâmetro, deve ser passado da empresa ativa
     if (!file || !empresaId || !profissionalId) {
         console.error("uploadFotoProfissional chamado com parâmetros inválidos.");
         return null;
@@ -147,6 +155,7 @@ export async function uploadFotoProfissional(file, empresaId, profissionalId) {
  * @returns {Promise<boolean>} - Retorna true se a operação for bem-sucedida, false caso contrário.
  */
 export async function deletarFotoProfissional(empresaId, profissionalId) {
+    // MULTIEMPRESA: empresaId vem do parâmetro, deve ser passado da empresa ativa
     if (!empresaId || !profissionalId) {
         console.error("deletarFotoProfissional chamado com parâmetros inválidos.");
         return false;
