@@ -1,6 +1,12 @@
 // Módulo de Inteligência para Resumo Diário
 // Funcionalidades de análise inteligente dos agendamentos
+// Adaptado para multiempresa: o contexto multiempresa deve ser garantido no momento de buscar os agendamentos (cada empresa possui sua própria lista do dia).
 
+/**
+ * Gera o resumo inteligente do dia para os agendamentos de UMA empresa.
+ * @param {Array} agendamentos Lista de agendamentos da empresa ativa (já filtrados).
+ * @returns {Object} Resumo inteligente do dia.
+ */
 export function gerarResumoDiarioInteligente(agendamentos) {
     if (!agendamentos || agendamentos.length === 0) {
         return {
@@ -69,7 +75,12 @@ export function gerarResumoDiarioInteligente(agendamentos) {
     };
 }
 
-// Função para gerar sugestões baseadas nos dados
+/**
+ * Gera sugestões inteligentes para o dia, considerando os agendamentos da empresa.
+ * @param {Array} agendamentos Lista de agendamentos da empresa ativa.
+ * @param {Object} configuracoes Configurações opcionais da empresa (ex: totalSlots).
+ * @returns {Array} Lista de sugestões inteligentes.
+ */
 export function gerarSugestoesInteligentes(agendamentos, configuracoes = {}) {
     const sugestoes = [];
 
