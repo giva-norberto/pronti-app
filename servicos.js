@@ -14,6 +14,11 @@ const appContent = document.getElementById('app-content');
 let empresaId = null;
 let isDono = false;
 
+// Obtém o empresaId da empresa ativa do localStorage (MULTIEMPRESA)
+function getEmpresaIdAtiva() {
+    return localStorage.getItem("empresaAtivaId") || null;
+}
+
 // Permite dono ou profissional acessar a empresa
 async function getEmpresaDoUsuario(uid) {
     // Dono
@@ -33,21 +38,32 @@ async function getEmpresaDoUsuario(uid) {
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         try {
-            const empresa = await getEmpresaDoUsuario(user.uid);
-            if (empresa) {
-                empresaId = empresa.id;
-                isDono = empresa.donoId === user.uid;
-                await carregarServicosDoFirebase();
-
-                if (btnAddServico) {
-                    btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
-                }
-
-                if (loader) loader.style.display = 'none';
-                if (appContent) appContent.style.display = 'block';
-            } else {
-                if (loader) loader.innerHTML = '<p style="color:red;">Nenhuma empresa associada a este utilizador. Verifique se o seu perfil está configurado corretamente.</p>';
+            // MULTIEMPRESA: usa empresaId da empresa ativa do localStorage
+            empresaId = getEmpresaIdAtiva();
+            if (!empresaId) {
+                if (loader) loader.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada. Selecione uma empresa primeiro.</p>';
+                return;
             }
+            // Busca dados da empresa para saber se é dono (permite lógica de permissão)
+            let empresa = null;
+            let q = query(collection(db, "empresarios"), where("__name__", "==", empresaId));
+            let snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                empresa = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+                isDono = empresa.donoId === user.uid;
+            } else {
+                empresa = await getEmpresaDoUsuario(user.uid);
+                isDono = empresa && empresa.donoId === user.uid;
+            }
+
+            await carregarServicosDoFirebase();
+
+            if (btnAddServico) {
+                btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
+            }
+
+            if (loader) loader.style.display = 'none';
+            if (appContent) appContent.style.display = 'block';
         } catch (error) {
             console.error("Erro fatal durante a inicialização:", error);
             if (loader) loader.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
