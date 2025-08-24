@@ -1,8 +1,14 @@
 // Importa a função de listener de autenticação do arquivo central de auth
 import { setupAuthListener } from './vitrini-auth.js';
 
+// --------- MULTIEMPRESA: obtém empresaId ativa se necessário ---------
+function getEmpresaIdAtiva() {
+  return localStorage.getItem("empresaAtivaId") || null;
+}
+
 // --------- EXIBE O MODAL QUANDO NÃO LOGADO ---------
 setupAuthListener(async (user) => {
+  // Se necessário, pode acessar empresaId com getEmpresaIdAtiva()
   if (!user) {
     if (typeof showModalAuth === "function") showModalAuth();
     if (typeof showStep === "function") showStep('login');
