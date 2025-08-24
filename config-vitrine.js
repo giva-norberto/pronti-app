@@ -2,13 +2,13 @@
  * config-vitrine.js (VERSÃO CORRIGIDA E ALINHADA COM A ESTRUTURA 'empresarios')
  *
  * Lógica Principal:
- * 1. Encontra a empresa ('empresaId') do dono logado.
+ * 1. Usa a empresa ativa selecionada ('empresaAtivaId') do localStorage.
  * 2. Carrega a lista de serviços do array que está dentro do documento do profissional.
  * 3. Permite ativar/desativar a visibilidade de cada serviço na vitrine.
  * 4. Ao salvar, atualiza o array de serviços inteiro no Firestore.
  */
 
-import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, collection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
@@ -18,38 +18,25 @@ const auth = getAuth(app);
 const listaServicosContainer = document.getElementById('lista-servicos-vitrine');
 const btnPreview = document.getElementById('btn-preview-vitrine');
 
-let empresaId = null;
+// --- MULTI-EMPRESA: lê empresa ativa do localStorage ---
+const empresaAtivaId = localStorage.getItem("empresaAtivaId");
+if (!empresaAtivaId) {
+  window.location.href = "selecionar-empresa.html";
+  throw new Error("Nenhuma empresa ativa encontrada.");
+}
+
 let profissionalRef = null; // Referência para o documento do profissional
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // CORREÇÃO: Primeiro, encontramos a empresa para depois carregar os dados
-        const idDaEmpresa = await getEmpresaIdDoDono(user.uid);
-        if (idDaEmpresa) {
-            empresaId = idDaEmpresa;
-            // A referência agora aponta para o documento do profissional (o dono)
-            profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
-            carregarServicosParaConfiguracao();
-            configurarBotaoPreview();
-        } else {
-            listaServicosContainer.innerHTML = '<p style="color:red;">Empresa não encontrada. Por favor, complete o seu perfil primeiro.</p>';
-        }
+        // A referência agora aponta para o documento do profissional (o dono) dentro da empresa ativa
+        profissionalRef = doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid);
+        carregarServicosParaConfiguracao();
+        configurarBotaoPreview();
     } else {
         window.location.href = 'login.html';
     }
 });
-
-
-/**
- * Função auxiliar para encontrar o ID da empresa com base no ID do dono.
- */
-async function getEmpresaIdDoDono(uid) {
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    return snapshot.docs[0].id;
-}
-
 
 /**
  * Carrega todos os serviços do empresário a partir do array no documento do profissional.
@@ -110,7 +97,7 @@ function adicionarListenersDeToggle() {
 }
 
 /**
- * CORREÇÃO: Nova função para atualizar a visibilidade de um serviço dentro do array.
+ * Atualiza a visibilidade de um serviço dentro do array.
  * @param {string} servicoId - O ID do serviço a ser atualizado.
  * @param {boolean} isVisible - O novo estado de visibilidade.
  */
@@ -146,14 +133,13 @@ async function atualizarVisibilidadeDoServico(servicoId, isVisible) {
     }
 }
 
-
 /**
- * CORREÇÃO: Configura o botão de pré-visualização para usar o 'empresaId'.
+ * Configura o botão de pré-visualização para usar o 'empresaAtivaId'.
  */
 function configurarBotaoPreview() {
-    if (!btnPreview || !empresaId) return;
+    if (!btnPreview || !empresaAtivaId) return;
 
-    const urlCompleta = `vitrine.html?empresa=${empresaId}`;
+    const urlCompleta = `vitrine.html?empresa=${empresaAtivaId}`;
     
     btnPreview.addEventListener('click', () => {
         window.open(urlCompleta, '_blank');
