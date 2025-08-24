@@ -1,18 +1,27 @@
 import { verificarAcesso } from "./userService.js";
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+/**
+ * Retorna o empresaId da empresa ativa (multiempresa) do localStorage.
+ */
+function getEmpresaIdAtiva() {
+    return localStorage.getItem("empresaAtivaId") || null;
+}
+
 function montaSidebar(role) {
+    const empresaId = getEmpresaIdAtiva();
+    // Adiciona os links com o parâmetro de empresaId (multiempresa)
     if (role === "dono") {
         return `
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">Pronti</div>
             <nav class="sidebar-links">
-                <a href="dashboard.html">Dashboard</a>
-                <a href="servicos.html">Serviços</a>
-                <a href="agenda.html">Agenda</a>
-                <a href="clientes.html">Clientes</a>
-                <a href="equipe.html">Equipe</a>
-                <a href="perfil.html">Meu Perfil</a>
+                <a href="dashboard.html${empresaId ? `?empresa=${empresaId}` : ''}">Dashboard</a>
+                <a href="servicos.html${empresaId ? `?empresa=${empresaId}` : ''}">Serviços</a>
+                <a href="agenda.html${empresaId ? `?empresa=${empresaId}` : ''}">Agenda</a>
+                <a href="clientes.html${empresaId ? `?empresa=${empresaId}` : ''}">Clientes</a>
+                <a href="equipe.html${empresaId ? `?empresa=${empresaId}` : ''}">Equipe</a>
+                <a href="perfil.html${empresaId ? `?empresa=${empresaId}` : ''}">Meu Perfil</a>
             </nav>
             <div class="sidebar-footer">
                 <button id="btn-logout" class="btn-logout">Sair</button>
@@ -24,8 +33,8 @@ function montaSidebar(role) {
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">Pronti</div>
             <nav class="sidebar-links">
-                <a href="agenda.html">Agenda</a>
-                <a href="perfil.html">Meu Perfil</a>
+                <a href="agenda.html${empresaId ? `?empresa=${empresaId}` : ''}">Agenda</a>
+                <a href="perfil.html${empresaId ? `?empresa=${empresaId}` : ''}">Meu Perfil</a>
             </nav>
             <div class="sidebar-footer">
                 <button id="btn-logout" class="btn-logout">Sair</button>
@@ -63,7 +72,7 @@ async function inicializarMenuLateral() {
         const links = placeholder.querySelectorAll('.sidebar-links a');
         const current = window.location.pathname.split('/').pop().toLowerCase();
         links.forEach(link => {
-            if (link.getAttribute('href').toLowerCase() === current) {
+            if (link.getAttribute('href').toLowerCase().startsWith(current)) {
                 link.classList.add('active');
             }
         });
