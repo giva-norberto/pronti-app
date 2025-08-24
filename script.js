@@ -15,7 +15,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const servicosCollection = collection(db, "servicos");
+
+// MULTIEMPRESA: obtém empresaId da empresa ativa do localStorage
+function getEmpresaIdAtiva() {
+  return localStorage.getItem("empresaAtivaId") || null;
+}
 
 // --- ELEMENTOS GLOBAIS ---
 const pageContent = document.getElementById('page-content');
@@ -26,6 +30,14 @@ const navLinks = document.querySelectorAll('.sidebar-links a');
 async function carregarServicos() {
   pageContent.innerHTML = '<h1>Nossos Serviços</h1><div id="lista-servicos">Carregando...</div>';
   const listaServicosDiv = document.getElementById('lista-servicos');
+
+  // MULTIEMPRESA: busca serviços dentro do contexto da empresa ativa
+  const empresaId = getEmpresaIdAtiva();
+  if (!empresaId) {
+    listaServicosDiv.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada.</p>';
+    return;
+  }
+  const servicosCollection = collection(db, "empresarios", empresaId, "servicos");
 
   try {
     const snapshot = await getDocs(servicosCollection);
