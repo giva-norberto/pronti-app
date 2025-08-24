@@ -1,7 +1,14 @@
 import { db, collection, doc, getDoc, getDocs, setDoc } from "./firebase-config.js";
 import { getTodosServicosDaEmpresa } from "./vitrini-profissionais.js";
 
-const empresaId = /* coloque aqui seu empresaId, ou traga do contexto do app */;
+// MULTIEMPRESA: SEMPRE pega o empresaId do localStorage
+const empresaId = localStorage.getItem("empresaAtivaId");
+if (!empresaId) {
+  alert("Nenhuma empresa ativa selecionada!");
+  window.location.href = "selecionar-empresa.html";
+  throw new Error("Nenhuma empresa ativa selecionada.");
+}
+
 let profissionais = [];
 let servicosEmpresa = [];
 
