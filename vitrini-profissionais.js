@@ -1,15 +1,13 @@
-// vitrini-profissionais.js
-
 import { db } from './firebase-config.js';
 import { doc, getDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /**
- * Pega o ID da empresa a partir da URL.
+ * Pega o ID da empresa a partir da URL ou do localStorage (multiempresa).
  * @returns {string|null} O ID da empresa ou nulo.
  */
 export function getEmpresaIdFromURL() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('empresa');
+    return params.get('empresa') || localStorage.getItem('empresaAtivaId');
 }
 
 /**
