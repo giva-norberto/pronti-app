@@ -1,6 +1,7 @@
 // Módulo de Inteligência para Resumo Diário
 // Funcionalidades de análise inteligente dos agendamentos
-// Adaptado para multiempresa: o contexto multiempresa deve ser garantido no momento de buscar os agendamentos (cada empresa possui sua própria lista do dia).
+// Adaptado para multiempresa: o contexto multiempresa deve ser garantido
+// no momento de buscar os agendamentos (cada empresa possui sua própria lista do dia).
 
 /**
  * Gera o resumo inteligente do dia para os agendamentos de UMA empresa.
@@ -8,18 +9,21 @@
  * @returns {Object} Resumo inteligente do dia.
  */
 export function gerarResumoDiarioInteligente(agendamentos) {
-    if (!agendamentos || agendamentos.length === 0) {
+    if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
         return {
             totalAtendimentos: 0,
             atendimentosPendentes: 0,
             atendimentosRealizados: 0,
             faturamentoRealizado: 0,
             faturamentoPrevisto: 0,
+            maiorIntervalo: null,
+            primeiro: null,
+            ultimo: null,
             mensagem: "Nenhum agendamento para hoje. Dia livre para outras atividades!"
         };
     }
 
-    // Ordenar agendamentos por horário
+    // Ordenar agendamentos por horário de início
     const agendamentosOrdenados = agendamentos.slice().sort((a, b) => {
         const horaA = new Date(a.inicio).getTime();
         const horaB = new Date(b.inicio).getTime();
@@ -29,19 +33,19 @@ export function gerarResumoDiarioInteligente(agendamentos) {
     const primeiro = agendamentosOrdenados[0];
     const ultimo = agendamentosOrdenados[agendamentosOrdenados.length - 1];
 
-    // Calcular totais e faturamento
+    // Totais e faturamento
     let atendimentosRealizados = 0;
     let atendimentosPendentes = 0;
     let faturamentoRealizado = 0;
     let faturamentoPrevisto = 0;
 
     agendamentos.forEach(ag => {
-        const preco = ag.servicoPreco || ag.preco || 50; // valor padrão
-        faturamentoPrevisto += Number(preco);
+        const preco = Number(ag.servicoPreco || ag.preco || 50); // valor padrão
+        faturamentoPrevisto += preco;
 
-        if (ag.status === "concluido" || ag.status === "finalizado") {
+        if (["concluido", "finalizado"].includes((ag.status || "").toLowerCase())) {
             atendimentosRealizados++;
-            faturamentoRealizado += Number(preco);
+            faturamentoRealizado += preco;
         } else {
             atendimentosPendentes++;
         }
@@ -61,28 +65,32 @@ export function gerarResumoDiarioInteligente(agendamentos) {
             if (duracaoMinutos > maiorDuracao) {
                 maiorDuracao = duracaoMinutos;
                 intervaloInfo = {
-                    inicio: fimAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                    fim: inicioProximo.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                    inicio: fimAtual.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                    fim: inicioProximo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
                     duracaoMinutos: Math.round(duracaoMinutos)
                 };
             }
         }
 
-        if (maiorDuracao > 30) { // Só considera intervalos maiores que 30 minutos
+        if (maiorDuracao > 30) { // considera apenas intervalos maiores que 30min
             maiorIntervalo = intervaloInfo;
         }
     }
 
-    // Geração de mensagem inteligente detalhada para o dashboard
-    let mensagem = `Hoje você tem <b>${agendamentos.length} agendamento${agendamentos.length > 1 ? 's' : ''}</b> `;
-    mensagem += `(${atendimentosRealizados} concluído${atendimentosRealizados !== 1 ? 's' : ''}, `;
-    mensagem += `${atendimentosPendentes} pendente${atendimentosPendentes !== 1 ? 's' : ''}).<br>`;
-    mensagem += `Começando às <b>${primeiro ? new Date(primeiro.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
-    mensagem += `(${primeiro?.cliente}${primeiro?.servico ? ' - ' + primeiro.servico : ''})`;
-    mensagem += ` e terminando às <b>${ultimo ? new Date(ultimo.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
-    mensagem += `(${ultimo?.cliente}${ultimo?.servico ? ' - ' + ultimo.servico : ''}).<br>`;
-    mensagem += `Faturamento realizado até agora: <b>${faturamentoRealizado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>. `;
-    mensagem += `Previsto para o dia: <b>${faturamentoPrevisto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>.`;
+    // Mensagem para exibir no dashboard
+    let mensagem = `Hoje você tem <b>${agendamentos.length} agendamento${agendamentos.length > 1 ? "s" : ""}</b> `;
+    mensagem += `(${atendimentosRealizados} concluído${atendimentosRealizados !== 1 ? "s" : ""}, `;
+    mensagem += `${atendimentosPendentes} pendente${atendimentosPendentes !== 1 ? "s" : ""}).<br>`;
+
+    mensagem += `Começando às <b>${primeiro ? new Date(primeiro.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</b> `;
+    if (primeiro) mensagem += `(${primeiro?.cliente || ""}${primeiro?.servico ? " - " + primeiro.servico : ""})`;
+
+    mensagem += ` e terminando às <b>${ultimo ? new Date(ultimo.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</b> `;
+    if (ultimo) mensagem += `(${ultimo?.cliente || ""}${ultimo?.servico ? " - " + ultimo.servico : ""}).<br>`;
+
+    mensagem += `Faturamento realizado até agora: <b>${faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b>. `;
+    mensagem += `Previsto para o dia: <b>${faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b>.`;
+
     if (maiorIntervalo) {
         mensagem += `<br>Maior intervalo livre: <b>${maiorIntervalo.duracaoMinutos} minutos</b> entre ${maiorIntervalo.inicio} e ${maiorIntervalo.fim}.`;
     }
@@ -93,16 +101,20 @@ export function gerarResumoDiarioInteligente(agendamentos) {
         atendimentosRealizados,
         faturamentoRealizado,
         faturamentoPrevisto,
-        primeiro: {
-            horario: new Date(primeiro.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            cliente: primeiro.cliente,
-            servico: primeiro.servico
-        },
-        ultimo: {
-            horario: new Date(ultimo.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            cliente: ultimo.cliente,
-            servico: ultimo.servico
-        },
+        primeiro: primeiro
+            ? {
+                  horario: new Date(primeiro.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                  cliente: primeiro.cliente,
+                  servico: primeiro.servico
+              }
+            : null,
+        ultimo: ultimo
+            ? {
+                  horario: new Date(ultimo.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                  cliente: ultimo.cliente,
+                  servico: ultimo.servico
+              }
+            : null,
         maiorIntervalo,
         mensagem
     };
@@ -117,35 +129,38 @@ export function gerarResumoDiarioInteligente(agendamentos) {
 export function gerarSugestoesInteligentes(agendamentos, configuracoes = {}) {
     const sugestoes = [];
 
-    if (!agendamentos || agendamentos.length === 0) {
+    if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
         sugestoes.push("Dia livre! Aproveite para organizar o espaço ou planejar promoções.");
         return sugestoes;
     }
 
-    // Análise de ocupação
+    // Ocupação
     const totalSlots = configuracoes.totalSlots || 20;
     const ocupacao = (agendamentos.length / totalSlots) * 100;
 
     if (ocupacao < 30) {
-        sugestoes.push("Baixa ocupação hoje. Considere enviar ofertas para clientes.");
+        sugestoes.push("Baixa ocupação hoje. Considere enviar ofertas ou lembretes para clientes.");
     } else if (ocupacao > 80) {
-        sugestoes.push("Dia muito movimentado! Prepare-se bem e considere ter um lanche.");
+        sugestoes.push("Dia muito movimentado! Prepare-se bem e lembre-se de se hidratar.");
     }
 
-    // Análise de intervalos
+    // Intervalos
     const resumo = gerarResumoDiarioInteligente(agendamentos);
     if (resumo.maiorIntervalo && resumo.maiorIntervalo.duracaoMinutos > 60) {
-        sugestoes.push(`Você tem ${resumo.maiorIntervalo.duracaoMinutos} minutos livres entre ${resumo.maiorIntervalo.inicio} e ${resumo.maiorIntervalo.fim}. Ótimo para uma pausa!`);
+        sugestoes.push(
+            `Você tem ${resumo.maiorIntervalo.duracaoMinutos} minutos livres entre ${resumo.maiorIntervalo.inicio} e ${resumo.maiorIntervalo.fim}. Ótima oportunidade para descanso ou tarefas administrativas.`
+        );
     }
 
-    // Análise de serviços
+    // Serviços populares
     const servicosContados = agendamentos.reduce((acc, ag) => {
-        acc[ag.servico] = (acc[ag.servico] || 0) + 1;
+        if (ag.servico) {
+            acc[ag.servico] = (acc[ag.servico] || 0) + 1;
+        }
         return acc;
     }, {});
 
-    const servicoMaisPopular = Object.entries(servicosContados)
-        .sort((a, b) => b[1] - a[1])[0];
+    const servicoMaisPopular = Object.entries(servicosContados).sort((a, b) => b[1] - a[1])[0];
 
     if (servicoMaisPopular && servicoMaisPopular[1] > 1) {
         sugestoes.push(`${servicoMaisPopular[0]} está em alta hoje com ${servicoMaisPopular[1]} agendamentos!`);
