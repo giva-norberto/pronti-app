@@ -305,6 +305,16 @@
         window.location.href = "dashboard.html";
       });
     }
+
+    // Troca de abas
+    document.querySelectorAll('.aba').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.aba').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.aba-conteudo').forEach(div=>div.classList.remove('active'));
+        document.getElementById(btn.dataset.aba).classList.add('active');
+      });
+    });
   </script>
   <script src="relatorios.js" type="module"></script>
 </body>
