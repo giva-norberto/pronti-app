@@ -22,6 +22,31 @@
       border-radius: 16px;
       box-shadow: 0 2px 10px #4f46e515;
     }
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+    .btn-voltar {
+      background: #ececff;
+      color: #4f46e5;
+      border: none;
+      padding: 9px 22px 9px 16px;
+      border-radius: 7px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.17s, color 0.18s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 2px 8px #4f46e51c;
+    }
+    .btn-voltar:hover {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
     .filtros-relatorios {
       display: flex;
       gap: 18px;
@@ -122,11 +147,25 @@
       .aba-conteudo {
         padding: 14px 2px;
       }
+      .top-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
     }
   </style>
 </head>
 <body>
   <main class="main-relatorios">
+    <div class="top-actions">
+      <button id="btn-voltar" class="btn-voltar"><i class="fa fa-arrow-left"></i> Voltar</button>
+      <nav class="abas-relatorios">
+        <button class="aba active" data-aba="servicos">Serviços</button>
+        <button class="aba" data-aba="profissionais">Profissionais</button>
+        <button class="aba" data-aba="faturamento">Faturamento</button>
+        <button class="aba" data-aba="clientes">Clientes</button>
+      </nav>
+    </div>
     <!-- Filtros -->
     <header class="filtros-relatorios">
       <label for="filtro-data-inicio">Data Início:</label>
@@ -143,23 +182,20 @@
 
       <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
     </header>
-    <!-- Abas -->
-    <nav class="abas-relatorios">
-      <button class="aba active" data-aba="resumo">Resumo Diário</button>
-      <button class="aba" data-aba="servicos">Serviços</button>
-      <button class="aba" data-aba="profissionais">Profissionais</button>
-      <button class="aba" data-aba="faturamento">Faturamento</button>
-      <button class="aba" data-aba="clientes">Clientes</button>
-    </nav>
     <!-- Conteúdo das abas -->
     <section class="conteudo-abas">
-      <div class="aba-conteudo active" id="resumo"></div>
-      <div class="aba-conteudo" id="servicos"></div>
+      <div class="aba-conteudo active" id="servicos"></div>
       <div class="aba-conteudo" id="profissionais"></div>
       <div class="aba-conteudo" id="faturamento"></div>
       <div class="aba-conteudo" id="clientes"></div>
     </section>
   </main>
+  <script>
+    document.getElementById("btn-voltar").addEventListener("click", () => {
+      // Altere o caminho abaixo para o menu desejado!
+      window.location.href = "menu-principal.html";
+    });
+  </script>
   <script src="relatorios.js" type="module"></script>
 </body>
 </html>
