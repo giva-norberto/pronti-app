@@ -1,31 +1,138 @@
-/* ================================================================
-   RELATÓRIOS - CSS COMPACTO, RESPONSIVO E PROFISSIONAL
-   (Aproveita e harmoniza com variáveis e padrões globais)
-   ================================================================ */
+:root {
+    --cor-primaria: #4facfe;
+    --cor-secundaria: #00f2fe;
+    --cor-sucesso: #34d399;
+    --cor-cinza: #6b7280;
+    --cor-texto-escuro: #22223b;
+    --cor-fundo-app: #f6f7fb;
+}
 
-/* Tabela compacta e responsiva */
+.abas-container {
+    display: flex;
+    gap: 0;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    background: transparent;
+    box-shadow: 0 1px 0 #e5e8f1;
+    border-radius: 8px 8px 0 0;
+    scrollbar-width: none;
+}
+.abas-container::-webkit-scrollbar {
+    display: none;
+}
+.aba {
+    padding: 7px 12px;
+    font-size: 0.97em;
+    font-weight: 600;
+    border: none;
+    background: none;
+    color: var(--cor-texto-escuro);
+    margin: 0;
+    border-radius: 7px 7px 0 0;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    outline: none;
+    position: relative;
+    min-width: 70px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.aba:not(.active):hover {
+    background: #f1f1fa;
+    color: var(--cor-primaria);
+}
+.aba.active {
+    background: #fff;
+    color: var(--cor-primaria);
+    border-bottom: 2.5px solid var(--cor-primaria);
+    z-index: 2;
+}
+@media (max-width: 600px) {
+    .abas-container {
+        border-radius: 0;
+        margin-bottom: 5px;
+    }
+    .aba {
+        padding: 7px 7px;
+        font-size: 0.95em;
+        min-width: 60px;
+        border-radius: 7px 7px 0 0;
+    }
+}
+.btn-exportar-csv {
+    background: var(--cor-sucesso);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    margin: 8px 0 8px 0;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s, box-shadow 0.18s;
+    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
+    font-size: 0.98em;
+    align-self: flex-end;
+}
+.btn-exportar-csv:hover, .btn-exportar-csv:focus {
+    background: #22996c;
+    outline: none;
+}
+.filtros-relatorio {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    align-items: center;
+    background: #f7fafd;
+    padding: 7px 10px;
+    border-radius: 7px;
+    box-shadow: 0 1px 2px #e5e8f1;
+}
+.filtros-relatorio label {
+    font-weight: 500;
+    margin-right: 2px;
+    color: var(--cor-cinza);
+    font-size: 0.98em;
+}
+.filtros-relatorio input,
+.filtros-relatorio select {
+    font-size: 0.98em;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: var(--cor-texto-escuro);
+    transition: border 0.18s;
+}
+.filtros-relatorio input:focus,
+.filtros-relatorio select:focus {
+    border: 1.5px solid var(--cor-primaria);
+    outline: none;
+}
 .aba-conteudo table {
     width: 100%;
-    font-size: 1.07em;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px #0001;
+    font-size: 1.05em;
+    border-radius: 7px;
+    box-shadow: 0 1.5px 6px #0001;
     background: #fff;
     overflow: hidden;
     border-spacing: 0;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 .aba-conteudo th, .aba-conteudo td {
-    padding: 10px 14px;
+    padding: 8px 10px;
     border-bottom: 1px solid #f0f0f0;
     text-align: left;
     font-weight: 400;
-    color: var(--cor-texto-escuro, #22223b);
+    color: var(--cor-texto-escuro);
 }
 .aba-conteudo th {
-    background: #f9f9f9;
+    background: #f6f8fa;
     font-weight: 600;
-    color: var(--cor-primaria, #0071e3);
-    letter-spacing: -0.5px;
+    color: var(--cor-primaria);
+    letter-spacing: -0.4px;
+    font-size: 1em;
 }
 .aba-conteudo tr:last-child td {
     border-bottom: none;
@@ -34,137 +141,28 @@
     background: #f5fbff;
     transition: background 0.15s;
 }
-
-/* Compactação mobile */
 @media (max-width: 600px) {
     .aba-conteudo table {
-        font-size: 0.95em;
-        box-shadow: 0 1px 3px #0001;
+        font-size: 0.94em;
+        box-shadow: 0 1px 2px #0001;
     }
     .aba-conteudo th, .aba-conteudo td {
-        padding: 6px 7px;
+        padding: 5px 3px;
     }
-    .filtros-relatorio, .filtros-relatorio * {
-        font-size: 0.97em !important;
-    }
-    .aba {
-        padding: 6px 8px;
-        min-width: 80px;
+    .filtros-relatorio {
+        padding: 5px 3px;
+        gap: 5px;
         font-size: 0.95em;
-    }
-    .aba-conteudo {
-        padding: 8px 2px;
     }
     .btn-exportar-csv {
-        font-size: 0.95em;
-        padding: 6px 10px;
-        min-width: 90px;
-    }
-    /* Abas horizontais roláveis */
-    .abas-container {
-        overflow-x: auto;
-        white-space: nowrap;
-        width: 100vw;
-        margin-bottom: 6px;
-    }
-    .aba {
-        display: inline-block;
-        margin: 0 2px;
+        font-size: 0.93em;
+        padding: 5px 7px;
+        margin: 4px 0 6px 0;
     }
 }
-
-/* Abas (tabs) e filtros */
-.abas-container {
-    display: flex;
-    gap: 2px;
-    margin-bottom: 8px;
-}
-.aba {
-    padding: 10px 18px;
-    border-radius: 8px 8px 0 0;
-    background: #f3f3f6;
-    margin-right: 4px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    font-weight: 600;
-    color: var(--cor-texto-escuro, #22223b);
-    border: none;
-}
-.aba.active {
-    background: #fff;
-    border-bottom: 2px solid var(--cor-primaria, #0071e3);
-    color: var(--cor-primaria, #0071e3);
-}
-.filtros-relatorio {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-    align-items: center;
-    background: none;
-    padding: 0;
-}
-.filtros-relatorio label {
-    font-weight: 500;
-    margin-right: 2px;
-    color: var(--cor-texto-claro, #44446a);
-}
-.filtros-relatorio input,
-.filtros-relatorio select {
-    font-size: 1em;
-    padding: 7px 10px;
-    border-radius: 7px;
-    border: 1px solid #d1d5db;
-    background: #fff;
-    color: var(--cor-texto-escuro, #22223b);
-    transition: border 0.18s;
-}
-.filtros-relatorio input:focus,
-.filtros-relatorio select:focus {
-    border: 1.5px solid var(--cor-primaria, #0071e3);
-    outline: none;
-}
-
-/* Botão de exportação CSV */
-.btn-exportar-csv {
-    background: var(--cor-sucesso, #008e5b);
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    margin-bottom: 12px;
-    margin-top: 4px;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background 0.2s, box-shadow 0.18s;
-    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 1em;
-}
-.btn-exportar-csv:hover, .btn-exportar-csv:focus {
-    background: #005c3c;
-    outline: none;
-    box-shadow: 0 2px 8px 0 #008e5b22;
-}
-
-/* Mensagens, vazio, carregando, erro */
 .aba-conteudo p {
-    margin: 18px 0 18px 0;
-    color: var(--cor-cinza, #6b7280);
-    font-size: 1.02em;
+    margin: 15px 0 15px 0;
+    color: var(--cor-cinza);
+    font-size: 1.01em;
     text-align: center;
-}
-
-@media (max-width: 400px) {
-    .btn-exportar-csv {
-        font-size: 0.94em;
-        padding: 6px 6px;
-        min-width: 70px;
-    }
-    .aba {
-        padding: 5px 6px;
-        min-width: 60px;
-    }
 }
