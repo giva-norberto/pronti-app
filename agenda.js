@@ -7,6 +7,7 @@
  * - Toda manipulação de data é local.
  * - [ATUALIZAÇÃO] Cards agora trazem botão "Ausência" (Não Compareceu) para agendamentos com status 'ativo'.
  * - [ATUALIZAÇÃO MULTI-EMPRESA] Sempre lê empresaAtivaId do localStorage, redireciona para seleção se não houver.
+ * - [AUTOMATIZAÇÃO] Agendamentos vencidos (status 'ativo' e data+horário no passado) são automaticamente marcados como 'realizado' ao carregar a agenda/histórico.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -80,6 +81,13 @@ function atualizarLegendaSemana(inicioISO, fimISO) {
     if (legendaSemana) {
         legendaSemana.innerHTML = `Mostrando de <strong>${formatarDataBrasileira(inicioISO)}</strong> a <strong>${formatarDataBrasileira(fimISO)}</strong>`;
     }
+}
+function agendamentoJaVenceu(dataISO, horarioStr) {
+    if (!dataISO || !horarioStr) return false;
+    const [ano, mes, dia] = dataISO.split("-").map(Number);
+    const [hora, min] = horarioStr.split(":").map(Number);
+    const dataAg = new Date(ano, mes - 1, dia, hora, min, 0, 0);
+    return dataAg.getTime() < Date.now();
 }
 
 // ----------- AUTENTICAÇÃO E PERFIL -----------
@@ -191,12 +199,33 @@ async function popularFiltroProfissionais() {
 }
 
 // ----------- CARREGAMENTO DE AGENDAMENTOS -----------
+// AUTOMATIZAÇÃO: Atualiza agendamentos vencidos de status 'ativo' para 'realizado'
 async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico = false) {
     listaAgendamentosDiv.innerHTML = `<p>Carregando agendamentos...</p>`;
     try {
         const ref = collection(db, "empresarios", empresaId, "agendamentos");
         const q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
         const snapshot = await getDocs(q);
+
+        // --- INÍCIO DA AUTOMATIZAÇÃO ---
+        const updates = [];
+        for (const docSnap of snapshot.docs) {
+            const ag = docSnap.data();
+            // Só automatiza se status 'ativo', já passou da data/hora e não é 'nao_compareceu' ou 'cancelado'
+            if (
+                ag.status === "ativo" &&
+                agendamentoJaVenceu(ag.data, ag.horario) &&
+                ag.status !== "nao_compareceu" &&
+                ag.status !== "cancelado" &&
+                ag.status !== "cancelado_pelo_gestor"
+            ) {
+                // Atualiza status para "realizado"
+                updates.push(updateDoc(doc(db, "empresarios", empresaId, "agendamentos", docSnap.id), { status: "realizado" }));
+            }
+        }
+        if (updates.length > 0) await Promise.all(updates);
+        // --- FIM DA AUTOMATIZAÇÃO ---
+
         if (snapshot.empty) {
             listaAgendamentosDiv.innerHTML = `<p>${mensagemVazio}</p>`;
             return;
