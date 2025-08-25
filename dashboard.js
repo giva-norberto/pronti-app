@@ -155,16 +155,15 @@ async function carregarRelatorioServicos() {
     }
 }
 
-// Relatório Profissionais
+// Relatório Profissionais (aplica filtro de profissional se selecionado)
 async function carregarRelatorioProfissionais() {
     const container = document.getElementById("profissionais");
     container.innerHTML = "<p>Carregando...</p>";
     try {
-        // Aqui, mesmo se filtro de profissional estiver setado, o relatório mostra todos, pois é analítico
         const ags = await buscarAgendamentos({
             inicio: filtroInicio.value,
             fim: filtroFim.value,
-            profissionalId: "todos"
+            profissionalId: filtroProfissional.value // aplica filtro de profissional
         });
         let profs = {};
         ags.forEach(ag => {
@@ -218,7 +217,7 @@ async function carregarRelatorioFaturamento() {
     }
 }
 
-// Relatório Clientes (não usa filtro profissional)
+// Relatório Clientes (não usa filtro por profissional)
 async function carregarRelatorioClientes() {
     const container = document.getElementById("clientes");
     container.innerHTML = "<p>Carregando...</p>";
