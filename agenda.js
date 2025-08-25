@@ -86,8 +86,17 @@ function atualizarLegendaSemana(inicioISO, fimISO) {
         legendaSemana.innerHTML = `Mostrando de <strong>${formatarDataBrasileira(inicioISO)}</strong> a <strong>${formatarDataBrasileira(fimISO)}</strong>`;
     }
 }
-function agendamentoJaVenceu(dataISO, horarioStr) {
-    if (!dataISO || !horarioStr) return false;
+// -------- CORREÇÃO: Verifica se já passou do horário FINAL DA AGENDA do profissional --------
+function agendamentoJaVenceu(dataISO, horarioStr, horarioFimExpediente) {
+    if (!dataISO) return false;
+    // Se passado horário fim do expediente, considera vencido para todos agendamentos do dia
+    if (horarioFimExpediente) {
+        const [ano, mes, dia] = dataISO.split("-").map(Number);
+        const [horaFim, minFim] = horarioFimExpediente.split(":").map(Number);
+        const dataFimExp = new Date(ano, mes - 1, dia, horaFim, minFim, 0, 0);
+        return Date.now() > dataFimExp.getTime();
+    }
+    if (!horarioStr) return false;
     const [ano, mes, dia] = dataISO.split("-").map(Number);
     const [hora, min] = horarioStr.split(":").map(Number);
     const dataAg = new Date(ano, mes - 1, dia, hora, min, 0, 0);
@@ -261,9 +270,10 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
         const docsVencidos = [];
         let ultimoHorarioDia = null;
         let dataReferencia = null;
+        let horarioFimExpediente = null;
         snapshot.docs.forEach(docSnap => {
             const ag = docSnap.data();
-            if (ag.status === "ativo" && agendamentoJaVenceu(ag.data, ag.horario)) {
+            if (ag.status === "ativo" && agendamentoJaVenceu(ag.data, ag.horario, horarioFimExpediente)) {
                 docsVencidos.push(docSnap);
             }
             // Descobre o último horário do dia para a data selecionada
@@ -273,15 +283,19 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
                     if (!ultimoHorarioDia || ag.horario > ultimoHorarioDia) {
                         ultimoHorarioDia = ag.horario;
                     }
+                    // CORREÇÃO: pega o maior horário de fim de expediente do profissional do dia
+                    if (ag.horarioFimExpediente && (!horarioFimExpediente || ag.horarioFimExpediente > horarioFimExpediente)) {
+                        horarioFimExpediente = ag.horarioFimExpediente;
+                    }
                 }
             }
         });
 
-        // Se há agendamentos vencidos e (é dia anterior ou já passou do último horário do dia)
+        // Se há agendamentos vencidos e (é dia anterior ou já passou do horário de fim do expediente do dia)
         if (
             docsVencidos.length > 0 &&
             (
-                (dataReferencia && isDataAnteriorOuHoje(dataReferencia) && agendamentoJaVenceu(dataReferencia, ultimoHorarioDia))
+                (dataReferencia && isDataAnteriorOuHoje(dataReferencia) && agendamentoJaVenceu(dataReferencia, ultimoHorarioDia, horarioFimExpediente))
                 || (dataReferencia && dataReferencia < formatarDataISO(new Date()))
             )
         ) {
@@ -339,7 +353,7 @@ function exibirModalFinalizarDia(docsVencidos, dataReferencia, onFinalizarDia) {
             const ag = docSnap.data();
             if (
                 ag.status === "ativo" &&
-                agendamentoJaVenceu(ag.data, ag.horario) &&
+                agendamentoJaVenceu(ag.data, ag.horario, ag.horarioFimExpediente) &&
                 ag.status !== "nao_compareceu" &&
                 ag.status !== "cancelado" &&
                 ag.status !== "cancelado_pelo_gestor"
