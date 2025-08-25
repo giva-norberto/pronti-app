@@ -1,8 +1,8 @@
 // ======================================================================
-//                       DASHBOARD.JS (VERSÃO REVISADA)
-//   - 1 consulta/dia (status: ativo/realizado)
-//   - Cards: Resumo, Serviço/Profissional, Agenda do Dia (foto/nome/horário)
-//   - Resumo Inteligente (campos corretos) + Sugestão IA
+//                       DASHBOARD.JS (VERSÃO FINAL)
+//   - Totais, pendentes, faturamento realizado e previsto
+//   - Agenda curta por turno (foto/nome/horário)
+//   - Cards: Resumo, Serviço/Profissional, IA, Resumo Inteligente
 //   - Multi-empresa via localStorage ("empresaAtivaId")
 // ======================================================================
 
@@ -130,40 +130,63 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 }
 
 // --------------------------------------------------
-// RESUMO DO DIA (1 consulta)
-//  - status IN ["ativo","realizado"]
-//  - calcula: total, faturamento, destaques, agenda curta, lista p/ IA
+// RESUMO DO DIA
 // --------------------------------------------------
 
 async function obterResumoDoDia(empresaId, dataSelecionada) {
   try {
     const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-
-    // Firestore permite where-in com até 10 valores
     const q = query(
       agRef,
       where("data", "==", dataSelecionada),
       where("status", "in", STATUS_VALIDOS)
     );
-
     const snapshot = await getDocs(q);
 
-    // Acumuladores
-    let totalAgendamentos = 0;
+    const agora = new Date();
+    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+    let inicioTurno = 0,
+      fimTurno = 24 * 60;
+    if (minutosAgora < 12 * 60) {
+      inicioTurno = 6 * 60;
+      fimTurno = 12 * 60;
+    } else if (minutosAgora < 18 * 60) {
+      inicioTurno = 12 * 60;
+      fimTurno = 18 * 60;
+    } else {
+      inicioTurno = 18 * 60;
+      fimTurno = 24 * 60;
+    }
+
+    let totalAgendamentosDia = 0;
+    let agendamentosPendentes = 0;
+    let faturamentoRealizado = 0;
     let faturamentoPrevisto = 0;
+
     const servicosCount = {};
     const profsCount = {};
-
-    // Para agenda do dia (UI)
     const agendaItens = [];
-
-    // Para IA (campos corretos)
     const agsParaIA = [];
 
     snapshot.forEach((d) => {
       const ag = d.data();
-      totalAgendamentos += 1;
+      const minutosAg = timeStringToMinutes(ag.horario);
+      totalAgendamentosDia += 1;
       faturamentoPrevisto += Number(ag.servicoPreco) || 0;
+
+      if (ag.status === "ativo") {
+        if (minutosAg >= inicioTurno && minutosAg < fimTurno) {
+          agendamentosPendentes += 1;
+          agendaItens.push({
+            horario: ag.horario || "--:--",
+            clienteNome: ag.clienteNome || "Cliente",
+            clienteFoto: ag.clienteFoto || "",
+            servicoNome: ag.servicoNome || "",
+          });
+        }
+      } else if (ag.status === "realizado") {
+        faturamentoRealizado += Number(ag.servicoPreco) || 0;
+      }
 
       if (ag.servicoNome)
         servicosCount[ag.servicoNome] =
@@ -172,23 +195,12 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
         profsCount[ag.profissionalNome] =
           (profsCount[ag.profissionalNome] || 0) + 1;
 
-      // Derivar início/fim
-      const dataISO = ag.data || dataSelecionada; // "YYYY-MM-DD"
+      const dataISO = ag.data || dataSelecionada;
       const inicioISO = `${dataISO}T${ag.horario || "00:00"}:00`;
       const fimHora =
         ag.horarioFim ||
         addMinutesToTimeString(ag.horario, Number(ag.servicoDuracao) || 0);
       const fimISO = `${dataISO}T${fimHora || ag.horario || "00:00"}:00`;
-
-      // Para UI (agenda breve)
-      agendaItens.push({
-        horario: ag.horario || "--:--",
-        clienteNome: ag.clienteNome || "Cliente",
-        clienteFoto: ag.clienteFoto || "",
-        servicoNome: ag.servicoNome || "",
-      });
-
-      // Para IA
       agsParaIA.push({
         inicio: inicioISO,
         fim: fimISO,
@@ -198,29 +210,30 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
       });
     });
 
-    // Ordenar agenda por horário (string HH:mm)
     agendaItens.sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
-
     const servicoDestaque = Object.keys(servicosCount).sort(
       (a, b) => servicosCount[b] - servicosCount[a]
     )[0];
-
     const profissionalDestaque = Object.keys(profsCount).sort(
       (a, b) => profsCount[b] - profsCount[a]
     )[0];
 
     return {
-      totalAgendamentos,
+      totalAgendamentosDia,
+      agendamentosPendentes,
+      faturamentoRealizado,
       faturamentoPrevisto,
       servicoDestaque: servicoDestaque || null,
       profissionalDestaque: profissionalDestaque || null,
-      agendaItens, // lista curta para o card
-      agsParaIA, // lista compacta para gerar o resumo inteligente
+      agendaItens,
+      agsParaIA,
     };
   } catch (e) {
     console.error("Erro ao obter resumo do dia:", e);
     return {
-      totalAgendamentos: 0,
+      totalAgendamentosDia: 0,
+      agendamentosPendentes: 0,
+      faturamentoRealizado: 0,
       faturamentoPrevisto: 0,
       servicoDestaque: null,
       profissionalDestaque: null,
@@ -236,16 +249,25 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
 
 function preencherCardResumo(resumo) {
   const totalEl = document.getElementById("total-agendamentos-dia");
-  const fatEl = document.getElementById("faturamento-previsto");
+  const pendEl = document.getElementById("agendamentos-pendentes");
+  const fatRealEl = document.getElementById("faturamento-realizado");
+  const fatPrevEl = document.getElementById("faturamento-previsto");
   const percEl = document.getElementById("percentual-ocupacao");
-  if (!totalEl || !fatEl || !percEl) return;
+  if (!totalEl || !pendEl || !fatRealEl || !fatPrevEl || !percEl) return;
 
-  const total = Number(resumo.totalAgendamentos) || 0;
-  const fat = Number(resumo.faturamentoPrevisto) || 0;
-  const perc = Math.min(100, Math.round((total / totalSlots) * 100));
+  const total = Number(resumo.totalAgendamentosDia) || 0;
+  const pend = Number(resumo.agendamentosPendentes) || 0;
+  const fatReal = Number(resumo.faturamentoRealizado) || 0;
+  const fatPrev = Number(resumo.faturamentoPrevisto) || 0;
+  const perc = Math.min(100, Math.round((pend / totalSlots) * 100));
 
   totalEl.textContent = total;
-  fatEl.textContent = fat.toLocaleString("pt-BR", {
+  pendEl.textContent = pend;
+  fatRealEl.textContent = fatReal.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+  fatPrevEl.textContent = fatPrev.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
@@ -272,7 +294,7 @@ function preencherCardProfissional(profissionalDestaque) {
 }
 
 function calcularSugestaoIA(resumo) {
-  const total = Number(resumo.totalAgendamentos) || 0;
+  const total = Number(resumo.totalAgendamentosDia) || 0;
   const ocupacaoPercent = Math.min(100, Math.round((total / totalSlots) * 100));
   if (total === 0)
     return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
@@ -292,11 +314,10 @@ function preencherCardAgendaDoDia(agendaItens) {
 
   if (!agendaItens || agendaItens.length === 0) {
     listaEl.innerHTML =
-      "<div style='color:#888;text-align:center;padding:12px 0;'>Nenhum agendamento para hoje.</div>";
+      "<div style='color:#888;text-align:center;padding:12px 0;'>Nenhum agendamento para o turno.</div>";
     return;
   }
 
-  // Render simples com foto (quando houver)
   const html =
     "<ul style='list-style:none;padding:0;margin:0;'>" +
     agendaItens
@@ -317,23 +338,19 @@ function preencherCardAgendaDoDia(agendaItens) {
 }
 
 // --------------------------------------------------
-// FUNÇÃO PRINCIPAL DO DASHBOARD
+// FUNÇÃO PRINCIPAL
 // --------------------------------------------------
 
 async function preencherDashboard(user, dataSelecionada, empresaId) {
   try {
     const resumoDoDia = await obterResumoDoDia(empresaId, dataSelecionada);
 
-    // Cards simples
     preencherCardResumo(resumoDoDia);
     preencherCardServico(resumoDoDia.servicoDestaque);
     preencherCardProfissional(resumoDoDia.profissionalDestaque);
     preencherCardIA(calcularSugestaoIA(resumoDoDia));
-
-    // Agenda do dia (lista curta)
     preencherCardAgendaDoDia(resumoDoDia.agendaItens);
 
-    // Resumo Inteligente (passando estrutura correta)
     const resumoInteligente = gerarResumoDiarioInteligente(
       resumoDoDia.agsParaIA
     );
@@ -342,7 +359,6 @@ async function preencherDashboard(user, dataSelecionada, empresaId) {
       if (resumoInteligente?.mensagem) {
         elResumo.innerHTML = resumoInteligente.mensagem;
       } else if (resumoInteligente?.totalAtendimentos > 0) {
-        // Fallback: montar um textinho básico
         elResumo.innerHTML = `
           Total de atendimentos: <b>${resumoInteligente.totalAtendimentos}</b><br>
           Faturamento estimado: <b>${Number(
@@ -387,7 +403,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const empresaId = getEmpresaIdAtiva();
     await iniciarDashboard(user, empresaId);
 
-    // Notificação trial
     if (isOwner) {
       const status = await checkUserStatus();
       if (status?.isTrialActive && status?.trialEndDate) {
