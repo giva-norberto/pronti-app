@@ -93,7 +93,7 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
         let totalAgendamentos = snapshot.size;
         let faturamentoPrevisto = 0;
         let servicosCount = {};
-        let profsCount = [];
+        let profsCount = {};
 
         snapshot.forEach(doc => {
             const ag = doc.data();
