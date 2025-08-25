@@ -199,36 +199,6 @@
     .aba-conteudo.active {
       display: block;
     }
-    /* TABELA COMPACTA */
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 4px;
-      background: transparent;
-      font-size: 0.96em;
-    }
-    th, td {
-      text-align: left;
-      padding: 6px 5px;
-      font-size: 0.97em;
-      border: none;
-      background: #f3f4fc;
-    }
-    th {
-      background: #e0e7ff;
-      color: var(--cor-primaria);
-      font-weight: 700;
-      font-size: 1em;
-      border-radius: 7px 7px 0 0;
-      border-bottom: 2px solid #c7d2fe;
-    }
-    tr {
-      border-radius: 4px;
-      box-shadow: 0 1px 3px #4f46e508;
-    }
-    tr:nth-child(even) td {
-      background: #f7f8fa;
-    }
     @keyframes fadeIn {
       from { opacity: 0;}
       to { opacity: 1;}
@@ -305,124 +275,19 @@
       <!-- Conteúdo das abas -->
       <section class="conteudo-abas">
         <div class="aba-conteudo active" id="servicos">
-          <!-- Dados de Serviços -->
-          <table>
-            <thead>
-              <tr>
-                <th>Serviço</th>
-                <th>Quantidade</th>
-                <th>Valor Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Corte Masculino</td>
-                <td>40</td>
-                <td>R$ 1.200,00</td>
-              </tr>
-              <tr>
-                <td>Coloração</td>
-                <td>15</td>
-                <td>R$ 900,00</td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- Conteúdo real carregado via JS/backend -->
         </div>
         <div class="aba-conteudo" id="profissionais">
-          <!-- Dados de Profissionais -->
-          <table>
-            <thead>
-              <tr>
-                <th>Profissional</th>
-                <th>Atendimentos</th>
-                <th>Receita</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Maria Silva</td>
-                <td>60</td>
-                <td>R$ 2.300,00</td>
-              </tr>
-              <tr>
-                <td>João Souza</td>
-                <td>45</td>
-                <td>R$ 1.900,00</td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- Conteúdo real carregado via JS/backend -->
         </div>
         <div class="aba-conteudo" id="faturamento">
-          <!-- Dados de Faturamento -->
-          <table>
-            <thead>
-              <tr>
-                <th>Mês</th>
-                <th>Faturamento</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Agosto 2025</td>
-                <td>R$ 8.900,00</td>
-              </tr>
-              <tr>
-                <td>Julho 2025</td>
-                <td>R$ 7.400,00</td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- Conteúdo real carregado via JS/backend -->
         </div>
         <div class="aba-conteudo" id="clientes">
-          <!-- Dados de Clientes -->
-          <table>
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Visitas</th>
-                <th>Última visita</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Ana Paula</td>
-                <td>8</td>
-                <td>20/08/2025</td>
-              </tr>
-              <tr>
-                <td>Ricardo Lopes</td>
-                <td>5</td>
-                <td>17/08/2025</td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- Conteúdo real carregado via JS/backend -->
         </div>
         <div class="aba-conteudo" id="agenda">
-          <!-- Dados de Agenda -->
-          <table>
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Horário</th>
-                <th>Cliente</th>
-                <th>Serviço</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>25/08/2025</td>
-                <td>14:00</td>
-                <td>Camila Dias</td>
-                <td>Escova</td>
-              </tr>
-              <tr>
-                <td>25/08/2025</td>
-                <td>15:00</td>
-                <td>Paulo Lima</td>
-                <td>Corte Masculino</td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- Conteúdo real carregado via JS/backend -->
         </div>
       </section>
     </main>
