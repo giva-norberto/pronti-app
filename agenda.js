@@ -8,6 +8,7 @@
  * - [ATUALIZAÇÃO] Cards agora trazem botão "Ausência" (Não Compareceu) para agendamentos com status 'ativo'.
  * - [ATUALIZAÇÃO MULTI-EMPRESA] Sempre lê empresaAtivaId do localStorage, redireciona para seleção se não houver.
  * - [NOVA LÓGICA] Ao vencer o turno do último agendamento do dia (ou em acesso posterior), o sistema pergunta ao usuário se deseja marcar ausências antes de finalizar o dia. Só após confirmação, os agendamentos vencidos são atualizados para "realizado" (exceto os marcados manualmente como ausência).
+ * - [NOVA LÓGICA RETROATIVO] Sempre que houver dias anteriores com agendamentos "ativos", o sistema pergunta para cada dia retroativo (um por vez) se deseja finalizar antes de mostrar o dia/filtro atual.
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -210,7 +211,43 @@ async function popularFiltroProfissionais() {
 async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico = false) {
     listaAgendamentosDiv.innerHTML = `<p>Carregando agendamentos...</p>`;
     try {
+        // 1. Busca todos os agendamentos "ativos" de dias anteriores ao hoje
+        const hojeISO = formatarDataISO(new Date());
+
         const ref = collection(db, "empresarios", empresaId, "agendamentos");
+        const queryRetroativos = query(
+            ref,
+            where("data", "<", hojeISO),
+            where("status", "==", "ativo")
+        );
+        const snapshotRetroativos = await getDocs(queryRetroativos);
+
+        if (!isHistorico && !window._finalizouDiasRetroativos && !snapshotRetroativos.empty) {
+            // Agrupa por data
+            const diasPendentes = {};
+            snapshotRetroativos.docs.forEach(docSnap => {
+                const ag = docSnap.data();
+                if (!diasPendentes[ag.data]) diasPendentes[ag.data] = [];
+                diasPendentes[ag.data].push(docSnap);
+            });
+            // Pega o primeiro dia retroativo pendente (ordem crescente)
+            const diasOrdenados = Object.keys(diasPendentes).sort();
+            const dataPend = diasOrdenados[0];
+            const docsPend = diasPendentes[dataPend];
+
+            // Exibe os cards desse dia e o modal de finalização
+            exibirCardsAgendamento(docsPend, false);
+            exibirModalFinalizarDia(docsPend, dataPend, async () => {
+                window._finalizouDiasRetroativos = false; // Permite rodar múltiplas vezes
+                await buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico);
+            });
+            window._finalizouDiasRetroativos = true;
+            return; // Só processa um dia retroativo por vez
+        }
+
+        window._finalizouDiasRetroativos = false; // Limpa flag após rodar todos retroativos
+
+        // 2. Busca os agendamentos do filtro/método normal
         const q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
         const snapshot = await getDocs(q);
 
@@ -219,7 +256,7 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
             return;
         }
 
-        // --- NOVA LÓGICA DE FINALIZAÇÃO DO DIA ---
+        // --- Lógica normal do dia/semana/histórico ---
         // Detecta se há agendamentos vencidos (ativos) para o(s) dia(s) anterior(es) ou turno do dia já acabou
         const docsVencidos = [];
         let ultimoHorarioDia = null;
@@ -263,8 +300,8 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
     }
 }
 
-function exibirModalFinalizarDia(docsVencidos, dataReferencia) {
-    // Remove modal antigo se existir
+// Adapte a função exibirModalFinalizarDia para receber um callback que re-executa a verificação após finalizar um dia retroativo:
+function exibirModalFinalizarDia(docsVencidos, dataReferencia, onFinalizarDia) {
     if (modalFinalizarDia) modalFinalizarDia.remove();
 
     modalFinalizarDia = document.createElement('div');
@@ -313,7 +350,7 @@ function exibirModalFinalizarDia(docsVencidos, dataReferencia) {
         if (updates.length > 0) await Promise.all(updates);
         mostrarToast("Agendamentos finalizados como 'realizado'.");
         modalFinalizarDia.remove();
-        carregarAgendamentosConformeModo();
+        if (typeof onFinalizarDia === "function") await onFinalizarDia();
     };
     document.getElementById("btn-fechar-modal").onclick = () => {
         modalFinalizarDia.remove();
