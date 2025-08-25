@@ -29,6 +29,7 @@
       min-height: 100vh;
       background: #f7f8fa;
     }
+    /* SIDEBAR LATERAL */
     .sidebar-relatorios {
       width: 180px;
       min-width: 52px;
@@ -43,15 +44,14 @@
       z-index: 10;
     }
     .sidebar-relatorios.collapsed {
-      width: 50px;
+      width: 54px;
     }
     .sidebar-toggle {
-      background: none;
+      background: var(--cor-primaria);
       border: none;
       position: absolute;
       top: 12px;
       right: -15px;
-      background: var(--cor-primaria);
       color: #fff;
       border-radius: 50%;
       width: 32px;
@@ -112,6 +112,7 @@
     .sidebar-relatorios.collapsed .sidebar-aba span {
       display: none;
     }
+    /* MAIN CONTENT */
     .main-relatorios-content {
       flex: 1;
       padding: 30px 24px;
@@ -232,6 +233,7 @@
       from { opacity: 0;}
       to { opacity: 1;}
     }
+    /* MOBILE: MENU VIRA HORIZONTAL */
     @media (max-width: 900px) {
       .relatorios-layout {
         flex-direction: column;
@@ -245,6 +247,10 @@
         border-bottom: 1.5px solid #e0e7ff;
         height: 56px;
         padding: 0;
+        position: relative;
+      }
+      .sidebar-toggle {
+        display: none;
       }
       .sidebar-abas {
         flex-direction: row;
@@ -258,11 +264,6 @@
         padding: 7px 0 7px 0;
         justify-content: center;
         flex: 1;
-      }
-      .sidebar-toggle {
-        left: auto;
-        right: 8px;
-        top: 10px;
       }
       .main-relatorios-content {
         margin: 8px 2px 0 2px;
@@ -303,11 +304,126 @@
       </header>
       <!-- Conteúdo das abas -->
       <section class="conteudo-abas">
-        <div class="aba-conteudo active" id="servicos"></div>
-        <div class="aba-conteudo" id="profissionais"></div>
-        <div class="aba-conteudo" id="faturamento"></div>
-        <div class="aba-conteudo" id="clientes"></div>
-        <div class="aba-conteudo" id="agenda"></div>
+        <div class="aba-conteudo active" id="servicos">
+          <!-- Dados de Serviços -->
+          <table>
+            <thead>
+              <tr>
+                <th>Serviço</th>
+                <th>Quantidade</th>
+                <th>Valor Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Corte Masculino</td>
+                <td>40</td>
+                <td>R$ 1.200,00</td>
+              </tr>
+              <tr>
+                <td>Coloração</td>
+                <td>15</td>
+                <td>R$ 900,00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="aba-conteudo" id="profissionais">
+          <!-- Dados de Profissionais -->
+          <table>
+            <thead>
+              <tr>
+                <th>Profissional</th>
+                <th>Atendimentos</th>
+                <th>Receita</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Maria Silva</td>
+                <td>60</td>
+                <td>R$ 2.300,00</td>
+              </tr>
+              <tr>
+                <td>João Souza</td>
+                <td>45</td>
+                <td>R$ 1.900,00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="aba-conteudo" id="faturamento">
+          <!-- Dados de Faturamento -->
+          <table>
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th>Faturamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Agosto 2025</td>
+                <td>R$ 8.900,00</td>
+              </tr>
+              <tr>
+                <td>Julho 2025</td>
+                <td>R$ 7.400,00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="aba-conteudo" id="clientes">
+          <!-- Dados de Clientes -->
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Visitas</th>
+                <th>Última visita</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Ana Paula</td>
+                <td>8</td>
+                <td>20/08/2025</td>
+              </tr>
+              <tr>
+                <td>Ricardo Lopes</td>
+                <td>5</td>
+                <td>17/08/2025</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="aba-conteudo" id="agenda">
+          <!-- Dados de Agenda -->
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Horário</th>
+                <th>Cliente</th>
+                <th>Serviço</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>25/08/2025</td>
+                <td>14:00</td>
+                <td>Camila Dias</td>
+                <td>Escova</td>
+              </tr>
+              <tr>
+                <td>25/08/2025</td>
+                <td>15:00</td>
+                <td>Paulo Lima</td>
+                <td>Corte Masculino</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   </div>
