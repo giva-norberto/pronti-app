@@ -22,8 +22,8 @@
       min-height: 100vh;
     }
     .main-relatorios {
-      max-width: 1100px;
-      margin: 28px auto 0 auto;
+      max-width: 1120px;
+      margin: 32px auto 0 auto;
       padding: 0;
       min-height: 90vh;
       background: #fff;
@@ -36,9 +36,10 @@
       justify-content: space-between;
       align-items: center;
       background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
-      padding: 18px 18px 10px 18px;
+      padding: 14px 14px 5px 18px;
       border-radius: 18px 18px 0 0;
       color: #fff;
+      gap: 12px;
     }
     .btn-voltar {
       background: #fff;
@@ -71,11 +72,11 @@
       scrollbar-width: none;
       align-items: flex-end;
       flex: 1;
-      margin-left: 12px;
+      margin-left: 10px;
     }
     .abas-container::-webkit-scrollbar { display: none; }
     .aba {
-      padding: 6px 14px;
+      padding: 4px 12px 4px 12px;
       font-size: 0.97em;
       font-weight: 600;
       border: none;
@@ -85,14 +86,15 @@
       border-radius: 7px 7px 0 0;
       cursor: pointer;
       transition: background 0.15s, color 0.15s;
-      min-width: 60px;
+      min-width: 52px;
       white-space: nowrap;
       flex-shrink: 0;
       opacity: 0.87;
       outline: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      line-height: 1.2;
     }
     .aba:not(.active):hover {
       background: #f1f4fa;
@@ -110,12 +112,12 @@
     /* FILTROS COMPACTOS */
     .filtros-relatorios {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       background: #f7fafd;
-      padding: 8px 14px;
+      padding: 7px 14px;
       border-radius: 0 0 13px 13px;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       flex-wrap: wrap;
       border-bottom: 1.3px solid #e0e7ff;
     }
@@ -123,16 +125,16 @@
       font-weight: 600;
       color: var(--cor-primaria);
       margin-right: 3px;
-      font-size: 0.96em;
+      font-size: 0.95em;
     }
     .filtros-relatorios input, 
     .filtros-relatorios select {
-      padding: 5px 8px;
+      padding: 4px 8px;
       border-radius: 6px;
       border: 1.1px solid #b3bcf7;
       font-size: 0.95em;
       outline: none;
-      min-width: 85px;
+      min-width: 80px;
       background: #fff;
       color: #3730a3;
       font-weight: 500;
@@ -147,7 +149,7 @@
       background: var(--cor-primaria);
       color: #fff;
       border: none;
-      padding: 6px 14px;
+      padding: 6px 12px;
       border-radius: 7px;
       font-weight: bold;
       cursor: pointer;
@@ -157,27 +159,27 @@
       gap: 7px;
       box-shadow: 0 1px 4px #38bdf812;
       transition: background 0.18s;
-      min-height: 30px;
+      min-height: 28px;
     }
     .filtros-relatorios button:hover {
       background: #38bdf8;
     }
     .conteudo-abas {
       margin-top: 0;
-      padding-bottom: 32px;
+      padding-bottom: 20px;
       background: #f7f8fa;
       border-radius: 0 0 18px 18px;
     }
     .aba-conteudo {
       display: none;
-      animation: fadeIn .22s;
+      animation: fadeIn .18s;
       background: #fff;
-      border-radius: 14px;
-      margin: 24px 10px 0 10px;
-      padding: 22px 8px 18px 8px;
-      min-height: 240px;
+      border-radius: 12px;
+      margin: 16px 6px 0 6px;
+      padding: 16px 4px 14px 4px;
+      min-height: 180px;
       box-shadow: 0 2px 10px #4f46e510;
-      border: 1.3px solid #e0e7ff;
+      border: 1.1px solid #e0e7ff;
     }
     .aba-conteudo.active {
       display: block;
@@ -186,14 +188,14 @@
     table {
       width: 100%;
       border-collapse: separate;
-      border-spacing: 0 5px;
+      border-spacing: 0 4px;
       background: transparent;
-      font-size: 0.98em;
+      font-size: 0.96em;
     }
     th, td {
       text-align: left;
-      padding: 7px 6px;
-      font-size: 0.98em;
+      padding: 6px 5px;
+      font-size: 0.97em;
       border: none;
       background: #f3f4fc;
     }
@@ -206,8 +208,8 @@
       border-bottom: 2px solid #c7d2fe;
     }
     tr {
-      border-radius: 5px;
-      box-shadow: 0 1.2px 4px #4f46e508;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px #4f46e508;
     }
     tr:nth-child(even) td {
       background: #f7f8fa;
@@ -226,36 +228,40 @@
         padding: 7px 4px;
       }
       .conteudo-abas {
-        padding-bottom: 14px;
+        padding-bottom: 10px;
       }
       .aba-conteudo {
-        margin: 10px 2px 0 2px;
-        padding: 10px 2px;
-        border-radius: 8px;
+        margin: 7px 2px 0 2px;
+        padding: 7px 2px;
+        border-radius: 7px;
+      }
+      .abas-container {
+        margin-left: 2px;
       }
       .aba {
-        font-size: 0.94em;
-        padding: 4px 6px;
+        font-size: 0.93em;
+        padding: 3px 5px;
         border-radius: 7px 7px 0 0;
-        min-width: 44px;
+        min-width: 36px;
+        gap: 3px;
       }
       .filtros-relatorios {
-        gap: 5px;
-        font-size: 0.93em;
+        gap: 4px;
+        font-size: 0.91em;
       }
       .filtros-relatorios label {
-        font-size: 0.93em;
+        font-size: 0.91em;
       }
       .filtros-relatorios input, 
       .filtros-relatorios select {
-        padding: 3px 4px;
-        min-width: 55px;
-        font-size: 0.92em;
+        padding: 2px 2px;
+        min-width: 36px;
+        font-size: 0.90em;
       }
       .filtros-relatorios button {
-        padding: 4px 9px;
-        font-size: 0.93em;
-        min-height: 24px;
+        padding: 3px 5px;
+        font-size: 0.91em;
+        min-height: 20px;
       }
     }
   </style>
@@ -305,7 +311,6 @@
         window.location.href = "dashboard.html";
       });
     }
-
     // Troca de abas
     document.querySelectorAll('.aba').forEach(btn => {
       btn.addEventListener('click', function() {
