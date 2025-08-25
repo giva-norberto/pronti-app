@@ -27,7 +27,6 @@ export function gerarResumoDiarioInteligente(agendamentos) {
 
     // Calcular faturamento estimado (assumindo preço padrão se não informado)
     const faturamentoEstimado = agendamentos.reduce((total, ag) => {
-        // Tentar extrair preço do serviço ou usar valor padrão
         const preco = ag.servicoPreco || ag.preco || 50; // valor padrão
         return total + Number(preco);
     }, 0);
@@ -53,21 +52,54 @@ export function gerarResumoDiarioInteligente(agendamentos) {
             }
         }
 
-        if (maiorDuracao > 30) { // Só considera intervalos maiores que 30 minutos
+        if (maiorDuracao > 30) {
             maiorIntervalo = intervaloInfo;
         }
     }
 
-    // Geração de mensagem inteligente detalhada para o dashboard
-    let mensagem = `Hoje você tem <b>${agendamentos.length} agendamento${agendamentos.length > 1 ? 's' : ''}</b> `;
-    mensagem += `previsto${agendamentos.length > 1 ? 's' : ''}, começando às <b>${primeiro ? new Date(primeiro.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
-    mensagem += `(${primeiro?.cliente}${primeiro?.servico ? ' - ' + primeiro.servico : ''})`;
-    mensagem += ` e terminando às <b>${ultimo ? new Date(ultimo.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
+    // Encontrar horário de pico (hora com mais atendimentos iniciados)
+    const distribuicaoHoraria = {};
+    agendamentos.forEach(ag => {
+        const hora = new Date(ag.inicio).getHours();
+        distribuicaoHoraria[hora] = (distribuicaoHoraria[hora] || 0) + 1;
+    });
+    const pico = Object.entries(distribuicaoHoraria).sort((a, b) => b[1] - a[1])[0];
+
+    // Ranking de serviços (por valor total, não só quantidade)
+    const servicosRanking = {};
+    agendamentos.forEach(ag => {
+        const preco = ag.servicoPreco || ag.preco || 50;
+        servicosRanking[ag.servico] = (servicosRanking[ag.servico] || 0) + preco;
+    });
+    const servicoTop = Object.entries(servicosRanking).sort((a, b) => b[1] - a[1])[0];
+
+    // Mensagens motivacionais aleatórias
+    const mensagensMotivacionais = [
+        "Dia cheio! Continue com essa energia incrível 💪",
+        "Agenda movimentada, sinal de sucesso 🚀",
+        "Aproveite os intervalos para recarregar as energias ✨",
+        "Mais um dia para brilhar com seus atendimentos ⭐"
+    ];
+    const mensagemExtra = mensagensMotivacionais[Math.floor(Math.random() * mensagensMotivacionais.length)];
+
+    // Mensagem detalhada
+    let mensagem = `Hoje você tem <b>${agendamentos.length} agendamento${agendamentos.length > 1 ? 's' : ''}</b>, `;
+    mensagem += `começando às <b>${primeiro ? new Date(primeiro.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
+    mensagem += `(${primeiro?.cliente}${primeiro?.servico ? ' - ' + primeiro.servico : ''}) `;
+    mensagem += `e terminando às <b>${ultimo ? new Date(ultimo.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
     mensagem += `(${ultimo?.cliente}${ultimo?.servico ? ' - ' + ultimo.servico : ''}).<br>`;
     mensagem += `Faturamento estimado: <b>${faturamentoEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>.`;
+
     if (maiorIntervalo) {
         mensagem += `<br>Maior intervalo livre: <b>${maiorIntervalo.duracaoMinutos} minutos</b> entre ${maiorIntervalo.inicio} e ${maiorIntervalo.fim}.`;
     }
+    if (pico) {
+        mensagem += `<br>Horário de pico: <b>${pico[0]}h</b> (${pico[1]} atendimentos iniciados).`;
+    }
+    if (servicoTop) {
+        mensagem += `<br>Serviço mais lucrativo do dia: <b>${servicoTop[0]}</b> (${servicoTop[1].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}).`;
+    }
+    mensagem += `<br><i>${mensagemExtra}</i>`;
 
     return {
         totalAtendimentos: agendamentos.length,
@@ -83,6 +115,8 @@ export function gerarResumoDiarioInteligente(agendamentos) {
         },
         faturamentoEstimado,
         maiorIntervalo,
+        pico: pico ? { hora: pico[0], atendimentos: pico[1] } : null,
+        servicoTop: servicoTop ? { nome: servicoTop[0], valor: servicoTop[1] } : null,
         mensagem
     };
 }
@@ -118,16 +152,8 @@ export function gerarSugestoesInteligentes(agendamentos, configuracoes = {}) {
     }
 
     // Análise de serviços
-    const servicosContados = agendamentos.reduce((acc, ag) => {
-        acc[ag.servico] = (acc[ag.servico] || 0) + 1;
-        return acc;
-    }, {});
-
-    const servicoMaisPopular = Object.entries(servicosContados)
-        .sort((a, b) => b[1] - a[1])[0];
-
-    if (servicoMaisPopular && servicoMaisPopular[1] > 1) {
-        sugestoes.push(`${servicoMaisPopular[0]} está em alta hoje com ${servicoMaisPopular[1]} agendamentos!`);
+    if (resumo.servicoTop) {
+        sugestoes.push(`${resumo.servicoTop.nome} representa o maior faturamento do dia (${resumo.servicoTop.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}).`);
     }
 
     return sugestoes.length > 0 ? sugestoes : ["Tenha um ótimo dia de trabalho!"];
