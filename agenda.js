@@ -252,7 +252,7 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-            listaAgendamentosDiv.innerHTML = `<p>${mensagemVazio}</p>`;
+            exibirCardsAgendamento([], isHistorico);
             return;
         }
 
@@ -357,6 +357,7 @@ function exibirModalFinalizarDia(docsVencidos, dataReferencia, onFinalizarDia) {
     };
 }
 
+// ----------- CARD PADRÃO MAIS BONITO -----------
 function exibirCardsAgendamento(docs, isHistorico) {
     listaAgendamentosDiv.innerHTML = '';
     docs.forEach(doc => {
@@ -400,8 +401,28 @@ function exibirCardsAgendamento(docs, isHistorico) {
         `;
         listaAgendamentosDiv.appendChild(cardElement);
     });
+
+    // CARD PADRÃO BONITO E COLORIDO
     if (listaAgendamentosDiv.childElementCount === 0) {
-        listaAgendamentosDiv.innerHTML = `<p>Nenhum agendamento encontrado para os critérios selecionados.</p>`;
+        const cardPadrao = document.createElement('div');
+        cardPadrao.className = 'card card--agenda card--padrao-pronti';
+        cardPadrao.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+                <div style="font-size:3em;margin-bottom:8px;color:#38bdf8;"><i class="fa-solid fa-calendar-check"></i></div>
+                <div class="card-title" style="color:#38bdf8;text-align:center;">Nenhum agendamento encontrado</div>
+                <div class="card-info" style="text-align:center;">
+                    <p style="margin:8px 0 0 0;">Sua agenda está livre para o período selecionado.<br>Que tal criar um novo agendamento? 😎</p>
+                </div>
+            </div>
+        `;
+        // CSS extra para destacar o card
+        cardPadrao.style.background = "linear-gradient(135deg, #e0f7fa 60%, #b2ebf2 100%)";
+        cardPadrao.style.borderRadius = "14px";
+        cardPadrao.style.boxShadow = "0 4px 20px #0001";
+        cardPadrao.style.padding = "36px 18px 28px 18px";
+        cardPadrao.style.maxWidth = "330px";
+        cardPadrao.style.margin = "32px auto";
+        listaAgendamentosDiv.appendChild(cardPadrao);
     }
 }
 
