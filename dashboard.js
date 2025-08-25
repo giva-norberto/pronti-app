@@ -1,267 +1,232 @@
-import { db } from "./firebase-config.js";
-import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// ======================================================================
+//                       DASHBOARD.JS (VERSÃO ATUALIZADA)
+//          Resumo do dia sem carregar todos os agendamentos completos
+//          Multi-empresa, cards do dashboard e sugestão IA
+// ======================================================================
 
-// DOM Elements
-const abas = document.querySelectorAll(".aba");
-const conteudosAbas = document.querySelectorAll(".aba-conteudo");
-const filtroInicio = document.getElementById("filtro-data-inicio");
-const filtroFim = document.getElementById("filtro-data-fim");
-const filtroProfissional = document.getElementById("filtro-profissional");
-const btnAplicarFiltro = document.getElementById("btn-aplicar-filtro");
+import { verificarAcesso, checkUserStatus } from "./userService.js";
+import { showCustomAlert } from "./custom-alert.js";
+import { db, auth } from "./firebase-config.js";
+import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-// Empresa ativa
-let empresaId = localStorage.getItem("empresaAtivaId");
-if (!empresaId) {
-    alert("Nenhuma empresa ativa encontrada. Selecione uma empresa.");
-    window.location.href = "selecionar-empresa.html";
+const totalSlots = 20;
+
+// --------------------------------------------------
+// UTILITÁRIOS
+// --------------------------------------------------
+
+function timeStringToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(":").map(Number);
+    return h * 60 + m;
 }
 
-// Utilitário para buscar agendamentos filtrados do Firestore
-async function buscarAgendamentos({inicio, fim, profissionalId}) {
-    let filtros = [
-        where("data", ">=", inicio),
-        where("data", "<=", fim),
-        where("status", "==", "ativo")
-    ];
-    if (profissionalId && profissionalId !== "todos") {
-        filtros.push(where("profissionalId", "==", profissionalId));
+function getEmpresaIdAtiva() {
+    const empresaId = localStorage.getItem("empresaAtivaId");
+    if (!empresaId) {
+        window.location.href = "selecionar-empresa.html";
+        throw new Error("Empresa não selecionada.");
     }
-    const q = query(
-        collection(db, "empresarios", empresaId, "agendamentos"),
-        ...filtros
-    );
+    return empresaId;
+}
+
+function debounce(fn, delay) {
+    let timer = null;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+// --------------------------------------------------
+// FUNÇÕES PRINCIPAIS
+// --------------------------------------------------
+
+async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     try {
-        const snapshot = await getDocs(q);
-        let ags = [];
-        snapshot.forEach(doc => {
-            let ag = doc.data();
-            ag.id = doc.id;
-            ags.push(ag);
-        });
-        return ags;
-    } catch (e) {
-        console.error("Erro ao buscar agendamentos:", e);
-        throw e;
-    }
-}
+        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
+        if (!empresaDoc.exists()) return dataInicial;
+        const donoId = empresaDoc.data().donoId;
+        if (!donoId) return dataInicial;
 
-// Função utilitária para renderizar tabelas
-function renderTabela(container, colunas, linhas) {
-    if (!linhas || !linhas.length) {
-        container.innerHTML = "<p>Nenhum dado encontrado no período.</p>";
-        return;
-    }
-    let ths = colunas.map(c => `<th style="text-align:left;">${c}</th>`).join("");
-    let trs = linhas.map(l => `<tr>${l.map(td => `<td>${td}</td>`).join("")}</tr>`).join("");
-    container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-        <thead><tr>${ths}</tr></thead>
-        <tbody>${trs}</tbody>
-    </table>`;
-}
+        const horariosSnap = await getDoc(doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios"));
+        const horarios = horariosSnap.exists() ? horariosSnap.data() : null;
+        if (!horarios) return dataInicial;
 
-// Troca de abas
-abas.forEach(botao => {
-    botao.addEventListener("click", () => {
-        abas.forEach(b => b.classList.remove("active"));
-        botao.classList.add("active");
-        const abaSelecionada = botao.dataset.aba;
-        conteudosAbas.forEach(c => {
-            c.classList.toggle("active", c.id === abaSelecionada);
-        });
-        carregarAbaDados(abaSelecionada);
-    });
-});
+        const diaDaSemana = ["domingo","segunda","terca","quarta","quinta","sexta","sabado"];
+        let dataAtual = new Date(`${dataInicial}T12:00:00`);
 
-// Aplicar filtro
-btnAplicarFiltro.addEventListener("click", () => {
-    const abaAtivaBtn = document.querySelector(".aba.active");
-    if (!abaAtivaBtn) return;
-    carregarAbaDados(abaAtivaBtn.dataset.aba);
-});
-
-// Datas padrão: mês atual
-function setDatasPadrao() {
-    const hoje = new Date();
-    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const fim = hoje;
-    const pad = n => n.toString().padStart(2, '0');
-    const f = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    filtroInicio.value = f(inicio);
-    filtroFim.value = f(fim);
-}
-
-// Profissionais
-async function popularFiltroProfissionais() {
-    if (!filtroProfissional) return;
-    filtroProfissional.innerHTML = '<option value="todos">Todos</option>';
-    try {
-        const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const option = document.createElement("option");
-            option.value = doc.id;
-            option.textContent = data.nome;
-            filtroProfissional.appendChild(option);
-        });
-    } catch (error) {
-        console.error("Erro ao buscar profissionais:", error);
-    }
-}
-
-// Dados das abas
-function carregarAbaDados(abaId) {
-    switch (abaId) {
-        case "servicos":
-            carregarRelatorioServicos();
-            break;
-        case "profissionais":
-            carregarRelatorioProfissionais();
-            break;
-        case "faturamento":
-            carregarRelatorioFaturamento();
-            break;
-        case "clientes":
-            carregarRelatorioClientes();
-            break;
-        default:
-            carregarAbaPlaceholder(abaId);
-    }
-}
-
-// Relatório Serviços
-async function carregarRelatorioServicos() {
-    const container = document.getElementById("servicos");
-    container.innerHTML = "<p>Carregando...</p>";
-    try {
-        const ags = await buscarAgendamentos({
-            inicio: filtroInicio.value,
-            fim: filtroFim.value,
-            profissionalId: filtroProfissional.value
-        });
-        // Agrupa
-        let servicos = {};
-        ags.forEach(ag => {
-            if (!ag.servicoNome) return;
-            if (!servicos[ag.servicoNome]) servicos[ag.servicoNome] = { qtd: 0, total: 0 };
-            servicos[ag.servicoNome].qtd += 1;
-            servicos[ag.servicoNome].total += parseFloat(ag.servicoPreco) || 0;
-        });
-        let linhas = Object.entries(servicos)
-            .sort((a, b) => b[1].qtd - a[1].qtd)
-            .map(([nome, info]) => [nome, info.qtd, `R$ ${info.total.toFixed(2)}`]);
-        renderTabela(container, ["Serviço", "Qtd", "Faturamento"], linhas);
-    } catch (e) {
-        container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
-    }
-}
-
-// Relatório Profissionais (aplica filtro de profissional se selecionado)
-async function carregarRelatorioProfissionais() {
-    const container = document.getElementById("profissionais");
-    container.innerHTML = "<p>Carregando...</p>";
-    try {
-        const ags = await buscarAgendamentos({
-            inicio: filtroInicio.value,
-            fim: filtroFim.value,
-            profissionalId: filtroProfissional.value // aplica filtro de profissional
-        });
-        let profs = {};
-        ags.forEach(ag => {
-            if (!ag.profissionalNome) return;
-            if (!profs[ag.profissionalNome]) profs[ag.profissionalNome] = { qtd: 0, total: 0 };
-            profs[ag.profissionalNome].qtd += 1;
-            profs[ag.profissionalNome].total += parseFloat(ag.servicoPreco) || 0;
-        });
-        let linhas = Object.entries(profs)
-            .sort((a, b) => b[1].qtd - a[1].qtd)
-            .map(([nome, info]) => [nome, info.qtd, `R$ ${info.total.toFixed(2)}`]);
-        renderTabela(container, ["Profissional", "Qtd Atendimentos", "Faturamento"], linhas);
-    } catch (e) {
-        container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
-    }
-}
-
-// Relatório Faturamento
-async function carregarRelatorioFaturamento() {
-    const container = document.getElementById("faturamento");
-    container.innerHTML = "<p>Carregando...</p>";
-    try {
-        const ags = await buscarAgendamentos({
-            inicio: filtroInicio.value,
-            fim: filtroFim.value,
-            profissionalId: filtroProfissional.value
-        });
-        const totalFaturamento = ags.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
-        let servicos = {};
-        ags.forEach(ag => {
-            if (!ag.servicoNome) return;
-            if (!servicos[ag.servicoNome]) servicos[ag.servicoNome] = 0;
-            servicos[ag.servicoNome] += parseFloat(ag.servicoPreco) || 0;
-        });
-        let linhas = Object.entries(servicos)
-            .sort((a, b) => b[1] - a[1])
-            .map(([nome, total]) => [nome, `R$ ${total.toFixed(2)}`]);
-        container.innerHTML = `<div>
-            <p><b>Faturamento total:</b> R$ ${totalFaturamento.toFixed(2)}</p>
-            <h4 style="margin:18px 0 7px 0;">Por serviço:</h4>
-        </div>`;
-        if (linhas.length) {
-            const tabela = document.createElement("div");
-            renderTabela(tabela, ["Serviço", "Faturamento"], linhas);
-            container.appendChild(tabela);
-        } else {
-            container.innerHTML += "<p>Nenhum faturamento no período.</p>";
+        for (let i = 0; i < 90; i++) {
+            const nomeDia = diaDaSemana[dataAtual.getDay()];
+            const diaConfig = horarios[nomeDia];
+            if (diaConfig && diaConfig.ativo) {
+                if (i === 0) {
+                    const ultimoBloco = diaConfig.blocos[diaConfig.blocos.length - 1];
+                    const fimExpediente = timeStringToMinutes(ultimoBloco.fim);
+                    const agoraMin = new Date().getHours() * 60 + new Date().getMinutes();
+                    if (agoraMin < fimExpediente) return dataAtual.toISOString().split("T")[0];
+                } else {
+                    return dataAtual.toISOString().split("T")[0];
+                }
+            }
+            dataAtual.setDate(dataAtual.getDate() + 1);
         }
+        return dataInicial;
     } catch (e) {
-        container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
+        console.error("Erro ao buscar próxima data disponível:", e);
+        return dataInicial;
     }
 }
 
-// Relatório Clientes (não usa filtro por profissional)
-async function carregarRelatorioClientes() {
-    const container = document.getElementById("clientes");
-    container.innerHTML = "<p>Carregando...</p>";
-    let clientesRef = collection(db, "empresarios", empresaId, "clientes");
-    let agendamentosRef = collection(db, "empresarios", empresaId, "agendamentos");
+// --------------------------------------------------
+// RESUMO DO DIA (SEM CARREGAR TODOS AGENDAMENTOS)
+// --------------------------------------------------
+
+async function obterResumoDoDia(empresaId, dataSelecionada) {
     try {
-        const [snapshotClientes, snapshotAgendamentos] = await Promise.all([
-            getDocs(clientesRef),
-            getDocs(agendamentosRef)
-        ]);
-        // Mapear agendamentos por clienteId e por período
-        let agPorCliente = {};
-        snapshotAgendamentos.forEach(doc => {
-            let ag = doc.data();
-            if (ag.status !== "ativo") return;
-            if (!ag.clienteId) return;
-            // filtro de período
-            if (ag.data < filtroInicio.value || ag.data > filtroFim.value) return;
-            if (!agPorCliente[ag.clienteId]) agPorCliente[ag.clienteId] = [];
-            agPorCliente[ag.clienteId].push(ag);
+        const agRef = collection(db, "empresarios", empresaId, "agendamentos");
+        const q = query(agRef, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
+        const snapshot = await getDocs(q);
+
+        let totalAgendamentos = snapshot.size;
+        let faturamentoPrevisto = 0;
+        let servicosCount = {};
+        let profsCount = [];
+
+        snapshot.forEach(doc => {
+            const ag = doc.data();
+            faturamentoPrevisto += parseFloat(ag.servicoPreco) || 0;
+            if (ag.servicoNome) servicosCount[ag.servicoNome] = (servicosCount[ag.servicoNome] || 0) + 1;
+            if (ag.profissionalNome) profsCount[ag.profissionalNome] = (profsCount[ag.profissionalNome] || 0) + 1;
         });
-        let linhas = [];
-        snapshotClientes.forEach(doc => {
-            let c = doc.data();
-            let ags = agPorCliente[doc.id] || [];
-            let ultimoAt = ags.length ? ags.map(a => a.data).sort().reverse()[0] : "-";
-            linhas.push([c.nome, ags.length, ultimoAt]);
-        });
-        renderTabela(container, ["Cliente", "Total atendimentos", "Último atendimento"], linhas);
+
+        const servicoDestaque = Object.keys(servicosCount).sort((a,b) => servicosCount[b]-servicosCount[a])[0];
+        const profissionalDestaque = Object.keys(profsCount).sort((a,b) => profsCount[b]-profsCount[a])[0];
+
+        return { totalAgendamentos, faturamentoPrevisto, servicoDestaque, profissionalDestaque };
     } catch (e) {
-        container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
+        console.error("Erro ao obter resumo do dia:", e);
+        return { totalAgendamentos: 0, faturamentoPrevisto: 0, servicoDestaque: null, profissionalDestaque: null };
     }
 }
 
-// Placeholder
-function carregarAbaPlaceholder(abaId) {
-    const container = document.getElementById(abaId);
-    if (!container) return;
-    container.innerHTML = `<p>Conteúdo não disponível.</p>`;
+// --------------------------------------------------
+// FUNÇÕES PARA ATUALIZAR CARDS
+// --------------------------------------------------
+
+function preencherCardResumo(resumo) {
+    const totalEl = document.getElementById("total-agendamentos-dia");
+    const fatEl = document.getElementById("faturamento-previsto");
+    const percEl = document.getElementById("percentual-ocupacao");
+    if (!totalEl || !fatEl || !percEl) return;
+    totalEl.textContent = resumo.totalAgendamentos;
+    fatEl.textContent = resumo.faturamentoPrevisto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    percEl.textContent = `${Math.min(100, Math.round((resumo.totalAgendamentos / totalSlots) * 100))}%`;
 }
 
-// Inicialização
-window.addEventListener("DOMContentLoaded", () => {
-    setDatasPadrao();
-    popularFiltroProfissionais();
-    carregarAbaDados("servicos");
+function preencherCardServico(servicoDestaque) {
+    const el = document.getElementById("servico-destaque");
+    if (el) el.textContent = servicoDestaque || "Nenhum";
+}
+
+function preencherCardProfissional(profissionalDestaque) {
+    const nomeEl = document.getElementById("prof-destaque-nome");
+    const qtdEl = document.getElementById("prof-destaque-qtd");
+    if (!nomeEl || !qtdEl) return;
+    if (profissionalDestaque) {
+        nomeEl.textContent = profissionalDestaque;
+        qtdEl.textContent = `Hoje`;
+    } else {
+        nomeEl.textContent = "Nenhum profissional";
+        qtdEl.textContent = "hoje";
+    }
+}
+
+function calcularSugestaoIA(resumo) {
+    const ocupacaoPercent = Math.min(100, Math.round((resumo.totalAgendamentos / totalSlots) * 100));
+    if (resumo.totalAgendamentos === 0) return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
+    else if (ocupacaoPercent < 50) return "Ainda há horários vagos. Considere enviar um lembrete aos clientes.";
+    else return "O dia está movimentado! Prepare-se para um dia produtivo.";
+}
+
+function preencherCardIA(mensagem) {
+    const el = document.getElementById("ia-sugestao");
+    if (el) el.textContent = mensagem;
+}
+
+// --------------------------------------------------
+// FUNÇÃO PRINCIPAL DO DASHBOARD
+// --------------------------------------------------
+
+async function preencherDashboard(user, dataSelecionada, empresaId) {
+    try {
+        const resumoDoDia = await obterResumoDoDia(empresaId, dataSelecionada);
+
+        preencherCardResumo(resumoDoDia);
+        preencherCardServico(resumoDoDia.servicoDestaque);
+        preencherCardProfissional(resumoDoDia.profissionalDestaque);
+        preencherCardIA(calcularSugestaoIA(resumoDoDia));
+
+        // Resumo Inteligente via IA
+        const resumoInteligente = gerarResumoDiarioInteligente([
+            { quantidade: resumoDoDia.totalAgendamentos, faturamento: resumoDoDia.faturamentoPrevisto }
+        ]);
+        const elResumo = document.getElementById("resumo-inteligente");
+        if (elResumo) elResumo.innerHTML = resumoInteligente?.mensagem || "Nenhum dado disponível.";
+
+    } catch (error) {
+        console.error("Erro ao preencher dashboard:", error);
+        alert("Ocorreu um erro ao carregar o dashboard.");
+    }
+}
+
+// --------------------------------------------------
+// INICIALIZAÇÃO
+// --------------------------------------------------
+
+async function iniciarDashboard(user, empresaId) {
+    const filtroData = document.getElementById("filtro-data");
+    const hojeString = new Date().toISOString().split("T")[0];
+    const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
+
+    if (filtroData) {
+        filtroData.value = dataInicial;
+        filtroData.addEventListener("change", debounce(() => {
+            preencherDashboard(user, filtroData.value, empresaId);
+        }, 300));
+    }
+
+    await preencherDashboard(user, dataInicial, empresaId);
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const { user, perfil, isOwner } = await verificarAcesso();
+        const empresaId = getEmpresaIdAtiva();
+        iniciarDashboard(user, empresaId);
+
+        // Notificação trial
+        if (isOwner) {
+            const status = await checkUserStatus();
+            if (status.isTrialActive && status.trialEndDate) {
+                const banner = document.getElementById('trial-notification-banner');
+                if (banner) {
+                    const hoje = new Date();
+                    const trialEnd = new Date(status.trialEndDate);
+                    const diasRestantes = Math.max(0, Math.ceil((trialEnd - hoje) / (1000 * 60 * 60 * 24)));
+                    banner.innerHTML = `🎉 Seu período de teste termina em ${diasRestantes} dia${diasRestantes !== 1 ? 's' : ''}.`;
+                    banner.style.display = 'block';
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error("Erro no porteiro:", error.message);
+        window.location.href = "login.html";
+    }
+
+    const btnVoltar = document.getElementById('btn-voltar');
+    if (btnVoltar) btnVoltar.addEventListener('click', () => window.location.href = "index.html");
 });
