@@ -12,7 +12,7 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, orderBy, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -49,6 +49,8 @@ let modalFinalizarDia = null;
 let perfilUsuario = "dono";
 let meuUid = null;
 let modoAgenda = "dia"; // Padrão: dia
+
+const diasDaSemanaArr = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
 
 // ----------- UTILITÁRIOS -----------
 function mostrarToast(texto, cor = '#38bdf8') {
@@ -216,7 +218,6 @@ async function popularFiltroProfissionais() {
 }
 
 // ----------- CARREGAMENTO DE AGENDAMENTOS -----------
-// NOVA LÓGICA: Pergunta antes de atualizar para "realizado" os agendamentos vencidos do dia anterior ou do dia atual após o último horário
 async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico = false) {
     listaAgendamentosDiv.innerHTML = `<p>Carregando agendamentos...</p>`;
     try {
@@ -265,6 +266,26 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
             return;
         }
 
+        // NOVO: Busque configuração de horários de todos os profissionais envolvidos para o(s) dia(s)
+        // Monta um map: {profissionalId: horariosObj}
+        let profConfigs = {};
+        let profissionaisIds = new Set();
+        snapshot.docs.forEach(docSnap => {
+            const ag = docSnap.data();
+            if (ag.profissionalId) profissionaisIds.add(ag.profissionalId);
+        });
+        // Busca os configs de todos os profissionais (paralelo)
+        const profConfigsArr = await Promise.all(
+            Array.from(profissionaisIds).map(async profId => {
+                const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profId, "configuracoes", "horarios");
+                const horariosSnap = await getDoc(horariosRef);
+                return { profId, horarios: horariosSnap.exists() ? horariosSnap.data() : null };
+            })
+        );
+        profConfigsArr.forEach(({ profId, horarios }) => {
+            profConfigs[profId] = horarios;
+        });
+
         // --- Lógica normal do dia/semana/histórico ---
         // Detecta se há agendamentos vencidos (ativos) para o(s) dia(s) anterior(es) ou turno do dia já acabou
         const docsVencidos = [];
@@ -273,17 +294,34 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
         let horarioFimExpediente = null;
         snapshot.docs.forEach(docSnap => {
             const ag = docSnap.data();
-            if (ag.status === "ativo" && agendamentoJaVenceu(ag.data, ag.horario, horarioFimExpediente)) {
+
+            // Pegue o fim de expediente do profissional para o dia do agendamento
+            let horarioFim = null;
+            if (ag.profissionalId && ag.data) {
+                const dt = new Date(`${ag.data}T00:00:00`);
+                const nomeDia = diasDaSemanaArr[dt.getDay()];
+                const profHorarios = profConfigs[ag.profissionalId];
+                if (profHorarios && profHorarios[nomeDia] && profHorarios[nomeDia].ativo) {
+                    const blocos = profHorarios[nomeDia].blocos || [];
+                    if (blocos.length > 0) {
+                        horarioFim = blocos[blocos.length-1].fim;
+                    }
+                }
+            }
+            ag.horarioFimExpediente = horarioFim;
+
+            // Detecta vencidos
+            if (ag.status === "ativo" && agendamentoJaVenceu(ag.data, ag.horario, ag.horarioFimExpediente)) {
                 docsVencidos.push(docSnap);
             }
-            // Descobre o último horário do dia para a data selecionada
+            // Descobre o último horário do dia para a data selecionada (para exibição)
             if (!isHistorico && ag.data) {
                 if (!dataReferencia) dataReferencia = ag.data;
                 if (ag.data === dataReferencia) {
                     if (!ultimoHorarioDia || ag.horario > ultimoHorarioDia) {
                         ultimoHorarioDia = ag.horario;
                     }
-                    // CORREÇÃO: pega o maior horário de fim de expediente do profissional do dia
+                    // Pega o maior fim de expediente entre os profissionais do dia
                     if (ag.horarioFimExpediente && (!horarioFimExpediente || ag.horarioFimExpediente > horarioFimExpediente)) {
                         horarioFimExpediente = ag.horarioFimExpediente;
                     }
@@ -299,22 +337,18 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
                 || (dataReferencia && dataReferencia < formatarDataISO(new Date()))
             )
         ) {
-            exibirCardsAgendamento(snapshot.docs, isHistorico);
-
-            // Exibe modal/botão de finalizar dia
+            exibirCardsAgendamento(snapshot.docs, isHistorico, horarioFimExpediente);
             exibirModalFinalizarDia(docsVencidos, dataReferencia);
             return;
         }
 
-        // Se não precisa perguntar, exibe os cards normalmente
-        exibirCardsAgendamento(snapshot.docs, isHistorico);
+        exibirCardsAgendamento(snapshot.docs, isHistorico, horarioFimExpediente);
     } catch (error) {
         exibirMensagemDeErro("Ocorreu um erro ao carregar os agendamentos.");
         console.error(error);
     }
 }
 
-// Adapte a função exibirModalFinalizarDia para receber um callback que re-executa a verificação após finalizar um dia retroativo:
 function exibirModalFinalizarDia(docsVencidos, dataReferencia, onFinalizarDia) {
     if (modalFinalizarDia) modalFinalizarDia.remove();
 
@@ -372,7 +406,7 @@ function exibirModalFinalizarDia(docsVencidos, dataReferencia, onFinalizarDia) {
 }
 
 // ----------- CARD PADRÃO MAIS BONITO -----------
-function exibirCardsAgendamento(docs, isHistorico) {
+function exibirCardsAgendamento(docs, isHistorico, horarioFimExpediente) {
     listaAgendamentosDiv.innerHTML = '';
     docs.forEach(doc => {
         const ag = { id: doc.id, ...doc.data() };
@@ -401,6 +435,7 @@ function exibirCardsAgendamento(docs, isHistorico) {
                     <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
                 </p>
                 <p><b>Status:</b> ${statusLabel}</p>
+                ${ag.horarioFimExpediente ? `<p><b>Fim do expediente:</b> ${ag.horarioFimExpediente}</p>` : ''}
             </div>
             ${
                 // Só mostra o botão "Ausência" se for status ativo E não estiver no histórico
