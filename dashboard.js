@@ -113,6 +113,36 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
 }
 
 // --------------------------------------------------
+// NOVA FUNÇÃO: AGENDA DO DIA (LISTA RESUMIDA)
+// --------------------------------------------------
+
+async function preencherCardAgendaDoDia(empresaId, dataSelecionada) {
+    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
+    const q = query(agRef, where("data", "==", dataSelecionada), where("status", "==", "ativo"));
+    const snapshot = await getDocs(q);
+
+    const listaEl = document.getElementById("agenda-dia-lista");
+    if (!listaEl) return;
+
+    if (snapshot.empty) {
+        listaEl.innerHTML = "<div style='color:#888;text-align:center;padding:12px 0;'>Nenhum agendamento para hoje.</div>";
+        return;
+    }
+
+    // Monta lista breve dos horários e clientes
+    let html = "<ul style='list-style:none;padding:0;margin:0;'>";
+    snapshot.forEach(doc => {
+        const ag = doc.data();
+        html += `<li style="padding:3px 0;border-bottom:1px solid #f3f3f3;">
+            <span style="font-weight:500;">${ag.horario || "--:--"}</span>
+            - <span>${ag.clienteNome || "Cliente"}</span>
+        </li>`;
+    });
+    html += "</ul>";
+    listaEl.innerHTML = html;
+}
+
+// --------------------------------------------------
 // FUNÇÕES PARA ATUALIZAR CARDS
 // --------------------------------------------------
 
@@ -168,6 +198,9 @@ async function preencherDashboard(user, dataSelecionada, empresaId) {
         preencherCardServico(resumoDoDia.servicoDestaque);
         preencherCardProfissional(resumoDoDia.profissionalDestaque);
         preencherCardIA(calcularSugestaoIA(resumoDoDia));
+
+        // CARD "AGENDA DO DIA"
+        await preencherCardAgendaDoDia(empresaId, dataSelecionada);
 
         // Resumo Inteligente via IA
         const resumoInteligente = gerarResumoDiarioInteligente([
