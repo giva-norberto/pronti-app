@@ -7,6 +7,13 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --cor-primaria: #4facfe;
+      --cor-sucesso: #34d399;
+      --cor-cinza: #6b7280;
+      --cor-texto-escuro: #22223b;
+      --cor-fundo-app: #f6f7fb;
+    }
     body {
       margin: 0;
       padding: 0;
@@ -16,12 +23,12 @@
     }
     .main-relatorios {
       max-width: 1100px;
-      margin: 48px auto 0 auto;
+      margin: 28px auto 0 auto;
       padding: 0;
       min-height: 90vh;
       background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 4px 32px #4f46e525;
+      border-radius: 18px;
+      box-shadow: 0 4px 28px #4f46e525;
       overflow: hidden;
     }
     .top-actions {
@@ -29,17 +36,17 @@
       justify-content: space-between;
       align-items: center;
       background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
-      padding: 26px 36px 20px 36px;
-      border-radius: 20px 20px 0 0;
+      padding: 18px 18px 10px 18px;
+      border-radius: 18px 18px 0 0;
       color: #fff;
     }
     .btn-voltar {
       background: #fff;
       color: #6366f1;
       border: none;
-      padding: 9px 22px 9px 16px;
+      padding: 6px 16px 6px 10px;
       border-radius: 8px;
-      font-size: 1em;
+      font-size: 0.96em;
       font-weight: 600;
       cursor: pointer;
       box-shadow: 0 2px 8px #4f46e51c;
@@ -47,130 +54,160 @@
       display: flex;
       align-items: center;
       gap: 7px;
+      min-height: 32px;
+      min-width: 64px;
     }
     .btn-voltar:hover {
       background: #38bdf8;
       color: #fff;
     }
-    .abas-relatorios {
+    /* ABAS COMPACTAS */
+    .abas-container {
       display: flex;
-      gap: 10px;
-      align-items: flex-end;
-    }
-    .aba {
+      gap: 0;
+      overflow-x: auto;
+      border-bottom: 1.5px solid #e0e7ff;
       background: transparent;
-      color: #fff;
-      border: none;
-      padding: 12px 25px 9px 25px;
-      border-radius: 12px 12px 0 0;
-      font-size: 1.12em;
+      scrollbar-width: none;
+      align-items: flex-end;
+      flex: 1;
+      margin-left: 12px;
+    }
+    .abas-container::-webkit-scrollbar { display: none; }
+    .aba {
+      padding: 6px 14px;
+      font-size: 0.97em;
       font-weight: 600;
+      border: none;
+      background: none;
+      color: #fff;
+      margin: 0;
+      border-radius: 7px 7px 0 0;
       cursor: pointer;
-      transition: background 0.14s, color 0.18s;
+      transition: background 0.15s, color 0.15s;
+      min-width: 60px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      opacity: 0.87;
+      outline: none;
       display: flex;
       align-items: center;
       gap: 8px;
-      opacity: 0.85;
+    }
+    .aba:not(.active):hover {
+      background: #f1f4fa;
+      color: var(--cor-primaria);
+      opacity: 1;
     }
     .aba.active, .aba:focus {
       background: #fff;
-      color: #4f46e5;
+      color: var(--cor-primaria);
       font-weight: 800;
-      outline: none;
-      box-shadow: 0 -2px 12px #4f46e52a;
+      box-shadow: 0 -1px 9px #4f46e51a;
       opacity: 1;
+      border-bottom: 2.5px solid var(--cor-primaria);
     }
+    /* FILTROS COMPACTOS */
     .filtros-relatorios {
       display: flex;
-      gap: 24px;
+      gap: 12px;
       align-items: center;
-      background: #f3f4fc;
-      padding: 22px 36px 20px 36px;
+      background: #f7fafd;
+      padding: 8px 14px;
       border-radius: 0 0 13px 13px;
-      margin-bottom: 8px;
+      margin-bottom: 5px;
       flex-wrap: wrap;
-      border-bottom: 1.5px solid #e0e7ff;
+      border-bottom: 1.3px solid #e0e7ff;
     }
     .filtros-relatorios label {
       font-weight: 600;
-      color: #4f46e5;
-      margin-right: 7px;
+      color: var(--cor-primaria);
+      margin-right: 3px;
+      font-size: 0.96em;
     }
     .filtros-relatorios input, 
     .filtros-relatorios select {
-      padding: 7px 11px;
-      border-radius: 7px;
-      border: 1.4px solid #b3bcf7;
-      font-size: 1em;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1.1px solid #b3bcf7;
+      font-size: 0.95em;
       outline: none;
-      min-width: 110px;
+      min-width: 85px;
       background: #fff;
       color: #3730a3;
-      box-shadow: 0 1px 4px #4f46e511;
       font-weight: 500;
+      transition: border 0.14s;
+    }
+    .filtros-relatorios input:focus, 
+    .filtros-relatorios select:focus {
+      border: 1.3px solid var(--cor-primaria);
+      outline: none;
     }
     .filtros-relatorios button {
-      background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
+      background: var(--cor-primaria);
       color: #fff;
       border: none;
-      padding: 10px 20px;
-      border-radius: 9px;
+      padding: 6px 14px;
+      border-radius: 7px;
       font-weight: bold;
       cursor: pointer;
-      font-size: 1em;
+      font-size: 0.95em;
       display: flex;
       align-items: center;
       gap: 7px;
-      transition: background 0.2s;
-      box-shadow: 0 2px 8px #38bdf822;
+      box-shadow: 0 1px 4px #38bdf812;
+      transition: background 0.18s;
+      min-height: 30px;
     }
     .filtros-relatorios button:hover {
-      background: #6366f1;
+      background: #38bdf8;
     }
     .conteudo-abas {
       margin-top: 0;
-      padding-bottom: 40px;
+      padding-bottom: 32px;
       background: #f7f8fa;
-      border-radius: 0 0 20px 20px;
+      border-radius: 0 0 18px 18px;
     }
     .aba-conteudo {
       display: none;
-      animation: fadeIn .27s;
+      animation: fadeIn .22s;
       background: #fff;
-      border-radius: 20px;
-      margin: 38px 24px 0 24px;
-      padding: 38px 20px 30px 20px;
-      min-height: 350px;
+      border-radius: 14px;
+      margin: 24px 10px 0 10px;
+      padding: 22px 8px 18px 8px;
+      min-height: 240px;
       box-shadow: 0 2px 10px #4f46e510;
-      border: 1.5px solid #e0e7ff;
+      border: 1.3px solid #e0e7ff;
     }
     .aba-conteudo.active {
       display: block;
     }
+    /* TABELA COMPACTA */
     table {
       width: 100%;
       border-collapse: separate;
-      border-spacing: 0 7px;
+      border-spacing: 0 5px;
       background: transparent;
+      font-size: 0.98em;
     }
     th, td {
       text-align: left;
-      padding: 11px 9px;
-      font-size: 1.05em;
+      padding: 7px 6px;
+      font-size: 0.98em;
       border: none;
       background: #f3f4fc;
     }
     th {
       background: #e0e7ff;
-      color: #4f46e5;
+      color: var(--cor-primaria);
       font-weight: 700;
-      font-size: 1.07em;
-      border-radius: 8px 8px 0 0;
-      border-bottom: 2.5px solid #c7d2fe;
+      font-size: 1em;
+      border-radius: 7px 7px 0 0;
+      border-bottom: 2px solid #c7d2fe;
     }
     tr {
-      border-radius: 7px;
-      box-shadow: 0 2px 8px #4f46e508;
+      border-radius: 5px;
+      box-shadow: 0 1.2px 4px #4f46e508;
     }
     tr:nth-child(even) td {
       background: #f7f8fa;
@@ -186,20 +223,39 @@
         border-radius: 8px;
       }
       .top-actions, .filtros-relatorios {
-        padding: 12px 8px;
+        padding: 7px 4px;
       }
       .conteudo-abas {
-        padding-bottom: 20px;
+        padding-bottom: 14px;
       }
       .aba-conteudo {
-        margin: 14px 4px 0 4px;
-        padding: 18px 2px;
-        border-radius: 10px;
+        margin: 10px 2px 0 2px;
+        padding: 10px 2px;
+        border-radius: 8px;
       }
       .aba {
-        font-size: 0.98em;
-        padding: 7px 8px;
-        border-radius: 8px 8px 0 0;
+        font-size: 0.94em;
+        padding: 4px 6px;
+        border-radius: 7px 7px 0 0;
+        min-width: 44px;
+      }
+      .filtros-relatorios {
+        gap: 5px;
+        font-size: 0.93em;
+      }
+      .filtros-relatorios label {
+        font-size: 0.93em;
+      }
+      .filtros-relatorios input, 
+      .filtros-relatorios select {
+        padding: 3px 4px;
+        min-width: 55px;
+        font-size: 0.92em;
+      }
+      .filtros-relatorios button {
+        padding: 4px 9px;
+        font-size: 0.93em;
+        min-height: 24px;
       }
     }
   </style>
@@ -208,7 +264,7 @@
   <main class="main-relatorios">
     <div class="top-actions">
       <button id="btn-voltar" class="btn-voltar"><i class="fa fa-arrow-left"></i> Voltar</button>
-      <nav class="abas-relatorios">
+      <nav class="abas-container">
         <button class="aba active" data-aba="servicos"><i class="fa-solid fa-gears"></i> Serviços</button>
         <button class="aba" data-aba="profissionais"><i class="fa-solid fa-user-tie"></i> Profissionais</button>
         <button class="aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> Faturamento</button>
