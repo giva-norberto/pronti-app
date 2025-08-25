@@ -23,7 +23,7 @@ const modalMensagem = document.getElementById("modal-mensagem");
 const btnModalConfirmar = document.getElementById("btn-modal-confirmar");
 const btnModalCancelar = document.getElementById("btn-modal-cancelar");
 
-let empresaId = null; // Armazena o ID da empresa do usuário logado
+let empresaId = null; // Armazena o ID da empresa ativa
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
@@ -90,36 +90,17 @@ function mostrarConfirmacao(mensagem) {
  */
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    try {
-      empresaId = await getEmpresaIdDoDono(user.uid);
-      if (empresaId) {
-        inicializarPaginaClientes();
-      } else {
-        exibirMensagemDeErro("Não foi possível encontrar uma empresa associada a este usuário.");
-      }
-    } catch (error) {
-      console.error("Erro ao verificar empresa:", error);
-      exibirMensagemDeErro("Ocorreu um erro ao verificar os dados da sua empresa.");
+    empresaId = localStorage.getItem("empresaAtivaId");
+    if (empresaId) {
+      inicializarPaginaClientes();
+    } else {
+      exibirMensagemDeErro("Selecione uma empresa para visualizar os clientes.");
+      // window.location.href = "selecionar-empresa.html";
     }
   } else {
     window.location.href = "login.html";
   }
 });
-
-/**
- * Busca o ID do documento da empresa com base no UID do dono.
- * @param {string} uid - O ID do usuário (dono).
- * @returns {Promise<string|null>} O ID do documento da empresa ou null.
- */
-async function getEmpresaIdDoDono(uid) {
-  const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    console.warn("Nenhum documento de empresário encontrado para o UID:", uid);
-    return null;
-  }
-  return snapshot.docs[0].id;
-}
 
 /**
  * Configura os listeners de eventos e carrega os dados iniciais.
