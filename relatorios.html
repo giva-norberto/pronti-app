@@ -29,7 +29,6 @@
       min-height: 100vh;
       background: #f7f8fa;
     }
-    /* SIDEBAR LATERAL */
     .sidebar-relatorios {
       width: 180px;
       min-width: 52px;
@@ -112,7 +111,6 @@
     .sidebar-relatorios.collapsed .sidebar-aba span {
       display: none;
     }
-    /* MAIN CONTENT */
     .main-relatorios-content {
       flex: 1;
       padding: 30px 24px;
@@ -124,7 +122,6 @@
       display: flex;
       flex-direction: column;
     }
-    /* FILTROS COMPACTOS */
     .filtros-relatorios {
       display: flex;
       gap: 10px;
@@ -203,7 +200,6 @@
       from { opacity: 0;}
       to { opacity: 1;}
     }
-    /* MOBILE: MENU VIRA HORIZONTAL */
     @media (max-width: 900px) {
       .relatorios-layout {
         flex-direction: column;
@@ -267,7 +263,6 @@
         <label for="filtro-profissional">Profissional:</label>
         <select id="filtro-profissional">
           <option value="todos">Todos</option>
-          <!-- Populado via JS -->
         </select>
 
         <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
@@ -275,19 +270,15 @@
       <!-- Conteúdo das abas -->
       <section class="conteudo-abas">
         <div class="aba-conteudo active" id="servicos">
-          <!-- Conteúdo real carregado via JS/backend -->
+          <!-- Conteúdo real carregado pelo backend/JS -->
         </div>
         <div class="aba-conteudo" id="profissionais">
-          <!-- Conteúdo real carregado via JS/backend -->
         </div>
         <div class="aba-conteudo" id="faturamento">
-          <!-- Conteúdo real carregado via JS/backend -->
         </div>
         <div class="aba-conteudo" id="clientes">
-          <!-- Conteúdo real carregado via JS/backend -->
         </div>
         <div class="aba-conteudo" id="agenda">
-          <!-- Conteúdo real carregado via JS/backend -->
         </div>
       </section>
     </main>
