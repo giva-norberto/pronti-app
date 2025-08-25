@@ -13,9 +13,6 @@
       --cor-cinza: #6b7280;
       --cor-texto-escuro: #22223b;
       --cor-fundo-app: #f6f7fb;
-      --cor-lateral: #f7f8fa;
-      --cor-hover: #e0e7ff;
-      --cor-ativo: #fff;
     }
     body {
       margin: 0;
@@ -24,112 +21,101 @@
       background: linear-gradient(135deg, #f7f8fa 80%, #e0e7ff 100%);
       min-height: 100vh;
     }
-    .relatorios-layout {
+    .main-relatorios {
+      max-width: 1100px;
+      margin: 28px auto 0 auto;
+      padding: 0;
+      min-height: 90vh;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 28px #4f46e525;
+      overflow: hidden;
+    }
+    .top-actions {
       display: flex;
-      min-height: 100vh;
-      background: #f7f8fa;
-    }
-    .sidebar-relatorios {
-      width: 180px;
-      min-width: 52px;
-      background: var(--cor-lateral);
-      border-right: 1.5px solid #e0e7ff;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      padding: 10px 0;
-      transition: width 0.2s;
-      position: relative;
-      z-index: 10;
-    }
-    .sidebar-relatorios.collapsed {
-      width: 54px;
-    }
-    .sidebar-toggle {
-      background: var(--cor-primaria);
-      border: none;
-      position: absolute;
-      top: 12px;
-      right: -15px;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
+      padding: 18px 18px 10px 18px;
+      border-radius: 18px 18px 0 0;
       color: #fff;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px #4facfe34;
-      cursor: pointer;
-      z-index: 11;
-      transition: background 0.18s;
     }
-    .sidebar-toggle:hover {
-      background: #38bdf8;
-    }
-    .sidebar-abas {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      margin-top: 46px;
-    }
-    .sidebar-aba {
-      background: none;
-      color: var(--cor-texto-escuro);
+    .btn-voltar {
+      background: #fff;
+      color: #6366f1;
       border: none;
-      padding: 13px 10px 13px 18px;
-      border-radius: 8px 0 0 8px;
-      font-size: 1.07em;
+      padding: 6px 16px 6px 10px;
+      border-radius: 8px;
+      font-size: 0.96em;
       font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #4f46e51c;
+      transition: background 0.17s, color 0.18s;
       display: flex;
       align-items: center;
-      gap: 11px;
-      transition: background 0.16s, color 0.15s;
-      cursor: pointer;
-      outline: none;
-      min-width: 0;
-      opacity: 0.87;
-      text-align: left;
-      white-space: nowrap;
+      gap: 7px;
+      min-height: 32px;
+      min-width: 64px;
     }
-    .sidebar-aba.active, .sidebar-aba:focus {
-      background: var(--cor-ativo);
+    .btn-voltar:hover {
+      background: #38bdf8;
+      color: #fff;
+    }
+    /* ABAS COMPACTAS */
+    .abas-container {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      border-bottom: 1.5px solid #e0e7ff;
+      background: transparent;
+      scrollbar-width: none;
+      align-items: flex-end;
+      flex: 1;
+      margin-left: 12px;
+    }
+    .abas-container::-webkit-scrollbar { display: none; }
+    .aba {
+      padding: 6px 14px;
+      font-size: 0.97em;
+      font-weight: 600;
+      border: none;
+      background: none;
+      color: #fff;
+      margin: 0;
+      border-radius: 7px 7px 0 0;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      min-width: 60px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      opacity: 0.87;
+      outline: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .aba:not(.active):hover {
+      background: #f1f4fa;
+      color: var(--cor-primaria);
+      opacity: 1;
+    }
+    .aba.active, .aba:focus {
+      background: #fff;
       color: var(--cor-primaria);
       font-weight: 800;
-      box-shadow: 2px 0 8px #4facfe13;
+      box-shadow: 0 -1px 9px #4f46e51a;
       opacity: 1;
+      border-bottom: 2.5px solid var(--cor-primaria);
     }
-    .sidebar-aba:not(.active):hover {
-      background: var(--cor-hover);
-      color: var(--cor-primaria);
-      opacity: 1;
-    }
-    .sidebar-relatorios.collapsed .sidebar-aba {
-      justify-content: center;
-      padding: 14px 0;
-      font-size: 1.15em;
-    }
-    .sidebar-relatorios.collapsed .sidebar-aba span {
-      display: none;
-    }
-    .main-relatorios-content {
-      flex: 1;
-      padding: 30px 24px;
-      min-width: 0;
-      background: #fff;
-      border-radius: 0 16px 16px 0;
-      margin: 24px;
-      box-shadow: 0 4px 24px #4facfe15;
-      display: flex;
-      flex-direction: column;
-    }
+    /* FILTROS COMPACTOS */
     .filtros-relatorios {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
       background: #f7fafd;
-      padding: 7px 14px;
-      border-radius: 7px;
-      margin-bottom: 12px;
+      padding: 8px 14px;
+      border-radius: 0 0 13px 13px;
+      margin-bottom: 5px;
       flex-wrap: wrap;
       border-bottom: 1.3px solid #e0e7ff;
     }
@@ -137,16 +123,16 @@
       font-weight: 600;
       color: var(--cor-primaria);
       margin-right: 3px;
-      font-size: 0.95em;
+      font-size: 0.96em;
     }
     .filtros-relatorios input, 
     .filtros-relatorios select {
-      padding: 4px 8px;
+      padding: 5px 8px;
       border-radius: 6px;
       border: 1.1px solid #b3bcf7;
       font-size: 0.95em;
       outline: none;
-      min-width: 80px;
+      min-width: 85px;
       background: #fff;
       color: #3730a3;
       font-weight: 500;
@@ -161,7 +147,7 @@
       background: var(--cor-primaria);
       color: #fff;
       border: none;
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 7px;
       font-weight: bold;
       cursor: pointer;
@@ -171,134 +157,159 @@
       gap: 7px;
       box-shadow: 0 1px 4px #38bdf812;
       transition: background 0.18s;
-      min-height: 28px;
+      min-height: 30px;
     }
     .filtros-relatorios button:hover {
       background: #38bdf8;
     }
     .conteudo-abas {
       margin-top: 0;
-      padding-bottom: 20px;
+      padding-bottom: 32px;
       background: #f7f8fa;
       border-radius: 0 0 18px 18px;
     }
     .aba-conteudo {
       display: none;
-      animation: fadeIn .18s;
+      animation: fadeIn .22s;
       background: #fff;
-      border-radius: 12px;
-      margin: 16px 6px 0 6px;
-      padding: 16px 4px 14px 4px;
-      min-height: 180px;
+      border-radius: 14px;
+      margin: 24px 10px 0 10px;
+      padding: 22px 8px 18px 8px;
+      min-height: 240px;
       box-shadow: 0 2px 10px #4f46e510;
-      border: 1.1px solid #e0e7ff;
+      border: 1.3px solid #e0e7ff;
     }
     .aba-conteudo.active {
       display: block;
+    }
+    /* TABELA COMPACTA */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 5px;
+      background: transparent;
+      font-size: 0.98em;
+    }
+    th, td {
+      text-align: left;
+      padding: 7px 6px;
+      font-size: 0.98em;
+      border: none;
+      background: #f3f4fc;
+    }
+    th {
+      background: #e0e7ff;
+      color: var(--cor-primaria);
+      font-weight: 700;
+      font-size: 1em;
+      border-radius: 7px 7px 0 0;
+      border-bottom: 2px solid #c7d2fe;
+    }
+    tr {
+      border-radius: 5px;
+      box-shadow: 0 1.2px 4px #4f46e508;
+    }
+    tr:nth-child(even) td {
+      background: #f7f8fa;
     }
     @keyframes fadeIn {
       from { opacity: 0;}
       to { opacity: 1;}
     }
     @media (max-width: 900px) {
-      .relatorios-layout {
-        flex-direction: column;
-      }
-      .sidebar-relatorios,
-      .sidebar-relatorios.collapsed {
-        flex-direction: row;
-        width: 100vw;
-        min-width: 0;
-        border-right: none;
-        border-bottom: 1.5px solid #e0e7ff;
-        height: 56px;
+      .main-relatorios {
+        margin: 10px 0 0 0;
         padding: 0;
-        position: relative;
+        border-radius: 8px;
       }
-      .sidebar-toggle {
-        display: none;
+      .top-actions, .filtros-relatorios {
+        padding: 7px 4px;
       }
-      .sidebar-abas {
-        flex-direction: row;
-        gap: 0;
-        margin-top: 0;
-        width: 100vw;
+      .conteudo-abas {
+        padding-bottom: 14px;
       }
-      .sidebar-aba {
-        border-radius: 0 0 8px 8px;
-        font-size: 1em;
-        padding: 7px 0 7px 0;
-        justify-content: center;
-        flex: 1;
-      }
-      .main-relatorios-content {
-        margin: 8px 2px 0 2px;
-        border-radius: 10px;
+      .aba-conteudo {
+        margin: 10px 2px 0 2px;
         padding: 10px 2px;
+        border-radius: 8px;
+      }
+      .aba {
+        font-size: 0.94em;
+        padding: 4px 6px;
+        border-radius: 7px 7px 0 0;
+        min-width: 44px;
+      }
+      .filtros-relatorios {
+        gap: 5px;
+        font-size: 0.93em;
+      }
+      .filtros-relatorios label {
+        font-size: 0.93em;
+      }
+      .filtros-relatorios input, 
+      .filtros-relatorios select {
+        padding: 3px 4px;
+        min-width: 55px;
+        font-size: 0.92em;
+      }
+      .filtros-relatorios button {
+        padding: 4px 9px;
+        font-size: 0.93em;
+        min-height: 24px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="relatorios-layout">
-    <nav class="sidebar-relatorios" id="sidebar-relatorios">
-      <button class="sidebar-toggle" id="sidebarToggle" title="Recolher/Expandir"><i class="fa fa-angle-left"></i></button>
-      <div class="sidebar-abas">
-        <button class="sidebar-aba active" data-aba="servicos"><i class="fa-solid fa-gears"></i> <span>Serviços</span></button>
-        <button class="sidebar-aba" data-aba="profissionais"><i class="fa-solid fa-user-tie"></i> <span>Profissionais</span></button>
-        <button class="sidebar-aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> <span>Faturamento</span></button>
-        <button class="sidebar-aba" data-aba="clientes"><i class="fa-solid fa-user-group"></i> <span>Clientes</span></button>
-        <button class="sidebar-aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> <span>Agenda</span></button>
-      </div>
-    </nav>
-    <main class="main-relatorios-content">
-      <!-- Filtros -->
-      <header class="filtros-relatorios">
-        <label for="filtro-data-inicio">Data Início:</label>
-        <input type="date" id="filtro-data-inicio">
+  <main class="main-relatorios">
+    <div class="top-actions">
+      <button id="btn-voltar" class="btn-voltar"><i class="fa fa-arrow-left"></i> Voltar</button>
+      <nav class="abas-container">
+        <button class="aba active" data-aba="servicos"><i class="fa-solid fa-gears"></i> Serviços</button>
+        <button class="aba" data-aba="profissionais"><i class="fa-solid fa-user-tie"></i> Profissionais</button>
+        <button class="aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> Faturamento</button>
+        <button class="aba" data-aba="clientes"><i class="fa-solid fa-user-group"></i> Clientes</button>
+        <button class="aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
+      </nav>
+    </div>
+    <!-- Filtros -->
+    <header class="filtros-relatorios">
+      <label for="filtro-data-inicio">Data Início:</label>
+      <input type="date" id="filtro-data-inicio">
 
-        <label for="filtro-data-fim">Data Fim:</label>
-        <input type="date" id="filtro-data-fim">
+      <label for="filtro-data-fim">Data Fim:</label>
+      <input type="date" id="filtro-data-fim">
 
-        <label for="filtro-profissional">Profissional:</label>
-        <select id="filtro-profissional">
-          <option value="todos">Todos</option>
-        </select>
+      <label for="filtro-profissional">Profissional:</label>
+      <select id="filtro-profissional">
+        <option value="todos">Todos</option>
+        <!-- Populado via JS -->
+      </select>
 
-        <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
-      </header>
-      <!-- Conteúdo das abas -->
-      <section class="conteudo-abas">
-        <div class="aba-conteudo active" id="servicos">
-          <!-- Conteúdo real carregado pelo backend/JS -->
-        </div>
-        <div class="aba-conteudo" id="profissionais">
-        </div>
-        <div class="aba-conteudo" id="faturamento">
-        </div>
-        <div class="aba-conteudo" id="clientes">
-        </div>
-        <div class="aba-conteudo" id="agenda">
-        </div>
-      </section>
-    </main>
-  </div>
+      <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
+    </header>
+    <!-- Conteúdo das abas -->
+    <section class="conteudo-abas">
+      <div class="aba-conteudo active" id="servicos"></div>
+      <div class="aba-conteudo" id="profissionais"></div>
+      <div class="aba-conteudo" id="faturamento"></div>
+      <div class="aba-conteudo" id="clientes"></div>
+      <div class="aba-conteudo" id="agenda"></div>
+    </section>
+  </main>
   <script>
-    // Sidebar toggle para recolher/expandir
-    const sidebar = document.getElementById('sidebar-relatorios');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    let collapsed = false;
-    toggleBtn.onclick = function() {
-      collapsed = !collapsed;
-      sidebar.classList.toggle('collapsed', collapsed);
-      toggleBtn.innerHTML = collapsed
-        ? '<i class="fa fa-angle-right"></i>'
-        : '<i class="fa fa-angle-left"></i>';
-    };
+    // Botão voltar seguro
+    const btnVoltar = document.getElementById("btn-voltar");
+    if (btnVoltar) {
+      btnVoltar.addEventListener("click", () => {
+        window.location.href = "dashboard.html";
+      });
+    }
+
     // Troca de abas
-    document.querySelectorAll('.sidebar-aba').forEach(btn => {
+    document.querySelectorAll('.aba').forEach(btn => {
       btn.addEventListener('click', function() {
-        document.querySelectorAll('.sidebar-aba').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.aba').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         document.querySelectorAll('.aba-conteudo').forEach(div=>div.classList.remove('active'));
         document.getElementById(btn.dataset.aba).classList.add('active');
