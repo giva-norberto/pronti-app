@@ -1,43 +1,62 @@
+/* ================================================================
+   RELATÓRIOS - CSS COMPACTO, RESPONSIVO E PROFISSIONAL
+   (Aproveita e harmoniza com variáveis e padrões globais)
+   ================================================================ */
+
 /* Tabela compacta e responsiva */
 .aba-conteudo table {
     width: 100%;
     font-size: 1.07em;
     border-radius: 8px;
     box-shadow: 0 2px 8px #0001;
+    background: #fff;
     overflow: hidden;
+    border-spacing: 0;
+    margin-bottom: 16px;
 }
 .aba-conteudo th, .aba-conteudo td {
     padding: 10px 14px;
     border-bottom: 1px solid #f0f0f0;
     text-align: left;
+    font-weight: 400;
+    color: var(--cor-texto-escuro, #22223b);
 }
 .aba-conteudo th {
     background: #f9f9f9;
     font-weight: 600;
+    color: var(--cor-primaria, #0071e3);
+    letter-spacing: -0.5px;
 }
-.aba-conteudo tr:last-child td { border-bottom: none; }
+.aba-conteudo tr:last-child td {
+    border-bottom: none;
+}
+.aba-conteudo tr:hover td {
+    background: #f5fbff;
+    transition: background 0.15s;
+}
 
 /* Compactação mobile */
 @media (max-width: 600px) {
     .aba-conteudo table {
-        font-size: 0.96em;
+        font-size: 0.95em;
+        box-shadow: 0 1px 3px #0001;
     }
     .aba-conteudo th, .aba-conteudo td {
         padding: 6px 7px;
     }
     .filtros-relatorio, .filtros-relatorio * {
-        font-size: 0.98em !important;
+        font-size: 0.97em !important;
     }
     .aba {
         padding: 6px 8px;
         min-width: 80px;
-        font-size: 0.97em;
+        font-size: 0.95em;
     }
     .aba-conteudo {
-        padding: 10px 4px;
+        padding: 8px 2px;
     }
     .btn-exportar-csv {
-        font-size: 0.97em;
+        font-size: 0.95em;
         padding: 6px 10px;
         min-width: 90px;
     }
@@ -46,6 +65,7 @@
         overflow-x: auto;
         white-space: nowrap;
         width: 100vw;
+        margin-bottom: 6px;
     }
     .aba {
         display: inline-block;
@@ -53,7 +73,7 @@
     }
 }
 
-/* Abas e filtros */
+/* Abas (tabs) e filtros */
 .abas-container {
     display: flex;
     gap: 2px;
@@ -65,13 +85,15 @@
     background: #f3f3f6;
     margin-right: 4px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
     font-weight: 600;
+    color: var(--cor-texto-escuro, #22223b);
+    border: none;
 }
 .aba.active {
     background: #fff;
-    border-bottom: 2px solid #0071e3;
-    color: #0071e3;
+    border-bottom: 2px solid var(--cor-primaria, #0071e3);
+    color: var(--cor-primaria, #0071e3);
 }
 .filtros-relatorio {
     display: flex;
@@ -79,14 +101,33 @@
     flex-wrap: wrap;
     margin-bottom: 10px;
     align-items: center;
+    background: none;
+    padding: 0;
 }
 .filtros-relatorio label {
     font-weight: 500;
     margin-right: 2px;
+    color: var(--cor-texto-claro, #44446a);
+}
+.filtros-relatorio input,
+.filtros-relatorio select {
+    font-size: 1em;
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: var(--cor-texto-escuro, #22223b);
+    transition: border 0.18s;
+}
+.filtros-relatorio input:focus,
+.filtros-relatorio select:focus {
+    border: 1.5px solid var(--cor-primaria, #0071e3);
+    outline: none;
 }
 
+/* Botão de exportação CSV */
 .btn-exportar-csv {
-    background: #008e5b;
+    background: var(--cor-sucesso, #008e5b);
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -95,8 +136,35 @@
     padding: 8px 16px;
     cursor: pointer;
     font-weight: 600;
-    transition: background 0.2s;
+    transition: background 0.2s, box-shadow 0.18s;
+    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1em;
 }
-.btn-exportar-csv:hover {
+.btn-exportar-csv:hover, .btn-exportar-csv:focus {
     background: #005c3c;
+    outline: none;
+    box-shadow: 0 2px 8px 0 #008e5b22;
+}
+
+/* Mensagens, vazio, carregando, erro */
+.aba-conteudo p {
+    margin: 18px 0 18px 0;
+    color: var(--cor-cinza, #6b7280);
+    font-size: 1.02em;
+    text-align: center;
+}
+
+@media (max-width: 400px) {
+    .btn-exportar-csv {
+        font-size: 0.94em;
+        padding: 6px 6px;
+        min-width: 70px;
+    }
+    .aba {
+        padding: 5px 6px;
+        min-width: 60px;
+    }
 }
