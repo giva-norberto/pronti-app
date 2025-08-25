@@ -191,10 +191,13 @@
     </section>
   </main>
   <script>
-    document.getElementById("btn-voltar").addEventListener("click", () => {
-      // Altere o caminho abaixo para o menu desejado!
-      window.location.href = "menu-principal.html";
-    });
+    // Botão voltar seguro
+    const btnVoltar = document.getElementById("btn-voltar");
+    if (btnVoltar) {
+      btnVoltar.addEventListener("click", () => {
+        window.location.href = "menu-principal.html"; // ajuste para seu menu real
+      });
+    }
   </script>
   <script src="relatorios.js" type="module"></script>
 </body>
