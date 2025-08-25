@@ -1,0 +1,102 @@
+/* Tabela compacta e responsiva */
+.aba-conteudo table {
+    width: 100%;
+    font-size: 1.07em;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px #0001;
+    overflow: hidden;
+}
+.aba-conteudo th, .aba-conteudo td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+}
+.aba-conteudo th {
+    background: #f9f9f9;
+    font-weight: 600;
+}
+.aba-conteudo tr:last-child td { border-bottom: none; }
+
+/* Compactação mobile */
+@media (max-width: 600px) {
+    .aba-conteudo table {
+        font-size: 0.96em;
+    }
+    .aba-conteudo th, .aba-conteudo td {
+        padding: 6px 7px;
+    }
+    .filtros-relatorio, .filtros-relatorio * {
+        font-size: 0.98em !important;
+    }
+    .aba {
+        padding: 6px 8px;
+        min-width: 80px;
+        font-size: 0.97em;
+    }
+    .aba-conteudo {
+        padding: 10px 4px;
+    }
+    .btn-exportar-csv {
+        font-size: 0.97em;
+        padding: 6px 10px;
+        min-width: 90px;
+    }
+    /* Abas horizontais roláveis */
+    .abas-container {
+        overflow-x: auto;
+        white-space: nowrap;
+        width: 100vw;
+    }
+    .aba {
+        display: inline-block;
+        margin: 0 2px;
+    }
+}
+
+/* Abas e filtros */
+.abas-container {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+.aba {
+    padding: 10px 18px;
+    border-radius: 8px 8px 0 0;
+    background: #f3f3f6;
+    margin-right: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 600;
+}
+.aba.active {
+    background: #fff;
+    border-bottom: 2px solid #0071e3;
+    color: #0071e3;
+}
+.filtros-relatorio {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    align-items: center;
+}
+.filtros-relatorio label {
+    font-weight: 500;
+    margin-right: 2px;
+}
+
+.btn-exportar-csv {
+    background: #008e5b;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    margin-top: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+.btn-exportar-csv:hover {
+    background: #005c3c;
+}
