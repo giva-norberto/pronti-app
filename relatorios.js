@@ -16,9 +16,10 @@ function exportarTabelaCSV(abaId) {
     let csv = [];
     for (let row of table.rows) {
         let cols = Array.from(row.cells).map(td => `"${td.innerText.replace(/"/g, '""')}"`);
-        csv.push(cols.join(","));
+        csv.push(cols.join(";")); // Usar ponto e vírgula para compatibilidade com Excel PT-BR
     }
-    const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+    // Adiciona BOM UTF-8 para acentos no Excel
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csv.join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
     link.setAttribute("download", `relatorio-${abaId}.csv`);
