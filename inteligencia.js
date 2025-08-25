@@ -58,6 +58,17 @@ export function gerarResumoDiarioInteligente(agendamentos) {
         }
     }
 
+    // Geração de mensagem inteligente detalhada para o dashboard
+    let mensagem = `Hoje você tem <b>${agendamentos.length} agendamento${agendamentos.length > 1 ? 's' : ''}</b> `;
+    mensagem += `previsto${agendamentos.length > 1 ? 's' : ''}, começando às <b>${primeiro ? new Date(primeiro.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
+    mensagem += `(${primeiro?.cliente}${primeiro?.servico ? ' - ' + primeiro.servico : ''})`;
+    mensagem += ` e terminando às <b>${ultimo ? new Date(ultimo.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</b> `;
+    mensagem += `(${ultimo?.cliente}${ultimo?.servico ? ' - ' + ultimo.servico : ''}).<br>`;
+    mensagem += `Faturamento estimado: <b>${faturamentoEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>.`;
+    if (maiorIntervalo) {
+        mensagem += `<br>Maior intervalo livre: <b>${maiorIntervalo.duracaoMinutos} minutos</b> entre ${maiorIntervalo.inicio} e ${maiorIntervalo.fim}.`;
+    }
+
     return {
         totalAtendimentos: agendamentos.length,
         primeiro: {
@@ -71,7 +82,8 @@ export function gerarResumoDiarioInteligente(agendamentos) {
             servico: ultimo.servico
         },
         faturamentoEstimado,
-        maiorIntervalo
+        maiorIntervalo,
+        mensagem
     };
 }
 
