@@ -7,7 +7,7 @@
  * - Toda manipulação de data é local.
  * - [ATUALIZAÇÃO] Cards agora trazem botão "Ausência" (Não Compareceu) para agendamentos com status 'ativo'.
  * - [ATUALIZAÇÃO MULTI-EMPRESA] Sempre lê empresaAtivaId do localStorage, redireciona para seleção se não houver.
- * - [AUTOMATIZAÇÃO] Agendamentos vencidos (status 'ativo' e data+horário no passado) são automaticamente marcados como 'realizado' ao carregar a agenda/histórico.
+ * - [NOVA LÓGICA] Ao vencer o turno do último agendamento do dia (ou em acesso posterior), o sistema pergunta ao usuário se deseja marcar ausências antes de finalizar o dia. Só após confirmação, os agendamentos vencidos são atualizados para "realizado" (exceto os marcados manualmente como ausência).
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -16,7 +16,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { firebaseConfig } from "./firebase-config.js";
 
 // Firebase
-const app = initializeApp(firebaseConfig );
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -42,6 +42,9 @@ const dataFinalEl = document.getElementById("data-final");
 const btnAplicarHistorico = document.getElementById("btn-aplicar-historico");
 const btnMesAtual = document.getElementById("btn-mes-atual");
 
+// Nova lógica: modal de confirmação
+let modalFinalizarDia = null;
+
 let perfilUsuario = "dono";
 let meuUid = null;
 let modoAgenda = "dia"; // Padrão: dia
@@ -54,9 +57,9 @@ function mostrarToast(texto, cor = '#38bdf8') {
         alert(texto);
     }
 }
-function formatarDataISO(data) { 
+function formatarDataISO(data) {
     const off = data.getTimezoneOffset();
-    const dataLocal = new Date(data.getTime() - (off*60*1000));
+    const dataLocal = new Date(data.getTime() - (off * 60 * 1000));
     return dataLocal.toISOString().split('T')[0];
 }
 function formatarDataBrasileira(dataISO) {
@@ -88,6 +91,10 @@ function agendamentoJaVenceu(dataISO, horarioStr) {
     const [hora, min] = horarioStr.split(":").map(Number);
     const dataAg = new Date(ano, mes - 1, dia, hora, min, 0, 0);
     return dataAg.getTime() < Date.now();
+}
+function isDataAnteriorOuHoje(dataISO) {
+    const hojeISO = formatarDataISO(new Date());
+    return dataISO <= hojeISO;
 }
 
 // ----------- AUTENTICAÇÃO E PERFIL -----------
@@ -199,7 +206,7 @@ async function popularFiltroProfissionais() {
 }
 
 // ----------- CARREGAMENTO DE AGENDAMENTOS -----------
-// AUTOMATIZAÇÃO: Atualiza agendamentos vencidos de status 'ativo' para 'realizado'
+// NOVA LÓGICA: Pergunta antes de atualizar para "realizado" os agendamentos vencidos do dia anterior ou do dia atual após o último horário
 async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico = false) {
     listaAgendamentosDiv.innerHTML = `<p>Carregando agendamentos...</p>`;
     try {
@@ -207,11 +214,92 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
         const q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
         const snapshot = await getDocs(q);
 
-        // --- INÍCIO DA AUTOMATIZAÇÃO ---
-        const updates = [];
-        for (const docSnap of snapshot.docs) {
+        if (snapshot.empty) {
+            listaAgendamentosDiv.innerHTML = `<p>${mensagemVazio}</p>`;
+            return;
+        }
+
+        // --- NOVA LÓGICA DE FINALIZAÇÃO DO DIA ---
+        // Detecta se há agendamentos vencidos (ativos) para o(s) dia(s) anterior(es) ou turno do dia já acabou
+        const docsVencidos = [];
+        let ultimoHorarioDia = null;
+        let dataReferencia = null;
+        snapshot.docs.forEach(docSnap => {
             const ag = docSnap.data();
-            // Só automatiza se status 'ativo', já passou da data/hora e não é 'nao_compareceu' ou 'cancelado'
+            if (ag.status === "ativo" && agendamentoJaVenceu(ag.data, ag.horario)) {
+                docsVencidos.push(docSnap);
+            }
+            // Descobre o último horário do dia para a data selecionada
+            if (!isHistorico && ag.data) {
+                if (!dataReferencia) dataReferencia = ag.data;
+                if (ag.data === dataReferencia) {
+                    if (!ultimoHorarioDia || ag.horario > ultimoHorarioDia) {
+                        ultimoHorarioDia = ag.horario;
+                    }
+                }
+            }
+        });
+
+        // Se há agendamentos vencidos e (é dia anterior ou já passou do último horário do dia)
+        if (
+            docsVencidos.length > 0 &&
+            (
+                (dataReferencia && isDataAnteriorOuHoje(dataReferencia) && agendamentoJaVenceu(dataReferencia, ultimoHorarioDia))
+                || (dataReferencia && dataReferencia < formatarDataISO(new Date()))
+            )
+        ) {
+            exibirCardsAgendamento(snapshot.docs, isHistorico);
+
+            // Exibe modal/botão de finalizar dia
+            exibirModalFinalizarDia(docsVencidos, dataReferencia);
+            return;
+        }
+
+        // Se não precisa perguntar, exibe os cards normalmente
+        exibirCardsAgendamento(snapshot.docs, isHistorico);
+    } catch (error) {
+        exibirMensagemDeErro("Ocorreu um erro ao carregar os agendamentos.");
+        console.error(error);
+    }
+}
+
+function exibirModalFinalizarDia(docsVencidos, dataReferencia) {
+    // Remove modal antigo se existir
+    if (modalFinalizarDia) modalFinalizarDia.remove();
+
+    modalFinalizarDia = document.createElement('div');
+    modalFinalizarDia.className = 'modal-finalizar-dia';
+    modalFinalizarDia.innerHTML = `
+        <div class="modal-finalizar-dia__content">
+            <h3>Finalizar dia ${formatarDataBrasileira(dataReferencia)}</h3>
+            <p>Você deseja marcar alguma ausência para os agendamentos deste dia antes de finalizar? Todos os agendamentos ainda "ativos" serão marcados como "realizado" após a finalização.</p>
+            <button id="btn-finalizar-dia">Finalizar dia</button>
+            <button id="btn-fechar-modal">Fechar</button>
+        </div>
+        <style>
+        .modal-finalizar-dia {
+            position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center;
+        }
+        .modal-finalizar-dia__content {
+            background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 8px 32px #0003; max-width: 370px;
+            text-align: center;
+        }
+        .modal-finalizar-dia__content button {
+            margin: 10px 8px 0 8px; padding: 8px 20px; font-size: 1rem; border-radius: 6px; border: none;
+            background: #38bdf8; color: #fff; cursor: pointer;
+        }
+        #btn-fechar-modal { background: #aaa; }
+        </style>
+    `;
+    document.body.appendChild(modalFinalizarDia);
+
+    document.getElementById("btn-finalizar-dia").onclick = async () => {
+        // Atualiza todos os docs vencidos para realizado
+        const updates = [];
+        for (const docSnap of docsVencidos) {
+            // Não atualiza se já foi marcado como ausência/cancelado
+            const ag = docSnap.data();
             if (
                 ag.status === "ativo" &&
                 agendamentoJaVenceu(ag.data, ag.horario) &&
@@ -219,22 +307,17 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
                 ag.status !== "cancelado" &&
                 ag.status !== "cancelado_pelo_gestor"
             ) {
-                // Atualiza status para "realizado"
                 updates.push(updateDoc(doc(db, "empresarios", empresaId, "agendamentos", docSnap.id), { status: "realizado" }));
             }
         }
         if (updates.length > 0) await Promise.all(updates);
-        // --- FIM DA AUTOMATIZAÇÃO ---
-
-        if (snapshot.empty) {
-            listaAgendamentosDiv.innerHTML = `<p>${mensagemVazio}</p>`;
-            return;
-        }
-        exibirCardsAgendamento(snapshot.docs, isHistorico);
-    } catch (error) {
-        exibirMensagemDeErro("Ocorreu um erro ao carregar os agendamentos.");
-        console.error(error);
-    }
+        mostrarToast("Agendamentos finalizados como 'realizado'.");
+        modalFinalizarDia.remove();
+        carregarAgendamentosConformeModo();
+    };
+    document.getElementById("btn-fechar-modal").onclick = () => {
+        modalFinalizarDia.remove();
+    };
 }
 
 function exibirCardsAgendamento(docs, isHistorico) {
@@ -251,7 +334,7 @@ function exibirCardsAgendamento(docs, isHistorico) {
         if (ag.status === "cancelado_pelo_gestor" || ag.status === "cancelado") statusLabel = "<span class='status-label status-cancelado'>Cancelado</span>";
         else if (ag.status === "nao_compareceu") statusLabel = "<span class='status-label status-falta'>Falta</span>";
         else if (ag.status === "realizado") statusLabel = "<span class='status-label status-realizado'>Realizado</span>";
-        
+
         const cardElement = document.createElement('div');
         cardElement.className = 'card card--agenda';
         cardElement.innerHTML = `
@@ -335,8 +418,8 @@ function preencherCamposMesAtual() {
     const hoje = new Date();
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-    if(dataInicialEl) dataInicialEl.value = formatarDataISO(primeiroDia);
-    if(dataFinalEl) dataFinalEl.value = formatarDataISO(ultimoDia);
+    if (dataInicialEl) dataInicialEl.value = formatarDataISO(primeiroDia);
+    if (dataFinalEl) dataFinalEl.value = formatarDataISO(ultimoDia);
 }
 
 function exibirMensagemDeErro(mensagem) {
