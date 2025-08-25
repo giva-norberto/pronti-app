@@ -16,12 +16,12 @@ if (!empresaId) {
     window.location.href = "selecionar-empresa.html";
 }
 
-// Busca agendamentos filtrados do Firestore (com where para profissional)
-async function buscarAgendamentos({inicio, fim, profissionalId}) {
+// Busca agendamentos filtrados do Firestore, considerando o status conforme o tipo de relatório
+async function buscarAgendamentos({inicio, fim, profissionalId, statusFiltro}) {
     let filtros = [
         where("data", ">=", inicio),
         where("data", "<=", fim),
-        where("status", "==", "ativo")
+        where("status", "in", statusFiltro)
     ];
     if (profissionalId && profissionalId !== "todos") {
         filtros.push(where("profissionalId", "==", profissionalId));
@@ -123,12 +123,15 @@ function carregarAbaDados(abaId) {
         case "clientes":
             carregarRelatorioClientes();
             break;
+        case "agenda":
+            carregarRelatorioAgenda();
+            break;
         default:
             carregarAbaPlaceholder(abaId);
     }
 }
 
-// Relatório Serviços (filtro profissional aplicado corretamente)
+// Relatório Serviços - considera somente concluídos (realizado)
 async function carregarRelatorioServicos() {
     const container = document.getElementById("servicos");
     container.innerHTML = "<p>Carregando...</p>";
@@ -136,7 +139,8 @@ async function carregarRelatorioServicos() {
         const ags = await buscarAgendamentos({
             inicio: filtroInicio.value,
             fim: filtroFim.value,
-            profissionalId: filtroProfissional.value
+            profissionalId: filtroProfissional.value,
+            statusFiltro: ["realizado"]
         });
         // Agrupa
         let servicos = {};
@@ -155,7 +159,7 @@ async function carregarRelatorioServicos() {
     }
 }
 
-// Relatório Profissionais (filtro profissional aplicado corretamente)
+// Relatório Profissionais - considera somente concluídos (realizado)
 async function carregarRelatorioProfissionais() {
     const container = document.getElementById("profissionais");
     container.innerHTML = "<p>Carregando...</p>";
@@ -163,7 +167,8 @@ async function carregarRelatorioProfissionais() {
         const ags = await buscarAgendamentos({
             inicio: filtroInicio.value,
             fim: filtroFim.value,
-            profissionalId: filtroProfissional.value
+            profissionalId: filtroProfissional.value,
+            statusFiltro: ["realizado"]
         });
         let profs = {};
         ags.forEach(ag => {
@@ -181,7 +186,7 @@ async function carregarRelatorioProfissionais() {
     }
 }
 
-// Relatório Faturamento (filtro profissional aplicado corretamente)
+// Relatório Faturamento - considera somente concluídos (realizado)
 async function carregarRelatorioFaturamento() {
     const container = document.getElementById("faturamento");
     container.innerHTML = "<p>Carregando...</p>";
@@ -189,7 +194,8 @@ async function carregarRelatorioFaturamento() {
         const ags = await buscarAgendamentos({
             inicio: filtroInicio.value,
             fim: filtroFim.value,
-            profissionalId: filtroProfissional.value
+            profissionalId: filtroProfissional.value,
+            statusFiltro: ["realizado"]
         });
         const totalFaturamento = ags.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
         let servicos = {};
@@ -217,7 +223,7 @@ async function carregarRelatorioFaturamento() {
     }
 }
 
-// Relatório Clientes (não usa filtro por profissional)
+// Relatório Clientes - considera somente concluídos (realizado), não usa filtro por profissional
 async function carregarRelatorioClientes() {
     const container = document.getElementById("clientes");
     container.innerHTML = "<p>Carregando...</p>";
@@ -232,7 +238,8 @@ async function carregarRelatorioClientes() {
         let agPorCliente = {};
         snapshotAgendamentos.forEach(doc => {
             let ag = doc.data();
-            if (ag.status !== "ativo") return;
+            // Só conta atendimentos realizados
+            if (ag.status !== "realizado") return;
             if (!ag.clienteId) return;
             // filtro de período
             if (ag.data < filtroInicio.value || ag.data > filtroFim.value) return;
@@ -247,6 +254,43 @@ async function carregarRelatorioClientes() {
             linhas.push([c.nome, ags.length, ultimoAt]);
         });
         renderTabela(container, ["Cliente", "Total atendimentos", "Último atendimento"], linhas);
+    } catch (e) {
+        container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
+    }
+}
+
+// Nova aba: Relatório Agenda (análise por status)
+async function carregarRelatorioAgenda() {
+    const container = document.getElementById("agenda");
+    container.innerHTML = "<p>Carregando...</p>";
+    try {
+        // Busca todos os agendamentos do período para o profissional (todos status relevantes)
+        const statusFiltro = ["ativo", "realizado", "cancelado", "cancelado_pelo_gestor", "nao_compareceu"];
+        const ags = await buscarAgendamentos({
+            inicio: filtroInicio.value,
+            fim: filtroFim.value,
+            profissionalId: filtroProfissional.value,
+            statusFiltro
+        });
+        // Conta por status
+        let contagem = {
+            "ativo": 0,
+            "realizado": 0,
+            "nao_compareceu": 0,
+            "cancelado": 0,
+            "cancelado_pelo_gestor": 0
+        };
+        ags.forEach(ag => {
+            if (contagem.hasOwnProperty(ag.status)) contagem[ag.status]++;
+        });
+        let linhas = [
+            ["Agendados (ativos)", contagem.ativo],
+            ["Concluídos (realizado)", contagem.realizado],
+            ["Faltas (não compareceu)", contagem.nao_compareceu],
+            ["Cancelados pelo cliente", contagem.cancelado],
+            ["Cancelados pelo gestor", contagem.cancelado_pelo_gestor]
+        ];
+        renderTabela(container, ["Status", "Quantidade"], linhas);
     } catch (e) {
         container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
     }
