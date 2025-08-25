@@ -1,15 +1,15 @@
-// relatorios.js
 import { db } from "./firebase-config.js"; // Seu Firebase já inicializado
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // DOM Elements
-const abasMenu = document.querySelectorAll(".aba-menu");
+const abas = document.querySelectorAll(".aba");
 const conteudosAbas = document.querySelectorAll(".aba-conteudo");
 const filtroInicio = document.getElementById("filtro-data-inicio");
 const filtroFim = document.getElementById("filtro-data-fim");
 const filtroProfissional = document.getElementById("filtro-profissional");
 const btnAplicarFiltro = document.getElementById("btn-aplicar-filtro");
 
+// Pega empresa ativa do localStorage
 let empresaId = localStorage.getItem("empresaAtivaId");
 if (!empresaId) {
     alert("Nenhuma empresa ativa encontrada. Selecione uma empresa.");
@@ -17,16 +17,20 @@ if (!empresaId) {
 }
 
 // Troca de abas
-abasMenu.forEach(botao => {
+abas.forEach(botao => {
     botao.addEventListener("click", () => {
         // Remove active de todos
-        abasMenu.forEach(b => b.classList.remove("active"));
+        abas.forEach(b => b.classList.remove("active"));
         botao.classList.add("active");
 
         // Mostra apenas a aba correspondente
         const abaSelecionada = botao.dataset.aba;
         conteudosAbas.forEach(c => {
-            c.style.display = c.id === abaSelecionada ? "block" : "none";
+            if (c.id === abaSelecionada) {
+                c.classList.add("active");
+            } else {
+                c.classList.remove("active");
+            }
         });
 
         // Atualiza conteúdo da aba (placeholder por enquanto)
@@ -78,9 +82,23 @@ async function popularFiltroProfissionais() {
     }
 }
 
+// Setar filtro de datas para mês atual
+function setDatasPadrao() {
+    const hoje = new Date();
+    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const fim = hoje;
+    const pad = n => n.toString().padStart(2, '0');
+    const f = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    filtroInicio.value = f(inicio);
+    filtroFim.value = f(fim);
+}
+
 // Listener do botão aplicar filtro
 btnAplicarFiltro.addEventListener("click", () => {
-    const abaAtiva = document.querySelector(".aba-menu.active").dataset.aba;
+    const abaAtivaBtn = document.querySelector(".aba.active");
+    if (!abaAtivaBtn) return;
+    const abaAtiva = abaAtivaBtn.dataset.aba;
+
     // Aqui vamos chamar a função que irá buscar dados filtrados
     console.log("Filtro aplicado:", {
         aba: abaAtiva,
@@ -95,6 +113,7 @@ btnAplicarFiltro.addEventListener("click", () => {
 
 // Inicializações
 window.addEventListener("DOMContentLoaded", () => {
+    setDatasPadrao();
     popularFiltroProfissionais();
     // Carrega aba inicial (Resumo Diário)
     carregarAbaPlaceholder("resumo");
