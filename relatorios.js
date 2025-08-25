@@ -9,6 +9,38 @@ const filtroFim = document.getElementById("filtro-data-fim");
 const filtroProfissional = document.getElementById("filtro-profissional");
 const btnAplicarFiltro = document.getElementById("btn-aplicar-filtro");
 
+// ---- EXPORTAÇÃO CSV ----
+function exportarTabelaCSV(abaId) {
+    const table = document.querySelector(`#${abaId} table`);
+    if (!table) return;
+    let csv = [];
+    for (let row of table.rows) {
+        let cols = Array.from(row.cells).map(td => `"${td.innerText.replace(/"/g, '""')}"`);
+        csv.push(cols.join(","));
+    }
+    const csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `relatorio-${abaId}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Adiciona botão de exportação CSV em cada aba (após renderização)
+function adicionarBotaoExportar(container, abaId) {
+    // Remove botão anterior se já existir
+    let oldBtn = container.querySelector('.btn-exportar-csv');
+    if (oldBtn) oldBtn.remove();
+    // Cria botão
+    let btn = document.createElement('button');
+    btn.className = 'btn-exportar-csv';
+    btn.innerHTML = '<i class="fa-solid fa-file-csv"></i> Exportar CSV';
+    btn.style.marginBottom = '18px';
+    btn.onclick = () => exportarTabelaCSV(abaId);
+    container.prepend(btn);
+}
+
 // Empresa ativa
 let empresaId = localStorage.getItem("empresaAtivaId");
 if (!empresaId) {
@@ -154,6 +186,7 @@ async function carregarRelatorioServicos() {
             .sort((a, b) => b[1].qtd - a[1].qtd)
             .map(([nome, info]) => [nome, info.qtd, `R$ ${info.total.toFixed(2)}`]);
         renderTabela(container, ["Serviço", "Qtd", "Faturamento"], linhas);
+        adicionarBotaoExportar(container, "servicos");
     } catch (e) {
         container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
     }
@@ -181,6 +214,7 @@ async function carregarRelatorioProfissionais() {
             .sort((a, b) => b[1].qtd - a[1].qtd)
             .map(([nome, info]) => [nome, info.qtd, `R$ ${info.total.toFixed(2)}`]);
         renderTabela(container, ["Profissional", "Qtd Atendimentos", "Faturamento"], linhas);
+        adicionarBotaoExportar(container, "profissionais");
     } catch (e) {
         container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
     }
@@ -218,6 +252,7 @@ async function carregarRelatorioFaturamento() {
         } else {
             container.innerHTML += "<p>Nenhum faturamento no período.</p>";
         }
+        adicionarBotaoExportar(container, "faturamento");
     } catch (e) {
         container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
     }
@@ -254,6 +289,7 @@ async function carregarRelatorioClientes() {
             linhas.push([c.nome, ags.length, ultimoAt]);
         });
         renderTabela(container, ["Cliente", "Total atendimentos", "Último atendimento"], linhas);
+        adicionarBotaoExportar(container, "clientes");
     } catch (e) {
         container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
     }
@@ -291,6 +327,7 @@ async function carregarRelatorioAgenda() {
             ["Cancelados pelo gestor", contagem.cancelado_pelo_gestor]
         ];
         renderTabela(container, ["Status", "Quantidade"], linhas);
+        adicionarBotaoExportar(container, "agenda");
     } catch (e) {
         container.innerHTML = `<p>Erro ao buscar dados: ${e.message}</p>`;
     }
