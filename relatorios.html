@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="styles.css"> <!-- Seu CSS global -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* Estilos básicos para layout de relatórios */
     body {
       margin: 0;
       padding: 0;
@@ -15,9 +14,13 @@
       background: #f7f8fa;
     }
     .main-relatorios {
-      margin-left: 240px;
+      max-width: 1100px;
+      margin: 40px auto 0 auto;
       padding: 32px 24px 24px 24px;
       min-height: 100vh;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 10px #4f46e515;
     }
     .filtros-relatorios {
       display: flex;
@@ -58,12 +61,7 @@
       background: #3730a3;
     }
     .conteudo-abas {
-      background: #fff;
-      border-radius: 16px;
-      padding: 32px 24px 24px 24px;
-      box-shadow: 0 2px 10px #4f46e515;
-      min-height: 350px;
-      margin-bottom: 32px;
+      margin-top: 18px;
     }
     .abas-relatorios {
       display: flex;
@@ -91,6 +89,11 @@
     .aba-conteudo {
       display: none;
       animation: fadeIn .25s;
+      background: #fff;
+      border-radius: 0 0 16px 16px;
+      padding: 32px 24px 24px 24px;
+      min-height: 350px;
+      box-shadow: 0 2px 10px #4f46e510;
     }
     .aba-conteudo.active {
       display: block;
@@ -101,38 +104,28 @@
     }
     @media (max-width: 900px) {
       .main-relatorios {
-        margin-left: 0;
-        padding: 12px 6px;
+        margin: 10px 0 0 0;
+        padding: 12px 4px;
+        border-radius: 6px;
       }
       .conteudo-abas {
-        padding: 12px 4px;
+        padding: 0;
       }
       .abas-relatorios {
-        gap: 5px;
-        margin-bottom: 12px;
+        gap: 4px;
+        margin-bottom: 10px;
+      }
+      .aba {
+        font-size: 1em;
+        padding: 8px 10px;
+      }
+      .aba-conteudo {
+        padding: 14px 2px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Sidebar padrão -->
-  <aside class="sidebar" id="sidebar">
-      <a href="index.html" class="sidebar-brand">Pronti</a>
-      <hr />
-      <nav class="sidebar-links">
-          <a href="dashboard.html"><span>📊</span> Dashboard</a>
-          <a href="servicos.html"><span>🛠️</span> Serviços</a>
-          <a href="agenda.html"><span>📅</span> Agenda</a>
-          <a href="clientes.html"><span>👤</span> Clientes</a>
-          <a href="equipe.html"><span>👥</span> Equipe</a>
-          <a href="relatorios.html" class="active"><span>📈</span> Relatórios</a>
-          <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-      </nav>
-      <div class="sidebar-footer">
-          <button id="btn-logout" class="btn-logout">Sair</button>
-      </div>
-  </aside>
-  <!-- Conteúdo principal -->
   <main class="main-relatorios">
     <!-- Filtros -->
     <header class="filtros-relatorios">
