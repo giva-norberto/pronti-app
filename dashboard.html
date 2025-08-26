@@ -6,9 +6,7 @@
     <title>Painel Inteligente - Pronti</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* --- Variáveis e Reset --- */
         :root {
             --primary: #6366f1;
             --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
@@ -31,7 +29,6 @@
             color: var(--text-main);
         }
 
-        /* --- Layout Principal --- */
         .dashboard-main {
             max-width: 1200px;
             margin: 0 auto;
@@ -183,6 +180,44 @@
             font-weight: 500;
         }
 
+        .agenda-list {
+            display: flex;
+            flex-direction: column;
+            gap: 13px;
+        }
+
+        .agenda-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border-radius: 9px;
+            padding: 10px 13px;
+            font-size: 1.08em;
+            border: 1px solid #e0e7ff;
+        }
+
+        .agenda-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .agenda-info strong {
+            color: var(--text-main);
+            font-size: 1.16em;
+        }
+
+        .agenda-info span {
+            font-size: 0.99em;
+            color: var(--text-secondary);
+        }
+
+        .agenda-horario {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.14rem;
+        }
+
         .ia-card {
             background: linear-gradient(120deg, #6366f1 60%, #8b5cf6 100%);
             color: #fff;
@@ -194,6 +229,11 @@
 
         .ia-card .card-title {
             color: #e0e7ff;
+        }
+
+        .ia-card p {
+            font-size: 1.12rem;
+            line-height: 1.7;
         }
 
         .ia-actions {
@@ -231,6 +271,11 @@
             transition: box-shadow 0.18s, transform 0.14s;
         }
 
+        .agenda-item:hover {
+            box-shadow: 0 4px 16px #6366f123;
+            transform: scale(1.015);
+        }
+
         ::-webkit-scrollbar {
             height: 7px;
             width: 7px;
@@ -249,11 +294,12 @@
                 --text-main: #f4f4fa;
                 --text-secondary: #b5b6c8;
                 --border: #28284a;
+                --agenda-bg: #181824;
             }
             .dashboard-main {
                 background: var(--background);
             }
-            .card {
+            .card, .agenda-item {
                 background: var(--card-bg);
                 border-color: var(--border);
             }
@@ -289,6 +335,7 @@
 
         <!-- Banner de notificação de teste -->
         <div id="trial-notification-banner" class="trial-banner" style="display: none;">
+            <!-- Banner do período de teste -->
         </div>
 
         <div class="dashboard-grid">
@@ -299,6 +346,7 @@
                 <!-- KPIs -->
                 <div class="kpi-row">
 
+                    <!-- Card Faturamento -->
                     <div class="card">
                         <div class="card-title">
                             <i class="fa-solid fa-dollar-sign"></i> Faturamento
@@ -311,6 +359,7 @@
                         </div>
                     </div>
 
+                    <!-- Card Agendamentos -->
                     <div class="card">
                         <div class="card-title">
                             <i class="fa-solid fa-calendar-check"></i> Agendamentos
@@ -325,12 +374,12 @@
 
                 </div>
 
-                <!-- Novo Card: Serviços mais vendidos da semana -->
+                <!-- Card Serviços mais vendidos da semana (substituindo Agenda do Dia) -->
                 <div class="card">
                     <div class="card-title">
-                        <i class="fa-solid fa-chart-pie"></i> Serviços mais vendidos da semana
+                        <i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos
                     </div>
-                    <canvas id="grafico-servicos-semana"></canvas>
+                    <canvas id="servicos-mais-vendidos" style="width:100%; max-height:320px;"></canvas>
                 </div>
 
             </div>
@@ -338,6 +387,7 @@
             <!-- Coluna Lateral -->
             <div class="side-cards">
 
+                <!-- Card Sugestão Inteligente -->
                 <div class="card ia-card">
                     <div class="card-title">
                         <i class="fa-solid fa-brain"></i> Sugestão Inteligente
@@ -355,6 +405,7 @@
                     </div>
                 </div>
 
+                <!-- Card Resumo Inteligente -->
                 <div class="card resumo-card">
                     <div class="card-title">
                         <i class="fa-solid fa-lightbulb"></i> Resumo Inteligente
@@ -374,6 +425,9 @@
         </div>
     </main>
 
+    <!-- Bibliotecas para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         // Sidebar dinâmica
         document.addEventListener("DOMContentLoaded", function() {
@@ -383,33 +437,39 @@
                     document.getElementById('sidebar-placeholder').innerHTML = html;
                 });
 
-            // IA ações
-            document.getElementById('btn-gerar-sugestao').onclick = function() {
-                document.getElementById('ia-sugestao').innerHTML = '<p>Consultando IA, aguarde...</p>';
-            };
-            document.getElementById('btn-ver-tendencia').onclick = function() {
-                document.getElementById('ia-sugestao').innerHTML = '<p>Analisando tendências, aguarde...</p>';
-            };
-
-            // Gráfico de pizza placeholder
-            const ctx = document.getElementById('grafico-servicos-semana').getContext('2d');
-            new Chart(ctx, {
-                type: 'pie',
+            // Gráfico de serviços mais vendidos (exemplo, preencher com dados reais via JS)
+            const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
+            window.servicosChart = new Chart(ctx, {
+                type: 'bar',
                 data: {
-                    labels: ['Corte Masculino', 'Penteado', 'Coloração', 'Barba'],
+                    labels: ['Corte Masculino', 'Manicure', 'Penteado', 'Coloração'],
                     datasets: [{
-                        label: 'Serviços mais vendidos',
-                        data: [12, 9, 5, 3],
-                        backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#c4b5fd']
+                        label: 'Vendas',
+                        data: [12, 7, 5, 3],
+                        backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa']
                     }]
                 },
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: { position: 'bottom' }
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
                     }
                 }
             });
+
+            // Exemplo de integração para IA (troque pela sua chamada real)
+            document.getElementById('btn-gerar-sugestao').onclick = function() {
+                document.getElementById('ia-sugestao').innerHTML = '<p>Consultando IA, aguarde...</p>';
+                // Sua chamada real aqui
+            };
+            document.getElementById('btn-ver-tendencia').onclick = function() {
+                document.getElementById('ia-sugestao').innerHTML = '<p>Analisando tendências, aguarde...</p>';
+                // Sua chamada real aqui
+            };
         });
     </script>
 
