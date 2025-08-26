@@ -1,12 +1,12 @@
 // ======================================================================
 //                      USERSERVICE.JS
-//           VERSÃO FINAL COM IMPORTAÇÕES CORRIGIDAS
+//           VERSÃO FINAL COM IMPORTAÇÕES CENTRALIZADAS
 // ======================================================================
 
-// ===================================================================
-//                      CORREÇÃO APLICADA AQUI
-// ===================================================================
-// Imports do Firestore (banco de dados)
+// Importa as instâncias JÁ INICIALIZADAS do seu arquivo de configuração
+import { db, auth } from './firebase-config.js';
+
+// Importa as FUNÇÕES que serão usadas, dos seus respectivos módulos
 import {
     collection,
     query,
@@ -18,14 +18,10 @@ import {
     updateDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Imports do Auth (autenticação )
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Importa a configuração central do Firebase
-import { db, auth } from './firebase-config.js';
-
-// --- Funções Auxiliares e checkUserStatus (sem alterações ) ---
+// --- Funções Auxiliares e checkUserStatus (sem alterações na lógica ) ---
 async function getEmpresasDoDono(uid) {
     if (!uid) return null;
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
@@ -101,12 +97,10 @@ export async function verificarAcesso() {
             const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
             if (user.uid === ADMIN_UID) {
-                console.log("Admin detectado. Configurando ambiente e concedendo acesso.");
                 const primeiraEmpresaQuery = query(collection(db, "empresarios"));
                 const snapshot = await getDocs(primeiraEmpresaQuery);
                 if (!snapshot.empty) {
-                    const primeiraEmpresaId = snapshot.docs[0].id;
-                    localStorage.setItem('empresaAtivaId', primeiraEmpresaId);
+                    localStorage.setItem('empresaAtivaId', snapshot.docs[0].id);
                 } else {
                     localStorage.removeItem('empresaAtivaId');
                 }
@@ -125,8 +119,6 @@ export async function verificarAcesso() {
                 window.location.href = 'assinatura.html';
                 return new Promise(() => {});
             }
-
-            console.log("--- Iniciando verificação de acesso para o utilizador (NÃO-ADMIN):", user.uid, "---");
 
             try {
                 const empresasSnapshot = await getEmpresasDoDono(user.uid);
