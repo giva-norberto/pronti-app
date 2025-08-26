@@ -143,3 +143,21 @@
   }
 }
 </style>
+<script>
+// Corrige o botão sair funcionar mesmo após sidebar ser carregada via fetch!
+document.addEventListener("DOMContentLoaded", function() {
+  // Aguarda DOM pronto, e adiciona o listener no botão
+  const btnLogout = document.getElementById('btn-logout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', function() {
+      // Limpe as principais chaves do localStorage/sessionStorage
+      localStorage.removeItem("empresaAtivaId");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      sessionStorage.clear();
+      // Redireciona para login
+      window.location.href = "login.html";
+    });
+  }
+});
+</script>
