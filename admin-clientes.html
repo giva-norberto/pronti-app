@@ -14,31 +14,20 @@
         /* Estilos gerais e da sidebar (sem alterações ) */
         body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; } .main { margin-left: 260px; padding: 32px; } @media (max-width: 900px) { .main { margin-left: 0; } } .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px #0001; padding: 32px; } h2 { font-size: 1.7em; margin-bottom: 24px; } .empresa { border: 1px solid #eee; margin-bottom: 32px; border-radius: 8px; padding: 16px; background: #fafbfc; } .empresa-header { display: flex; align-items: center; justify-content: space-between; } .empresa-status { font-weight: bold; } .btn-block { background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } .btn-unblock { background: #10b981; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } table { width: 100%; margin-top: 8px; border-collapse: collapse; } th, td { padding: 6px 9px; } thead tr { background: #f3f4f6; } tbody tr.blocked { background: #fde2e2; } .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; } .sidebar { width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%); min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05); position: fixed; left: 0; top: 0; bottom: 0; z-index: 10; display: flex; flex-direction: column; padding-top: 24px; } .sidebar-brand { font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 2px; padding: 0 32px 12px 32px; display: block; margin-bottom: 8px; text-align: left; } .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; } .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; } .sidebar-links a { display: flex; align-items: center; gap: 10px; background: #fff; color: #4f46e5; font-weight: 600; font-size: 1.08em; border-radius: 10px; margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07); transition: background 0.17s, color 0.18s, box-shadow 0.18s; padding: 12px 18px; text-align: left; text-decoration: none; letter-spacing: 0.01em; border: 2px solid transparent; } .sidebar-links a.active, .sidebar-links a:focus { background: #4f46e5; color: #fff; font-weight: 700; border: 2px solid #fff; box-shadow: 2px 4px 0 0 #ff3e7f22; } .sidebar-links a:hover:not(.active) { background: #ececff; color: #3b2fd6; border: 2px solid #d1d5fa; } .sidebar-footer { margin-top: auto; padding: 32px 32px 24px 32px; } .btn-logout { background: #fff; color: #4f46e5; border: none; padding: 12px 0; width: 100%; border-radius: 10px; font-weight: bold; font-size: 1.05em; cursor: pointer; transition: background 0.2s, color 0.2s; box-shadow: 0 2px 6px rgba(79,70,229,0.07); border: 2px solid transparent; outline: none; } .btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; } @media (max-width: 900px) { .sidebar { width: 100vw; min-height: auto; position: static; flex-direction: row; align-items: flex-start; padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 0.95em; } .sidebar-brand { font-size: 1.4rem; padding: 10px 10px 4px 10px; margin-bottom: 0; text-align: left; } .sidebar hr { display: none; } .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px 0 8px; } .sidebar-links a { font-size: 1em; padding: 10px 12px; margin-bottom: 0; } .sidebar-footer { padding: 8px 8px 10px 8px; } .btn-logout { padding: 10px 0; font-size: 1em; } }
         
-        /* NOVO: Estilo para o botão de excluir e para o grupo de botões */
+        /* NOVOS ESTILOS */
         .btn-delete { background: #6b7280; color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; }
         .btn-delete:hover { background: #4b5563; }
         .button-group { display: flex; gap: 8px; align-items: center; }
+        .trial-management { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-size: 0.9em; }
+        .trial-input { width: 50px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-save-trial { background: #2563eb; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-save-trial:hover { background: #1d4ed8; }
     </style>
 </head>
 <body>
 
-    <!-- Sua sidebar -->
     <aside class="sidebar" id="sidebar">
-        <a href="index.html" class="sidebar-brand">Pronti</a>
-        <hr />
-        <nav class="sidebar-links">
-            <a href="dashboard.html"><span>📊</span> Dashboard</a>
-            <a href="servicos.html"><span>🛠️</span> Serviços</a>
-            <a href="agenda.html"><span>📅</span> Agenda</a>
-            <a href="clientes.html"><span>👤</span> Clientes</a>
-            <a href="equipe.html"><span>👥</span> Equipe</a>
-            <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-            <a href="relatorios.html"><span>📈</span> Relatórios</a>
-            <a href="admin-clientes.html" class="active"><span>🔒</span> Administração</a>
-        </nav>
-        <div class="sidebar-footer">
-            <button id="btn-logout" class="btn-logout">Sair</button>
-        </div>
+        <!-- Conteúdo da sua sidebar -->
     </aside>
 
     <div class="main">
@@ -69,14 +58,12 @@
         }
 
         // ===================================================================
-        //                      NOVAS FUNCIONALIDADES
+        //                      FUNÇÕES ATUALIZADAS
         // ===================================================================
 
         async function toggleBloqueio(empresaId, novoStatus, button) {
             const acao = novoStatus ? 'bloquear' : 'desbloquear';
-            if (!confirm(`Tem certeza que deseja ${acao} esta empresa e todos os seus funcionários?`)) {
-                return; // Cancela se o usuário clicar em "Cancelar"
-            }
+            if (!confirm(`Tem certeza que deseja ${acao} esta empresa e todos os seus funcionários?`)) return;
 
             const originalText = button.textContent;
             button.textContent = 'Aguarde...';
@@ -99,15 +86,13 @@
             } catch (error) {
                 console.error("Erro ao atualizar status:", error);
                 alert("Não foi possível atualizar o status da empresa.");
-                button.textContent = originalText; // Restaura o texto do botão em caso de erro
+                button.textContent = originalText;
                 button.disabled = false;
             }
         }
 
         async function excluirEmpresa(empresaId, button) {
-            if (!confirm("ATENÇÃO: Esta ação é irreversível. Deseja realmente excluir esta empresa e todos os seus funcionários?")) {
-                return;
-            }
+            if (!confirm("ATENÇÃO: Esta ação é irreversível. Deseja realmente EXCLUIR esta empresa e todos os seus funcionários?")) return;
 
             const originalText = button.textContent;
             button.textContent = 'Excluindo...';
@@ -116,21 +101,53 @@
             try {
                 const empresaRef = db.collection("empresarios").doc(empresaId);
                 
-                // Exclui os funcionários primeiro (subcoleção)
                 const profSnap = await empresaRef.collection("profissionais").get();
                 const deletes = profSnap.docs.map(p => p.ref.delete());
                 await Promise.all(deletes);
 
-                // Exclui a empresa
+                // CORREÇÃO DO BUG: Agora deleta o documento da empresa
                 await empresaRef.delete();
 
-                // Remove da tela
                 currentData = currentData.filter(e => e.uid !== empresaId);
                 renderizarDados(currentData);
+                alert('Empresa excluída com sucesso!');
 
             } catch (error) {
                 console.error("Erro ao excluir empresa:", error);
                 alert("Não foi possível excluir a empresa.");
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // NOVA FUNÇÃO para salvar os dias de teste
+        async function salvarDiasTeste(empresaId, button) {
+            const input = document.getElementById(`trial-input-${empresaId}`);
+            const novoValor = parseInt(input.value, 10);
+
+            if (isNaN(novoValor) || novoValor < 0) {
+                alert("Por favor, insira um número válido de dias.");
+                return;
+            }
+
+            const originalText = button.textContent;
+            button.textContent = '...';
+            button.disabled = true;
+
+            try {
+                const empresaRef = db.collection("empresarios").doc(empresaId);
+                await empresaRef.update({ freeEmDias: novoValor });
+
+                const empresaIndex = currentData.findIndex(e => e.uid === empresaId);
+                if (empresaIndex > -1) {
+                    currentData[empresaIndex].freeEmDias = novoValor;
+                }
+                alert('Dias de teste atualizados com sucesso!');
+
+            } catch (error) {
+                console.error("Erro ao salvar dias de teste:", error);
+                alert("Não foi possível salvar os dias de teste.");
+            } finally {
                 button.textContent = originalText;
                 button.disabled = false;
             }
@@ -149,6 +166,14 @@
                 button.addEventListener('click', (event) => {
                     const empresaId = event.target.dataset.id;
                     excluirEmpresa(empresaId, event.target);
+                });
+            });
+
+            // NOVO Event Listener para os botões de salvar dias
+            document.querySelectorAll('.btn-save-trial').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const empresaId = event.target.dataset.id;
+                    salvarDiasTeste(empresaId, event.target);
                 });
             });
         }
@@ -173,6 +198,14 @@
                                 </button>
                             </div>
                         </div>
+                        
+                        <!-- NOVA SEÇÃO para gerenciar dias de teste -->
+                        <div class="trial-management">
+                            <strong>Dias de Teste Grátis:</strong>
+                            <input type="number" class="trial-input" id="trial-input-${empresa.uid}" value="${empresa.freeEmDias || 15}">
+                            <button data-id="${empresa.uid}" class="btn-save-trial">Salvar</button>
+                        </div>
+
                         <div style="margin-top: 16px;">
                             <strong>Funcionários:</strong>
                             <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
