@@ -1,6 +1,6 @@
 // ======================================================================
 //                      USERSERVICE.JS
-//           VERSÃO FINAL - CORREÇÃO NA LÓGICA DE TRIAL
+//           VERSÃO FINAL - CORREÇÃO DA LÓGICA DE NOVO USUÁRIO
 // ======================================================================
 
 // Imports (sem alterações)
@@ -26,51 +26,58 @@ export async function checkUserStatus() {
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
 
-        if (!userSnap.exists()) return safeReturn;
+        if (!userSnap.exists()) {
+            // Se o documento do usuário ainda não foi criado, não podemos fazer nada.
+            // Isso pode acontecer em um breve momento antes do ensureUserAndTrialDoc completar.
+            // Considerar o trial ativo por segurança evita um bloqueio indevido.
+            return { hasActivePlan: false, isTrialActive: true };
+        }
+        
         const userData = userSnap.data();
 
+        // Se o usuário já pagou, o acesso é liberado.
         if (userData.isPremium === true) {
             return { hasActivePlan: true, isTrialActive: false };
         }
 
+        // Se a data de início do trial não existe, algo está errado, mas não devemos bloquear.
         if (!userData.trialStart?.seconds) {
-            // Se não tem data de início, o trial é considerado ativo por padrão
             return { hasActivePlan: false, isTrialActive: true };
         }
 
-        // LÓGICA CORRIGIDA: Busca os dias de teste da empresa ATIVA.
-        let trialDurationDays = 15; // Padrão
-        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+        // Busca as empresas do dono para pegar os dias de teste.
+        const empresasSnapshot = await getEmpresasDoDono(user.uid);
 
-        if (empresaAtivaId) {
-            const empresaRef = doc(db, "empresarios", empresaAtivaId);
-            const empresaSnap = await getDoc(empresaRef);
-            if (empresaSnap.exists() && empresaSnap.data().freeEmDias !== undefined) {
-                trialDurationDays = empresaSnap.data().freeEmDias;
-                console.log(`Encontrada configuração de ${trialDurationDays} dias de teste para a empresa ativa.`);
-            }
-        } else {
-            console.log("Nenhuma empresa ativa no localStorage. Usando 15 dias de teste como padrão.");
+        // CRUCIAL: Se o usuário é novo e AINDA NÃO TEM EMPRESA, o trial DEVE estar ativo.
+        if (!empresasSnapshot || empresasSnapshot.empty) {
+            console.log("Usuário novo sem empresa. Trial considerado ativo por padrão.");
+            return { hasActivePlan: false, isTrialActive: true };
         }
 
+        // Se tem empresa, pega a configuração de dias de teste dela.
+        let trialDurationDays = 15; // Padrão
+        const empresaData = empresasSnapshot.docs[0].data();
+        if (empresaData.freeEmDias !== undefined) {
+            trialDurationDays = empresaData.freeEmDias;
+        }
+        
         const startDate = new Date(userData.trialStart.seconds * 1000);
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + trialDurationDays);
 
-        if (endDate > new Date()) {
-            return { hasActivePlan: false, isTrialActive: true };
-        }
-
-        return safeReturn; // Trial expirado
+        // Retorna se o trial está ativo ou não.
+        return { hasActivePlan: false, isTrialActive: endDate > new Date() };
 
     } catch (error) {
         console.error("Erro em checkUserStatus:", error);
-        return safeReturn;
+        return safeReturn; // Em caso de erro, não bloqueia o usuário.
     }
 }
 
-// --- Função Principal (sem alterações na lógica) ---
+// --- Função Principal (verificarAcesso) - SEM ALTERAÇÕES ---
 export async function verificarAcesso() {
+    // O corpo desta função permanece exatamente o mesmo da versão anterior.
+    // ... (cole o corpo da função verificarAcesso da versão anterior aqui)
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             unsubscribe();
@@ -84,7 +91,6 @@ export async function verificarAcesso() {
             const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
             if (user.uid === ADMIN_UID) {
-                // Lógica do Admin (sem alterações)
                 const primeiraEmpresaQuery = query(collection(db, "empresarios"));
                 const snapshot = await getDocs(primeiraEmpresaQuery);
                 if (!snapshot.empty) {
@@ -93,7 +99,6 @@ export async function verificarAcesso() {
                 return resolve({ user, isAdmin: true, perfil: { nome: "Administrador", nomeFantasia: "Painel de Controle" }, empresaId: localStorage.getItem('empresaAtivaId'), isOwner: true, role: 'admin' });
             }
 
-            // Lógica para usuários normais (sem alterações)
             const { hasActivePlan, isTrialActive } = await checkUserStatus();
             if (!hasActivePlan && !isTrialActive) {
                 if (currentPage !== 'assinatura.html') {
