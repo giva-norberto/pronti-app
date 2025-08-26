@@ -1,5 +1,6 @@
 // ======================================================================
-//          DASHBOARD.JS (VERSÃO FINAL COM REGRA DE DATA CORRIGIDA)
+//          DASHBOARD.JS (VERSÃO FINAL COM REGRA DE DATA CORRIGIDA
+//          + ALTERAÇÃO: SERVIÇOS MAIS VENDIDOS DA SEMANA)
 // ======================================================================
 
 import { verificarAcesso, checkUserStatus } from "./userService.js";
@@ -14,7 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-const totalSlots = 20; // Total de slots disponíveis no dia para cálculo de ocupação
+const totalSlots = 20;
 const STATUS_VALIDOS = ["ativo", "realizado"];
 
 // --------------------------------------------------
@@ -84,7 +85,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
       dataAtual.setDate(dataAtual.getDate() + 1);
     }
 
-    return dataInicial; // fallback
+    return dataInicial;
   } catch (e) {
     console.error("Erro ao buscar próxima data disponível:", e);
     return dataInicial;
@@ -123,7 +124,6 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
     let agendamentosPendentes = 0;
     let faturamentoRealizado = 0;
     let faturamentoPrevisto = 0;
-    const agendaItens = [];
     const agsParaIA = [];
 
     snapshot.forEach((d) => {
@@ -135,12 +135,6 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
       if (ag.status === "ativo") {
         if (minutosAg >= inicioTurno && minutosAg < fimTurno) {
           agendamentosPendentes++;
-          agendaItens.push({
-            horario: ag.horario || "--:--",
-            clienteNome: ag.clienteNome || "Cliente",
-            servicoNome: ag.servicoNome || "",
-            profissionalNome: ag.profissionalNome || ""
-          });
         }
       } else if (ag.status === "realizado") {
         faturamentoRealizado += Number(ag.servicoPreco) || 0;
@@ -161,19 +155,47 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
       });
     });
 
-    agendaItens.sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
-
     return {
       totalAgendamentosDia,
       agendamentosPendentes,
       faturamentoRealizado,
       faturamentoPrevisto,
-      agendaItens,
       agsParaIA,
     };
   } catch (e) {
     console.error("Erro ao obter resumo do dia:", e);
-    return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevisto: 0, agendaItens: [], agsParaIA: [] };
+    return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevisto: 0, agsParaIA: [] };
+  }
+}
+
+// NOVO: Buscar serviços mais vendidos da semana
+async function obterServicosMaisVendidosSemana(empresaId) {
+  try {
+    const hoje = new Date();
+    const inicioSemana = new Date(hoje);
+    inicioSemana.setDate(hoje.getDate() - 6);
+    const dataISOInicio = inicioSemana.toISOString().split("T")[0];
+
+    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
+    const q = query(
+      agRef,
+      where("data", ">=", dataISOInicio),
+      where("data", "<=", hoje.toISOString().split("T")[0]),
+      where("status", "in", STATUS_VALIDOS)
+    );
+    const snapshot = await getDocs(q);
+
+    const contagem = {};
+    snapshot.forEach((d) => {
+      const ag = d.data();
+      const nome = ag.servicoNome || "Serviço";
+      contagem[nome] = (contagem[nome] || 0) + 1;
+    });
+
+    return contagem;
+  } catch (e) {
+    console.error("Erro ao buscar serviços semanais:", e);
+    return {};
   }
 }
 
@@ -181,57 +203,63 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
 // RENDERIZAÇÃO NA UI
 // --------------------------------------------------
 
-function preencherPainel(resumo) {
-    // Cards de Resumo
-    document.getElementById("faturamento-realizado").textContent = resumo.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    document.getElementById("faturamento-previsto").textContent = resumo.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    document.getElementById("total-agendamentos-dia").textContent = resumo.totalAgendamentosDia;
-    document.getElementById("agendamentos-pendentes").textContent = resumo.agendamentosPendentes;
+function preencherPainel(resumo, servicosSemana) {
+  document.getElementById("faturamento-realizado").textContent =
+    resumo.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  document.getElementById("faturamento-previsto").textContent =
+    resumo.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  document.getElementById("total-agendamentos-dia").textContent = resumo.totalAgendamentosDia;
+  document.getElementById("agendamentos-pendentes").textContent = resumo.agendamentosPendentes;
 
-    // Agenda do Turno
-    const listaAgendaEl = document.getElementById("agenda-dia-lista");
-    if (resumo.agendaItens.length === 0) {
-        listaAgendaEl.innerHTML = `<p style='color:#888;text-align:center;padding:12px 0;'>Nenhum agendamento para este turno.</p>`;
-    } else {
-        listaAgendaEl.innerHTML = resumo.agendaItens.map(ag => `
-            <div class="agenda-item">
-                <div class="agenda-info">
-                    <strong>${ag.clienteNome}</strong>
-                    <span>${ag.servicoNome}${ag.profissionalNome ? ' com ' + ag.profissionalNome : ''}</span>
-                </div>
-                <div class="agenda-horario">${ag.horario}</div>
-            </div>
-        `).join("");
-    }
-
-    // Resumo Inteligente e IA
-    const resumoInteligente = gerarResumoDiarioInteligente(resumo.agsParaIA);
-    const elResumo = document.getElementById("resumo-inteligente");
-    const elSugestaoIA = document.getElementById("ia-sugestao");
-
-    if (elResumo) {
-        // A função gerarResumoDiarioInteligente deve retornar HTML de lista (<ul><li>...</li></ul>)
-        if (resumoInteligente?.mensagem) {
-            elResumo.innerHTML = resumoInteligente.mensagem;
-        } else {
-            elResumo.innerHTML = "<ul><li>Nenhum dado disponível para o resumo.</li></ul>";
+  // Substituição da agenda do dia → gráfico de pizza
+  const ctx = document.getElementById("grafico-servicos-semana");
+  if (ctx) {
+    new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: Object.keys(servicosSemana),
+        datasets: [{
+          data: Object.values(servicosSemana),
+          backgroundColor: ["#4e79a7", "#f28e2c", "#e15759", "#76b7b2", "#59a14f", "#edc948"]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom" },
+          title: { display: true, text: "Serviços mais vendidos da semana" }
         }
+      }
+    });
+  }
+
+  // Resumo Inteligente
+  const resumoInteligente = gerarResumoDiarioInteligente(resumo.agsParaIA);
+  const elResumo = document.getElementById("resumo-inteligente");
+  const elSugestaoIA = document.getElementById("ia-sugestao");
+
+  if (elResumo) {
+    if (resumoInteligente?.mensagem) {
+      elResumo.innerHTML = resumoInteligente.mensagem;
+    } else {
+      elResumo.innerHTML = "<ul><li>Nenhum dado disponível para o resumo.</li></ul>";
     }
-    if (elSugestaoIA) {
-        elSugestaoIA.textContent = calcularSugestaoIA(resumo);
-    }
+  }
+  if (elSugestaoIA) {
+    elSugestaoIA.textContent = calcularSugestaoIA(resumo);
+  }
 }
 
 function calcularSugestaoIA(resumo) {
-    const total = resumo.totalAgendamentosDia || 0;
-    const ocupacaoPercent = Math.min(100, Math.round((total / totalSlots) * 100));
-    if (total === 0) return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
-    if (ocupacaoPercent < 50) return "Ainda há horários vagos. Considere enviar um lembrete aos clientes.";
-    return "O dia está movimentado! Prepare-se para um dia produtivo.";
+  const total = resumo.totalAgendamentosDia || 0;
+  const ocupacaoPercent = Math.min(100, Math.round((total / totalSlots) * 100));
+  if (total === 0) return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
+  if (ocupacaoPercent < 50) return "Ainda há horários vagos. Considere enviar um lembrete aos clientes.";
+  return "O dia está movimentado! Prepare-se para um dia produtivo.";
 }
 
 // --------------------------------------------------
-// INICIALIZAÇÃO E EVENTOS
+// INICIALIZAÇÃO
 // --------------------------------------------------
 
 async function iniciarDashboard(user, empresaId) {
@@ -242,17 +270,19 @@ async function iniciarDashboard(user, empresaId) {
   if (filtroData) {
     filtroData.value = dataInicial;
     filtroData.addEventListener("change", debounce(async () => {
-        const novaData = await encontrarProximaDataDisponivel(empresaId, filtroData.value);
-        if (novaData !== filtroData.value) {
-            filtroData.value = novaData;
-        }
-        const resumo = await obterResumoDoDia(empresaId, novaData);
-        preencherPainel(resumo);
+      const novaData = await encontrarProximaDataDisponivel(empresaId, filtroData.value);
+      if (novaData !== filtroData.value) {
+        filtroData.value = novaData;
+      }
+      const resumo = await obterResumoDoDia(empresaId, novaData);
+      const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
+      preencherPainel(resumo, servicosSemana);
     }, 300));
   }
 
   const resumoInicial = await obterResumoDoDia(empresaId, dataInicial);
-  preencherPainel(resumoInicial);
+  const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
+  preencherPainel(resumoInicial, servicosSemana);
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -274,8 +304,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   } catch(error){
     if (!error.message.includes("A redirecionar")) {
-        console.error("Erro no guardião de acesso:", error?.message || error);
-        window.location.href = "login.html";
+      console.error("Erro no guardião de acesso:", error?.message || error);
+      window.location.href = "login.html";
     }
   }
 });
