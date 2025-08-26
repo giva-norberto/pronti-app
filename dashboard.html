@@ -20,6 +20,7 @@
             --danger: #f87171;
             --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
         }
+
         body {
             margin: 0;
             padding: 0;
@@ -27,11 +28,13 @@
             background: var(--background);
             color: var(--text-main);
         }
+
         .dashboard-main {
             max-width: 1200px;
             margin: 0 auto;
             padding: 32px 18px 32px 18px;
         }
+
         .dashboard-header {
             display: flex;
             align-items: center;
@@ -40,6 +43,7 @@
             flex-wrap: wrap;
             margin-bottom: 32px;
         }
+
         .dashboard-header h1 {
             font-size: 2.1rem;
             font-weight: 800;
@@ -51,11 +55,13 @@
             text-fill-color: transparent;
             margin: 0;
         }
+
         .dashboard-actions {
             display: flex;
             align-items: center;
             gap: 14px;
         }
+
         .date-filter input[type="date"] {
             padding: 10px 14px;
             border-radius: 9px;
@@ -65,10 +71,12 @@
             color: var(--text-main);
             transition: border-color 0.18s;
         }
+
         .date-filter input[type="date"]:focus {
             border-color: var(--primary);
             outline: none;
         }
+
         .trial-banner {
             background: var(--warning);
             color: #92400e;
@@ -83,28 +91,33 @@
             box-shadow: 0 2px 6px #fde68a45;
             font-size: 1.08em;
         }
+
         .dashboard-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 30px;
         }
+
         @media (max-width: 1000px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
                 gap: 24px;
             }
         }
+
         .main-cards,
         .side-cards {
             display: flex;
             flex-direction: column;
             gap: 24px;
         }
+
         .kpi-row {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 22px;
         }
+
         @media (max-width: 700px) {
             .dashboard-header {
                 flex-direction: column;
@@ -122,6 +135,7 @@
                 gap: 14px;
             }
         }
+
         .card {
             background: var(--card-bg);
             border-radius: 18px;
@@ -134,10 +148,12 @@
             transition: box-shadow 0.18s, transform 0.16s;
             position: relative;
         }
+
         .card:hover {
             box-shadow: 0 10px 36px #6366f123, 0 2px 14px #6366f10a;
             transform: translateY(-2px) scale(1.012);
         }
+
         .card-title {
             margin: 0 0 13px 0;
             font-size: 1.13rem;
@@ -148,6 +164,7 @@
             gap: 10px;
             letter-spacing: -0.3px;
         }
+
         .card-main-value {
             font-size: 2.45rem;
             font-weight: 800;
@@ -155,17 +172,20 @@
             margin: 0;
             letter-spacing: -1px;
         }
+
         .card-sub-value {
             font-size: 1.03rem;
             color: var(--text-secondary);
             margin-top: 8px;
             font-weight: 500;
         }
+
         .agenda-list {
             display: flex;
             flex-direction: column;
             gap: 13px;
         }
+
         .agenda-item {
             display: flex;
             align-items: center;
@@ -176,24 +196,28 @@
             font-size: 1.08em;
             border: 1px solid #e0e7ff;
         }
+
         .agenda-info {
             display: flex;
             flex-direction: column;
         }
+
         .agenda-info strong {
             color: var(--text-main);
             font-size: 1.16em;
         }
+
         .agenda-info span {
             font-size: 0.99em;
             color: var(--text-secondary);
         }
+
         .agenda-horario {
             font-weight: 700;
             color: var(--primary);
             font-size: 1.14rem;
         }
-        /* IA/Sugestão */
+
         .ia-card {
             background: linear-gradient(120deg, #6366f1 60%, #8b5cf6 100%);
             color: #fff;
@@ -202,19 +226,22 @@
             position: relative;
             overflow: hidden;
         }
+
         .ia-card .card-title {
             color: #e0e7ff;
         }
+
         .ia-card p {
             font-size: 1.12rem;
             line-height: 1.7;
         }
-        /* Botão IA */
+
         .ia-actions {
             margin-top: 15px;
             display: flex;
             gap: 12px;
         }
+
         .ia-btn {
             background: #fff2;
             color: #fff;
@@ -226,35 +253,40 @@
             font-size: 0.98em;
             transition: background 0.18s, color 0.13s;
         }
+
         .ia-btn:hover {
             background: #fff4;
             color: #ffffffe0;
         }
+
         .resumo-card {
             border-left: 6px solid var(--primary);
         }
+
         .resumo-card .card-title {
             color: var(--primary);
         }
-        /* Microanimações */
+
         .card, .agenda-item {
             transition: box-shadow 0.18s, transform 0.14s;
         }
+
         .agenda-item:hover {
             box-shadow: 0 4px 16px #6366f123;
             transform: scale(1.015);
         }
-        /* Scrollbar custom */
+
         ::-webkit-scrollbar {
             height: 7px;
             width: 7px;
             background: #f1f5f9;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #e0e7ff;
             border-radius: 4px;
         }
-        /* Dark mode pronto */
+
         @media (prefers-color-scheme: dark) {
             :root {
                 --background: #1c1c22;
@@ -286,8 +318,12 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar dinâmica -->
     <div id="sidebar-placeholder"></div>
+
     <main class="dashboard-main">
+
+        <!-- Cabeçalho -->
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
             <div class="dashboard-actions">
@@ -296,57 +332,123 @@
                 </div>
             </div>
         </div>
+
+        <!-- Banner de notificação de teste -->
         <div id="trial-notification-banner" class="trial-banner" style="display: none;">
-            <!-- Banner de período de teste aparece aqui -->
+            <!-- Banner do período de teste -->
         </div>
+
         <div class="dashboard-grid">
+
             <!-- Coluna Principal -->
             <div class="main-cards">
+
+                <!-- KPIs -->
                 <div class="kpi-row">
+
+                    <!-- Card Faturamento -->
                     <div class="card">
-                        <div class="card-title"><i class="fa-solid fa-dollar-sign"></i> Faturamento</div>
-                        <div class="card-main-value" id="faturamento-realizado">R$ 0,00</div>
-                        <div class="card-sub-value">Previsto: <span id="faturamento-previsto">R$ 0,00</span></div>
+                        <div class="card-title">
+                            <i class="fa-solid fa-dollar-sign"></i> Faturamento
+                        </div>
+                        <div class="card-main-value" id="faturamento-realizado">
+                            R$ 0,00
+                        </div>
+                        <div class="card-sub-value">
+                            Previsto: <span id="faturamento-previsto">R$ 0,00</span>
+                        </div>
                     </div>
+
+                    <!-- Card Agendamentos -->
                     <div class="card">
-                        <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Agendamentos</div>
-                        <div class="card-main-value" id="total-agendamentos-dia">0</div>
-                        <div class="card-sub-value"><span id="agendamentos-pendentes">0</span> pendentes no dia</div>
+                        <div class="card-title">
+                            <i class="fa-solid fa-calendar-check"></i> Agendamentos
+                        </div>
+                        <div class="card-main-value" id="total-agendamentos-dia">
+                            0
+                        </div>
+                        <div class="card-sub-value">
+                            <span id="agendamentos-pendentes">0</span> pendentes no dia
+                        </div>
                     </div>
+
                 </div>
+
+                <!-- Card Agenda do Dia -->
                 <div class="card">
-                    <div class="card-title"><i class="fa-regular fa-calendar"></i> Agenda do Dia</div>
+                    <div class="card-title">
+                        <i class="fa-regular fa-calendar"></i> Agenda do Dia
+                    </div>
                     <div id="agenda-dia-lista" class="agenda-list">
-                        <!-- Aqui seus agendamentos do dia serão carregados via JS/backend -->
-                        <p style="color: var(--text-secondary);">Nenhum agendamento para este dia.</p>
+                        <!-- Exemplo de preenchimento real (remova este bloco abaixo e preencha via JS/backend) -->
+                        <!--
+                        <div class="agenda-item">
+                            <div class="agenda-info">
+                                <strong>Cliente 1</strong>
+                                <span>Corte Masculino</span>
+                            </div>
+                            <span class="agenda-horario">09:35</span>
+                        </div>
+                        <div class="agenda-item">
+                            <div class="agenda-info">
+                                <strong>Cliente 2</strong>
+                                <span>Penteado para festas</span>
+                            </div>
+                            <span class="agenda-horario">11:55</span>
+                        </div>
+                        -->
+                        <!-- Se não houver agendamento, mostre abaixo -->
+                        <p style="color: var(--text-secondary);">
+                            Nenhum agendamento para este dia.
+                        </p>
                     </div>
                 </div>
+
             </div>
+
             <!-- Coluna Lateral -->
             <div class="side-cards">
+
+                <!-- Card Sugestão Inteligente -->
                 <div class="card ia-card">
-                    <div class="card-title"><i class="fa-solid fa-brain"></i> Sugestão Inteligente</div>
+                    <div class="card-title">
+                        <i class="fa-solid fa-brain"></i> Sugestão Inteligente
+                    </div>
                     <div id="ia-sugestao">
-                        <!-- Aqui sua IA pode responder -->
-                        <p>Analisando dados...</p>
+                        <p>Analisando tendências, aguarde...</p>
                     </div>
                     <div class="ia-actions">
-                        <button class="ia-btn" id="btn-gerar-sugestao">Gerar nova sugestão</button>
-                        <button class="ia-btn" id="btn-ver-tendencia">Ver tendência</button>
+                        <button class="ia-btn" id="btn-gerar-sugestao">
+                            Gerar nova sugestão
+                        </button>
+                        <button class="ia-btn" id="btn-ver-tendencia">
+                            Ver tendência
+                        </button>
                     </div>
                 </div>
+
+                <!-- Card Resumo Inteligente -->
                 <div class="card resumo-card">
-                    <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Resumo Inteligente</div>
+                    <div class="card-title">
+                        <i class="fa-solid fa-lightbulb"></i> Resumo Inteligente
+                    </div>
                     <div id="resumo-inteligente">
-                        <!-- Aqui seu resumo inteligente será carregado -->
-                        <p>Sem dados para exibir.</p>
+                        <!-- Só insira insights REAIS/ÚTEIS aqui, não repita métricas dos outros cards -->
+                        <ul style="margin:0; padding-left: 1.1em;">
+                            <li>Exemplo: Envie um lembrete para clientes com horários vagos.</li>
+                            <li>Exemplo: Aproveite o intervalo das 11h para encaixe rápido.</li>
+                            <!-- Remova esses exemplos e preencha via backend/IA -->
+                        </ul>
                     </div>
                 </div>
+
             </div>
+
         </div>
     </main>
+
     <script>
-        // Menu lateral dinâmico
+        // Sidebar dinâmica
         document.addEventListener("DOMContentLoaded", function() {
             fetch('menu-lateral.html')
                 .then(res => res.text())
@@ -354,14 +456,14 @@
                     document.getElementById('sidebar-placeholder').innerHTML = html;
                 });
 
-            // Exemplo de integração para botão de IA (troque pela sua chamada real à IA)
+            // Exemplo de integração para IA (troque pela sua chamada real)
             document.getElementById('btn-gerar-sugestao').onclick = function() {
                 document.getElementById('ia-sugestao').innerHTML = '<p>Consultando IA, aguarde...</p>';
-                // Aqui você chama sua API real, depois atualiza o conteúdo do card
+                // Sua chamada real aqui
             };
             document.getElementById('btn-ver-tendencia').onclick = function() {
                 document.getElementById('ia-sugestao').innerHTML = '<p>Analisando tendências, aguarde...</p>';
-                // Sua lógica de tendência aqui
+                // Sua chamada real aqui
             };
         });
     </script>
