@@ -87,15 +87,19 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
       const diaConfig = horarios[nomeDia];
       if (diaConfig && diaConfig.ativo) {
         if (i === 0) {
+          // Hoje: verifica se ainda há horário disponível
+          const agoraMin = new Date().getHours()*60 + new Date().getMinutes();
           const ultimoBloco = diaConfig.blocos?.[diaConfig.blocos.length - 1];
           if (ultimoBloco?.fim) {
             const fimExp = timeStringToMinutes(ultimoBloco.fim);
-            const agoraMin = new Date().getHours() * 60 + new Date().getMinutes();
-            if (agoraMin < fimExp) return dataAtual.toISOString().split("T")[0];
+            if (agoraMin < fimExp) {
+              return dataAtual.toISOString().split("T")[0]; // mantém hoje
+            }
           } else {
             return dataAtual.toISOString().split("T")[0];
           }
         } else {
+          // Próximos dias disponíveis
           return dataAtual.toISOString().split("T")[0];
         }
       }
