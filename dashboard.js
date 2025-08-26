@@ -3,7 +3,7 @@
 //          + ALTERAÇÃO: SERVIÇOS MAIS VENDIDOS DA SEMANA)
 // ======================================================================
 
-import { verificarAcesso, checkUserStatus } from "./userService.js";
+import { verificarAcesso } from "./userService.js"; 
 import { db } from "./firebase-config.js";
 import {
   doc,
