@@ -10,8 +10,7 @@ import {
   collection,
   query,
   where,
-  getDocs,
-  Timestamp
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
@@ -158,6 +157,7 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
         cliente: ag.clienteNome || "Cliente",
         servico: ag.servicoNome || "Serviço",
         servicoPreco: Number(ag.servicoPreco) || 0,
+        status: ag.status || ""
       });
     });
 
