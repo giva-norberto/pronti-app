@@ -3,25 +3,9 @@ import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "./config/firebase";
 import { useAuth } from "./useAuth";
 
-// Definindo o tipo de Cliente e Funcionário
-type Funcionario = {
-  id: string;
-  nome?: string;
-  email?: string;
-  bloqueado?: boolean;
-};
-
-type Empresa = {
-  uid: string;
-  nome?: string;
-  email?: string;
-  bloqueado?: boolean;
-  funcionarios: Funcionario[];
-};
-
 export function AdminClientes() {
   const { user } = useAuth();
-  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
   const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Substitua pelo seu UID de admin
 
@@ -29,27 +13,28 @@ export function AdminClientes() {
     if (user && user.uid === ADMIN_UID) {
       carregarEmpresas();
     }
+    // eslint-disable-next-line
   }, [user]);
 
   async function carregarEmpresas() {
     setLoading(true);
     const snap = await getDocs(collection(db, "empresarios"));
-    const lista: Empresa[] = [];
+    const lista = [];
     for (const empresaDoc of snap.docs) {
-      const empresa = { uid: empresaDoc.id, ...empresaDoc.data(), funcionarios: [] } as Empresa;
+      const empresa = { uid: empresaDoc.id, ...empresaDoc.data(), funcionarios: [] };
       // Busca funcionários
       const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
       empresa.funcionarios = profSnap.docs.map(p => ({
         id: p.id,
         ...p.data()
-      })) as Funcionario[];
+      }));
       lista.push(empresa);
     }
     setEmpresas(lista);
     setLoading(false);
   }
 
-  async function bloquearEmpresa(uid: string, bloquear: boolean) {
+  async function bloquearEmpresa(uid, bloquear) {
     // 1. Bloquear empresa/dono
     await updateDoc(doc(db, "empresarios", uid), { bloqueado: bloquear });
     // 2. Bloquear/desbloquear todos funcionários
