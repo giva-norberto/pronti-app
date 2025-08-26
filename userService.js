@@ -1,6 +1,6 @@
 // ======================================================================
 //                      USERSERVICE.JS
-//           VERSÃO FINAL COM LÓGICA DE ASSINATURA CORRIGIDA
+//           VERSÃO FINAL COM LÓGICA ORIGINAL RESTAURADA
 // ======================================================================
 
 // Imports do Firebase (sem alterações)
@@ -47,9 +47,7 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
-// ======================================================================
-//                      CORREÇÃO APLICADA AQUI
-// ======================================================================
+// Função corrigida para buscar os dias de teste corretamente
 export async function checkUserStatus() {
     const safeReturn = { hasActivePlan: false, isTrialActive: false, trialEndDate: null };
     const user = auth.currentUser;
@@ -67,12 +65,9 @@ export async function checkUserStatus() {
         let trialEndDate = null;
 
         if (userData.trialStart && userData.trialStart.seconds) {
-            // CORREÇÃO: Busca as empresas do dono para encontrar os dias de teste.
             const empresasSnapshot = await getEmpresasDoDono(user.uid);
-            let trialDurationDays = 15; // Valor padrão
+            let trialDurationDays = 15; 
 
-            // Se o dono tem pelo menos uma empresa, usamos os dias de teste da primeira que encontrarmos.
-            // A lógica assume que os dias de teste são os mesmos para todas as empresas de um dono.
             if (empresasSnapshot && !empresasSnapshot.empty) {
                 const empresaData = empresasSnapshot.docs[0].data();
                 if (empresaData.freeEmDias !== undefined) {
@@ -83,7 +78,6 @@ export async function checkUserStatus() {
             const startDate = new Date(userData.trialStart.seconds * 1000);
             const endDate = new Date(startDate);
             endDate.setDate(startDate.getDate() + trialDurationDays);
-
             trialEndDate = endDate;
 
             if (endDate > new Date()) {
@@ -99,7 +93,7 @@ export async function checkUserStatus() {
 }
 
 // ======================================================================
-// FUNÇÃO PRINCIPAL (sem alterações, já estava correta)
+// FUNÇÃO PRINCIPAL COM A LÓGICA ORIGINAL RESTAURADA
 // ======================================================================
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
@@ -113,11 +107,11 @@ export async function verificarAcesso() {
             
             const currentPage = window.location.pathname.split('/').pop();
             
-            // Se o usuário for o admin, libera o acesso direto.
             const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
             if (user.uid === ADMIN_UID) {
                 console.log("Admin logado, acesso liberado.");
-                return resolve({ user, isAdmin: true });
+                // Retornando um objeto que não quebra outras partes do sistema
+                return resolve({ user, isAdmin: true, perfil: { nome: "Admin" } });
             }
 
             const { hasActivePlan, isTrialActive } = await checkUserStatus();
@@ -135,18 +129,65 @@ export async function verificarAcesso() {
                 console.log(`Foram encontradas ${empresasSnapshot ? empresasSnapshot.size : 0} empresas para este dono.`);
 
                 if (empresasSnapshot && !empresasSnapshot.empty) {
-                    // O resto da sua lógica de dono de empresa...
-                    // ...
-                    return resolve({ user, isOwner: true, role: "dono" }); // Simplificado para o exemplo
+                    // O utilizador é dono de pelo menos uma empresa.
+                    if (empresasSnapshot.size === 1) {
+                        const empresaDoc = empresasSnapshot.docs[0];
+                        localStorage.setItem('empresaAtivaId', empresaDoc.id);
+                        const empresaData = empresaDoc.data();
+                        const userDocRef = doc(db, "usuarios", user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        empresaData.nome = userDocSnap.exists() && userDocSnap.data().nome ? userDocSnap.data().nome : (user.displayName || user.email);
+                        
+                        // SUA LÓGICA ORIGINAL RESTAURADA
+                        return resolve({
+                            user,
+                            empresaId: empresaDoc.id,
+                            perfil: empresaData,
+                            isOwner: true,
+                            role: "dono"
+                        });
+
+                    } else {
+                        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                        const empresaAtivaValida = empresasSnapshot.docs.some(doc => doc.id === empresaAtivaId);
+
+                        if (empresaAtivaId && empresaAtivaValida) {
+                             const empresaDoc = empresasSnapshot.docs.find(doc => doc.id === empresaAtivaId);
+                             const empresaData = empresaDoc.data();
+                             const userDocRef = doc(db, "usuarios", user.uid);
+                             const userDocSnap = await getDoc(userDocRef);
+                             empresaData.nome = userDocSnap.exists() && userDocSnap.data().nome ? userDocSnap.data().nome : (user.displayName || user.email);
+                             
+                             // SUA LÓGICA ORIGINAL RESTAURADA
+                             return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" });
+                        } else {
+                            if (currentPage !== 'selecionar-empresa.html' && currentPage !== 'perfil.html') {
+                                window.location.href = 'selecionar-empresa.html';
+                                return new Promise(() => {});
+                            }
+                            // SUA LÓGICA ORIGINAL RESTAURADA
+                            return resolve({ user, isOwner: true, role: "dono" });
+                        }
+                    }
                 }
 
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
 
                 if (mapaSnap.exists()) {
-                    // O resto da sua lógica de funcionário...
-                    // ...
-                    return resolve({ user, isOwner: false, role: "funcionario" }); // Simplificado para o exemplo
+                    const empresaId = mapaSnap.data().empresaId;
+                    const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+                    const profissionalSnap = await getDoc(profissionalRef);
+
+                    if (profissionalSnap.exists()) {
+                        if (profissionalSnap.data().status === 'ativo') {
+                             localStorage.setItem('empresaAtivaId', empresaId);
+                             // SUA LÓGICA ORIGINAL RESTAURADA
+                             return resolve({ user, perfil: profissionalSnap.data(), empresaId, isOwner: false, role: "funcionario" });
+                        } else {
+                            return reject(new Error("aguardando_aprovacao"));
+                        }
+                    }
                 }
 
                 console.log("Cenário: PRIMEIRO ACESSO. Nenhum vínculo de dono ou funcionário encontrado.");
