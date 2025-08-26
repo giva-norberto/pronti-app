@@ -144,10 +144,10 @@
 }
 </style>
 <script>
-// Corrige o botão sair funcionar mesmo após sidebar ser carregada via fetch!
-document.addEventListener("DOMContentLoaded", function() {
-  // Aguarda DOM pronto, e adiciona o listener no botão
-  const btnLogout = document.getElementById('btn-logout');
+// O script abaixo garante que o botão Sair funcione, mesmo que a sidebar seja carregada por fetch!
+(function() {
+  // Como este script está dentro do HTML carregado por fetch, ele SEMPRE será executado depois de inserir o botão.
+  var btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', function() {
       // Limpe as principais chaves do localStorage/sessionStorage
@@ -159,5 +159,5 @@ document.addEventListener("DOMContentLoaded", function() {
       window.location.href = "login.html";
     });
   }
-});
+})();
 </script>
