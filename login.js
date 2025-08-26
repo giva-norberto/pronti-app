@@ -1,14 +1,12 @@
 // ======================================================================
-//                          LOGIN.JS (Corrigido)
-//       Versão simplificada para resolver o conflito de login
+//                          LOGIN.JS (VERSÃO FINAL SEM LOOP)
 // ======================================================================
 
-import { onAuthStateChanged, signInWithPopup, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// Imports (sem alterações)
+import { signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth, provider } from "./vitrini-firebase.js"; 
-// A verificação de acesso foi removida desta página para evitar conflitos.
-// import { ensureUserAndTrialDoc, verificarAcesso } from "./userService.js";
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', ( ) => {
     const btnLoginGoogle = document.getElementById('btn-login-google');
     const loginForm = document.getElementById('login-form');
     const loginStatusDiv = document.getElementById('login-status');
@@ -16,20 +14,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // ======================================================================
     //                      CORREÇÃO APLICADA AQUI
     // ======================================================================
-    // O listener onAuthStateChanged foi simplificado. Ele agora apenas verifica
-    // se um usuário já tem uma sessão ativa e o redireciona, sem fazer
-    // a verificação de acesso complexa, que agora é responsabilidade do index.html.
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            // Se o usuário já está logado (ex: voltou para a página de login),
-            // envia-o para a página principal para ser roteado corretamente.
-            console.log("Sessão de usuário ativa encontrada, redirecionando...");
-            window.location.href = 'index.html';
-        }
-    });
+    // O bloco onAuthStateChanged foi REMOVIDO desta página.
+    // A responsabilidade de redirecionar um usuário já logado agora é
+    // exclusivamente do userService.js, evitando o loop na página de login.
     // ======================================================================
 
-    // Lógica do Login com Google
+    // Lógica do Login com Google (sem alterações)
     if (btnLoginGoogle) {
         btnLoginGoogle.addEventListener('click', async () => {
             btnLoginGoogle.disabled = true;
@@ -49,7 +39,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Lógica do Login com E-mail e Senha
+    // Lógica do Login com E-mail e Senha (sem alterações)
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
