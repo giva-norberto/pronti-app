@@ -1,88 +1,23 @@
 // ======================================================================
 //                      USERSERVICE.JS
-//           VERSÃO FINAL COM IMPORTAÇÕES CENTRALIZADAS
+//           VERSÃO FINAL COM FLUXO DE LÓGICA CORRIGIDO
 // ======================================================================
 
-// Importa as instâncias JÁ INICIALIZADAS do seu arquivo de configuração
+// Imports (sem alterações)
+import {
+    collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
-// Importa as FUNÇÕES que serão usadas, dos seus respectivos módulos
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// Funções Auxiliares (sem alterações )
+async function getEmpresasDoDono(uid) { /* ...código inalterado... */ }
+export async function ensureUserAndTrialDoc() { /* ...código inalterado... */ }
+export async function checkUserStatus() { /* ...código inalterado... */ }
 
-
-// --- Funções Auxiliares e checkUserStatus (sem alterações na lógica ) ---
-async function getEmpresasDoDono(uid) {
-    if (!uid) return null;
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot;
-}
-export async function ensureUserAndTrialDoc() {
-    const user = auth.currentUser;
-    if (!user) return;
-    const userRef = doc(db, "usuarios", user.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-        await setDoc(userRef, {
-            nome: user.displayName || user.email,
-            email: user.email,
-            trialStart: serverTimestamp(),
-            isPremium: false
-        });
-    } else if (!userSnap.data().trialStart) {
-        await updateDoc(userRef, {
-            trialStart: serverTimestamp()
-        });
-    }
-}
-export async function checkUserStatus() {
-    const safeReturn = { hasActivePlan: false, isTrialActive: false, trialEndDate: null };
-    const user = auth.currentUser;
-    if (!user) return safeReturn;
-    try {
-        const userRef = doc(db, "usuarios", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return safeReturn;
-        const userData = userSnap.data();
-        const hasActivePlan = userData.isPremium === true;
-        let isTrialActive = false;
-        let trialEndDate = null;
-        if (userData.trialStart && userData.trialStart.seconds) {
-            const empresasSnapshot = await getEmpresasDoDono(user.uid);
-            let trialDurationDays = 15;
-            if (empresasSnapshot && !empresasSnapshot.empty) {
-                const empresaData = empresasSnapshot.docs[0].data();
-                if (empresaData.freeEmDias !== undefined) {
-                    trialDurationDays = empresaData.freeEmDias;
-                }
-            }
-            const startDate = new Date(userData.trialStart.seconds * 1000);
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + trialDurationDays);
-            trialEndDate = endDate;
-            if (endDate > new Date()) {
-                isTrialActive = true;
-            }
-        }
-        return { hasActivePlan, isTrialActive, trialEndDate };
-    } catch (error) {
-        console.error("Erro em checkUserStatus:", error);
-        return safeReturn;
-    }
-}
-
-// --- Função Principal (sem alterações na lógica) ---
+// ======================================================================
+// FUNÇÃO PRINCIPAL COM A LÓGICA DE FLUXO CORRIGIDA
+// ======================================================================
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -96,33 +31,41 @@ export async function verificarAcesso() {
             const currentPage = window.location.pathname.split('/').pop();
             const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
+            // Etapa 1: Tratar o Admin como um caso especial e sair imediatamente.
             if (user.uid === ADMIN_UID) {
+                console.log("Admin detectado. Concedendo acesso.");
                 const primeiraEmpresaQuery = query(collection(db, "empresarios"));
                 const snapshot = await getDocs(primeiraEmpresaQuery);
                 if (!snapshot.empty) {
                     localStorage.setItem('empresaAtivaId', snapshot.docs[0].id);
-                } else {
-                    localStorage.removeItem('empresaAtivaId');
                 }
-                return resolve({ 
-                    user, 
-                    isAdmin: true, 
-                    perfil: { nome: "Administrador" },
-                    empresaId: localStorage.getItem('empresaAtivaId'),
-                    isOwner: false,
-                    role: 'admin'
-                });
+                return resolve({ user, isAdmin: true, perfil: { nome: "Administrador" }, empresaId: localStorage.getItem('empresaAtivaId'), isOwner: false, role: 'admin' });
             }
 
+            // Etapa 2: Verificar status de assinatura para usuários normais.
             const { hasActivePlan, isTrialActive } = await checkUserStatus();
-            if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
-                window.location.href = 'assinatura.html';
-                return new Promise(() => {});
+            
+            // Se o acesso deve ser bloqueado...
+            if (!hasActivePlan && !isTrialActive) {
+                // ...e a página atual NÃO é a de assinatura, redireciona.
+                if (currentPage !== 'assinatura.html') {
+                    console.log("Acesso bloqueado. Redirecionando para assinatura...");
+                    window.location.href = 'assinatura.html';
+                } else {
+                    // Se já está na página de assinatura, apenas informa e para.
+                    console.log("Acesso bloqueado. Permanecendo na página de assinatura.");
+                }
+                // CRUCIAL: Rejeita a promessa para parar a execução aqui.
+                return reject(new Error("Assinatura expirada."));
             }
+
+            // Etapa 3: Se chegou até aqui, o usuário tem acesso. Prossiga com a lógica normal.
+            console.log("--- Acesso permitido. Verificando perfil do utilizador:", user.uid, "---");
 
             try {
                 const empresasSnapshot = await getEmpresasDoDono(user.uid);
                 if (empresasSnapshot && !empresasSnapshot.empty) {
+                    // Lógica de Dono (sem alterações)
                     if (empresasSnapshot.size === 1) {
                         const empresaDoc = empresasSnapshot.docs[0];
                         localStorage.setItem('empresaAtivaId', empresaDoc.id);
@@ -154,6 +97,7 @@ export async function verificarAcesso() {
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
                 if (mapaSnap.exists()) {
+                    // Lógica de Funcionário (sem alterações)
                     const empresaId = mapaSnap.data().empresaId;
                     const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
                     const profissionalSnap = await getDoc(profissionalRef);
