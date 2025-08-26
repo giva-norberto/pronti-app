@@ -26,6 +26,98 @@
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" src="admin-clientes.js"></script>
+
+  <!-- 
+    Não use "src=" se o arquivo JS não for puro ES5/JSX.
+    O recomendado: coloque o código JS mockado DENTRO do <script type="text/babel">.
+  -->
+  <script type="text/babel">
+    function AdminClientes() {
+      const [empresas, setEmpresas] = React.useState([
+        {
+          uid: "1",
+          nome: "Empresa XPTO",
+          email: "xpto@empresa.com",
+          bloqueado: false,
+          funcionarios: [
+            { id: "a", nome: "Ana", email: "ana@empresa.com", bloqueado: false },
+            { id: "b", nome: "Beto", email: "beto@empresa.com", bloqueado: true }
+          ]
+        },
+        {
+          uid: "2",
+          nome: "Empresa Beta",
+          email: "beta@empresa.com",
+          bloqueado: true,
+          funcionarios: [
+            { id: "c", nome: "Carlos", email: "carlos@empresa.com", bloqueado: false }
+          ]
+        }
+      ]);
+
+      function bloquearEmpresa(uid, bloquear) {
+        setEmpresas(empresas.map(emp =>
+          emp.uid === uid
+            ? { ...emp, bloqueado: bloquear, funcionarios: emp.funcionarios.map(f => ({ ...f, bloqueado: bloquear })) }
+            : emp
+        ));
+      }
+
+      return (
+        <div className="container">
+          <h2>Gestão de Empresas e Funcionários</h2>
+          {empresas.map(empresa => (
+            <div className="empresa" key={empresa.uid}>
+              <div className="empresa-header">
+                <div>
+                  <div><strong>Empresa:</strong> {empresa.nome} ({empresa.email})</div>
+                  <div><strong>Status:</strong> <span className="empresa-status" style={{ color: empresa.bloqueado ? "#dc2626" : "#10b981" }}>{empresa.bloqueado ? "Bloqueada" : "Ativa"}</span></div>
+                </div>
+                <button
+                  className={empresa.bloqueado ? "btn-unblock" : "btn-block"}
+                  onClick={() => bloquearEmpresa(empresa.uid, !empresa.bloqueado)}
+                >
+                  {empresa.bloqueado ? "Desbloquear Empresa" : "Bloquear Empresa"}
+                </button>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <strong>Funcionários:</strong>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {empresa.funcionarios.length === 0 && (
+                      <tr>
+                        <td colSpan={3} style={{ textAlign: "center", color: "#aaa" }}>Nenhum funcionário</td>
+                      </tr>
+                    )}
+                    {empresa.funcionarios.map(func => (
+                      <tr key={func.id} className={func.bloqueado ? "blocked" : ""}>
+                        <td>{func.nome}</td>
+                        <td>{func.email}</td>
+                        <td>
+                          <span style={{ color: func.bloqueado ? "#dc2626" : "#10b981" }}>
+                            {func.bloqueado ? "Bloqueado" : "Ativo"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<AdminClientes />);
+  </script>
 </body>
 </html>
