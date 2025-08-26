@@ -7,25 +7,26 @@ export function AdminClientes() {
   const { user } = useAuth();
   const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Substitua pelo seu UID de admin
+  const [actionLoading, setActionLoading] = useState(null); // ID da empresa sendo bloqueada/desbloqueada
+  const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Seu UID de admin
 
   const carregarEmpresas = useCallback(async () => {
     setLoading(true);
     try {
       const snap = await getDocs(collection(db, "empresarios"));
-      const lista = [];
-      for (const empresaDoc of snap.docs) {
-        const empresa = { uid: empresaDoc.id, ...empresaDoc.data(), funcionarios: [] };
-        // Busca funcionários
-        const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
-        empresa.funcionarios = profSnap.docs.map(p => ({
-          id: p.id,
-          ...p.data()
-        }));
-        lista.push(empresa);
-      }
+      const lista = await Promise.all(
+        snap.docs.map(async (empresaDoc) => {
+          const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
+          return {
+            uid: empresaDoc.id,
+            ...empresaDoc.data(),
+            funcionarios: profSnap.docs.map(p => ({ id: p.id, ...p.data() }))
+          };
+        })
+      );
       setEmpresas(lista);
     } catch (e) {
+      console.error("Erro ao carregar empresas:", e);
       alert("Erro ao carregar empresas!");
     } finally {
       setLoading(false);
@@ -40,33 +41,33 @@ export function AdminClientes() {
 
   async function bloquearEmpresa(uid, bloquear) {
     try {
+      setActionLoading(uid);
       await updateDoc(doc(db, "empresarios", uid), { bloqueado: bloquear });
+
       const profSnap = await getDocs(collection(db, "empresarios", uid, "profissionais"));
-      const updates = [];
-      profSnap.forEach(prof => {
-        updates.push(updateDoc(doc(db, "empresarios", uid, "profissionais", prof.id), { bloqueado: bloquear }));
-      });
-      await Promise.all(updates);
+      await Promise.all(profSnap.docs.map(p =>
+        updateDoc(doc(db, "empresarios", uid, "profissionais", p.id), { bloqueado: bloquear })
+          .catch(err => console.error(`Erro ao atualizar funcionário ${p.id}:`, err))
+      ));
+
       await carregarEmpresas();
     } catch (e) {
+      console.error("Erro ao bloquear/desbloquear empresa:", e);
       alert("Erro ao bloquear/desbloquear empresa.");
+    } finally {
+      setActionLoading(null);
     }
   }
 
-  if (!user || user.uid !== ADMIN_UID) {
-    return <div style={{ padding: 32, textAlign: "center" }}>Acesso restrito.</div>;
-  }
+  if (!user) return <div style={{ padding: 32, textAlign: "center" }}>Aguardando login...</div>;
+  if (user.uid !== ADMIN_UID) return <div style={{ padding: 32, textAlign: "center" }}>Acesso restrito.</div>;
   if (loading) return <div style={{ padding: 32 }}>Carregando empresas...</div>;
 
   return (
     <div style={{ padding: 32 }}>
-      <h2 style={{ fontWeight: "bold", fontSize: 22, marginBottom: 24 }}>
-        Gestão de Empresas e Funcionários
-      </h2>
+      <h2 style={{ fontWeight: "bold", fontSize: 22, marginBottom: 24 }}>Gestão de Empresas e Funcionários</h2>
       {empresas.length === 0 && (
-        <div style={{ color: "#888", fontStyle: "italic" }}>
-          Nenhuma empresa cadastrada.
-        </div>
+        <div style={{ color: "#888", fontStyle: "italic" }}>Nenhuma empresa cadastrada.</div>
       )}
       {empresas.map(empresa => (
         <div
@@ -81,10 +82,8 @@ export function AdminClientes() {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <strong>Empresa:</strong> {empresa.nome || empresa.email || empresa.uid}
-              <br />
-              <strong>Dono:</strong> {empresa.nome || "-"} ({empresa.email || "-"})
-              <br />
+              <strong>Empresa:</strong> {empresa.nome || empresa.email || empresa.uid}<br/>
+              <strong>Dono:</strong> {empresa.nome || "-"} ({empresa.email || "-"})<br/>
               <strong>Status:</strong>{" "}
               {empresa.bloqueado ? (
                 <span style={{ color: "#dc2626" }}>Bloqueada</span>
@@ -93,6 +92,7 @@ export function AdminClientes() {
               )}
             </div>
             <button
+              disabled={actionLoading === empresa.uid}
               style={{
                 background: empresa.bloqueado ? "#10b981" : "#dc2626",
                 color: "#fff",
@@ -100,13 +100,15 @@ export function AdminClientes() {
                 borderRadius: 4,
                 padding: "6px 18px",
                 fontWeight: 600,
-                cursor: "pointer"
+                cursor: actionLoading === empresa.uid ? "not-allowed" : "pointer",
+                opacity: actionLoading === empresa.uid ? 0.6 : 1
               }}
               onClick={() => bloquearEmpresa(empresa.uid, !empresa.bloqueado)}
             >
-              {empresa.bloqueado ? "Desbloquear Empresa" : "Bloquear Empresa"}
+              {actionLoading === empresa.uid ? "Aguarde..." : (empresa.bloqueado ? "Desbloquear Empresa" : "Bloquear Empresa")}
             </button>
           </div>
+
           <div style={{ marginTop: 16 }}>
             <strong>Funcionários:</strong>
             <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse" }}>
@@ -120,9 +122,7 @@ export function AdminClientes() {
               <tbody>
                 {empresa.funcionarios.length === 0 && (
                   <tr>
-                    <td colSpan={3} style={{ textAlign: "center", color: "#aaa" }}>
-                      Nenhum funcionário
-                    </td>
+                    <td colSpan={3} style={{ textAlign: "center", color: "#aaa" }}>Nenhum funcionário</td>
                   </tr>
                 )}
                 {empresa.funcionarios.map(func => (
