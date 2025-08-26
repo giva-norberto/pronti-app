@@ -85,7 +85,7 @@
         }
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1.8fr 1.2fr;
+            grid-template-columns: 2fr 1fr;
             gap: 30px;
         }
         @media (max-width: 1000px) {
@@ -193,12 +193,14 @@
             color: var(--primary);
             font-size: 1.14rem;
         }
-        /* IA e Resumo especiais */
+        /* IA/Sugestão */
         .ia-card {
             background: linear-gradient(120deg, #6366f1 60%, #8b5cf6 100%);
             color: #fff;
             box-shadow: 0 6px 28px #6366f133;
             border:none;
+            position: relative;
+            overflow: hidden;
         }
         .ia-card .card-title {
             color: #e0e7ff;
@@ -206,6 +208,27 @@
         .ia-card p {
             font-size: 1.12rem;
             line-height: 1.7;
+        }
+        /* Botão IA */
+        .ia-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 12px;
+        }
+        .ia-btn {
+            background: #fff2;
+            color: #fff;
+            border: 1.5px solid #e0e7ff55;
+            border-radius: 9px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.98em;
+            transition: background 0.18s, color 0.13s;
+        }
+        .ia-btn:hover {
+            background: #fff4;
+            color: #ffffffe0;
         }
         .resumo-card {
             border-left: 6px solid var(--primary);
@@ -288,27 +311,34 @@
                     <div class="card">
                         <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Agendamentos</div>
                         <div class="card-main-value" id="total-agendamentos-dia">0</div>
-                        <div class="card-sub-value"><span id="agendamentos-pendentes">0</span> pendentes no turno</div>
+                        <div class="card-sub-value"><span id="agendamentos-pendentes">0</span> pendentes no dia</div>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title"><i class="fa-regular fa-calendar"></i> Agenda do Turno Atual</div>
+                    <div class="card-title"><i class="fa-regular fa-calendar"></i> Agenda do Dia</div>
                     <div id="agenda-dia-lista" class="agenda-list">
-                        <p style="color: var(--text-secondary);">Nenhum agendamento para este turno.</p>
+                        <!-- Aqui seus agendamentos do dia serão carregados via JS/backend -->
+                        <p style="color: var(--text-secondary);">Nenhum agendamento para este dia.</p>
                     </div>
                 </div>
             </div>
             <!-- Coluna Lateral -->
             <div class="side-cards">
                 <div class="card ia-card">
-                    <div class="card-title"><i class="fa-solid fa-brain"></i> Sugestão do Dia</div>
+                    <div class="card-title"><i class="fa-solid fa-brain"></i> Sugestão Inteligente</div>
                     <div id="ia-sugestao">
+                        <!-- Aqui sua IA pode responder -->
                         <p>Analisando dados...</p>
+                    </div>
+                    <div class="ia-actions">
+                        <button class="ia-btn" id="btn-gerar-sugestao">Gerar nova sugestão</button>
+                        <button class="ia-btn" id="btn-ver-tendencia">Ver tendência</button>
                     </div>
                 </div>
                 <div class="card resumo-card">
                     <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Resumo Inteligente</div>
                     <div id="resumo-inteligente">
+                        <!-- Aqui seu resumo inteligente será carregado -->
                         <p>Sem dados para exibir.</p>
                     </div>
                 </div>
@@ -323,6 +353,16 @@
                 .then(html => {
                     document.getElementById('sidebar-placeholder').innerHTML = html;
                 });
+
+            // Exemplo de integração para botão de IA (troque pela sua chamada real à IA)
+            document.getElementById('btn-gerar-sugestao').onclick = function() {
+                document.getElementById('ia-sugestao').innerHTML = '<p>Consultando IA, aguarde...</p>';
+                // Aqui você chama sua API real, depois atualiza o conteúdo do card
+            };
+            document.getElementById('btn-ver-tendencia').onclick = function() {
+                document.getElementById('ia-sugestao').innerHTML = '<p>Analisando tendências, aguarde...</p>';
+                // Sua lógica de tendência aqui
+            };
         });
     </script>
     <script type="module" src="dashboard.js"></script>
