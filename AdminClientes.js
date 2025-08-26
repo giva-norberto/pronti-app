@@ -1,30 +1,22 @@
-// Arquivo: admin-clientes.js
+// Arquivo: admin-clientes.js (Versão Final SEM JSX)
 
-// Importa o React e o ReactDOM para renderizar a página
-import React, { useState, useEffect, useCallback } from "https://esm.sh/react";
+import React from "https://esm.sh/react";
 import ReactDOM from "https://esm.sh/react-dom/client";
-
-// ===================================================================
-//                        PONTO CRUCIAL
-// Importa a conexão do Firebase que VOCÊ já criou, evitando conflito.
-// ===================================================================
-import { auth, db } from "./vitrini-firebase.js"; 
-
-// Importa as funções do Firestore que vamos usar
+import { auth, db } from "./vitrini-firebase.js"; // USA SUA CONEXÃO EXISTENTE
 import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-
+const e = React.createElement;
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 function AdminClientes( ) {
-    const [user, setUser] = useState(null);
-    const [authLoading, setAuthLoading] = useState(true);
-    const [dataLoading, setDataLoading] = useState(false);
-    const [empresas, setEmpresas] = useState([]);
-    const [error, setError] = useState(null);
+    const [user, setUser] = React.useState(null);
+    const [authLoading, setAuthLoading] = React.useState(true);
+    const [dataLoading, setDataLoading] = React.useState(false);
+    const [empresas, setEmpresas] = React.useState([]);
+    const [error, setError] = React.useState(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
             setAuthLoading(false);
@@ -32,7 +24,7 @@ function AdminClientes( ) {
         return () => unsubscribe();
     }, []);
 
-    const carregarEmpresas = useCallback(async () => {
+    const carregarEmpresas = React.useCallback(async () => {
         setDataLoading(true);
         setError(null);
         try {
@@ -40,56 +32,63 @@ function AdminClientes( ) {
             const lista = await Promise.all(
                 snap.docs.map(async (empresaDoc) => {
                     const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
-                    return {
-                        uid: empresaDoc.id,
-                        ...empresaDoc.data(),
-                        funcionarios: profSnap.docs.map(p => ({ id: p.id, ...p.data() }))
-                    };
+                    return { uid: empresaDoc.id, ...empresaDoc.data(), funcionarios: profSnap.docs.map(p => ({ id: p.id, ...p.data() })) };
                 })
             );
             setEmpresas(lista);
-        } catch (e) {
-            setError("Falha ao buscar dados: " + e.message);
+        } catch (err) {
+            setError("Falha ao buscar dados: " + err.message);
         } finally {
             setDataLoading(false);
         }
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (user && user.uid === ADMIN_UID) {
             carregarEmpresas();
         }
     }, [user, carregarEmpresas]);
 
     if (authLoading) {
-        return <div className="loading">Verificando autenticação...</div>;
+        return e('div', { className: 'loading' }, 'Verificando autenticação...');
     }
-
     if (!user) {
-        return <div className="restricted">Acesso negado. Por favor, faça o login.</div>;
+        return e('div', { className: 'restricted' }, 'Acesso negado. Por favor, faça o login.');
     }
-
     if (user.uid !== ADMIN_UID) {
-        return <div className="restricted">Acesso restrito. Apenas administradores. (Seu UID: {user.uid})</div>;
+        return e('div', { className: 'restricted' }, `Acesso restrito. Apenas administradores. (Seu UID: ${user.uid})`);
     }
 
-    return (
-        <div className="container">
-            <h2>Gestão de Empresas e Funcionários</h2>
-            {dataLoading && <div className="loading">Carregando dados...</div>}
-            {error && <div className="restricted" style={{color: 'red'}}><strong>Erro:</strong> {error}</div>}
-            {!dataLoading && !error && empresas.length === 0 && <p>Nenhuma empresa encontrada.</p>}
-            
-            {empresas.map(emp => (
-                <div className="empresa" key={emp.uid}>
-                    <div><strong>Empresa:</strong> {emp.nome || emp.email || emp.uid}</div>
-                    {/* Resto do seu código para mostrar os dados... */}
-                </div>
-            ))}
-        </div>
+    return e('div', { className: 'container' },
+        e('h2', null, 'Gestão de Empresas e Funcionários'),
+        dataLoading && e('div', { className: 'loading' }, 'Carregando dados...'),
+        error && e('div', { className: 'restricted', style: { color: 'red' } }, e('strong', null, 'Erro: '), error),
+        !dataLoading && !error && empresas.length === 0 && e('p', null, 'Nenhuma empresa encontrada.'),
+        empresas.map(emp => 
+            e('div', { className: 'empresa', key: emp.uid },
+                e('div', { className: 'empresa-header' },
+                    e('div', null,
+                        e('div', null, e('strong', null, 'Empresa: '), emp.nome || emp.email || emp.uid),
+                        e('div', null, e('strong', null, 'Status: '), e('span', { className: 'empresa-status', style: { color: emp.bloqueado ? '#dc2626' : '#10b981' } }, emp.bloqueado ? 'Bloqueada' : 'Ativa'))
+                    ),
+                    e('button', { className: emp.bloqueado ? 'btn-unblock' : 'btn-block', onClick: () => { /* Lógica de bloquear aqui */ } }, emp.bloqueado ? 'Desbloquear' : 'Bloquear')
+                ),
+                e('div', { style: { marginTop: 16 } },
+                    e('strong', null, 'Funcionários:'),
+                    e('table', { style: { width: '100%', marginTop: 8, borderCollapse: 'collapse' } },
+                        e('thead', null, e('tr', { style: { background: '#f3f4f6' } }, e('th', null, 'Nome'), e('th', null, 'Email'), e('th', null, 'Status'))),
+                        e('tbody', null, 
+                            emp.funcionarios.length === 0 
+                            ? e('tr', null, e('td', { colSpan: 3, style: { textAlign: 'center', color: '#aaa' } }, 'Nenhum funcionário'))
+                            : emp.funcionarios.map(f => e('tr', { key: f.id, className: f.bloqueado ? 'blocked' : '' }, e('td', null, f.nome || '-'), e('td', null, f.email || '-'), e('td', null, e('span', { style: { color: f.bloqueado ? '#dc2626' : '#10b981' } }, f.bloqueado ? 'Bloqueado' : 'Ativo'))))
+                        )
+                    )
+                )
+            )
+        )
     );
 }
 
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
-root.render(<AdminClientes />);
+root.render(e(AdminClientes));
