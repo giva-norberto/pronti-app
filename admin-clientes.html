@@ -7,8 +7,27 @@
   <!-- React e ReactDOM CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Babel para usar JSX direto no navegador -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_PROJECT_ID.firebaseapp.com",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_PROJECT_ID.appspot.com",
+      messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    window.db = getFirestore(app);
+    window.auth = getAuth(app);
+  </script>
+
   <style>
     body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; }
     .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px #0001; padding: 32px; }
@@ -22,55 +41,84 @@
     th, td { padding: 6px 9px; }
     thead tr { background: #f3f4f6; }
     tbody tr.blocked { background: #fde2e2; }
+    .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
-  <!-- 
-    Não use "src=" se o arquivo JS não for puro ES5/JSX.
-    O recomendado: coloque o código JS mockado DENTRO do <script type="text/babel">.
-  -->
   <script type="text/babel">
-    function AdminClientes() {
-      const [empresas, setEmpresas] = React.useState([
-        {
-          uid: "1",
-          nome: "Empresa XPTO",
-          email: "xpto@empresa.com",
-          bloqueado: false,
-          funcionarios: [
-            { id: "a", nome: "Ana", email: "ana@empresa.com", bloqueado: false },
-            { id: "b", nome: "Beto", email: "beto@empresa.com", bloqueado: true }
-          ]
-        },
-        {
-          uid: "2",
-          nome: "Empresa Beta",
-          email: "beta@empresa.com",
-          bloqueado: true,
-          funcionarios: [
-            { id: "c", nome: "Carlos", email: "carlos@empresa.com", bloqueado: false }
-          ]
-        }
-      ]);
 
-      function bloquearEmpresa(uid, bloquear) {
-        setEmpresas(empresas.map(emp =>
-          emp.uid === uid
-            ? { ...emp, bloqueado: bloquear, funcionarios: emp.funcionarios.map(f => ({ ...f, bloqueado: bloquear })) }
-            : emp
-        ));
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Seu UID de admin
+
+    function AdminClientes() {
+      const [user, setUser] = React.useState(null);
+      const [empresas, setEmpresas] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
+
+      // Observa o auth
+      React.useEffect(() => {
+        const unsub = window.auth && window.auth.onAuthStateChanged((u) => {
+          setUser(u);
+        });
+        return () => unsub && unsub();
+      }, []);
+
+      const carregarEmpresas = React.useCallback(async () => {
+        setLoading(true);
+        try {
+          const snap = await getDocs(collection(window.db, "empresarios"));
+          const lista = await Promise.all(
+            snap.docs.map(async (empresaDoc) => {
+              const profSnap = await getDocs(collection(window.db, "empresarios", empresaDoc.id, "profissionais"));
+              return {
+                uid: empresaDoc.id,
+                ...empresaDoc.data(),
+                funcionarios: profSnap.docs.map(p => ({ id: p.id, ...p.data() }))
+              };
+            })
+          );
+          setEmpresas(lista);
+        } catch(e) {
+          alert("Erro ao carregar empresas.");
+          console.error(e);
+        } finally {
+          setLoading(false);
+        }
+      }, []);
+
+      // Carrega empresas quando o admin logar
+      React.useEffect(() => {
+        if(user && user.uid === ADMIN_UID) {
+          carregarEmpresas();
+        }
+      }, [user, carregarEmpresas]);
+
+      async function bloquearEmpresa(uid, bloquear) {
+        try {
+          await updateDoc(doc(window.db, "empresarios", uid), { bloqueado: bloquear });
+          const profSnap = await getDocs(collection(window.db, "empresarios", uid, "profissionais"));
+          await Promise.all(profSnap.docs.map(p => updateDoc(doc(window.db, "empresarios", uid, "profissionais", p.id), { bloqueado: bloquear })));
+          await carregarEmpresas();
+        } catch(e) {
+          alert("Erro ao atualizar empresa e funcionários.");
+          console.error(e);
+        }
       }
+
+      if(!user) return <div className="loading">Aguardando login...</div>;
+      if(user.uid !== ADMIN_UID) return <div className="restricted">Acesso restrito.</div>;
+      if(loading) return <div className="loading">Carregando empresas...</div>;
 
       return (
         <div className="container">
           <h2>Gestão de Empresas e Funcionários</h2>
+          {empresas.length === 0 && <div style={{ color: "#888", fontStyle: "italic" }}>Nenhuma empresa cadastrada.</div>}
           {empresas.map(empresa => (
             <div className="empresa" key={empresa.uid}>
               <div className="empresa-header">
                 <div>
-                  <div><strong>Empresa:</strong> {empresa.nome} ({empresa.email})</div>
+                  <div><strong>Empresa:</strong> {empresa.nome || empresa.email || empresa.uid}</div>
                   <div><strong>Status:</strong> <span className="empresa-status" style={{ color: empresa.bloqueado ? "#dc2626" : "#10b981" }}>{empresa.bloqueado ? "Bloqueada" : "Ativa"}</span></div>
                 </div>
                 <button
@@ -98,13 +146,9 @@
                     )}
                     {empresa.funcionarios.map(func => (
                       <tr key={func.id} className={func.bloqueado ? "blocked" : ""}>
-                        <td>{func.nome}</td>
-                        <td>{func.email}</td>
-                        <td>
-                          <span style={{ color: func.bloqueado ? "#dc2626" : "#10b981" }}>
-                            {func.bloqueado ? "Bloqueado" : "Ativo"}
-                          </span>
-                        </td>
+                        <td>{func.nome || "-"}</td>
+                        <td>{func.email || "-"}</td>
+                        <td><span style={{ color: func.bloqueado ? "#dc2626" : "#10b981" }}>{func.bloqueado ? "Bloqueado" : "Ativo"}</span></td>
                       </tr>
                     ))}
                   </tbody>
