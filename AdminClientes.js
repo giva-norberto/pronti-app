@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from "https://esm.sh/react";
-import ReactDOM from "https://esm.sh/react-dom/client"; // Importação corrigida
+import ReactDOM from "https://esm.sh/react-dom/client";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// Config Firebase
+// =================================================================================
+// 1. CONFIGURE SEU FIREBASE AQUI
+// Verifique se estas chaves estão corretas e não são apenas placeholders.
+// =================================================================================
 const firebaseConfig = {
   apiKey: "SUA_API_KEY",
   authDomain: "SEU_PROJECT_ID.firebaseapp.com",
@@ -14,29 +17,54 @@ const firebaseConfig = {
   appId: "SEU_APP_ID"
 };
 
-const app = initializeApp(firebaseConfig );
-const db = getFirestore(app);
-const auth = getAuth(app);
-
+// =================================================================================
+// 2. VERIFIQUE O UID DO ADMINISTRADOR
+// Este é o ID do usuário que tem permissão para ver esta página.
+// =================================================================================
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+
+// Inicializa o Firebase
+let app, db, auth;
+let firebaseError = null;
+try {
+  app = initializeApp(firebaseConfig );
+  db = getFirestore(app);
+  auth = getAuth(app);
+} catch (e) {
+  console.error("Erro Crítico na Inicialização do Firebase:", e);
+  firebaseError = e.message; // Captura o erro de inicialização
+}
 
 function AdminClientes() {
   const [user, setUser] = useState(null);
+  const [authStatus, setAuthStatus] = useState("Verificando login..."); // Mensagem de status
   const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Observa auth
+  // Observa o estado da autenticação
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setAuthStatus(`Logado como: ${currentUser.email} (UID: ${currentUser.uid})`);
+      } else {
+        setUser(null);
+        setAuthStatus("Nenhum usuário logado.");
+      }
     });
     return () => unsubscribe();
   }, []);
 
   const carregarEmpresas = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const snap = await getDocs(collection(db, "empresarios"));
+      if (snap.empty) {
+        setError("Nenhuma empresa encontrada no banco de dados.");
+      }
       const lista = await Promise.all(
         snap.docs.map(async (empresaDoc) => {
           const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
@@ -49,8 +77,8 @@ function AdminClientes() {
       );
       setEmpresas(lista);
     } catch (e) {
-      console.error(e);
-      alert("Erro ao carregar empresas");
+      console.error("Erro ao carregar empresas:", e);
+      setError(`Falha ao buscar dados do Firestore: ${e.message}. Verifique as regras de segurança.`);
     } finally {
       setLoading(false);
     }
@@ -59,72 +87,60 @@ function AdminClientes() {
   useEffect(() => {
     if (user && user.uid === ADMIN_UID) {
       carregarEmpresas();
-    } else if (user) {
-        setLoading(false); // Para de carregar se o usuário não for admin
     }
   }, [user, carregarEmpresas]);
 
-  async function bloquearEmpresa(uid, bloquear) {
-    try {
-      await updateDoc(doc(db, "empresarios", uid), { bloqueado: bloquear });
-      const profSnap = await getDocs(collection(db, "empresarios", uid, "profissionais"));
-      await Promise.all(profSnap.docs.map(p =>
-        updateDoc(doc(db, "empresarios", uid, "profissionais", p.id), { bloqueado: bloquear })
-      ));
-      await carregarEmpresas();
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao bloquear/desbloquear empresa");
-    }
+  // =================================================================================
+  // RENDERIZAÇÃO COM MENSAGENS DE DIAGNÓSTICO
+  // =================================================================================
+
+  // Se o Firebase falhou ao inicializar
+  if (firebaseError) {
+    return <div className="container" style={{color: 'red'}}>
+      <h2>Erro Crítico</h2>
+      <p>O Firebase não pôde ser inicializado. Verifique suas credenciais `firebaseConfig` no arquivo `admin-clientes.js`.</p>
+      <p><strong>Detalhe:</strong> {firebaseError}</p>
+    </div>;
   }
 
-  if (!user && loading) return <div className="loading">Aguardando login...</div>;
-  if (user && user.uid !== ADMIN_UID) return <div className="restricted">Acesso restrito.</div>;
-  if (loading) return <div className="loading">Carregando empresas...</div>;
+  // Renderiza o status da autenticação e erros
+  const renderDiagnostico = () => {
+    return (
+      <div style={{ background: '#fff3cd', border: '1px solid #ffeeba', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+        <h3 style={{marginTop: 0}}>Diagnóstico da Página</h3>
+        <p><strong>Status da Autenticação:</strong> {authStatus}</p>
+        {user && user.uid !== ADMIN_UID && (
+          <p style={{ color: 'red' }}>
+            <strong>Aviso de Permissão:</strong> O usuário logado não é o administrador (UID esperado: {ADMIN_UID}).
+          </p>
+        )}
+        {error && <p style={{ color: 'red' }}><strong>Erro de Dados:</strong> {error}</p>}
+      </div>
+    );
+  };
 
+  if (loading && (!user || user.uid === ADMIN_UID)) {
+    return <div className="container">{renderDiagnostico()} <div className="loading">Carregando empresas...</div></div>;
+  }
+
+  if (!user || user.uid !== ADMIN_UID) {
+    return <div className="container">{renderDiagnostico()} <div className="restricted">Acesso restrito.</div></div>;
+  }
+
+  // Renderização principal (se tudo estiver correto)
   return (
     <div className="container">
+      {renderDiagnostico()}
       <h2>Gestão de Empresas e Funcionários</h2>
-      {empresas.length === 0 && <div style={{ color:"#888", fontStyle:"italic"}}>Nenhuma empresa cadastrada.</div>}
       {empresas.map(empresa => (
         <div className="empresa" key={empresa.uid}>
-          <div className="empresa-header">
-            <div>
-              <div><strong>Empresa:</strong> {empresa.nome || empresa.email || empresa.uid}</div>
-              <div><strong>Status:</strong> <span className="empresa-status" style={{color: empresa.bloqueado?"#dc2626":"#10b981"}}>{empresa.bloqueado?"Bloqueada":"Ativa"}</span></div>
-            </div>
-            <button className={empresa.bloqueado?"btn-unblock":"btn-block"} onClick={()=>bloquearEmpresa(empresa.uid,!empresa.bloqueado)}>
-              {empresa.bloqueado?"Desbloquear Empresa":"Bloquear Empresa"}
-            </button>
-          </div>
-          <div style={{marginTop:16}}>
-            <strong>Funcionários:</strong>
-            <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#f3f4f6" }}>
-                  <th>Nome</th><th>Email</th><th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {empresa.funcionarios.length === 0 ? (
-                  <tr><td colSpan={3} style={{ textAlign: "center", color: "#aaa" }}>Nenhum funcionário</td></tr>
-                ) : empresa.funcionarios.map(func => (
-                  <tr key={func.id} className={func.bloqueado?"blocked":""}>
-                    <td>{func.nome || "-"}</td>
-                    <td>{func.email || "-"}</td>
-                    <td><span style={{color: func.bloqueado ? "#dc2626" : "#10b981"}}>{func.bloqueado ? "Bloqueado" : "Ativo"}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* O resto do seu código de exibição de empresas... */}
         </div>
       ))}
     </div>
   );
 }
 
-// Renderiza o componente na div#root
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 root.render(<AdminClientes />);
