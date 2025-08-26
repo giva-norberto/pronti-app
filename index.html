@@ -1,229 +1,281 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Início</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            min-height: 100vh;
-        }
-        body.is-loading {
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        body {
-            opacity: 1;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .primeiro-acesso-card {
-            max-width: 400px;
-            margin: 80px auto;
-            padding: 36px 28px 32px 28px;
-            border-radius: 22px;
-            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001;
-            background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%);
-            border: 1.5px solid #e3eafc;
-            text-align: center;
-            transition: box-shadow 0.2s;
-        }
-        .primeiro-acesso-card h2 {
-            color: #2563eb;
-            font-weight: 700;
-            font-size: 1.34rem;
-            margin-bottom: 18px;
-            letter-spacing: 0.01em;
-        }
-        .primeiro-acesso-card p {
-            font-size: 16px;
-            color: #6b7a90;
-            margin-bottom: 30px;
-        }
-        .primeiro-btn {
-            display: block;
-            width: 100%;
-            background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%);
-            color: #fff;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            padding: 13px 0;
-            font-size: 1rem;
-            cursor: pointer;
-            box-shadow: 0 2px 10px #2563eb22;
-            margin-bottom: 0;
-        }
-        .primeiro-btn i {
-            margin-right: 8px;
-        }
-        .primeiro-btn:hover {
-            background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
-        }
-    </style>
-</head>
-<body class="dashboard-body is-loading">
+// ======================================================================
+//          DASHBOARD.JS (VERSÃO FINAL COM REGRA DE DATA CORRIGIDA)
+// ======================================================================
 
-<!-- Sidebar (menu lateral) incluso dinamicamente -->
-<div id="sidebar-placeholder"></div>
+import { verificarAcesso, checkUserStatus } from "./userService.js";
+import { db } from "./firebase-config.js";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-<main class="main-content" id="main-content">
- <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
- <div class="dashboard-welcome-center" id="dashboard-welcome-center">
-    <!-- ========================================================== -->
-    <!--      CORREÇÃO: TÍTULO DA EMPRESA ATIVA ADICIONADO AQUI     -->
-    <!-- ========================================================== -->
-    <h2 id="nome-empresa-ativa" style="color: #a7b3c4; font-size: 1.2rem; font-weight: 500; margin-bottom: 5px; min-height: 29px;"></h2>
-    <h1><span id="saudacao"></span>, <span id="nome-usuario">Utilizador</span>!</h1>
-    <p>Pronto para gerir o seu dia?</p>
- </div>
+const totalSlots = 20; // Total de slots disponíveis no dia para cálculo de ocupação
+const STATUS_VALIDOS = ["ativo", "realizado"];
 
- <!-- AÇÕES PRINCIPAIS -->
- <div class="dashboard-main-actions" id="dashboard-main-actions">
-  <a href="dashboard.html" class="action-card">
-   <i class="fa-solid fa-chart-line"></i>
-   <span>Painel Inteligente</span>
-  </a>
-  <a href="agenda.html" class="action-card">
-   <i class="fa-solid fa-calendar-check"></i>
-   <span>Agenda</span>
-  </a>
-  <a href="servicos.html" class="action-card" id="acao-servicos">
-   <i class="fa-solid fa-scissors"></i>
-   <span>Serviços</span>
-  </a>
- </div>
+// --------------------------------------------------
+// UTILITÁRIOS
+// --------------------------------------------------
 
- <!-- BOTÃO DE STATUS -->
- <button class="status-button">Ver status de hoje</button>
-</main>
+function timeStringToMinutes(timeStr) {
+  if (!timeStr) return 0;
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+}
 
-<script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { auth } from "./vitrini-firebase.js";
-    import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
+function addMinutesToTimeString(timeStr, minutes) {
+  if (!timeStr) return timeStr;
+  const [h, m] = timeStr.split(":").map(Number);
+  const base = new Date();
+  base.setHours(h, m, 0, 0);
+  base.setMinutes(base.getMinutes() + (Number(minutes) || 0));
+  const hh = String(base.getHours()).padStart(2, "0");
+  const mm = String(base.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
 
-    const nomeUsuarioSpan = document.getElementById("nome-usuario");
-    const saudacaoSpan = document.getElementById("saudacao");
-    const mainContent = document.getElementById("main-content");
-    // ==========================================================
-    //      NOVO: Referência para o título da empresa
-    // ==========================================================
-    const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
+function getEmpresaIdAtiva() {
+  const empresaId = localStorage.getItem("empresaAtivaId");
+  if (!empresaId) {
+    window.location.href = "selecionar-empresa.html";
+    throw new Error("Empresa não selecionada.");
+  }
+  return empresaId;
+}
 
-    function destacarLinkAtivo() {
-        const links = document.querySelectorAll('.sidebar-links a');
-        let current = window.location.pathname.split('/').pop().toLowerCase();
-        links.forEach(link => link.classList.remove('active'));
-        links.forEach(link => {
-            let href = link.getAttribute('href').split('?')[0].toLowerCase();
-            if (
-                href === current ||
-                (href.replace('.html', '') === current.replace('.html', '')) ||
-                (href === 'index.html' && (current === '' || current === 'index.html'))
-            ) {
-                link.classList.add('active');
-            }
-        });
+function debounce(fn, delay) {
+  let timer = null;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// --------------------------------------------------
+// LÓGICA DA DATA
+// --------------------------------------------------
+
+async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
+  try {
+    const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
+    if (!empresaDoc.exists()) return dataInicial;
+    const donoId = empresaDoc.data().donoId;
+    if (!donoId) return dataInicial;
+
+    const horariosSnap = await getDoc(
+      doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios")
+    );
+    const horarios = horariosSnap.exists() ? horariosSnap.data() : null;
+    if (!horarios) return dataInicial;
+
+    const diaDaSemana = ["domingo","segunda","terca","quarta","quinta","sexta","sabado"];
+    let dataAtual = new Date(`${dataInicial}T12:00:00`);
+
+    for (let i = 0; i < 90; i++) {
+      const nomeDia = diaDaSemana[dataAtual.getDay()];
+      const diaConfig = horarios[nomeDia];
+      if (diaConfig && diaConfig.ativo) {
+        return dataAtual.toISOString().split("T")[0];
+      }
+      dataAtual.setDate(dataAtual.getDate() + 1);
     }
 
-    function ativarLogout() {
-        const btnLogout = document.getElementById('btn-logout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                // Limpa a empresa ativa ao fazer logout
-                localStorage.removeItem('empresaAtivaId');
-                signOut(auth).then(() => {
-                    window.location.replace('login.html');
-                }).catch((error) => {
-                    console.error('Erro ao fazer logout:', error);
-                });
-            });
-        }
+    return dataInicial; // fallback
+  } catch (e) {
+    console.error("Erro ao buscar próxima data disponível:", e);
+    return dataInicial;
+  }
+}
+
+// --------------------------------------------------
+// BUSCA E PROCESSAMENTO DE DADOS
+// --------------------------------------------------
+
+async function obterResumoDoDia(empresaId, dataSelecionada) {
+  try {
+    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
+    const q = query(
+      agRef,
+      where("data", "==", dataSelecionada),
+      where("status", "in", STATUS_VALIDOS)
+    );
+    const snapshot = await getDocs(q);
+
+    const agora = new Date();
+    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+    let inicioTurno = 0, fimTurno = 24 * 60;
+    if (minutosAgora < 12 * 60) {
+      inicioTurno = 6 * 60;
+      fimTurno = 12 * 60;
+    } else if (minutosAgora < 18 * 60) {
+      inicioTurno = 12 * 60;
+      fimTurno = 18 * 60;
+    } else {
+      inicioTurno = 18 * 60;
+      fimTurno = 24 * 60;
     }
 
-    function definirSaudacao() {
-        const hora = new Date().getHours();
-        if (hora >= 5 && hora < 12) {
-            return "Bom dia";
-        } else if (hora >= 12 && hora < 18) {
-            return "Boa tarde";
-        } else {
-            return "Boa noite";
+    let totalAgendamentosDia = 0;
+    let agendamentosPendentes = 0;
+    let faturamentoRealizado = 0;
+    let faturamentoPrevisto = 0;
+    const agendaItens = [];
+    const agsParaIA = [];
+
+    snapshot.forEach((d) => {
+      const ag = d.data();
+      const minutosAg = timeStringToMinutes(ag.horario);
+      totalAgendamentosDia++;
+      faturamentoPrevisto += Number(ag.servicoPreco) || 0;
+
+      if (ag.status === "ativo") {
+        if (minutosAg >= inicioTurno && minutosAg < fimTurno) {
+          agendamentosPendentes++;
+          agendaItens.push({
+            horario: ag.horario || "--:--",
+            clienteNome: ag.clienteNome || "Cliente",
+            servicoNome: ag.servicoNome || "",
+            profissionalNome: ag.profissionalNome || ""
+          });
         }
-    }
+      } else if (ag.status === "realizado") {
+        faturamentoRealizado += Number(ag.servicoPreco) || 0;
+      }
 
-    function mostrarPrimeiroAcessoCard() {
-        if (mainContent) {
-            mainContent.innerHTML = `
-                <div class="primeiro-acesso-card">
-                    <h2>Seja bem-vindo ao Pronti!</h2>
-                    <p>Inicie o cadastro da sua empresa.</p>
-                    <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
-                </div>
-            `;
-            document.body.classList.remove('is-loading');
-            document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                // Limpa qualquer seleção antiga para garantir que está a criar uma nova
-                localStorage.removeItem('empresaAtivaId');
-                window.location.href = "perfil.html";
-            });
-        }
-    }
+      const dataISO = ag.data || dataSelecionada;
+      const inicioISO = `${dataISO}T${ag.horario || "00:00"}:00`;
+      const fimHora = ag.horarioFim || addMinutesToTimeString(ag.horario, Number(ag.servicoDuracao) || 0);
+      const fimISO = `${dataISO}T${fimHora || ag.horario || "00:00"}:00`;
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            try {
-                await ensureUserAndTrialDoc();
-
-                const { perfil, isOwner } = await verificarAcesso();
-
-                if (!isOwner) {
-                    window.location.replace('agenda.html');
-                    return;
-                }
-
-                // Saudação personalizada
-                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Utilizador';
-                if (nomeUsuarioSpan) {
-                    nomeUsuarioSpan.textContent = primeiroNome;
-                }
-                if (saudacaoSpan) {
-                    saudacaoSpan.textContent = definirSaudacao();
-                }
-
-                // ==========================================================
-                //      CORREÇÃO: Exibe o nome da empresa ativa
-                // ==========================================================
-                if (nomeEmpresaSpan && perfil.nomeFantasia) {
-                    nomeEmpresaSpan.textContent = `A gerir: ${perfil.nomeFantasia}`;
-                }
-
-                // Carrega o menu lateral
-                fetch('menu-lateral.html')
-                    .then(res => res.text())
-                    .then(html => {
-                        document.getElementById('sidebar-placeholder').innerHTML = html;
-                        destacarLinkAtivo();
-                        ativarLogout();
-                        document.body.classList.remove('is-loading');
-                    });
-            } catch (error) {
-                if (error.message === "primeiro_acesso") {
-                    mostrarPrimeiroAcessoCard();
-                } else if (!error.message.includes("A redirecionar")) { // Ignora o erro de redirecionamento
-                    console.log("Verificação de acesso interrompida:", error.message);
-                    window.location.replace('login.html');
-                }
-            }
-        } else {
-            window.location.replace('login.html');
-        }
+      agsParaIA.push({
+        inicio: inicioISO,
+        fim: fimISO,
+        cliente: ag.clienteNome || "Cliente",
+        servico: ag.servicoNome || "Serviço",
+        servicoPreco: Number(ag.servicoPreco) || 0,
+      });
     });
-</script>
 
-</body>
-</html>
+    agendaItens.sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
+
+    return {
+      totalAgendamentosDia,
+      agendamentosPendentes,
+      faturamentoRealizado,
+      faturamentoPrevisto,
+      agendaItens,
+      agsParaIA,
+    };
+  } catch (e) {
+    console.error("Erro ao obter resumo do dia:", e);
+    return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevisto: 0, agendaItens: [], agsParaIA: [] };
+  }
+}
+
+// --------------------------------------------------
+// RENDERIZAÇÃO NA UI
+// --------------------------------------------------
+
+function preencherPainel(resumo) {
+    // Cards de Resumo
+    document.getElementById("faturamento-realizado").textContent = resumo.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById("faturamento-previsto").textContent = resumo.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById("total-agendamentos-dia").textContent = resumo.totalAgendamentosDia;
+    document.getElementById("agendamentos-pendentes").textContent = resumo.agendamentosPendentes;
+
+    // Agenda do Turno
+    const listaAgendaEl = document.getElementById("agenda-dia-lista");
+    if (resumo.agendaItens.length === 0) {
+        listaAgendaEl.innerHTML = `<p style='color:#888;text-align:center;padding:12px 0;'>Nenhum agendamento para este turno.</p>`;
+    } else {
+        listaAgendaEl.innerHTML = resumo.agendaItens.map(ag => `
+            <div class="agenda-item">
+                <div class="agenda-info">
+                    <strong>${ag.clienteNome}</strong>
+                    <span>${ag.servicoNome}${ag.profissionalNome ? ' com ' + ag.profissionalNome : ''}</span>
+                </div>
+                <div class="agenda-horario">${ag.horario}</div>
+            </div>
+        `).join("");
+    }
+
+    // Resumo Inteligente e IA
+    const resumoInteligente = gerarResumoDiarioInteligente(resumo.agsParaIA);
+    const elResumo = document.getElementById("resumo-inteligente");
+    const elSugestaoIA = document.getElementById("ia-sugestao");
+
+    if (elResumo) {
+        // A função gerarResumoDiarioInteligente deve retornar HTML de lista (<ul><li>...</li></ul>)
+        if (resumoInteligente?.mensagem) {
+            elResumo.innerHTML = resumoInteligente.mensagem;
+        } else {
+            elResumo.innerHTML = "<ul><li>Nenhum dado disponível para o resumo.</li></ul>";
+        }
+    }
+    if (elSugestaoIA) {
+        elSugestaoIA.textContent = calcularSugestaoIA(resumo);
+    }
+}
+
+function calcularSugestaoIA(resumo) {
+    const total = resumo.totalAgendamentosDia || 0;
+    const ocupacaoPercent = Math.min(100, Math.round((total / totalSlots) * 100));
+    if (total === 0) return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
+    if (ocupacaoPercent < 50) return "Ainda há horários vagos. Considere enviar um lembrete aos clientes.";
+    return "O dia está movimentado! Prepare-se para um dia produtivo.";
+}
+
+// --------------------------------------------------
+// INICIALIZAÇÃO E EVENTOS
+// --------------------------------------------------
+
+async function iniciarDashboard(user, empresaId) {
+  const filtroData = document.getElementById("filtro-data");
+  const hojeString = new Date().toISOString().split("T")[0];
+  const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
+
+  if (filtroData) {
+    filtroData.value = dataInicial;
+    filtroData.addEventListener("change", debounce(async () => {
+        const novaData = await encontrarProximaDataDisponivel(empresaId, filtroData.value);
+        if (novaData !== filtroData.value) {
+            filtroData.value = novaData;
+        }
+        const resumo = await obterResumoDoDia(empresaId, novaData);
+        preencherPainel(resumo);
+    }, 300));
+  }
+
+  const resumoInicial = await obterResumoDoDia(empresaId, dataInicial);
+  preencherPainel(resumoInicial);
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const { user } = await verificarAcesso();
+    const empresaId = getEmpresaIdAtiva();
+    await iniciarDashboard(user, empresaId);
+
+    const status = await checkUserStatus();
+    if (status?.isTrialActive && status?.trialEndDate) {
+      const banner = document.getElementById("trial-notification-banner");
+      if (banner) {
+        const hoje = new Date();
+        const trialEnd = new Date(status.trialEndDate);
+        const diasRestantes = Math.max(0, Math.ceil((trialEnd - hoje)/(1000*60*60*24)));
+        banner.innerHTML = `🎉 O seu período de teste termina em ${diasRestantes} dia${diasRestantes!==1?"s":""}.`;
+        banner.style.display = "block";
+      }
+    }
+  } catch(error){
+    if (!error.message.includes("A redirecionar")) {
+        console.error("Erro no guardião de acesso:", error?.message || error);
+        window.location.href = "login.html";
+    }
+  }
+});
