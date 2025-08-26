@@ -5,7 +5,39 @@
     <title>Administração de Clientes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Carrega o SDK do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <!-- Seus estilos -->
+    <style>
+        /* Seus estilos aqui... */
+        body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; } .main { margin-left: 260px; padding: 32px; } @media (max-width: 900px ) { .main { margin-left: 0; } } .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px #0001; padding: 32px; } h2 { font-size: 1.7em; margin-bottom: 24px; } .empresa { border: 1px solid #eee; margin-bottom: 32px; border-radius: 8px; padding: 16px; background: #fafbfc; } .empresa-header { display: flex; align-items: center; justify-content: space-between; } .empresa-status { font-weight: bold; } .btn-block { background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } .btn-unblock { background: #10b981; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } table { width: 100%; margin-top: 8px; border-collapse: collapse; } th, td { padding: 6px 9px; } thead tr { background: #f3f4f6; } tbody tr.blocked { background: #fde2e2; } .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; } .sidebar { width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%); min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05); position: fixed; left: 0; top: 0; bottom: 0; z-index: 10; display: flex; flex-direction: column; padding-top: 24px; } .sidebar-brand { font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 2px; padding: 0 32px 12px 32px; display: block; margin-bottom: 8px; text-align: left; } .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; } .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; } .sidebar-links a { display: flex; align-items: center; gap: 10px; background: #fff; color: #4f46e5; font-weight: 600; font-size: 1.08em; border-radius: 10px; margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07); transition: background 0.17s, color 0.18s, box-shadow 0.18s; padding: 12px 18px; text-align: left; text-decoration: none; letter-spacing: 0.01em; border: 2px solid transparent; } .sidebar-links a.active, .sidebar-links a:focus { background: #4f46e5; color: #fff; font-weight: 700; border: 2px solid #fff; box-shadow: 2px 4px 0 0 #ff3e7f22; } .sidebar-links a:hover:not(.active) { background: #ececff; color: #3b2fd6; border: 2px solid #d1d5fa; } .sidebar-footer { margin-top: auto; padding: 32px 32px 24px 32px; } .btn-logout { background: #fff; color: #4f46e5; border: none; padding: 12px 0; width: 100%; border-radius: 10px; font-weight: bold; font-size: 1.05em; cursor: pointer; transition: background 0.2s, color 0.2s; box-shadow: 0 2px 6px rgba(79,70,229,0.07);Sim, com certeza! E essa é a pergunta mais importante agora que os dados estão aparecendo.
+
+A resposta é: **Ainda não, mas está 95% pronto para isso.**
+
+Deixe-me explicar:
+1.  **A Comunicação de Leitura está 100% funcional:** A página já está se comunicando com o Firebase para **ler** os dados. A prova é que a lista de empresas e funcionários que você vê na tela veio diretamente do seu banco de dados Firestore. Isso está perfeito.
+2.  **A Comunicação de Escrita (Botões) precisa ser ativada:** Eu deixei o código dos botões "Bloquear/Desbloquear" de propósito sem a função final para garantir que a página carregasse primeiro. Atualmente, se você clicar neles, nada acontecerá.
+
+Vamos ativar essa comunicação agora. É um ajuste muito pequeno e seguro no código que já temos.
+
+---
+
+### Ativando a Comunicação dos Botões
+
+Vou te passar o código completo do `admin-clientes.html` novamente. A única diferença será a adição da lógica de `update` do Firebase dentro dos botões.
+
+**Substitua o código do seu `admin-clientes.html` por esta versão final e completa:**
+
+```html
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Administração de Clientes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -37,18 +69,13 @@
         </div>
     </aside>
 
-    <!-- Onde o conteúdo será renderizado -->
     <div class="main">
-      <div id="conteudo-admin">
-          <div class="loading">Verificando autenticação...</div>
-      </div>
+      <div id="conteudo-admin"></div>
     </div>
 
-    <!-- O SCRIPT FINAL -->
     <script>
-        // Configuração do Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // Sua chave correta
+            apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
             authDomain: "pronti-app-37c6e.firebaseapp.com",
             projectId: "pronti-app-37c6e",
             storageBucket: "pronti-app-37c6e.appspot.com",
@@ -56,83 +83,123 @@
             appId: "1:736700619274:web:557aa247905e56fa7e5df3"
         };
 
-        // Inicializa o Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
         const conteudoDiv = document.getElementById('conteudo-admin');
+        let currentData = []; // Guarda os dados atuais para não precisar reler tudo
 
-        // Função para renderizar o HTML
         function render(html) {
             conteudoDiv.innerHTML = html;
+            addEventListeners(); // Adiciona os eventos aos botões depois de renderizar
         }
 
-        // Função principal que roda quando a página carrega
+        // ===================================================================
+        //                      FUNÇÃO DO BOTÃO ATIVADA
+        // ===================================================================
+        async function toggleBloqueio(empresaId, novoStatus) {
+            const empresaRef = db.collection("empresarios").doc(empresaId);
+            try {
+                // Desabilita todos os botões para evitar cliques duplos
+                document.querySelectorAll('.btn-block, .btn-unblock').forEach(b => b.disabled = true);
+                
+                // Atualiza o status da empresa
+                await empresaRef.update({ bloqueado: novoStatus });
+
+                // Atualiza o status de todos os funcionários da empresa
+                const profSnap = await empresaRef.collection("profissionais").get();
+                const updates = profSnap.docs.map(p => p.ref.update({ bloqueado: novoStatus }));
+                await Promise.all(updates);
+
+                // Atualiza os dados na tela sem recarregar tudo do zero
+                const empresaIndex = currentData.findIndex(e => e.uid === empresaId);
+                if (empresaIndex > -1) {
+                    currentData[empresaIndex].bloqueado = novoStatus;
+                    currentData[empresaIndex].funcionarios.forEach(f => f.bloqueado = novoStatus);
+                    renderizarDados(currentData); // Renderiza novamente com os dados atualizados
+                }
+
+            } catch (error) {
+                console.error("Erro ao atualizar status:", error);
+                alert("Não foi possível atualizar o status da empresa.");
+                // Reabilita os botões em caso de erro
+                document.querySelectorAll('.btn-block, .btn-unblock').forEach(b => b.disabled = false);
+            }
+        }
+
+        function addEventListeners() {
+            document.querySelectorAll('.btn-block, .btn-unblock').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const empresaId = event.target.dataset.id;
+                    const novoStatus = event.target.classList.contains('btn-block'); // true se for para bloquear
+                    toggleBloqueio(empresaId, novoStatus);
+                });
+            });
+        }
+
+        function renderizarDados(empresas) {
+            currentData = empresas; // Atualiza os dados guardados
+            let htmlFinal = '<h2>Gestão de Empresas e Funcionários</h2>';
+            if (empresas.length === 0) {
+                htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
+            } else {
+                htmlFinal += empresas.map(empresa => `
+                    <div class="empresa">
+                        <div class="empresa-header">
+                            <div>
+                                <div><strong>Empresa:</strong> ${empresa.nome || empresa.email || empresa.uid}</div>
+                                <div><strong>Status:</strong> <span style="color: ${empresa.bloqueado ? '#dc2626' : '#10b981'}">${empresa.bloqueado ? 'Bloqueada' : 'Ativa'}</span></div>
+                            </div>
+                            <button data-id="${empresa.uid}" class="${empresa.bloqueado ? 'btn-unblock' : 'btn-block'}">
+                                ${empresa.bloqueado ? 'Desbloquear' : 'Bloquear'}
+                            </button>
+                        </div>
+                        <div style="margin-top: 16px;">
+                            <strong>Funcionários:</strong>
+                            <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
+                                <thead><tr style="background: #f3f4f6;"><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    ${empresa.funcionarios.length === 0 
+                                        ? '<tr><td colspan="3" style="text-align: center; color: #aaa;">Nenhum funcionário</td></tr>'
+                                        : empresa.funcionarios.map(f => `
+                                            <tr class="${f.bloqueado ? 'blocked' : ''}">
+                                                <td>${f.nome || '-'}</td>
+                                                <td>${f.email || '-'}</td>
+                                                <td><span style="color: ${f.bloqueado ? '#dc2626' : '#10b981'}">${f.bloqueado ? 'Bloqueado' : 'Ativo'}</span></td>
+                                            </tr>
+                                        `).join('')
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            render(htmlFinal);
+        }
+
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
                 render('<div class="restricted">Acesso negado. Por favor, faça o login.</div>');
                 return;
             }
-
             if (user.uid !== ADMIN_UID) {
                 render(`<div class="restricted">Acesso restrito. Apenas administradores. (Seu UID: ${user.uid})</div>`);
                 return;
             }
 
-            // Se chegou aqui, o usuário é o admin. Vamos buscar os dados.
             render('<div class="loading">Carregando dados das empresas...</div>');
-
             try {
                 const snap = await db.collection("empresarios").get();
-                if (snap.empty) {
-                    render('<p>Nenhuma empresa encontrada.</p>');
-                    return;
-                }
-
-                let htmlFinal = '<h2>Gestão de Empresas e Funcionários</h2>';
-
-                for (const empresaDoc of snap.docs) {
+                const empresasComFuncionarios = await Promise.all(snap.docs.map(async (empresaDoc) => {
                     const empresa = { uid: empresaDoc.id, ...empresaDoc.data() };
-                    
                     const profSnap = await db.collection("empresarios").doc(empresa.uid).collection("profissionais").get();
-                    const funcionarios = profSnap.docs.map(p => ({ id: p.id, ...p.data() }));
-
-                    htmlFinal += `
-                        <div class="empresa">
-                            <div class="empresa-header">
-                                <div>
-                                    <div><strong>Empresa:</strong> ${empresa.nome || empresa.email || empresa.uid}</div>
-                                    <div><strong>Status:</strong> <span style="color: ${empresa.bloqueado ? '#dc2626' : '#10b981'}">${empresa.bloqueado ? 'Bloqueada' : 'Ativa'}</span></div>
-                                </div>
-                                <button class="${empresa.bloqueado ? 'btn-unblock' : 'btn-block'}">
-                                    ${empresa.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                                </button>
-                            </div>
-                            <div style="margin-top: 16px;">
-                                <strong>Funcionários:</strong>
-                                <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
-                                    <thead><tr style="background: #f3f4f6;"><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
-                                    <tbody>
-                                        ${funcionarios.length === 0 
-                                            ? '<tr><td colspan="3" style="text-align: center; color: #aaa;">Nenhum funcionário</td></tr>'
-                                            : funcionarios.map(f => `
-                                                <tr class="${f.bloqueado ? 'blocked' : ''}">
-                                                    <td>${f.nome || '-'}</td>
-                                                    <td>${f.email || '-'}</td>
-                                                    <td><span style="color: ${f.bloqueado ? '#dc2626' : '#10b981'}">${f.bloqueado ? 'Bloqueado' : 'Ativo'}</span></td>
-                                                </tr>
-                                            `).join('')
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    `;
-                }
-                render(htmlFinal);
-
+                    empresa.funcionarios = profSnap.docs.map(p => ({ id: p.id, ...p.data() }));
+                    return empresa;
+                }));
+                renderizarDados(empresasComFuncionarios);
             } catch (error) {
                 render(`<div class="restricted" style="color: red;"><strong>Erro ao carregar dados:</strong> ${error.message}</div>`);
                 console.error("Erro detalhado:", error);
