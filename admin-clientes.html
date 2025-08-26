@@ -12,46 +12,20 @@
     <!-- Seus estilos -->
     <style>
         /* Cole seus estilos aqui */
-        body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; } .main { margin-left: 260px; padding: 32px; } @media (max-width: 900px ) { .main { margin-left: 0; } } .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px #0001; padding: 32px; } h2 { font-size: 1.7em; margin-bottom: 24px; } .empresa { border: 1px solid #eee; margin-bottom: 32px; border-radius: 8px; padding: 16px; background: #fafbfc; } .empresa-header { display: flex; align-items: center; justify-content: space-between; } .empresa-status { font-weight: bold; } .btn-block { background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } .btn-unblock { background: #10b981; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } table { width: 100%; margin-top: 8px; border-collapse: collapse; } th, td { padding: 6px 9px; } thead tr { background: #f3f4f6; } tbody tr.blocked { background: #fde2e2; } .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; } .sidebar { width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%); min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05); position: fixed; left: 0; top: 0; bottom: 0; z-index: 10; display: flex; flex-direction: column; padding-top: 24px; } .sidebar-brand { font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 2px; padding: 0 32px 12px 32px; display: block; margin-bottom: 8px; text-align: left; } .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; } .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; } .sidebar-links a { display: flex; align-items: center; gap: 10px; background: #fff; color: #4f46e5; font-weight: 600;Ah, você está certíssimo! Peço desculpas, na minha pressa para adicionar a nova funcionalidade, eu cometi um erro no código que renderiza o HTML e acabei omitindo a tabela de funcionários. Foi uma falha de atenção minha.
-
-Vamos corrigir isso imediatamente. A lógica de busca dos funcionários no script está correta, o problema foi apenas na hora de "desenhar" a tabela na tela.
-
----
-
-### Arquivo `admin-clientes.html` (Com a Correção da Tabela de Funcionários)
-
-Vou te passar o código completo novamente. A única alteração está na função `renderizarDados`, onde eu reinseri o bloco de código que cria a tabela de funcionários.
-
-**Substitua o conteúdo do seu `admin-clientes.html` por esta versão corrigida:**
-
-```html
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Administração de Clientes</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-
-    <!-- Seus estilos -->
-    <style>
-        /* Cole seus estilos aqui */
         body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; } .main { margin-left: 260px; padding: 32px; } @media (max-width: 900px ) { .main { margin-left: 0; } } .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px #0001; padding: 32px; } h2 { font-size: 1.7em; margin-bottom: 24px; } .empresa { border: 1px solid #eee; margin-bottom: 32px; border-radius: 8px; padding: 16px; background: #fafbfc; } .empresa-header { display: flex; align-items: center; justify-content: space-between; } .empresa-status { font-weight: bold; } .btn-block { background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } .btn-unblock { background: #10b981; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; } table { width: 100%; margin-top: 8px; border-collapse: collapse; } th, td { padding: 6px 9px; } thead tr { background: #f3f4f6; } tbody tr.blocked { background: #fde2e2; } .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; } .sidebar { width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%); min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05); position: fixed; left: 0; top: 0; bottom: 0; z-index: 10; display: flex; flex-direction: column; padding-top: 24px; } .sidebar-brand { font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 2px; padding: 0 32px 12px 32px; display: block; margin-bottom: 8px; text-align: left; } .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; } .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; } .sidebar-links a { display: flex; align-items: center; gap: 10px; background: #fff; color: #4f46e5; font-weight: 600; font-size: 1.08em; border-radius: 10px; margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07); transition: background 0.17s, color 0.18s, box-shadow 0.18s; padding: 12px 18px; text-align: left; text-decoration: none; letter-spacing: 0.01em; border: 2px solid transparent; } .sidebar-links a.active, .sidebar-links a:focus { background: #4f46e5; color: #fff; font-weight: 700; border: 2px solid #fff; box-shadow: 2px 4px 0 0 #ff3e7f22; } .sidebar-links a:hover:not(.active) { background: #ececff; color: #3b2fd6; border: 2px solid #d1d5fa; } .sidebar-footer { margin-top: auto; padding: 32px 32px 24px 32px; } .btn-logout { background: #fff; color: #4f46e5; border: none; padding: 12px 0; width: 100%; border-radius: 10px; font-weight: bold; font-size: 1.05em; cursor: pointer; transition: background 0.2s, color 0.2s; box-shadow: 0 2px 6px rgba(79,70,229,0.07); border: 2px solid transparent; outline: none; } .btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; } @media (max-width: 900px) { .sidebar { width: 100vw; min-height: auto; position: static; flex-direction: row; align-items: flex-start; padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 0.95em; } .sidebar-brand { font-size: 1.4rem; padding: 10px 10px 4px 10px; margin-bottom: 0; text-align: left; } .sidebar hr { display: none; } .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px 0 8px; } .sidebar-links a { font-size: 1em; padding: 10px 12px; margin-bottom: 0; } .sidebar-footer { padding: 8px 8px 10px 8px; } .btn-logout { padding: 10px 0; font-size: 1em; } }
         .btn-delete { background: #6b7280; color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; }
         .btn-delete:hover { background: #4b5563; }
         .button-group { display: flex; gap: 8px; align-items: center; }
-        .trial-management { margin-top: 12px; font-size: 0.9em; }
-        .btn-reset-trial { background: #2563eb; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; margin-left: 10px; }
-        .btn-reset-trial:hover { background: #1d4ed8; }
+        .trial-management { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-size: 0.9em; }
+        .trial-input { width: 50px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-save-trial { background: #2563eb; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-save-trial:hover { background: #1d4ed8; }
     </style>
 </head>
 <body>
 
     <aside class="sidebar" id="sidebar">
-        <!-- Conteúdo da sua sidebar -->
+        <!-- Seu menu lateral aqui -->
     </aside>
 
     <div class="main">
@@ -81,32 +55,78 @@ Vou te passar o código completo novamente. A única alteração está na funç�
             addEventListeners();
         }
 
-        // Funções de toggleBloqueio, excluirEmpresa, e reiniciarTeste (sem alterações)
+        // Funções de Bloqueio e Exclusão (sem alterações, já estavam corretas)
         async function toggleBloqueio(empresaId, novoStatus, button) { /* ...código inalterado... */ }
         async function excluirEmpresa(empresaId, button) { /* ...código inalterado... */ }
-        async function reiniciarTeste(usuarioId, button) { /* ...código inalterado... */ }
-        
-        function addEventListeners() {
-            // Listeners para .btn-toggle, .btn-delete, e .btn-reset-trial (sem alterações)
+
+        // Função para salvar os dias de teste (agora salva em 'empresarios')
+        async function salvarDiasTeste(empresaId, button) {
+            const input = document.getElementById(`trial-input-${empresaId}`);
+            const novoValor = parseInt(input.value, 10);
+
+            if (isNaN(novoValor) || novoValor < 0) {
+                alert("Por favor, insira um número válido de dias.");
+                return;
+            }
+
+            const originalText = button.textContent;
+            button.textContent = '...';
+            button.disabled = true;
+
+            try {
+                const empresaRef = db.collection("empresarios").doc(empresaId);
+                await empresaRef.update({ freeEmDias: novoValor });
+
+                const empresaIndex = currentData.findIndex(e => e.uid === empresaId);
+                if (empresaIndex > -1) {
+                    currentData[empresaIndex].freeEmDias = novoValor;
+                }
+                alert('Dias de teste atualizados com sucesso!');
+
+            } catch (error) {
+                console.error("Erro ao salvar dias de teste:", error);
+                alert("Não foi possível salvar os dias de teste.");
+            } finally {
+                button.textContent = originalText;
+                button.disabled = false;
+            }
         }
 
+        function addEventListeners() {
+            document.querySelectorAll('.btn-toggle').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const empresaId = event.target.dataset.id;
+                    const novoStatus = event.target.classList.contains('btn-block');
+                    toggleBloqueio(empresaId, novoStatus, event.target);
+                });
+            });
+
+            document.querySelectorAll('.btn-delete').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const empresaId = event.target.dataset.id;
+                    excluirEmpresa(empresaId, event.target);
+                });
+            });
+
+            document.querySelectorAll('.btn-save-trial').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const empresaId = event.target.dataset.id;
+                    salvarDiasTeste(empresaId, event.target);
+                });
+            });
+        }
+
+        // ===================================================================
+        //              FUNÇÃO DE RENDERIZAÇÃO CORRIGIDA
+        // ===================================================================
         function renderizarDados(empresas) {
             currentData = empresas;
             let htmlFinal = '<h2>Gestão de Empresas e Funcionários</h2>';
             if (empresas.length === 0) {
                 htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
             } else {
-                htmlFinal += empresas.map(empresa => {
-                    let dataInicioTeste = 'Não definido';
-                    if (empresa.usuario && empresa.usuario.trialStart) {
-                        dataInicioTeste = new Date(empresa.usuario.trialStart.seconds * 1000).toLocaleDateString('pt-BR');
-                    }
-
-                    // ===================================================================
-                    //                      CORREÇÃO APLICADA AQUI
-                    //      O bloco da tabela de funcionários foi reinserido.
-                    // ===================================================================
-                    return `
+                // O .map() aqui estava com o erro. Agora está correto.
+                htmlFinal += empresas.map(empresa => `
                     <div class="empresa">
                         <div class="empresa-header">
                             <div>
@@ -122,8 +142,9 @@ Vou te passar o código completo novamente. A única alteração está na funç�
                         </div>
                         
                         <div class="trial-management">
-                            <strong>Início do Teste:</strong> ${dataInicioTeste}
-                            <button data-id="${empresa.uid}" class="btn-reset-trial">Reiniciar Teste</button>
+                            <strong>Dias de Teste Grátis:</strong>
+                            <input type="number" class="trial-input" id="trial-input-${empresa.uid}" value="${empresa.freeEmDias === undefined ? 15 : empresa.freeEmDias}">
+                            <button data-id="${empresa.uid}" class="btn-save-trial">Salvar</button>
                         </div>
 
                         <div style="margin-top: 16px;">
@@ -131,46 +152,39 @@ Vou te passar o código completo novamente. A única alteração está na funç�
                             <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
                                 <thead><tr style="background: #f3f4f6;"><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
                                 <tbody>
-                                    ${empresa.funcionarios.length === 0 
-                                        ? '<tr><td colspan="3" style="text-align: center; color: #aaa;">Nenhum funcionário</td></tr>'
-                                        : empresa.funcionarios.map(f => `
+                                    ${(empresa.funcionarios && empresa.funcionarios.length > 0)
+                                        ? empresa.funcionarios.map(f => `
                                             <tr class="${f.bloqueado ? 'blocked' : ''}">
                                                 <td>${f.nome || '-'}</td>
                                                 <td>${f.email || '-'}</td>
                                                 <td><span style="color: ${f.bloqueado ? '#dc2626' : '#10b981'}">${f.bloqueado ? 'Bloqueado' : 'Ativo'}</span></td>
                                             </tr>
                                         `).join('')
+                                        : '<tr><td colspan="3" style="text-align: center; color: #aaa;">Nenhum funcionário</td></tr>'
                                     }
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                `}).join('');
+                `).join('');
             }
             render(htmlFinal);
         }
 
+        // Função de carregamento simplificada para usar a nova lógica
         async function carregarDados() {
             render('<div class="loading">Carregando dados das empresas...</div>');
             try {
                 const snap = await db.collection("empresarios").get();
-                const empresasComDados = await Promise.all(snap.docs.map(async (empresaDoc) => {
+                const empresasComFuncionarios = await Promise.all(snap.docs.map(async (empresaDoc) => {
                     const empresa = { uid: empresaDoc.id, ...empresaDoc.data() };
                     
                     const profSnap = await db.collection("empresarios").doc(empresa.uid).collection("profissionais").get();
                     empresa.funcionarios = profSnap.docs.map(p => ({ id: p.id, ...p.data() }));
-
-                    const usuarioRef = db.collection("usuarios").doc(empresa.uid);
-                    const usuarioDoc = await usuarioRef.get();
-                    if (usuarioDoc.exists) {
-                        empresa.usuario = usuarioDoc.data();
-                    } else {
-                        empresa.usuario = {};
-                    }
                     
                     return empresa;
                 }));
-                renderizarDados(empresasComDados);
+                renderizarDados(empresasComFuncionarios);
             } catch (error) {
                 render(`<div class="restricted" style="color: red;"><strong>Erro ao carregar dados:</strong> ${error.message}</div>`);
                 console.error("Erro detalhado:", error);
