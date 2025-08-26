@@ -1,9 +1,9 @@
 // ======================================================================
 //                      USERSERVICE.JS
-//           VERSÃO FINAL - CORRIGINDO O FLUXO DE CRIAÇÃO DE USUÁRIO
+//           VERSÃO FINAL - ESTÁVEL E FUNCIONAL
 // ======================================================================
 
-// Imports (sem alterações)
+// Imports
 import { collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
@@ -60,9 +60,7 @@ async function checkUserStatus(user, empresaData) {
     return { hasActivePlan: false, isTrialActive: endDate > new Date() };
 }
 
-// ======================================================================
-// FUNÇÃO PRINCIPAL COM A ORDEM DE OPERAÇÕES CORRIGIDA
-// ======================================================================
+// FUNÇÃO PRINCIPAL COM A ORDEM DE OPERAÇÕES CORRIGIDA E MEMÓRIA
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
         return Promise.resolve(cachedSessionProfile);
@@ -78,12 +76,8 @@ export async function verificarAcesso() {
                 return reject(new Error("Utilizador não autenticado."));
             }
             
-            // ===================================================================
-            //                      CORREÇÃO APLICADA AQUI
-            // ===================================================================
             // Garante que o documento do usuário exista ANTES de qualquer outra coisa.
             await ensureUserAndTrialDoc();
-            // ===================================================================
 
             const currentPage = window.location.pathname.split('/').pop();
             const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
@@ -138,3 +132,4 @@ export async function verificarAcesso() {
         });
     });
 }
+
