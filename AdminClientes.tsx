@@ -1,118 +1,131 @@
-// AdminClientes.js (ou .tsx para TypeScript)
-
 import React, { useEffect, useState } from "react";
-// ATENÇÃO: Corrija os imports para apontar para seus arquivos reais do Firebase
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "./config/firebase";
 import { useAuth } from "./useAuth";
 
-// Definindo o tipo de Cliente
-type Cliente = {
-  uid: string;
-  email: string;
+// Definindo o tipo de Cliente e Funcionário
+type Funcionario = {
+  id: string;
   nome?: string;
-  plan?: string;
-  trialEnds?: string;
-  trialDays?: number; // Nosso novo campo
-  premiumSince?: string;
-  status?: string;
-  ultimaAtividade?: string;
+  email?: string;
+  bloqueado?: boolean;
+};
+
+type Empresa = {
+  uid: string;
+  nome?: string;
+  email?: string;
+  bloqueado?: boolean;
+  funcionarios: Funcionario[];
 };
 
 export function AdminClientes() {
   const { user } = useAuth();
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true);
-  // NOVO: Estado para guardar os valores dos inputs de trial
-  const [diasEditados, setDiasEditados] = useState<{ [uid: string]: number }>({});
-
   const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Substitua pelo seu UID de admin
 
-  async function fetchClientes() {
-    setLoading(true);
-    // ATENÇÃO: Ajuste a coleção para "empresarios" se for o caso
-    const snap = await getDocs(collection(db, "empresarios"));
-    const lista: Cliente[] = snap.docs.map(doc => ({ uid: doc.id, ...doc.data() }) as Cliente);
-    setClientes(lista);
-    setLoading(false);
-  }
-  
   useEffect(() => {
     if (user && user.uid === ADMIN_UID) {
-      fetchClientes();
+      carregarEmpresas();
     }
   }, [user]);
 
-  // NOVO: Função para salvar os dias de trial
-  const handleSaveTrialDays = async (clienteUid: string) => {
-    const days = diasEditados[clienteUid];
-    if (typeof days !== 'number' || days < 0) {
-      alert("Por favor, insira um número válido de dias.");
-      return;
+  async function carregarEmpresas() {
+    setLoading(true);
+    const snap = await getDocs(collection(db, "empresarios"));
+    const lista: Empresa[] = [];
+    for (const empresaDoc of snap.docs) {
+      const empresa = { uid: empresaDoc.id, ...empresaDoc.data(), funcionarios: [] } as Empresa;
+      // Busca funcionários
+      const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
+      empresa.funcionarios = profSnap.docs.map(p => ({
+        id: p.id,
+        ...p.data()
+      })) as Funcionario[];
+      lista.push(empresa);
     }
-    
-    try {
-      const clienteRef = doc(db, "empresarios", clienteUid);
-      await updateDoc(clienteRef, {
-        trialDays: days
-      });
-      alert(`Dias de trial para o cliente ${clienteUid} atualizado para ${days}!`);
-      fetchClientes(); // Recarrega a lista para mostrar o novo valor
-    } catch (error) {
-      console.error("Erro ao atualizar dias de trial:", error);
-      alert("Ocorreu um erro ao salvar.");
-    }
-  };
+    setEmpresas(lista);
+    setLoading(false);
+  }
 
-  // NOVO: Função para atualizar o estado enquanto você digita
-  const handleDaysChange = (uid: string, value: string) => {
-    setDiasEditados(prev => ({
-      ...prev,
-      [uid]: Number(value)
-    }));
-  };
+  async function bloquearEmpresa(uid: string, bloquear: boolean) {
+    // 1. Bloquear empresa/dono
+    await updateDoc(doc(db, "empresarios", uid), { bloqueado: bloquear });
+    // 2. Bloquear/desbloquear todos funcionários
+    const profSnap = await getDocs(collection(db, "empresarios", uid, "profissionais"));
+    const updates = [];
+    profSnap.forEach(prof => {
+      updates.push(updateDoc(doc(db, "empresarios", uid, "profissionais", prof.id), { bloqueado: bloquear }));
+    });
+    await Promise.all(updates);
+    await carregarEmpresas();
+  }
 
   if (!user || user.uid !== ADMIN_UID) {
-    return <div style={{padding: 32, textAlign: "center"}}>Acesso restrito.</div>;
+    return <div style={{ padding: 32, textAlign: "center" }}>Acesso restrito.</div>;
   }
-  if (loading) return <div style={{padding: 32}}>Carregando clientes...</div>;
+  if (loading) return <div style={{ padding: 32 }}>Carregando empresas...</div>;
 
   return (
-    <div style={{padding: 32}}>
-      <h2 style={{fontWeight: "bold", fontSize: 22, marginBottom: 24}}>Gestão de Clientes</h2>
-      <table border={1} cellPadding={8} style={{width: "100%", borderCollapse: "collapse"}}>
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Nome</th>
-            <th>Trial Ends</th>
-            <th style={{width: "200px"}}>Dias de Trial (Padrão)</th> {/* NOVA COLUNA */}
-          </tr>
-        </thead>
-        <tbody>
-          {clientes.map(cli => (
-            <tr key={cli.uid}>
-              <td>{cli.email}</td>
-              <td>{cli.nome || "-"}</td>
-              <td>{cli.trialEnds ? new Date(cli.trialEnds).toLocaleDateString() : "N/A"}</td>
-              
-              {/* NOVA CÉLULA COM INPUT E BOTÃO */}
-              <td style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <input
-                  type="number"
-                  value={diasEditados[cli.uid] ?? cli.trialDays ?? 15}
-                  onChange={(e) => handleDaysChange(cli.uid, e.target.value)}
-                  style={{width: '60px', padding: '4px'}}
-                />
-                <button onClick={() => handleSaveTrialDays(cli.uid)}>
-                  Salvar
-                </button>
-              </td>
-
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ padding: 32 }}>
+      <h2 style={{ fontWeight: "bold", fontSize: 22, marginBottom: 24 }}>Gestão de Empresas e Funcionários</h2>
+      {empresas.map(empresa => (
+        <div key={empresa.uid} style={{ border: "1px solid #eee", marginBottom: 32, borderRadius: 8, padding: 16, background: "#fafbfc" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <strong>Empresa:</strong> {empresa.nome || empresa.email || empresa.uid}
+              <br />
+              <strong>Dono:</strong> {empresa.nome || "-"} ({empresa.email})
+              <br />
+              <strong>Status:</strong> {empresa.bloqueado ? <span style={{ color: "#dc2626" }}>Bloqueada</span> : <span style={{ color: "#10b981" }}>Ativa</span>}
+            </div>
+            <button
+              style={{
+                background: empresa.bloqueado ? "#10b981" : "#dc2626",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                padding: "6px 18px"
+              }}
+              onClick={() => bloquearEmpresa(empresa.uid, !empresa.bloqueado)}
+            >
+              {empresa.bloqueado ? "Desbloquear Empresa" : "Bloquear Empresa"}
+            </button>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <strong>Funcionários:</strong>
+            <table style={{ width: "100%", marginTop: 8, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "#f3f4f6" }}>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {empresa.funcionarios.length === 0 && (
+                  <tr>
+                    <td colSpan={3} style={{ textAlign: "center", color: "#aaa" }}>Nenhum funcionário</td>
+                  </tr>
+                )}
+                {empresa.funcionarios.map(func => (
+                  <tr key={func.id} style={func.bloqueado ? { background: "#fde2e2" } : {}}>
+                    <td>{func.nome || "-"}</td>
+                    <td>{func.email || "-"}</td>
+                    <td>
+                      {func.bloqueado
+                        ? <span style={{ color: "#dc2626" }}>Bloqueado</span>
+                        : <span style={{ color: "#10b981" }}>Ativo</span>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
