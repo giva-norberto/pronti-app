@@ -1,25 +1,18 @@
-// Importa as funções do React que acabamos de carregar via CDN no HTML
-const { useState, useEffect } = React;
-
-// Importa seu componente da tabela de clientes
-// ATENÇÃO: Verifique se o nome e o caminho do arquivo estão corretos!
-import { AdminClientes } from './AdminClientes.js';
-
-// Encontra a div 'root' no nosso HTML
+import { SuperAdminPainel } from './SuperAdminPainel.js';
 const container = document.getElementById('root');
-
-// Cria a 'raiz' da nossa aplicação React
 const root = ReactDOM.createRoot(container);
 
-// Lê a empresa ativa do localStorage e só renderiza AdminClientes se houver!
-// Se não houver, redireciona para a seleção de empresa.
-const empresaId = localStorage.getItem('empresaAtivaId');
+// Checagem de admin (ajuste seu UID)
+import { auth } from "./firebase-config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-if (!empresaId) {
-  window.location.href = "selecionar-empresa.html";
-} else {
-  // Renderiza (desenha) o seu componente AdminClientes dentro da div 'root'
+const ADMIN_UID = "SEU_UID_ADMIN_AQUI";
+onAuthStateChanged(auth, (user) => {
+  if (!user || user.uid !== ADMIN_UID) {
+    window.location.href = "login.html";
+    return;
+  }
   root.render(
-    React.createElement(AdminClientes, { empresaId })
+    React.createElement(SuperAdminPainel)
   );
-}
+});
