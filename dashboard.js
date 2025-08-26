@@ -1,9 +1,8 @@
 // ======================================================================
-//                       DASHBOARD.JS (VERSÃO FINAL REVISADO)
+//          DASHBOARD.JS (VERSÃO FINAL COM REGRA DE DATA CORRIGIDA)
 // ======================================================================
 
 import { verificarAcesso, checkUserStatus } from "./userService.js";
-import { showCustomAlert } from "./custom-alert.js";
 import { db } from "./firebase-config.js";
 import {
   doc,
@@ -12,10 +11,11 @@ import {
   query,
   where,
   getDocs,
+  Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-const totalSlots = 20;
+const totalSlots = 20; // Defina o total de slots disponíveis no dia para cálculo de ocupação
 const STATUS_VALIDOS = ["ativo", "realizado"];
 
 // --------------------------------------------------
@@ -39,12 +39,6 @@ function addMinutesToTimeString(timeStr, minutes) {
   return `${hh}:${mm}`;
 }
 
-function toLocalTimeStr(dateOrISO) {
-  const d = dateOrISO instanceof Date ? dateOrISO : new Date(dateOrISO);
-  if (isNaN(d)) return "--:--";
-  return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-}
-
 function getEmpresaIdAtiva() {
   const empresaId = localStorage.getItem("empresaAtivaId");
   if (!empresaId) {
@@ -63,7 +57,7 @@ function debounce(fn, delay) {
 }
 
 // --------------------------------------------------
-// HORÁRIOS / PRÓXIMA DATA DISPONÍVEL
+// LÓGICA DA DATA (REGRA IMPORTANTE)
 // --------------------------------------------------
 
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
@@ -101,7 +95,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 }
 
 // --------------------------------------------------
-// RESUMO DO DIA
+// BUSCA E PROCESSAMENTO DE DADOS
 // --------------------------------------------------
 
 async function obterResumoDoDia(empresaId, dataSelecionada) {
@@ -132,34 +126,28 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
     let agendamentosPendentes = 0;
     let faturamentoRealizado = 0;
     let faturamentoPrevisto = 0;
-
-    const servicosCount = {};
-    const profsCount = {};
     const agendaItens = [];
     const agsParaIA = [];
 
     snapshot.forEach((d) => {
       const ag = d.data();
       const minutosAg = timeStringToMinutes(ag.horario);
-      totalAgendamentosDia += 1;
+      totalAgendamentosDia++;
       faturamentoPrevisto += Number(ag.servicoPreco) || 0;
 
       if (ag.status === "ativo") {
         if (minutosAg >= inicioTurno && minutosAg < fimTurno) {
-          agendamentosPendentes += 1;
+          agendamentosPendentes++;
           agendaItens.push({
             horario: ag.horario || "--:--",
             clienteNome: ag.clienteNome || "Cliente",
-            clienteFoto: ag.clienteFoto || "",
             servicoNome: ag.servicoNome || "",
+            profissionalNome: ag.profissionalNome || ""
           });
         }
       } else if (ag.status === "realizado") {
         faturamentoRealizado += Number(ag.servicoPreco) || 0;
       }
-
-      if (ag.servicoNome) servicosCount[ag.servicoNome] = (servicosCount[ag.servicoNome] || 0) + 1;
-      if (ag.profissionalNome) profsCount[ag.profissionalNome] = (profsCount[ag.profissionalNome] || 0) + 1;
 
       const dataISO = ag.data || dataSelecionada;
       const inicioISO = `${dataISO}T${ag.horario || "00:00"}:00`;
@@ -169,154 +157,82 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
       agsParaIA.push({
         inicio: inicioISO,
         fim: fimISO,
-        cliente: ag.clienteNome || ag.cliente || "Cliente",
-        servico: ag.servicoNome || ag.servico || "Serviço",
+        cliente: ag.clienteNome || "Cliente",
+        servico: ag.servicoNome || "Serviço",
         servicoPreco: Number(ag.servicoPreco) || 0,
       });
     });
 
     agendaItens.sort((a, b) => (a.horario || "").localeCompare(b.horario || ""));
-    const servicoDestaque = Object.keys(servicosCount).sort((a,b)=>servicosCount[b]-servicosCount[a])[0];
-    const profissionalDestaque = Object.keys(profsCount).sort((a,b)=>profsCount[b]-profsCount[a])[0];
 
     return {
       totalAgendamentosDia,
       agendamentosPendentes,
       faturamentoRealizado,
       faturamentoPrevisto,
-      servicoDestaque: servicoDestaque || null,
-      profissionalDestaque: profissionalDestaque || null,
       agendaItens,
       agsParaIA,
     };
   } catch (e) {
     console.error("Erro ao obter resumo do dia:", e);
-    return {
-      totalAgendamentosDia: 0,
-      agendamentosPendentes: 0,
-      faturamentoRealizado: 0,
-      faturamentoPrevisto: 0,
-      servicoDestaque: null,
-      profissionalDestaque: null,
-      agendaItens: [],
-      agsParaIA: [],
-    };
+    return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevisto: 0, agendaItens: [], agsParaIA: [] };
   }
 }
 
 // --------------------------------------------------
-// UI: CARDS
+// RENDERIZAÇÃO NA UI
 // --------------------------------------------------
 
-function preencherCardResumo(resumo) {
-  const totalEl = document.getElementById("total-agendamentos-dia");
-  const pendEl = document.getElementById("agendamentos-pendentes");
-  const fatRealEl = document.getElementById("faturamento-realizado");
-  const fatPrevEl = document.getElementById("faturamento-previsto");
-  const percEl = document.getElementById("percentual-ocupacao");
-  if (!totalEl || !pendEl || !fatRealEl || !fatPrevEl || !percEl) return;
+function preencherPainel(resumo) {
+    // Cards de Resumo
+    document.getElementById("faturamento-realizado").textContent = resumo.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById("faturamento-previsto").textContent = resumo.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById("total-agendamentos-dia").textContent = resumo.totalAgendamentosDia;
+    document.getElementById("agendamentos-pendentes").textContent = resumo.agendamentosPendentes;
 
-  const total = Number(resumo.totalAgendamentosDia) || 0;
-  const pend = Number(resumo.agendamentosPendentes) || 0;
-  const fatReal = Number(resumo.faturamentoRealizado) || 0;
-  const fatPrev = Number(resumo.faturamentoPrevisto) || 0;
-  const perc = Math.min(100, Math.round((pend / totalSlots) * 100));
+    // Agenda do Turno
+    const listaAgendaEl = document.getElementById("agenda-dia-lista");
+    if (resumo.agendaItens.length === 0) {
+        listaAgendaEl.innerHTML = `<p style='color:#888;text-align:center;padding:12px 0;'>Nenhum agendamento para este turno.</p>`;
+    } else {
+        listaAgendaEl.innerHTML = resumo.agendaItens.map(ag => `
+            <div class="agenda-item">
+                <div class="agenda-info">
+                    <strong>${ag.clienteNome}</strong>
+                    <span>${ag.servicoNome} com ${ag.profissionalNome}</span>
+                </div>
+                <div class="agenda-horario">${ag.horario}</div>
+            </div>
+        `).join("");
+    }
 
-  totalEl.textContent = total;
-  pendEl.textContent = pend;
-  fatRealEl.textContent = fatReal.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  fatPrevEl.textContent = fatPrev.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-  percEl.textContent = `${perc}%`;
-}
+    // Resumo Inteligente e IA
+    const resumoInteligente = gerarResumoDiarioInteligente(resumo.agsParaIA);
+    const elResumo = document.getElementById("resumo-inteligente");
+    const elSugestaoIA = document.getElementById("ia-sugestao");
 
-function preencherCardServico(servicoDestaque) {
-  const el = document.getElementById("servico-destaque");
-  if (el) el.textContent = servicoDestaque || "Nenhum";
-}
-
-function preencherCardProfissional(profissionalDestaque) {
-  const nomeEl = document.getElementById("prof-destaque-nome");
-  const qtdEl = document.getElementById("prof-destaque-qtd");
-  if (!nomeEl || !qtdEl) return;
-
-  if (profissionalDestaque) {
-    nomeEl.textContent = profissionalDestaque;
-    qtdEl.textContent = "Hoje";
-  } else {
-    nomeEl.textContent = "Nenhum profissional";
-    qtdEl.textContent = "hoje";
-  }
+    if (elResumo) {
+        if (resumoInteligente?.mensagem) {
+            elResumo.innerHTML = resumoInteligente.mensagem;
+        } else {
+            elResumo.textContent = "Nenhum dado disponível para o resumo.";
+        }
+    }
+    if (elSugestaoIA) {
+        elSugestaoIA.textContent = calcularSugestaoIA(resumo);
+    }
 }
 
 function calcularSugestaoIA(resumo) {
-  const total = Number(resumo.totalAgendamentosDia) || 0;
-  const ocupacaoPercent = Math.min(100, Math.round((total / totalSlots) * 100));
-  if (total === 0) return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
-  if (ocupacaoPercent < 50) return "Ainda há horários vagos. Considere enviar um lembrete aos clientes.";
-  return "O dia está movimentado! Prepare-se para um dia produtivo.";
-}
-
-function preencherCardIA(mensagem) {
-  const el = document.getElementById("ia-sugestao");
-  if (el) el.textContent = mensagem;
-}
-
-function preencherCardAgendaDoDia(agendaItens) {
-  const listaEl = document.getElementById("agenda-dia-lista");
-  if (!listaEl) return;
-
-  if (!agendaItens || agendaItens.length === 0) {
-    listaEl.innerHTML = `<div style='color:#888;text-align:center;padding:12px 0;'>Nenhum agendamento para o turno.</div>`;
-    return;
-  }
-
-  const html = `<ul style='list-style:none;padding:0;margin:0;'>` +
-    agendaItens.map(ag=>{
-      const foto = ag.clienteFoto ? `<img src="${ag.clienteFoto}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:8px;vertical-align:middle;">` : "";
-      return `<li style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f3f3;">
-        ${foto}
-        <span style="font-weight:600;min-width:52px">${ag.horario || "--:--"}</span>
-        <span>${ag.clienteNome || "Cliente"}</span>
-        ${ag.servicoNome ? `<span style="margin-left:auto;opacity:.7">${ag.servicoNome}</span>` : ""}
-      </li>`;
-    }).join("") +
-    `</ul>`;
-  listaEl.innerHTML = html;
+    const total = resumo.totalAgendamentosDia || 0;
+    const ocupacaoPercent = Math.min(100, Math.round((total / totalSlots) * 100));
+    if (total === 0) return "O dia está livre! Que tal criar uma promoção para atrair clientes?";
+    if (ocupacaoPercent < 50) return "Ainda há horários vagos. Considere enviar um lembrete aos clientes.";
+    return "O dia está movimentado! Prepare-se para um dia produtivo.";
 }
 
 // --------------------------------------------------
-// FUNÇÃO PRINCIPAL
-// --------------------------------------------------
-
-async function preencherDashboard(user, dataSelecionada, empresaId) {
-  try {
-    const resumoDoDia = await obterResumoDoDia(empresaId, dataSelecionada);
-    preencherCardResumo(resumoDoDia);
-    preencherCardServico(resumoDoDia.servicoDestaque);
-    preencherCardProfissional(resumoDoDia.profissionalDestaque);
-    preencherCardIA(calcularSugestaoIA(resumoDoDia));
-    preencherCardAgendaDoDia(resumoDoDia.agendaItens);
-
-    const resumoInteligente = gerarResumoDiarioInteligente(resumoDoDia.agsParaIA);
-    const elResumo = document.getElementById("resumo-inteligente");
-    if (elResumo) {
-      if (resumoInteligente?.mensagem) {
-        elResumo.innerHTML = resumoInteligente.mensagem;
-      } else if (resumoInteligente?.totalAtendimentos > 0) {
-        elResumo.innerHTML = `Total de atendimentos: <b>${resumoInteligente.totalAtendimentos}</b><br>
-          Faturamento estimado: <b>${Number(resumoInteligente.faturamentoEstimado || 0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</b>`;
-      } else {
-        elResumo.textContent = "Nenhum dado disponível.";
-      }
-    }
-  } catch(error){
-    console.error("Erro ao preencher dashboard:", error);
-    alert("Ocorreu um erro ao carregar o dashboard.");
-  }
-}
-
-// --------------------------------------------------
-// INICIALIZAÇÃO
+// INICIALIZAÇÃO E EVENTOS
 // --------------------------------------------------
 
 async function iniciarDashboard(user, empresaId) {
@@ -326,38 +242,41 @@ async function iniciarDashboard(user, empresaId) {
 
   if (filtroData) {
     filtroData.value = dataInicial;
-    filtroData.addEventListener("change", debounce(()=>{
-      preencherDashboard(user, filtroData.value, empresaId);
+    filtroData.addEventListener("change", debounce(async () => {
+        const novaData = await encontrarProximaDataDisponivel(empresaId, filtroData.value);
+        if (novaData !== filtroData.value) {
+            filtroData.value = novaData;
+        }
+        const resumo = await obterResumoDoDia(empresaId, novaData);
+        preencherPainel(resumo);
     }, 300));
   }
 
-  await preencherDashboard(user, dataInicial, empresaId);
+  const resumoInicial = await obterResumoDoDia(empresaId, dataInicial);
+  preencherPainel(resumoInicial);
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    const { user, perfil, isOwner } = await verificarAcesso();
+    const { user } = await verificarAcesso();
     const empresaId = getEmpresaIdAtiva();
     await iniciarDashboard(user, empresaId);
 
-    if (isOwner) {
-      const status = await checkUserStatus();
-      if (status?.isTrialActive && status?.trialEndDate) {
-        const banner = document.getElementById("trial-notification-banner");
-        if (banner) {
-          const hoje = new Date();
-          const trialEnd = new Date(status.trialEndDate);
-          const diasRestantes = Math.max(0, Math.ceil((trialEnd - hoje)/(1000*60*60*24)));
-          banner.innerHTML = `🎉 Seu período de teste termina em ${diasRestantes} dia${diasRestantes!==1?"s":""}.`;
-          banner.style.display = "block";
-        }
+    const status = await checkUserStatus();
+    if (status?.isTrialActive && status?.trialEndDate) {
+      const banner = document.getElementById("trial-notification-banner");
+      if (banner) {
+        const hoje = new Date();
+        const trialEnd = new Date(status.trialEndDate);
+        const diasRestantes = Math.max(0, Math.ceil((trialEnd - hoje)/(1000*60*60*24)));
+        banner.innerHTML = `🎉 O seu período de teste termina em ${diasRestantes} dia${diasRestantes!==1?"s":""}.`;
+        banner.style.display = "block";
       }
     }
   } catch(error){
-    console.error("Erro no porteiro:", error?.message || error);
-    window.location.href = "login.html";
+    if (!error.message.includes("A redirecionar")) {
+        console.error("Erro no guardião de acesso:", error?.message || error);
+        window.location.href = "login.html";
+    }
   }
-
-  const btnVoltar = document.getElementById("btn-voltar");
-  if (btnVoltar) btnVoltar.addEventListener("click",()=>window.location.href="index.html");
 });
