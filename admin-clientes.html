@@ -1,161 +1,49 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Administração de Clientes</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- React e ReactDOM CDN -->
-<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-<!-- Firebase compat (global) -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-
-<script>
-  // Configuração Firebase
-  const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_PROJECT_ID.firebaseapp.com",
-    projectId: "SEU_PROJECT_ID",
-    storageBucket: "SEU_PROJECT_ID.appspot.com",
-    messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-    appId: "SEU_APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  window.db = firebase.firestore();
-  window.auth = firebase.auth();
-</script>
-
-<style>
-  body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; }
-  .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px #0001; padding: 32px; }
-  h2 { font-size: 1.7em; margin-bottom: 24px; }
-  .empresa { border: 1px solid #eee; margin-bottom: 32px; border-radius: 8px; padding: 16px; background: #fafbfc; }
-  .empresa-header { display: flex; align-items: center; justify-content: space-between; }
-  .empresa-status { font-weight: bold; }
-  .btn-block { background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; }
-  .btn-unblock { background: #10b981; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; }
-  table { width: 100%; margin-top: 8px; border-collapse: collapse; }
-  th, td { padding: 6px 9px; }
-  thead tr { background: #f3f4f6; }
-  tbody tr.blocked { background: #fde2e2; }
-  .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; }
-  /* Sidebar */
-  .sidebar { width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%); min-height: 100vh; color: #fff; position: fixed; left: 0; top: 0; padding-top: 24px; display: flex; flex-direction: column; }
-  .sidebar a { color: #fff; text-decoration: none; padding: 12px 24px; display: block; font-weight: bold; }
-  .main { margin-left: 260px; padding: 32px; }
-</style>
+    <meta charset="UTF-8">
+    <title>Administração de Clientes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body { font-family: Arial, sans-serif; background: #f6f6fa; margin: 0; }
+      .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px #0001; padding: 32px; }
+      h2 { font-size: 1.7em; margin-bottom: 24px; }
+      .empresa { border: 1px solid #eee; margin-bottom: 32px; border-radius: 8px; padding: 16px; background: #fafbfc; }
+      .empresa-header { display: flex; align-items: center; justify-content: space-between; }
+      .empresa-status { font-weight: bold; }
+      .btn-block { background: #dc2626; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; }
+      .btn-unblock { background: #10b981; color: #fff; border: none; border-radius: 4px; padding: 6px 18px; cursor: pointer; }
+      table { width: 100%; margin-top: 8px; border-collapse: collapse; }
+      th, td { padding: 6px 9px; }
+      thead tr { background: #f3f4f6; }
+      tbody tr.blocked { background: #fde2e2; }
+      .loading, .restricted { padding: 32px; text-align: center; font-size: 1.1em; }
+      /* Sidebar */
+      .sidebar { width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%); min-height: 100vh; color: #fff; position: fixed; left: 0; top: 0; padding-top: 24px; display: flex; flex-direction: column; }
+      .sidebar a { color: #fff; text-decoration: none; padding: 12px 24px; display: block; font-weight: bold; }
+      .main { margin-left: 260px; padding: 32px; }
+    </style>
 </head>
 <body>
 
-<aside class="sidebar">
-  <a href="index.html">Pronti</a>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="servicos.html">Serviços</a>
-  <a href="agenda.html">Agenda</a>
-  <a href="clientes.html">Clientes</a>
-  <a href="equipe.html">Equipe</a>
-  <a href="perfil.html">Meu Perfil</a>
-  <a href="relatorios.html">Relatórios</a>
-  <a href="admin-clientes.html">Administração</a>
-</aside>
+    <aside class="sidebar">
+      <a href="index.html">Pronti</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="servicos.html">Serviços</a>
+      <a href="agenda.html">Agenda</a>
+      <a href="clientes.html">Clientes</a>
+      <a href="equipe.html">Equipe</a>
+      <a href="perfil.html">Meu Perfil</a>
+      <a href="relatorios.html">Relatórios</a>
+      <a href="admin-clientes.html">Administração</a>
+    </aside>
 
-<div class="main">
-  <div id="root"></div>
-</div>
-
-<script type="text/babel">
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-
-function AdminClientes() {
-  const [user, setUser] = React.useState(null);
-  const [empresas, setEmpresas] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const unsub = window.auth.onAuthStateChanged(u => setUser(u));
-    return () => unsub();
-  }, []);
-
-  const carregarEmpresas = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const snap = await window.db.collection("empresarios").get();
-      const lista = await Promise.all(
-        snap.docs.map(async docEmp => {
-          const profSnap = await window.db.collection("empresarios").doc(docEmp.id).collection("profissionais").get();
-          return {
-            uid: docEmp.id,
-            ...docEmp.data(),
-            funcionarios: profSnap.docs.map(p => ({ id: p.id, ...p.data() }))
-          };
-        })
-      );
-      setEmpresas(lista);
-    } catch(e) { console.error(e); alert("Erro ao carregar empresas."); }
-    setLoading(false);
-  }, []);
-
-  React.useEffect(() => {
-    if(user && user.uid === ADMIN_UID) carregarEmpresas();
-  }, [user, carregarEmpresas]);
-
-  async function bloquearEmpresa(uid, bloquear) {
-    try {
-      await window.db.collection("empresarios").doc(uid).update({ bloqueado: bloquear });
-      const profSnap = await window.db.collection("empresarios").doc(uid).collection("profissionais").get();
-      await Promise.all(profSnap.docs.map(p => window.db.collection("empresarios").doc(uid).collection("profissionais").doc(p.id).update({ bloqueado: bloquear })));
-      await carregarEmpresas();
-    } catch(e) { console.error(e); alert("Erro ao atualizar empresa e funcionários."); }
-  }
-
-  if(!user) return <div className="loading">Aguardando login...</div>;
-  if(user.uid !== ADMIN_UID) return <div className="restricted">Acesso restrito.</div>;
-  if(loading) return <div className="loading">Carregando empresas...</div>;
-
-  return (
-    <div className="container">
-      <h2>Gestão de Empresas e Funcionários</h2>
-      {empresas.length === 0 && <div style={{ color:"#888", fontStyle:"italic"}}>Nenhuma empresa cadastrada.</div>}
-      {empresas.map(emp => (
-        <div className="empresa" key={emp.uid}>
-          <div className="empresa-header">
-            <div>
-              <div><strong>Empresa:</strong> {emp.nome || emp.email || emp.uid}</div>
-              <div><strong>Status:</strong> <span className="empresa-status" style={{color: emp.bloqueado?"#dc2626":"#10b981"}}>{emp.bloqueado?"Bloqueada":"Ativa"}</span></div>
-            </div>
-            <button className={emp.bloqueado?"btn-unblock":"btn-block"} onClick={()=>bloquearEmpresa(emp.uid,!emp.bloqueado)}>
-              {emp.bloqueado?"Desbloquear Empresa":"Bloquear Empresa"}
-            </button>
-          </div>
-          <div style={{marginTop:16}}>
-            <strong>Funcionários:</strong>
-            <table>
-              <thead><tr><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
-              <tbody>
-                {emp.funcionarios.length===0 && <tr><td colSpan={3} style={{textAlign:"center",color:"#aaa"}}>Nenhum funcionário</td></tr>}
-                {emp.funcionarios.map(f => (
-                  <tr key={f.id} className={f.bloqueado?"blocked":""}>
-                    <td>{f.nome||"-"}</td>
-                    <td>{f.email||"-"}</td>
-                    <td><span style={{color:f.bloqueado?"#dc2626":"#10b981"}}>{f.bloqueado?"Bloqueado":"Ativo"}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
+    <div class="main">
+      <div id="root"></div>
     </div>
-  );
-}
 
-ReactDOM.createRoot(document.getElementById("root")).render(<AdminClientes />);
-</script>
+    <!-- Carrega o script do componente React como um módulo -->
+    <script type="module" src="admin-clientes.js"></script>
 
 </body>
 </html>
