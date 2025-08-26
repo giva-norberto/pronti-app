@@ -1,6 +1,6 @@
 // ======================================================================
 //                      USERSERVICE.JS
-//           VERSÃO FINAL COM PREPARAÇÃO DE AMBIENTE PARA ADMIN
+//           VERSÃO FINAL COM FLUXO DE EXECUÇÃO CORRIGIDO
 // ======================================================================
 
 // Imports do Firebase (sem alterações)
@@ -14,7 +14,7 @@ import {
     setDoc,
     updateDoc,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import { db, auth } from './firebase-config.js';
@@ -25,7 +25,7 @@ export async function ensureUserAndTrialDoc() { /* ...código inalterado... */ }
 export async function checkUserStatus() { /* ...código inalterado... */ }
 
 // ======================================================================
-// FUNÇÃO PRINCIPAL COM A LÓGICA DE ADMIN CORRIGIDA
+// FUNÇÃO PRINCIPAL COM A LÓGICA DE FLUXO CORRIGIDA
 // ======================================================================
 export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
@@ -43,12 +43,10 @@ export async function verificarAcesso() {
             // ===================================================================
             //                      CORREÇÃO APLICADA AQUI
             // ===================================================================
-            // Se o usuário é o Admin, o fluxo para aqui, mas prepara o ambiente.
+            // Se o usuário é o Admin, o fluxo para aqui e resolve imediatamente.
             if (user.uid === ADMIN_UID) {
                 console.log("Admin detectado. Configurando ambiente e concedendo acesso.");
                 
-                // Pega a primeira empresa que existir no banco de dados para usar como "placeholder".
-                // Isso satisfaz a verificação do agenda.js e outras páginas.
                 const primeiraEmpresaQuery = query(collection(db, "empresarios"));
                 const snapshot = await getDocs(primeiraEmpresaQuery);
                 
@@ -57,15 +55,15 @@ export async function verificarAcesso() {
                     localStorage.setItem('empresaAtivaId', primeiraEmpresaId);
                     console.log(`Ambiente do Admin configurado com a empresa placeholder: ${primeiraEmpresaId}`);
                 } else {
-                    // Se não houver nenhuma empresa, limpa para evitar IDs antigos.
                     localStorage.removeItem('empresaAtivaId');
                 }
 
+                // A CHAMADA 'return' AQUI É CRUCIAL. ELA IMPEDE QUE O RESTO DO CÓDIGO EXECUTE.
                 return resolve({ 
                     user, 
                     isAdmin: true, 
                     perfil: { nome: "Administrador" },
-                    empresaId: localStorage.getItem('empresaAtivaId'), // Passa o ID para consistência
+                    empresaId: localStorage.getItem('empresaAtivaId'),
                     isOwner: false,
                     role: 'admin'
                 });
@@ -76,20 +74,50 @@ export async function verificarAcesso() {
             if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
                 console.log("Acesso bloqueado: Sem plano ativo e trial expirado. Redirecionando...");
                 window.location.href = 'assinatura.html';
-                return new Promise(() => {});
+                return new Promise(() => {}); // Para a execução para usuários sem acesso
             }
 
-            // ... (O resto do seu código para usuários normais continua exatamente igual)
+            console.log("--- Iniciando verificação de acesso para o utilizador (NÃO-ADMIN):", user.uid, "---");
+
             try {
+                // Lógica para usuários normais (donos e funcionários) - SEM ALTERAÇÕES
                 const empresasSnapshot = await getEmpresasDoDono(user.uid);
                 if (empresasSnapshot && !empresasSnapshot.empty) {
-                    // ... (lógica de dono)
+                    if (empresasSnapshot.size === 1) {
+                        const empresaDoc = empresasSnapshot.docs[0];
+                        localStorage.setItem('empresaAtivaId', empresaDoc.id);
+                        const empresaData = empresaDoc.data();
+                        const userDocRef = doc(db, "usuarios", user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        empresaData.nome = userDocSnap.exists() && userDocSnap.data().nome ? userDocSnap.data().nome : (user.displayName || user.email);
+                        return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" });
+                    } else {
+                        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                        const empresaAtivaValida = empresasSnapshot.docs.some(doc => doc.id === empresaAtivaId);
+                        if (empresaAtivaId && empresaAtivaValida) {
+                             const empresaDoc = empresasSnapshot.docs.find(doc => doc.id === empresaAtivaId);
+                             const empresaData = empresaDoc.data();
+                             const userDocRef = doc(db, "usuarios", user.uid);
+                             const userDocSnap = await getDoc(userDocRef);
+                             empresaData.nome = userDocSnap.exists() && userDocSnap.data().nome ? userDocSnap.data().nome : (user.displayName || user.email);
+                             return resolve({ user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" });
+                        } else {
+                            if (currentPage !== 'selecionar-empresa.html' && currentPage !== 'perfil.html') {
+                                window.location.href = 'selecionar-empresa.html';
+                                return new Promise(() => {});
+                            }
+                            return resolve({ user, isOwner: true, role: "dono" });
+                        }
+                    }
                 }
+
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 if (mapaRef.exists()) {
                     // ... (lógica de funcionário)
                 }
+
                 return reject(new Error("primeiro_acesso"));
+
             } catch (error) {
                 return reject(error);
             }
