@@ -50,16 +50,73 @@
         const conteudoDiv = document.getElementById('conteudo-admin');
         let currentData = [];
 
+        // ===================================================================
+        //                      CORREÇÃO FINAL AQUI
+        // ===================================================================
         function render(html) {
             conteudoDiv.innerHTML = html;
-            addEventListeners();
+            // Esta linha ativa os botões. Ela estava faltando.
+            addEventListeners(); 
         }
 
-        // Funções de Bloqueio e Exclusão (sem alterações, já estavam corretas)
-        async function toggleBloqueio(empresaId, novoStatus, button) { /* ...código inalterado... */ }
-        async function excluirEmpresa(empresaId, button) { /* ...código inalterado... */ }
+        async function toggleBloqueio(empresaId, novoStatus, button) {
+            const acao = novoStatus ? 'bloquear' : 'desbloquear';
+            if (!confirm(`Tem certeza que deseja ${acao} esta empresa e todos os seus funcionários?`)) return;
 
-        // Função para salvar os dias de teste (agora salva em 'empresarios')
+            const originalText = button.textContent;
+            button.textContent = 'Aguarde...';
+            button.disabled = true;
+
+            try {
+                const empresaRef = db.collection("empresarios").doc(empresaId);
+                await empresaRef.update({ bloqueado: novoStatus });
+
+                const profSnap = await empresaRef.collection("profissionais").get();
+                const updates = profSnap.docs.map(p => p.ref.update({ bloqueado: novoStatus }));
+                await Promise.all(updates);
+
+                const empresaIndex = currentData.findIndex(e => e.uid === empresaId);
+                if (empresaIndex > -1) {
+                    currentData[empresaIndex].bloqueado = novoStatus;
+                    currentData[empresaIndex].funcionarios.forEach(f => f.bloqueado = novoStatus);
+                    renderizarDados(currentData);
+                }
+            } catch (error) {
+                console.error("Erro ao atualizar status:", error);
+                alert("Não foi possível atualizar o status da empresa.");
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
+        async function excluirEmpresa(empresaId, button) {
+            if (!confirm("ATENÇÃO: Esta ação é irreversível. Deseja realmente EXCLUIR esta empresa e todos os seus funcionários?")) return;
+
+            const originalText = button.textContent;
+            button.textContent = 'Excluindo...';
+            button.disabled = true;
+
+            try {
+                const empresaRef = db.collection("empresarios").doc(empresaId);
+                
+                const profSnap = await empresaRef.collection("profissionais").get();
+                const deletes = profSnap.docs.map(p => p.ref.delete());
+                await Promise.all(deletes);
+
+                await empresaRef.delete();
+
+                currentData = currentData.filter(e => e.uid !== empresaId);
+                renderizarDados(currentData);
+                alert('Empresa excluída com sucesso!');
+
+            } catch (error) {
+                console.error("Erro ao excluir empresa:", error);
+                alert("Não foi possível excluir a empresa.");
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+
         async function salvarDiasTeste(empresaId, button) {
             const input = document.getElementById(`trial-input-${empresaId}`);
             const novoValor = parseInt(input.value, 10);
@@ -116,16 +173,12 @@
             });
         }
 
-        // ===================================================================
-        //              FUNÇÃO DE RENDERIZAÇÃO CORRIGIDA
-        // ===================================================================
         function renderizarDados(empresas) {
             currentData = empresas;
             let htmlFinal = '<h2>Gestão de Empresas e Funcionários</h2>';
             if (empresas.length === 0) {
                 htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
             } else {
-                // O .map() aqui estava com o erro. Agora está correto.
                 htmlFinal += empresas.map(empresa => `
                     <div class="empresa">
                         <div class="empresa-header">
@@ -171,7 +224,6 @@
             render(htmlFinal);
         }
 
-        // Função de carregamento simplificada para usar a nova lógica
         async function carregarDados() {
             render('<div class="loading">Carregando dados das empresas...</div>');
             try {
