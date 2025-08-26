@@ -6,7 +6,7 @@
 /**
  * Gera o resumo inteligente do dia para os agendamentos de UMA empresa.
  * @param {Array} agendamentos Lista de agendamentos da empresa ativa (já filtrados).
- * @returns {Object} Resumo inteligente do dia.
+ * @returns {Object} Resumo inteligente do dia, incluindo mensagem formatada como lista HTML.
  */
 export function gerarResumoDiarioInteligente(agendamentos) {
     if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
@@ -19,7 +19,9 @@ export function gerarResumoDiarioInteligente(agendamentos) {
             maiorIntervalo: null,
             primeiro: null,
             ultimo: null,
-            mensagem: "Nenhum agendamento para hoje. Dia livre para outras atividades!"
+            mensagem: `<ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">
+                <li>Nenhum agendamento para hoje. Dia livre para outras atividades!</li>
+            </ul>`
         };
     }
 
@@ -77,22 +79,27 @@ export function gerarResumoDiarioInteligente(agendamentos) {
         }
     }
 
-    // Mensagem para exibir no dashboard
-    let mensagem = `Hoje você tem <b>${agendamentos.length} agendamento${agendamentos.length > 1 ? "s" : ""}</b> `;
-    mensagem += `(${atendimentosRealizados} concluído${atendimentosRealizados !== 1 ? "s" : ""}, `;
-    mensagem += `${atendimentosPendentes} pendente${atendimentosPendentes !== 1 ? "s" : ""}).<br>`;
+    // Geração de insights para a lista
+    const insights = [];
 
-    mensagem += `Começando às <b>${primeiro ? new Date(primeiro.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</b> `;
-    if (primeiro) mensagem += `(${primeiro?.cliente || ""}${primeiro?.servico ? " - " + primeiro.servico : ""})`;
+    insights.push(`Você tem <strong>${agendamentos.length} agendamento${agendamentos.length > 1 ? "s" : ""}</strong> hoje: 
+        <strong>${atendimentosRealizados}</strong> concluído${atendimentosRealizados !== 1 ? "s" : ""} e 
+        <strong>${atendimentosPendentes}</strong> pendente${atendimentosPendentes !== 1 ? "s" : ""}.`);
 
-    mensagem += ` e terminando às <b>${ultimo ? new Date(ultimo.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</b> `;
-    if (ultimo) mensagem += `(${ultimo?.cliente || ""}${ultimo?.servico ? " - " + ultimo.servico : ""}).<br>`;
+    insights.push(`Início: <strong>${primeiro ? new Date(primeiro.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</strong>
+        (${primeiro?.cliente || ""}${primeiro?.servico ? " - " + primeiro.servico : ""})`);
 
-    mensagem += `Faturamento realizado até agora: <b>${faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b>. `;
-    mensagem += `Previsto para o dia: <b>${faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</b>.`;
+    insights.push(`Término: <strong>${ultimo ? new Date(ultimo.inicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</strong>
+        (${ultimo?.cliente || ""}${ultimo?.servico ? " - " + ultimo.servico : ""})`);
+
+    insights.push(`Faturamento realizado: <strong>${faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. 
+        Previsto: <strong>${faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>.`);
 
     if (maiorIntervalo) {
-        mensagem += `<br>Maior intervalo livre: <b>${maiorIntervalo.duracaoMinutos} minutos</b> entre ${maiorIntervalo.inicio} e ${maiorIntervalo.fim}.`;
+        insights.push(
+            `Maior intervalo livre: <strong>${maiorIntervalo.duracaoMinutos} minutos</strong> entre 
+            <strong>${maiorIntervalo.inicio}</strong> e <strong>${maiorIntervalo.fim}</strong>.`
+        );
     }
 
     return {
@@ -116,7 +123,7 @@ export function gerarResumoDiarioInteligente(agendamentos) {
               }
             : null,
         maiorIntervalo,
-        mensagem
+        mensagem: `<ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">${insights.map(i=>`<li>${i}</li>`).join('')}</ul>`
     };
 }
 
