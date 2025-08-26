@@ -15,7 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-const totalSlots = 20; // Defina o total de slots disponíveis no dia para cálculo de ocupação
+const totalSlots = 20; // Total de slots disponíveis no dia para cálculo de ocupação
 const STATUS_VALIDOS = ["ativo", "realizado"];
 
 // --------------------------------------------------
@@ -57,7 +57,7 @@ function debounce(fn, delay) {
 }
 
 // --------------------------------------------------
-// LÓGICA DA DATA (REGRA IMPORTANTE)
+// LÓGICA DA DATA
 // --------------------------------------------------
 
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
@@ -79,15 +79,13 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     for (let i = 0; i < 90; i++) {
       const nomeDia = diaDaSemana[dataAtual.getDay()];
       const diaConfig = horarios[nomeDia];
-
       if (diaConfig && diaConfig.ativo) {
         return dataAtual.toISOString().split("T")[0];
       }
-
       dataAtual.setDate(dataAtual.getDate() + 1);
     }
 
-    return dataInicial;
+    return dataInicial; // fallback
   } catch (e) {
     console.error("Erro ao buscar próxima data disponível:", e);
     return dataInicial;
@@ -199,7 +197,7 @@ function preencherPainel(resumo) {
             <div class="agenda-item">
                 <div class="agenda-info">
                     <strong>${ag.clienteNome}</strong>
-                    <span>${ag.servicoNome} com ${ag.profissionalNome}</span>
+                    <span>${ag.servicoNome}${ag.profissionalNome ? ' com ' + ag.profissionalNome : ''}</span>
                 </div>
                 <div class="agenda-horario">${ag.horario}</div>
             </div>
@@ -212,10 +210,11 @@ function preencherPainel(resumo) {
     const elSugestaoIA = document.getElementById("ia-sugestao");
 
     if (elResumo) {
+        // A função gerarResumoDiarioInteligente deve retornar HTML de lista (<ul><li>...</li></ul>)
         if (resumoInteligente?.mensagem) {
             elResumo.innerHTML = resumoInteligente.mensagem;
         } else {
-            elResumo.textContent = "Nenhum dado disponível para o resumo.";
+            elResumo.innerHTML = "<ul><li>Nenhum dado disponível para o resumo.</li></ul>";
         }
     }
     if (elSugestaoIA) {
