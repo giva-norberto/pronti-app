@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "./config/firebase";
 import { useAuth } from "./useAuth";
@@ -9,42 +9,48 @@ export function AdminClientes() {
   const [loading, setLoading] = useState(true);
   const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Substitua pelo seu UID de admin
 
+  const carregarEmpresas = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collection(db, "empresarios"));
+      const lista = [];
+      for (const empresaDoc of snap.docs) {
+        const empresa = { uid: empresaDoc.id, ...empresaDoc.data(), funcionarios: [] };
+        // Busca funcionários
+        const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
+        empresa.funcionarios = profSnap.docs.map(p => ({
+          id: p.id,
+          ...p.data()
+        }));
+        lista.push(empresa);
+      }
+      setEmpresas(lista);
+    } catch (e) {
+      alert("Erro ao carregar empresas!");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user && user.uid === ADMIN_UID) {
       carregarEmpresas();
     }
-    // eslint-disable-next-line
-  }, [user]);
-
-  async function carregarEmpresas() {
-    setLoading(true);
-    const snap = await getDocs(collection(db, "empresarios"));
-    const lista = [];
-    for (const empresaDoc of snap.docs) {
-      const empresa = { uid: empresaDoc.id, ...empresaDoc.data(), funcionarios: [] };
-      // Busca funcionários
-      const profSnap = await getDocs(collection(db, "empresarios", empresaDoc.id, "profissionais"));
-      empresa.funcionarios = profSnap.docs.map(p => ({
-        id: p.id,
-        ...p.data()
-      }));
-      lista.push(empresa);
-    }
-    setEmpresas(lista);
-    setLoading(false);
-  }
+  }, [user, carregarEmpresas]);
 
   async function bloquearEmpresa(uid, bloquear) {
-    // 1. Bloquear empresa/dono
-    await updateDoc(doc(db, "empresarios", uid), { bloqueado: bloquear });
-    // 2. Bloquear/desbloquear todos funcionários
-    const profSnap = await getDocs(collection(db, "empresarios", uid, "profissionais"));
-    const updates = [];
-    profSnap.forEach(prof => {
-      updates.push(updateDoc(doc(db, "empresarios", uid, "profissionais", prof.id), { bloqueado: bloquear }));
-    });
-    await Promise.all(updates);
-    await carregarEmpresas();
+    try {
+      await updateDoc(doc(db, "empresarios", uid), { bloqueado: bloquear });
+      const profSnap = await getDocs(collection(db, "empresarios", uid, "profissionais"));
+      const updates = [];
+      profSnap.forEach(prof => {
+        updates.push(updateDoc(doc(db, "empresarios", uid, "profissionais", prof.id), { bloqueado: bloquear }));
+      });
+      await Promise.all(updates);
+      await carregarEmpresas();
+    } catch (e) {
+      alert("Erro ao bloquear/desbloquear empresa.");
+    }
   }
 
   if (!user || user.uid !== ADMIN_UID) {
@@ -54,16 +60,37 @@ export function AdminClientes() {
 
   return (
     <div style={{ padding: 32 }}>
-      <h2 style={{ fontWeight: "bold", fontSize: 22, marginBottom: 24 }}>Gestão de Empresas e Funcionários</h2>
+      <h2 style={{ fontWeight: "bold", fontSize: 22, marginBottom: 24 }}>
+        Gestão de Empresas e Funcionários
+      </h2>
+      {empresas.length === 0 && (
+        <div style={{ color: "#888", fontStyle: "italic" }}>
+          Nenhuma empresa cadastrada.
+        </div>
+      )}
       {empresas.map(empresa => (
-        <div key={empresa.uid} style={{ border: "1px solid #eee", marginBottom: 32, borderRadius: 8, padding: 16, background: "#fafbfc" }}>
+        <div
+          key={empresa.uid}
+          style={{
+            border: "1px solid #eee",
+            marginBottom: 32,
+            borderRadius: 8,
+            padding: 16,
+            background: "#fafbfc"
+          }}
+        >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <strong>Empresa:</strong> {empresa.nome || empresa.email || empresa.uid}
               <br />
-              <strong>Dono:</strong> {empresa.nome || "-"} ({empresa.email})
+              <strong>Dono:</strong> {empresa.nome || "-"} ({empresa.email || "-"})
               <br />
-              <strong>Status:</strong> {empresa.bloqueado ? <span style={{ color: "#dc2626" }}>Bloqueada</span> : <span style={{ color: "#10b981" }}>Ativa</span>}
+              <strong>Status:</strong>{" "}
+              {empresa.bloqueado ? (
+                <span style={{ color: "#dc2626" }}>Bloqueada</span>
+              ) : (
+                <span style={{ color: "#10b981" }}>Ativa</span>
+              )}
             </div>
             <button
               style={{
@@ -71,7 +98,9 @@ export function AdminClientes() {
                 color: "#fff",
                 border: "none",
                 borderRadius: 4,
-                padding: "6px 18px"
+                padding: "6px 18px",
+                fontWeight: 600,
+                cursor: "pointer"
               }}
               onClick={() => bloquearEmpresa(empresa.uid, !empresa.bloqueado)}
             >
@@ -91,7 +120,9 @@ export function AdminClientes() {
               <tbody>
                 {empresa.funcionarios.length === 0 && (
                   <tr>
-                    <td colSpan={3} style={{ textAlign: "center", color: "#aaa" }}>Nenhum funcionário</td>
+                    <td colSpan={3} style={{ textAlign: "center", color: "#aaa" }}>
+                      Nenhum funcionário
+                    </td>
                   </tr>
                 )}
                 {empresa.funcionarios.map(func => (
@@ -99,10 +130,11 @@ export function AdminClientes() {
                     <td>{func.nome || "-"}</td>
                     <td>{func.email || "-"}</td>
                     <td>
-                      {func.bloqueado
-                        ? <span style={{ color: "#dc2626" }}>Bloqueado</span>
-                        : <span style={{ color: "#10b981" }}>Ativo</span>
-                      }
+                      {func.bloqueado ? (
+                        <span style={{ color: "#dc2626" }}>Bloqueado</span>
+                      ) : (
+                        <span style={{ color: "#10b981" }}>Ativo</span>
+                      )}
                     </td>
                   </tr>
                 ))}
