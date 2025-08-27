@@ -2,7 +2,7 @@
 <!--          MENU-LATERAL.HTML (VERSÃO FINAL, COMPLETA E CORRIGIDA)        -->
 <!-- ====================================================================== -->
 
-<!-- 1. O SEU HTML DO MENU (INTACTO) -->
+<!-- 1. HTML DO MENU -->
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -21,7 +21,7 @@
     </div>
 </aside>
 
-<!-- 2. O SEU CSS DO MENU (INTACTO) -->
+<!-- 2. CSS DO MENU -->
 <style>
 .sidebar {
   width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -74,38 +74,38 @@
 }
 </style>
 
-<!-- ====================================================================== -->
-<!--          SCRIPT TURBINADO COM A ARQUITETURA CORRETA                    -->
-<!-- ====================================================================== -->
+<!-- 3. SCRIPT DE SEGURANÇA E CONTROLE DE SESSÃO -->
 <script type="module">
-    // 1. Importa a instância ÚNICA de auth do seu config, como o ChatGPT recomendou.
     import { auth } from "./firebase-config.js"; 
-    // 2. Importa as FUNÇÕES que vamos usar com essa instância.
     import { onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    // --- MÁGICA 1: GARANTIR QUE O LOGIN "GRUDE" ---
+    // -- Persistência da sessão --
     setPersistence(auth, browserLocalPersistence )
       .then(() => {
         console.log("Guardião do Menu: Persistência de sessão ativada.");
-        iniciarGuardião();
+        iniciarGuardiao();
       })
       .catch((error) => {
         console.error("Guardião do Menu: Falha ao ativar persistência!", error);
-        iniciarGuardião();
+        iniciarGuardiao();
       });
 
-    // --- MÁGICA 2: O GUARDIÃO COM "MEMÓRIA" ---
     let authInitialized = false;
-
-    function iniciarGuardião() {
+    function iniciarGuardiao() {
         onAuthStateChanged(auth, (user) => {
             if (authInitialized) return;
             authInitialized = true;
 
             const isLoginPage = window.location.pathname.endsWith('login.html');
-            
+            // NOVO: Proteção para empresaAtivaId obrigatória
+            const precisaEmpresa = !isLoginPage && !window.location.pathname.endsWith('selecionar-empresa.html');
+            const empresaId = localStorage.getItem("empresaAtivaId");
+
             if (!user && !isLoginPage) {
                 window.location.replace('login.html');
+            } else if (precisaEmpresa && !empresaId) {
+                // Redireciona para selecionar empresa se não houver empresa ativa
+                window.location.replace('selecionar-empresa.html');
             } else {
                 console.log("Guardião do Menu: Acesso PERMITIDO.");
                 setupMenu(user);
@@ -113,7 +113,7 @@
         });
     }
 
-    // --- LÓGICA DO PRÓPRIO MENU (INTACTA) ---
+    // -- Lógica do menu --
     function setupMenu(user) {
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
@@ -129,7 +129,11 @@
         if (btnLogout) {
             btnLogout.replaceWith(btnLogout.cloneNode(true)); 
             document.getElementById('btn-logout').addEventListener('click', () => {
-                signOut(auth).then(() => window.location.replace('login.html'));
+                signOut(auth).then(() => {
+                  // Limpa empresa ativa ao sair
+                  localStorage.removeItem("empresaAtivaId");
+                  window.location.replace('login.html');
+                });
             });
         }
     }
