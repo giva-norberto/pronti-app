@@ -7,15 +7,15 @@ import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } 
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ===================================================================
-//        CONFIGURAÇÃO FINAL - GERADA PELO APP ANTIGO (Pronti-App)
+//      CONFIGURAÇÃO ATUALIZADA - APONTANDO PARA O NOVO PROJETO
 // ===================================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
-  authDomain: "pronti-app-37c6e.firebaseapp.com",
-  projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // Corrigido
-  messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e56fa7e5df3" // <-- APP ID DO PROJETO ANTIGO
+  apiKey: "AIzaSyBIT61ii28vbYyi5oNRDRy8vNx3U4XDVfo",
+  authDomain: "pronti-novo.firebaseapp.com",
+  projectId: "pronti-novo",
+  storageBucket: "pronti-novo.appspot.com", // Corrigido para o novo projeto
+  messagingSenderId: "315046501183",
+  appId: "1:315046501183:web:2f188bfd00b448aa64518a"
 };
 // ===================================================================
 
