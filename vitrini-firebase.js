@@ -1,4 +1,4 @@
-// RESPONSABILIDADE: Criar e exportar as instâncias do Firebase, garantindo persistência de login.
+// RESPONSABILIDADE: Criar e exportar as instâncias do Firebase, garantindo persistência de login multiempresa.
 
 // 1. Importa os módulos necessários do Firebase
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -7,11 +7,11 @@ import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } 
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ===================================================================
-//                      A ÚNICA ALTERAÇÃO É AQUI
+//                    ATENÇÃO: CONFIG MULTIEMPRESA
 // ===================================================================
 // 2. Configuração do seu projeto Firebase (ATUALIZADA COM A CHAVE CORRETA )
 const firebaseConfig = {
-  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8", // <-- A NOVA CHAVE CORRETA
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
@@ -19,7 +19,6 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 // ===================================================================
-
 
 // 3. Inicializa as instâncias do Firebase (previne duplicidade)
 let app;
@@ -37,18 +36,19 @@ export const storage = getStorage(app);
 
 // 4. Garante que o usuário permaneça logado entre páginas/tabs
 setPersistence(auth, browserLocalPersistence).catch((error) => {
-  // Opcional: você pode tratar/logar erros aqui se desejar
+  // Opcional: trate ou logue erros se desejar
   console.error("Erro ao definir persistência do Auth:", error);
 });
 
 /*
   DOCUMENTAÇÃO:
-  - Este módulo deve ser importado em todos os arquivos que dependem de autenticação, Firestore ou provider Google.
+  - Importe este módulo em todos os arquivos que dependem de autenticação, Firestore ou provider Google.
   - O bloco setPersistence(auth, browserLocalPersistence) garante que o login do usuário não se perca ao navegar ou recarregar a página.
-  - Se precisar de logout, use: import { signOut } from "firebase/auth"; signOut(auth);
+  - Para logout: import { signOut } from "firebase/auth"; signOut(auth);
 
   MULTIEMPRESA:
   - NÃO é necessário alterar nada neste arquivo para multiempresa.
-  - O contexto multiempresa é controlado pelos módulos que consomem Firestore/Auth/Storage, 
-    sempre passando o empresaId correto. Mantenha este arquivo central e universal.
+  - O contexto multiempresa é controlado nos módulos que consomem Firestore/Auth/Storage,
+    sempre usando o empresaId correto nas queries/paths de dados.
+  - Este arquivo é universal, central, seguro e não depende do contexto atual de empresa do usuário.
 */
