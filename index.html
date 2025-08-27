@@ -1,101 +1,42 @@
 <!-- ================================================================== -->
-<!-- SCRIPT DE VERIFICAÇÃO - COLOQUE NO FINAL DO <body> DO SEU INDEX.HTML -->
+<!--    SCRIPT DE VERIFICAÇÃO SIMPLIFICADO - FINAL DO <body>     -->
 <!-- ================================================================== -->
 <script type="module">
-    // Importa apenas o essencial
-    import { auth, db } from './firebase-config.js';
+    // 1. Importa apenas o essencial para autenticação
+    import { auth } from './firebase-config.js';
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { doc, getDoc, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    console.log("Iniciando script de verificação direta no index.html..." );
+    // Função para mostrar o conteúdo da página e esconder o "loading"
+    function mostrarPagina( ) {
+        // Esta função assume que você tem uma classe 'is-loading' no seu <body>
+        // que o torna transparente. Se não, pode remover esta linha.
+        document.body.classList.remove('is-loading');
+        console.log("Página carregada e exibida.");
+    }
 
-    onAuthStateChanged(auth, async (user) => {
+    // 2. Observa o estado da autenticação
+    onAuthStateChanged(auth, (user) => {
         
-        // ==================================================================
-        //          CORREÇÃO APLICADA AQUI PARA EVITAR O LOOP
-        // ==================================================================
-        // Verifica se a página atual JÁ É a de login. Se for, não faz nada.
-        if (window.location.pathname.endsWith('login.html') || window.location.pathname.endsWith('login.html/')) {
-            console.log("Na página de login, verificação de acesso ignorada.");
-            return; 
-        }
-        // ==================================================================
+        // Adiciona uma pequena pausa para garantir que tudo inicializou
+        setTimeout(() => {
+            if (user) {
+                // 3. Se o usuário ESTÁ logado:
+                console.log("SUCESSO: Usuário está logado.", user.uid);
+                console.log("Acesso liberado. A página deve carregar normalmente.");
+                
+                // Mostra o conteúdo da página
+                mostrarPagina();
 
-        if (!user) {
-            // Se não há usuário E NÃO ESTAMOS na página de login, vai para o login.
-            console.log("Nenhum usuário logado. Redirecionando para login.html");
-            window.location.href = 'login.html';
-            return;
-        }
+                // ** IMPORTANTE **
+                // Todo o resto do seu código (para carregar o menu, nome do usuário, etc.)
+                // deveria ser chamado a partir daqui.
 
-        const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-        if (user.uid === ADMIN_UID) {
-            // Se for o Admin, o acesso é liberado e o script para.
-            console.log("Admin detectado. Acesso liberado.");
-            return; 
-        }
-
-        // Se não for o Admin, executa a verificação de assinatura.
-        console.log("Usuário normal detectado. Verificando status da assinatura...");
-
-        try {
-            // 1. Busca o documento do usuário
-            const userRef = doc(db, "usuarios", user.uid);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                console.log("Documento do usuário não encontrado. Tratando como primeiro acesso.");
-                // Aqui você pode redirecionar para a tela de criar empresa, se quiser.
-                // window.location.href = 'perfil.html';
-                return;
-            }
-
-            const userData = userSnap.data();
-
-            // 2. Verifica se já é premium
-            if (userData.isPremium === true) {
-                console.log("Usuário é Premium. Acesso liberado.");
-                return;
-            }
-
-            // 3. Se não for premium, verifica o trial
-            if (!userData.trialStart || !userData.trialStart.seconds) {
-                console.log("Usuário não tem data de início do trial. Acesso liberado (ou tratar como erro).");
-                return;
-            }
-
-            // 4. Busca os dias de teste do documento da empresa
-            const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
-            const empresasSnapshot = await getDocs(q);
-            let trialDurationDays = 15; // Padrão
-
-            if (!empresasSnapshot.empty) {
-                const empresaData = empresasSnapshot.docs[0].data();
-                if (empresaData.freeEmDias !== undefined) {
-                    trialDurationDays = empresaData.freeEmDias;
-                }
-            }
-            console.log(`Duração do trial definida para: ${trialDurationDays} dias.`);
-
-            // 5. Calcula a data de expiração
-            const startDate = new Date(userData.trialStart.seconds * 1000);
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + trialDurationDays);
-
-            console.log(`Data de expiração do trial: ${endDate.toLocaleDateString()}`);
-
-            // 6. Compara com a data atual e redireciona se necessário
-            if (new Date() > endDate) {
-                console.log("TRIAL EXPIRADO! Redirecionando para assinatura.html...");
-                window.location.href = 'assinatura.html';
             } else {
-                console.log("Trial está ativo. Acesso liberado.");
+                // 4. Se o usuário NÃO ESTÁ logado:
+                console.log("AVISO: Nenhum usuário logado. Redirecionando para login.html...");
+                window.location.href = 'login.html';
             }
+        }, 200); // Pausa de 200ms por segurança
 
-        } catch (error) {
-            console.error("Ocorreu um erro grave na verificação de acesso:", error);
-            // Opcional: redirecionar para uma página de erro genérica
-            // window.location.href = 'erro.html';
-        }
     });
 </script>
