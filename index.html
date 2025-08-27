@@ -2,63 +2,96 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* SEUS ESTILOS - SEM ALTERAÇÃO */
-        .dashboard-body { background: linear-gradient(135deg, #1e3c72, #2a5298  ); min-height: 100vh; }
-        body.is-loading { opacity: 0; }
-        body { opacity: 1; transition: opacity 0.3s ease-in-out; }
-        .primeiro-acesso-card { max-width: 400px; margin: 80px auto; padding: 36px 28px 32px 28px; border-radius: 22px; box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001; background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%); border: 1.5px solid #e3eafc; text-align: center; }
-        .primeiro-acesso-card h2 { color: #2563eb; font-weight: 700; font-size: 1.34rem; margin-bottom: 18px; }
-        .primeiro-acesso-card p { font-size: 16px; color: #6b7a90; margin-bottom: 30px; }
-        .primeiro-btn { display: block; width: 100%; background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%); color: #fff; font-weight: 600; border: none; border-radius: 8px; padding: 13px 0; font-size: 1rem; cursor: pointer; }
+        /* =================================================================== */
+        /*                  CSS DO MENU LATERAL COLADO AQUI                  */
+        /* =================================================================== */
+        .sidebar {
+            width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100% );
+            min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            position: fixed; left: 0; top: 0; bottom: 0; z-index: 10;
+            display: flex; flex-direction: column; padding-top: 24px;
+        }
+        .sidebar-brand {
+            font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
+            letter-spacing: 2px; padding: 0 32px 12px 32px; display: block;
+            margin-bottom: 8px; text-align: left;
+        }
+        .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; }
+        .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; }
+        .sidebar-links a {
+            display: flex; align-items: center; gap: 10px; background: #fff;
+            color: #4f46e5; font-weight: 600; font-size: 1.08em; border-radius: 10px;
+            margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+            transition: background 0.17s, color 0.18s, box-shadow 0.18s;
+            padding: 12px 18px; text-align: left; text-decoration: none;
+            letter-spacing: 0.01em; border: 2px solid transparent;
+        }
+        .sidebar-links a.active, .sidebar-links a:focus {
+            background: #4f46e5; color: #fff; font-weight: 700;
+            border: 2px solid #fff; box-shadow: 2px 4px 0 0 #ff3e7f22;
+        }
+        .sidebar-links a:hover:not(.active) { background: #ececff; color: #3b2fd6; border: 2px solid #d1d5fa; }
+        .sidebar-footer { margin-top: auto; padding: 32px 32px 24px 32px; }
+        .btn-logout {
+            background: #fff; color: #4f46e5; border: none; padding: 12px 0;
+            width: 100%; border-radius: 10px; font-weight: bold; font-size: 1.05em;
+            cursor: pointer; transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 6px rgba(79,70,229,0.07); border: 2px solid transparent; outline: none;
+        }
+        .btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; }
+        
+        /* CSS PRINCIPAL DA PÁGINA */
+        .dashboard-body { display: flex; }
+        .main-content {
+            margin-left: 240px; /* Deixa espaço para o sidebar */
+            flex-grow: 1;
+            padding: 20px;
+        }
+        .primeiro-acesso-card { /* ... (seus outros estilos) ... */ }
     </style>
 </head>
-<body class="dashboard-body is-loading">
+<body class="dashboard-body">
 
-<!-- =================================================================== -->
-<!--                MENU LATERAL EMBUTIDO DIRETAMENTE AQUI               -->
-<!-- =================================================================== -->
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <a href="index.html" class="sidebar-logo-link">
-            <img src="logo-pronti-branca.png" alt="Logo Pronti" class="sidebar-logo">
-        </a>
-    </div>
+<!-- HTML do Menu Lateral (como você mandou) -->
+<aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
     <nav class="sidebar-links">
         <a href="index.html" class="active"><span>🏠</span> Início</a>
+        <a href="dashboard.html"><span>📊</span> Dashboard</a>
+        <a href="servicos.html"><span>🛠️</span> Serviços</a>
         <a href="agenda.html"><span>📅</span> Agenda</a>
-        <a href="clientes.html"><span>👥</span> Clientes</a>
-        <a href="servicos.html"><span>✂️</span> Serviços</a>
-        <a href="profissionais.html"><span>💇‍♀️</span> Profissionais</a>
-        <a href="perfil.html"><span>⚙️</span> Configurações</a>
+        <a href="clientes.html"><span>👤</span> Clientes</a>
+        <a href="equipe.html"><span>👥</span> Equipe</a>
+        <a href="perfil.html" id="perfil-link"><span>🙍‍♂️</span> Meu Perfil</a>
+        <a href="relatorios.html"><span>📈</span> Relatórios</a>
     </nav>
     <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout"><span>🚪</span> Sair</button>
+        <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
 </aside>
-<!-- =================================================================== -->
 
 <main class="main-content" id="main-content">
-    <!-- O conteúdo será preenchido pelo script -->
+    <h1>Carregando...</h1>
 </main>
 
 <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { verificarAcesso } from "./userService.js"; // Usando a versão BÁSICA
 
     const mainContent = document.getElementById("main-content" );
 
     function mostrarPrimeiroAcessoCard() {
         mainContent.innerHTML = `
-            <div class="primeiro-acesso-card">
+            <div class="primeiro-acesso-card" style="color: #333;">
                 <h2>Seja bem-vindo ao Pronti!</h2>
                 <p>Inicie o cadastro da sua empresa.</p>
-                <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
+                <button id="btn-criar-empresa" class="primeiro-btn">Criar minha empresa</button>
             </div>
         `;
         document.getElementById("btn-criar-empresa").addEventListener("click", () => {
@@ -67,15 +100,9 @@
     }
 
     function mostrarDashboard(perfil) {
-        mainContent.innerHTML = `
-            <div class="dashboard-welcome-center">
-                <h1>Bem-vindo, ${perfil.nome || 'Usuário'}!</h1>
-                <p>Seu dashboard está funcionando.</p>
-            </div>
-        `;
+        mainContent.innerHTML = `<h1 style="color: #333;">Bem-vindo de volta, ${perfil.nome || 'Usuário'}!</h1>`;
     }
 
-    // Ativa o botão de logout que agora está no HTML principal
     document.getElementById('btn-logout').addEventListener('click', () => {
         signOut(auth).then(() => window.location.replace('login.html'));
     });
@@ -84,17 +111,14 @@
         if (user) {
             setTimeout(async () => {
                 try {
-                    const userSession = await verificarAcesso(); // Chama a versão BÁSICA
+                    const userSession = await verificarAcesso();
                     mostrarDashboard(userSession.perfil);
                 } catch (error) {
                     if (error.message === "primeiro_acesso") {
                         mostrarPrimeiroAcessoCard();
                     } else {
-                        console.error("Erro fatal:", error);
-                        mainContent.innerHTML = "<h1>Ocorreu um erro fatal. Verifique o console.</h1>";
+                        mainContent.innerHTML = `<h1 style="color: red;">Erro: ${error.message}</h1>`;
                     }
-                } finally {
-                    document.body.classList.remove('is-loading');
                 }
             }, 200);
         } else {
