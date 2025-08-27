@@ -11,10 +11,10 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-
 // ===================================================================
 // 2. Configuração do seu projeto Firebase
 export const firebaseConfig = {
-  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8", // <-- A NOVA CHAVE CORRETA
+  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // <-- A CHAVE CORRETA FORNECIDA POR SI
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // <-- Corrigido para o padrão correto
+  storageBucket: "pronti-app-37c6e.appspot.com", 
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
