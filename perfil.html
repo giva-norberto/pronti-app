@@ -257,6 +257,10 @@
                     <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">
                         <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
                     </a>
+                    <!-- BOTÃO PARA CRIAR NOVA EMPRESA ADICIONADO AQUI -->
+                    <button id="btn-criar-nova-empresa" class="btn-new" style="background-color: #10b981;">
+                        <i class="fa-solid fa-plus"></i> Criar Nova Empresa
+                    </button>
                 </div>
             </div>
             <!-- CARD ESPECIAL DE CADASTRO SUCESSO -->
@@ -302,62 +306,49 @@
                         <label for="descricao">Descrição Curta</label>
                         <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
                     </div>
+                    <!-- NOVOS CAMPOS ADICIONADOS PARA SINCRONIZAR COM O JS -->
+                    <div class="form-group">
+                        <label for="localizacao">Localização (Endereço)</label>
+                        <input type="text" id="localizacao" placeholder="Ex: Rua das Flores, 123, São Paulo">
+                    </div>
+                    <div class="form-group">
+                        <label for="horarioFuncionamento">Horário de Funcionamento</label>
+                        <input type="text" id="horarioFuncionamento" placeholder="Ex: Seg a Sex, 9h - 18h">
+                    </div>
+                    <div class="form-group">
+                        <label for="chavePix">Chave PIX (Opcional)</label>
+                        <input type="text" id="chavePix" placeholder="Digite sua chave PIX">
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
                 </div>
             </form>
         </div>
-
-        <!-- ========================================================== -->
-        <!--      MODAL DE BOAS-VINDAS (Mantido como estava)      -->
-        <!-- ========================================================== -->
-        <div id="modal-boas-vindas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index: 1000;">
-            <div style="background:white; padding:40px; border-radius:12px; text-align:center; max-width: 400px; box-shadow: 0 5px 25px rgba(0,0,0,0.2);">
-                <h2 style="font-size: 48px; margin-bottom: 15px;">👋</h2>
-                <h2 style="font-size: 24px; margin-bottom: 10px; color: #333;">Tudo pronto!</h2>
-                <p style="color: #666; margin-bottom: 25px;">O seu perfil de negócio foi configurado com sucesso.</p>
-                <p style="font-size: 16px;"><strong>Você ativou 15 dias de acesso total gratuito!</strong></p>
-                <button id="btn-ir-painel" style="width: 100%; padding: 15px; border: none; border-radius: 8px; background-color: #5b67f1; color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 25px;">
-                    Começar a Usar
-                </button>
-            </div>
-        </div>
-        
     </main>
     <div id="modal-add-profissional" class="modal-overlay" style="display: none;">
         <!-- O conteúdo do seu modal vai aqui dentro -->
     </div>
-    
-    <!-- SCRIPT ATUALIZADO PARA CORRIGIR O RECARREGAMENTO DO MENU -->
     <script>
+    // Inclusão dinâmica do menu lateral e destaque do menu de perfil (mesmo se o menu já tem JS de active)
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
-          
-          // CORREÇÃO: A lógica agora espera o menu ser carregado
-          // e depois assume o controlo dos links.
-          const links = document.querySelectorAll('.sidebar-links a');
-          const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
-
-          // Limpa a seleção de todos os links para garantir
-          links.forEach(link => link.classList.remove('active'));
-
-          if (perfilLink) {
-              // Marca o link do perfil como ativo
-              perfilLink.classList.add('active');
-              
-              // Adiciona o evento de clique para prevenir a ação padrão
-              perfilLink.addEventListener('click', function(event) {
-                  // Como já estamos na página de perfil, o clique não faz nada.
-                  event.preventDefault();
-                  console.log("Já está na página de perfil. Recarregamento evitado.");
-              });
-          }
+          // Garante que só "perfil" fica ativo (mesmo se o menu já tem lógica de active)
+          setTimeout(() => {
+            const links = document.querySelectorAll('.sidebar-links a');
+            links.forEach(link => link.classList.remove('active'));
+            const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
+            if (perfilLink) perfilLink.classList.add('active');
+          }, 10);
         });
     });
+
+    // PROTEÇÃO CONTRA LOOP: 
+    // No seu perfil.js, garanta que NUNCA redirecione para index.html se for dono e não tiver empresa.
+    // Apenas exiba o formulário normalmente!
     </script>
     <script src="perfil.js" type="module"></script>
 </body>
