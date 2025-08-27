@@ -345,11 +345,40 @@
           }, 10);
         });
     });
-
-    // PROTEÇÃO CONTRA LOOP: 
-    // No seu perfil.js, garanta que NUNCA redirecione para index.html se for dono e não tiver empresa.
-    // Apenas exiba o formulário normalmente!
     </script>
-    <script src="perfil.js" type="module"></script>
+    <script type="module">
+    // CORREÇÃO: Proteção contra redirecionamento indevido para index.html
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { auth } from "./firebase-config.js";
+    import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          await ensureUserAndTrialDoc();
+          const userSession = await verificarAcesso();
+
+          // Só redireciona funcionário
+          if (userSession.role === 'funcionario') {
+            window.location.replace('agenda.html');
+            return;
+          }
+          // Se for dono/admin ou primeiro acesso: NÃO redireciona! Apenas mostra normalmente a tela de perfil.
+          // Coloque aqui o código para carregar/exibir os dados do perfil normalmente.
+
+        } catch (error) {
+          if (error.message === "primeiro_acesso") {
+            // Mostra o formulário normalmente!
+            // NÃO redireciona para index!
+          } else {
+            // Erro grave: só manda para login se não autenticado
+            // window.location.replace('login.html');
+          }
+        }
+      } else {
+        window.location.replace('login.html');
+      }
+    });
+    </script>
 </body>
 </html>
