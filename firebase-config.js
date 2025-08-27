@@ -7,22 +7,19 @@ import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } 
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ===================================================================
-//        CONFIGURAÇÃO FINAL - GERADA PELO NOVO APP (ProntiIA-v2 )
+//        CONFIGURAÇÃO FINAL - GERADA PELO APP ANTIGO (Pronti-App)
 // ===================================================================
-// 2. Configuração do seu projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // Corrigido para o padrão correto
+  storageBucket: "pronti-app-37c6e.appspot.com", // Corrigido
   messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:b1f96678a0c3e9d47e5df3" // <-- O NOVO App ID
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3" // <-- APP ID DO PROJETO ANTIGO
 };
 // ===================================================================
 
-
 // 3. Inicializa as instâncias do Firebase (previne duplicidade)
-// (Vou incluir a exportação do provider que estava no seu outro arquivo para garantir consistência)
 let app;
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
@@ -33,12 +30,11 @@ if (!getApps().length) {
 export { app };
 export const db = getFirestore(app);
 export const auth = getAuth(app);
-export const provider = new GoogleAuthProvider(); // Garantindo que o provider do Google continue aqui
+export const provider = new GoogleAuthProvider();
 export const storage = getStorage(app);
 
 // 4. Garante que o usuário permaneça logado entre páginas/tabs
 setPersistence(auth, browserLocalPersistence).catch((error) => {
-  // Opcional: você pode tratar/logar erros aqui se desejar
   console.error("Erro ao definir persistência do Auth:", error);
 });
 
