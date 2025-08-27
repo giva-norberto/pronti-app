@@ -19,7 +19,7 @@
 <!-- Estilos do menu para garantir a aparência correta -->
 <style>
 .sidebar {
-  width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%  );
+  width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
   min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);
   position: fixed; left: 0; top: 0; bottom: 0; z-index: 10;
   display: flex; flex-direction: column; padding-top: 24px;
@@ -52,16 +52,17 @@
   box-shadow: 0 2px 6px rgba(79,70,229,0.07); border: 2px solid transparent; outline: none;
 }
 .btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; }
+
 @media (max-width: 900px) {
   .sidebar {
     width: 100vw; min-height: auto; position: static;
-    flex-direction: row; align-items: flex-start;
+    flex-direction: row; align-items: center; /* corrigido */
     padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     font-size: 0.95em;
   }
   .sidebar-brand { font-size: 1.4rem; padding: 10px 10px 4px 10px; margin-bottom: 0; text-align: left; }
   .sidebar hr { display: none; }
-  .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px 0 8px; overflow-x: auto; }
+  .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; overflow-x: auto; }
   .sidebar-links a { font-size: 1em; padding: 10px 12px; margin-bottom: 0; white-space: nowrap; }
   .sidebar-footer { padding: 8px 8px 10px 8px; margin-left: auto; }
   .btn-logout { padding: 10px 0; font-size: 1em; }
@@ -70,45 +71,32 @@
 
 <!-- SCRIPT INTELIGENTE E CENTRALIZADO -->
 <script type="module">
-    // Importa apenas o que é necessário para o menu
     import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js"; 
 
     function setupMenu() {
         const links = document.querySelectorAll('.sidebar-links a');
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html'; // Garante que a página inicial seja reconhecida
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
         links.forEach(link => {
             const linkPage = link.getAttribute('href').split('/').pop();
-
-            // Se o link corresponde à página atual
             if (linkPage === currentPage) {
-                link.classList.add('active'); // Marca como ativo
-                
-                // Adiciona o evento para prevenir o recarregamento
-                link.addEventListener('click', (event) => {
-                    event.preventDefault();
-                });
+                link.classList.add('active');
+                link.addEventListener('click', (event) => event.preventDefault());
             } else {
-                link.classList.remove('active'); // Garante que os outros não estão ativos
+                link.classList.remove('active');
             }
         });
 
-        // Ativa o botão de logout
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
             btnLogout.addEventListener('click', () => {
                 signOut(auth)
-                    .then(() => {
-                        window.location.replace('login.html');
-                    })
-                    .catch((error) => {
-                        console.error('Erro ao fazer logout:', error);
-                    });
+                    .then(() => window.location.replace('login.html'))
+                    .catch((error) => console.error('Erro ao fazer logout:', error));
             });
         }
     }
 
-    // Executa a configuração do menu assim que ele é carregado
     setupMenu();
 </script>
