@@ -1,3 +1,8 @@
+<!-- ====================================================================== -->
+<!--          MENU-LATERAL.HTML (VERSÃO FINAL, COMPLETA E TURBINADA)        -->
+<!-- ====================================================================== -->
+
+<!-- 1. O SEU HTML DO MENU (INTACTO) -->
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -16,7 +21,7 @@
     </div>
 </aside>
 
-<!-- Estilos do menu para garantir a aparência correta -->
+<!-- 2. O SEU CSS DO MENU (INTACTO) -->
 <style>
 .sidebar {
   width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -56,7 +61,7 @@
 @media (max-width: 900px) {
   .sidebar {
     width: 100vw; min-height: auto; position: static;
-    flex-direction: row; align-items: center; /* corrigido */
+    flex-direction: row; align-items: center;
     padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     font-size: 0.95em;
   }
@@ -69,11 +74,33 @@
 }
 </style>
 
-<!-- SCRIPT INTELIGENTE E CENTRALIZADO -->
+<!-- ====================================================================== -->
+<!--          SCRIPT TURBINADO: GUARDIÃO + LÓGICA DO MENU                   -->
+<!-- ====================================================================== -->
 <script type="module">
-    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { auth } from "./vitrini-firebase.js"; 
+    // Importa as ferramentas de autenticação
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { auth } from "./firebase-config.js"; // Garanta que o nome do arquivo de config esteja correto
 
+    // --- O GUARDIÃO ---
+    // Esta função é executada IMEDIATAMENTE quando o menu é carregado.
+    onAuthStateChanged(auth, (user ) => {
+        const isLoginPage = window.location.pathname.endsWith('login.html');
+        
+        if (!user && !isLoginPage) {
+            // Se não há usuário E não estamos na página de login, expulsa.
+            console.log("Guardião do Menu: Acesso NEGADO. Redirecionando para login.");
+            window.location.replace('login.html');
+        } else if (user) {
+            // Se há usuário, o acesso é permitido.
+            console.log("Guardião do Menu: Acesso PERMITIDO para", user.email);
+            // A lógica do menu (logout, links ativos) pode ser executada com segurança.
+            setupMenu();
+        }
+    });
+
+    // --- LÓGICA DO PRÓPRIO MENU ---
+    // Esta função agora é chamada com segurança pelo guardião.
     function setupMenu() {
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
@@ -82,7 +109,6 @@
             const linkPage = link.getAttribute('href').split('/').pop();
             if (linkPage === currentPage) {
                 link.classList.add('active');
-                link.addEventListener('click', (event) => event.preventDefault());
             } else {
                 link.classList.remove('active');
             }
@@ -90,13 +116,11 @@
 
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                signOut(auth)
-                    .then(() => window.location.replace('login.html'))
-                    .catch((error) => console.error('Erro ao fazer logout:', error));
+            // Remove listener antigo para evitar duplicação
+            btnLogout.replaceWith(btnLogout.cloneNode(true)); 
+            document.getElementById('btn-logout').addEventListener('click', () => {
+                signOut(auth).then(() => window.location.replace('login.html'));
             });
         }
     }
-
-    setupMenu();
 </script>
