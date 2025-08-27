@@ -66,11 +66,11 @@ function criarEmpresaCard(id, data) {
     card.href = '#'; // Usamos JS para o clique para evitar recarregamento
     card.onclick = () => selecionarEmpresa(id);
 
-    const logoSrc = data.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${data.nomeFantasia.charAt(0)}`;
+    const logoSrc = data.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(data.nomeFantasia?.charAt(0) || "E")}`;
 
     card.innerHTML = `
-        <img src="${logoSrc}" alt="Logo de ${data.nomeFantasia}" class="empresa-logo">
-        <span class="empresa-nome">${data.nomeFantasia}</span>
+        <img src="${logoSrc}" alt="Logo de ${data.nomeFantasia || "Empresa"}" class="empresa-logo">
+        <span class="empresa-nome">${data.nomeFantasia || "Empresa sem nome"}</span>
     `;
     return card;
 }
@@ -98,12 +98,7 @@ function criarNovoCard() {
 function selecionarEmpresa(empresaId) {
     // Usamos localStorage para que a seleção persista entre abas e sessões
     localStorage.setItem('empresaAtivaId', empresaId);
-    
-    // ==========================================================
-    //      CORREÇÃO APLICADA AQUI
-    // ==========================================================
-    // O redirecionamento foi alterado de 'dashboard.html' para 'index.html',
-    // conforme a sua preferência.
+    // Redirecionamento para index.html
     window.location.href = 'index.html'; 
 }
 
