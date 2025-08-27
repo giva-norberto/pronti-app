@@ -10,7 +10,7 @@
         /*                  CSS DO MENU LATERAL COLADO AQUI                  */
         /* =================================================================== */
         .sidebar {
-            width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100% );
+            width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%  );
             min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);
             position: fixed; left: 0; top: 0; bottom: 0; z-index: 10;
             display: flex; flex-direction: column; padding-top: 24px;
@@ -50,8 +50,8 @@
             margin-left: 240px; /* Deixa espaço para o sidebar */
             flex-grow: 1;
             padding: 20px;
+            color: #333; /* Cor de texto padrão para o conteúdo */
         }
-        .primeiro-acesso-card { /* ... (seus outros estilos) ... */ }
     </style>
 </head>
 <body class="dashboard-body">
@@ -76,52 +76,38 @@
 </aside>
 
 <main class="main-content" id="main-content">
-    <h1>Carregando...</h1>
+    <!-- O conteúdo será preenchido pelo script -->
 </main>
 
 <script type="module">
+    // ===================================================================
+    //          LÓGICA SIMPLIFICADA PARA GARANTIR ESTABILIDADE
+    // ===================================================================
     import { auth } from "./vitrini-firebase.js";
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { verificarAcesso } from "./userService.js"; // Usando a versão BÁSICA
+    
+    // A importação do userService.js foi REMOVIDA para este teste.
 
     const mainContent = document.getElementById("main-content" );
 
-    function mostrarPrimeiroAcessoCard() {
-        mainContent.innerHTML = `
-            <div class="primeiro-acesso-card" style="color: #333;">
-                <h2>Seja bem-vindo ao Pronti!</h2>
-                <p>Inicie o cadastro da sua empresa.</p>
-                <button id="btn-criar-empresa" class="primeiro-btn">Criar minha empresa</button>
-            </div>
-        `;
-        document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-            window.location.href = "perfil.html";
-        });
-    }
-
-    function mostrarDashboard(perfil) {
-        mainContent.innerHTML = `<h1 style="color: #333;">Bem-vindo de volta, ${perfil.nome || 'Usuário'}!</h1>`;
-    }
-
+    // Ativa o botão de logout que agora está no HTML principal
     document.getElementById('btn-logout').addEventListener('click', () => {
         signOut(auth).then(() => window.location.replace('login.html'));
     });
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            setTimeout(async () => {
-                try {
-                    const userSession = await verificarAcesso();
-                    mostrarDashboard(userSession.perfil);
-                } catch (error) {
-                    if (error.message === "primeiro_acesso") {
-                        mostrarPrimeiroAcessoCard();
-                    } else {
-                        mainContent.innerHTML = `<h1 style="color: red;">Erro: ${error.message}</h1>`;
-                    }
-                }
-            }, 200);
+            // Se o usuário está logado, simplesmente mostramos uma mensagem de boas-vindas.
+            // Não há leitura do Firestore, então não há risco de erro.
+            console.log("BASE ESTÁVEL: Usuário autenticado. Exibindo conteúdo.");
+            mainContent.innerHTML = `
+                <h1>Bem-vindo ao Pronti!</h1>
+                <p>A autenticação está funcionando e a página está estável.</p>
+                <p>Usuário: ${user.email}</p>
+                <p>Agora podemos, passo a passo, reconstruir a lógica de verificação de acesso.</p>
+            `;
         } else {
+            // Se não há usuário, redireciona para o login.
             window.location.replace('login.html');
         }
     });
