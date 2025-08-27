@@ -8,7 +8,7 @@
         <a href="agenda.html"><span>📅</span> Agenda</a>
         <a href="clientes.html"><span>👤</span> Clientes</a>
         <a href="equipe.html"><span>👥</span> Equipe</a>
-        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
+        <a href="perfil.html" id="perfil-link"><span>🙍‍♂️</span> Meu Perfil</a>
         <a href="relatorios.html"><span>📈</span> Relatórios</a>
         <!-- Item "Administração" removido -->
     </nav>
@@ -148,8 +148,9 @@
 </style>
 
 <script>
-// Se o menu for incluído dinamicamente, este script deve ser reinserido após a inclusão!
+// Destaca automaticamente o link do perfil se estiver em perfil.html
 document.addEventListener("DOMContentLoaded", function() {
+  // Logout padrão
   var btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', function() {
@@ -159,6 +160,15 @@ document.addEventListener("DOMContentLoaded", function() {
       sessionStorage.clear();
       window.location.href = "login.html";
     });
+  }
+
+  // Destacar o link do perfil se estiver em perfil.html
+  var path = window.location.pathname.split('/').pop().toLowerCase();
+  if (path === "perfil.html") {
+    var perfilLink = document.getElementById('perfil-link');
+    if (perfilLink) {
+      perfilLink.classList.add('active');
+    }
   }
 });
 </script>
