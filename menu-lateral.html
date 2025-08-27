@@ -8,167 +8,107 @@
         <a href="agenda.html"><span>📅</span> Agenda</a>
         <a href="clientes.html"><span>👤</span> Clientes</a>
         <a href="equipe.html"><span>👥</span> Equipe</a>
-        <a href="perfil.html" id="perfil-link"><span>🙍‍♂️</span> Meu Perfil</a>
+        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
         <a href="relatorios.html"><span>📈</span> Relatórios</a>
-        <!-- Item "Administração" removido -->
     </nav>
     <div class="sidebar-footer">
         <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
 </aside>
 
+<!-- Estilos do menu para garantir a aparência correta -->
 <style>
 .sidebar {
-  width: 240px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-  min-height: 100vh;
-  color: #fff;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  padding-top: 24px;
+  width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%  );
+  min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+  position: fixed; left: 0; top: 0; bottom: 0; z-index: 10;
+  display: flex; flex-direction: column; padding-top: 24px;
 }
 .sidebar-brand {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #fff;
-  text-decoration: none;
-  letter-spacing: 2px;
-  padding: 0 32px 12px 32px;
-  display: block;
-  margin-bottom: 8px;
-  text-align: left;
+  font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
+  letter-spacing: 2px; padding: 0 32px 12px 32px; display: block;
+  margin-bottom: 8px; text-align: left;
 }
-.sidebar hr {
-  margin: 0 32px 16px 32px;
-  border: none;
-  border-top: 1px solid #787cff55;
-}
-.sidebar-links {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 24px;
-}
+.sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; }
+.sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; }
 .sidebar-links a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  color: #4f46e5;
-  font-weight: 600;
-  font-size: 1.08em;
-  border-radius: 10px;
-  margin-bottom: 0;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+  display: flex; align-items: center; gap: 10px; background: #fff;
+  color: #4f46e5; font-weight: 600; font-size: 1.08em; border-radius: 10px;
+  margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07);
   transition: background 0.17s, color 0.18s, box-shadow 0.18s;
-  padding: 12px 18px;
-  text-align: left;
-  text-decoration: none;
-  letter-spacing: 0.01em;
-  border: 2px solid transparent;
+  padding: 12px 18px; text-align: left; text-decoration: none;
+  letter-spacing: 0.01em; border: 2px solid transparent;
 }
 .sidebar-links a.active, .sidebar-links a:focus {
-  background: #4f46e5;
-  color: #fff;
-  font-weight: 700;
-  border: 2px solid #fff;
-  box-shadow: 2px 4px 0 0 #ff3e7f22;
+  background: #4f46e5; color: #fff; font-weight: 700;
+  border: 2px solid #fff; box-shadow: 2px 4px 0 0 #ff3e7f22;
 }
-.sidebar-links a:hover:not(.active) {
-  background: #ececff;
-  color: #3b2fd6;
-  border: 2px solid #d1d5fa;
-}
-.sidebar-footer {
-  margin-top: auto;
-  padding: 32px 32px 24px 32px;
-}
+.sidebar-links a:hover:not(.active) { background: #ececff; color: #3b2fd6; border: 2px solid #d1d5fa; }
+.sidebar-footer { margin-top: auto; padding: 32px 32px 24px 32px; }
 .btn-logout {
-  background: #fff;
-  color: #4f46e5;
-  border: none;
-  padding: 12px 0;
-  width: 100%;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 1.05em;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  border: 2px solid transparent;
-  outline: none;
+  background: #fff; color: #4f46e5; border: none; padding: 12px 0;
+  width: 100%; border-radius: 10px; font-weight: bold; font-size: 1.05em;
+  cursor: pointer; transition: background 0.2s, color 0.2s;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.07); border: 2px solid transparent; outline: none;
 }
-.btn-logout:hover, .btn-logout:focus {
-  background: #4f46e5;
-  color: #fff;
-  border: 2px solid #fff;
-}
+.btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; }
 @media (max-width: 900px) {
   .sidebar {
-    width: 100vw;
-    min-height: auto;
-    position: static;
-    flex-direction: row;
-    align-items: flex-start;
-    padding: 10px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    width: 100vw; min-height: auto; position: static;
+    flex-direction: row; align-items: flex-start;
+    padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     font-size: 0.95em;
   }
-  .sidebar-brand {
-    font-size: 1.4rem;
-    padding: 10px 10px 4px 10px;
-    margin-bottom: 0;
-    text-align: left;
-  }
-  .sidebar hr {
-    display: none;
-  }
-  .sidebar-links {
-    flex-direction: row;
-    gap: 6px;
-    padding: 0 8px 0 8px;
-  }
-  .sidebar-links a {
-    font-size: 1em;
-    padding: 10px 12px;
-    margin-bottom: 0;
-  }
-  .sidebar-footer {
-    padding: 8px 8px 10px 8px;
-  }
-  .btn-logout {
-    padding: 10px 0;
-    font-size: 1em;
-  }
+  .sidebar-brand { font-size: 1.4rem; padding: 10px 10px 4px 10px; margin-bottom: 0; text-align: left; }
+  .sidebar hr { display: none; }
+  .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px 0 8px; overflow-x: auto; }
+  .sidebar-links a { font-size: 1em; padding: 10px 12px; margin-bottom: 0; white-space: nowrap; }
+  .sidebar-footer { padding: 8px 8px 10px 8px; margin-left: auto; }
+  .btn-logout { padding: 10px 0; font-size: 1em; }
 }
 </style>
 
-<script>
-// Destaca automaticamente o link do perfil se estiver em perfil.html
-document.addEventListener("DOMContentLoaded", function() {
-  // Logout padrão
-  var btnLogout = document.getElementById('btn-logout');
-  if (btnLogout) {
-    btnLogout.addEventListener('click', function() {
-      localStorage.removeItem("empresaAtivaId");
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("user");
-      sessionStorage.clear();
-      window.location.href = "login.html";
-    });
-  }
+<!-- SCRIPT INTELIGENTE E CENTRALIZADO -->
+<script type="module">
+    // Importa apenas o que é necessário para o menu
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { auth } from "./vitrini-firebase.js"; 
 
-  // Destacar o link do perfil se estiver em perfil.html
-  var path = window.location.pathname.split('/').pop().toLowerCase();
-  if (path === "perfil.html") {
-    var perfilLink = document.getElementById('perfil-link');
-    if (perfilLink) {
-      perfilLink.classList.add('active');
+    function setupMenu() {
+        const links = document.querySelectorAll('.sidebar-links a');
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html'; // Garante que a página inicial seja reconhecida
+
+        links.forEach(link => {
+            const linkPage = link.getAttribute('href').split('/').pop();
+
+            // Se o link corresponde à página atual
+            if (linkPage === currentPage) {
+                link.classList.add('active'); // Marca como ativo
+                
+                // Adiciona o evento para prevenir o recarregamento
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                });
+            } else {
+                link.classList.remove('active'); // Garante que os outros não estão ativos
+            }
+        });
+
+        // Ativa o botão de logout
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                signOut(auth)
+                    .then(() => {
+                        window.location.replace('login.html');
+                    })
+                    .catch((error) => {
+                        console.error('Erro ao fazer logout:', error);
+                    });
+            });
+        }
     }
-  }
-});
+
+    // Executa a configuração do menu assim que ele é carregado
+    setupMenu();
 </script>
