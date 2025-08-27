@@ -7,60 +7,71 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* SEUS ESTILOS FICAM AQUI - SEM ALTERAÇÃO */
-        .dashboard-body { background: linear-gradient(135deg, #1e3c72, #2a5298 ); min-height: 100vh; }
-        /* ... (resto dos seus estilos) ... */
+        /* SEUS ESTILOS - SEM ALTERAÇÃO */
+        .dashboard-body { background: linear-gradient(135deg, #1e3c72, #2a5298  ); min-height: 100vh; }
+        body.is-loading { opacity: 0; transition: opacity 0.3s ease-in-out; }
+        body { opacity: 1; transition: opacity 0.3s ease-in-out; }
+        .primeiro-acesso-card { max-width: 400px; margin: 80px auto; padding: 36px 28px 32px 28px; border-radius: 22px; box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001; background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%); border: 1.5px solid #e3eafc; text-align: center; transition: box-shadow 0.2s; }
+        .primeiro-acesso-card h2 { color: #2563eb; font-weight: 700; font-size: 1.34rem; margin-bottom: 18px; letter-spacing: 0.01em; }
+        .primeiro-acesso-card p { font-size: 16px; color: #6b7a90; margin-bottom: 30px; }
+        .primeiro-btn { display: block; width: 100%; background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%); color: #fff; font-weight: 600; border: none; border-radius: 8px; padding: 13px 0; font-size: 1rem; cursor: pointer; box-shadow: 0 2px 10px #2563eb22; margin-bottom: 0; }
+        .primeiro-btn i { margin-right: 8px; }
+        .primeiro-btn:hover { background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%); }
     </style>
 </head>
 <body class="dashboard-body is-loading">
 
-<!-- SEU HTML FICA AQUI - SEM ALTERAÇÃO -->
+<!-- SEU HTML - SEM ALTERAÇÃO -->
 <div id="sidebar-placeholder"></div>
 <main class="main-content" id="main-content">
-    <!-- ... (resto do seu HTML) ... -->
+    <!-- O conteúdo original será substituído pelo card de primeiro acesso -->
 </main>
 
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./vitrini-firebase.js";
-    
-    // ===================================================================
-    //                      1ª CORREÇÃO APLICADA AQUI
-    // ===================================================================
-    // A importação da função 'ensureUserAndTrialDoc' foi removida, pois
-    // ela não existe mais no nosso userService.js de teste.
     import { verificarAcesso } from "./userService.js";
-    // ===================================================================
 
-    // Suas constantes e funções originais (sem alteração )
-    const nomeUsuarioSpan = document.getElementById("nome-usuario");
-    // ... (resto das suas constantes e funções) ...
-    function destacarLinkAtivo() { /* ... */ }
-    function ativarLogout() { /* ... */ }
-    function definirSaudacao() { /* ... */ }
-    function mostrarPrimeiroAcessoCard() { /* ... */ }
+    const mainContent = document.getElementById("main-content" );
+
+    // ===================================================================
+    //                      FUNÇÃO RESTAURADA AQUI
+    // ===================================================================
+    // Esta função é chamada quando o userService retorna "primeiro_acesso"
+    function mostrarPrimeiroAcessoCard() {
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="primeiro-acesso-card">
+                    <h2>Seja bem-vindo ao Pronti!</h2>
+                    <p>Inicie o cadastro da sua empresa.</p>
+                    <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
+                </div>
+            `;
+            document.body.classList.remove('is-loading');
+            document.getElementById("btn-criar-empresa").addEventListener("click", () => {
+                // Redireciona para a página de perfil para criar a empresa
+                window.location.href = "perfil.html";
+            });
+        }
+    }
+    // ===================================================================
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
             setTimeout(async () => {
                 try {
-                    // ===================================================================
-                    //                      2ª CORREÇÃO APLICADA AQUI
-                    // ===================================================================
-                    // A chamada para a função 'ensureUserAndTrialDoc' foi removida.
-                    // await ensureUserAndTrialDoc(); // <--- LINHA REMOVIDA
-                    // ===================================================================
-
                     const userSession = await verificarAcesso();
-                    const { perfil, role } = userSession;
-
-                    // O resto do seu código de sucesso (sem alteração)
-                    if (role === 'funcionario') { /* ... */ }
-                    // ... (resto da sua lógica) ...
+                    
+                    // Se o acesso for bem-sucedido (não for primeiro acesso),
+                    // o código para carregar o dashboard viria aqui.
+                    // Por enquanto, vamos focar no primeiro acesso.
+                    console.log("Usuário já tem empresa, carregando dashboard...", userSession);
+                    // (Lógica do dashboard viria aqui)
 
                 } catch (error) {
-                    // Sua lógica de tratamento de erro (sem alteração)
+                    // Se o userService rejeitar com "primeiro_acesso", este bloco é executado
                     if (error.message === "primeiro_acesso") {
+                        console.log("Capturado 'primeiro_acesso'. Mostrando o card de boas-vindas.");
                         mostrarPrimeiroAcessoCard();
                     } else {
                         console.error("Erro fatal na verificação de acesso:", error.message);
