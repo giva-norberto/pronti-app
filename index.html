@@ -1,237 +1,91 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Início</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298    );
-            min-height: 100vh;
-        }
-        body.is-loading {
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        body {
-            opacity: 1;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .primeiro-acesso-card {
-            max-width: 400px;
-            margin: 80px auto;
-            padding: 36px 28px 32px 28px;
-            border-radius: 22px;
-            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001;
-            background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%);
-            border: 1.5px solid #e3eafc;
-            text-align: center;
-            transition: box-shadow 0.2s;
-        }
-        .primeiro-acesso-card h2 {
-            color: #2563eb;
-            font-weight: 700;
-            font-size: 1.34rem;
-            margin-bottom: 18px;
-            letter-spacing: 0.01em;
-        }
-        .primeiro-acesso-card p {
-            font-size: 16px;
-            color: #6b7a90;
-            margin-bottom: 30px;
-        }
-        .primeiro-btn {
-            display: block;
-            width: 100%;
-            background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%);
-            color: #fff;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            padding: 13px 0;
-            font-size: 1rem;
-            cursor: pointer;
-            box-shadow: 0 2px 10px #2563eb22;
-            margin-bottom: 0;
-        }
-        .primeiro-btn i {
-            margin-right: 8px;
-        }
-        .primeiro-btn:hover {
-            background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
-        }
-    </style>
-</head>
-<body class="dashboard-body is-loading">
-
-<!-- Sidebar (menu lateral) incluso dinamicamente -->
-<div id="sidebar-placeholder"></div>
-
-<main class="main-content" id="main-content">
- <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
- <div class="dashboard-welcome-center" id="dashboard-welcome-center">
-    <h2 id="nome-empresa-ativa" style="color: #a7b3c4; font-size: 1.2rem; font-weight: 500; margin-bottom: 5px; min-height: 29px;"></h2>
-    <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
-    <p>Pronto para gerenciar seu dia?</p>
- </div>
-
- <!-- AÇÕES PRINCIPAIS -->
- <div class="dashboard-main-actions" id="dashboard-main-actions">
-  <a href="dashboard.html" class="action-card">
-   <i class="fa-solid fa-chart-line"></i>
-   <span>Painel Inteligente</span>
-  </a>
-  <a href="agenda.html" class="action-card">
-   <i class="fa-solid fa-calendar-check"></i>
-   <span>Agenda</span>
-  </a>
-  <a href="servicos.html" class="action-card" id="acao-servicos">
-   <i class="fa-solid fa-scissors"></i>
-   <span>Serviços</span>
-  </a>
- </div>
-
- <!-- BOTÃO DE STATUS -->
- <button class="status-button">Ver status de hoje</button>
-</main>
-
+<!-- ================================================================== -->
+<!-- NOVO SCRIPT DE TESTE - COLOQUE NO FINAL DO BODY DO SEU INDEX.HTML -->
+<!-- ================================================================== -->
 <script type="module">
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { auth } from "./vitrini-firebase.js";
-    import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
+    // Importa apenas o essencial
+    import { auth, db } from './firebase-config.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, query, collection, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const nomeUsuarioSpan = document.getElementById("nome-usuario"   );
-    const saudacaoSpan = document.getElementById("saudacao");
-    const mainContent = document.getElementById("main-content");
-    const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
+    console.log("Iniciando script de verificação direta no index.html..." );
 
-    function destacarLinkAtivo() {
-        const links = document.querySelectorAll('.sidebar-links a');
-        let current = window.location.pathname.split('/').pop().toLowerCase();
-        if (current === '' || current === 'index.html') {
-            current = 'index.html';
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            // Se não há usuário, vai para o login.
+            console.log("Nenhum usuário logado. Redirecionando para login.html");
+            window.location.href = 'login.html';
+            return;
         }
-        links.forEach(link => {
-            link.classList.remove('active');
-            let href = link.getAttribute('href').toLowerCase();
-            if (href === current) {
-                link.classList.add('active');
+
+        const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+        if (user.uid === ADMIN_UID) {
+            // Se for o Admin, o acesso é liberado e o script para.
+            console.log("Admin detectado. Acesso liberado.");
+            return; 
+        }
+
+        // Se não for o Admin, executa a verificação de assinatura.
+        console.log("Usuário normal detectado. Verificando status da assinatura...");
+
+        try {
+            // 1. Busca o documento do usuário
+            const userRef = doc(db, "usuarios", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                console.log("Documento do usuário não encontrado. Tratando como primeiro acesso.");
+                // Aqui você pode redirecionar para a tela de criar empresa, se quiser.
+                // window.location.href = 'criar-empresa.html';
+                return;
             }
-        });
-    }
 
-    function ativarLogout() {
-        const btnLogout = document.getElementById('btn-logout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                localStorage.removeItem('empresaAtivaId');
-                if (window.userService && typeof window.userService.clearCache === 'function') {
-                    window.userService.clearCache();
-                }
-                signOut(auth).then(() => {
-                    window.location.replace('login.html');
-                }).catch((error) => {
-                    console.error('Erro ao fazer logout:', error);
-                });
-            });
-        }
-    }
+            const userData = userSnap.data();
 
-    function definirSaudacao() {
-        const hora = new Date().getHours();
-        if (hora >= 5 && hora < 12) {
-            return "Bom dia";
-        } else if (hora >= 12 && hora < 18) {
-            return "Boa tarde";
-        } else {
-            return "Boa noite";
-        }
-    }
-
-    function mostrarPrimeiroAcessoCard() {
-        if (mainContent) {
-            mainContent.innerHTML = `
-                <div class="primeiro-acesso-card">
-                    <h2>Seja bem-vindo ao Pronti!</h2>
-                    <p>Inicie o cadastro da sua empresa.</p>
-                    <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
-                </div>
-            `;
-            document.body.classList.remove('is-loading');
-            const btnCriar = document.getElementById("btn-criar-empresa");
-            if (btnCriar) {
-                btnCriar.addEventListener("click", () => {
-                    localStorage.removeItem('empresaAtivaId');
-                    window.location.href = "perfil.html";
-                });
+            // 2. Verifica se já é premium
+            if (userData.isPremium === true) {
+                console.log("Usuário é Premium. Acesso liberado.");
+                return;
             }
-        }
-    }
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            // Adicionamos uma pequena pausa para garantir que a conexão do Firestore
-            // esteja 100% estabelecida antes de qualquer leitura de dados.
-            setTimeout(async () => {
-                try {
-                    await ensureUserAndTrialDoc();
-                    const userSession = await verificarAcesso();
-                    const { perfil, role } = userSession;
+            // 3. Se não for premium, verifica o trial
+            if (!userData.trialStart || !userData.trialStart.seconds) {
+                console.log("Usuário não tem data de início do trial. Acesso liberado (ou tratar como erro).");
+                return;
+            }
 
-                    if (role === 'funcionario') {
-                        window.location.replace('agenda.html');
-                        return; 
-                    }
+            // 4. Busca os dias de teste do documento da empresa
+            const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
+            const empresasSnapshot = await getDocs(q);
+            let trialDurationDays = 15; // Padrão
 
-                    const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
-                    if(document.getElementById("nome-usuario")) document.getElementById("nome-usuario").textContent = primeiroNome;
-                    if(document.getElementById("saudacao")) document.getElementById("saudacao").textContent = definirSaudacao();
-                    
-                    if (perfil.nomeFantasia) {
-                        if(document.getElementById("nome-empresa-ativa")) document.getElementById("nome-empresa-ativa").textContent = `Gerenciando: ${perfil.nomeFantasia}`;
-                    }
-
-                    fetch('menu-lateral.html')
-                        .then(res => res.text())
-                        .then(html => {
-                            const sidebar = document.getElementById('sidebar-placeholder');
-                            if (sidebar) {
-                                sidebar.innerHTML = html;
-                                destacarLinkAtivo();
-                                ativarLogout();
-                                
-                                if (role === 'admin') {
-                                    const navLinks = document.querySelector('.sidebar-links');
-                                    if (navLinks) {
-                                        const adminLink = document.createElement('a');
-                                        adminLink.href = 'admin-clientes.html';
-                                        adminLink.innerHTML = '<span>🔒</span> Administração';
-                                        if (window.location.pathname.includes('admin-clientes.html')) {
-                                            adminLink.classList.add('active');
-                                        }
-                                        navLinks.appendChild(adminLink);
-                                    }
-                                }
-                            }
-                            document.body.classList.remove('is-loading');
-                        });
-
-                } catch (error) {
-                    if (error.message === "primeiro_acesso") {
-                        mostrarPrimeiroAcessoCard();
-                    } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
-                        console.error("Erro fatal na verificação de acesso:", error.message);
-                    }
+            if (!empresasSnapshot.empty) {
+                const empresaData = empresasSnapshot.docs[0].data();
+                if (empresaData.freeEmDias !== undefined) {
+                    trialDurationDays = empresaData.freeEmDias;
                 }
-            }, 200); // Aumentei a pausa para 200ms por segurança.
-        } else {
-            window.location.replace('login.html');
+            }
+            console.log(`Duração do trial definida para: ${trialDurationDays} dias.`);
+
+            // 5. Calcula a data de expiração
+            const startDate = new Date(userData.trialStart.seconds * 1000);
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + trialDurationDays);
+
+            console.log(`Data de expiração do trial: ${endDate.toLocaleDateString()}`);
+
+            // 6. Compara com a data atual e redireciona se necessário
+            if (new Date() > endDate) {
+                console.log("TRIAL EXPIRADO! Redirecionando para assinatura.html...");
+                window.location.href = 'assinatura.html';
+            } else {
+                console.log("Trial está ativo. Acesso liberado.");
+            }
+
+        } catch (error) {
+            console.error("Ocorreu um erro grave na verificação de acesso:", error);
+            // Opcional: redirecionar para uma página de erro genérica
+            // window.location.href = 'erro.html';
         }
     });
 </script>
 
-</body>
-</html>
