@@ -1,147 +1,62 @@
 // ======================================================================
-//                      USERSERVICE.JS
-//      VERSÃO CORRIGIDA E SIMPLIFICADA PARA GARANTIR O ACESSO
+//                      USERSERVICE.JS - VERSÃO BÁSICA DE TESTE
 // ======================================================================
 
-import {
-    collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { db, auth } from './firebase-config.js';
+import { db, auth } from './firebase-config.js'; // Verifique se o nome do arquivo está correto
 
 /**
- * Busca todas as empresas associadas a um dono.
- * @param {string} uid - O ID do dono.
- * @returns {Promise<Array>} Uma lista de documentos de empresas.
+ * ensureUserAndTrialDoc - Esta função não é necessária para o teste básico.
+ * A lógica será incorporada diretamente na função principal.
  */
-async function getEmpresasDoDono(uid) {
-    if (!uid) return [];
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs;
-}
-
-// ======================================================================
-//      CORREÇÃO APLICADA AQUI: A PALAVRA 'export' FOI ADICIONADA
-// ======================================================================
-/**
- * Garante que um documento para o usuário exista na coleção 'usuarios'.
- */
-export async function ensureUserAndTrialDoc() {
-    const user = auth.currentUser;
-    if (!user) return;
-    const userRef = doc(db, "usuarios", user.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-        await setDoc(userRef, {
-            nome: user.displayName || user.email,
-            email: user.email,
-            criadoEm: serverTimestamp()
-        });
-    }
-}
-
 
 /**
- * Verifica o status do plano e do trial para uma empresa específica.
- * @param {string} empresaId - O ID da empresa a ser verificada.
- * @returns {Promise<{hasActivePlan: boolean, isTrialActive: boolean}>}
+ * verificarAcesso - VERSÃO SIMPLIFICADA
+ * A única responsabilidade é verificar se o usuário existe no banco de dados.
+ * Se não existir, assume "primeiro_acesso".
  */
-async function checkTrialStatus(empresaId) {
-    if (!empresaId) return { hasActivePlan: false, isTrialActive: false };
-    try {
-        const empresaRef = doc(db, "empresarios", empresaId);
-        const empresaSnap = await getDoc(empresaRef);
-        if (!empresaSnap.exists()) return { hasActivePlan: false, isTrialActive: false };
+export async function verificarAcesso( ) {
+    console.log("Iniciando userService.js (versão BÁSICA)...");
 
-        const data = empresaSnap.data();
-        const hasActivePlan = data.isPremium === true || data.statusPlano === 'ativo';
-        let isTrialActive = false;
-
-        // A verificação agora usa o campo 'trialFim' que é definido no perfil.
-        if (data.trialFim && data.trialFim.seconds) {
-            const dataFimTrial = new Date(data.trialFim.seconds * 1000);
-            if (dataFimTrial > new Date()) {
-                isTrialActive = true;
-            }
-        }
-        return { hasActivePlan, isTrialActive };
-    } catch (error) {
-        console.error("Erro ao verificar status do trial:", error);
-        return { hasActivePlan: false, isTrialActive: false };
-    }
-}
-
-/**
- * ======================================================================
- * FUNÇÃO PRINCIPAL REESCRITA PARA CLAREZA E CORREÇÃO
- * ======================================================================
- * A função principal que verifica o acesso do usuário e o redireciona.
- */
-export async function verificarAcesso() {
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe(); // Executa apenas uma vez
+            unsubscribe(); // Executa apenas uma vez para evitar loops
 
             if (!user) {
-                window.location.href = 'login.html';
+                // Se não há usuário, o onAuthStateChanged no index.html já redireciona.
+                // Rejeitar aqui é uma segurança extra.
+                console.log("userService: Usuário não autenticado.");
                 return reject(new Error("Não autenticado."));
             }
 
-            const currentPage = window.location.pathname.split('/').pop();
+            console.log("userService: Usuário autenticado:", user.uid);
+            console.log("userService: Tentando ler o documento do usuário no Firestore...");
 
             try {
-                // 1. O usuário é DONO de alguma empresa?
-                const empresas = await getEmpresasDoDono(user.uid);
-                if (empresas.length > 0) {
-                    // SIM, É DONO.
-                    if (empresas.length === 1) {
-                        // Cenário: Dono com UMA empresa.
-                        const empresaId = empresas[0].id;
-                        localStorage.setItem('empresaAtivaId', empresaId);
-                        const { hasActivePlan, isTrialActive } = await checkTrialStatus(empresaId);
+                // Tenta ler APENAS o documento do próprio usuário.
+                const userRef = doc(db, "usuarios", user.uid);
+                const userSnap = await getDoc(userRef);
 
-                        if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
-                            window.location.href = 'assinatura.html';
-                            return reject(new Error("Trial expirado."));
-                        }
-                        return resolve({ user, perfil: empresas[0].data(), empresaId, isOwner: true, role: "dono" });
-
-                    } else {
-                        // Cenário: Dono com MÚLTIPLAS empresas.
-                        if (currentPage !== 'selecionar-empresa.html') {
-                            window.location.href = 'selecionar-empresa.html';
-                            return reject(new Error("Redirecionando para seleção."));
-                        }
-                        // Se já está na página de seleção, permite que ela carregue.
-                        return resolve({ user, isOwner: true, role: "dono" });
-                    }
+                if (userSnap.exists()) {
+                    // Se o documento do usuário existe, consideramos um sucesso por enquanto.
+                    // Retornamos um perfil básico para o index.html poder carregar.
+                    console.log("userService: Documento do usuário encontrado. Resolvendo como 'dono' para teste.");
+                    resolve({
+                        user: user,
+                        perfil: userSnap.data(),
+                        role: "dono" // Simula o papel de "dono" para a página carregar
+                    });
+                } else {
+                    // Se o documento do usuário NÃO existe, é o primeiro acesso.
+                    console.log("userService: Documento do usuário NÃO encontrado. Rejeitando como 'primeiro_acesso'.");
+                    reject(new Error("primeiro_acesso"));
                 }
-
-                // 2. Se não é dono, é FUNCIONÁRIO?
-                const mapaRef = doc(db, "mapaUsuarios", user.uid);
-                const mapaSnap = await getDoc(mapaRef);
-                if (mapaSnap.exists()) {
-                    const { empresaId } = mapaSnap.data();
-                    localStorage.setItem('empresaAtivaId', empresaId);
-                    const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
-                    const profissionalSnap = await getDoc(profissionalRef);
-
-                    if (profissionalSnap.exists()) {
-                        if (profissionalSnap.data().status === 'ativo') {
-                            return resolve({ user, perfil: profissionalSnap.data(), empresaId, isOwner: false, role: "funcionario" });
-                        } else {
-                            return reject(new Error("aguardando_aprovacao"));
-                        }
-                    }
-                }
-
-                // 3. Se não é dono nem funcionário, é o PRIMEIRO ACESSO.
-                return reject(new Error("primeiro_acesso"));
 
             } catch (error) {
-                console.error("Erro na verificação de acesso:", error);
-                return reject(error);
+                // Se qualquer erro ocorrer durante a leitura do Firestore...
+                console.error("userService: ERRO CRÍTICO ao tentar ler o Firestore!", error);
+                reject(error); // Rejeita a promessa com o erro original.
             }
         });
     });
