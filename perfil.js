@@ -46,7 +46,9 @@ window.addEventListener('DOMContentLoaded', () => {
         boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
         btnFecharBoasVindas: document.getElementById('fechar-boas-vindas'),
         // --- NOVO BOTÃO MAPEADO ---
-        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa')
+        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
+        // --- MENSAGEM AMIGÁVEL CASO NÃO HÁ PERFIL ---
+        msgPerfilAusente: document.getElementById('mensagem-perfil-ausente')
     };
 
     let currentUser;
@@ -90,6 +92,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (elements.msgFree) {
                     elements.msgFree.style.display = "none";
                 }
+                if (elements.msgPerfilAusente) {
+                    elements.msgPerfilAusente.style.display = "block";
+                    elements.msgPerfilAusente.textContent = "Seu perfil de empresa ainda não está cadastrado. Complete o cadastro para ativar todas as funções!";
+                }
             } else {
                 // Cenário: Utilizador existente, carrega dados da empresa
                 const empresaRef = doc(db, "empresarios", empresaId);
@@ -99,6 +105,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     const dadosEmpresa = empresaDoc.data();
                     preencherFormulario(dadosEmpresa);
                     mostrarCamposExtras();
+                    if (elements.msgPerfilAusente) {
+                        elements.msgPerfilAusente.style.display = "none";
+                    }
 
                     // EXIBE A MENSAGEM DE FREE SE O PLANO FOR FREE
                     if (dadosEmpresa.plano === "free" && elements.msgFree) {
@@ -110,7 +119,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 } else {
                     // Se o ID no localStorage for inválido, limpa e recarrega
                     localStorage.removeItem('empresaAtivaId');
-                    window.location.reload();
+                    // Mostra mensagem de perfil ausente, mas NÃO faz logout!
+                    atualizarTelaParaNovoPerfil();
+                    if (elements.msgPerfilAusente) {
+                        elements.msgPerfilAusente.style.display = "block";
+                        elements.msgPerfilAusente.textContent = "O perfil da empresa não foi encontrado. Por favor, cadastre novamente.";
+                    }
                 }
             }
         } catch (error) {
@@ -161,7 +175,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 // --- LÓGICA DE EDIÇÃO ---
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
-
             } else {
                 // --- LÓGICA DE NOVO CADASTRO ---
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
@@ -200,7 +213,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('empresaAtivaId', empresaId);
                 await carregarDadosDaPagina(uid);
             }
-
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
             alert("Ocorreu um erro ao salvar: " + error.message);
@@ -245,6 +257,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 localStorage.removeItem('empresaAtivaId');
                 empresaId = null; 
                 atualizarTelaParaNovoPerfil();
+                if (elements.msgPerfilAusente) {
+                    elements.msgPerfilAusente.style.display = "block";
+                    elements.msgPerfilAusente.textContent = "Seu perfil de empresa ainda não está cadastrado. Complete o cadastro para ativar todas as funções!";
+                }
             });
         }
     }
