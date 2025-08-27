@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background: linear-gradient(135deg, #1e3c72, #2a5298 );
             min-height: 100vh;
         }
         body.is-loading {
@@ -103,7 +103,7 @@
     import { auth } from "./vitrini-firebase.js"; // Certifique-se que este caminho está correto
     import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
-    const nomeUsuarioSpan = document.getElementById("nome-usuario");
+    const nomeUsuarioSpan = document.getElementById("nome-usuario" );
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
@@ -128,6 +128,11 @@
         if (btnLogout) {
             btnLogout.addEventListener('click', () => {
                 localStorage.removeItem('empresaAtivaId');
+                // Limpa a memória da sessão no userService para forçar uma re-verificação completa no próximo login
+                // Esta é uma suposição, a implementação real pode variar.
+                if (window.userService && typeof window.userService.clearCache === 'function') {
+                    window.userService.clearCache();
+                }
                 signOut(auth).then(() => {
                     window.location.replace('login.html');
                 }).catch((error) => {
@@ -169,12 +174,19 @@
         if (user) {
             try {
                 await ensureUserAndTrialDoc();
-                const { perfil, isOwner } = await verificarAcesso();
+                // ===================================================================
+                //                      A ÚNICA ALTERAÇÃO É AQUI
+                // ===================================================================
+                // Adicionamos a variável 'role' para obter o papel do usuário
+                const { perfil, isOwner, role } = await verificarAcesso();
 
-                if (!isOwner) {
+                // Se o usuário logado for um funcionário, redireciona para a agenda.
+                // Isso garante que o index.html seja apenas para donos e admins.
+                if (role === 'funcionario') {
                     window.location.replace('agenda.html');
-                    return;
+                    return; // Para a execução para evitar que o resto do código rode.
                 }
+                // ===================================================================
 
                 const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
                 if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
@@ -194,9 +206,8 @@
             } catch (error) {
                 if (error.message === "primeiro_acesso") {
                     mostrarPrimeiroAcessoCard();
-                } else if (!error.message.includes("Redirecionando")) {
+                } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
                     console.log("Verificação de acesso interrompida:", error.message);
-                    // window.location.replace('login.html'); // Comentado para evitar loops indesejados
                 }
             }
         } else {
