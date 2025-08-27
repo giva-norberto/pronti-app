@@ -1,5 +1,5 @@
 <!-- ================================================================== -->
-<!-- NOVO SCRIPT DE TESTE - COLOQUE NO FINAL DO BODY DO SEU INDEX.HTML -->
+<!-- SCRIPT DE VERIFICAÇÃO - COLOQUE NO FINAL DO <body> DO SEU INDEX.HTML -->
 <!-- ================================================================== -->
 <script type="module">
     // Importa apenas o essencial
@@ -10,8 +10,19 @@
     console.log("Iniciando script de verificação direta no index.html..." );
 
     onAuthStateChanged(auth, async (user) => {
+        
+        // ==================================================================
+        //          CORREÇÃO APLICADA AQUI PARA EVITAR O LOOP
+        // ==================================================================
+        // Verifica se a página atual JÁ É a de login. Se for, não faz nada.
+        if (window.location.pathname.endsWith('login.html') || window.location.pathname.endsWith('login.html/')) {
+            console.log("Na página de login, verificação de acesso ignorada.");
+            return; 
+        }
+        // ==================================================================
+
         if (!user) {
-            // Se não há usuário, vai para o login.
+            // Se não há usuário E NÃO ESTAMOS na página de login, vai para o login.
             console.log("Nenhum usuário logado. Redirecionando para login.html");
             window.location.href = 'login.html';
             return;
@@ -35,7 +46,7 @@
             if (!userSnap.exists()) {
                 console.log("Documento do usuário não encontrado. Tratando como primeiro acesso.");
                 // Aqui você pode redirecionar para a tela de criar empresa, se quiser.
-                // window.location.href = 'criar-empresa.html';
+                // window.location.href = 'perfil.html';
                 return;
             }
 
@@ -88,4 +99,3 @@
         }
     });
 </script>
-
