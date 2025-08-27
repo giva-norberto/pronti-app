@@ -19,9 +19,8 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 
 // Exporta as instâncias ÚNICAS para todo o aplicativo usar
-export { app }; // Agora exportando explicitamente o app!
+export { app };
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
-export const storage = getStorage(app);
 export const storage = getStorage(app);
