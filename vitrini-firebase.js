@@ -6,15 +6,20 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebas
 import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-// 2. Configuração do seu projeto Firebase
+// ===================================================================
+//                      A ÚNICA ALTERAÇÃO É AQUI
+// ===================================================================
+// 2. Configuração do seu projeto Firebase (ATUALIZADA COM A CHAVE CORRETA )
 const firebaseConfig = {
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8", // <-- A NOVA CHAVE CORRETA
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // Corrigido: .app -> .appspot.com
+  storageBucket: "pronti-app-37c6e.appspot.com",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
+// ===================================================================
+
 
 // 3. Inicializa as instâncias do Firebase (previne duplicidade)
 let app;
