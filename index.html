@@ -6,112 +6,102 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* =================================================================== */
-        /*                  CSS DO MENU LATERAL COLADO AQUI                  */
-        /* =================================================================== */
-        .sidebar {
-            width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%  );
-            min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-            position: fixed; left: 0; top: 0; bottom: 0; z-index: 10;
-            display: flex; flex-direction: column; padding-top: 24px;
-        }
-        .sidebar-brand {
-            font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
-            letter-spacing: 2px; padding: 0 32px 12px 32px; display: block;
-            margin-bottom: 8px; text-align: left;
-        }
-        .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; }
-        .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; }
-        .sidebar-links a {
-            display: flex; align-items: center; gap: 10px; background: #fff;
-            color: #4f46e5; font-weight: 600; font-size: 1.08em; border-radius: 10px;
-            margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-            transition: background 0.17s, color 0.18s, box-shadow 0.18s;
-            padding: 12px 18px; text-align: left; text-decoration: none;
-            letter-spacing: 0.01em; border: 2px solid transparent;
-        }
-        .sidebar-links a.active, .sidebar-links a:focus {
-            background: #4f46e5; color: #fff; font-weight: 700;
-            border: 2px solid #fff; box-shadow: 2px 4px 0 0 #ff3e7f22;
-        }
-        .sidebar-links a:hover:not(.active) { background: #ececff; color: #3b2fd6; border: 2px solid #d1d5fa; }
-        .sidebar-footer { margin-top: auto; padding: 32px 32px 24px 32px; }
-        .btn-logout {
-            background: #fff; color: #4f46e5; border: none; padding: 12px 0;
-            width: 100%; border-radius: 10px; font-weight: bold; font-size: 1.05em;
-            cursor: pointer; transition: background 0.2s, color 0.2s;
-            box-shadow: 0 2px 6px rgba(79,70,229,0.07); border: 2px solid transparent; outline: none;
-        }
-        .btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; }
-        
-        /* CSS PRINCIPAL DA PÁGINA */
+        /* Estilos principais da página */
         .dashboard-body { display: flex; }
         .main-content {
-            margin-left: 240px; /* Deixa espaço para o sidebar */
+            margin-left: 240px; /* Deixa espaço para o sidebar que será carregado */
             flex-grow: 1;
             padding: 20px;
-            color: #333; /* Cor de texto padrão para o conteúdo */
+            color: #333; /* Cor de texto padrão */
         }
+        /* Estilos para o card de primeiro acesso */
+        .primeiro-acesso-card {
+            max-width: 400px; margin: 80px auto; padding: 36px 28px; border-radius: 22px;
+            background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100% );
+            text-align: center;
+        }
+        .primeiro-acesso-card h2 { color: #2563eb; }
+        .primeiro-acesso-card p { color: #6b7a90; }
+        .primeiro-btn { display: block; width: 100%; background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%); color: #fff; font-weight: 600; border: none; border-radius: 8px; padding: 13px 0; font-size: 1rem; cursor: pointer; }
     </style>
 </head>
 <body class="dashboard-body">
 
-<!-- HTML do Menu Lateral (como você mandou) -->
-<aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <nav class="sidebar-links">
-        <a href="index.html" class="active"><span>🏠</span> Início</a>
-        <a href="dashboard.html"><span>📊</span> Dashboard</a>
-        <a href="servicos.html"><span>🛠️</span> Serviços</a>
-        <a href="agenda.html"><span>📅</span> Agenda</a>
-        <a href="clientes.html"><span>👤</span> Clientes</a>
-        <a href="equipe.html"><span>👥</span> Equipe</a>
-        <a href="perfil.html" id="perfil-link"><span>🙍‍♂️</span> Meu Perfil</a>
-        <a href="relatorios.html"><span>📈</span> Relatórios</a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
+    <!-- O placeholder para o menu lateral, como você projetou -->
+    <div id="sidebar-placeholder"></div>
 
-<main class="main-content" id="main-content">
-    <!-- O conteúdo será preenchido pelo script -->
-</main>
+    <main class="main-content" id="main-content">
+        <h1>Carregando...</h1>
+    </main>
 
-<script type="module">
-    // ===================================================================
-    //          LÓGICA SIMPLIFICADA PARA GARANTIR ESTABILIDADE
-    // ===================================================================
-    import { auth } from "./vitrini-firebase.js";
-    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    
-    // A importação do userService.js foi REMOVIDA para este teste.
-
-    const mainContent = document.getElementById("main-content" );
-
-    // Ativa o botão de logout que agora está no HTML principal
-    document.getElementById('btn-logout').addEventListener('click', () => {
-        signOut(auth).then(() => window.location.replace('login.html'));
+    <!-- Script para carregar o menu lateral -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => {
+            if (!res.ok) { throw new Error('Erro ao carregar o menu.'); }
+            return res.text();
+        })
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          // Ativa o link correto no menu
+          const links = document.querySelectorAll('.sidebar-links a');
+          links.forEach(link => link.classList.remove('active'));
+          const homeLink = document.querySelector('.sidebar-links a[href="index.html"]');
+          if (homeLink) homeLink.classList.add('active');
+        })
+        .catch(error => {
+            console.error("Falha ao carregar menu-lateral.html:", error);
+            // Opcional: Mostrar uma mensagem de erro no lugar do menu
+        });
     });
+    </script>
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            // Se o usuário está logado, simplesmente mostramos uma mensagem de boas-vindas.
-            // Não há leitura do Firestore, então não há risco de erro.
-            console.log("BASE ESTÁVEL: Usuário autenticado. Exibindo conteúdo.");
+    <!-- Script principal da página -->
+    <script type="module">
+        import { auth } from "./vitrini-firebase.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { verificarAcesso } from "./userService.js"; // Usando a versão ESTÁVEL do userService
+
+        const mainContent = document.getElementById("main-content" );
+
+        function mostrarPrimeiroAcessoCard() {
             mainContent.innerHTML = `
-                <h1>Bem-vindo ao Pronti!</h1>
-                <p>A autenticação está funcionando e a página está estável.</p>
-                <p>Usuário: ${user.email}</p>
-                <p>Agora podemos, passo a passo, reconstruir a lógica de verificação de acesso.</p>
+                <div class="primeiro-acesso-card">
+                    <h2>Seja bem-vindo ao Pronti!</h2>
+                    <p>O próximo passo é cadastrar sua empresa.</p>
+                    <a href="perfil.html" class="primeiro-btn">Cadastrar Minha Empresa</a>
+                </div>
             `;
-        } else {
-            // Se não há usuário, redireciona para o login.
-            window.location.replace('login.html');
         }
-    });
-</script>
+
+        function mostrarDashboard(perfil) {
+            mainContent.innerHTML = `
+                <h1>Bem-vindo de volta, ${perfil.nomeFantasia || 'Usuário'}!</h1>
+                <p>Seu dashboard está pronto.</p>
+            `;
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Usamos o setTimeout para dar tempo do menu carregar e da conexão estabilizar
+                setTimeout(async () => {
+                    try {
+                        const userSession = await verificarAcesso();
+                        mostrarDashboard(userSession.perfil);
+                    } catch (error) {
+                        if (error.message === "primeiro_acesso") {
+                            mostrarPrimeiroAcessoCard();
+                        } else {
+                            mainContent.innerHTML = `<h1>Erro: ${error.message}</h1>`;
+                        }
+                    }
+                }, 200);
+            } else {
+                window.location.replace('login.html');
+            }
+        });
+    </script>
 
 </body>
 </html>
