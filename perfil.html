@@ -310,7 +310,7 @@
         </div>
 
         <!-- ========================================================== -->
-        <!--      CORREÇÃO: MODAL DE BOAS-VINDAS ADICIONADO AQUI      -->
+        <!--      MODAL DE BOAS-VINDAS (Mantido como estava)      -->
         <!-- ========================================================== -->
         <div id="modal-boas-vindas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index: 1000;">
             <div style="background:white; padding:40px; border-radius:12px; text-align:center; max-width: 400px; box-shadow: 0 5px 25px rgba(0,0,0,0.2);">
@@ -337,15 +337,21 @@
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
           
-          // CORREÇÃO: Adiciona a lógica para evitar o recarregamento
+          // CORREÇÃO: A lógica agora espera o menu ser carregado
+          // e depois assume o controlo dos links.
+          const links = document.querySelectorAll('.sidebar-links a');
           const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
+
+          // Limpa a seleção de todos os links para garantir
+          links.forEach(link => link.classList.remove('active'));
+
           if (perfilLink) {
-              // Marca o link como ativo
+              // Marca o link do perfil como ativo
               perfilLink.classList.add('active');
               
               // Adiciona o evento de clique para prevenir a ação padrão
               perfilLink.addEventListener('click', function(event) {
-                  // Como já estamos na página de perfil, o clique não faz nada além de prevenir o recarregamento.
+                  // Como já estamos na página de perfil, o clique não faz nada.
                   event.preventDefault();
                   console.log("Já está na página de perfil. Recarregamento evitado.");
               });
