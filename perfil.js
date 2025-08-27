@@ -67,7 +67,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (e) {
                 // Se for o primeiro acesso, permite continuar para criar a empresa
-                if (e.message !== 'primeiro_acesso') {
+                if (
+                    e.message !== 'primeiro_acesso' &&
+                    e.message !== 'perfil_ausente'
+                ) {
                     window.location.href = 'login.html';
                     return;
                 }
