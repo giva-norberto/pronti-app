@@ -4,7 +4,7 @@
 // ======================================================================
 
 import {
-    collection, query, where, getDocs, doc, getDoc
+    collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
@@ -20,6 +20,27 @@ async function getEmpresasDoDono(uid) {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs;
 }
+
+// ======================================================================
+//      CORREÇÃO APLICADA AQUI: A PALAVRA 'export' FOI ADICIONADA
+// ======================================================================
+/**
+ * Garante que um documento para o usuário exista na coleção 'usuarios'.
+ */
+export async function ensureUserAndTrialDoc() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const userRef = doc(db, "usuarios", user.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+        await setDoc(userRef, {
+            nome: user.displayName || user.email,
+            email: user.email,
+            criadoEm: serverTimestamp()
+        });
+    }
+}
+
 
 /**
  * Verifica o status do plano e do trial para uma empresa específica.
