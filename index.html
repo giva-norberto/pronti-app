@@ -1,42 +1,73 @@
-<!-- ================================================================== -->
-<!--    SCRIPT DE VERIFICAÇÃO SIMPLIFICADO - FINAL DO <body>     -->
-<!-- ================================================================== -->
-<script type="module">
-    // 1. Importa apenas o essencial para autenticação
-    import { auth } from './firebase-config.js';
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste de Login - Pronti</title>
+    <style>
+        /* Estilo mínimo para sabermos que a página carregou */
+        body { 
+            font-family: sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .container {
+            padding: 40px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 { color: #1877f2; }
+        p { color: #333; font-size: 1.2rem; }
+        #user-email { font-weight: bold; color: #e63946; }
+    </style>
+</head>
+<body>
 
-    // Função para mostrar o conteúdo da página e esconder o "loading"
-    function mostrarPagina( ) {
-        // Esta função assume que você tem uma classe 'is-loading' no seu <body>
-        // que o torna transparente. Se não, pode remover esta linha.
-        document.body.classList.remove('is-loading');
-        console.log("Página carregada e exibida.");
-    }
+    <div class="container" id="main-container">
+        <h1>Verificando autenticação...</h1>
+        <p>Por favor, aguarde.</p>
+    </div>
 
-    // 2. Observa o estado da autenticação
-    onAuthStateChanged(auth, (user) => {
-        
-        // Adiciona uma pequena pausa para garantir que tudo inicializou
-        setTimeout(() => {
-            if (user) {
-                // 3. Se o usuário ESTÁ logado:
-                console.log("SUCESSO: Usuário está logado.", user.uid);
-                console.log("Acesso liberado. A página deve carregar normalmente.");
-                
-                // Mostra o conteúdo da página
-                mostrarPagina();
+    <script type="module">
+        // 1. Importa apenas o essencial para o teste
+        import { auth } from './vitrini-firebase.js'; // VERIFIQUE SE ESTE É O NOME CORRETO DO SEU ARQUIVO DE CONFIG
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-                // ** IMPORTANTE **
-                // Todo o resto do seu código (para carregar o menu, nome do usuário, etc.)
-                // deveria ser chamado a partir daqui.
+        // Pega o container principal para exibir o resultado
+        const mainContainer = document.getElementById('main-container' );
 
-            } else {
-                // 4. Se o usuário NÃO ESTÁ logado:
-                console.log("AVISO: Nenhum usuário logado. Redirecionando para login.html...");
-                window.location.href = 'login.html';
-            }
-        }, 200); // Pausa de 200ms por segurança
+        console.log("Iniciando teste de login com index.html básico...");
 
-    });
-</script>
+        // 2. Observa a mudança de estado do login
+        onAuthStateChanged(auth, (user) => {
+            // Adiciona uma pequena pausa para garantir que a conexão não falhe por timing
+            setTimeout(() => {
+                if (user) {
+                    // 3. SUCESSO! Se o usuário está logado:
+                    console.log("SUCESSO! Usuário autenticado:", user.uid);
+                    
+                    // Altera o HTML para mostrar a mensagem de boas-vindas
+                    mainContainer.innerHTML = `
+                        <h1>Login bem-sucedido!</h1>
+                        <p>Bem-vindo, <span id="user-email">${user.email}</span>!</p>
+                        <p>A conexão com o novo projeto Firebase está funcionando.</p>
+                    `;
+
+                } else {
+                    // 4. FALHA! Se o usuário não está logado:
+                    console.log("AVISO: Nenhum usuário autenticado. Redirecionando para a página de login...");
+                    
+                    // Redireciona para a página de login para uma nova tentativa
+                    window.location.href = 'login.html';
+                }
+            }, 500); // Uma pausa um pouco maior por segurança
+        });
+    </script>
+
+</body>
+</html>
