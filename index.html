@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298   );
+            background: linear-gradient(135deg, #1e3c72, #2a5298    );
             min-height: 100vh;
         }
         body.is-loading {
@@ -161,18 +161,18 @@
                 </div>
             `;
             document.body.classList.remove('is-loading');
-            document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                localStorage.removeItem('empresaAtivaId');
-                window.location.href = "perfil.html";
-            });
+            const btnCriar = document.getElementById("btn-criar-empresa");
+            if (btnCriar) {
+                btnCriar.addEventListener("click", () => {
+                    localStorage.removeItem('empresaAtivaId');
+                    window.location.href = "perfil.html";
+                });
+            }
         }
     }
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // ===================================================================
-            //                      A CORREÇÃO FINAL ESTÁ AQUI
-            // ===================================================================
             // Adicionamos uma pequena pausa para garantir que a conexão do Firestore
             // esteja 100% estabelecida antes de qualquer leitura de dados.
             setTimeout(async () => {
@@ -187,30 +187,33 @@
                     }
 
                     const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
-                    document.getElementById("nome-usuario").textContent = primeiroNome;
-                    document.getElementById("saudacao").textContent = definirSaudacao();
+                    if(document.getElementById("nome-usuario")) document.getElementById("nome-usuario").textContent = primeiroNome;
+                    if(document.getElementById("saudacao")) document.getElementById("saudacao").textContent = definirSaudacao();
                     
                     if (perfil.nomeFantasia) {
-                        document.getElementById("nome-empresa-ativa").textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+                        if(document.getElementById("nome-empresa-ativa")) document.getElementById("nome-empresa-ativa").textContent = `Gerenciando: ${perfil.nomeFantasia}`;
                     }
 
                     fetch('menu-lateral.html')
                         .then(res => res.text())
                         .then(html => {
-                            document.getElementById('sidebar-placeholder').innerHTML = html;
-                            destacarLinkAtivo();
-                            ativarLogout();
-                            
-                            if (role === 'admin') {
-                                const navLinks = document.querySelector('.sidebar-links');
-                                if (navLinks) {
-                                    const adminLink = document.createElement('a');
-                                    adminLink.href = 'admin-clientes.html';
-                                    adminLink.innerHTML = '<span>🔒</span> Administração';
-                                    if (window.location.pathname.includes('admin-clientes.html')) {
-                                        adminLink.classList.add('active');
+                            const sidebar = document.getElementById('sidebar-placeholder');
+                            if (sidebar) {
+                                sidebar.innerHTML = html;
+                                destacarLinkAtivo();
+                                ativarLogout();
+                                
+                                if (role === 'admin') {
+                                    const navLinks = document.querySelector('.sidebar-links');
+                                    if (navLinks) {
+                                        const adminLink = document.createElement('a');
+                                        adminLink.href = 'admin-clientes.html';
+                                        adminLink.innerHTML = '<span>🔒</span> Administração';
+                                        if (window.location.pathname.includes('admin-clientes.html')) {
+                                            adminLink.classList.add('active');
+                                        }
+                                        navLinks.appendChild(adminLink);
                                     }
-                                    navLinks.appendChild(adminLink);
                                 }
                             }
                             document.body.classList.remove('is-loading');
