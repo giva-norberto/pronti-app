@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298 );
+            background: linear-gradient(135deg, #1e3c72, #2a5298  );
             min-height: 100vh;
         }
         body.is-loading {
@@ -103,7 +103,7 @@
     import { auth } from "./vitrini-firebase.js";
     import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
-    const nomeUsuarioSpan = document.getElementById("nome-usuario" );
+    const nomeUsuarioSpan = document.getElementById("nome-usuario"  );
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
@@ -170,66 +170,71 @@
         }
     }
 
-    onAuthStateChanged(auth, async (user) => {
+    // ===================================================================
+    //                      A ÚNICA CORREÇÃO É AQUI
+    // ===================================================================
+    onAuthStateChanged(auth, (user) => {
         if (user) {
-            try {
-                // A chamada ao ensureUserAndTrialDoc é segura, pois ela não faz nada se o usuário for o Admin
-                await ensureUserAndTrialDoc();
-                const userSession = await verificarAcesso();
+            // Adicionamos uma pequena pausa de 100 milissegundos.
+            // Isso dá tempo para a conexão do Firestore se estabelecer completamente
+            // antes de chamarmos verificarAcesso(), resolvendo o erro "client is offline".
+            setTimeout(async () => {
+                try {
+                    // A chamada ao ensureUserAndTrialDoc é segura, pois ela não faz nada se o usuário for o Admin
+                    await ensureUserAndTrialDoc();
+                    const userSession = await verificarAcesso();
 
-                // ===================================================================
-                //                      A CORREÇÃO FINAL ESTÁ AQUI
-                // ===================================================================
-                const { perfil, role } = userSession;
+                    const { perfil, role } = userSession;
 
-                // Se for funcionário, redireciona para a agenda.
-                if (role === 'funcionario') {
-                    window.location.replace('agenda.html');
-                    return; 
-                }
+                    // Se for funcionário, redireciona para a agenda.
+                    if (role === 'funcionario') {
+                        window.location.replace('agenda.html');
+                        return; 
+                    }
 
-                // Se for admin ou dono, carrega a página normalmente.
-                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
-                document.getElementById("nome-usuario").textContent = primeiroNome;
-                document.getElementById("saudacao").textContent = definirSaudacao();
-                
-                if (perfil.nomeFantasia) {
-                    document.getElementById("nome-empresa-ativa").textContent = `Gerenciando: ${perfil.nomeFantasia}`;
-                }
+                    // Se for admin ou dono, carrega a página normalmente.
+                    const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+                    document.getElementById("nome-usuario").textContent = primeiroNome;
+                    document.getElementById("saudacao").textContent = definirSaudacao();
+                    
+                    if (perfil.nomeFantasia) {
+                        document.getElementById("nome-empresa-ativa").textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+                    }
 
-                // Carrega o menu lateral e finaliza o carregamento
-                fetch('menu-lateral.html')
-                    .then(res => res.text())
-                    .then(html => {
-                        document.getElementById('sidebar-placeholder').innerHTML = html;
-                        destacarLinkAtivo();
-                        ativarLogout();
-                        
-                        // Adiciona um link para o painel de Admin se o usuário for admin
-                        if (role === 'admin') {
-                            const navLinks = document.querySelector('.sidebar-links');
-                            if (navLinks) {
-                                const adminLink = document.createElement('a');
-                                adminLink.href = 'admin-clientes.html';
-                                adminLink.innerHTML = '<span>🔒</span> Administração';
-                                // Destaca o link se estiver na página de admin
-                                if (window.location.pathname.includes('admin-clientes.html')) {
-                                    adminLink.classList.add('active');
+                    // Carrega o menu lateral e finaliza o carregamento
+                    fetch('menu-lateral.html')
+                        .then(res => res.text())
+                        .then(html => {
+                            document.getElementById('sidebar-placeholder').innerHTML = html;
+                            destacarLinkAtivo();
+                            ativarLogout();
+                            
+                            // Adiciona um link para o painel de Admin se o usuário for admin
+                            if (role === 'admin') {
+                                const navLinks = document.querySelector('.sidebar-links');
+                                if (navLinks) {
+                                    const adminLink = document.createElement('a');
+                                    adminLink.href = 'admin-clientes.html';
+                                    adminLink.innerHTML = '<span>🔒</span> Administração';
+                                    // Destaca o link se estiver na página de admin
+                                    if (window.location.pathname.includes('admin-clientes.html')) {
+                                        adminLink.classList.add('active');
+                                    }
+                                    navLinks.appendChild(adminLink);
                                 }
-                                navLinks.appendChild(adminLink);
                             }
-                        }
-                        document.body.classList.remove('is-loading');
-                    });
+                            document.body.classList.remove('is-loading');
+                        });
 
-            } catch (error) {
-                if (error.message === "primeiro_acesso") {
-                    mostrarPrimeiroAcessoCard();
-                } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
-                    console.error("Erro fatal na verificação de acesso:", error.message);
-                    // window.location.replace('login.html'); // Comentado para evitar loops
+                } catch (error) {
+                    if (error.message === "primeiro_acesso") {
+                        mostrarPrimeiroAcessoCard();
+                    } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
+                        console.error("Erro fatal na verificação de acesso:", error.message);
+                        // window.location.replace('login.html'); // Comentado para evitar loops
+                    }
                 }
-            }
+            }, 100); // A pausa de 100ms
         } else {
             window.location.replace('login.html');
         }
@@ -238,3 +243,4 @@
 
 </body>
 </html>
+
