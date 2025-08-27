@@ -7,9 +7,9 @@ import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gs
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // ===================================================================
-//                      A ÚNICA ALTERAÇÃO É AQUI
+//                CONFIGURAÇÃO ATUALIZADA E CORRIGIDA
 // ===================================================================
-// 2. Configuração do seu projeto Firebase (ATUALIZADA COM A CHAVE CORRETA )
+// 2. Configuração do seu projeto Firebase
 export const firebaseConfig = {
   apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8", // <-- A NOVA CHAVE CORRETA
   authDomain: "pronti-app-37c6e.firebaseapp.com",
