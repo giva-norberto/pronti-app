@@ -11,7 +11,7 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-
 // ===================================================================
 // 2. Configuração do seu projeto Firebase
 export const firebaseConfig = {
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // <-- A CHAVE CORRETA FORNECIDA POR SI
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8", // <-- A CHAVE NOVA E CORRETA DO PAINEL
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com", 
@@ -21,7 +21,7 @@ export const firebaseConfig = {
 // ===================================================================
 
 
-// 3. Inicializa as instâncias do Firebase (previne duplicidade)
+// 3. Inicializa as instâncias do Firebase (previne duplicidade )
 let app;
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
