@@ -1,67 +1,140 @@
 // ======================================================================
-//              USERSERVICE.JS - VERSÃO ESTÁVEL DE VERIFICAÇÃO
+//                      USERSERVICE.JS
+//           VERSÃO FINAL - CORRIGINDO O FLUXO DE CRIAÇÃO DE USUÁRIO
 // ======================================================================
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Imports (sem alterações)
+import { collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
-/**
- * Garante que o documento do usuário e o trial (avaliação) existem no Firestore.
- * Cria documentos básicos caso não existam.
- */
-export async function ensureUserAndTrialDoc() {
-    const user = auth.currentUser || getAuth().currentUser;
-    if (!user) throw new Error("Não autenticado.");
+// "Memória" para evitar re-verificação
+let cachedSessionProfile = null;
 
-    // Documento de usuário empresário
-    const userRef = doc(db, "empresarios", user.uid);
+// Funções Auxiliares
+async function getEmpresasDoDono(uid ) {
+    if (!uid) return null;
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot;
+}
+
+export async function ensureUserAndTrialDoc() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
+        console.log("Criando documento inicial para o usuário:", user.uid);
         await setDoc(userRef, {
-            nome: user.displayName || "",
-            email: user.email || "",
-            criadoEm: new Date(),
-            // outros campos padrão, se necessário
+            nome: user.displayName || user.email,
+            email: user.email,
+            trialStart: serverTimestamp(),
+            isPremium: false
         });
-    }
-
-    // Documento de trial (período de avaliação) - ajuste se sua estrutura usar outro nome/coleção
-    const trialRef = doc(db, "trials", user.uid);
-    const trialSnap = await getDoc(trialRef);
-    if (!trialSnap.exists()) {
-        await setDoc(trialRef, {
-            inicio: new Date(),
-            // outros campos padrão, se necessário
+    } else if (!userSnap.data().trialStart) {
+        await updateDoc(userRef, {
+            trialStart: serverTimestamp()
         });
     }
 }
 
+async function checkUserStatus(user, empresaData) {
+    const userRef = doc(db, "usuarios", user.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
+    
+    const userData = userSnap.data();
+    if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
+    if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
+
+    let trialDurationDays = 15;
+    if (empresaData && empresaData.freeEmDias !== undefined) {
+        trialDurationDays = empresaData.freeEmDias;
+    }
+    
+    const startDate = new Date(userData.trialStart.seconds * 1000);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + trialDurationDays);
+
+    return { hasActivePlan: false, isTrialActive: endDate > new Date() };
+}
+
+// ======================================================================
+// FUNÇÃO PRINCIPAL COM A ORDEM DE OPERAÇÕES CORRIGIDA
+// ======================================================================
 export async function verificarAcesso() {
+    if (cachedSessionProfile) {
+        return Promise.resolve(cachedSessionProfile);
+    }
+
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe(); 
+            unsubscribe();
+
             if (!user) {
-                return reject(new Error("Não autenticado."));
+                cachedSessionProfile = null;
+                window.location.href = 'login.html';
+                return reject(new Error("Utilizador não autenticado."));
             }
-            try {
-                // Tenta ler o documento da empresa. O ID é o mesmo do usuário.
-                const empresaRef = doc(db, "empresarios", user.uid);
-                const empresaSnap = await getDoc(empresaRef);
-                if (empresaSnap.exists()) {
-                    // SUCESSO! O usuário já tem uma empresa cadastrada.
-                    resolve({
-                        user: user,
-                        perfil: empresaSnap.data(),
-                        role: "dono" 
-                    });
-                } else {
-                    // Se não encontrou a empresa, é o primeiro acesso.
-                    reject(new Error("primeiro_acesso"));
+            
+            // ===================================================================
+            //                      CORREÇÃO APLICADA AQUI
+            // ===================================================================
+            // Garante que o documento do usuário exista ANTES de qualquer outra coisa.
+            await ensureUserAndTrialDoc();
+            // ===================================================================
+
+            const currentPage = window.location.pathname.split('/').pop();
+            const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+
+            if (user.uid === ADMIN_UID) {
+                const adminProfile = { user, isAdmin: true, perfil: { nome: "Administrador", nomeFantasia: "Painel de Controle" }, isOwner: true, role: 'admin' };
+                cachedSessionProfile = adminProfile;
+                return resolve(adminProfile);
+            }
+
+            const empresasSnapshot = await getEmpresasDoDono(user.uid);
+            const mapaRef = doc(db, "mapaUsuarios", user.uid);
+            const mapaSnap = await getDoc(mapaRef);
+
+            if ((empresasSnapshot && !empresasSnapshot.empty) || mapaSnap.exists()) {
+                let empresaData = null;
+                if (empresasSnapshot && !empresasSnapshot.empty) {
+                    empresaData = empresasSnapshot.docs[0].data();
                 }
-            } catch (error) {
-                console.error("Erro crítico no userService:", error);
-                reject(error); 
+                
+                const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+                if (!hasActivePlan && !isTrialActive) {
+                    cachedSessionProfile = null;
+                    if (currentPage !== 'assinatura.html') {
+                        window.location.href = 'assinatura.html';
+                    }
+                    return reject(new Error("Assinatura expirada."));
+                }
+
+                if (empresasSnapshot && !empresasSnapshot.empty) {
+                    const empresaDoc = empresasSnapshot.docs[0];
+                    const empresaData = empresaDoc.data();
+                    empresaData.nome = (await getDoc(doc(db, "usuarios", user.uid))).data()?.nome || user.displayName;
+                    const userProfile = { user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" };
+                    cachedSessionProfile = userProfile;
+                    return resolve(userProfile);
+                } else {
+                    const empresaId = mapaSnap.data().empresaId;
+                    const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+                    const profissionalSnap = await getDoc(profissionalRef);
+                    if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
+                         const userProfile = { user, perfil: profissionalSnap.data(), empresaId, isOwner: false, role: "funcionario" };
+                         cachedSessionProfile = userProfile;
+                         return resolve(userProfile);
+                    } else {
+                        return reject(new Error("aguardando_aprovacao"));
+                    }
+                }
             }
+
+            return reject(new Error("primeiro_acesso"));
         });
     });
 }
