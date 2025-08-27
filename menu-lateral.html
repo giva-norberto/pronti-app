@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!--          MENU-LATERAL.HTML (VERSÃO FINAL, COMPLETA E ESTÁVEL)          -->
+<!--          MENU-LATERAL.HTML (VERSÃO FINAL, COMPLETA E CORRIGIDA)        -->
 <!-- ====================================================================== -->
 
 <!-- 1. O SEU HTML DO MENU (INTACTO) -->
@@ -75,48 +75,39 @@
 </style>
 
 <!-- ====================================================================== -->
-<!--          SCRIPT TURBINADO COM A LÓGICA DE PERSISTÊNCIA E GUARDA        -->
+<!--          SCRIPT TURBINADO COM A ARQUITETURA CORRETA                    -->
 <!-- ====================================================================== -->
 <script type="module">
-    // Importa TODAS as ferramentas de autenticação necessárias
-    import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { auth } from "./firebase-config.js"; // Garanta que o nome do arquivo de config esteja correto
+    // 1. Importa a instância ÚNICA de auth do seu config, como o ChatGPT recomendou.
+    import { auth } from "./firebase-config.js"; 
+    // 2. Importa as FUNÇÕES que vamos usar com essa instância.
+    import { onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     // --- MÁGICA 1: GARANTIR QUE O LOGIN "GRUDE" ---
     setPersistence(auth, browserLocalPersistence )
       .then(() => {
         console.log("Guardião do Menu: Persistência de sessão ativada.");
-        // Só depois de garantir a persistência, iniciamos o guardião.
         iniciarGuardião();
       })
       .catch((error) => {
         console.error("Guardião do Menu: Falha ao ativar persistência!", error);
-        // Mesmo se falhar, tentamos iniciar o guardião.
         iniciarGuardião();
       });
 
-
     // --- MÁGICA 2: O GUARDIÃO COM "MEMÓRIA" ---
-    let authInitialized = false; // A "prancheta" do segurança.
+    let authInitialized = false;
 
     function iniciarGuardião() {
         onAuthStateChanged(auth, (user) => {
-            // O segurança só toma a decisão de expulsar/liberar UMA VEZ.
-            if (authInitialized) {
-                return; // Se a decisão já foi tomada, ele não faz mais nada.
-            }
-            authInitialized = true; // Marca na prancheta: "Decisão tomada".
+            if (authInitialized) return;
+            authInitialized = true;
 
             const isLoginPage = window.location.pathname.endsWith('login.html');
             
             if (!user && !isLoginPage) {
-                // Se não há usuário E não estamos na página de login, expulsa.
-                console.log("Guardião do Menu: Acesso NEGADO. Redirecionando para login.");
                 window.location.replace('login.html');
             } else {
-                // Se há usuário (ou se estamos na pág de login), o acesso é permitido.
                 console.log("Guardião do Menu: Acesso PERMITIDO.");
-                // A lógica do menu (logout, links ativos) pode ser executada com segurança.
                 setupMenu(user);
             }
         });
@@ -131,8 +122,6 @@
             const linkPage = link.getAttribute('href').split('/').pop();
             if (linkPage === currentPage) {
                 link.classList.add('active');
-            } else {
-                link.classList.remove('active');
             }
         });
 
