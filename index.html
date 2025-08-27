@@ -2,72 +2,231 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Teste de Login - Pronti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Início</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Estilo mínimo para sabermos que a página carregou */
-        body { 
-            font-family: sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0;
-            background-color: #f0f2f5;
+        .dashboard-body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298    );
+            min-height: 100vh;
         }
-        .container {
-            padding: 40px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        body.is-loading {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        body {
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .primeiro-acesso-card {
+            max-width: 400px;
+            margin: 80px auto;
+            padding: 36px 28px 32px 28px;
+            border-radius: 22px;
+            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001;
+            background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%);
+            border: 1.5px solid #e3eafc;
             text-align: center;
+            transition: box-shadow 0.2s;
         }
-        h1 { color: #1877f2; }
-        p { color: #333; font-size: 1.2rem; }
-        #user-email { font-weight: bold; color: #e63946; }
+        .primeiro-acesso-card h2 {
+            color: #2563eb;
+            font-weight: 700;
+            font-size: 1.34rem;
+            margin-bottom: 18px;
+            letter-spacing: 0.01em;
+        }
+        .primeiro-acesso-card p {
+            font-size: 16px;
+            color: #6b7a90;
+            margin-bottom: 30px;
+        }
+        .primeiro-btn {
+            display: block;
+            width: 100%;
+            background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%);
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            padding: 13px 0;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 2px 10px #2563eb22;
+            margin-bottom: 0;
+        }
+        .primeiro-btn i {
+            margin-right: 8px;
+        }
+        .primeiro-btn:hover {
+            background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
+        }
     </style>
 </head>
-<body>
+<body class="dashboard-body is-loading">
 
-    <div class="container" id="main-container">
-        <h1>Verificando autenticação...</h1>
-        <p>Por favor, aguarde.</p>
-    </div>
+<!-- Sidebar (menu lateral) incluso dinamicamente -->
+<div id="sidebar-placeholder"></div>
 
-    <script type="module">
-        // 1. Importa apenas o essencial para o teste
-        import { auth } from './vitrini-firebase.js'; // VERIFIQUE SE ESTE É O NOME CORRETO DO SEU ARQUIVO DE CONFIG
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<main class="main-content" id="main-content">
+ <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
+ <div class="dashboard-welcome-center" id="dashboard-welcome-center">
+    <h2 id="nome-empresa-ativa" style="color: #a7b3c4; font-size: 1.2rem; font-weight: 500; margin-bottom: 5px; min-height: 29px;"></h2>
+    <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
+    <p>Pronto para gerenciar seu dia?</p>
+ </div>
 
-        // Pega o container principal para exibir o resultado
-        const mainContainer = document.getElementById('main-container' );
+ <!-- AÇÕES PRINCIPAIS -->
+ <div class="dashboard-main-actions" id="dashboard-main-actions">
+  <a href="dashboard.html" class="action-card">
+   <i class="fa-solid fa-chart-line"></i>
+   <span>Painel Inteligente</span>
+  </a>
+  <a href="agenda.html" class="action-card">
+   <i class="fa-solid fa-calendar-check"></i>
+   <span>Agenda</span>
+  </a>
+  <a href="servicos.html" class="action-card" id="acao-servicos">
+   <i class="fa-solid fa-scissors"></i>
+   <span>Serviços</span>
+  </a>
+ </div>
 
-        console.log("Iniciando teste de login com index.html básico...");
+ <!-- BOTÃO DE STATUS -->
+ <button class="status-button">Ver status de hoje</button>
+</main>
 
-        // 2. Observa a mudança de estado do login
-        onAuthStateChanged(auth, (user) => {
-            // Adiciona uma pequena pausa para garantir que a conexão não falhe por timing
-            setTimeout(() => {
-                if (user) {
-                    // 3. SUCESSO! Se o usuário está logado:
-                    console.log("SUCESSO! Usuário autenticado:", user.uid);
-                    
-                    // Altera o HTML para mostrar a mensagem de boas-vindas
-                    mainContainer.innerHTML = `
-                        <h1>Login bem-sucedido!</h1>
-                        <p>Bem-vindo, <span id="user-email">${user.email}</span>!</p>
-                        <p>A conexão com o novo projeto Firebase está funcionando.</p>
-                    `;
+<script type="module">
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { auth } from "./vitrini-firebase.js";
+    import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
-                } else {
-                    // 4. FALHA! Se o usuário não está logado:
-                    console.log("AVISO: Nenhum usuário autenticado. Redirecionando para a página de login...");
-                    
-                    // Redireciona para a página de login para uma nova tentativa
-                    window.location.href = 'login.html';
-                }
-            }, 500); // Uma pausa um pouco maior por segurança
+    const nomeUsuarioSpan = document.getElementById("nome-usuario"    );
+    const saudacaoSpan = document.getElementById("saudacao");
+    const mainContent = document.getElementById("main-content");
+    const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
+
+    function destacarLinkAtivo() {
+        const links = document.querySelectorAll('.sidebar-links a');
+        let current = window.location.pathname.split('/').pop().toLowerCase();
+        if (current === '' || current === 'index.html') {
+            current = 'index.html';
+        }
+        links.forEach(link => {
+            link.classList.remove('active');
+            let href = link.getAttribute('href').toLowerCase();
+            if (href === current) {
+                link.classList.add('active');
+            }
         });
-    </script>
+    }
+
+    function ativarLogout() {
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                localStorage.removeItem('empresaAtivaId');
+                if (window.userService && typeof window.userService.clearCache === 'function') {
+                    window.userService.clearCache();
+                }
+                signOut(auth).then(() => {
+                    window.location.replace('login.html');
+                }).catch((error) => {
+                    console.error('Erro ao fazer logout:', error);
+                });
+            });
+        }
+    }
+
+    function definirSaudacao() {
+        const hora = new Date().getHours();
+        if (hora >= 5 && hora < 12) {
+            return "Bom dia";
+        } else if (hora >= 12 && hora < 18) {
+            return "Boa tarde";
+        } else {
+            return "Boa noite";
+        }
+    }
+
+    function mostrarPrimeiroAcessoCard() {
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="primeiro-acesso-card">
+                    <h2>Seja bem-vindo ao Pronti!</h2>
+                    <p>Inicie o cadastro da sua empresa.</p>
+                    <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
+                </div>
+            `;
+            document.body.classList.remove('is-loading');
+            document.getElementById("btn-criar-empresa").addEventListener("click", () => {
+                localStorage.removeItem('empresaAtivaId');
+                window.location.href = "perfil.html";
+            });
+        }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Adicionamos uma pequena pausa para garantir que a conexão do Firestore
+            // esteja 100% estabelecida antes de qualquer leitura de dados.
+            setTimeout(async () => {
+                try {
+                    await ensureUserAndTrialDoc();
+                    const userSession = await verificarAcesso();
+                    const { perfil, role } = userSession;
+
+                    if (role === 'funcionario') {
+                        window.location.replace('agenda.html');
+                        return; 
+                    }
+
+                    const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+                    document.getElementById("nome-usuario").textContent = primeiroNome;
+                    document.getElementById("saudacao").textContent = definirSaudacao();
+                    
+                    if (perfil.nomeFantasia) {
+                        document.getElementById("nome-empresa-ativa").textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+                    }
+
+                    fetch('menu-lateral.html')
+                        .then(res => res.text())
+                        .then(html => {
+                            document.getElementById('sidebar-placeholder').innerHTML = html;
+                            destacarLinkAtivo();
+                            ativarLogout();
+                            
+                            if (role === 'admin') {
+                                const navLinks = document.querySelector('.sidebar-links');
+                                if (navLinks) {
+                                    const adminLink = document.createElement('a');
+                                    adminLink.href = 'admin-clientes.html';
+                                    adminLink.innerHTML = '<span>🔒</span> Administração';
+                                    if (window.location.pathname.includes('admin-clientes.html')) {
+                                        adminLink.classList.add('active');
+                                    }
+                                    navLinks.appendChild(adminLink);
+                                }
+                            }
+                            document.body.classList.remove('is-loading');
+                        });
+
+                } catch (error) {
+                    if (error.message === "primeiro_acesso") {
+                        mostrarPrimeiroAcessoCard();
+                    } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
+                        console.error("Erro fatal na verificação de acesso:", error.message);
+                    }
+                }
+            }, 200); // A pausa de 200ms
+        } else {
+            window.location.replace('login.html');
+        }
+    });
+</script>
 
 </body>
 </html>
+
