@@ -5,6 +5,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebas
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
+// Configurações do seu projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBIT61ii28vbYyi5oNRDRy8vNx3U4XDVfo",
   authDomain: "pronti-novo.firebaseapp.com",
@@ -15,10 +16,12 @@ const firebaseConfig = {
 };
 
 // Inicializa o Firebase APENAS UMA VEZ
-const app = !getApps( ).length ? initializeApp(firebaseConfig) : getApps()[0];
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 
 // Exporta as instâncias ÚNICAS para todo o aplicativo usar
+export { app }; // Agora exportando explicitamente o app!
 export const db = getFirestore(app);
-export const auth = getAuth(app); // <--- Instância ÚNICA de auth
+export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
+export const storage = getStorage(app);
 export const storage = getStorage(app);
