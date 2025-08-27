@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!--          MENU-LATERAL.HTML (VERSÃO FINAL, COMPLETA E TURBINADA)        -->
+<!--          MENU-LATERAL.HTML (VERSÃO FINAL, COMPLETA E ESTÁVEL)          -->
 <!-- ====================================================================== -->
 
 <!-- 1. O SEU HTML DO MENU (INTACTO) -->
@@ -75,33 +75,55 @@
 </style>
 
 <!-- ====================================================================== -->
-<!--          SCRIPT TURBINADO: GUARDIÃO + LÓGICA DO MENU                   -->
+<!--          SCRIPT TURBINADO COM A LÓGICA DE PERSISTÊNCIA E GUARDA        -->
 <!-- ====================================================================== -->
 <script type="module">
-    // Importa as ferramentas de autenticação
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    // Importa TODAS as ferramentas de autenticação necessárias
+    import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { auth } from "./firebase-config.js"; // Garanta que o nome do arquivo de config esteja correto
 
-    // --- O GUARDIÃO ---
-    // Esta função é executada IMEDIATAMENTE quando o menu é carregado.
-    onAuthStateChanged(auth, (user ) => {
-        const isLoginPage = window.location.pathname.endsWith('login.html');
-        
-        if (!user && !isLoginPage) {
-            // Se não há usuário E não estamos na página de login, expulsa.
-            console.log("Guardião do Menu: Acesso NEGADO. Redirecionando para login.");
-            window.location.replace('login.html');
-        } else if (user) {
-            // Se há usuário, o acesso é permitido.
-            console.log("Guardião do Menu: Acesso PERMITIDO para", user.email);
-            // A lógica do menu (logout, links ativos) pode ser executada com segurança.
-            setupMenu();
-        }
-    });
+    // --- MÁGICA 1: GARANTIR QUE O LOGIN "GRUDE" ---
+    setPersistence(auth, browserLocalPersistence )
+      .then(() => {
+        console.log("Guardião do Menu: Persistência de sessão ativada.");
+        // Só depois de garantir a persistência, iniciamos o guardião.
+        iniciarGuardião();
+      })
+      .catch((error) => {
+        console.error("Guardião do Menu: Falha ao ativar persistência!", error);
+        // Mesmo se falhar, tentamos iniciar o guardião.
+        iniciarGuardião();
+      });
 
-    // --- LÓGICA DO PRÓPRIO MENU ---
-    // Esta função agora é chamada com segurança pelo guardião.
-    function setupMenu() {
+
+    // --- MÁGICA 2: O GUARDIÃO COM "MEMÓRIA" ---
+    let authInitialized = false; // A "prancheta" do segurança.
+
+    function iniciarGuardião() {
+        onAuthStateChanged(auth, (user) => {
+            // O segurança só toma a decisão de expulsar/liberar UMA VEZ.
+            if (authInitialized) {
+                return; // Se a decisão já foi tomada, ele não faz mais nada.
+            }
+            authInitialized = true; // Marca na prancheta: "Decisão tomada".
+
+            const isLoginPage = window.location.pathname.endsWith('login.html');
+            
+            if (!user && !isLoginPage) {
+                // Se não há usuário E não estamos na página de login, expulsa.
+                console.log("Guardião do Menu: Acesso NEGADO. Redirecionando para login.");
+                window.location.replace('login.html');
+            } else {
+                // Se há usuário (ou se estamos na pág de login), o acesso é permitido.
+                console.log("Guardião do Menu: Acesso PERMITIDO.");
+                // A lógica do menu (logout, links ativos) pode ser executada com segurança.
+                setupMenu(user);
+            }
+        });
+    }
+
+    // --- LÓGICA DO PRÓPRIO MENU (INTACTA) ---
+    function setupMenu(user) {
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
@@ -116,7 +138,6 @@
 
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
-            // Remove listener antigo para evitar duplicação
             btnLogout.replaceWith(btnLogout.cloneNode(true)); 
             document.getElementById('btn-logout').addEventListener('click', () => {
                 signOut(auth).then(() => window.location.replace('login.html'));
