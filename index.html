@@ -1,217 +1,75 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Início</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298 );
-            min-height: 100vh;
-        }
-        body.is-loading {
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        body {
-            opacity: 1;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .primeiro-acesso-card {
-            max-width: 400px;
-            margin: 80px auto;
-            padding: 36px 28px 32px 28px;
-            border-radius: 22px;
-            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.17), 0 1.5px 6px #0001;
-            background: linear-gradient(135deg, #e3ecfa 0%, #f7fafd 100%);
-            border: 1.5px solid #e3eafc;
-            text-align: center;
-            transition: box-shadow 0.2s;
-        }
-        .primeiro-acesso-card h2 {
-            color: #2563eb;
-            font-weight: 700;
-            font-size: 1.34rem;
-            margin-bottom: 18px;
-            letter-spacing: 0.01em;
-        }
-        .primeiro-acesso-card p {
-            font-size: 16px;
-            color: #6b7a90;
-            margin-bottom: 30px;
-        }
-        .primeiro-btn {
-            display: block;
-            width: 100%;
-            background: linear-gradient(90deg, #2563eb 0%, #5b9eff 100%);
-            color: #fff;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            padding: 13px 0;
-            font-size: 1rem;
-            cursor: pointer;
-            box-shadow: 0 2px 10px #2563eb22;
-            margin-bottom: 0;
-        }
-        .primeiro-btn i {
-            margin-right: 8px;
-        }
-        .primeiro-btn:hover {
-            background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
-        }
-    </style>
-</head>
-<body class="dashboard-body is-loading">
-
-<!-- Sidebar (menu lateral) incluso dinamicamente -->
-<div id="sidebar-placeholder"></div>
-
-<main class="main-content" id="main-content">
- <!-- CABEÇALHO DE BOAS-VINDAS CENTRALIZADO -->
- <div class="dashboard-welcome-center" id="dashboard-welcome-center">
-    <h2 id="nome-empresa-ativa" style="color: #a7b3c4; font-size: 1.2rem; font-weight: 500; margin-bottom: 5px; min-height: 29px;"></h2>
-    <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
-    <p>Pronto para gerenciar seu dia?</p>
- </div>
-
- <!-- AÇÕES PRINCIPAIS -->
- <div class="dashboard-main-actions" id="dashboard-main-actions">
-  <a href="dashboard.html" class="action-card">
-   <i class="fa-solid fa-chart-line"></i>
-   <span>Painel Inteligente</span>
-  </a>
-  <a href="agenda.html" class="action-card">
-   <i class="fa-solid fa-calendar-check"></i>
-   <span>Agenda</span>
-  </a>
-  <a href="servicos.html" class="action-card" id="acao-servicos">
-   <i class="fa-solid fa-scissors"></i>
-   <span>Serviços</span>
-  </a>
- </div>
-
- <!-- BOTÃO DE STATUS -->
- <button class="status-button">Ver status de hoje</button>
-</main>
+<!-- ... (todo o seu HTML e <head> do index.html permanecem inalterados) ... -->
 
 <script type="module">
+    // ======================================================================
+    //                      SCRIPT DE DIAGNÓSTICO FINAL
+    // ======================================================================
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { auth } from "./vitrini-firebase.js"; // Certifique-se que este caminho está correto
+    import { auth } from "./vitrini-firebase.js";
     import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
+    // Seleciona os elementos da página
     const nomeUsuarioSpan = document.getElementById("nome-usuario" );
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
-    function destacarLinkAtivo() {
-        const links = document.querySelectorAll('.sidebar-links a');
-        let current = window.location.pathname.split('/').pop().toLowerCase();
-        if (current === '' || current === 'index.html') {
-            current = 'index.html';
-        }
-        links.forEach(link => {
-            link.classList.remove('active');
-            let href = link.getAttribute('href').toLowerCase();
-            if (href === current) {
-                link.classList.add('active');
-            }
-        });
-    }
-
-    function ativarLogout() {
-        const btnLogout = document.getElementById('btn-logout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                localStorage.removeItem('empresaAtivaId');
-                // Limpa a memória da sessão no userService para forçar uma re-verificação completa no próximo login
-                // Esta é uma suposição, a implementação real pode variar.
-                if (window.userService && typeof window.userService.clearCache === 'function') {
-                    window.userService.clearCache();
-                }
-                signOut(auth).then(() => {
-                    window.location.replace('login.html');
-                }).catch((error) => {
-                    console.error('Erro ao fazer logout:', error);
-                });
-            });
-        }
-    }
-
-    function definirSaudacao() {
-        const hora = new Date().getHours();
-        if (hora >= 5 && hora < 12) {
-            return "Bom dia";
-        } else if (hora >= 12 && hora < 18) {
-            return "Boa tarde";
-        } else {
-            return "Boa noite";
-        }
-    }
-
-    function mostrarPrimeiroAcessoCard() {
-        if (mainContent) {
-            mainContent.innerHTML = `
-                <div class="primeiro-acesso-card">
-                    <h2>Seja bem-vindo ao Pronti!</h2>
-                    <p>Inicie o cadastro da sua empresa.</p>
-                    <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
-                </div>
-            `;
-            document.body.classList.remove('is-loading');
-            document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                localStorage.removeItem('empresaAtivaId');
-                window.location.href = "perfil.html";
-            });
-        }
+    // Função para mostrar os dados de diagnóstico na tela
+    function displayDebugInfo(title, data) {
+        const debugBox = document.createElement('div');
+        debugBox.style.position = 'fixed';
+        debugBox.style.bottom = '10px';
+        debugBox.style.left = '10px';
+        debugBox.style.background = 'rgba(0, 0, 0, 0.8)';
+        debugBox.style.color = '#00ff00';
+        debugBox.style.padding = '15px';
+        debugBox.style.borderRadius = '8px';
+        debugBox.style.zIndex = '9999';
+        debugBox.style.fontFamily = 'monospace';
+        debugBox.style.fontSize = '14px';
+        debugBox.innerHTML = `
+            <h3>${title}</h3>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+        document.body.appendChild(debugBox);
     }
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             try {
-                await ensureUserAndTrialDoc();
-                // ===================================================================
-                //                      A ÚNICA ALTERAÇÃO É AQUI
-                // ===================================================================
-                // Adicionamos a variável 'role' para obter o papel do usuário
-                const { perfil, isOwner, role } = await verificarAcesso();
+                // 1. Chama a função de verificação como sempre
+                const userSession = await verificarAcesso();
 
-                // Se o usuário logado for um funcionário, redireciona para a agenda.
-                // Isso garante que o index.html seja apenas para donos e admins.
+                // 2. MOSTRA NA TELA O QUE FOI RECEBIDO
+                // Esta é a parte mais importante. Vamos ver o que o index.html realmente recebeu.
+                displayDebugInfo("Resultado do verificarAcesso()", userSession);
+
+                // 3. Pega os dados recebidos para usar
+                const { perfil, role } = userSession;
+
+                // 4. Lógica de redirecionamento baseada nos dados recebidos
                 if (role === 'funcionario') {
-                    window.location.replace('agenda.html');
-                    return; // Para a execução para evitar que o resto do código rode.
+                    displayDebugInfo("DECISÃO:", { motivo: "role é 'funcionario'", redirecionando_para: "agenda.html" });
+                    // window.location.replace('agenda.html'); // Temporariamente desativado para podermos ver o debug
+                    alert("Redirecionamento para AGENDA foi bloqueado para depuração. Verifique o console e a caixa de diagnóstico.");
+                    return;
                 }
-                // ===================================================================
 
+                // Se não redirecionou, continua a carregar a página
                 const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
                 if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
-                if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
-                if (nomeEmpresaSpan && perfil.nomeFantasia) {
-                    nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
-                }
+                // ... (resto da sua lógica para carregar o nome, saudação, etc.)
 
-                fetch('menu-lateral.html')
-                    .then(res => res.text())
-                    .then(html => {
-                        document.getElementById('sidebar-placeholder').innerHTML = html;
-                        destacarLinkAtivo();
-                        ativarLogout();
-                        document.body.classList.remove('is-loading');
-                    });
+                document.body.classList.remove('is-loading'); // Mostra a página
+
             } catch (error) {
-                if (error.message === "primeiro_acesso") {
-                    mostrarPrimeiroAcessoCard();
-                } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
-                    console.log("Verificação de acesso interrompida:", error.message);
-                }
+                // Se o verificarAcesso() falhar, mostra o erro na tela
+                displayDebugInfo("ERRO no verificarAcesso()", { mensagem: error.message });
             }
         } else {
-            window.location.replace('login.html');
+            // Se não houver usuário, mostra isso também
+            displayDebugInfo("ERRO", { motivo: "Nenhum usuário logado", redirecionando_para: "login.html" });
+            // window.location.replace('login.html');
         }
     });
 </script>
