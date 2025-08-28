@@ -28,9 +28,13 @@ export function showModal(title, message, buttons) {
             return resolve(false); // Retorna 'false' para não travar a aplicação
         }
 
+        // Limpa event listeners antigos (boa prática para evitar multiplicaçao de eventos)
+        while (buttonsContainer.firstChild) {
+            buttonsContainer.removeChild(buttonsContainer.firstChild);
+        }
+
         titleEl.textContent = title;
         messageEl.textContent = message;
-        buttonsContainer.innerHTML = ''; // Limpa botões antigos
 
         const close = (value) => {
             overlay.classList.remove('ativo'); // Garanta que seu CSS usa .ativo para mostrar/esconder
@@ -41,6 +45,7 @@ export function showModal(title, message, buttons) {
             const button = document.createElement('button');
             button.id = buttonInfo.id;
             button.textContent = buttonInfo.text;
+            button.type = 'button';
             button.addEventListener('click', () => close(buttonInfo.value));
             buttonsContainer.appendChild(button);
         });
@@ -53,6 +58,7 @@ export function showModal(title, message, buttons) {
  * Exibe um "Card de Alerta" central com um único botão "OK".
  * @param {string} title - Título do alerta.
  * @param {string} message - Mensagem do alerta.
+ * @returns {Promise<boolean>} - Resolve true ao clicar em OK.
  */
 export function showAlert(title, message) {
     const buttons = [
