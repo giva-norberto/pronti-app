@@ -4,7 +4,17 @@
 //           **PADRONIZADO PARA FIREBASE 10.13.2**
 // ======================================================================
 
-import { collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import {
+    collection,
+    query,
+    where,
+    getDocs,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
@@ -16,7 +26,7 @@ async function getEmpresasDoDono(uid) {
     if (!uid) return null;
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const querySnapshot = await getDocs(q);
-    console.log("[LOG] getEmpresasDoDono:", {uid, empresas: querySnapshot.size});
+    console.log("[LOG] getEmpresasDoDono:", { uid, empresas: querySnapshot.size });
     return querySnapshot;
 }
 
@@ -34,12 +44,12 @@ export async function ensureUserAndTrialDoc() {
             nome: user.displayName || user.email,
             email: user.email,
             trialStart: serverTimestamp(),
-            isPremium: false
+            isPremium: false,
         });
     } else if (!userSnap.data().trialStart) {
         console.log("[LOG] Adicionando trialStart ao usuário:", user.uid);
         await updateDoc(userRef, {
-            trialStart: serverTimestamp()
+            trialStart: serverTimestamp(),
         });
     }
 }
@@ -96,7 +106,16 @@ export async function verificarAcesso() {
                 const currentPage = window.location.pathname.split('/').pop();
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 if (user.uid === ADMIN_UID) {
-                    const adminProfile = { user, isAdmin: true, perfil: { nome: "Administrador", nomeFantasia: "Painel de Controle" }, isOwner: true, role: 'admin' };
+                    const adminProfile = {
+                        user,
+                        isAdmin: true,
+                        perfil: {
+                            nome: "Administrador",
+                            nomeFantasia: "Painel de Controle",
+                        },
+                        isOwner: true,
+                        role: 'admin',
+                    };
                     cachedSessionProfile = adminProfile;
                     console.log("[LOG] Usuário ADMIN detectado, retornando perfil admin");
                     return resolve(adminProfile);
@@ -138,7 +157,13 @@ export async function verificarAcesso() {
                         empresaData.chavePix = empresaData.chavePix || "-";
                         empresaData.logoUrl = empresaData.logoUrl || "https://placehold.co/80x80";
                         empresaData.nome = (await getDoc(doc(db, "usuarios", user.uid))).data()?.nome || user.displayName;
-                        const userProfile = { user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" };
+                        const userProfile = {
+                            user,
+                            empresaId: empresaDoc.id,
+                            perfil: empresaData,
+                            isOwner: true,
+                            role: "dono",
+                        };
                         cachedSessionProfile = userProfile;
                         console.log("[LOG] Perfil DONO retornado:", userProfile);
                         return resolve(userProfile);
@@ -147,7 +172,13 @@ export async function verificarAcesso() {
                         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
                         const profissionalSnap = await getDoc(profissionalRef);
                         if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
-                            const userProfile = { user, perfil: profissionalSnap.data(), empresaId, isOwner: false, role: "funcionario" };
+                            const userProfile = {
+                                user,
+                                perfil: profissionalSnap.data(),
+                                empresaId,
+                                isOwner: false,
+                                role: "funcionario",
+                            };
                             cachedSessionProfile = userProfile;
                             console.log("[LOG] Perfil FUNCIONÁRIO retornado:", userProfile);
                             return resolve(userProfile);
