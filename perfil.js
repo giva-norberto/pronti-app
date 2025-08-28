@@ -49,9 +49,7 @@ window.addEventListener('DOMContentLoaded', () => {
             boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
             btnFecharBoasVindas: document.getElementById('fechar-boas-vindas'),
             btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
-            msgPerfilAusente: document.getElementById('mensagem-perfil-ause
-
-nte')
+          msgPerfilAusente: document.getElementById('mensagem-perfil-ausente')
         };
 
         let currentUser;
