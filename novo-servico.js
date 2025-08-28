@@ -1,51 +1,44 @@
 // ======================================================================
-// ARQUIVO: novo-servico.js (Foco em "Arrumar a Casa")
+// ARQUIVO: novo-servico.js (VERSÃO CORRETA, BASEADA NO SEU CÓDIGO ANTIGO)
 // ======================================================================
 
 import { 
-    doc, getDoc, updateDoc, deleteDoc, 
-    collection, addDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    doc, getDoc, setDoc, updateDoc, deleteDoc, 
+    collection, query, where, getDocs, addDoc, serverTimestamp // Adicionado serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"; // Versão atualizada
 
-// 1. IMPORTANTE: Garanta que está importando o config do PAINEL.
-import { db, auth } from "./firebase-config.js"; 
-import { showAlert } from "./vitrini-utils.js"; // Seu utilitário de alertas
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"; // Versão atualizada
 
-// --- Mapeamento de Elementos do DOM ---
+import { db, auth } from "./firebase-config.js";
+import { showAlert } from "./vitrini-utils.js";
+
+// --- Elementos do DOM e Variáveis de Estado ---
 const form = document.getElementById('form-servico' );
 const btnExcluir = document.getElementById('btn-excluir-servico');
-const btnSalvar = form.querySelector('button[type="submit"]');
-
-// --- Variáveis de Estado ---
 let empresaId = null;
 let servicoId = null;
+let servicoEditando = null;
 let isDono = false;
 
-/**
- * Obtém o ID da empresa ativa do localStorage.
- * Esta é a fonte da verdade para saber em qual empresa operar.
- */
+// --- Funções Auxiliares (do seu código original) ---
+
 function getEmpresaIdAtiva() {
-    const id = localStorage.getItem("empresaAtivaId");
-    if (!id) {
-        console.error("Nenhum 'empresaAtivaId' encontrado no localStorage.");
-        showAlert("Erro Crítico", "Nenhuma empresa está ativa. Por favor, retorne ao painel e selecione uma empresa.");
-    }
-    return id;
+    return localStorage.getItem("empresaAtivaId") || null;
 }
 
-/**
- * Extrai o ID do serviço da URL para saber se estamos em modo de edição.
- */
-function getIdServicoFromUrl() {
+async function getEmpresaDoUsuario(uid) {
+    // Esta função pode ser simplificada no futuro, mas vamos mantê-la por enquanto
+    let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    let snapshot = await getDocs(q);
+    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    return null; // Simplificado, pois a lógica de permissão principal é outra
+}
+
+function getIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
 }
 
-/**
- * Preenche o formulário com os dados de um serviço existente.
- */
 function preencherFormulario(servico) {
     document.getElementById('nome-servico').value = servico.nome || '';
     document.getElementById('descricao-servico').value = servico.descricao || '';
@@ -53,52 +46,71 @@ function preencherFormulario(servico) {
     document.getElementById('duracao-servico').value = servico.duracao || '';
 }
 
-/**
- * Ponto de entrada principal que roda quando a página carrega.
- */
-async function inicializarPagina(user) {
-    empresaId = getEmpresaIdAtiva();
-    if (!empresaId) {
-        btnSalvar.disabled = true;
+function usuarioEDono(empresa, uid) {
+    return empresa.donoId === uid;
+}
+
+// --- Lógica Principal (Estrutura do seu código original, que é a correta) ---
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
         return;
     }
 
-    // A única permissão que importa aqui é: o usuário logado é o dono da empresa ativa?
-    const empresaRef = doc(db, "empresarios", empresaId);
-    const empresaSnap = await getDoc(empresaRef);
-    
-    if (!empresaSnap.exists() || empresaSnap.data().donoId !== user.uid) {
-        isDono = false;
-        showAlert("Acesso Negado", "Você não tem permissão para gerenciar serviços nesta empresa.");
-        btnSalvar.disabled = true;
+    empresaId = getEmpresaIdAtiva();
+    const empresa = await getEmpresaDoUsuario(user.uid); // Usado para checar se é dono
+
+    if (!empresaId) {
+        await showAlert("Atenção", "Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
+        form.querySelector('button[type="submit"]').disabled = true;
         if (btnExcluir) btnExcluir.style.display = 'none';
         return;
     }
-    
-    isDono = true;
-    servicoId = getIdServicoFromUrl();
-    const modoEdicao = !!servicoId;
 
-    if (modoEdicao) {
+    // A verificação de permissão crucial
+    isDono = empresa && usuarioEDono(empresa, user.uid);
+
+    servicoId = getIdFromUrl();
+    if (servicoId) {
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         const servicoSnap = await getDoc(servicoRef);
         if (servicoSnap.exists()) {
-            preencherFormulario(servicoSnap.data());
-            if (btnExcluir) btnExcluir.style.display = 'block'; // Mostra o botão de excluir
-        } else {
-            showAlert("Erro", "O serviço que você está tentando editar não foi encontrado.");
-            btnSalvar.disabled = true;
+            servicoEditando = { id: servicoSnap.id, ...servicoSnap.data() };
+            preencherFormulario(servicoEditando);
         }
     }
-}
 
-/**
- * Lida com o envio do formulário para criar ou atualizar um serviço.
- */
+    // Lógica de UI para permissões
+    if (!isDono && !servicoId) {
+        await showAlert("Atenção", "Apenas o dono pode criar um novo serviço.");
+        form.querySelector('button[type="submit"]').disabled = true;
+    }
+
+    if (btnExcluir) {
+        if (servicoEditando && isDono) {
+            btnExcluir.style.display = 'block';
+            btnExcluir.addEventListener('click', handleServicoExcluir);
+        } else {
+            btnExcluir.style.display = 'none';
+        }
+    }
+
+    // CORREÇÃO: O listener do formulário é adicionado AQUI, no final,
+    // garantindo que todas as variáveis de estado (isDono, empresaId) já estão definidas.
+    form.addEventListener('submit', handleFormSubmit);
+});
+
 async function handleFormSubmit(e) {
     e.preventDefault();
-    if (!isDono || !empresaId) {
-        showAlert("Erro", "Não foi possível salvar. Permissões ou ID da empresa ausentes.");
+
+    if (!empresaId) {
+        await showAlert("Erro", "Empresa não identificada. Tente recarregar a página.");
+        return;
+    }
+
+    if (!isDono) { // Simplificado: se não é dono, não pode salvar/editar.
+        await showAlert("Atenção", "Apenas o dono pode salvar ou editar um serviço.");
         return;
     }
 
@@ -108,45 +120,43 @@ async function handleFormSubmit(e) {
     const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
 
     if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
-        showAlert("Atenção", "Preencha todos os campos obrigatórios corretamente.");
+        await showAlert("Atenção", "Preencha todos os campos obrigatórios corretamente.");
         return;
     }
 
+    const btnSalvar = form.querySelector('button[type="submit"]');
     btnSalvar.disabled = true;
     btnSalvar.textContent = "Salvando...";
 
     try {
         const dadosServico = { nome, descricao, preco, duracao, updatedAt: serverTimestamp() };
 
-        if (servicoId) { // Modo Edição
+        if (servicoEditando) {
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, dadosServico);
-            await showAlert("Sucesso!", "Serviço atualizado com sucesso!");
-        } else { // Modo Criação
+        } else {
             dadosServico.createdAt = serverTimestamp();
+            dadosServico.visivelNaVitrine = true;
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
             await addDoc(servicosCol, dadosServico);
-            await showAlert("Sucesso!", "Serviço salvo com sucesso!");
         }
+
+        await showAlert("Sucesso!", servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
         window.location.href = 'servicos.html';
     } catch (err) {
         console.error("Erro ao salvar serviço:", err);
-        await showAlert("Erro", `Ocorreu um erro ao salvar: ${err.message}`);
+        await showAlert("Erro", `Ocorreu um erro ao salvar o serviço: ${err.message}`);
     } finally {
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Serviço";
     }
 }
 
-/**
- * Lida com a exclusão de um serviço.
- */
 async function handleServicoExcluir(e) {
     e.preventDefault();
-    if (!isDono || !servicoId) return;
+    if (!isDono || !servicoEditando) return;
     
-    // Usando a função de alerta customizada para confirmação
-    const confirmou = await showAlert("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.", true);
+    const confirmou = confirm("Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
     if (!confirmou) return;
 
     try {
@@ -156,20 +166,6 @@ async function handleServicoExcluir(e) {
         window.location.href = 'servicos.html';
     } catch (err) {
         console.error("Erro ao excluir serviço:", err);
-        await showAlert("Erro", `Ocorreu um erro ao excluir: ${err.message}`);
+        await showAlert("Erro", `Ocorreu um erro ao excluir o serviço: ${err.message}`);
     }
-}
-
-// --- Ponto de Entrada ---
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        inicializarPagina(user);
-    } else {
-        window.location.href = 'login.html';
-    }
-});
-
-form.addEventListener('submit', handleFormSubmit);
-if (btnExcluir) {
-    btnExcluir.addEventListener('click', handleServicoExcluir);
 }
