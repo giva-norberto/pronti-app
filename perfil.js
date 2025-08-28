@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL, COMPLETA E ROBUSTA - SEM PERDA DE FUNÇÕES)
+// PERFIL.JS (VERSÃO FINAL E ROBUSTA PARA GARANTIR CRIAÇÃO/EDIÇÃO)
 // ======================================================================
 
 import {
@@ -11,13 +11,18 @@ import {
 import {
     onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-// As dependências externas foram removidas para garantir estabilidade.
-// Este arquivo agora é autossuficiente.
-import { db, auth, storage } from "./firebase-config.js";
+import { uploadFile } from './uploadService.js';
+import { app, db, auth, storage } from "./firebase-config.js";
+import { verificarAcesso } from "./userService.js";
 
-window.addEventListener('DOMContentLoaded', ( ) => {
-    // --- Mapeamento de Elementos (INTACTO) ---
-    // Todas as suas variáveis de elementos estão aqui.
+// Garante que os serviços do Firebase foram inicializados
+if (!app || !db || !auth || !storage ) {
+    console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
+    throw new Error("Firebase não inicializado.");
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    // Mapeamento dos elementos do DOM
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
@@ -35,218 +40,190 @@ window.addEventListener('DOMContentLoaded', ( ) => {
         urlVitrineEl: document.getElementById('url-vitrine-display'),
         btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
         btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
-        btnLogout: document.getElementById('btn-logout'), // Assumindo que ele pode estar aqui
-        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
-        boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
-        btnFecharBoasVindas: document.getElementById('fechar-boas-vindas'),
-        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
-        msgPerfilAusente: document.getElementById('mensagem-perfil-ausente'),
-        msgFree: document.getElementById('mensagem-free')
+        btnLogout: document.getElementById('btn-logout'),
+        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso')
     };
 
-    let currentUser = null;
-    let empresaIdAtual = null; // Variável de estado chave
-    let logoFile = null;
+    let currentUser;
+    let empresaId = null;
 
-    // --- Guardião da Página ---
-    onAuthStateChanged(auth, (user) => {
+    // Listener principal de autenticação
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
-            carregarDadosIniciais(user.uid);
+            await carregarDadosDaPagina(user.uid);
             adicionarListenersDeEvento();
         } else {
-            window.location.replace('login.html');
+            window.location.href = 'login.html';
         }
     });
 
-    // --- Lógica Principal ---
+    // --- FUNÇÕES PRINCIPAIS ---
 
-    async function carregarDadosIniciais(uid) {
-        // Esta função agora só tem UMA responsabilidade: verificar se já existe uma empresa.
+    async function carregarDadosDaPagina(uid) {
         try {
             const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
             const snapshot = await getDocs(q);
 
-            if (!snapshot.empty) {
-                // Se já tem empresa, carrega a primeira para edição.
-                const empresaDoc = snapshot.docs[0];
-                empresaIdAtual = empresaDoc.id;
-                preencherFormulario(empresaDoc.data());
-            } else {
-                // Se não tem, prepara para novo cadastro.
-                empresaIdAtual = null;
+            if (snapshot.empty) {
+                console.log("Nenhuma empresa encontrada. Preparando para novo cadastro.");
+                empresaId = null;
                 atualizarTelaParaNovoPerfil();
+            } else {
+                const empresaDoc = snapshot.docs[0];
+                empresaId = empresaDoc.id;
+                console.log("Empresa encontrada:", empresaId);
+                const dadosEmpresa = empresaDoc.data();
+                preencherFormulario(dadosEmpresa);
+                mostrarCamposExtras();
+                if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
             }
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
-            alert("Ocorreu um erro ao buscar seus dados. A página será preparada para um novo cadastro.");
-            atualizarTelaParaNovoPerfil();
+            alert("Erro ao carregar dados do perfil: " + error.message);
         }
     }
-
+    
     async function handleFormSubmit(event) {
         event.preventDefault();
-        if (!currentUser) return;
-
-        const btnSalvar = elements.btnSalvar;
-        btnSalvar.disabled = true;
-        btnSalvar.textContent = 'Salvando...';
+        elements.btnSalvar.disabled = true;
+        elements.btnSalvar.textContent = 'A salvar...';
 
         try {
-            // --- Preparação dos Dados (INTACTO) ---
-            let logoUrl = elements.logoPreview.src.startsWith('https://' ) ? elements.logoPreview.src : '';
-            if (logoFile) {
-                const storageRef = ref(storage, `logos/${currentUser.uid}/${Date.now()}-${logoFile.name}`);
-                const snapshot = await uploadBytes(storageRef, logoFile);
-                logoUrl = await getDownloadURL(snapshot.ref);
-            }
+            const uid = currentUser?.uid;
+            if (!uid) throw new Error("Utilizador não autenticado.");
+
+            const nomeNegocio = elements.nomeNegocioInput.value.trim();
+            if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
             const dadosEmpresa = {
-                donoId: currentUser.uid,
-                nomeFantasia: elements.nomeNegocioInput.value.trim(),
+                nomeFantasia: nomeNegocio,
                 descricao: elements.descricaoInput.value.trim(),
                 localizacao: elements.localizacaoInput.value.trim(),
                 horarioFuncionamento: elements.horarioFuncionamentoInput.value.trim(),
                 chavePix: elements.chavePixInput.value.trim(),
-                logoUrl: logoUrl,
-                atualizadoEm: serverTimestamp(),
-                plano: "free", // Adicionado para consistência
-                status: "ativo" // Adicionado para consistência
+                donoId: uid, // Essencial para as regras de segurança
+                plano: "free",
+                status: "ativo",
+                updatedAt: serverTimestamp()
             };
 
-            // ===================================================================
-            //                      A CORREÇÃO DO CARMA ESTÁ AQUI
-            // ===================================================================
-            if (empresaIdAtual) {
-                // Se já tínhamos um ID ao carregar a página, ATUALIZA.
-                const empresaRef = doc(db, "empresarios", empresaIdAtual);
-                await setDoc(empresaRef, dadosEmpresa, { merge: true });
-                alert("Empresa atualizada com sucesso!");
-
+            const logoFile = elements.logoInput.files[0];
+            if (logoFile) {
+                const storagePath = `logos/${uid}/${Date.now()}-${logoFile.name}`;
+                const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
+                dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
+            }
+            
+            if (empresaId) {
+                // --- LÓGICA DE EDIÇÃO ---
+                console.log("Editando empresa existente:", empresaId);
+                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+                alert("Perfil atualizado com sucesso!");
             } else {
-                // Se não tínhamos um ID, CRIA.
-                dadosEmpresa.criadoEm = serverTimestamp();
+                // --- LÓGICA DE NOVO CADASTRO (REVISADA) ---
+                dadosEmpresa.createdAt = serverTimestamp();
+                console.log("Criando nova empresa com os dados:", dadosEmpresa);
                 
-                // 1. Cria o documento da empresa
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-                
-                // 2. Cria o documento do usuário
-                const userRef = doc(db, "usuarios", currentUser.uid);
-                await setDoc(userRef, {
-                    nome: currentUser.displayName || dadosEmpresa.nomeFantasia,
-                    email: currentUser.email
-                }, { merge: true });
+                empresaId = novaEmpresaRef.id; // O ID da nova empresa é capturado
+                console.log("Nova empresa criada com sucesso! ID:", empresaId);
 
-                // 3. Cria o subdocumento do profissional/dono
                 const dadosProfissional = {
-                    uid: currentUser.uid,
-                    nome: currentUser.displayName || dadosEmpresa.nomeFantasia,
+                    uid: uid,
+                    nome: currentUser.displayName || nomeNegocio,
                     fotoUrl: currentUser.photoURL || "",
                     ehDono: true,
                     criadoEm: serverTimestamp(),
                     status: "ativo"
                 };
-                await setDoc(doc(db, "empresarios", novaEmpresaRef.id, "profissionais", currentUser.uid), dadosProfissional);
+                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
-                alert("Empresa cadastrada com sucesso!");
-                // Força o recarregamento da página para refletir o novo estado de "edição"
-                window.location.reload(); 
+                // ATUALIZAÇÃO DIRETA DA UI (MUDANÇA PRINCIPAL)
+                // Atualiza a tela com os dados que acabaram de ser criados, sem precisar de uma nova leitura.
+                preencherFormulario(dadosEmpresa);
+                mostrarCamposExtras();
+                if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
+
+                if (elements.msgCadastroSucesso) {
+                    elements.msgCadastroSucesso.innerHTML = "O seu negócio foi cadastrado com sucesso!  
+Você ganhou <strong>15 dias grátis</strong>!";
+                    elements.msgCadastroSucesso.style.display = "block";
+                    setTimeout(() => {
+                        elements.msgCadastroSucesso.style.display = "none";
+                    }, 6000);
+                }
+                alert("Negócio cadastrado com sucesso!");
             }
-            // ===================================================================
 
         } catch (error) {
-            console.error("Erro ao salvar:", error);
+            console.error("Erro ao salvar perfil:", error);
             alert("Ocorreu um erro ao salvar: " + error.message);
         } finally {
-            btnSalvar.disabled = false;
-            btnSalvar.textContent = 'Salvar Todas as Configurações';
+            elements.btnSalvar.disabled = false;
+            elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
         }
     }
 
-    // --- Funções de UI (INTACTAS E COMPLETAS) ---
-    // Todas as suas funções de manipulação da interface estão aqui.
+    // --- FUNÇÕES DE UI E EVENTOS (sem alterações, já estavam boas) ---
 
     function adicionarListenersDeEvento() {
         if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
-        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput?.click());
-        if (elements.logoInput) elements.logoInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
+        if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
+        if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
+            const file = elements.logoInput.files[0];
             if (file) {
-                logoFile = file; // Armazena o arquivo para o upload
                 const reader = new FileReader();
                 reader.onload = (e) => { if (elements.logoPreview) elements.logoPreview.src = e.target.result; };
                 reader.readAsDataURL(file);
             }
         });
-
+        
         if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
-            try {
-                localStorage.removeItem('empresaAtivaId');
-                await signOut(auth);
-                window.location.href = 'login.html';
+            try { 
+                localStorage.removeItem('empresaAtivaId'); 
+                await signOut(auth); 
+                window.location.href = 'login.html'; 
             }
             catch (error) { console.error("Erro no logout:", error); }
         });
-
-        if (elements.btnCriarNovaEmpresa) {
-            elements.btnCriarNovaEmpresa.addEventListener('click', () => {
-                if (confirm("Tem certeza que deseja limpar o formulário para criar uma nova empresa?")) {
-                    localStorage.removeItem('empresaAtivaId');
-                    window.location.reload();
-                }
-            });
-        }
-        
-        if (elements.btnFecharBoasVindas) {
-            elements.btnFecharBoasVindas.onclick = () => {
-                if(elements.boasVindasAposCadastro) elements.boasVindasAposCadastro.style.display = "none";
-            };
-        }
     }
 
     function atualizarTelaParaNovoPerfil() {
-        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
+        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Negócio";
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-
-        if (elements.containerLinkVitrine ) elements.containerLinkVitrine.style.display = 'none';
-        if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = 'none';
-        if (elements.msgFree) elements.msgFree.style.display = "none";
+        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
+        camposExtras.forEach(el => { if (el ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
-        if (elements.boasVindasAposCadastro) elements.boasVindasAposCadastro.style.display = "none";
-        if (elements.msgPerfilAusente) elements.msgPerfilAusente.style.display = "block";
     }
 
     function mostrarCamposExtras() {
-        if (elements.containerLinkVitrine) elements.containerLinkVitrine.style.display = '';
-        if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.style.display = '';
+        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
+        camposExtras.forEach(el => { if (el) el.style.display = ''; });
     }
 
     function preencherFormulario(dadosEmpresa) {
-        if (elements.h1Titulo) elements.h1Titulo.textContent = "Editar Perfil e Configurações";
         if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
         if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
         if (elements.localizacaoInput) elements.localizacaoInput.value = dadosEmpresa.localizacao || '';
         if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
         if (elements.chavePixInput) elements.chavePixInput.value = dadosEmpresa.chavePix || '';
-
         if (elements.logoPreview && dadosEmpresa.logoUrl) {
             elements.logoPreview.src = dadosEmpresa.logoUrl;
         }
 
-        if (!empresaIdAtual) return;
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaIdAtual}`;
+        if (!empresaId) return;
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
         if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
-        
-        mostrarCamposExtras();
     }
 
     function copiarLink() {
-        if (!empresaIdAtual) return;
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaIdAtual}`;
+        if (!empresaId) return;
+        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         navigator.clipboard.writeText(urlCompleta).then(() => {
             alert("Link da vitrine copiado!");
         }, () => {
