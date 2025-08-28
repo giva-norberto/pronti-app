@@ -104,6 +104,14 @@ export async function verificarAcesso() {
                     if (empresasSnapshot && !empresasSnapshot.empty) {
                         const empresaDoc = empresasSnapshot.docs[0];
                         const empresaData = empresaDoc.data();
+                        // Preenchimento defensivo dos campos essenciais do perfil da empresa
+                        empresaData.nomeFantasia = empresaData.nomeFantasia || "Empresa sem nome";
+                        empresaData.plano = empresaData.plano || "free";
+                        empresaData.descricao = empresaData.descricao || "-";
+                        empresaData.localizacao = empresaData.localizacao || "-";
+                        empresaData.horarioFuncionamento = empresaData.horarioFuncionamento || "-";
+                        empresaData.chavePix = empresaData.chavePix || "-";
+                        empresaData.logoUrl = empresaData.logoUrl || "https://placehold.co/80x80";
                         empresaData.nome = (await getDoc(doc(db, "usuarios", user.uid))).data()?.nome || user.displayName;
                         const userProfile = { user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" };
                         cachedSessionProfile = userProfile;
