@@ -82,7 +82,6 @@
     // -- Persistência da sessão --
     setPersistence(auth, browserLocalPersistence )
       .then(() => {
-        console.log("Guardião do Menu: Persistência de sessão ativada.");
         iniciarGuardiao();
       })
       .catch((error) => {
@@ -90,31 +89,24 @@
         iniciarGuardiao();
       });
 
-    let authInitialized = false;
     function iniciarGuardiao() {
         onAuthStateChanged(auth, (user) => {
-            if (authInitialized) return;
-            authInitialized = true;
-
             const isLoginPage = window.location.pathname.endsWith('login.html');
-            // NOVO: Proteção para empresaAtivaId obrigatória
             const precisaEmpresa = !isLoginPage && !window.location.pathname.endsWith('selecionar-empresa.html');
             const empresaId = localStorage.getItem("empresaAtivaId");
 
             if (!user && !isLoginPage) {
                 window.location.replace('login.html');
             } else if (precisaEmpresa && !empresaId) {
-                // Redireciona para selecionar empresa se não houver empresa ativa
                 window.location.replace('selecionar-empresa.html');
             } else {
-                console.log("Guardião do Menu: Acesso PERMITIDO.");
-                setupMenu(user);
+                setupMenu();
             }
         });
     }
 
     // -- Lógica do menu --
-    function setupMenu(user) {
+    function setupMenu() {
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
@@ -127,10 +119,11 @@
 
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
-            btnLogout.replaceWith(btnLogout.cloneNode(true)); 
-            document.getElementById('btn-logout').addEventListener('click', () => {
+            // Remove todos os event listeners prévios
+            const newBtn = btnLogout.cloneNode(true);
+            btnLogout.parentNode.replaceChild(newBtn, btnLogout);
+            newBtn.addEventListener('click', () => {
                 signOut(auth).then(() => {
-                  // Limpa empresa ativa ao sair
                   localStorage.removeItem("empresaAtivaId");
                   window.location.replace('login.html');
                 });
