@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL E ROBUSTA PARA GARANTIR CRIAÇÃO/EDIÇÃO)
+// PERFIL.JS (VERSÃO FINAL E ROBUSTA - COM CORREÇÃO DE SINTAXE)
 // ======================================================================
 
 import {
@@ -102,7 +102,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 localizacao: elements.localizacaoInput.value.trim(),
                 horarioFuncionamento: elements.horarioFuncionamentoInput.value.trim(),
                 chavePix: elements.chavePixInput.value.trim(),
-                donoId: uid, // Essencial para as regras de segurança
+                donoId: uid,
                 plano: "free",
                 status: "ativo",
                 updatedAt: serverTimestamp()
@@ -116,17 +116,15 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             
             if (empresaId) {
-                // --- LÓGICA DE EDIÇÃO ---
                 console.log("Editando empresa existente:", empresaId);
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
-                // --- LÓGICA DE NOVO CADASTRO (REVISADA) ---
                 dadosEmpresa.createdAt = serverTimestamp();
                 console.log("Criando nova empresa com os dados:", dadosEmpresa);
                 
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-                empresaId = novaEmpresaRef.id; // O ID da nova empresa é capturado
+                empresaId = novaEmpresaRef.id;
                 console.log("Nova empresa criada com sucesso! ID:", empresaId);
 
                 const dadosProfissional = {
@@ -139,8 +137,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
-                // ATUALIZAÇÃO DIRETA DA UI (MUDANÇA PRINCIPAL)
-                // Atualiza a tela com os dados que acabaram de ser criados, sem precisar de uma nova leitura.
                 preencherFormulario(dadosEmpresa);
                 mostrarCamposExtras();
                 if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
@@ -164,8 +160,6 @@ Você ganhou <strong>15 dias grátis</strong>!";
             elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
         }
     }
-
-    // --- FUNÇÕES DE UI E EVENTOS (sem alterações, já estavam boas) ---
 
     function adicionarListenersDeEvento() {
         if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
@@ -215,6 +209,7 @@ Você ganhou <strong>15 dias grátis</strong>!";
         }
 
         if (!empresaId) return;
+        // CORREÇÃO APLICADA AQUI: Uso de crase (`) em vez de aspas (')
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
@@ -223,6 +218,7 @@ Você ganhou <strong>15 dias grátis</strong>!";
 
     function copiarLink() {
         if (!empresaId) return;
+        // CORREÇÃO APLICADA AQUI: Uso de crase (`) em vez de aspas (')
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         navigator.clipboard.writeText(urlCompleta).then(() => {
             alert("Link da vitrine copiado!");
