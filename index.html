@@ -63,6 +63,69 @@
         .primeiro-btn:hover {
             background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
         }
+
+        /* ===================== CARDS DASHBOARD ===================== */
+        .dashboard-main-actions {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0 30px 0;
+        }
+        .action-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            min-height: 120px;
+            background: #f7fafd;
+            border-radius: 15px;
+            box-shadow: 0 2px 12px #0001;
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: 600;
+            font-size: 1.07rem;
+            transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+            cursor: pointer;
+            border: 1.5px solid #e3eafc;
+            padding: 18px 6px 12px 6px;
+        }
+        .action-card i {
+            font-size: 2.3rem;
+            margin-bottom: 10px;
+            color: #2563eb;
+        }
+        .action-card span {
+            margin-top: 6px;
+        }
+        .action-card:hover {
+            background: linear-gradient(90deg, #2563eb10 0%, #5b9eff07 100%);
+            box-shadow: 0 6px 30px #2563eb22;
+            color: #183d7a;
+        }
+
+        /* ===================== OUTROS AJUSTES ===================== */
+        .dashboard-welcome-center {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .status-button {
+            display: block;
+            margin: 35px auto 0 auto;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 2px 10px #2563eb22;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .status-button:hover {
+            background: #1741ad;
+        }
     </style>
 </head>
 <body class="dashboard-body is-loading">
@@ -103,7 +166,7 @@
     import { auth } from "./vitrini-firebase.js"; // O nome aqui pode ser firebase-config.js
     import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
-    const nomeUsuarioSpan = document.getElementById("nome-usuario" );
+    const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
@@ -178,11 +241,13 @@
                 }
 
                 const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
-                document.getElementById("nome-usuario").textContent = primeiroNome;
-                document.getElementById("saudacao").textContent = definirSaudacao();
+                nomeUsuarioSpan.textContent = primeiroNome;
+                saudacaoSpan.textContent = definirSaudacao();
                 
                 if (perfil.nomeFantasia) {
-                    document.getElementById("nome-empresa-ativa").textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+                    nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+                } else {
+                    nomeEmpresaSpan.textContent = "";
                 }
 
                 fetch('menu-lateral.html')
