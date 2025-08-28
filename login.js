@@ -1,22 +1,21 @@
 // ======================================================================
-//                          LOGIN.JS (VERSÃO FINAL SEM LOOP)
+//                          LOGIN.JS (VERSÃO FINAL, SEM LOOP, PERMANECE LOGADO)
 // ======================================================================
 
 // Imports (atualizados para 10.13.2 e firebase-config.js)
 import { signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { auth, provider } from "./firebase-config.js"; 
 
-window.addEventListener('DOMContentLoaded', ( ) => {
+window.addEventListener('DOMContentLoaded', () => {
     const btnLoginGoogle = document.getElementById('btn-login-google');
     const loginForm = document.getElementById('login-form');
     const loginStatusDiv = document.getElementById('login-status');
 
     // ======================================================================
-    //                      CORREÇÃO APLICADA AQUI
-    // ======================================================================
-    // O bloco onAuthStateChanged foi REMOVIDO desta página.
-    // A responsabilidade de redirecionar um usuário já logado agora é
-    // exclusivamente do userService.js, evitando o loop na página de login.
+    //      onAuthStateChanged NÃO está presente nesta página.
+    //      O gerenciamento de sessão/logado ocorre em userService.js e/ou
+    //      nas páginas protegidas (index, perfil, etc).
+    //      O Firebase Auth mantém o usuário autenticado por padrão (local).
     // ======================================================================
 
     // Lógica do Login com Google
