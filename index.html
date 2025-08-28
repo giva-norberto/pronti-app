@@ -233,58 +233,71 @@
     }
 
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            try {
-                await ensureUserAndTrialDoc();
-                const userSession = await verificarAcesso();
-                const { perfil, role } = userSession;
+        // Mudança principal: sempre remove 'is-loading' mesmo se der erro
+        try {
+            if (user) {
+                try {
+                    await ensureUserAndTrialDoc();
+                    const userSession = await verificarAcesso();
+                    const { perfil, role } = userSession;
 
-                if (role === 'funcionario') {
-                    window.location.replace('agenda.html');
-                    return; 
-                }
+                    if (role === 'funcionario') {
+                        window.location.replace('agenda.html');
+                        return;
+                    }
 
-                const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
-                nomeUsuarioSpan.textContent = primeiroNome;
-                saudacaoSpan.textContent = definirSaudacao();
-                
-                if (perfil.nomeFantasia) {
-                    nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
-                } else {
-                    nomeEmpresaSpan.textContent = "";
-                }
+                    const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+                    nomeUsuarioSpan.textContent = primeiroNome;
+                    saudacaoSpan.textContent = definirSaudacao();
 
-                fetch('menu-lateral.html')
-                    .then(res => res.text())
-                    .then(html => {
-                        document.getElementById('sidebar-placeholder').innerHTML = html;
-                        destacarLinkAtivo();
-                        ativarLogout();
-                        
-                        if (role === 'admin') {
-                            const navLinks = document.querySelector('.sidebar-links');
-                            if (navLinks) {
-                                const adminLink = document.createElement('a');
-                                adminLink.href = 'admin-clientes.html';
-                                adminLink.innerHTML = '<span>🔒</span> Administração';
-                                if (window.location.pathname.includes('admin-clientes.html')) {
-                                    adminLink.classList.add('active');
+                    if (perfil.nomeFantasia) {
+                        nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+                    } else {
+                        nomeEmpresaSpan.textContent = "";
+                    }
+
+                    fetch('menu-lateral.html')
+                        .then(res => res.text())
+                        .then(html => {
+                            document.getElementById('sidebar-placeholder').innerHTML = html;
+                            destacarLinkAtivo();
+                            ativarLogout();
+
+                            if (role === 'admin') {
+                                const navLinks = document.querySelector('.sidebar-links');
+                                if (navLinks) {
+                                    const adminLink = document.createElement('a');
+                                    adminLink.href = 'admin-clientes.html';
+                                    adminLink.innerHTML = '<span>🔒</span> Administração';
+                                    if (window.location.pathname.includes('admin-clientes.html')) {
+                                        adminLink.classList.add('active');
+                                    }
+                                    navLinks.appendChild(adminLink);
                                 }
-                                navLinks.appendChild(adminLink);
                             }
-                        }
-                        document.body.classList.remove('is-loading');
-                    });
+                            document.body.classList.remove('is-loading');
+                        })
+                        .catch(() => {
+                            // Se erro ao carregar menu, remove is-loading mesmo assim
+                            document.body.classList.remove('is-loading');
+                        });
 
-            } catch (error) {
-                if (error.message === "primeiro_acesso") {
-                    mostrarPrimeiroAcessoCard();
-                } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
-                    console.error("Erro fatal na verificação de acesso:", error.message);
+                } catch (error) {
+                    if (error.message === "primeiro_acesso") {
+                        mostrarPrimeiroAcessoCard();
+                    } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
+                        console.error("Erro fatal na verificação de acesso:", error.message);
+                        document.body.classList.remove('is-loading');
+                    } else {
+                        document.body.classList.remove('is-loading');
+                    }
                 }
+            } else {
+                window.location.replace('login.html');
+                document.body.classList.remove('is-loading');
             }
-        } else {
-            window.location.replace('login.html');
+        } catch (outerError) {
+            document.body.classList.remove('is-loading');
         }
     });
 </script>
