@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL E ROBUSTA - COM CORREÇÃO DE SINTAXE)
+// PERFIL.JS (VERSÃO FINAL E ROBUSTA - COM CORREÇÃO DE SINTAXE v2)
 // ======================================================================
 
 import {
@@ -47,7 +47,6 @@ window.addEventListener('DOMContentLoaded', () => {
     let currentUser;
     let empresaId = null;
 
-    // Listener principal de autenticação
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
@@ -57,8 +56,6 @@ window.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'login.html';
         }
     });
-
-    // --- FUNÇÕES PRINCIPAIS ---
 
     async function carregarDadosDaPagina(uid) {
         try {
@@ -209,7 +206,7 @@ Você ganhou <strong>15 dias grátis</strong>!";
         }
 
         if (!empresaId) return;
-        // CORREÇÃO APLICADA AQUI: Uso de crase (`) em vez de aspas (')
+        // CORREÇÃO APLICADA AQUI: Uso de crase (`)
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
@@ -218,7 +215,7 @@ Você ganhou <strong>15 dias grátis</strong>!";
 
     function copiarLink() {
         if (!empresaId) return;
-        // CORREÇÃO APLICADA AQUI: Uso de crase (`) em vez de aspas (')
+        // CORREÇÃO APLICADA AQUI: Uso de crase (`)
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         navigator.clipboard.writeText(urlCompleta).then(() => {
             alert("Link da vitrine copiado!");
