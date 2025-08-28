@@ -3,7 +3,7 @@
 // ======================================================================
 
 import {
-    doc, getDoc, setDoc, addDoc, collection
+    doc, getDoc, setDoc, addDoc, collection, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import {
     ref, uploadBytes, getDownloadURL
@@ -49,7 +49,9 @@ window.addEventListener('DOMContentLoaded', () => {
             boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
             btnFecharBoasVindas: document.getElementById('fechar-boas-vindas'),
             btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
-            msgPerfilAusente: document.getElementById('mensagem-perfil-ausente')
+            msgPerfilAusente: document.getElementById('mensagem-perfil-ause
+
+nte')
         };
 
         let currentUser;
@@ -145,6 +147,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const nomeNegocio = elements.nomeNegocioInput?.value.trim();
                 if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
+                // MELHORIA: Adicione campos automáticos e essenciais
                 const dadosEmpresa = {
                     nomeFantasia: nomeNegocio,
                     descricao: elements.descricaoInput?.value.trim() || '',
@@ -152,8 +155,15 @@ window.addEventListener('DOMContentLoaded', () => {
                     horarioFuncionamento: elements.horarioFuncionamentoInput?.value.trim() || '',
                     chavePix: elements.chavePixInput?.value.trim() || '',
                     donoId: uid,
-                    plano: "free"
+                    plano: "free",
+                    status: "ativo", // automático
+                    updatedAt: serverTimestamp()
                 };
+
+                // Só criar createdAt na criação
+                if (!empresaId) {
+                    dadosEmpresa.createdAt = serverTimestamp();
+                }
 
                 const logoFile = elements.logoInput?.files[0];
                 if (logoFile) {
@@ -179,11 +189,14 @@ window.addEventListener('DOMContentLoaded', () => {
                     const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                     empresaId = novaEmpresaRef.id;
 
+                    // MELHORIA: Cria automaticamente o dono como profissional
                     const dadosProfissional = {
                         uid: uid,
                         nome: currentUser.displayName || nomeNegocio,
                         fotoUrl: currentUser.photoURL || "",
-                        ehDono: true
+                        ehDono: true,
+                        criadoEm: serverTimestamp(),
+                        status: "ativo"
                     };
                     await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
