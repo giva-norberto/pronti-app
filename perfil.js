@@ -49,7 +49,7 @@ window.addEventListener('DOMContentLoaded', () => {
             boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
             btnFecharBoasVindas: document.getElementById('fechar-boas-vindas'),
             btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
-          msgPerfilAusente: document.getElementById('mensagem-perfil-ausente')
+            msgPerfilAusente: document.getElementById('mensagem-perfil-ausente')
         };
 
         let currentUser;
@@ -62,12 +62,16 @@ window.addEventListener('DOMContentLoaded', () => {
                 currentUser = user;
                 // Verifica se o utilizador tem permissão para estar nesta página
                 try {
+                    console.log("Verificando acesso...");
                     const acesso = await verificarAcesso();
+                    console.log("Acesso verificado:", acesso);
                     if (acesso.role && acesso.role !== "dono") {
+                        console.warn("Usuário não é dono. Redirecionando...");
                         window.location.href = "perfil-funcionario.html";
                         return;
                     }
                 } catch (e) {
+                    console.warn("Erro/verificação especial em verificarAcesso:", e);
                     // Se for o primeiro acesso, permite continuar para criar a empresa
                     if (
                         e.message !== 'primeiro_acesso' &&
@@ -77,7 +81,9 @@ window.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                 }
+                console.log("Carregando dados da página para UID:", user.uid);
                 await carregarDadosDaPagina(user.uid);
+                console.log("Adicionando listeners de evento...");
                 adicionarListenersDeEvento();
             } else {
                 window.location.href = 'login.html';
@@ -89,32 +95,32 @@ window.addEventListener('DOMContentLoaded', () => {
         async function carregarDadosDaPagina(uid) {
             try {
                 empresaId = localStorage.getItem('empresaAtivaId');
+                console.log("carregarDadosDaPagina: empresaId localStorage:", empresaId);
 
                 if (!empresaId) {
                     atualizarTelaParaNovoPerfil();
-                    if (elements.msgFree) {
-                        elements.msgFree.style.display = "none";
-                    }
+                    if (elements.msgFree) elements.msgFree.style.display = "none";
                     if (elements.msgPerfilAusente) {
                         elements.msgPerfilAusente.style.display = "block";
                         elements.msgPerfilAusente.textContent = "Seu perfil de empresa ainda não está cadastrado. Complete o cadastro para ativar todas as funções!";
                     }
+                    console.log("Nenhuma empresa ativa. Tela pronta para novo cadastro.");
                 } else {
                     const empresaRef = doc(db, "empresarios", empresaId);
                     const empresaDoc = await getDoc(empresaRef);
+                    console.log("Consulta no Firestore retornou:", empresaDoc.exists());
                     if (empresaDoc.exists()) {
                         const dadosEmpresa = empresaDoc.data();
                         preencherFormulario(dadosEmpresa);
                         mostrarCamposExtras();
-                        if (elements.msgPerfilAusente) {
-                            elements.msgPerfilAusente.style.display = "none";
-                        }
+                        if (elements.msgPerfilAusente) elements.msgPerfilAusente.style.display = "none";
                         if (dadosEmpresa.plano === "free" && elements.msgFree) {
                             elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
                             elements.msgFree.style.display = "block";
                         } else if (elements.msgFree) {
                             elements.msgFree.style.display = "none";
                         }
+                        console.log("Dados da empresa carregados e formulário preenchido.");
                     } else {
                         // Se o ID no localStorage for inválido, limpa e recarrega
                         localStorage.removeItem('empresaAtivaId');
@@ -123,6 +129,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             elements.msgPerfilAusente.style.display = "block";
                             elements.msgPerfilAusente.textContent = "O perfil da empresa não foi encontrado. Por favor, cadastre novamente.";
                         }
+                        console.warn("Empresa não encontrada no Firestore para o ID informado.");
                     }
                 }
             } catch (error) {
@@ -133,7 +140,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         async function handleFormSubmit(event) {
             event.preventDefault();
-            console.log('Formulário foi enviado!');
+            console.log('[handleFormSubmit] Formulário enviado');
             if (elements.btnSalvar) {
                 elements.btnSalvar.disabled = true;
                 elements.btnSalvar.textContent = 'A salvar...';
@@ -165,14 +172,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 const logoFile = elements.logoInput?.files[0];
                 if (logoFile) {
-                    console.log("A tentar fazer o upload da logo...");
+                    console.log("[handleFormSubmit] Tentando upload da logo...");
                     const storagePath = `logos/${uid}/${Date.now()}-${logoFile.name}`;
                     const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
                     try {
                         dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
-                        console.log("Upload bem-sucedido:", dadosEmpresa.logoUrl);
+                        console.log("[handleFormSubmit] Upload da logo ok:", dadosEmpresa.logoUrl);
                     } catch (uploadError) {
-                        console.error("ERRO NO UPLOAD:", uploadError);
+                        console.error("[handleFormSubmit] ERRO NO UPLOAD:", uploadError);
                         alert(`Falha no upload da logo. Erro: ${uploadError.message}`);
                         return;
                     }
@@ -180,10 +187,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (empresaId) {
                     // --- LÓGICA DE EDIÇÃO ---
+                    console.log("[handleFormSubmit] Editando empresa existente:", empresaId, dadosEmpresa);
                     await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                     alert("Perfil atualizado com sucesso!");
                 } else {
                     // --- LÓGICA DE NOVO CADASTRO ---
+                    console.log("[handleFormSubmit] Criando nova empresa:", dadosEmpresa);
                     const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                     empresaId = novaEmpresaRef.id;
 
@@ -196,6 +205,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         criadoEm: serverTimestamp(),
                         status: "ativo"
                     };
+                    console.log("[handleFormSubmit] Criando profissional/dono:", dadosProfissional);
                     await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
                     // Lógica do card de boas-vindas
@@ -221,10 +231,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
                     // Após criar, guarda o ID da nova empresa como ativa e recarrega
                     localStorage.setItem('empresaAtivaId', empresaId);
+                    console.log("[handleFormSubmit] Empresa cadastrada e ID salvo:", empresaId);
                     await carregarDadosDaPagina(uid);
                 }
             } catch (error) {
-                console.error("Erro ao salvar perfil:", error);
+                console.error("[handleFormSubmit] Erro ao salvar perfil:", error);
                 alert("Ocorreu um erro ao salvar: " + error.message);
             } finally {
                 if (elements.btnSalvar) {
@@ -237,6 +248,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // --- FUNÇÕES DE UI E EVENTOS ---
 
         function adicionarListenersDeEvento() {
+            console.log("adicionarListenersDeEvento chamado");
             if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
             if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
             if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput?.click());
@@ -272,6 +284,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         function atualizarTelaParaNovoPerfil() {
+            console.log("Atualizando tela para novo perfil/empresa.");
             if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
             if (elements.form) elements.form.reset();
             if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
@@ -287,6 +300,7 @@ window.addEventListener('DOMContentLoaded', () => {
         function mostrarCamposExtras() {
             const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine];
             camposExtras.forEach(el => { if (el) el.style.display = ''; });
+            console.log("Campos extras de vitrine exibidos.");
         }
 
         function preencherFormulario(dadosEmpresa) {
@@ -306,6 +320,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
             if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
             if (elements.linkVitrineMenu) elements.linkVitrineMenu.href = urlCompleta;
+            console.log("Formulário preenchido com dados da empresa.");
         }
 
         function copiarLink() {
