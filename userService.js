@@ -15,16 +15,20 @@ async function getEmpresasDoDono(uid) {
     if (!uid) return null;
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const querySnapshot = await getDocs(q);
+    console.log("[LOG] getEmpresasDoDono:", {uid, empresas: querySnapshot.size});
     return querySnapshot;
 }
 
 export async function ensureUserAndTrialDoc() {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+        console.log("[LOG] ensureUserAndTrialDoc: usuário não autenticado");
+        return;
+    }
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
-        console.log("Criando documento inicial para o usuário:", user.uid);
+        console.log("[LOG] Criando documento inicial para o usuário:", user.uid);
         await setDoc(userRef, {
             nome: user.displayName || user.email,
             email: user.email,
@@ -32,6 +36,7 @@ export async function ensureUserAndTrialDoc() {
             isPremium: false
         });
     } else if (!userSnap.data().trialStart) {
+        console.log("[LOG] Adicionando trialStart ao usuário:", user.uid);
         await updateDoc(userRef, {
             trialStart: serverTimestamp()
         });
@@ -41,10 +46,19 @@ export async function ensureUserAndTrialDoc() {
 async function checkUserStatus(user, empresaData) {
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
+    if (!userSnap.exists()) {
+        console.log("[LOG] checkUserStatus: userSnap não existe");
+        return { hasActivePlan: false, isTrialActive: true };
+    }
     const userData = userSnap.data();
-    if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
-    if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
+    if (userData.isPremium === true) {
+        console.log("[LOG] checkUserStatus: usuário é premium");
+        return { hasActivePlan: true, isTrialActive: false };
+    }
+    if (!userData.trialStart?.seconds) {
+        console.log("[LOG] checkUserStatus: trialStart ausente");
+        return { hasActivePlan: false, isTrialActive: true };
+    }
     let trialDurationDays = 15;
     if (empresaData && empresaData.freeEmDias !== undefined) {
         trialDurationDays = empresaData.freeEmDias;
@@ -52,14 +66,17 @@ async function checkUserStatus(user, empresaData) {
     const startDate = new Date(userData.trialStart.seconds * 1000);
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + trialDurationDays);
-    return { hasActivePlan: false, isTrialActive: endDate > new Date() };
+    const trialOk = endDate > new Date();
+    console.log("[LOG] checkUserStatus: startDate, endDate, trialOk", startDate, endDate, trialOk);
+    return { hasActivePlan: false, isTrialActive: trialOk };
 }
 
 // ======================================================================
-// FUNÇÃO PRINCIPAL COM A ORDEM DE OPERAÇÕES CORRIGIDA
+// FUNÇÃO PRINCIPAL COM A ORDEM DE OPERAÇÕES CORRIGIDA + LOGS
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
+        console.log("[LOG] Retornando sessionProfile em cache");
         return Promise.resolve(cachedSessionProfile);
     }
     return new Promise((resolve, reject) => {
@@ -67,6 +84,7 @@ export async function verificarAcesso() {
             unsubscribe();
             if (!user) {
                 cachedSessionProfile = null;
+                console.log("[LOG] Usuário não autenticado, redirecionando para login.html");
                 window.location.href = 'login.html';
                 return reject(new Error("Utilizador não autenticado."));
             }
@@ -79,12 +97,15 @@ export async function verificarAcesso() {
                 if (user.uid === ADMIN_UID) {
                     const adminProfile = { user, isAdmin: true, perfil: { nome: "Administrador", nomeFantasia: "Painel de Controle" }, isOwner: true, role: 'admin' };
                     cachedSessionProfile = adminProfile;
+                    console.log("[LOG] Usuário ADMIN detectado, retornando perfil admin");
                     return resolve(adminProfile);
                 }
 
                 const empresasSnapshot = await getEmpresasDoDono(user.uid);
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
+
+                console.log("[LOG] empresasSnapshot.empty:", empresasSnapshot.empty, "| mapaSnap.exists():", mapaSnap.exists());
 
                 if ((empresasSnapshot && !empresasSnapshot.empty) || mapaSnap.exists()) {
                     let empresaData = null;
@@ -93,8 +114,11 @@ export async function verificarAcesso() {
                     }
 
                     const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+                    console.log("[LOG] Plano ativo:", hasActivePlan, "| Trial ativo:", isTrialActive);
+
                     if (!hasActivePlan && !isTrialActive) {
                         cachedSessionProfile = null;
+                        console.log("[LOG] Assinatura expirada, redirecionando para assinatura.html");
                         if (currentPage !== 'assinatura.html') {
                             window.location.href = 'assinatura.html';
                         }
@@ -115,24 +139,28 @@ export async function verificarAcesso() {
                         empresaData.nome = (await getDoc(doc(db, "usuarios", user.uid))).data()?.nome || user.displayName;
                         const userProfile = { user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" };
                         cachedSessionProfile = userProfile;
+                        console.log("[LOG] Perfil DONO retornado:", userProfile);
                         return resolve(userProfile);
                     } else {
                         const empresaId = mapaSnap.data().empresaId;
                         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
                         const profissionalSnap = await getDoc(profissionalRef);
                         if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
-                             const userProfile = { user, perfil: profissionalSnap.data(), empresaId, isOwner: false, role: "funcionario" };
-                             cachedSessionProfile = userProfile;
-                             return resolve(userProfile);
+                            const userProfile = { user, perfil: profissionalSnap.data(), empresaId, isOwner: false, role: "funcionario" };
+                            cachedSessionProfile = userProfile;
+                            console.log("[LOG] Perfil FUNCIONÁRIO retornado:", userProfile);
+                            return resolve(userProfile);
                         } else {
+                            console.log("[LOG] Profissional aguardando aprovação!");
                             return reject(new Error("aguardando_aprovacao"));
                         }
                     }
                 }
+                console.log("[LOG] Primeiro acesso detectado: nenhuma empresa encontrada para o usuário");
                 return reject(new Error("primeiro_acesso"));
             } catch (error) {
                 // Torna o erro visível para debug e sempre rejeita
-                console.error("Erro em verificarAcesso:", error);
+                console.error("[LOG] Erro em verificarAcesso:", error);
                 return reject(error);
             }
         });
