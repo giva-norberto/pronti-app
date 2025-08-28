@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL E ROBUSTA - COM CORREÇÃO DE SINTAXE v3)
+// PERFIL.JS (VERSÃO FINAL E FUNCIONAL - build 4)
 // ======================================================================
 
 import {
@@ -93,6 +93,12 @@ window.addEventListener('DOMContentLoaded', () => {
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
+            // ===== MUDANÇA ESTRATÉGICA PARA GARANTIR O FUNCIONAMENTO =====
+            // Usamos a data do cliente (new Date()) em vez do serverTimestamp()
+            // para evitar a falha silenciosa na comunicação com o servidor.
+            const timestampCliente = new Date();
+            // ============================================================
+
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
                 descricao: elements.descricaoInput.value.trim(),
@@ -102,7 +108,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 donoId: uid,
                 plano: "free",
                 status: "ativo",
-                updatedAt: serverTimestamp()
+                updatedAt: timestampCliente // Usando a data do cliente
             };
 
             const logoFile = elements.logoInput.files[0];
@@ -117,19 +123,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
-                dadosEmpresa.createdAt = serverTimestamp();
-                console.log("Criando nova empresa com os dados:", dadosEmpresa);
+                dadosEmpresa.createdAt = timestampCliente; // Usando a data do cliente
+                
+                console.log("Criando nova empresa com os dados (usando data do cliente):", dadosEmpresa);
                 
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
+                
+                console.log("SUCESSO! Empresa criada com o ID:", novaEmpresaRef.id);
                 empresaId = novaEmpresaRef.id;
-                console.log("Nova empresa criada com sucesso! ID:", empresaId);
 
                 const dadosProfissional = {
                     uid: uid,
                     nome: currentUser.displayName || nomeNegocio,
                     fotoUrl: currentUser.photoURL || "",
                     ehDono: true,
-                    criadoEm: serverTimestamp(),
+                    criadoEm: timestampCliente, // Usando a data do cliente
                     status: "ativo"
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
@@ -139,7 +147,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
 
                 if (elements.msgCadastroSucesso) {
-                    // CORREÇÃO APLICADA AQUI: Uso de crases (`) para permitir a quebra de linha.
                     elements.msgCadastroSucesso.innerHTML = `O seu negócio foi cadastrado com sucesso!  
 Você ganhou <strong>15 dias grátis</strong>!`;
                     elements.msgCadastroSucesso.style.display = "block";
@@ -187,7 +194,7 @@ Você ganhou <strong>15 dias grátis</strong>!`;
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
-        camposExtras.forEach(el => { if (el  ) el.style.display = 'none'; });
+        camposExtras.forEach(el => { if (el ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
     }
 
