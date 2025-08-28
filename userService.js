@@ -1,10 +1,11 @@
 // ======================================================================
 //                      USERSERVICE.JS
 //           VERSÃO FINAL - CORRIGINDO O FLUXO DE CRIAÇÃO DE USUÁRIO
+//           **PADRONIZADO PARA FIREBASE 10.13.2**
 // ======================================================================
 
-import { collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
 // "Memória" para evitar re-verificação
