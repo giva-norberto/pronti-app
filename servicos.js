@@ -1,13 +1,11 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO CORRIGIDA E CENTRALIZADA)
+// ARQUIVO: servicos.js (VERSÃO COM BOTÃO EXCLUIR CORRIGIDO)
 // ======================================================================
 
-// 1. Importa as funções do Firestore e Auth da versão correta
 import { collection, doc, getDocs, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// 2. A CORREÇÃO MAIS IMPORTANTE ESTÁ AQUI:
-//    Importa 'db' e 'auth' do arquivo de configuração MESTRE do painel.
+// Garante que está importando do arquivo de configuração MESTRE.
 import { db, auth } from "./firebase-config.js"; 
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
@@ -19,7 +17,7 @@ const appContent = document.getElementById('app-content');
 
 // --- Variáveis de Estado ---
 let empresaId = null;
-let isDono = false;
+let isDono = false; // Esta variável é crucial para a UI
 
 /**
  * Obtém o ID da empresa ativa do localStorage.
@@ -42,7 +40,7 @@ function renderizarServicos(servicos) {
     if (!listaServicosDiv) return;
 
     if (!servicos || servicos.length === 0) {
-        listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>`;
+        listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. ${isDono ? 'Clique em "Adicionar Novo Serviço" para começar.' : ''}</p>`;
         return;
     }
     
@@ -60,7 +58,13 @@ function renderizarServicos(servicos) {
                     <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
                 </div>
                 <div class="servico-acoes">
+                    <!-- O botão de editar é visível para todos que podem ver a página -->
                     <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
+                    
+                    <!-- ====================================================== -->
+                    <!--          A LÓGICA DO BOTÃO EXCLUIR ESTÁ AQUI           -->
+                    <!-- ====================================================== -->
+                    <!-- O botão de excluir só é renderizado se 'isDono' for true -->
                     ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
                 </div>
             </div>
@@ -78,10 +82,11 @@ async function carregarServicosDoFirebase() {
     }
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>A carregar serviços...</p>';
 
-    // Esta linha agora vai funcionar, pois 'db' será uma instância válida.
     const servicosCol = collection(db, "empresarios", empresaId, "servicos");
     const snap = await getDocs(servicosCol);
     const servicos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // A função de renderização agora usará a variável 'isDono' corretamente
     renderizarServicos(servicos);
 }
 
@@ -121,15 +126,18 @@ onAuthStateChanged(auth, async (user) => {
             return;
         }
 
+        // A verificação de permissão que define a variável 'isDono'
         const empresaRef = doc(db, "empresarios", empresaId);
         const empresaSnap = await getDoc(empresaRef);
 
         isDono = empresaSnap.exists() && empresaSnap.data().donoId === user.uid;
 
+        // A UI é atualizada com base na permissão
         if (btnAddServico) {
             btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
         }
 
+        // Carrega os serviços, e a função de renderização usará 'isDono'
         await carregarServicosDoFirebase();
 
     } catch (error) {
@@ -152,9 +160,15 @@ if (listaServicosDiv) {
         if (!id) return;
 
         if (target.classList.contains('btn-editar')) {
-            window.location.href = `novo-servico.html?id=${id}`;
+            // Apenas o dono pode editar, então adicionamos uma verificação aqui
+            if (isDono) {
+                window.location.href = `novo-servico.html?id=${id}`;
+            } else {
+                showAlert("Acesso Negado", "Apenas o dono pode editar serviços.");
+            }
         }
         if (target.classList.contains('btn-excluir')) {
+            // A função excluirServico já tem sua própria verificação 'isDono'
             excluirServico(id);
         }
     });
