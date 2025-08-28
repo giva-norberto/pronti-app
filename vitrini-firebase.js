@@ -1,34 +1,34 @@
 // ======================================================================
-// O ÚNICO E EXCLUSIVO ARQUIVO: firebase-config.js
+// ARQUIVO: firebase-config-vitrine.js (NOME SUGERIDO)
+// RESPONSABILIDADE: Ser o PONTO DE ENTRADA ÚNICO do Firebase para a vitrine.
 // ======================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+// Importe outros módulos do Auth/Storage se a vitrine precisar deles.
+// Se a vitrine for apenas de leitura, eles podem até ser removidos.
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// Use a configuração do seu app principal. Ela é a fonte da verdade.
+// Configuração do Firebase específica para a Vitrine.
+// Use a chave de API que você designou para o app público.
 const firebaseConfig = {
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // A chave do seu app principal
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8", // Chave do app público
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
   messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e56fa7e5df3" // O ID do seu app principal
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Função Singleton. Garante que o app seja inicializado apenas uma vez.
+// Função Singleton para garantir inicialização única
 const getFirebaseApp = ( ) => {
   return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 };
 
-// Inicializa e exporta tudo a partir da instância única
+// Inicializa e exporta as instâncias para uso EXCLUSIVO da vitrine
 const app = getFirebaseApp();
 const auth = getAuth(app);
-const storage = getStorage(app);
-const provider = new GoogleAuthProvider();
 const db = getFirestore(app, "pronti-app"); // Conecta ao banco de dados correto
 
-setPersistence(auth, browserLocalPersistence);
+export { app, db, auth };
 
-export { app, db, auth, storage, provider };
