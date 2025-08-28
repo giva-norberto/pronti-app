@@ -1,9 +1,9 @@
 import { 
     doc, getDoc, setDoc, updateDoc, deleteDoc, 
     collection, query, where, getDocs, addDoc 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 import { db, auth } from "./firebase-config.js";
 import { showAlert } from "./vitrini-utils.js";
