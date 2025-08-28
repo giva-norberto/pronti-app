@@ -1,8 +1,18 @@
-// servicos.js
-// Gerencia a listagem, exclusão e navegação dos serviços.
+// ======================================================================
+//                      SERVICOS.JS
+//      Gerencia a listagem, exclusão e navegação dos serviços.
+//      Compatível e revisado para Firebase 10.13.2
+// ======================================================================
 
-import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+    collection,
+    doc,
+    getDocs,
+    deleteDoc,
+    query,
+    where
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./vitrini-firebase.js";
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
@@ -26,7 +36,7 @@ async function getEmpresaDoUsuario(uid) {
     let snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
 
-    // Profissional
+    // Profissional (caso sua estrutura use array de UIDs)
     q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
     snapshot = await getDocs(q);
     if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
