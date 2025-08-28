@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL E ROBUSTA - COM CORREÇÃO DE SINTAXE v2)
+// PERFIL.JS (VERSÃO FINAL E ROBUSTA - COM CORREÇÃO DE SINTAXE v3)
 // ======================================================================
 
 import {
@@ -16,7 +16,7 @@ import { app, db, auth, storage } from "./firebase-config.js";
 import { verificarAcesso } from "./userService.js";
 
 // Garante que os serviços do Firebase foram inicializados
-if (!app || !db || !auth || !storage ) {
+if (!app || !db || !auth || !storage  ) {
     console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
     throw new Error("Firebase não inicializado.");
 }
@@ -139,8 +139,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
 
                 if (elements.msgCadastroSucesso) {
-                    elements.msgCadastroSucesso.innerHTML = "O seu negócio foi cadastrado com sucesso!  
-Você ganhou <strong>15 dias grátis</strong>!";
+                    // CORREÇÃO APLICADA AQUI: Uso de crases (`) para permitir a quebra de linha.
+                    elements.msgCadastroSucesso.innerHTML = `O seu negócio foi cadastrado com sucesso!  
+Você ganhou <strong>15 dias grátis</strong>!`;
                     elements.msgCadastroSucesso.style.display = "block";
                     setTimeout(() => {
                         elements.msgCadastroSucesso.style.display = "none";
@@ -186,7 +187,7 @@ Você ganhou <strong>15 dias grátis</strong>!";
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
-        camposExtras.forEach(el => { if (el ) el.style.display = 'none'; });
+        camposExtras.forEach(el => { if (el  ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
     }
 
@@ -206,7 +207,6 @@ Você ganhou <strong>15 dias grátis</strong>!";
         }
 
         if (!empresaId) return;
-        // CORREÇÃO APLICADA AQUI: Uso de crase (`)
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
@@ -215,7 +215,6 @@ Você ganhou <strong>15 dias grátis</strong>!";
 
     function copiarLink() {
         if (!empresaId) return;
-        // CORREÇÃO APLICADA AQUI: Uso de crase (`)
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         navigator.clipboard.writeText(urlCompleta).then(() => {
             alert("Link da vitrine copiado!");
