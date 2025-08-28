@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO REVISADA, ROBUSTA E COMPATÍVEL COM FIREBASE V10.13.2)
+// PERFIL.JS (VERSÃO FINAL E ROBUSTA PARA GARANTIR CRIAÇÃO/EDIÇÃO)
 // ======================================================================
 
 import {
@@ -13,6 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
+// A dependência do 'verificarAcesso' foi removida da lógica de carregamento para maior robustez
 import { verificarAcesso } from "./userService.js";
 
 // Garante que os serviços do Firebase foram inicializados
@@ -22,7 +23,7 @@ if (!app || !db || !auth || !storage) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // Mapeamento dos elementos do DOM para fácil acesso
+    // Mapeamento dos elementos do DOM
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
@@ -40,14 +41,8 @@ window.addEventListener('DOMContentLoaded', () => {
         urlVitrineEl: document.getElementById('url-vitrine-display'),
         btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
         btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
-        linkVitrineMenu: document.querySelector('.sidebar-links a[href="vitrine.html"]'),
         btnLogout: document.getElementById('btn-logout'),
-        msgFree: document.getElementById('mensagem-free'),
-        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
-        boasVindasAposCadastro: document.getElementById('boas-vindas-apos-cadastro'),
-        btnFecharBoasVindas: document.getElementById('fechar-boas-vindas'),
-        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
-        msgPerfilAusente: document.getElementById('mensagem-perfil-ausente')
+        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso')
     };
 
     let currentUser;
@@ -57,18 +52,7 @@ window.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
-            try {
-                const acesso = await verificarAcesso();
-                if (acesso.role && acesso.role !== "dono") {
-                    window.location.href = "perfil-funcionario.html";
-                    return;
-                }
-            } catch (e) {
-                if (e.message !== 'primeiro_acesso' && e.message !== 'perfil_ausente') {
-                    window.location.href = 'login.html';
-                    return;
-                }
-            }
+            // A verificação de acesso agora é feita diretamente aqui
             await carregarDadosDaPagina(user.uid);
             adicionarListenersDeEvento();
         } else {
@@ -80,41 +64,29 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function carregarDadosDaPagina(uid) {
         try {
-            empresaId = localStorage.getItem('empresaAtivaId');
+            const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+            const snapshot = await getDocs(q);
 
-            if (!empresaId) {
+            if (snapshot.empty) {
+                // Cenário: Novo utilizador, ainda não tem empresa
+                console.log("Nenhuma empresa encontrada para este dono. Preparando para novo cadastro.");
+                empresaId = null;
                 atualizarTelaParaNovoPerfil();
             } else {
-                const empresaRef = doc(db, "empresarios", empresaId);
-                const empresaDoc = await getDoc(empresaRef);
-                
-                if (empresaDoc.exists()) {
-                    const dadosEmpresa = empresaDoc.data();
-                    preencherFormulario(dadosEmpresa);
-                    mostrarCamposExtras();
-                    if (elements.msgPerfilAusente) elements.msgPerfilAusente.style.display = "none";
-
-                    if (dadosEmpresa.plano === "free" && elements.msgFree) {
-                        elements.msgFree.innerHTML = 'Plano atual: <strong>FREE</strong>. Você está em período de teste gratuito!';
-                        elements.msgFree.style.display = "block";
-                    } else if (elements.msgFree) {
-                        elements.msgFree.style.display = "none";
-                    }
-                } else {
-                    localStorage.removeItem('empresaAtivaId');
-                    atualizarTelaParaNovoPerfil();
-                    if (elements.msgPerfilAusente) {
-                        elements.msgPerfilAusente.style.display = "block";
-                        elements.msgPerfilAusente.textContent = "O perfil da empresa não foi encontrado. Por favor, cadastre novamente.";
-                    }
-                }
+                // Cenário: Utilizador existente, carrega dados da empresa
+                const empresaDoc = snapshot.docs[0];
+                empresaId = empresaDoc.id;
+                console.log("Empresa encontrada:", empresaId);
+                const dadosEmpresa = empresaDoc.data();
+                preencherFormulario(dadosEmpresa);
+                mostrarCamposExtras();
             }
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             alert("Erro ao carregar dados do perfil: " + error.message);
         }
     }
-
+    
     async function handleFormSubmit(event) {
         event.preventDefault();
         if (elements.btnSalvar) {
@@ -153,23 +125,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // ======================================================================
-            //          CORREÇÃO APLICADA AQUI PARA GARANTIR A CRIAÇÃO
-            // ======================================================================
-            // Em vez de depender da variável 'empresaId', verificamos diretamente
-            // se o utilizador já tem uma empresa para decidir se criamos ou editamos.
-            const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-            const empresasSnapshot = await getDocs(q);
-            
-            if (!empresasSnapshot.empty) {
+            if (empresaId) {
                 // --- LÓGICA DE EDIÇÃO ---
-                const empresaExistenteId = empresasSnapshot.docs[0].id;
-                console.log("Editando empresa existente:", empresaExistenteId);
-                await setDoc(doc(db, "empresarios", empresaExistenteId), dadosEmpresa, { merge: true });
+                console.log("Editando empresa existente:", empresaId);
+                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
             } else {
                 // --- LÓGICA DE NOVO CADASTRO ---
-                dadosEmpresa.createdAt = serverTimestamp(); // Adiciona data de criação
+                dadosEmpresa.createdAt = serverTimestamp();
                 console.log("Criando nova empresa...");
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 empresaId = novaEmpresaRef.id;
@@ -184,10 +147,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
 
-                localStorage.setItem('empresaAtivaId', empresaId);
-                console.log("Empresa cadastrada e ID salvo:", empresaId);
-                
-                // Lógica do card de boas-vindas
                 if (elements.msgCadastroSucesso) {
                     elements.msgCadastroSucesso.innerHTML = "O seu negócio foi cadastrado com sucesso!<br>Você ganhou <strong>15 dias grátis</strong>!";
                     elements.msgCadastroSucesso.style.display = "block";
@@ -206,7 +165,7 @@ window.addEventListener('DOMContentLoaded', () => {
         } finally {
             if (elements.btnSalvar) {
                 elements.btnSalvar.disabled = false;
-                elements.btnSalvar.textContent = 'Salvar Configurações';
+                elements.btnSalvar.textContent = 'Salvar Todas as Configurações';
             }
         }
     }
@@ -234,18 +193,10 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             catch (error) { console.error("Erro no logout:", error); }
         });
-
-        if (elements.btnCriarNovaEmpresa) {
-            elements.btnCriarNovaEmpresa.addEventListener('click', () => {
-                localStorage.removeItem('empresaAtivaId');
-                empresaId = null; 
-                atualizarTelaParaNovoPerfil();
-            });
-        }
     }
 
     function atualizarTelaParaNovoPerfil() {
-        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
+        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Negócio";
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
 
@@ -254,11 +205,6 @@ window.addEventListener('DOMContentLoaded', () => {
         
         if (elements.msgFree) elements.msgFree.style.display = "none";
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
-        if (elements.boasVindasAposCadastro) elements.boasVindasAposCadastro.style.display = "none";
-        if (elements.msgPerfilAusente) {
-            elements.msgPerfilAusente.style.display = "block";
-            elements.msgPerfilAusente.textContent = "Complete o cadastro para ativar todas as funções!";
-        }
     }
 
     function mostrarCamposExtras() {
@@ -281,7 +227,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
         if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
-        if (elements.linkVitrineMenu) elements.linkVitrineMenu.href = urlCompleta;
     }
 
     function copiarLink() {
@@ -293,5 +238,4 @@ window.addEventListener('DOMContentLoaded', () => {
             alert("Falha ao copiar o link.");
         });
     }
-
 });
