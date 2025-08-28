@@ -240,14 +240,25 @@
     // Safety: Remover is-loading após 3 segundos no máximo (garantia visual)
     setTimeout(removerIsLoading, 3000);
 
+    // LOG EXTRA para debug (verificar execução)
+    console.log("[index.html] Script carregado, aguardando autenticação...");
+
     onAuthStateChanged(auth, async (user) => {
-        // Mudança principal: sempre remove 'is-loading' mesmo se der erro
+        // LOG EXTRA para debug
+        console.log("[index.html] onAuthStateChanged disparou. user:", user);
+
         try {
             if (user) {
                 try {
+                    // LOG EXTRA
+                    console.log("[index.html] Usuário autenticado, executando ensureUserAndTrialDoc/verificarAcesso...");
+
                     await ensureUserAndTrialDoc();
                     const userSession = await verificarAcesso();
                     const { perfil, role } = userSession;
+
+                    // LOG EXTRA
+                    console.log("[index.html] userSession:", userSession);
 
                     if (role === 'funcionario') {
                         window.location.replace('agenda.html');
@@ -285,8 +296,8 @@
                             }
                             removerIsLoading();
                         })
-                        .catch(() => {
-                            // Se erro ao carregar menu, remove is-loading mesmo assim
+                        .catch((err) => {
+                            console.error("[index.html] Erro ao carregar menu-lateral.html:", err);
                             removerIsLoading();
                         });
 
@@ -294,17 +305,19 @@
                     if (error.message === "primeiro_acesso") {
                         mostrarPrimeiroAcessoCard();
                     } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
-                        console.error("Erro fatal na verificação de acesso:", error.message);
+                        console.error("[index.html] Erro fatal na verificação de acesso:", error.message);
                         removerIsLoading();
                     } else {
                         removerIsLoading();
                     }
                 }
             } else {
+                console.log("[index.html] Usuário não autenticado, redirecionando para login.");
                 window.location.replace('login.html');
                 removerIsLoading();
             }
         } catch (outerError) {
+            console.error("[index.html] Erro externo:", outerError);
             removerIsLoading();
         }
     });
