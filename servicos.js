@@ -1,81 +1,81 @@
-// servicos.js
-// Gerencia a listagem, exclusão e navegação dos serviços.
+// ======================================================================
+// ARQUIVO: servicos.js (VERSÃO REVISADA E CENTRALIZADA)
+// ======================================================================
 
-import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { db, auth } from "./vitrini-firebase.js";
-import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
+// 1. Importa as funções do Firestore e Auth da versão correta
+import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-const listaServicosDiv = document.getElementById('lista-servicos');
+// 2. IMPORTANTE: Importa 'db' e 'auth' do arquivo de configuração MESTRE
+import { db, auth } from "./firebase-config.js"; 
+import { showCustomConfirm, showAlert } from "./vitrini-utils.js"; // Supondo que este caminho esteja correto
+
+// --- Mapeamento de Elementos do DOM ---
+const listaServicosDiv = document.getElementById('lista-servicos' );
 const btnAddServico = document.querySelector('.btn-new');
 const loader = document.getElementById('loader');
 const appContent = document.getElementById('app-content');
 
+// --- Variáveis de Estado ---
 let empresaId = null;
 let isDono = false;
 
-// Obtém o empresaId da empresa ativa do localStorage (MULTIEMPRESA)
+/**
+ * Obtém o ID da empresa ativa do localStorage.
+ */
 function getEmpresaIdAtiva() {
-    return localStorage.getItem("empresaAtivaId") || null;
+    return localStorage.getItem("empresaAtivaId");
 }
 
-// Permite dono ou profissional acessar a empresa
-async function getEmpresaDoUsuario(uid) {
-    // Dono
-    let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    let snapshot = await getDocs(q);
-    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-
-    // Profissional
-    q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
-    snapshot = await getDocs(q);
-    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-
-    return null;
+/**
+ * Formata um número para o padrão de moeda BRL.
+ */
+function formatarPreco(preco) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco || 0);
 }
 
-// Inicialização e autenticação
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        try {
-            // MULTIEMPRESA: usa empresaId da empresa ativa do localStorage
-            empresaId = getEmpresaIdAtiva();
-            if (!empresaId) {
-                if (loader) loader.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada. Selecione uma empresa primeiro.</p>';
-                return;
-            }
-            // Busca dados da empresa para saber se é dono (permite lógica de permissão)
-            let empresa = null;
-            let q = query(collection(db, "empresarios"), where("__name__", "==", empresaId));
-            let snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                empresa = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-                isDono = empresa.donoId === user.uid;
-            } else {
-                empresa = await getEmpresaDoUsuario(user.uid);
-                isDono = empresa && empresa.donoId === user.uid;
-            }
+/**
+ * Renderiza a lista de serviços na tela.
+ */
+function renderizarServicos(servicos) {
+    if (!listaServicosDiv) return;
 
-            await carregarServicosDoFirebase();
-
-            if (btnAddServico) {
-                btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
-            }
-
-            if (loader) loader.style.display = 'none';
-            if (appContent) appContent.style.display = 'block';
-        } catch (error) {
-            console.error("Erro fatal durante a inicialização:", error);
-            if (loader) loader.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
-        }
-    } else {
-        window.location.href = 'login.html';
+    if (!servicos || servicos.length === 0) {
+        listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>`;
+        return;
     }
-});
+    
+    // Ordena os serviços por nome antes de renderizar
+    servicos.sort((a, b) => a.nome.localeCompare(b.nome));
+    
+    listaServicosDiv.innerHTML = servicos.map(servico => `
+        <div class="servico-card">
+            <div class="servico-header">
+                <h3 class="servico-titulo">${servico.nome}</h3>
+            </div>
+            <p class="servico-descricao">${servico.descricao || 'Sem descrição.'}</p>
+            <div class="servico-footer">
+                <div>
+                    <span class="servico-preco">${formatarPreco(servico.preco)}</span>
+                    <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
+                </div>
+                <div class="servico-acoes">
+                    <!-- O botão de editar é visível para todos que podem ver a página -->
+                    <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
+                    <!-- O botão de excluir só é renderizado se o usuário for o dono -->
+                    ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
 
+/**
+ * Carrega os serviços da subcoleção da empresa ativa no Firestore.
+ */
 async function carregarServicosDoFirebase() {
     if (!empresaId) {
-        if (listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
+        if (listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">ID da empresa não encontrado.</p>';
         return;
     }
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>A carregar serviços...</p>';
@@ -91,35 +91,10 @@ async function carregarServicosDoFirebase() {
     }
 }
 
-function renderizarServicos(servicos) {
-    if (!listaServicosDiv) return;
-
-    if (!servicos || servicos.length === 0) {
-        listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. Clique em "Adicionar Novo Serviço" para começar.</p>`;
-        return;
-    }
-    servicos.sort((a, b) => a.nome.localeCompare(b.nome));
-    listaServicosDiv.innerHTML = servicos.map(servico => `
-        <div class="servico-card">
-            <div class="servico-header">
-                <h3 class="servico-titulo">${servico.nome}</h3>
-            </div>
-            <p class="servico-descricao">${servico.descricao || ''}</p>
-            <div class="servico-footer">
-                <div>
-                    <span class="servico-preco">${formatarPreco(servico.preco)}</span>
-                    <span class="servico-duracao"> • ${servico.duracao} min</span>
-                </div>
-                <div class="servico-acoes">
-                    <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
-                    ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-async function excluirServico(servicoId) {
+/**
+ * Lida com a exclusão de um serviço.
+ */
+async function excluirServico(servicoIdParaExcluir) {
     if (!isDono) {
         await showAlert("Acesso Negado", "Apenas o dono pode excluir serviços.");
         return;
@@ -128,24 +103,69 @@ async function excluirServico(servicoId) {
     if (!confirmado) return;
 
     try {
-        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoIdParaExcluir);
         await deleteDoc(servicoRef);
         await showAlert("Sucesso!", "Serviço excluído com sucesso!");
-        await carregarServicosDoFirebase();
+        await carregarServicosDoFirebase(); // Recarrega a lista após a exclusão
     } catch (error) {
+        console.error("Erro ao excluir serviço:", error);
         await showAlert("Erro", "Ocorreu um erro ao excluir o serviço: " + error.message);
     }
 }
 
-function formatarPreco(preco) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco || 0);
-}
+/**
+ * Ponto de entrada principal da página.
+ */
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
 
-// Event delegation para novo, editar e excluir
+    if (loader) loader.style.display = 'block';
+    if (appContent) appContent.style.display = 'none';
+
+    try {
+        empresaId = getEmpresaIdAtiva();
+        if (!empresaId) {
+            if (loader) loader.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada. Retorne ao painel e selecione uma.</p>';
+            return;
+        }
+
+        // Lógica de permissão simplificada: busca a empresa ativa e verifica o dono.
+        const empresaRef = doc(db, "empresarios", empresaId);
+        const empresaSnap = await getDoc(empresaRef);
+
+        if (empresaSnap.exists() && empresaSnap.data().donoId === user.uid) {
+            isDono = true;
+        } else {
+            isDono = false;
+        }
+
+        // Mostra o botão de adicionar apenas para o dono.
+        if (btnAddServico) {
+            btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
+        }
+
+        await carregarServicosDoFirebase();
+
+    } catch (error) {
+        console.error("Erro fatal durante a inicialização:", error);
+        if (loader) loader.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
+    } finally {
+        if (loader) loader.style.display = 'none';
+        if (appContent) appContent.style.display = 'block';
+    }
+});
+
+// --- Listeners de Eventos ---
+
+// Delegação de eventos para os botões na lista de serviços
 if (listaServicosDiv) {
     listaServicosDiv.addEventListener('click', function(e) {
         const target = e.target.closest('.btn-acao');
         if (!target) return;
+        
         const id = target.dataset.id;
         if (!id) return;
 
@@ -158,9 +178,14 @@ if (listaServicosDiv) {
     });
 }
 
+// Listener para o botão de adicionar novo serviço
 if (btnAddServico) {
     btnAddServico.addEventListener('click', (e) => {
         e.preventDefault();
-        window.location.href = 'novo-servico.html';
+        // Apenas o dono pode adicionar, mas o botão já estará escondido se não for.
+        // Adicionamos uma verificação extra por segurança.
+        if (isDono) {
+            window.location.href = 'novo-servico.html';
+        }
     });
 }
