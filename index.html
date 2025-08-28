@@ -8,6 +8,7 @@
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Fundo geral do dashboard */
         .dashboard-body {
             background: linear-gradient(135deg, #1e3c72, #2a5298 );
             min-height: 100vh;
@@ -20,6 +21,7 @@
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
         }
+        /* Card de primeiro acesso */
         .primeiro-acesso-card {
             max-width: 400px;
             margin: 80px auto;
@@ -63,8 +65,7 @@
         .primeiro-btn:hover {
             background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
         }
-
-        /* ===================== CARDS DASHBOARD ===================== */
+        /* Estilização dos cards de ação do dashboard */
         .dashboard-main-actions {
             display: flex;
             justify-content: center;
@@ -82,7 +83,7 @@
             border-radius: 15px;
             box-shadow: 0 2px 12px #0001;
             text-decoration: none;
-            color: #2563eb;
+            color: #2563eb !important;
             font-weight: 600;
             font-size: 1.07rem;
             transition: box-shadow 0.2s, background 0.2s, color 0.2s;
@@ -101,10 +102,9 @@
         .action-card:hover {
             background: linear-gradient(90deg, #2563eb10 0%, #5b9eff07 100%);
             box-shadow: 0 6px 30px #2563eb22;
-            color: #183d7a;
+            color: #183d7a !important;
         }
-
-        /* ===================== OUTROS AJUSTES ===================== */
+        /* Outras melhorias */
         .dashboard-welcome-center {
             text-align: center;
             margin-top: 40px;
@@ -125,6 +125,10 @@
         }
         .status-button:hover {
             background: #1741ad;
+        }
+        /* Garante que os links não fiquem invisíveis em modo escuro */
+        a {
+            color: inherit;
         }
     </style>
 </head>
@@ -163,7 +167,7 @@
 
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { auth } from "./vitrini-firebase.js"; // O nome aqui pode ser firebase-config.js
+    import { auth } from "./vitrini-firebase.js"; // Ou firebase-config.js
     import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
