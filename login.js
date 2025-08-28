@@ -2,9 +2,9 @@
 //                          LOGIN.JS (VERSÃO FINAL SEM LOOP)
 // ======================================================================
 
-// Imports (sem alterações)
-import { signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { auth, provider } from "./vitrini-firebase.js"; 
+// Imports (atualizados para 10.13.2 e firebase-config.js)
+import { signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { auth, provider } from "./firebase-config.js"; 
 
 window.addEventListener('DOMContentLoaded', ( ) => {
     const btnLoginGoogle = document.getElementById('btn-login-google');
@@ -19,11 +19,11 @@ window.addEventListener('DOMContentLoaded', ( ) => {
     // exclusivamente do userService.js, evitando o loop na página de login.
     // ======================================================================
 
-    // Lógica do Login com Google (sem alterações)
+    // Lógica do Login com Google
     if (btnLoginGoogle) {
         btnLoginGoogle.addEventListener('click', async () => {
             btnLoginGoogle.disabled = true;
-            if(loginStatusDiv) loginStatusDiv.textContent = "";
+            if (loginStatusDiv) loginStatusDiv.textContent = "";
 
             try {
                 await signInWithPopup(auth, provider);
@@ -39,11 +39,11 @@ window.addEventListener('DOMContentLoaded', ( ) => {
         });
     }
 
-    // Lógica do Login com E-mail e Senha (sem alterações)
+    // Lógica do Login com E-mail e Senha
     if (loginForm) {
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            if(loginStatusDiv) loginStatusDiv.textContent = "";
+            if (loginStatusDiv) loginStatusDiv.textContent = "";
 
             const submitButton = loginForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
@@ -57,13 +57,13 @@ window.addEventListener('DOMContentLoaded', ( ) => {
                 window.location.href = 'index.html';
             } catch (error) {
                 console.error("Erro no login manual:", error.code);
-                 if (loginStatusDiv) {
+                if (loginStatusDiv) {
                     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                         loginStatusDiv.textContent = 'E-mail ou senha inválidos.';
                     } else {
                         loginStatusDiv.textContent = 'Ocorreu um erro. Tente novamente.';
                     }
-                 }
+                }
                 submitButton.disabled = false;
             }
         });
