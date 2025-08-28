@@ -1,14 +1,15 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO REVISADA E CENTRALIZADA)
+// ARQUIVO: servicos.js (VERSÃO CORRIGIDA E CENTRALIZADA)
 // ======================================================================
 
 // 1. Importa as funções do Firestore e Auth da versão correta
-import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, doc, getDocs, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// 2. IMPORTANTE: Importa 'db' e 'auth' do arquivo de configuração MESTRE
+// 2. A CORREÇÃO MAIS IMPORTANTE ESTÁ AQUI:
+//    Importa 'db' e 'auth' do arquivo de configuração MESTRE do painel.
 import { db, auth } from "./firebase-config.js"; 
-import { showCustomConfirm, showAlert } from "./vitrini-utils.js"; // Supondo que este caminho esteja correto
+import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
 // --- Mapeamento de Elementos do DOM ---
 const listaServicosDiv = document.getElementById('lista-servicos' );
@@ -45,7 +46,6 @@ function renderizarServicos(servicos) {
         return;
     }
     
-    // Ordena os serviços por nome antes de renderizar
     servicos.sort((a, b) => a.nome.localeCompare(b.nome));
     
     listaServicosDiv.innerHTML = servicos.map(servico => `
@@ -60,9 +60,7 @@ function renderizarServicos(servicos) {
                     <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
                 </div>
                 <div class="servico-acoes">
-                    <!-- O botão de editar é visível para todos que podem ver a página -->
                     <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
-                    <!-- O botão de excluir só é renderizado se o usuário for o dono -->
                     ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
                 </div>
             </div>
@@ -80,15 +78,11 @@ async function carregarServicosDoFirebase() {
     }
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>A carregar serviços...</p>';
 
-    try {
-        const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-        const snap = await getDocs(servicosCol);
-        const servicos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderizarServicos(servicos);
-    } catch (error) {
-        console.error("Erro ao carregar serviços:", error);
-        if (listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">Erro ao carregar os serviços.</p>';
-    }
+    // Esta linha agora vai funcionar, pois 'db' será uma instância válida.
+    const servicosCol = collection(db, "empresarios", empresaId, "servicos");
+    const snap = await getDocs(servicosCol);
+    const servicos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderizarServicos(servicos);
 }
 
 /**
@@ -102,15 +96,10 @@ async function excluirServico(servicoIdParaExcluir) {
     const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
     if (!confirmado) return;
 
-    try {
-        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoIdParaExcluir);
-        await deleteDoc(servicoRef);
-        await showAlert("Sucesso!", "Serviço excluído com sucesso!");
-        await carregarServicosDoFirebase(); // Recarrega a lista após a exclusão
-    } catch (error) {
-        console.error("Erro ao excluir serviço:", error);
-        await showAlert("Erro", "Ocorreu um erro ao excluir o serviço: " + error.message);
-    }
+    const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoIdParaExcluir);
+    await deleteDoc(servicoRef);
+    await showAlert("Sucesso!", "Serviço excluído com sucesso!");
+    await carregarServicosDoFirebase();
 }
 
 /**
@@ -132,17 +121,11 @@ onAuthStateChanged(auth, async (user) => {
             return;
         }
 
-        // Lógica de permissão simplificada: busca a empresa ativa e verifica o dono.
         const empresaRef = doc(db, "empresarios", empresaId);
         const empresaSnap = await getDoc(empresaRef);
 
-        if (empresaSnap.exists() && empresaSnap.data().donoId === user.uid) {
-            isDono = true;
-        } else {
-            isDono = false;
-        }
+        isDono = empresaSnap.exists() && empresaSnap.data().donoId === user.uid;
 
-        // Mostra o botão de adicionar apenas para o dono.
         if (btnAddServico) {
             btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
         }
@@ -151,7 +134,7 @@ onAuthStateChanged(auth, async (user) => {
 
     } catch (error) {
         console.error("Erro fatal durante a inicialização:", error);
-        if (loader) loader.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
+        if (loader) loader.innerHTML = `<p style="color:red;">Ocorreu um erro crítico: ${error.message}</p>`;
     } finally {
         if (loader) loader.style.display = 'none';
         if (appContent) appContent.style.display = 'block';
@@ -160,7 +143,6 @@ onAuthStateChanged(auth, async (user) => {
 
 // --- Listeners de Eventos ---
 
-// Delegação de eventos para os botões na lista de serviços
 if (listaServicosDiv) {
     listaServicosDiv.addEventListener('click', function(e) {
         const target = e.target.closest('.btn-acao');
@@ -178,12 +160,9 @@ if (listaServicosDiv) {
     });
 }
 
-// Listener para o botão de adicionar novo serviço
 if (btnAddServico) {
     btnAddServico.addEventListener('click', (e) => {
         e.preventDefault();
-        // Apenas o dono pode adicionar, mas o botão já estará escondido se não for.
-        // Adicionamos uma verificação extra por segurança.
         if (isDono) {
             window.location.href = 'novo-servico.html';
         }
