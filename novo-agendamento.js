@@ -5,16 +5,10 @@
  * Firebase Modular v10+
  */
 
-// Importações dos módulos Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, doc, addDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
-
-// Inicialização do Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// IMPORTAÇÃO CORRETA: use o db e auth já inicializados do config central (com nome do banco certo)
+import { db, auth } from "./firebase-config.js";
+import { collection, getDocs, query, where, doc, addDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // --- Elementos do DOM ---
 const formAgendamento = document.getElementById("form-agendamento");
