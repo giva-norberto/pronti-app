@@ -1,35 +1,62 @@
-import { db, auth } from "./firebase-config.js";
+ import { db } from './firebase-config.js';
 import {
     collection,
     query,
     where,
     getDocs,
     addDoc,
+    doc,
+    updateDoc,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { limparUIAgendamento } from './vitrini-ui.js'; // <-- ADICIONADO
 
 // --- Funções Auxiliares de Tempo ---
 function timeStringToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
+
 function minutesToTimeString(totalMinutes) {
     const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
     const minutes = (totalMinutes % 60).toString().padStart(2, '0');
     return `${hours}:${minutes}`;
 }
 
-// --- MULTIEMPRESA ---
-function getEmpresaIdAtiva() {
-    return localStorage.getItem("empresaAtivaId") || null;
+// --- Funções Principais de Agendamento ---
+
+/**
+ * Busca todos os agendamentos de uma empresa em uma data específica.
+ * @param {string} empresaId - O ID da empresa.
+ * @param {string} data - A data no formato "AAAA-MM-DD".
+ * @returns {Promise<Array>} Lista de agendamentos do dia.
+ */
+export async function buscarAgendamentosDoDia(empresaId, data) {
+    try {
+        const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
+        const q = query(
+            agendamentosRef,
+            where("data", "==", data),
+            where("status", "==", "ativo")
+        );
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Erro ao buscar agendamentos do dia:", error);
+        // Lança o erro para que a função que chamou possa tratá-lo
+        throw new Error("Não foi possível buscar os agendamentos do dia.");
+    }
 }
 
-// --- Lógica de slots baseada na vitrine ---
-function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
+/**
+ * Calcula os horários (slots) disponíveis para um agendamento.
+ * REFINADO: Não mostra horários passados se a data for hoje.
+ */
+export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    const dataObj = new Date(`${data}T12:00:00Z`);
+    const dataObj = new Date(`${data}T12:00:00Z`); // Usar Z para tratar como UTC
     const nomeDia = diaDaSemana[dataObj.getUTCDay()];
+
     const diaDeTrabalho = horariosTrabalho?.[nomeDia];
     if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos || diaDeTrabalho.blocos.length === 0) {
         return [];
@@ -37,9 +64,10 @@ function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, dur
 
     const intervaloEntreSessoes = horariosTrabalho.intervalo || 0;
     const slotsDisponiveis = [];
+
     const horariosOcupados = agendamentosDoDia.map(ag => {
         const inicio = timeStringToMinutes(ag.horario);
-        const fim = inicio + (ag.servicoDuracao || duracaoServico);
+        const fim = inicio + ag.servicoDuracao;
         return { inicio, fim };
     });
 
@@ -58,180 +86,126 @@ function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, dur
             let temConflito = horariosOcupados.some(ocupado =>
                 slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio
             );
+
             if (
                 !temConflito &&
                 (!ehHoje || slotAtualEmMinutos > minutosAgora)
             ) {
                 slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
             }
+            // Garante que o loop avance mesmo sem intervalo
             slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico;
         }
     }
     return slotsDisponiveis;
 }
 
-// --- Busca agendamentos do dia (igual vitrine) ---
-async function buscarAgendamentosDoDia(empresaId, data, profissionalId) {
-    const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
-    const q = query(
-        agendamentosRef,
-        where("data", "==", data),
-        where("profissionalId", "==", profissionalId),
-        where("status", "==", "ativo")
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+/**
+ * Tenta encontrar a próxima data com horários disponíveis, a partir de hoje.
+ */
+export async function encontrarPrimeiraDataComSlots(empresaId, profissional, duracaoServico) {
+    const hoje = new Date();
+    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
+        const dataAtual = new Date(hoje);
+        dataAtual.setDate(hoje.getDate() + i);
+        const dataString = dataAtual.toISOString().split('T')[0];
+
+        const agendamentos = await buscarAgendamentosDoDia(empresaId, dataString);
+        const agendamentosProfissional = agendamentos.filter(ag => ag.profissionalId === profissional.id);
+
+        const slots = calcularSlotsDisponiveis(dataString, agendamentosProfissional, profissional.horarios, duracaoServico);
+
+        if (slots.length > 0) {
+            return dataString; // Encontrou! Retorna a data.
+        }
+    }
+    return null; // Não encontrou nenhuma data nos próximos 90 dias
 }
 
-// --- DOM Elements (ajuste os IDs conforme seu HTML) ---
-const formAgendamento = document.getElementById("form-agendamento");
-const selectServico = document.getElementById("servico");
-const selectProfissional = document.getElementById("profissional");
-const inputData = document.getElementById("dia");
-const gradeHorarios = document.getElementById("grade-horarios");
-const inputHorarioFinal = document.getElementById("horario-final");
-const inputClienteNome = document.getElementById("cliente");
-
-let empresaId = null;
-let servicosCache = [];
-let profissionaisCache = [];
-
-onAuthStateChanged(auth, async (user) => {
-    if (!user) return window.location.href = "login.html";
-    empresaId = getEmpresaIdAtiva();
-    if (!empresaId) return document.body.innerHTML = "<h1>Nenhuma empresa ativa selecionada.</h1>";
-    await carregarDadosIniciais();
-    selectServico.addEventListener("change", popularSelectProfissionais);
-    selectProfissional.addEventListener("change", buscarHorariosDisponiveis);
-    inputData.addEventListener("change", buscarHorariosDisponiveis);
-    gradeHorarios.addEventListener("click", selecionarHorarioSlot);
-    formAgendamento.addEventListener("submit", salvarAgendamento);
-});
-
-async function carregarDadosIniciais() {
-    const servicosRef = collection(db, "empresarios", empresaId, "servicos");
-    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-
-    const [servicosSnapshot, profissionaisSnapshot] = await Promise.all([
-        getDocs(servicosRef),
-        getDocs(profissionaisRef)
-    ]);
-    servicosCache = servicosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    profissionaisCache = profissionaisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    selectServico.innerHTML = '<option value="">Selecione um serviço</option>';
-    servicosCache.forEach(servico => {
-        selectServico.appendChild(new Option(`${servico.nome} (${servico.duracao} min)`, servico.id));
-    });
-}
-
-function popularSelectProfissionais() {
-    const servicoId = selectServico.value;
-    selectProfissional.innerHTML = '<option value="">Primeiro, selecione um serviço</option>';
-    selectProfissional.disabled = true;
-    gradeHorarios.innerHTML = '<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>';
-
-    if (!servicoId) return;
-
-    // Filtra profissionais que oferecem o serviço selecionado
-    const profissionaisFiltrados = profissionaisCache.filter(p =>
-        p.servicos && p.servicos.includes(servicoId)
-    );
-    if (profissionaisFiltrados.length > 0) {
-        selectProfissional.innerHTML = '<option value="">Selecione um profissional</option>';
-        profissionaisFiltrados.forEach(p => {
-            selectProfissional.appendChild(new Option(p.nome, p.id));
-        });
-        selectProfissional.disabled = false;
-    } else {
-        selectProfissional.innerHTML = '<option value="">Nenhum profissional para este serviço</option>';
-    }
-}
-
-async function buscarHorariosDisponiveis() {
-    const servicoId = selectServico.value;
-    const profissionalId = selectProfissional.value;
-    const dataSelecionada = inputData.value;
-    if (!servicoId || !profissionalId || !dataSelecionada) {
-        gradeHorarios.innerHTML = `<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>`;
-        return;
-    }
-
-    gradeHorarios.innerHTML = `<p class="aviso-horarios">A verificar horários...</p>`;
-
-    // Busca profissional no cache e horários de trabalho no campo "horarios"
-    const profissional = profissionaisCache.find(p => p.id === profissionalId);
-    const servico = servicosCache.find(s => s.id === servicoId);
-
-    // Atenção: espera-se que profissional.horarios esteja preenchido igual ao vitrine!
-    if (!profissional || !profissional.horarios) {
-        gradeHorarios.innerHTML = `<p class="aviso-horarios" style="color: red;">Este profissional não tem horários configurados.</p>`;
-        return;
-    }
-
-    const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataSelecionada, profissionalId);
-    const slotsDisponiveis = calcularSlotsDisponiveis(dataSelecionada, agendamentosDoDia, profissional.horarios, servico.duracao);
-
-    gradeHorarios.innerHTML = '';
-    if (slotsDisponiveis.length === 0) {
-        gradeHorarios.innerHTML = `<p class="aviso-horarios">Nenhum horário disponível para esta data.</p>`;
-        return;
-    }
-
-    slotsDisponiveis.forEach(horario => {
-        const slot = document.createElement('div');
-        slot.className = 'slot-horario';
-        slot.textContent = horario;
-        slot.setAttribute('data-hora', horario);
-        gradeHorarios.appendChild(slot);
-    });
-    inputHorarioFinal.value = '';
-}
-
-// Seleciona slot de horário (igual vitrine)
-function selecionarHorarioSlot(e) {
-    if (e.target.classList.contains("slot-horario")) {
-        document.querySelectorAll('.slot-horario.selecionado').forEach(slot => slot.classList.remove('selecionado'));
-        e.target.classList.add('selecionado');
-        inputHorarioFinal.value = e.target.dataset.hora || e.target.textContent;
-    }
-}
-
-async function salvarAgendamento(e) {
-    e.preventDefault();
-    const servicoId = selectServico.value;
-    const profissionalId = selectProfissional.value;
-    const servico = servicosCache.find(s => s.id === servicoId);
-    const profissional = profissionaisCache.find(p => p.id === profissionalId);
-
-    const novoAgendamento = {
-        clienteNome: inputClienteNome.value,
-        servicoId,
-        servicoNome: servico.nome,
-        servicoDuracao: servico.duracao,
-        profissionalId,
-        profissionalNome: profissional.nome,
-        data: inputData.value,
-        horario: inputHorarioFinal.value,
-        status: 'ativo',
-        criadoEm: serverTimestamp()
-    };
-
-    if (!novoAgendamento.horario) {
-        alert("Por favor, selecione um horário.");
-        return;
-    }
-
+/**
+ * Salva um novo agendamento no banco de dados. (REVISADO: SILENCIOSO)
+ * Após salvar, limpa e reseta a UI do agendamento.
+ */
+export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
-        await addDoc(collection(db, "empresarios", empresaId, "agendamentos"), novoAgendamento);
-        alert("Agendamento salvo com sucesso!");
-        formAgendamento.reset();
-        gradeHorarios.innerHTML = `<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>`;
-        selectProfissional.innerHTML = '<option value="">Primeiro, selecione um serviço</option>';
-        selectProfissional.disabled = true;
-        setTimeout(() => { window.location.href = 'agenda.html'; }, 1500);
+        const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
+        await addDoc(agendamentosRef, {
+            empresaId: empresaId,
+            clienteId: currentUser.uid,
+            clienteNome: currentUser.displayName,
+            clienteFoto: currentUser.photoURL,
+            profissionalId: agendamento.profissional.id,
+            profissionalNome: agendamento.profissional.nome,
+            servicoId: agendamento.servico.id,
+            servicoNome: agendamento.servico.nome,
+            servicoDuracao: agendamento.servico.duracao,
+            servicoPreco: agendamento.servico.preco,
+            data: agendamento.data,
+            horario: agendamento.horario,
+            status: 'ativo',
+            criadoEm: serverTimestamp()
+        });
+
+        // Limpa e reseta a UI do agendamento após salvar
+        if (typeof limparUIAgendamento === "function") {
+            limparUIAgendamento();
+        }
+        // Mensagem e reload removidos para serem controlados pelo vitrine.js
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
-        alert("Erro ao salvar agendamento.");
+        throw new Error('Ocorreu um erro ao confirmar seu agendamento.');
     }
 }
+
+/**
+ * Busca os agendamentos de um cliente específico.
+ */
+export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) {
+    if (!currentUser) return [];
+    try {
+        const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
+        const hoje = new Date().toISOString().split('T')[0];
+
+        let q;
+        if (modo === 'ativos') {
+            q = query(
+                agendamentosRef,
+                where("clienteId", "==", currentUser.uid),
+                where("status", "==", "ativo"),
+                where("data", ">=", hoje)
+            );
+        } else { // historico
+            q = query(
+                agendamentosRef,
+                where("clienteId", "==", currentUser.uid),
+                where("data", "<", hoje)
+            );
+        }
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Erro ao buscar agendamentos do cliente:", error);
+        if (error.code === 'failed-precondition' && error.message.includes("The query requires an index")) {
+             throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
+        }
+        throw error;
+    }
+}
+
+/**
+ * Cancela um agendamento (muda o status para 'cancelado'). (REVISADO: SILENCIOSO)
+ */
+export async function cancelarAgendamento(empresaId, agendamentoId) {
+    try {
+        const agendamentoRef = doc(db, 'empresarios', empresaId, 'agendamentos', agendamentoId);
+        await updateDoc(agendamentoRef, {
+            status: 'cancelado_pelo_cliente',
+            canceladoEm: serverTimestamp()
+        });
+        // Mensagem removida para ser controlada pelo vitrine.js
+    } catch (error) {
+        console.error("Erro ao cancelar agendamento:", error);
+        throw new Error("Ocorreu um erro ao cancelar o agendamento.");
+    }
+} 
