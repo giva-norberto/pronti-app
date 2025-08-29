@@ -5,7 +5,6 @@
  * Firebase Modular v10+
  */
 
-// IMPORTAÇÃO CORRETA: use o db e auth já inicializados do config central (com nome do banco certo)
 import { db, auth } from "./firebase-config.js";
 import { collection, getDocs, query, where, doc, addDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -53,7 +52,6 @@ function minutesToTimeString(totalMinutes) {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     try {
-      // MULTIEMPRESA: usa empresaId da empresa ativa do localStorage
       empresaId = getEmpresaIdAtiva();
       if (empresaId) await inicializarFormulario();
       else document.body.innerHTML = "<h1>Nenhuma empresa ativa selecionada.</h1>";
@@ -66,25 +64,23 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// --- (Não mais usado: função para buscar empresaId do dono) ---
-// async function getEmpresaIdDoDono(uid) {
-//   const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-//   const snapshot = await getDocs(q);
-//   return snapshot.empty ? null : snapshot.docs[0].id;
-// }
-
 async function inicializarFormulario() {
     await carregarDadosIniciais();
-    
+
     selectServico.addEventListener("change", popularSelectProfissionais);
     selectProfissional.addEventListener("change", buscarHorariosDisponiveis);
     inputData.addEventListener("change", buscarHorariosDisponiveis);
 
+    // Clique em slot de horário - revisado para garantir funcionalidade e visual
     gradeHorarios.addEventListener("click", (e) => {
+        // Só permite selecionar se for realmente um slot habilitado
         if (e.target.classList.contains("slot-horario") && !e.target.classList.contains("desabilitado")) {
+            // Remove seleção anterior
             document.querySelectorAll('.slot-horario.selecionado').forEach(slot => slot.classList.remove('selecionado'));
+            // Marca o slot clicado
             e.target.classList.add('selecionado');
-            inputHorarioFinal.value = e.target.textContent;
+            // Seta o valor no campo oculto (ou visível) do horário
+            inputHorarioFinal.value = e.target.dataset.hora || e.target.textContent;
         }
     });
 
@@ -92,7 +88,6 @@ async function inicializarFormulario() {
 }
 
 async function carregarDadosIniciais() {
-    // Carrega todos os serviços e profissionais em cache para otimizar
     try {
         const servicosRef = collection(db, "empresarios", empresaId, "servicos");
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
@@ -126,7 +121,7 @@ function popularSelectProfissionais() {
     if (!servicoId) return;
 
     // Filtra os profissionais que oferecem o serviço selecionado
-    const profissionaisFiltrados = profissionaisCache.filter(p => 
+    const profissionaisFiltrados = profissionaisCache.filter(p =>
         p.servicos && p.servicos.includes(servicoId)
     );
 
@@ -176,12 +171,17 @@ async function buscarHorariosDisponiveis() {
             return;
         }
 
+        // Cria slots clicáveis e deixa o valor do horário também como data-hora (mais robusto)
         slotsDisponiveis.forEach(horario => {
             const slot = document.createElement('div');
             slot.className = 'slot-horario';
             slot.textContent = horario;
+            slot.setAttribute('data-hora', horario);
             gradeHorarios.appendChild(slot);
         });
+
+        // Limpa seleção anterior e campo oculto
+        inputHorarioFinal.value = '';
 
     } catch (error) {
         console.error("Erro ao buscar horários:", error);
@@ -230,7 +230,7 @@ async function salvarAgendamento(e) {
 // --- Funções de Apoio ---
 
 async function getAgendamentosDoDia(data, profissionalId) {
-    const q = query(collection(db, "empresarios", empresaId, "agendamentos"), 
+    const q = query(collection(db, "empresarios", empresaId, "agendamentos"),
         where("data", "==", data),
         where("profissionalId", "==", profissionalId)
     );
@@ -249,7 +249,6 @@ function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, dur
     const slotsDisponiveis = [];
     const horariosOcupados = agendamentosDoDia.map(ag => {
         const inicio = timeStringToMinutes(ag.horario);
-        // Assumindo que a duração do serviço está no agendamento, se não, buscar do serviço
         const fim = inicio + (ag.servicoDuracao || duracaoServico);
         return { inicio, fim };
     });
@@ -260,14 +259,13 @@ function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, dur
 
         while (slotAtual + duracaoServico <= fimBloco) {
             const fimSlotProposto = slotAtual + duracaoServico;
-            let temConflito = horariosOcupados.some(ocupado => 
+            let temConflito = horariosOcupados.some(ocupado =>
                 slotAtual < ocupado.fim && fimSlotProposto > ocupado.inicio
             );
 
             if (!temConflito) {
                 slotsDisponiveis.push(minutesToTimeString(slotAtual));
             }
-            // Avança para o próximo slot. O ideal é usar um intervalo definido, mas usar a duração do serviço é uma abordagem comum.
             slotAtual += (horariosTrabalho.intervalo || duracaoServico);
         }
     });
