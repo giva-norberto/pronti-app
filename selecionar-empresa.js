@@ -5,8 +5,8 @@
 // ======================================================================
 
 import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- ELEMENTOS DO DOM ---
 const grid = document.getElementById('empresas-grid');
@@ -15,55 +15,39 @@ const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
 const btnLogout = document.getElementById('btn-logout');
 
 // --- INICIALIZAÇÃO ---
-onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, (user) => {
     if (user) {
-        const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Utilizador';
-        tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-
-        // Se já existe empresaAtivaId, vai direto para index.html
+        // Se já existe empresa ativa, não precisa selecionar novamente
         const empresaAtivaId = localStorage.getItem('empresaAtivaId');
         if (empresaAtivaId) {
             window.location.href = 'index.html';
             return;
         }
-
-        // Se não tem empresaAtivaId, carrega as empresas normalmente
-        await carregarOuRedirecionarEmpresas(user.uid);
+        const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Utilizador';
+        tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+        carregarEmpresas(user.uid);
     } else {
         window.location.href = 'login.html';
     }
 });
 
 /**
- * Busca no Firestore todas as empresas associadas a um dono.
- * Se só tiver uma, já seleciona e redireciona.
- * Se tiver mais de uma, exibe para o usuário escolher.
+ * Busca no Firestore todas as empresas associadas a um dono e renderiza na tela.
  * @param {string} donoId - O UID do utilizador autenticado.
  */
-async function carregarOuRedirecionarEmpresas(donoId) {
+async function carregarEmpresas(donoId) {
     try {
         const q = query(collection(db, "empresarios"), where("donoId", "==", donoId));
         const querySnapshot = await getDocs(q);
 
-        loader.style.display = 'none'; // Sempre oculta o loader ao finalizar a busca
+        loader.style.display = "none"; // Esconde o loader após carregar
 
-        // Sem empresas cadastradas: mostra mensagem e só o card de criar nova
+        grid.innerHTML = ''; // Limpa o grid antes de adicionar cards
+
         if (querySnapshot.empty) {
             grid.innerHTML = '<p style="color: #dc2626; font-weight:bold;">Você ainda não possui empresas cadastradas.</p>';
-            grid.appendChild(criarNovoCard());
-            return;
         }
 
-        // Se só tem UMA empresa, seleciona automaticamente e redireciona (NÃO mostra tela)
-        if (querySnapshot.size === 1) {
-            const unica = querySnapshot.docs[0];
-            localStorage.setItem('empresaAtivaId', unica.id);
-            window.location.href = 'index.html';
-            return;
-        }
-
-        // Se tem MAIS DE UMA, exibe todas para selecionar
-        grid.innerHTML = '';
         querySnapshot.forEach((doc) => {
             const empresa = doc.data();
             const empresaCard = criarEmpresaCard(doc.id, empresa);
@@ -75,7 +59,7 @@ async function carregarOuRedirecionarEmpresas(donoId) {
         grid.appendChild(criarCard);
 
     } catch (error) {
-        loader.style.display = 'none'; // Oculta o loader em caso de erro também
+        loader.style.display = "none";
         console.error("Erro ao carregar empresas:", error);
         grid.innerHTML = '<p style="color: red;">Não foi possível carregar as suas empresas. Tente novamente.</p>';
     }
@@ -93,11 +77,12 @@ function criarEmpresaCard(id, data) {
     card.href = '#';
     card.onclick = () => selecionarEmpresa(id);
 
-    const logoSrc = data.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(data.nomeFantasia?.charAt(0) || "E")}`;
+    const nomeFantasia = data.nomeFantasia || "Empresa";
+    const logoSrc = data.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(nomeFantasia.charAt(0))}`;
 
     card.innerHTML = `
-        <img src="${logoSrc}" alt="Logo de ${data.nomeFantasia || "Empresa"}" class="empresa-logo">
-        <span class="empresa-nome">${data.nomeFantasia || "Empresa sem nome"}</span>
+        <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
+        <span class="empresa-nome">${nomeFantasia}</span>
     `;
     return card;
 }
