@@ -5,8 +5,8 @@
 // ======================================================================
 
 import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- ELEMENTOS DO DOM ---
 const grid = document.getElementById('empresas-grid');
@@ -38,6 +38,22 @@ async function carregarEmpresas(donoId) {
 
         grid.innerHTML = ''; // Limpa o loader
 
+        // Se não tem empresas cadastradas, mostra mensagem e só o card de criar nova
+        if (querySnapshot.empty) {
+            grid.innerHTML = '<p style="color: #dc2626; font-weight:bold;">Você ainda não possui empresas cadastradas.</p>';
+            grid.appendChild(criarNovoCard());
+            return;
+        }
+
+        // Se só tem UMA empresa, seleciona automaticamente e redireciona
+        if (querySnapshot.size === 1) {
+            const unica = querySnapshot.docs[0];
+            localStorage.setItem('empresaAtivaId', unica.id);
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // Se tem MAIS DE UMA, exibe todas para selecionar
         querySnapshot.forEach((doc) => {
             const empresa = doc.data();
             const empresaCard = criarEmpresaCard(doc.id, empresa);
