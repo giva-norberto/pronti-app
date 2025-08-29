@@ -11,7 +11,10 @@ let empresaId = null;
 let servicoId = null;
 let servicoEditando = null;
 let isDono = false;
+let isAdmin = false;
 let userUid = null;
+
+const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Mantenha igual ao das regras Firestore
 
 // Obtém o empresaId da empresa ativa do localStorage.
 function getEmpresaIdAtiva() {
@@ -45,6 +48,7 @@ function usuarioEDono(empresa, uid) {
     return empresa && empresa.donoId === uid;
 }
 
+// Autenticação e carregamento inicial
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
@@ -53,36 +57,58 @@ onAuthStateChanged(auth, async (user) => {
     
     userUid = user.uid;
     empresaId = getEmpresaIdAtiva();
-    const empresa = await getEmpresaDoUsuario(user.uid);
+    isAdmin = userUid === ADMIN_UID;
 
-    if (!empresaId) {
+    console.log("Usuário autenticado:", userUid, "Empresa ativa:", empresaId, "É admin:", isAdmin);
+
+    let empresa = null;
+    if (empresaId) {
+        // Busca o documento da empresa ativa para logar o donoId real
+        const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
+        if (empresaSnap.exists()) {
+            empresa = { id: empresaSnap.id, ...empresaSnap.data() };
+            console.log("Dono da empresa ativa (donoId):", empresa.donoId);
+        } else {
+            console.warn("Empresa ativa não encontrada no Firestore!");
+            alert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa.");
+            if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
+            if (btnExcluir) btnExcluir.style.display = 'none';
+            return;
+        }
+    } else {
         alert("Atenção: Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
         if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
         if (btnExcluir) btnExcluir.style.display = 'none';
         return;
     }
 
-    isDono = empresa && usuarioEDono(empresa, user.uid);
+    isDono = usuarioEDono(empresa, userUid);
 
     servicoId = getIdFromUrl();
     if (servicoId) {
         const tituloForm = document.querySelector('.form-card h1');
         if (tituloForm) tituloForm.textContent = 'Editar Serviço';
-        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
-        const servicoSnap = await getDoc(servicoRef);
-        if (servicoSnap.exists()) {
-            servicoEditando = { id: servicoSnap.id, ...servicoSnap.data() };
-            preencherFormulario(servicoEditando);
+        // Validação extra: só busca se servicoId é válido
+        if (empresaId && servicoId) {
+            const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+            const servicoSnap = await getDoc(servicoRef);
+            if (servicoSnap.exists()) {
+                servicoEditando = { id: servicoSnap.id, ...servicoSnap.data() };
+                preencherFormulario(servicoEditando);
+            } else {
+                alert("Serviço não encontrado!");
+            }
         }
     }
 
-    if (!isDono && !servicoId) {
-        alert("Acesso Negado: Apenas o dono da empresa pode criar novos serviços.");
+    // Só permite criar se for dono OU admin
+    if (!isDono && !isAdmin && !servicoId) {
+        alert("Acesso Negado: Apenas o dono da empresa ou o admin podem criar novos serviços.");
         if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
     }
 
     if (btnExcluir) {
-        if (servicoEditando && isDono) {
+        if (servicoEditando && (isDono || isAdmin)) {
             btnExcluir.style.display = 'block';
         } else {
             btnExcluir.style.display = 'none';
@@ -90,26 +116,23 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// ======================================================================
-//          CORREÇÃO: ouvintes de evento fora do onAuthStateChanged
-// ======================================================================
 if (form) form.addEventListener('submit', handleFormSubmit);
 if (btnExcluir) btnExcluir.addEventListener('click', handleServicoExcluir);
-// ======================================================================
 
+// SUBMISSÃO DO FORMULÁRIO
 async function handleFormSubmit(e) {
     e.preventDefault();
 
-    // Diagnóstico: log empresaId e userUid
-    // console.log("empresaId", empresaId, "userUid", userUid);
+    // Logs de validação
+    console.log("SUBMIT - empresaId:", empresaId, "UID:", userUid, "isDono:", isDono, "isAdmin:", isAdmin);
 
     if (!empresaId) {
         alert("Erro: Empresa não identificada. Tente recarregar a página.");
         return;
     }
     
-    if (!isDono && !servicoEditando) {
-        alert("Acesso Negado: Apenas o dono pode criar um novo serviço.");
+    if (!isDono && !isAdmin && !servicoEditando) {
+        alert("Acesso Negado: Apenas o dono ou admin podem criar um novo serviço.");
         return;
     }
 
@@ -129,9 +152,13 @@ async function handleFormSubmit(e) {
 
     try {
         if (servicoEditando) {
+            // Edição
+            if (!empresaId || !servicoId) throw new Error("Dados de identificação do serviço incompletos.");
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
+            // Criação
+            if (!empresaId) throw new Error("Empresa ativa não definida.");
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
             await addDoc(servicosCol, { 
                 nome, 
@@ -145,6 +172,8 @@ async function handleFormSubmit(e) {
         alert(servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
         window.location.href = 'servicos.html';
     } catch (err) {
+        // Log e alerta detalhados para depuração
+        console.error("Erro ao salvar serviço:", err);
         alert(`Ocorreu um erro ao salvar o serviço: ${err.message}`);
     } finally {
         btnSalvar.disabled = false;
@@ -152,19 +181,22 @@ async function handleFormSubmit(e) {
     }
 }
 
+// EXCLUSÃO DO SERVIÇO
 async function handleServicoExcluir(e) {
     e.preventDefault();
-    if (!isDono || !servicoEditando) return;
+    if ((!isDono && !isAdmin) || !servicoEditando) return;
     
     const confirmado = confirm("Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
     if (!confirmado) return;
 
     try {
+        if (!empresaId || !servicoId) throw new Error("Dados de identificação do serviço incompletos.");
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         await deleteDoc(servicoRef);
         alert("Serviço excluído com sucesso.");
         window.location.href = 'servicos.html';
     } catch (err) {
+        console.error("Erro ao excluir serviço:", err);
         alert(`Ocorreu um erro ao excluir o serviço: ${err.message}`);
     }
 }
