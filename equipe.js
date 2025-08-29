@@ -92,6 +92,7 @@ async function inicializar() {
     try {
         // MULTIEMPRESA: PEGA empresaId do localStorage
         empresaId = localStorage.getItem("empresaAtivaId");
+        // Validação: só mostra tela se não houver empresa ativa
         if (!empresaId) {
             alert("Nenhuma empresa ativa selecionada!");
             window.location.href = "selecionar-empresa.html";
