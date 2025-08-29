@@ -1,10 +1,10 @@
 // ======================================================================
-//                    NOVO-SERVICO.JS (VERSÃO DE DIAGNÓSTICO)
+//                    NOVO-SERVICO.JS (VERSÃO COM VALIDAÇÃO DIRETA)
 // ======================================================================
 
 import { 
     doc, getDoc, updateDoc, deleteDoc, 
-    collection, addDoc 
+    collection, addDoc, query, where, getDocs
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js"; 
@@ -33,45 +33,60 @@ let temPermissaoParaEditar = false;
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
 
+// --- NOVA FUNÇÃO DE "VARREDURA" ---
+/**
+ * Busca no banco de dados a empresa da qual o usuário é dono.
+ * @param {string} uid - O ID do usuário logado.
+ * @returns {Promise<string|null>} O ID da empresa ou null se não encontrar.
+ */
+async function getEmpresaDoDono(uid) {
+    const empresariosRef = collection(db, "empresarios");
+    const q = query(empresariosRef, where("donoId", "==", uid));
+    try {
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            // Retorna o ID da primeira empresa encontrada para este dono
+            return snapshot.docs[0].id;
+        }
+        return null; // Retorna nulo se o usuário não for dono de nenhuma empresa
+    } catch (error) {
+        console.error("Erro ao fazer a 'varredura' por empresa:", error);
+        return null;
+    }
+}
+
+
 // --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, async (user) => {
-    console.clear(); // Limpa o console para facilitar a leitura
-    console.log("==== INICIANDO DIAGNÓSTICO DE PERMISSÃO ====");
-
     if (!user) {
-        console.log("DIAGNÓSTICO: Nenhum utilizador logado. Redirecionando...");
         window.location.href = 'login.html';
         return;
     }
 
-    console.log(`DIAGNÓSTICO: Utilizador logado. UID: ${user.uid}`);
-    console.log(`DIAGNÓSTICO: ADMIN_UID definido no código: ${ADMIN_UID}`);
     const isAdmin = user.uid === ADMIN_UID;
-    console.log(`DIAGNÓSTICO: Este utilizador é o Admin? ${isAdmin}`);
-
+    
     try {
-        empresaId = localStorage.getItem("empresaAtivaId");
-        console.log(`DIAGNÓSTICO: ID da empresa ativa (localStorage): ${empresaId}`);
+        // CORREÇÃO: A lógica agora faz a "varredura" em vez de ler da memória local
+        empresaId = await getEmpresaDoDono(user.uid);
 
-        if (!empresaId) {
-            throw new Error("Nenhuma empresa ativa selecionada. Por favor, volte ao seu perfil.");
+        if (!empresaId && !isAdmin) {
+             // Se não encontrou empresa e não é admin, não pode fazer nada.
+             await mostrarAlerta("Acesso Negado", "Você precisa primeiro cadastrar sua empresa na tela de perfil.");
+             form.querySelector('button[type="submit"]').disabled = true;
+             return;
         }
-
-        const empresaRef = doc(db, "empresarios", empresaId);
-        const empresaSnap = await getDoc(empresaRef);
         
-        let isDono = false;
-        if (empresaSnap.exists()) {
-            const donoId = empresaSnap.data().donoId;
-            console.log(`DIAGNÓSTICO: 'donoId' da empresa no banco de dados: ${donoId}`);
-            isDono = (user.uid === donoId);
-            console.log(`DIAGNÓSTICO: Este utilizador é o Dono desta empresa? ${isDono}`);
-        } else {
-            console.error(`DIAGNÓSTICO: A empresa com ID "${empresaId}" não foi encontrada no banco de dados.`);
+        // Se for admin e não houver empresa selecionada, usa a do localStorage (para gerenciar outras)
+        if (isAdmin && !empresaId) {
+             empresaId = localStorage.getItem("empresaAtivaId");
         }
-
-        temPermissaoParaEditar = isDono || isAdmin;
-        console.log(`DIAGNÓSTICO: RESULTADO FINAL - Tem permissão para editar? ${temPermissaoParaEditar}`);
+        
+        if (!empresaId) {
+            throw new Error("Nenhuma empresa ativa selecionada. Por favor, verifique seu perfil.");
+        }
+        
+        // A permissão é verdadeira se o sistema encontrou uma empresa para este dono, ou se é o Admin.
+        temPermissaoParaEditar = !!empresaId || isAdmin;
 
         servicoId = new URLSearchParams(window.location.search).get('id');
 
@@ -91,16 +106,11 @@ onAuthStateChanged(auth, async (user) => {
         } else {
             tituloPagina.textContent = 'Novo Serviço';
             if (!temPermissaoParaEditar) {
-                 console.log("DIAGNÓSTICO: Acesso negado. Mostrando alerta.");
                  await mostrarAlerta("Acesso Negado", "Apenas o dono da empresa ou um administrador pode criar novos serviços.");
                  form.querySelector('button[type="submit"]').disabled = true;
-            } else {
-                 console.log("DIAGNÓSTICO: Acesso permitido. Formulário de criação habilitado.");
             }
         }
-        console.log("==== DIAGNÓSTICO CONCLUÍDO ====");
     } catch (error) {
-        console.error("==== ERRO NO DIAGNÓSTICO ====", error);
         await mostrarAlerta("Erro", error.message);
         const submitButton = form.querySelector('button[type="submit"]');
         if (submitButton) {
@@ -181,4 +191,3 @@ async function handleServicoExcluir(e) {
         await mostrarAlerta("Erro", `Ocorreu um erro ao excluir o serviço: ${err.message}`);
     }
 }
-
