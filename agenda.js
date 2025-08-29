@@ -11,15 +11,10 @@
  * - [NOVA LÓGICA RETROATIVO] Sempre que houver dias anteriores com agendamentos "ativos", o sistema pergunta para cada dia retroativo (um por vez) se deseja finalizar antes de mostrar o dia/filtro atual.
  */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, orderBy, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
-
-// Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// CIRÚRGICO: Corrija as importações para usar a versão correta do Firebase e importação do config central!
+import { db, auth } from "./firebase-config.js";
+import { collection, getDocs, query, where, orderBy, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // ----------- MULTI-EMPRESA: Checa empresa ativa -----------
 let empresaId = localStorage.getItem("empresaAtivaId");
