@@ -14,11 +14,16 @@ let isDono = false;
 let isAdmin = false;
 let userUid = null;
 
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Mantenha igual ao das regras Firestore
+const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Igual às suas regras
 
 // Obtém o empresaId da empresa ativa do localStorage.
 function getEmpresaIdAtiva() {
     return localStorage.getItem("empresaAtivaId") || null;
+}
+
+// Limpa empresa ativa do localStorage
+function limparEmpresaAtiva() {
+    localStorage.removeItem("empresaAtivaId");
 }
 
 // Busca a empresa do usuário logado como dono.
@@ -48,7 +53,6 @@ function usuarioEDono(empresa, uid) {
     return empresa && empresa.donoId === uid;
 }
 
-// Autenticação e carregamento inicial
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
@@ -70,9 +74,10 @@ onAuthStateChanged(auth, async (user) => {
             console.log("Dono da empresa ativa (donoId):", empresa.donoId);
         } else {
             console.warn("Empresa ativa não encontrada no Firestore!");
-            alert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa.");
-            if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
-            if (btnExcluir) btnExcluir.style.display = 'none';
+            alert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa ou selecione uma empresa existente.");
+            limparEmpresaAtiva();
+            // Opcional: redirecione usuário para tela de cadastro/seleção de empresa
+            window.location.href = 'selecionar-empresa.html';
             return;
         }
     } else {
@@ -88,7 +93,6 @@ onAuthStateChanged(auth, async (user) => {
     if (servicoId) {
         const tituloForm = document.querySelector('.form-card h1');
         if (tituloForm) tituloForm.textContent = 'Editar Serviço';
-        // Validação extra: só busca se servicoId é válido
         if (empresaId && servicoId) {
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             const servicoSnap = await getDoc(servicoRef);
@@ -119,11 +123,9 @@ onAuthStateChanged(auth, async (user) => {
 if (form) form.addEventListener('submit', handleFormSubmit);
 if (btnExcluir) btnExcluir.addEventListener('click', handleServicoExcluir);
 
-// SUBMISSÃO DO FORMULÁRIO
 async function handleFormSubmit(e) {
     e.preventDefault();
 
-    // Logs de validação
     console.log("SUBMIT - empresaId:", empresaId, "UID:", userUid, "isDono:", isDono, "isAdmin:", isAdmin);
 
     if (!empresaId) {
@@ -152,12 +154,10 @@ async function handleFormSubmit(e) {
 
     try {
         if (servicoEditando) {
-            // Edição
             if (!empresaId || !servicoId) throw new Error("Dados de identificação do serviço incompletos.");
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
-            // Criação
             if (!empresaId) throw new Error("Empresa ativa não definida.");
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
             await addDoc(servicosCol, { 
@@ -172,7 +172,6 @@ async function handleFormSubmit(e) {
         alert(servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
         window.location.href = 'servicos.html';
     } catch (err) {
-        // Log e alerta detalhados para depuração
         console.error("Erro ao salvar serviço:", err);
         alert(`Ocorreu um erro ao salvar o serviço: ${err.message}`);
     } finally {
@@ -181,7 +180,6 @@ async function handleFormSubmit(e) {
     }
 }
 
-// EXCLUSÃO DO SERVIÇO
 async function handleServicoExcluir(e) {
     e.preventDefault();
     if ((!isDono && !isAdmin) || !servicoEditando) return;
