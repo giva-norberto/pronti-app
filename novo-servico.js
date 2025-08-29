@@ -1,6 +1,5 @@
 // ======================================================================
-//                    NOVO-SERVICO.JS
-//      Gerencia o cadastro e edição de serviços para a empresa
+//                    NOVO-SERVICO.JS (VERSÃO DE DIAGNÓSTICO)
 // ======================================================================
 
 import { 
@@ -30,42 +29,53 @@ btnExcluir.style.display = 'none';
 // --- VARIÁVEIS DE ESTADO ---
 let empresaId = null;
 let servicoId = null;
-let temPermissaoParaEditar = false; // Nome mais claro para incluir Admin
+let temPermissaoParaEditar = false;
 
-// ======================================================================
-//          CORREÇÃO CIRÚRGICA APLICADA AQUI
-// ======================================================================
-// O seu ID de Administrador é definido aqui para ser usado na verificação.
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
-// ======================================================================
-
 
 // --- INICIALIZAÇÃO ---
 onAuthStateChanged(auth, async (user) => {
+    console.clear(); // Limpa o console para facilitar a leitura
+    console.log("==== INICIANDO DIAGNÓSTICO DE PERMISSÃO ====");
+
     if (!user) {
+        console.log("DIAGNÓSTICO: Nenhum utilizador logado. Redirecionando...");
         window.location.href = 'login.html';
         return;
     }
 
+    console.log(`DIAGNÓSTICO: Utilizador logado. UID: ${user.uid}`);
+    console.log(`DIAGNÓSTICO: ADMIN_UID definido no código: ${ADMIN_UID}`);
+    const isAdmin = user.uid === ADMIN_UID;
+    console.log(`DIAGNÓSTICO: Este utilizador é o Admin? ${isAdmin}`);
+
     try {
         empresaId = localStorage.getItem("empresaAtivaId");
+        console.log(`DIAGNÓSTICO: ID da empresa ativa (localStorage): ${empresaId}`);
+
         if (!empresaId) {
             throw new Error("Nenhuma empresa ativa selecionada. Por favor, volte ao seu perfil.");
         }
 
-        // Lógica de permissão corrigida para incluir o Admin
         const empresaRef = doc(db, "empresarios", empresaId);
         const empresaSnap = await getDoc(empresaRef);
+        
+        let isDono = false;
         if (empresaSnap.exists()) {
             const donoId = empresaSnap.data().donoId;
-            // A permissão é concedida se o utilizador for o dono OU o Admin.
-            temPermissaoParaEditar = (user.uid === donoId) || (user.uid === ADMIN_UID);
+            console.log(`DIAGNÓSTICO: 'donoId' da empresa no banco de dados: ${donoId}`);
+            isDono = (user.uid === donoId);
+            console.log(`DIAGNÓSTICO: Este utilizador é o Dono desta empresa? ${isDono}`);
+        } else {
+            console.error(`DIAGNÓSTICO: A empresa com ID "${empresaId}" não foi encontrada no banco de dados.`);
         }
+
+        temPermissaoParaEditar = isDono || isAdmin;
+        console.log(`DIAGNÓSTICO: RESULTADO FINAL - Tem permissão para editar? ${temPermissaoParaEditar}`);
 
         servicoId = new URLSearchParams(window.location.search).get('id');
 
         if (servicoId) {
-            // Modo de Edição
             tituloPagina.textContent = 'Editar Serviço';
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             const servicoSnap = await getDoc(servicoRef);
@@ -79,14 +89,18 @@ onAuthStateChanged(auth, async (user) => {
                 throw new Error("Serviço não encontrado.");
             }
         } else {
-            // Modo de Criação
             tituloPagina.textContent = 'Novo Serviço';
             if (!temPermissaoParaEditar) {
+                 console.log("DIAGNÓSTICO: Acesso negado. Mostrando alerta.");
                  await mostrarAlerta("Acesso Negado", "Apenas o dono da empresa ou um administrador pode criar novos serviços.");
                  form.querySelector('button[type="submit"]').disabled = true;
+            } else {
+                 console.log("DIAGNÓSTICO: Acesso permitido. Formulário de criação habilitado.");
             }
         }
+        console.log("==== DIAGNÓSTICO CONCLUÍDO ====");
     } catch (error) {
+        console.error("==== ERRO NO DIAGNÓSTICO ====", error);
         await mostrarAlerta("Erro", error.message);
         const submitButton = form.querySelector('button[type="submit"]');
         if (submitButton) {
@@ -95,11 +109,11 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Adiciona os listeners de evento
+// Adiciona os listeners de evento (sem alterações)
 if (form) form.addEventListener('submit', handleFormSubmit);
 btnExcluir.addEventListener('click', handleServicoExcluir);
 
-// --- FUNÇÕES DE LÓGICA ---
+// --- FUNÇÕES DE LÓGICA (sem alterações) ---
 
 function preencherFormulario(servico) {
     nomeInput.value = servico.nome || '';
@@ -167,3 +181,4 @@ async function handleServicoExcluir(e) {
         await mostrarAlerta("Erro", `Ocorreu um erro ao excluir o serviço: ${err.message}`);
     }
 }
+
