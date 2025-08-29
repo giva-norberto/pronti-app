@@ -171,10 +171,29 @@ export async function deletarFotoProfissional(empresaId, profissionalId) {
         }
 
         const fotoUrl = docSnap.data().fotoUrl;
-        const fotoRef = ref(storage, fotoUrl);
+        // Corrige referência do storage: se fotoUrl é uma URL, precisa do caminho
+        // Se fotoUrl já for path do storage, pode passar direto
+        let fotoRef;
+        if (fotoUrl.startsWith('https://')) {
+            // Firebase Storage URLs format: https://firebasestorage.googleapis.com/v0/b/[BUCKET]/o/[PATH]?alt=media
+            // Queremos extrair [PATH]
+            try {
+                const urlObj = new URL(fotoUrl);
+                const pathParam = urlObj.pathname.split('/o/')[1];
+                const pathDecoded = decodeURIComponent(pathParam.split('?')[0]);
+                fotoRef = ref(storage, pathDecoded);
+            } catch (err) {
+                console.warn("Não foi possível extrair o caminho do Storage a partir da URL. Pulando deleção física.");
+                fotoRef = null;
+            }
+        } else {
+            fotoRef = ref(storage, fotoUrl);
+        }
 
-        await deleteObject(fotoRef);
-        console.log("Arquivo de foto deletado do Storage com sucesso.");
+        if (fotoRef) {
+            await deleteObject(fotoRef);
+            console.log("Arquivo de foto deletado do Storage com sucesso.");
+        }
 
         await updateDoc(profDocRef, {
             fotoUrl: null
