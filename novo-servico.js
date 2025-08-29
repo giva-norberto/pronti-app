@@ -53,6 +53,14 @@ function usuarioEDono(empresa, uid) {
     return empresa && empresa.donoId === uid;
 }
 
+// Função para forçar seleção de empresa se não houver empresa ativa
+function redirecionaSeSemEmpresa() {
+    alert("Atenção: Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
+    if(form) form.querySelector('button[type="submit"]').disabled = true;
+    if(btnExcluir) btnExcluir.style.display = 'none';
+    window.location.href = 'selecionar-empresa.html'; // garanta que essa tela existe
+}
+
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
@@ -66,24 +74,21 @@ onAuthStateChanged(auth, async (user) => {
     console.log("Usuário autenticado:", userUid, "Empresa ativa:", empresaId, "É admin:", isAdmin);
 
     let empresa = null;
-    if (empresaId) {
-        // Busca o documento da empresa ativa para logar o donoId real
-        const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
-        if (empresaSnap.exists()) {
-            empresa = { id: empresaSnap.id, ...empresaSnap.data() };
-            console.log("Dono da empresa ativa (donoId):", empresa.donoId);
-        } else {
-            console.warn("Empresa ativa não encontrada no Firestore!");
-            alert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa ou selecione uma empresa existente.");
-            limparEmpresaAtiva();
-            // Opcional: redirecione usuário para tela de cadastro/seleção de empresa
-            window.location.href = 'selecionar-empresa.html';
-            return;
-        }
+    if (!empresaId) {
+        redirecionaSeSemEmpresa();
+        return;
+    }
+
+    // Busca o documento da empresa ativa para logar o donoId real
+    const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
+    if (empresaSnap.exists()) {
+        empresa = { id: empresaSnap.id, ...empresaSnap.data() };
+        console.log("Dono da empresa ativa (donoId):", empresa.donoId);
     } else {
-        alert("Atenção: Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
-        if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
-        if (btnExcluir) btnExcluir.style.display = 'none';
+        console.warn("Empresa ativa não encontrada no Firestore!");
+        alert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa ou selecione uma empresa existente.");
+        limparEmpresaAtiva();
+        window.location.href = 'selecionar-empresa.html';
         return;
     }
 
@@ -108,7 +113,7 @@ onAuthStateChanged(auth, async (user) => {
     // Só permite criar se for dono OU admin
     if (!isDono && !isAdmin && !servicoId) {
         alert("Acesso Negado: Apenas o dono da empresa ou o admin podem criar novos serviços.");
-        if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
+        if(form) form.querySelector('button[type="submit"]').disabled = true;
     }
 
     if (btnExcluir) {
@@ -129,7 +134,7 @@ async function handleFormSubmit(e) {
     console.log("SUBMIT - empresaId:", empresaId, "UID:", userUid, "isDono:", isDono, "isAdmin:", isAdmin);
 
     if (!empresaId) {
-        alert("Erro: Empresa não identificada. Tente recarregar a página.");
+        redirecionaSeSemEmpresa();
         return;
     }
     
