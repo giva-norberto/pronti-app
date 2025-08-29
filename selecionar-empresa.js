@@ -20,7 +20,7 @@ onAuthStateChanged(auth, async (user) => {
         const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Utilizador';
         tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
 
-        // Validação: se já existe empresaAtivaId, vai direto para index.html
+        // Se já existe empresaAtivaId, vai direto para index.html
         const empresaAtivaId = localStorage.getItem('empresaAtivaId');
         if (empresaAtivaId) {
             window.location.href = 'index.html';
@@ -45,6 +45,8 @@ async function carregarOuRedirecionarEmpresas(donoId) {
         const q = query(collection(db, "empresarios"), where("donoId", "==", donoId));
         const querySnapshot = await getDocs(q);
 
+        loader.style.display = 'none'; // Sempre oculta o loader ao finalizar a busca
+
         // Sem empresas cadastradas: mostra mensagem e só o card de criar nova
         if (querySnapshot.empty) {
             grid.innerHTML = '<p style="color: #dc2626; font-weight:bold;">Você ainda não possui empresas cadastradas.</p>';
@@ -61,7 +63,7 @@ async function carregarOuRedirecionarEmpresas(donoId) {
         }
 
         // Se tem MAIS DE UMA, exibe todas para selecionar
-        grid.innerHTML = ''; // Limpa o loader
+        grid.innerHTML = '';
         querySnapshot.forEach((doc) => {
             const empresa = doc.data();
             const empresaCard = criarEmpresaCard(doc.id, empresa);
@@ -73,6 +75,7 @@ async function carregarOuRedirecionarEmpresas(donoId) {
         grid.appendChild(criarCard);
 
     } catch (error) {
+        loader.style.display = 'none'; // Oculta o loader em caso de erro também
         console.error("Erro ao carregar empresas:", error);
         grid.innerHTML = '<p style="color: red;">Não foi possível carregar as suas empresas. Tente novamente.</p>';
     }
