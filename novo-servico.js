@@ -1,5 +1,5 @@
 import { 
-    doc, getDoc, setDoc, updateDoc, deleteDoc, 
+    doc, getDoc, updateDoc, deleteDoc, 
     collection, query, where, getDocs, addDoc 
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -11,6 +11,7 @@ let empresaId = null;
 let servicoId = null;
 let servicoEditando = null;
 let isDono = false;
+let userUid = null;
 
 // Obtém o empresaId da empresa ativa do localStorage.
 function getEmpresaIdAtiva() {
@@ -50,12 +51,13 @@ onAuthStateChanged(auth, async (user) => {
         return;
     }
     
+    userUid = user.uid;
     empresaId = getEmpresaIdAtiva();
     const empresa = await getEmpresaDoUsuario(user.uid);
 
     if (!empresaId) {
         alert("Atenção: Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
-        form.querySelector('button[type="submit"]').disabled = true;
+        if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
         if (btnExcluir) btnExcluir.style.display = 'none';
         return;
     }
@@ -64,7 +66,8 @@ onAuthStateChanged(auth, async (user) => {
 
     servicoId = getIdFromUrl();
     if (servicoId) {
-        document.querySelector('.form-card h1').textContent = 'Editar Serviço';
+        const tituloForm = document.querySelector('.form-card h1');
+        if (tituloForm) tituloForm.textContent = 'Editar Serviço';
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         const servicoSnap = await getDoc(servicoRef);
         if (servicoSnap.exists()) {
@@ -75,7 +78,7 @@ onAuthStateChanged(auth, async (user) => {
 
     if (!isDono && !servicoId) {
         alert("Acesso Negado: Apenas o dono da empresa pode criar novos serviços.");
-        form.querySelector('button[type="submit"]').disabled = true;
+        if(form) form.querySelector('button[type=\"submit\"]').disabled = true;
     }
 
     if (btnExcluir) {
@@ -88,16 +91,17 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ======================================================================
-//          CORREÇÃO APLICADA AQUI
+//          CORREÇÃO: ouvintes de evento fora do onAuthStateChanged
 // ======================================================================
-// Os "ouvintes" de evento foram movidos para fora do onAuthStateChanged
-// para garantir que sejam adicionados apenas uma vez.
 if (form) form.addEventListener('submit', handleFormSubmit);
 if (btnExcluir) btnExcluir.addEventListener('click', handleServicoExcluir);
 // ======================================================================
 
 async function handleFormSubmit(e) {
     e.preventDefault();
+
+    // Diagnóstico: log empresaId e userUid
+    // console.log("empresaId", empresaId, "userUid", userUid);
 
     if (!empresaId) {
         alert("Erro: Empresa não identificada. Tente recarregar a página.");
