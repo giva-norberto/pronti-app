@@ -1,205 +1,173 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <title>Novo Serviço</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      background: #f6f8fa;
-      font-family: 'Inter', Arial, sans-serif;
-      color: #22223b;
-    }
-    .main-content {
-      margin-left: 240px;
-      padding: 36px 40px;
-      min-height: 100vh;
-      background: #f6f8fa;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-    }
-    .form-card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 18px #6366f120;
-      padding: 32px 32px 24px 32px;
-      margin-top: 40px;
-      max-width: 430px;
-      width: 100%;
-    }
-    .form-card h1 {
-      font-size: 2rem;
-      font-weight: bold;
-      margin-bottom: 30px;
-      text-align: center;
-      color: #22223b;
-    }
-    .form-group {
-      margin-bottom: 18px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-    .form-group label {
-      font-size: 1.08rem;
-      font-weight: 500;
-      margin-bottom: 7px;
-    }
-    .form-group input,
-    .form-group textarea {
-      font-size: 1.05rem;
-      padding: 12px 14px;
-      border: 1.5px solid #d7d6e0;
-      border-radius: 7px;
-      background: #f8f8fa;
-      transition: border 0.2s;
-      outline: none;
-      width: 100%;
-      resize: none;
-      margin-bottom: 0;
-    }
-    .form-group input:focus,
-    .form-group textarea:focus {
-      border-color: #6366f1;
-      background: #f6f3ff;
-    }
-    .btn-submit {
-      background: #6366f1;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 14px 0;
-      font-weight: bold;
-      font-size: 1.15rem;
-      cursor: pointer;
-      box-shadow: 0 2px 8px #d6d2f8;
-      width: 100%;
-      margin-top: 18px;
-      transition: background 0.2s;
-      display: block;
-    }
-    .btn-submit:hover {
-      background: #4f46e5;
+import { 
+    doc, getDoc, setDoc, updateDoc, deleteDoc, 
+    collection, query, where, getDocs, addDoc 
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+// ATUALIZADO: Usando a configuração centralizada
+import { db, auth } from "./firebase-config.js"; 
+// ATUALIZADO: Usando as funções de UI do ficheiro correto
+import { mostrarAlerta, mostrarConfirmacao } from "./vitrini-ui.js"; 
+
+const form = document.getElementById('form-servico');
+// O botão de excluir é procurado no HTML, se existir
+const btnExcluir = document.getElementById('btn-excluir-servico'); 
+let empresaId = null;
+let servicoId = null;
+let servicoEditando = null;
+let isDono = false;
+
+// Obtém o empresaId da empresa ativa do localStorage.
+function getEmpresaIdAtiva() {
+    return localStorage.getItem("empresaAtivaId") || null;
+}
+
+// Busca a empresa do usuário logado como dono OU na qual ele é profissional.
+async function getEmpresaDoUsuario(uid) {
+    // Dono
+    let q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    let snapshot = await getDocs(q);
+    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+
+    // Profissional
+    q = query(collection(db, "empresarios"), where("profissionaisUids", "array-contains", uid));
+    snapshot = await getDocs(q);
+    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+
+    return null;
+}
+
+// Extrai o id do serviço da URL (se em edição)
+function getIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+}
+
+// Preenche o formulário com dados do serviço
+function preencherFormulario(servico) {
+    document.getElementById('nome-servico').value = servico.nome || '';
+    document.getElementById('descricao-servico').value = servico.descricao || '';
+    document.getElementById('preco-servico').value = servico.preco !== undefined ? servico.preco : '';
+    document.getElementById('duracao-servico').value = servico.duracao !== undefined ? servico.duracao : '';
+}
+
+// Checa se usuário é dono da empresa
+function usuarioEDono(empresa, uid) {
+    return empresa && empresa.donoId === uid;
+}
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
     }
     
-    /* Estilos para o Modal de Alerta - Adicionados para compatibilidade */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    }
-    .modal-content {
-        background: white;
-        padding: 20px 30px;
-        border-radius: 10px;
-        text-align: center;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        max-width: 400px;
-    }
-    .modal-buttons {
-        margin-top: 20px;
-    }
-    .btn-principal, .btn-secundario {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    .btn-principal {
-        background-color: #6366f1;
-        color: white;
-    }
-    .btn-secundario {
-        background-color: #e2e8f0;
-        color: #1e293b;
-        margin-left: 10px;
+    empresaId = getEmpresaIdAtiva();
+    const empresa = await getEmpresaDoUsuario(user.uid);
+
+    if (!empresaId) {
+        await mostrarAlerta("Atenção", "Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
+        form.querySelector('button[type="submit"]').disabled = true;
+        if (btnExcluir) btnExcluir.style.display = 'none';
+        return;
     }
 
-    @media (max-width: 900px) {
-      .main-content { margin-left: 0; padding: 24px 10px; }
-      .form-card { margin: 24px auto 0 auto; }
+    isDono = empresa && usuarioEDono(empresa, user.uid);
+
+    servicoId = getIdFromUrl();
+    if (servicoId) {
+        document.querySelector('.form-card h1').textContent = 'Editar Serviço';
+        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+        const servicoSnap = await getDoc(servicoRef);
+        if (servicoSnap.exists()) {
+            servicoEditando = { id: servicoSnap.id, ...servicoSnap.data() };
+            preencherFormulario(servicoEditando);
+        }
     }
-    @media (max-width: 600px) {
-      .form-card { padding: 16px 8vw; }
-      .main-content { padding: 8px; }
+
+    // Só dono pode criar novo serviço
+    if (!isDono && !servicoId) {
+        await mostrarAlerta("Acesso Negado", "Apenas o dono da empresa pode criar novos serviços.");
+        form.querySelector('button[type="submit"]').disabled = true;
     }
-  </style>
-</head>
-<body>
-  <!-- Sidebar/menu lateral INCLUDE -->
-  <div id="sidebar-placeholder"></div>
 
-  <!-- Conteúdo principal -->
-  <div class="main-content">
-    <div class="form-card">
-      <h1>Novo Serviço</h1>
-      <form id="form-servico">
-        <div class="form-group">
-          <label for="nome-servico">Nome do Serviço</label>
-          <input id="nome-servico" name="nome-servico" type="text" required />
-        </div>
-        <div class="form-group">
-          <label for="descricao-servico">Descrição</label>
-          <textarea id="descricao-servico" name="descricao-servico" rows="2" required></textarea>
-        </div>
-        <div class="form-group">
-          <label for="preco-servico">Preço</label>
-          <input id="preco-servico" name="preco-servico" type="number" min="0" step="0.01" required />
-        </div>
-        <div class="form-group">
-          <label for="duracao-servico">Duração (minutos)</label>
-          <input id="duracao-servico" name="duracao-servico" type="number" min="1" required />
-        </div>
-        <button type="submit" class="btn-submit">Salvar Serviço</button>
-      </form>
-    </div>
-  </div>
+    // Botão de exclusão só aparece se está editando E usuário é dono
+    if (btnExcluir) {
+        if (servicoEditando && isDono) {
+            btnExcluir.style.display = 'block'; // Mostra o botão
+            btnExcluir.addEventListener('click', handleServicoExcluir);
+        } else {
+            btnExcluir.style.display = 'none';
+        }
+    }
 
-  <!-- ====================================================== -->
-  <!--   HTML DO MODAL DE ALERTA (A PEÇA QUE FALTAVA)         -->
-  <!-- ====================================================== -->
-  <div id="alert-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-      <h2 id="alert-modal-title">Título do Alerta</h2>
-      <p id="alert-modal-message">Mensagem do alerta.</p>
-      <button id="alert-modal-close" class="btn-principal">OK</button>
-    </div>
-  </div>
+    form.addEventListener('submit', handleFormSubmit);
+});
 
-  <!-- HTML para o modal de confirmação (Sim/Não), caso seu vitrini-utils.js o utilize -->
-  <div id="confirm-modal" class="modal-overlay" style="display: none;">
-      <div class="modal-content">
-          <h2 id="confirm-modal-title">Título da Confirmação</h2>
-          <p id="confirm-modal-message">Mensagem da confirmação.</p>
-          <div class="modal-buttons">
-              <button id="confirm-modal-yes" class="btn-principal">Sim</button>
-              <button id="confirm-modal-no" class="btn-secundario">Não</button>
-          </div>
-      </div>
-  </div>
-  <!-- ====================================================== -->
+async function handleFormSubmit(e) {
+    e.preventDefault();
 
-  <!-- SCRIPTS DOS MÓDULOS -->
-  <script type="module" src="firebase-config.js"></script>
-  <script type="module" src="novo-servico.js"></script>
-  <script>
-    // Inclui o menu-lateral.html dinamicamente
-    document.addEventListener("DOMContentLoaded", function() {
-      fetch('menu-lateral.html')
-        .then(res => res.text())
-        .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-        });
-    });
-  </script>
-</body>
-</html>
+    if (!empresaId) {
+        await mostrarAlerta("Erro", "Empresa não identificada. Tente recarregar a página.");
+        return;
+    }
+    
+    if (!isDono && !servicoEditando) {
+        await mostrarAlerta("Acesso Negado", "Apenas o dono pode criar um novo serviço.");
+        return;
+    }
+
+    const nome = document.getElementById('nome-servico').value.trim();
+    const descricao = document.getElementById('descricao-servico').value.trim();
+    const preco = parseFloat(document.getElementById('preco-servico').value);
+    const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
+
+    if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
+        await mostrarAlerta("Dados Inválidos", "Preencha todos os campos obrigatórios corretamente.");
+        return;
+    }
+
+    const btnSalvar = form.querySelector('button[type="submit"]');
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = "Salvando...";
+
+    try {
+        if (servicoEditando) {
+            const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+            await updateDoc(servicoRef, { nome, descricao, preco, duracao });
+        } else {
+            const servicosCol = collection(db, "empresarios", empresaId, "servicos");
+            await addDoc(servicosCol, { 
+                nome, 
+                descricao, 
+                preco, 
+                duracao, 
+                visivelNaVitrine: true 
+            });
+        }
+
+        await mostrarAlerta("Sucesso!", servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
+        window.location.href = 'servicos.html';
+    } catch (err) {
+        await mostrarAlerta("Erro", `Ocorreu um erro ao salvar o serviço: ${err.message}`);
+    } finally {
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = "Salvar Serviço";
+    }
+}
+
+async function handleServicoExcluir(e) {
+    e.preventDefault();
+    if (!isDono || !servicoEditando) return;
+    
+    const confirmado = await mostrarConfirmacao("Excluir Serviço", "Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
+    if (!confirmado) return;
+
+    try {
+        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+        await deleteDoc(servicoRef);
+        await mostrarAlerta("Serviço Excluído", "O serviço foi removido com sucesso.");
+        window.location.href = 'servicos.html';
+    } catch (err) {
+        await mostrarAlerta("Erro", `Ocorreu um erro ao excluir o serviço: ${err.message}`);
+    }
+}
