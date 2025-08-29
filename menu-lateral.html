@@ -1,12 +1,12 @@
 <!-- ====================================================================== -->
-<!--          MENU-LATERAL.HTML (VERSÃO FINAL, COMPLETA E CORRIGIDA)        -->
+<!--          MENU-LATERAL.HTML (VERSÃO FINAL, RESPONSIVA E SEGURA)         -->
 <!-- ====================================================================== -->
 
-<!-- 1. HTML DO MENU -->
+<!-- 1. HTML DO MENU (Hamburger incluído para mobile) -->
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
-    <nav class="sidebar-links">
+    <nav class="sidebar-links" id="sidebar-links">
         <a href="index.html"><span>🏠</span> Início</a>
         <a href="dashboard.html"><span>📊</span> Dashboard</a>
         <a href="servicos.html"><span>🛠️</span> Serviços</a>
@@ -19,6 +19,12 @@
     <div class="sidebar-footer">
         <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
+    <!-- Hamburger para mobile -->
+    <button id="sidebar-hamburger" aria-label="Abrir menu" class="sidebar-hamburger" tabindex="0">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
 </aside>
 
 <!-- 2. CSS DO MENU -->
@@ -26,8 +32,9 @@
 .sidebar {
   width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
   min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed; left: 0; top: 0; bottom: 0; z-index: 10;
+  position: fixed; left: 0; top: 0; bottom: 0; z-index: 20;
   display: flex; flex-direction: column; padding-top: 24px;
+  transition: left 0.3s;
 }
 .sidebar-brand {
   font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
@@ -58,26 +65,77 @@
 }
 .btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; }
 
+.sidebar-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 101;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.sidebar-hamburger span {
+  display: block;
+  width: 28px;
+  height: 3px;
+  background: #fff;
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+.sidebar-hamburger:focus { background: #4f46e522; outline: 2px solid #fff; }
+.sidebar-hamburger span:last-child { margin-bottom: 0; }
+
 @media (max-width: 900px) {
   .sidebar {
-    width: 100vw; min-height: auto; position: static;
-    flex-direction: row; align-items: center;
-    padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    font-size: 0.95em;
+    width: 205px;
+    min-height: 100vh;
+    left: -215px;
+    top: 0;
+    bottom: 0;
+    position: fixed;
+    box-shadow: 2px 0 8px #21213b10;
+    transition: left 0.35s cubic-bezier(.7,0,.3,1);
+    background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+    padding-top: 20px;
   }
-  .sidebar-brand { font-size: 1.4rem; padding: 10px 10px 4px 10px; margin-bottom: 0; text-align: left; }
+  .sidebar.show {
+    left: 0;
+  }
+  .sidebar-hamburger {
+    display: flex;
+  }
+  .sidebar-brand { font-size: 1.4rem; padding: 10px 10px 4px 18px; margin-bottom: 0; text-align: left; }
   .sidebar hr { display: none; }
-  .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; overflow-x: auto; }
+  .sidebar-links { flex-direction: column; gap: 6px; padding: 0 12px; }
   .sidebar-links a { font-size: 1em; padding: 10px 12px; margin-bottom: 0; white-space: nowrap; }
-  .sidebar-footer { padding: 8px 8px 10px 8px; margin-left: auto; }
+  .sidebar-footer { padding: 8px 12px 10px 12px; }
   .btn-logout { padding: 10px 0; font-size: 1em; }
+  /* Fundo escurecido ao abrir menu */
+  body.menu-open::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(30,30,50,0.32);
+    z-index: 19;
+    pointer-events: all;
+    transition: opacity 0.25s;
+  }
 }
+
+/* Para evitar scroll horizontal ao abrir o menu */
+body.menu-open { overflow-x: hidden; }
 </style>
 
-<!-- 3. SCRIPT DE SEGURANÇA E CONTROLE DE SESSÃO -->
+<!-- 3. SCRIPT DE SEGURANÇA E CONTROLE DE SESSÃO + HAMBURGER -->
 <script type="module">
     import { auth } from "./firebase-config.js"; 
-    import { onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
     // -- Persistência da sessão --
     setPersistence(auth, browserLocalPersistence )
@@ -105,7 +163,7 @@
         });
     }
 
-    // -- Lógica do menu --
+    // -- Lógica do menu e hamburger --
     function setupMenu() {
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
@@ -126,6 +184,42 @@
                 signOut(auth).then(() => {
                   localStorage.removeItem("empresaAtivaId");
                   window.location.replace('login.html');
+                });
+            });
+        }
+
+        // Hamburger logic (só aparece no mobile)
+        const hamburger = document.getElementById('sidebar-hamburger');
+        const sidebar = document.getElementById('sidebar');
+
+        if (hamburger && sidebar) {
+            hamburger.onclick = (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('show');
+                document.body.classList.toggle('menu-open', sidebar.classList.contains('show'));
+            };
+
+            // Fecha menu ao clicar fora
+            document.addEventListener('click', (evt) => {
+                if (window.innerWidth <= 900) {
+                    if (
+                        sidebar.classList.contains('show') &&
+                        !sidebar.contains(evt.target) &&
+                        evt.target !== hamburger
+                    ) {
+                        sidebar.classList.remove('show');
+                        document.body.classList.remove('menu-open');
+                    }
+                }
+            });
+
+            // Fecha ao clicar em qualquer link do menu
+            links.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 900) {
+                        sidebar.classList.remove('show');
+                        document.body.classList.remove('menu-open');
+                    }
                 });
             });
         }
