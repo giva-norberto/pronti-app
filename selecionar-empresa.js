@@ -15,37 +15,36 @@ const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
 const btnLogout = document.getElementById('btn-logout');
 
 // --- INICIALIZAÇÃO ---
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // Se o utilizador estiver logado, busca as suas empresas
         const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Utilizador';
         tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-        carregarEmpresas(user.uid);
+        // Carregar empresas e decidir se mostra seleção ou redireciona direto
+        await carregarOuRedirecionarEmpresas(user.uid);
     } else {
-        // Se não estiver logado, redireciona para a página de login
         window.location.href = 'login.html';
     }
 });
 
 /**
- * Busca no Firestore todas as empresas associadas a um dono e renderiza na tela.
+ * Busca no Firestore todas as empresas associadas a um dono.
+ * Se só tiver uma, já seleciona e redireciona.
+ * Se tiver mais de uma, exibe para o usuário escolher.
  * @param {string} donoId - O UID do utilizador autenticado.
  */
-async function carregarEmpresas(donoId) {
+async function carregarOuRedirecionarEmpresas(donoId) {
     try {
         const q = query(collection(db, "empresarios"), where("donoId", "==", donoId));
         const querySnapshot = await getDocs(q);
 
-        grid.innerHTML = ''; // Limpa o loader
-
-        // Se não tem empresas cadastradas, mostra mensagem e só o card de criar nova
+        // Sem empresas cadastradas: mostra mensagem e só o card de criar nova
         if (querySnapshot.empty) {
             grid.innerHTML = '<p style="color: #dc2626; font-weight:bold;">Você ainda não possui empresas cadastradas.</p>';
             grid.appendChild(criarNovoCard());
             return;
         }
 
-        // Se só tem UMA empresa, seleciona automaticamente e redireciona
+        // Se só tem UMA empresa, seleciona automaticamente e redireciona (NÃO mostra tela)
         if (querySnapshot.size === 1) {
             const unica = querySnapshot.docs[0];
             localStorage.setItem('empresaAtivaId', unica.id);
@@ -54,6 +53,7 @@ async function carregarEmpresas(donoId) {
         }
 
         // Se tem MAIS DE UMA, exibe todas para selecionar
+        grid.innerHTML = ''; // Limpa o loader
         querySnapshot.forEach((doc) => {
             const empresa = doc.data();
             const empresaCard = criarEmpresaCard(doc.id, empresa);
@@ -112,9 +112,7 @@ function criarNovoCard() {
  * @param {string} empresaId - O ID da empresa que foi clicada.
  */
 function selecionarEmpresa(empresaId) {
-    // Usamos localStorage para que a seleção persista entre abas e sessões
     localStorage.setItem('empresaAtivaId', empresaId);
-    // Redirecionamento para index.html
     window.location.href = 'index.html'; 
 }
 
