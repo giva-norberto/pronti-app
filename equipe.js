@@ -4,12 +4,8 @@
 //             (100% Frontend, Sem Cloud Functions)
 // ======================================================================
 
-// Variáveis globais
-let db, auth, storage;
-let empresaId = null;
-let profissionalAtual = null;
-let servicosDisponiveis = [];
-let editandoProfissionalId = null;
+// Importação centralizada do Firebase config (nome do banco garantido)
+import { db, auth, storage } from "./firebase-config.js";
 
 // Horários base com dias INATIVOS por padrão, para novos funcionários
 let horariosBase = {
@@ -23,6 +19,11 @@ let horariosBase = {
 };
 let intervaloBase = 30;
 let agendaEspecial = [];
+
+let empresaId = null;
+let profissionalAtual = null;
+let servicosDisponiveis = [];
+let editandoProfissionalId = null;
 
 // Elementos DOM
 const elementos = {
@@ -86,23 +87,19 @@ function setupPerfilTabs() {
 }
 window.addEventListener('DOMContentLoaded', setupPerfilTabs);
 
-// Inicialização
+// Inicialização da equipe
 async function inicializar() {
     try {
-        const firebaseConfig = await import('./firebase-config.js');
-        db = firebaseConfig.db; auth = firebaseConfig.auth; storage = firebaseConfig.storage;
-
-        const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-
-        onAuthStateChanged(auth, async (user) => {
+        // MULTIEMPRESA: PEGA empresaId do localStorage
+        empresaId = localStorage.getItem("empresaAtivaId");
+        if (!empresaId) {
+            alert("Nenhuma empresa ativa selecionada!");
+            window.location.href = "selecionar-empresa.html";
+            return;
+        }
+        // Autenticação
+        auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // MULTIEMPRESA: PEGA empresaId do localStorage
-                empresaId = localStorage.getItem("empresaAtivaId");
-                if (!empresaId) {
-                    alert("Nenhuma empresa ativa selecionada!");
-                    window.location.href = "selecionar-empresa.html";
-                    return;
-                }
                 await carregarServicos();
                 iniciarListenerDaEquipe();
                 adicionarEventListeners();
@@ -119,7 +116,7 @@ async function inicializar() {
 function voltarMenuLateral() { window.location.href = "index.html"; }
 
 async function carregarServicos() {
-    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
     try {
         const servicosRef = collection(db, "empresarios", empresaId, "servicos");
         const snapshot = await getDocs(servicosRef);
@@ -131,7 +128,7 @@ async function carregarServicos() {
 }
 
 async function iniciarListenerDaEquipe() {
-    const { collection, onSnapshot, query, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { collection, onSnapshot, query, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
     if (!empresaSnap.exists()) {
@@ -206,7 +203,7 @@ async function abrirPerfilProfissional(profissionalId) {
 }
 
 async function carregarDadosProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
@@ -384,7 +381,7 @@ function adicionarAgendaEspecial() {
 }
 
 async function salvarPerfilProfissional() {
-    const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
         const horarios = coletarHorarios();
@@ -444,8 +441,8 @@ async function gerarLinkDeConvite() {
 }
 
 async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js");
     const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
     btnSubmit.disabled = true; btnSubmit.textContent = "Salvando...";
     const nome = elementos.nomeProfissional.value.trim();
@@ -492,7 +489,7 @@ async function adicionarProfissional() {
 }
 
 async function editarProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
@@ -514,8 +511,8 @@ async function editarProfissional(profissionalId) {
 }
 
 async function salvarEdicaoProfissional(profissionalId) {
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js");
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) return alert("O nome do profissional é obrigatório.");
     let fotoURL = "";
@@ -543,7 +540,7 @@ async function salvarEdicaoProfissional(profissionalId) {
 
 async function excluirProfissional(profissionalId) {
     if (!confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.")) return;
-    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await deleteDoc(profissionalRef);
@@ -555,7 +552,7 @@ async function excluirProfissional(profissionalId) {
 
 async function ativarFuncionario(profissionalId) {
     if (!confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.")) return;
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, { status: 'ativo' });
