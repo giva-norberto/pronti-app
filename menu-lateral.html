@@ -1,8 +1,7 @@
 <!-- ====================================================================== -->
-<!--          MENU-LATERAL.HTML (VERSÃO FINAL, RESPONSIVA E SEGURA)         -->
+<!--          MENU-LATERAL.HTML (COMPATÍVEL COM CELULAR, CSS+JS EMBUTIDOS)  -->
 <!-- ====================================================================== -->
 
-<!-- 1. HTML DO MENU (Hamburger incluído para mobile) -->
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -27,7 +26,6 @@
     </button>
 </aside>
 
-<!-- 2. CSS DO MENU -->
 <style>
 .sidebar {
   width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -116,7 +114,6 @@
   .sidebar-links a { font-size: 1em; padding: 10px 12px; margin-bottom: 0; white-space: nowrap; }
   .sidebar-footer { padding: 8px 12px 10px 12px; }
   .btn-logout { padding: 10px 0; font-size: 1em; }
-  /* Fundo escurecido ao abrir menu */
   body.menu-open::before {
     content: "";
     position: fixed;
@@ -127,17 +124,14 @@
     transition: opacity 0.25s;
   }
 }
-
-/* Para evitar scroll horizontal ao abrir o menu */
 body.menu-open { overflow-x: hidden; }
 </style>
 
-<!-- 3. SCRIPT DE SEGURANÇA E CONTROLE DE SESSÃO + HAMBURGER -->
 <script type="module">
+    // Se já importa o firebase/auth no resto do sistema, pode remover essa import aqui!
     import { auth } from "./firebase-config.js"; 
     import { onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    // -- Persistência da sessão --
     setPersistence(auth, browserLocalPersistence )
       .then(() => {
         iniciarGuardiao();
@@ -163,7 +157,6 @@ body.menu-open { overflow-x: hidden; }
         });
     }
 
-    // -- Lógica do menu e hamburger --
     function setupMenu() {
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
