@@ -81,7 +81,12 @@ onAuthStateChanged(auth, async (user) => {
         }
     } catch (error) {
         alert("Erro: " + error.message);
-        form.querySelector('button[type="submit"]').disabled = true;
+        if (form) { // Adicionado verificação para segurança
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+        }
     }
 });
 
@@ -93,10 +98,10 @@ btnExcluir.addEventListener('click', handleServicoExcluir);
 // --- FUNÇÕES DE LÓGICA ---
 
 function preencherFormulario(servico) {
-    nomeInput.value = servico.nome || '';
-    descricaoInput.value = servico.descricao || '';
-    precoInput.value = servico.preco !== undefined ? servico.preco : '';
-    duracaoInput.value = servico.duracao !== undefined ? servico.duracao : '';
+    if(nomeInput) nomeInput.value = servico.nome || '';
+    if(descricaoInput) descricaoInput.value = servico.descricao || '';
+    if(precoInput) precoInput.value = servico.preco !== undefined ? servico.preco : '';
+    if(duracaoInput) duracaoInput.value = servico.duracao !== undefined ? servico.duracao : '';
 }
 
 async function handleFormSubmit(e) {
@@ -148,7 +153,6 @@ async function handleServicoExcluir(e) {
     e.preventDefault();
     if (!isDono || !servicoId) return;
 
-    // REVERTIDO: Usa o confirm padrão do navegador para garantir funcionamento
     const confirmado = confirm("Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
     if (!confirmado) return;
 
