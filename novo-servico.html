@@ -82,6 +82,48 @@
     .btn-submit:hover {
       background: #4f46e5;
     }
+    
+    /* Estilos para o Modal de Alerta - Adicionados para compatibilidade */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    .modal-content {
+        background: white;
+        padding: 20px 30px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        max-width: 400px;
+    }
+    .modal-buttons {
+        margin-top: 20px;
+    }
+    .btn-principal, .btn-secundario {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-principal {
+        background-color: #6366f1;
+        color: white;
+    }
+    .btn-secundario {
+        background-color: #e2e8f0;
+        color: #1e293b;
+        margin-left: 10px;
+    }
+
     @media (max-width: 900px) {
       .main-content { margin-left: 0; padding: 24px 10px; }
       .form-card { margin: 24px auto 0 auto; }
@@ -121,6 +163,30 @@
       </form>
     </div>
   </div>
+
+  <!-- ====================================================== -->
+  <!--   HTML DO MODAL DE ALERTA (A PEÇA QUE FALTAVA)         -->
+  <!-- ====================================================== -->
+  <div id="alert-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 id="alert-modal-title">Título do Alerta</h2>
+      <p id="alert-modal-message">Mensagem do alerta.</p>
+      <button id="alert-modal-close" class="btn-principal">OK</button>
+    </div>
+  </div>
+
+  <!-- HTML para o modal de confirmação (Sim/Não), caso seu vitrini-utils.js o utilize -->
+  <div id="confirm-modal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+          <h2 id="confirm-modal-title">Título da Confirmação</h2>
+          <p id="confirm-modal-message">Mensagem da confirmação.</p>
+          <div class="modal-buttons">
+              <button id="confirm-modal-yes" class="btn-principal">Sim</button>
+              <button id="confirm-modal-no" class="btn-secundario">Não</button>
+          </div>
+      </div>
+  </div>
+  <!-- ====================================================== -->
 
   <!-- SCRIPTS DOS MÓDULOS -->
   <script type="module" src="firebase-config.js"></script>
