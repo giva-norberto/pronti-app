@@ -10,8 +10,6 @@ import {
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 // CORRIGIDO: Padronizado para usar a mesma configuração de todo o app
 import { db, auth } from "./firebase-config.js"; 
-// REFINADO: Usa as funções de "mensagens bonitas"
-import { mostrarAlerta, mostrarConfirmacao } from "./vitrini-utils.js"; 
 
 // --- MAPEAMENTO DOS ELEMENTOS DO DOM ---
 const form = document.getElementById('form-servico');
@@ -77,12 +75,12 @@ onAuthStateChanged(auth, async (user) => {
             // Modo de Criação
             tituloPagina.textContent = 'Novo Serviço';
             if (!isDono) {
-                 await mostrarAlerta("Acesso Negado", "Apenas o dono da empresa pode criar novos serviços.");
+                 alert("Acesso Negado: Apenas o dono da empresa pode criar novos serviços.");
                  form.querySelector('button[type="submit"]').disabled = true;
             }
         }
     } catch (error) {
-        await mostrarAlerta("Erro", error.message);
+        alert("Erro: " + error.message);
         form.querySelector('button[type="submit"]').disabled = true;
     }
 });
@@ -104,7 +102,7 @@ function preencherFormulario(servico) {
 async function handleFormSubmit(e) {
     e.preventDefault();
     if (!isDono) {
-        await mostrarAlerta("Acesso Negado", "Você não tem permissão para salvar serviços.");
+        alert("Acesso Negado: Você não tem permissão para salvar serviços.");
         return;
     }
 
@@ -116,7 +114,7 @@ async function handleFormSubmit(e) {
     };
 
     if (!servicoData.nome || isNaN(servicoData.preco) || isNaN(servicoData.duracao) || servicoData.preco < 0 || servicoData.duracao <= 0) {
-        await mostrarAlerta("Dados Inválidos", "Por favor, preencha todos os campos corretamente.");
+        alert("Dados Inválidos: Por favor, preencha todos os campos corretamente.");
         return;
     }
 
@@ -129,17 +127,17 @@ async function handleFormSubmit(e) {
             // Atualiza o serviço existente
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
             await updateDoc(servicoRef, servicoData);
-            await mostrarAlerta("Sucesso!", "Serviço atualizado com sucesso!");
+            alert("Sucesso! Serviço atualizado com sucesso!");
         } else {
             // Cria um novo serviço
             servicoData.visivelNaVitrine = true; // Valor padrão
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
             await addDoc(servicosCol, servicoData);
-            await mostrarAlerta("Sucesso!", "Novo serviço salvo com sucesso!");
+            alert("Sucesso! Novo serviço salvo com sucesso!");
         }
         window.location.href = 'servicos.html'; // Redireciona para a lista
     } catch (err) {
-        await mostrarAlerta("Erro", `Ocorreu um erro ao salvar: ${err.message}`);
+        alert(`Ocorreu um erro ao salvar: ${err.message}`);
     } finally {
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Serviço";
@@ -150,16 +148,16 @@ async function handleServicoExcluir(e) {
     e.preventDefault();
     if (!isDono || !servicoId) return;
 
-    // REFINADO: Usa o modal de confirmação "bonito"
-    const confirmado = await mostrarConfirmacao("Excluir Serviço", "Tem a certeza que deseja excluir este serviço? Esta ação é permanente.");
+    // REVERTIDO: Usa o confirm padrão do navegador para garantir funcionamento
+    const confirmado = confirm("Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
     if (!confirmado) return;
 
     try {
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         await deleteDoc(servicoRef);
-        await mostrarAlerta("Serviço Excluído", "O serviço foi removido com sucesso.");
+        alert("Serviço Excluído: O serviço foi removido com sucesso.");
         window.location.href = 'servicos.html';
     } catch (err) {
-        await mostrarAlerta("Erro", `Ocorreu um erro ao excluir o serviço: ${err.message}`);
+        alert(`Ocorreu um erro ao excluir o serviço: ${err.message}`);
     }
 }
