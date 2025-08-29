@@ -2,7 +2,9 @@ import { db, auth } from "./firebase-config.js";
 import {
     collection,
     getDocs,
+    getDoc,
     addDoc,
+    doc,
     query,
     where,
     serverTimestamp
@@ -73,7 +75,27 @@ async function carregarDadosIniciais() {
         getDocs(profissionaisRef)
     ]);
     servicosCache = servicosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    profissionaisCache = profissionaisSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Carrega profissionais e também busca os horários de cada um no subdocumento "configuracoes/horarios"
+    profissionaisCache = [];
+    for (const docProf of profissionaisSnapshot.docs) {
+        let dadosProf = { id: docProf.id, ...docProf.data() };
+        // Busca o subdocumento 'configuracoes/horarios'
+        try {
+            const horariosSnap = await getDoc(doc(
+                db,
+                "empresarios", empresaId,
+                "profissionais", docProf.id,
+                "configuracoes", "horarios"
+            ));
+            if (horariosSnap.exists()) {
+                dadosProf.horarios = horariosSnap.data(); // <- esse é seu JSON de horários!
+            }
+        } catch (e) {
+            // Ignorar se não existir
+        }
+        profissionaisCache.push(dadosProf);
+    }
 
     selectServico.innerHTML = '<option value="">Selecione um serviço</option>';
     servicosCache.forEach(servico => {
@@ -212,6 +234,12 @@ async function salvarAgendamento(e) {
     const profissionalId = selectProfissional.value;
     const servico = servicosCache.find(s => s.id === servicoId);
     const profissional = profissionaisCache.find(p => p.id === profissionalId);
+
+    // Checagem extra: profissional precisa ter horários ativos
+    if (!profissional || !profissional.horarios) {
+        mostrarToast("Este profissional não tem horários configurados.", "#ef4444");
+        return;
+    }
 
     const novoAgendamento = {
         clienteNome: inputClienteNome.value,
