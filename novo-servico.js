@@ -16,30 +16,87 @@ let userUid = null;
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Igual às suas regras
 
-// Obtém o empresaId da empresa ativa do localStorage.
+// ====== MODAL PRONTI PARA CONFIRMAÇÃO E ALERTA ======
+// Adicione este bloco no final do seu HTML também (veja instrução anterior)
+function prontiAlert(msg, callback) {
+    showProntiModal(msg, [{ text: "OK", className: "pronti-btn pronti-btn-ok", onClick: callback }]);
+}
+
+function prontiConfirm(msg, onOk, onCancel) {
+    showProntiModal(msg, [
+        { text: "Cancelar", className: "pronti-btn pronti-btn-cancel", onClick: onCancel },
+        { text: "Confirmar", className: "pronti-btn pronti-btn-ok", onClick: onOk }
+    ]);
+}
+
+function showProntiModal(msg, actions) {
+    let modal = document.getElementById('pronti-modal');
+    if (!modal) {
+        // Cria o modal se não existir
+        modal = document.createElement('div');
+        modal.id = 'pronti-modal';
+        modal.className = 'pronti-modal';
+        modal.style.display = 'none';
+        modal.innerHTML = `
+          <div class="pronti-modal-content">
+            <span id="pronti-modal-close" class="pronti-modal-close">&times;</span>
+            <div id="pronti-modal-message"></div>
+            <div id="pronti-modal-actions"></div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        // CSS inline
+        const style = document.createElement('style');
+        style.textContent = `
+.pronti-modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(44,54,80,0.25); display:flex; align-items:center; justify-content:center; z-index:9999; }
+.pronti-modal-content { background:#fff; border-radius:10px; padding:32px; text-align:center; max-width:350px; box-shadow:0 6px 24px #0002; position:relative; }
+.pronti-modal-close { position:absolute; right:16px; top:12px; font-size:22px; cursor:pointer; color:#666;}
+.pronti-modal-actions { margin-top:28px; display:flex; gap:16px; justify-content:center; }
+.pronti-btn { border:none; border-radius:6px; padding:9px 22px; font-weight:bold; cursor:pointer; font-size:16px;}
+.pronti-btn-ok { background:#4f46e5; color:#fff; }
+.pronti-btn-cancel { background:#e53e3e; color:#fff; }
+        `;
+        document.head.appendChild(style);
+    }
+    const msgDiv = modal.querySelector('#pronti-modal-message');
+    const actionsDiv = modal.querySelector('#pronti-modal-actions');
+    msgDiv.innerHTML = msg;
+    actionsDiv.innerHTML = '';
+    actions.forEach(act => {
+        const btn = document.createElement('button');
+        btn.textContent = act.text;
+        btn.className = act.className;
+        btn.onclick = () => {
+            modal.style.display = 'none';
+            setTimeout(() => { if (act.onClick) act.onClick(); }, 100);
+        };
+        actionsDiv.appendChild(btn);
+    });
+    modal.style.display = 'flex';
+    modal.querySelector('#pronti-modal-close').onclick = () => { modal.style.display = 'none'; };
+}
+
+// =====================================================
+
 function getEmpresaIdAtiva() {
     return localStorage.getItem("empresaAtivaId") || null;
 }
 
-// Limpa empresa ativa do localStorage
 function limparEmpresaAtiva() {
     localStorage.removeItem("empresaAtivaId");
 }
 
-// Busca todas as empresas do usuário logado como dono
 async function buscaEmpresasDoUsuario(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 }
 
-// Extrai o id do serviço da URL (se em edição)
 function getIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
 }
 
-// Preenche o formulário com dados do serviço
 function preencherFormulario(servico) {
     document.getElementById('nome-servico').value = servico.nome || '';
     document.getElementById('descricao-servico').value = servico.descricao || '';
@@ -47,20 +104,18 @@ function preencherFormulario(servico) {
     document.getElementById('duracao-servico').value = servico.duracao !== undefined ? servico.duracao : '';
 }
 
-// Checa se usuário é dono da empresa
 function usuarioEDono(empresa, uid) {
     return empresa && empresa.donoId === uid;
 }
 
-// Redireciona para selecionar/cadastrar empresa
 function redirecionaSeSemEmpresa() {
-    alert("Atenção: Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
-    if(form) form.querySelector('button[type="submit"]').disabled = true;
-    if(btnExcluir) btnExcluir.style.display = 'none';
-    window.location.href = 'selecionar-empresa.html';
+    prontiAlert("Atenção: Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.", () => {
+        if(form) form.querySelector('button[type="submit"]').disabled = true;
+        if(btnExcluir) btnExcluir.style.display = 'none';
+        window.location.href = 'selecionar-empresa.html';
+    });
 }
 
-// Fluxo principal ao autenticar
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
@@ -71,26 +126,23 @@ onAuthStateChanged(auth, async (user) => {
 
     empresaId = getEmpresaIdAtiva();
 
-    // Se não há empresa ativa, busca empresas do usuário (auto-seleção se só uma)
     if (!empresaId) {
         const empresas = await buscaEmpresasDoUsuario(userUid);
         if (empresas.length === 0) {
-            alert("Você ainda não possui nenhuma empresa cadastrada. Cadastre uma empresa para continuar.");
-            window.location.href = 'cadastro-empresa.html';
+            prontiAlert("Você ainda não possui nenhuma empresa cadastrada. Cadastre uma empresa para continuar.", () => {
+                window.location.href = 'cadastro-empresa.html';
+            });
             return;
         }
         if (empresas.length === 1) {
-            // Só uma empresa, seleciona automaticamente
             localStorage.setItem("empresaAtivaId", empresas[0].id);
             empresaId = empresas[0].id;
         } else {
-            // Mais de uma empresa: vai para seleção
             redirecionaSeSemEmpresa();
             return;
         }
     }
 
-    // Busca o documento da empresa ativa
     let empresa = null;
     const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
     if (empresaSnap.exists()) {
@@ -99,9 +151,10 @@ onAuthStateChanged(auth, async (user) => {
         console.log("Dono da empresa ativa (donoId):", empresa.donoId);
     } else {
         console.warn("Empresa ativa não encontrada no Firestore!");
-        alert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa ou selecione uma empresa existente.");
-        limparEmpresaAtiva();
-        window.location.href = 'selecionar-empresa.html';
+        prontiAlert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa ou selecione uma empresa existente.", () => {
+            limparEmpresaAtiva();
+            window.location.href = 'selecionar-empresa.html';
+        });
         return;
     }
 
@@ -118,15 +171,15 @@ onAuthStateChanged(auth, async (user) => {
                 servicoEditando = { id: servicoSnap.id, ...servicoSnap.data() };
                 preencherFormulario(servicoEditando);
             } else {
-                alert("Serviço não encontrado!");
+                prontiAlert("Serviço não encontrado!");
             }
         }
     }
 
-    // Só permite criar se for dono OU admin
     if (!isDono && !isAdmin && !servicoId) {
-        alert("Acesso Negado: Apenas o dono da empresa ou o admin podem criar novos serviços.");
-        if(form) form.querySelector('button[type="submit"]').disabled = true;
+        prontiAlert("Acesso Negado: Apenas o dono da empresa ou o admin podem criar novos serviços.", () => {
+            if(form) form.querySelector('button[type="submit"]').disabled = true;
+        });
     }
 
     if (btnExcluir) {
@@ -152,7 +205,7 @@ async function handleFormSubmit(e) {
     }
     
     if (!isDono && !isAdmin && !servicoEditando) {
-        alert("Acesso Negado: Apenas o dono ou admin podem criar um novo serviço.");
+        prontiAlert("Acesso Negado: Apenas o dono ou admin podem criar um novo serviço.");
         return;
     }
 
@@ -162,7 +215,7 @@ async function handleFormSubmit(e) {
     const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
 
     if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
-        alert("Atenção: Preencha todos os campos obrigatórios corretamente.");
+        prontiAlert("Atenção: Preencha todos os campos obrigatórios corretamente.");
         return;
     }
 
@@ -187,11 +240,12 @@ async function handleFormSubmit(e) {
             });
         }
 
-        alert(servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!");
-        window.location.href = 'servicos.html';
+        prontiAlert(servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!", () => {
+            window.location.href = 'servicos.html';
+        });
     } catch (err) {
         console.error("Erro ao salvar serviço:", err);
-        alert(`Ocorreu um erro ao salvar o serviço: ${err.message}`);
+        prontiAlert(`Ocorreu um erro ao salvar o serviço: ${err.message}`);
     } finally {
         btnSalvar.disabled = false;
         btnSalvar.textContent = "Salvar Serviço";
@@ -202,17 +256,21 @@ async function handleServicoExcluir(e) {
     e.preventDefault();
     if ((!isDono && !isAdmin) || !servicoEditando) return;
     
-    const confirmado = confirm("Tem certeza que deseja excluir este serviço? Esta ação é permanente.");
-    if (!confirmado) return;
-
-    try {
-        if (!empresaId || !servicoId) throw new Error("Dados de identificação do serviço incompletos.");
-        const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
-        await deleteDoc(servicoRef);
-        alert("Serviço excluído com sucesso.");
-        window.location.href = 'servicos.html';
-    } catch (err) {
-        console.error("Erro ao excluir serviço:", err);
-        alert(`Ocorreu um erro ao excluir o serviço: ${err.message}`);
-    }
+    prontiConfirm(
+        "Tem certeza que deseja excluir este serviço? Esta ação é permanente.",
+        async () => {
+            try {
+                if (!empresaId || !servicoId) throw new Error("Dados de identificação do serviço incompletos.");
+                const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+                await deleteDoc(servicoRef);
+                prontiAlert("Serviço excluído com sucesso.", () => {
+                    window.location.href = 'servicos.html';
+                });
+            } catch (err) {
+                console.error("Erro ao excluir serviço:", err);
+                prontiAlert(`Ocorreu um erro ao excluir o serviço: ${err.message}`);
+            }
+        },
+        () => { /* Cancelado */ }
+    );
 }
