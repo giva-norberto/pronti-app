@@ -89,13 +89,18 @@ async function carregarDadosIniciais() {
                 "configuracoes", "horarios"
             ));
             if (horariosSnap.exists()) {
-                dadosProf.horarios = horariosSnap.data(); // <- esse é seu JSON de horários!
+                dadosProf.horarios = horariosSnap.data();
             }
         } catch (e) {
             // Ignorar se não existir
         }
         profissionaisCache.push(dadosProf);
     }
+
+    // Permitir seleção múltipla de serviços se qualquer profissional permitir
+    const permitirMultiplo = profissionaisCache.some(p => p.horarios && p.horarios.permitirAgendamentoMultiplo);
+    if (permitirMultiplo) selectServico.setAttribute("multiple", "multiple");
+    else selectServico.removeAttribute("multiple");
 
     selectServico.innerHTML = '<option value="">Selecione um serviço</option>';
     servicosCache.forEach(servico => {
@@ -104,14 +109,16 @@ async function carregarDadosIniciais() {
 }
 
 function popularSelectProfissionais() {
-    const servicoId = selectServico.value;
+    // Para múltiplos serviços, mostra todos profissionais que fazem pelo menos um deles
+    const servicoIds = Array.from(selectServico.selectedOptions).map(opt => opt.value);
     selectProfissional.innerHTML = '<option value="">Primeiro, selecione um serviço</option>';
     selectProfissional.disabled = true;
     gradeHorarios.innerHTML = '<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>';
-    if (!servicoId) return;
+    if (!servicoIds.length || servicoIds[0] === "") return;
 
-    // Profissionais que executam o serviço
-    const profissionaisFiltrados = profissionaisCache.filter(p => p.servicos && p.servicos.includes(servicoId));
+    const profissionaisFiltrados = profissionaisCache.filter(p =>
+        p.servicos && servicoIds.some(sid => p.servicos.includes(sid))
+    );
     if (profissionaisFiltrados.length > 0) {
         selectProfissional.innerHTML = '<option value="">Selecione um profissional</option>';
         profissionaisFiltrados.forEach(p => {
@@ -119,32 +126,43 @@ function popularSelectProfissionais() {
         });
         selectProfissional.disabled = false;
     } else {
-        selectProfissional.innerHTML = '<option value="">Nenhum profissional para este serviço</option>';
+        selectProfissional.innerHTML = '<option value="">Nenhum profissional para estes serviços</option>';
     }
 }
 
 async function buscarHorariosDisponiveis() {
-    const servicoId = selectServico.value;
+    const servicoIds = Array.from(selectServico.selectedOptions).map(opt => opt.value);
     const profissionalId = selectProfissional.value;
     const dataSelecionada = inputData.value;
-    if (!servicoId || !profissionalId || !dataSelecionada) {
+    if (!servicoIds.length || !profissionalId || !dataSelecionada) {
         gradeHorarios.innerHTML = `<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>`;
         return;
     }
 
     gradeHorarios.innerHTML = `<p class="aviso-horarios">A verificar horários...</p>`;
 
-    // Busca profissional no cache, busca horários no campo .horarios do profissional
     const profissional = profissionaisCache.find(p => p.id === profissionalId);
-    const servico = servicosCache.find(s => s.id === servicoId);
-
+    const servicosSelecionados = servicosCache.filter(s => servicoIds.includes(s.id));
     if (!profissional || !profissional.horarios) {
         gradeHorarios.innerHTML = `<p class="aviso-horarios" style="color: red;">Este profissional não tem horários configurados.</p>`;
         return;
     }
 
+    // Calcular duração total dos serviços selecionados
+    let duracaoTotal = 0;
+    if (profissional.horarios.permitirAgendamentoMultiplo) {
+        duracaoTotal = servicosSelecionados.reduce((total, s) => total + (s.duracao || 0), 0);
+    } else {
+        duracaoTotal = servicosSelecionados[0]?.duracao || 0;
+    }
+
     const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataSelecionada, profissionalId);
-    const slotsDisponiveis = calcularSlotsDisponiveis(dataSelecionada, agendamentosDoDia, profissional.horarios, servico.duracao);
+    const slotsDisponiveis = calcularSlotsDisponiveis(
+        dataSelecionada,
+        agendamentosDoDia,
+        profissional.horarios,
+        duracaoTotal
+    );
 
     gradeHorarios.innerHTML = '';
     if (slotsDisponiveis.length === 0) {
@@ -168,14 +186,16 @@ function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, dur
     const dataObj = new Date(`${data}T12:00:00Z`);
     const nomeDia = diaDaSemana[dataObj.getUTCDay()];
     const diaDeTrabalho = horariosTrabalho?.[nomeDia];
+    // Intervalo pode estar no objeto do dia OU no principal:
+    const intervaloEntreSessoes = diaDeTrabalho?.intervalo || horariosTrabalho.intervalo || 0;
+
     if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos || diaDeTrabalho.blocos.length === 0) {
         return [];
     }
-    const intervaloEntreSessoes = horariosTrabalho.intervalo || 0;
     const slotsDisponiveis = [];
     const horariosOcupados = agendamentosDoDia.map(ag => {
         const inicio = timeStringToMinutes(ag.horario);
-        const fim = inicio + (ag.servicoDuracao || duracaoServico);
+        const fim = inicio + (ag.servicoDuracao || ag.duracaoTotal || duracaoServico);
         return { inicio, fim };
     });
 
@@ -230,22 +250,35 @@ function selecionarHorarioSlot(e) {
 // --- Salvar Agendamento ---
 async function salvarAgendamento(e) {
     e.preventDefault();
-    const servicoId = selectServico.value;
+    const servicoIds = Array.from(selectServico.selectedOptions).map(opt => opt.value);
     const profissionalId = selectProfissional.value;
-    const servico = servicosCache.find(s => s.id === servicoId);
     const profissional = profissionaisCache.find(p => p.id === profissionalId);
+    const servicosSelecionados = servicosCache.filter(s => servicoIds.includes(s.id));
 
-    // Checagem extra: profissional precisa ter horários ativos
     if (!profissional || !profissional.horarios) {
         mostrarToast("Este profissional não tem horários configurados.", "#ef4444");
         return;
     }
+    if (!servicosSelecionados.length) {
+        mostrarToast("Selecione pelo menos um serviço.", "#ef4444");
+        return;
+    }
+
+    let duracaoTotal = 0;
+    if (profissional.horarios.permitirAgendamentoMultiplo) {
+        duracaoTotal = servicosSelecionados.reduce((total, s) => total + (s.duracao || 0), 0);
+    } else {
+        duracaoTotal = servicosSelecionados[0]?.duracao || 0;
+    }
 
     const novoAgendamento = {
         clienteNome: inputClienteNome.value,
-        servicoId,
-        servicoNome: servico.nome,
-        servicoDuracao: servico.duracao,
+        servicos: servicosSelecionados.map(s => ({
+            id: s.id,
+            nome: s.nome,
+            duracao: s.duracao
+        })),
+        duracaoTotal,
         profissionalId,
         profissionalNome: profissional.nome,
         data: inputData.value,
