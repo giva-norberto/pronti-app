@@ -26,12 +26,11 @@ function limparEmpresaAtiva() {
     localStorage.removeItem("empresaAtivaId");
 }
 
-// Busca a empresa do usuário logado como dono.
-async function getEmpresaDoUsuario(uid) {
+// Busca todas as empresas do usuário logado como dono
+async function buscaEmpresasDoUsuario(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
-    if (!snapshot.empty) return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-    return null;
+    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 }
 
 // Extrai o id do serviço da URL (se em edição)
@@ -53,36 +52,50 @@ function usuarioEDono(empresa, uid) {
     return empresa && empresa.donoId === uid;
 }
 
-// Função para forçar seleção de empresa se não houver empresa ativa
+// Redireciona para selecionar/cadastrar empresa
 function redirecionaSeSemEmpresa() {
     alert("Atenção: Nenhuma empresa ativa selecionada. Complete seu cadastro ou selecione uma empresa.");
     if(form) form.querySelector('button[type="submit"]').disabled = true;
     if(btnExcluir) btnExcluir.style.display = 'none';
-    window.location.href = 'selecionar-empresa.html'; // garanta que essa tela existe
+    window.location.href = 'selecionar-empresa.html';
 }
 
+// Fluxo principal ao autenticar
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
         return;
     }
-    
     userUid = user.uid;
-    empresaId = getEmpresaIdAtiva();
     isAdmin = userUid === ADMIN_UID;
 
-    console.log("Usuário autenticado:", userUid, "Empresa ativa:", empresaId, "É admin:", isAdmin);
+    empresaId = getEmpresaIdAtiva();
 
-    let empresa = null;
+    // Se não há empresa ativa, busca empresas do usuário (auto-seleção se só uma)
     if (!empresaId) {
-        redirecionaSeSemEmpresa();
-        return;
+        const empresas = await buscaEmpresasDoUsuario(userUid);
+        if (empresas.length === 0) {
+            alert("Você ainda não possui nenhuma empresa cadastrada. Cadastre uma empresa para continuar.");
+            window.location.href = 'cadastro-empresa.html';
+            return;
+        }
+        if (empresas.length === 1) {
+            // Só uma empresa, seleciona automaticamente
+            localStorage.setItem("empresaAtivaId", empresas[0].id);
+            empresaId = empresas[0].id;
+        } else {
+            // Mais de uma empresa: vai para seleção
+            redirecionaSeSemEmpresa();
+            return;
+        }
     }
 
-    // Busca o documento da empresa ativa para logar o donoId real
+    // Busca o documento da empresa ativa
+    let empresa = null;
     const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
     if (empresaSnap.exists()) {
         empresa = { id: empresaSnap.id, ...empresaSnap.data() };
+        console.log("Usuário autenticado:", userUid, "Empresa ativa:", empresaId, "É admin:", isAdmin);
         console.log("Dono da empresa ativa (donoId):", empresa.donoId);
     } else {
         console.warn("Empresa ativa não encontrada no Firestore!");
