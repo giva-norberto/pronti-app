@@ -19,7 +19,15 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Utilizador';
         tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-        // Carregar empresas e decidir se mostra seleção ou redireciona direto
+
+        // Validação: se já existe empresaAtivaId, vai direto para index.html
+        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+        if (empresaAtivaId) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // Se não tem empresaAtivaId, carrega as empresas normalmente
         await carregarOuRedirecionarEmpresas(user.uid);
     } else {
         window.location.href = 'login.html';
@@ -79,7 +87,7 @@ async function carregarOuRedirecionarEmpresas(donoId) {
 function criarEmpresaCard(id, data) {
     const card = document.createElement('a');
     card.className = 'empresa-card';
-    card.href = '#'; // Usamos JS para o clique para evitar recarregamento
+    card.href = '#';
     card.onclick = () => selecionarEmpresa(id);
 
     const logoSrc = data.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(data.nomeFantasia?.charAt(0) || "E")}`;
@@ -98,7 +106,7 @@ function criarEmpresaCard(id, data) {
 function criarNovoCard() {
     const card = document.createElement('a');
     card.className = 'criar-empresa-card';
-    card.href = 'perfil.html'; // Redireciona para a página de criação/edição de perfil
+    card.href = 'perfil.html';
 
     card.innerHTML = `
         <i class="fa-solid fa-plus"></i>
