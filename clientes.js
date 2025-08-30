@@ -5,15 +5,10 @@
  * Firebase Modular v10+
  */
 
-// Importa instâncias já inicializadas (NÃO precisa importar firebaseConfig!)
+// Importa instâncias já inicializadas do firebase-config.js
 import { db, auth } from "./firebase-config.js";
 import { collection, getDocs, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-// Inicialização do Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
 
 // --- Elementos do DOM ---
 const listaClientesDiv = document.getElementById("lista-clientes");
