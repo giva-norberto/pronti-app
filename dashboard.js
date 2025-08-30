@@ -1,16 +1,16 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (FUNCIONAL, MULTIEMPRESA, FIREBASE PURO, EXCLUINDO AUSENTE/NÃO COMPARECEU)
+// ARQUIVO: DASHBOARD.JS (FATURAMENTO CORRETO, MULTIEMPRESA, EXCLUINDO AUSENTE)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// Status para métricas
+// Status de faturamento
 const STATUS_PREVISTO_DIA = ["ativo", "realizado", "concluido", "efetivado"];
 const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
 const STATUS_SEMANA = ["ativo", "realizado"];
-const STATUS_EXCLUIR_TOTAL = ["não compareceu", "ausente"];
+const STATUS_EXCLUIR = ["não compareceu", "ausente"];
 
 // Debounce para filtro de data
 function debounce(fn, delay) {
@@ -21,7 +21,6 @@ function debounce(fn, delay) {
     };
 }
 
-// Descobre próxima data disponível, respeitando multiempresa
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     try {
         const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
@@ -48,6 +47,13 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     }
 }
 
+// --- NOVA FUNÇÃO: verifica se status é "ausente" ou "não compareceu" (case insensitive)
+function isExcluido(status) {
+    if (!status) return false;
+    const s = status.toLowerCase();
+    return STATUS_EXCLUIR.includes(s);
+}
+
 // Busca todas as métricas do painel
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
@@ -70,13 +76,14 @@ async function obterMetricas(empresaId, dataSelecionada) {
         snapshotDia.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
-            // Exclui "não compareceu" e "ausente" do total do dia
-            if (!STATUS_EXCLUIR_TOTAL.includes((ag.status || "").toLowerCase())) {
-                totalAgendamentosDia += 1;
-                if (ag.status === "ativo") agendamentosPendentes++;
-                if (STATUS_PREVISTO_DIA.includes(ag.status)) faturamentoPrevistoDia += preco;
-                if (STATUS_REALIZADO.includes(ag.status)) faturamentoRealizadoDia += preco;
-            }
+
+            // Exclui "não compareceu" e "ausente"
+            if (isExcluido(ag.status)) return;
+
+            totalAgendamentosDia += 1;
+            if (ag.status === "ativo") agendamentosPendentes++;
+            if (STATUS_PREVISTO_DIA.includes(ag.status)) faturamentoPrevistoDia += preco;
+            if (STATUS_REALIZADO.includes(ag.status)) faturamentoRealizadoDia += preco;
         });
 
         // 2. Faturamento mensal realizado
@@ -87,6 +94,9 @@ async function obterMetricas(empresaId, dataSelecionada) {
         snapshotMes.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
+
+            if (isExcluido(ag.status)) return;
+
             if (STATUS_REALIZADO.includes(ag.status)) {
                 const dataHoraAgendamento = new Date(`${ag.data}T${ag.horario || '00:00:00'}`);
                 if (dataHoraAgendamento <= agora) {
@@ -114,7 +124,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// Serviços mais vendidos na semana (multiempresa, só dados reais)
+// Serviços mais vendidos na semana (sem inventar nada!)
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
@@ -133,6 +143,7 @@ async function obterServicosMaisVendidosSemana(empresaId) {
         const contagem = {};
         snapshot.forEach((d) => {
             const ag = d.data();
+            if (isExcluido(ag.status)) return;
             const nome = ag.servicoNome || "Serviço";
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
@@ -143,22 +154,18 @@ async function obterServicosMaisVendidosSemana(empresaId) {
     }
 }
 
-// Preenche todos os cards e gráfico
 function preencherPainel(metricas, servicosSemana) {
     const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-    // Faturamento Mensal (realizado)
     const faturamentoRealizadoEl = document.getElementById("faturamento-realizado");
     if (faturamentoRealizadoEl) faturamentoRealizadoEl.textContent = formatCurrency(metricas.faturamentoRealizado);
 
-    // Faturamento do Dia (realizado e previsto)
     const faturamentoPrevistoDiaEl = document.getElementById("faturamento-previsto-dia");
     if (faturamentoPrevistoDiaEl) faturamentoPrevistoDiaEl.textContent = formatCurrency(metricas.faturamentoPrevistoDia);
 
     const faturamentoRealizadoDiaEl = document.getElementById("faturamento-realizado-dia");
     if (faturamentoRealizadoDiaEl) faturamentoRealizadoDiaEl.textContent = formatCurrency(metricas.faturamentoRealizadoDia);
 
-    // Agendamentos do dia
     const totalAgendamentosEl = document.getElementById("total-agendamentos-dia");
     if (totalAgendamentosEl) totalAgendamentosEl.textContent = metricas.totalAgendamentosDia;
 
@@ -194,7 +201,6 @@ function preencherPainel(metricas, servicosSemana) {
     });
 }
 
-// Inicializa o dashboard multiempresa
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) {
@@ -217,7 +223,6 @@ async function iniciarDashboard(empresaId) {
     await atualizarPainel();
 }
 
-// Multiempresa: valida empresa ativa no localStorage, senão busca do user
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
