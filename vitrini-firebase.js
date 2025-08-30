@@ -45,4 +45,3 @@ const provider = new GoogleAuthProvider();
 // --- EXPORTAÇÕES ---
 // [REVISADO] Exporta as instâncias para uso da vitrine, incluindo o 'provider'.
 export { app, db, auth, provider };
-
