@@ -3,16 +3,18 @@
 // ======================================================================
 
 // --- IMPORTS ---
+// [VALIDADO] Versão do Firebase padronizada para 10.13.2.
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-// Se você usa a IA, descomente a linha abaixo
+// Se você usa a IA, descomente a linha abaixo.
 // import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
-const totalSlots = 20; // Total de horários para cálculo de ocupação.
+// --- CONSTANTES DE NEGÓCIO (Mantidas do seu código) ---
+const totalSlots = 20;
 const STATUS_VALIDOS = ["ativo", "realizado"];
 
-// --- FUNÇÕES UTILITÁRIAS (Mantidas do seu código original) ---
+// --- FUNÇÕES UTILITÁRIAS (Mantidas do seu código) ---
 
 function timeStringToMinutes(timeStr) {
     if (!timeStr || typeof timeStr !== 'string') return 0;
@@ -39,9 +41,10 @@ function debounce(fn, delay) {
     };
 }
 
-// --- LÓGICA DE BUSCA DE DADOS (Mantida do seu código original) ---
+// --- LÓGICA DE BUSCA DE DADOS (Mantida do seu código) ---
 
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
+    // Sua lógica original, sem alterações.
     try {
         const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
         if (!empresaDoc.exists()) return dataInicial;
@@ -68,13 +71,14 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 }
 
 async function obterResumoDoDia(empresaId, dataSelecionada) {
+    // Sua lógica original, sem alterações.
     try {
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
         const q = query(agRef, where("data", "==", dataSelecionada), where("status", "in", STATUS_VALIDOS));
         const snapshot = await getDocs(q);
         let faturamentoRealizado = 0;
         let faturamentoPrevisto = 0;
-        let agsParaIA = []; // Para a função de resumo inteligente
+        let agsParaIA = [];
 
         snapshot.forEach((d) => {
             const ag = d.data();
@@ -82,8 +86,9 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
             if (ag.status === "realizado") {
                 faturamentoRealizado += Number(ag.servicoPreco) || 0;
             }
-            // Lógica para popular agsParaIA (mantida do seu original)
+            // Adicione aqui sua lógica para popular 'agsParaIA' se necessário
         });
+
         return {
             totalAgendamentosDia: snapshot.size,
             agendamentosPendentes: snapshot.docs.filter(d => d.data().status === 'ativo').length,
@@ -98,7 +103,7 @@ async function obterResumoDoDia(empresaId, dataSelecionada) {
 }
 
 async function obterServicosMaisVendidosSemana(empresaId) {
-    // Sua lógica original, sem alterações
+    // Sua lógica original, sem alterações.
     try {
         const hoje = new Date();
         const inicioSemana = new Date(hoje);
@@ -120,11 +125,12 @@ async function obterServicosMaisVendidosSemana(empresaId) {
     }
 }
 
-// --- FUNÇÕES DE RENDERIZAÇÃO NA UI (Mantidas do seu código original) ---
+// --- FUNÇÕES DE RENDERIZAÇÃO NA UI ---
 
 function preencherPainel(resumo, servicosSemana) {
-    const formatCurrency = (value) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+    // [REVISADO] Adicionadas verificações de existência para robustez.
     const faturamentoRealizadoEl = document.getElementById("faturamento-realizado");
     if (faturamentoRealizadoEl) faturamentoRealizadoEl.textContent = formatCurrency(resumo.faturamentoRealizado);
 
@@ -141,9 +147,10 @@ function preencherPainel(resumo, servicosSemana) {
     if (ctx && typeof Chart !== 'undefined') {
         const chartExistente = Chart.getChart(ctx);
         if (chartExistente) chartExistente.destroy();
-        new Chart(ctx, { /* Sua configuração de gráfico original aqui */ });
+        // Coloque sua configuração new Chart() aqui, se estiver usando.
     }
-    // ... restante da sua lógica de preenchimento
+    
+    // Coloque sua lógica de preenchimento do resumo inteligente aqui.
 }
 
 // --- FUNÇÃO DE INICIALIZAÇÃO DO DASHBOARD ---
@@ -151,7 +158,11 @@ function preencherPainel(resumo, servicosSemana) {
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) {
-        console.warn("Elemento de filtro de data não encontrado.");
+        console.warn("Elemento de filtro de data não encontrado. Algumas funcionalidades podem não estar disponíveis.");
+        // Se não houver filtro, podemos carregar os dados do dia atual como padrão
+        const resumo = await obterResumoDoDia(empresaId, new Date().toISOString().split("T")[0]);
+        const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
+        preencherPainel(resumo, servicosSemana);
         return;
     }
     
@@ -167,7 +178,7 @@ async function iniciarDashboard(empresaId) {
     };
 
     filtroData.addEventListener("change", debounce(atualizarPainel, 300));
-    await atualizarPainel(); // Carga inicial
+    await atualizarPainel(); // Carga inicial dos dados.
 }
 
 // --- PONTO DE ENTRADA: AUTENTICAÇÃO E LÓGICA MULTIEMPRESA (REVISADO) ---
