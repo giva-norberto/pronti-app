@@ -281,10 +281,8 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar dinâmica -->
     <div id="sidebar-placeholder"></div>
     <main class="dashboard-main">
-        <!-- Cabeçalho -->
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
             <div class="dashboard-actions">
@@ -293,16 +291,12 @@
                 </div>
             </div>
         </div>
-        <!-- Banner de notificação de teste -->
         <div id="trial-notification-banner" class="trial-banner" style="display: none;">
-            <!-- Banner do período de teste -->
         </div>
         <div class="dashboard-grid">
-            <!-- Coluna Principal -->
             <div class="main-cards">
-                <!-- KPIs -->
                 <div class="kpi-row">
-                    <!-- Card Faturamento Mensal -->
+                    <!-- Card Faturamento Mensal (só realizado) -->
                     <div class="card">
                         <div class="card-title">
                             <i class="fa-solid fa-dollar-sign"></i> Faturamento Mensal
@@ -310,11 +304,8 @@
                         <div class="card-main-value" id="faturamento-realizado">
                             R$ 0,00
                         </div>
-                        <div class="card-sub-value">
-                            Previsto: <span id="faturamento-previsto">R$ 0,00</span>
-                        </div>
                     </div>
-                    <!-- Card Faturamento do Dia -->
+                    <!-- Card Faturamento do Dia (realizado + previsto) -->
                     <div class="card">
                         <div class="card-title">
                             <i class="fa-solid fa-coins"></i> Faturamento do Dia
@@ -339,7 +330,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Card Serviços mais vendidos da semana -->
                 <div class="card">
                     <div class="card-title">
                         <i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos
@@ -347,9 +337,7 @@
                     <canvas id="servicos-mais-vendidos" style="width:100%; max-height:320px;"></canvas>
                 </div>
             </div>
-            <!-- Coluna Lateral -->
             <div class="side-cards">
-                <!-- Card Sugestão Inteligente -->
                 <div class="card ia-card">
                     <div class="card-title">
                         <i class="fa-solid fa-brain"></i> Sugestão Inteligente
@@ -366,7 +354,6 @@
                         </button>
                     </div>
                 </div>
-                <!-- Card Resumo Inteligente -->
                 <div class="card resumo-card">
                     <div class="card-title">
                         <i class="fa-solid fa-lightbulb"></i> Resumo Inteligente
@@ -383,10 +370,8 @@
             </div>
         </div>
     </main>
-    <!-- Bibliotecas para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Sidebar dinâmica
         document.addEventListener("DOMContentLoaded", function() {
             fetch('menu-lateral.html')
                 .then(res => res.text())
@@ -394,7 +379,7 @@
                     document.getElementById('sidebar-placeholder').innerHTML = html;
                 });
 
-            // Gráfico de serviços mais vendidos (exemplo, preencher com dados reais via JS)
+            // Gráfico de serviços mais vendidos (exemplo)
             const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
             window.servicosChart = new Chart(ctx, {
                 type: 'bar',
@@ -418,14 +403,11 @@
                 }
             });
 
-            // Exemplo de integração para IA (troque pela sua chamada real)
             document.getElementById('btn-gerar-sugestao').onclick = function() {
                 document.getElementById('ia-sugestao').innerHTML = '<p>Consultando IA, aguarde...</p>';
-                // Sua chamada real aqui
             };
             document.getElementById('btn-ver-tendencia').onclick = function() {
                 document.getElementById('ia-sugestao').innerHTML = '<p>Analisando tendências, aguarde...</p>';
-                // Sua chamada real aqui
             };
         });
     </script>
