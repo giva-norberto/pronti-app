@@ -24,7 +24,7 @@ onAuthStateChanged(auth, (user) => {
             return;
         }
         const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Utilizador';
-        tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+        if (tituloBoasVindas) tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
         carregarEmpresas(user.uid);
     } else {
         window.location.href = 'login.html';
@@ -37,32 +37,32 @@ onAuthStateChanged(auth, (user) => {
  */
 async function carregarEmpresas(donoId) {
     try {
-        // CORREÇÃO: Passe sempre o 'db' como primeiro argumento de collection!
+        // Use sempre o db como primeiro argumento de collection!
         const q = query(collection(db, "empresarios"), where("donoId", "==", donoId));
         const querySnapshot = await getDocs(q);
 
-        loader.style.display = "none"; // Esconde o loader após carregar
+        if (loader) loader.style.display = "none"; // Esconde o loader após carregar
 
-        grid.innerHTML = ''; // Limpa o grid antes de adicionar cards
+        if (grid) grid.innerHTML = ''; // Limpa o grid antes de adicionar cards
 
         if (querySnapshot.empty) {
-            grid.innerHTML = '<p style="color: #dc2626; font-weight:bold;">Você ainda não possui empresas cadastradas.</p>';
+            if (grid) grid.innerHTML = '<p style="color: #dc2626; font-weight:bold;">Você ainda não possui empresas cadastradas.</p>';
         }
 
         querySnapshot.forEach((doc) => {
             const empresa = doc.data();
             const empresaCard = criarEmpresaCard(doc.id, empresa);
-            grid.appendChild(empresaCard);
+            if (grid) grid.appendChild(empresaCard);
         });
 
         // Adiciona sempre o card para criar uma nova empresa
         const criarCard = criarNovoCard();
-        grid.appendChild(criarCard);
+        if (grid) grid.appendChild(criarCard);
 
     } catch (error) {
-        loader.style.display = "none";
+        if (loader) loader.style.display = "none";
         console.error("Erro ao carregar empresas:", error);
-        grid.innerHTML = '<p style="color: red;">Não foi possível carregar as suas empresas. Tente novamente.</p>';
+        if (grid) grid.innerHTML = '<p style="color: red;">Não foi possível carregar as suas empresas. Tente novamente.</p>';
     }
 }
 
