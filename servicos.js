@@ -46,14 +46,16 @@ onAuthStateChanged(auth, async (user) => {
             }
             // Busca dados da empresa para saber se é dono (permite lógica de permissão)
             let empresa = null;
-            let q = query(collection(db, "empresarios"), where("__name__", "==", empresaId));
-            let snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                empresa = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+            // Corrigido: buscar pelo id diretamente, não usando where(__name__, ...)
+            const empresaDocRef = doc(db, "empresarios", empresaId);
+            const empresaSnap = await getDocs(query(collection(db, "empresarios"), where("__name__", "==", empresaId)));
+            if (!empresaSnap.empty) {
+                empresa = { id: empresaId, ...empresaSnap.docs[0].data() };
                 isDono = empresa.donoId === user.uid;
             } else {
                 empresa = await getEmpresaDoUsuario(user.uid);
                 isDono = empresa && empresa.donoId === user.uid;
+                empresaId = empresa?.id || empresaId;
             }
 
             await carregarServicosDoFirebase();
