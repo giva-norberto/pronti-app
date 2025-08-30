@@ -1,8 +1,7 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM FATURAMENTO MENSAL E DIÁRIO)
+// ARQUIVO: DASHBOARD.JS (FINAL MULTI-EMPRESA, TUDO VALIDADO FIREBASE)
 // ======================================================================
 
-// --- IMPORTS ---
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -51,7 +50,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 
 /**
  * Busca métricas do dia selecionado e do mês inteiro,
- * e agora também retorna o faturamento previsto e o realizado do DIA.
+ * e retorna o faturamento previsto e o realizado do DIA.
  */
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
@@ -61,48 +60,44 @@ async function obterMetricas(empresaId, dataSelecionada) {
         const inicioDoMesStr = new Date(anoAtual, mesAtual, 1).toISOString().split("T")[0];
         const fimDoMesStr = new Date(anoAtual, mesAtual + 1, 0).toISOString().split("T")[0];
 
-        // 1. Busca agendamentos do DIA SELECIONADO para as métricas diárias
+        // 1. Busca agendamentos do DIA SELECIONADO para as métricas diárias (todos, independente do status)
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-        const qDia = query(agRef, where("data", "==", dataSelecionada), where("status", "in", STATUS_VALIDOS_DIA));
+        const qDia = query(agRef, where("data", "==", dataSelecionada));
         const snapshotDia = await getDocs(qDia);
 
-        const resumoDia = {
-            totalAgendamentosDia: snapshotDia.size,
-            agendamentosPendentes: snapshotDia.docs.filter(d => d.data().status === 'ativo').length
-        };
-
-        // Calcula o faturamento previsto e realizado do DIA
+        let totalAgendamentosDia = 0;
+        let agendamentosPendentes = 0;
         let faturamentoPrevistoDia = 0;
         let faturamentoRealizadoDia = 0;
+
         snapshotDia.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
+            totalAgendamentosDia += 1;
+
+            // Pendentes
+            if (ag.status === "ativo") agendamentosPendentes += 1;
+
+            // Previsto do dia (todos os status previstos)
             if (STATUS_PARA_PREVISAO_MES.includes(ag.status)) {
                 faturamentoPrevistoDia += preco;
             }
+            // Realizado do dia (status realizados)
             if (STATUS_REALIZADOS_MES.includes(ag.status)) {
-                // Considera realizado se o status for dos válidos
                 faturamentoRealizadoDia += preco;
             }
         });
 
-        // 2. Busca agendamentos do MÊS INTEIRO para o faturamento mensal
+        // 2. Busca agendamentos do MÊS INTEIRO para o faturamento mensal (todos os agendamentos do mês)
         const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshotMes = await getDocs(qMes);
 
-        let faturamentoPrevistoMes = 0;
         let faturamentoRealizadoMes = 0;
 
         snapshotMes.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
-
-            // Lógica de Faturamento Previsto (Mês)
-            if (STATUS_PARA_PREVISAO_MES.includes(ag.status)) {
-                faturamentoPrevistoMes += preco;
-            }
-
-            // Lógica de Faturamento Realizado (Mês)
+            // Realizado do mês (status realizados e até agora)
             if (STATUS_REALIZADOS_MES.includes(ag.status)) {
                 const dataHoraAgendamento = new Date(`${ag.data}T${ag.horario || '00:00:00'}`);
                 if (dataHoraAgendamento <= agora) {
@@ -113,9 +108,9 @@ async function obterMetricas(empresaId, dataSelecionada) {
 
         // Retorna objeto único com todas as métricas
         return {
-            ...resumoDia,
+            totalAgendamentosDia,
+            agendamentosPendentes,
             faturamentoRealizado: faturamentoRealizadoMes,
-            faturamentoPrevisto: faturamentoPrevistoMes,
             faturamentoPrevistoDia,
             faturamentoRealizadoDia
         };
@@ -126,13 +121,11 @@ async function obterMetricas(empresaId, dataSelecionada) {
             totalAgendamentosDia: 0,
             agendamentosPendentes: 0,
             faturamentoRealizado: 0,
-            faturamentoPrevisto: 0,
             faturamentoPrevistoDia: 0,
             faturamentoRealizadoDia: 0
         };
     }
 }
-
 
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
@@ -161,26 +154,51 @@ async function obterServicosMaisVendidosSemana(empresaId) {
 function preencherPainel(metricas, servicosSemana) {
     const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+    // Faturamento Mensal (realizado)
     const faturamentoRealizadoEl = document.getElementById("faturamento-realizado");
     if (faturamentoRealizadoEl) faturamentoRealizadoEl.textContent = formatCurrency(metricas.faturamentoRealizado);
 
-    const faturamentoPrevistoEl = document.getElementById("faturamento-previsto");
-    if (faturamentoPrevistoEl) faturamentoPrevistoEl.textContent = formatCurrency(metricas.faturamentoPrevisto);
-
-    // NOVO: valores diários!
+    // Faturamento do Dia (realizado e previsto)
     const faturamentoPrevistoDiaEl = document.getElementById("faturamento-previsto-dia");
     if (faturamentoPrevistoDiaEl) faturamentoPrevistoDiaEl.textContent = formatCurrency(metricas.faturamentoPrevistoDia);
 
     const faturamentoRealizadoDiaEl = document.getElementById("faturamento-realizado-dia");
     if (faturamentoRealizadoDiaEl) faturamentoRealizadoDiaEl.textContent = formatCurrency(metricas.faturamentoRealizadoDia);
 
+    // Agendamentos do dia
     const totalAgendamentosEl = document.getElementById("total-agendamentos-dia");
     if (totalAgendamentosEl) totalAgendamentosEl.textContent = metricas.totalAgendamentosDia;
 
     const agendamentosPendentesEl = document.getElementById("agendamentos-pendentes");
     if (agendamentosPendentesEl) agendamentosPendentesEl.textContent = metricas.agendamentosPendentes;
 
-    // ...Sua lógica de gráfico e IA permanece aqui...
+    // Gráfico de Serviços mais vendidos
+    const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
+    const labels = Object.keys(servicosSemana);
+    const data = Object.values(servicosSemana);
+
+    if (window.servicosChart) window.servicosChart.destroy();
+    window.servicosChart = new window.Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Vendas',
+                data: data,
+                backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa','#fcd34d','#f87171','#34d399','#60a5fa']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: true }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
 }
 
 // --- FUNÇÃO DE INICIALIZAÇÃO DO DASHBOARD ---
