@@ -1,5 +1,4 @@
 // --- IMPORTS ---
-// Corrigido para importar apenas o que é exportado e necessário.
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -15,13 +14,10 @@ const btnExcluir = document.getElementById('btn-excluir');
 let empresaId = null;
 let clienteId = null;
 let userUid = null;
-let isEditing = false; // Controla se estamos em modo de criação ou edição
+let isEditing = false;
 
 // --- FUNÇÕES AUXILIARES ---
 
-/**
- * Mostra uma notificação toast ou um alerta como alternativa.
- */
 function mostrarToast(texto, cor) {
   if (typeof Toastify !== "undefined") {
     Toastify({
@@ -36,33 +32,25 @@ function mostrarToast(texto, cor) {
   }
 }
 
-/**
- * Busca no Firestore as empresas associadas ao UID do usuário.
- */
 async function buscaEmpresasDoUsuario(uid) {
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 }
 
-/**
- * Ajusta a interface para o modo de edição.
- */
 function configurarModoEdicao() {
     formTitulo.textContent = 'Editar Cliente';
     formSubtitulo.textContent = 'Altere os dados do cliente abaixo.';
     btnSalvar.innerHTML = '<i class="fa-solid fa-save"></i> Atualizar Cliente';
-    btnExcluir.style.display = 'inline-block'; // Mostra o botão de excluir
+    if (btnExcluir) { // Adicionando verificação aqui também
+        btnExcluir.style.display = 'inline-block';
+    }
 }
 
-/**
- * Carrega os dados do cliente do Firestore e preenche o formulário.
- */
 async function carregarDadosCliente() {
     try {
         const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
         const docSnap = await getDoc(clienteRef);
-
         if (docSnap.exists()) {
             const cliente = docSnap.data();
             document.getElementById('nome-cliente').value = cliente.nome || '';
@@ -78,12 +66,8 @@ async function carregarDadosCliente() {
     }
 }
 
-/**
- * Lida com o envio do formulário (criação ou atualização).
- */
 async function handleFormSubmit(e) {
     e.preventDefault();
-
     const nome = document.getElementById('nome-cliente').value.trim();
     const telefone = document.getElementById('telefone-cliente').value.trim();
     const email = document.getElementById('email-cliente').value.trim();
@@ -97,7 +81,6 @@ async function handleFormSubmit(e) {
         nome, 
         telefone, 
         email,
-        // Adiciona/atualiza um campo para sabermos quando foi a última modificação
         atualizadoEm: serverTimestamp() 
     };
 
@@ -106,13 +89,10 @@ async function handleFormSubmit(e) {
 
     try {
         if (isEditing) {
-            // ATUALIZA um cliente existente
             const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
             await updateDoc(clienteRef, dadosCliente);
             mostrarToast("Cliente atualizado com sucesso!", "#22c55e");
         } else {
-            // CRIA um novo cliente
-            // Adiciona o campo 'criadoEm' apenas na criação
             dadosCliente.criadoEm = serverTimestamp();
             const clientesCollectionRef = collection(db, "empresarios", empresaId, "clientes");
             await addDoc(clientesCollectionRef, dadosCliente);
@@ -128,14 +108,10 @@ async function handleFormSubmit(e) {
     }
 }
 
-/**
- * Lida com a exclusão do cliente.
- */
 async function handleExcluirCliente() {
     if (!confirm("Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.")) {
         return;
     }
-
     try {
         const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
         await deleteDoc(clienteRef);
@@ -155,9 +131,8 @@ onAuthStateChanged(auth, async (user) => {
         return;
     }
     userUid = user.uid;
-
-    // Lógica robusta para obter o ID da empresa
     empresaId = localStorage.getItem("empresaAtivaId");
+
     if (!empresaId) {
         const empresas = await buscaEmpresasDoUsuario(userUid);
         if (empresas.length === 1) {
@@ -171,7 +146,6 @@ onAuthStateChanged(auth, async (user) => {
         }
     }
 
-    // Verifica se há um ID de cliente na URL para o modo de edição
     const params = new URLSearchParams(window.location.search);
     clienteId = params.get('id');
     isEditing = !!clienteId;
@@ -181,7 +155,14 @@ onAuthStateChanged(auth, async (user) => {
         await carregarDadosCliente();
     }
 
-    // Adiciona os listeners de evento somente após toda a configuração estar pronta
-    form.addEventListener('submit', handleFormSubmit);
-    btnExcluir.addEventListener('click', handleExcluirCliente);
+    // ================== AQUI ESTÁ A CORREÇÃO ==================
+    // Adiciona os listeners de evento somente se os elementos existirem,
+    // prevenindo o erro "Cannot read properties of null". ✅
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+    }
+    if (btnExcluir) {
+        btnExcluir.addEventListener('click', handleExcluirCliente);
+    }
+    // ==========================================================
 });
