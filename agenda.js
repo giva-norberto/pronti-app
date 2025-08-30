@@ -1,8 +1,10 @@
 /**
- * agenda.js - Pronti (com expediente dos profissionais, fechamento automático e filtro inteligente)
- * - Firebase 10.13.2
- * - Modal "Ausência" (Não Compareceu) só após expediente do dia.
- * - Filtro DIA já pula para o próximo expediente se o atual acabou.
+ * agenda.js - Pronti (versão completa e revisada, Firebase 10.13.2)
+ * - Três modos: Dia, Semana, Histórico.
+ * - Considera expediente dos profissionais para fechamento e filtro.
+ * - Modal "Ausência" (Não Compareceu) só aparece após expediente do dia.
+ * - Só pergunta sobre ausência se o dia tinha expediente ativo de ao menos 1 profissional.
+ * - Filtro DIA já pula para o próximo expediente se o dia atual acabou.
  * - Multi-empresa, profissional, e lógica completa de fechamento.
  */
 
@@ -84,6 +86,7 @@ function formatarDataBrasileira(dataISO) {
 }
 
 // ----------- EXPEDIENTE PROFISSIONAIS -----------
+
 async function expedienteAcabou(empresaId, dataISO) {
   const profs = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
   let maxFim = null;
@@ -104,6 +107,23 @@ async function expedienteAcabou(empresaId, dataISO) {
   const [h, m] = maxFim.split(":").map(Number);
   const fimExpediente = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), h, m);
   return Date.now() > fimExpediente.getTime();
+}
+
+// Regra extra: só pergunta ausência se o dia tinha expediente ativo
+async function diaTemExpediente(empresaId, dataISO) {
+  const profs = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+  const dt = new Date(`${dataISO}T00:00:00`);
+  const nomeDia = diasDaSemanaArr[dt.getDay()];
+  for (const docProf of profs.docs) {
+    const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docProf.id, "configuracoes", "horarios");
+    const horariosSnap = await getDoc(horariosRef);
+    if (!horariosSnap.exists()) continue;
+    const conf = horariosSnap.data();
+    if (conf[nomeDia] && conf[nomeDia].ativo && conf[nomeDia].blocos && conf[nomeDia].blocos.length > 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 async function encontrarProximoDiaComExpediente(empresaId, dataInicialISO) {
@@ -242,7 +262,7 @@ function configurarListeners() {
   });
 }
 
-// ----------- FECHAMENTO DE DIAS PENDENTES (considera expediente) -----------
+// ----------- FECHAMENTO DE DIAS PENDENTES (considera expediente ativo) -----------
 async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
   const hojeISO = formatarDataISO(new Date());
   const ref = collection(db, "empresarios", empresaId, "agendamentos");
@@ -253,7 +273,6 @@ async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
   );
   const snapshotRetroativos = await getDocs(queryRetroativos);
 
-  // Só fecha dias cujo expediente já acabou
   if (!window._finalizouDiasRetroativos && !snapshotRetroativos.empty) {
     const diasPendentes = {};
     snapshotRetroativos.docs.forEach((docSnap) => {
@@ -264,8 +283,8 @@ async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
     const diasOrdenados = Object.keys(diasPendentes).sort();
     const dataPend = diasOrdenados[0];
     const docsPend = diasPendentes[dataPend];
-    // Só exibe fechamento se expediente daquele dia acabou
-    if (await expedienteAcabou(empresaId, dataPend)) {
+    // Só exibe fechamento se expediente daquele dia acabou e havia expediente ativo
+    if (await expedienteAcabou(empresaId, dataPend) && await diaTemExpediente(empresaId, dataPend)) {
       exibirCardsAgendamento(docsPend, false);
       exibirModalFinalizarDia(docsPend, dataPend, async () => {
         window._finalizouDiasRetroativos = false;
@@ -404,7 +423,7 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
         }
       });
 
-      // Só mostra fechamento do dia atual se expediente acabou!
+      // Só mostra fechamento do dia atual se expediente acabou e havia expediente ativo!
       if (
         docsVencidos.length > 0 &&
         ((dataReferencia &&
@@ -414,7 +433,8 @@ async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico
             ultimoHorarioDia,
             horarioFimExpediente
           ) &&
-          await expedienteAcabou(empresaId, dataReferencia)) ||
+          await expedienteAcabou(empresaId, dataReferencia) &&
+          await diaTemExpediente(empresaId, dataReferencia)) ||
           (dataReferencia && dataReferencia < formatarDataISO(new Date())))
       ) {
         exibirCardsAgendamento(snapshot.docs, isHistorico, horarioFimExpediente);
