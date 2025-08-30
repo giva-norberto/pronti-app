@@ -1,159 +1,162 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Novo Cliente</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <style>
-        .main-content {
-            margin-left: 270px;
-            padding: 36px 40px;
-            min-height: 100vh;
-            background: #f5f6fa;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+// --- IMPORTS ---
+import { db, auth } from "./firebase-config.js";
+import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// --- ELEMENTOS DO DOM ---
+const form = document.getElementById('form-cliente');
+const formTitulo = document.querySelector('.page-header h1');
+// Pega o botão de salvar pela classe, para ser compatível com o seu HTML.
+const btnSalvar = document.querySelector('#form-cliente .btn-submit');
+
+// --- VARIÁVEIS DE ESTADO ---
+let empresaId = null;
+let clienteId = null;
+let userUid = null;
+let isEditing = false; // Controla se estamos em modo de criação ou edição
+
+// --- FUNÇÕES AUXILIARES ---
+
+/**
+ * Mostra uma notificação toast ou um alerta como alternativa.
+ */
+function mostrarToast(texto, cor) {
+  if (typeof Toastify !== "undefined") {
+    Toastify({
+      text: texto,
+      duration: 4000,
+      gravity: "top",
+      position: "right",
+      style: { background: cor, color: "white" }
+    }).showToast();
+  } else {
+    alert(texto);
+  }
+}
+
+/**
+ * Busca no Firestore as empresas associadas ao UID do usuário.
+ */
+async function buscaEmpresasDoUsuario(uid) {
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+}
+
+/**
+ * Carrega os dados do cliente do Firestore e preenche o formulário.
+ */
+async function carregarDadosCliente() {
+    try {
+        const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
+        const docSnap = await getDoc(clienteRef);
+
+        if (docSnap.exists()) {
+            const cliente = docSnap.data();
+            document.getElementById('nome-cliente').value = cliente.nome || '';
+            document.getElementById('telefone-cliente').value = cliente.telefone || '';
+            document.getElementById('email-cliente').value = cliente.email || '';
+        } else {
+            mostrarToast("Cliente não encontrado. Você será redirecionado.", "#ef4444");
+            setTimeout(() => { window.location.href = 'clientes.html'; }, 2000);
         }
-        .page-header {
-            display: flex;
-            align-items: center;
-            gap: 28px;
-            margin-bottom: 18px;
+    } catch (error) {
+        console.error("Erro ao carregar dados do cliente:", error);
+        mostrarToast("Ocorreu um erro ao buscar os dados do cliente.", "#ef4444");
+    }
+}
+
+/**
+ * Lida com o envio do formulário (criação ou atualização).
+ */
+async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    if (!btnSalvar) {
+        console.error("Botão de salvar (.btn-submit) não foi encontrado no DOM.");
+        return;
+    }
+
+    const nome = document.getElementById('nome-cliente').value.trim();
+    const telefone = document.getElementById('telefone-cliente').value.trim();
+    const email = document.getElementById('email-cliente').value.trim();
+
+    if (!nome) {
+        mostrarToast("O campo 'Nome Completo' é obrigatório.", "#ef4444");
+        return;
+    }
+
+    const dadosCliente = { 
+        nome, 
+        telefone, 
+        email,
+        atualizadoEm: serverTimestamp() 
+    };
+
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = 'Salvando...';
+
+    try {
+        if (isEditing) {
+            // ATUALIZA um cliente existente
+            const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
+            await updateDoc(clienteRef, dadosCliente);
+            mostrarToast("Cliente atualizado com sucesso!", "#22c55e");
+        } else {
+            // CRIA um novo cliente
+            dadosCliente.criadoEm = serverTimestamp();
+            const clientesCollectionRef = collection(db, "empresarios", empresaId, "clientes");
+            await addDoc(clientesCollectionRef, dadosCliente);
+            mostrarToast("Cliente cadastrado com sucesso!", "#22c55e");
         }
-        .page-header h1 {
-            font-size: 1.55rem;
-            font-weight: 700;
-            color: #22223b;
-            margin: 0;
+        setTimeout(() => { window.location.href = 'clientes.html'; }, 1500);
+    } catch (error) {
+        console.error("Erro ao salvar cliente:", error);
+        mostrarToast("Ocorreu um erro ao salvar o cliente.", "#ef4444");
+    } finally {
+        if (btnSalvar) {
+            btnSalvar.disabled = false;
+            btnSalvar.textContent = isEditing ? 'Atualizar Cliente' : 'Salvar Cliente';
         }
-        .btn-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            background: #f1f5f9;
-            color: #2457e3;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 18px;
-            font-size: 1rem;
-            text-decoration: none;
-            font-weight: 600;
-            box-shadow: 0 1px 4px 0 #dbeafe;
-            transition: background 0.19s, color 0.19s, box-shadow 0.15s;
+    }
+}
+
+// --- LÓGICA DE AUTENTICAÇÃO E INICIALIZAÇÃO DA PÁGINA ---
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+    userUid = user.uid;
+
+    empresaId = localStorage.getItem("empresaAtivaId");
+    if (!empresaId) {
+        const empresas = await buscaEmpresasDoUsuario(userUid);
+        if (empresas.length === 1) {
+            empresaId = empresas[0].id;
+            localStorage.setItem("empresaAtivaId", empresaId);
+        } else {
+            mostrarToast("Nenhuma empresa ativa selecionada. Você será redirecionado.", "#ef4444");
+            const proximaPagina = empresas.length === 0 ? 'cadastro-empresa.html' : 'selecionar-empresa.html';
+            setTimeout(() => { window.location.href = proximaPagina; }, 2000);
+            return;
         }
-        .btn-back:hover {
-            background: #dbeafe;
-            color: #1e40af;
-            box-shadow: 0 2px 8px 0 #bfdbfe;
-            text-decoration: none;
-        }
-        .card {
-            background: #fff;
-            border-radius: 18px;
-            box-shadow: 0 5px 28px 0 rgba(29,78,216,0.07);
-            padding: 32px 32px 24px 32px;
-            width: 100%;
-            max-width: 370px;
-            margin-top: 16px;
-            margin-left: 0;
-            margin-right: auto;
-            border: 1px solid #e0e7ef;
-        }
-        .form-group label {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: block;
-        }
-        .form-group input {
-            font-size: 1rem;
-            padding: 12px 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            width: 100%;
-            margin-bottom: 10px;
-            background: #f9fafb;
-            transition: border 0.16s;
-        }
-        .form-group input:focus {
-            border: 1.5px solid #2457e3;
-            outline: none;
-            background: #fff;
-        }
-        .btn-submit {
-            width: 100%;
-            margin-top: 10px;
-            background: linear-gradient(90deg, #38bdf8 0%, #2457e3 100%);
-            color: #fff;
-            font-weight: 700;
-            border: none;
-            border-radius: 8px;
-            padding: 13px 0;
-            font-size: 1.05rem;
-            box-shadow: 0 1px 8px 0 #c7e8fc;
-            cursor: pointer;
-            transition: background 0.15s, box-shadow 0.15s;
-        }
-        .btn-submit:hover, .btn-submit:focus {
-            background: linear-gradient(90deg, #2457e3 0%, #38bdf8 100%);
-            box-shadow: 0 4px 20px 0 #bae6fd;
-        }
-        @media (max-width: 900px) {
-            .main-content {
-                margin-left: 0;
-                padding: 24px 10px;
-            }
-            .card {
-                padding: 20px 10px 16px 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div id="sidebar-placeholder"></div>
-    <main class="main-content">
-        <div class="page-header">
-            <h1>Novo Cliente</h1>
-            <a href="clientes.html" class="btn-back">
-                <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-                Voltar para Clientes
-            </a>
-        </div>
-        <form id="form-cliente" class="card" autocomplete="off">
-            <div class="form-group">
-                <label for="nome-cliente">Nome Completo:</label>
-                <input type="text" id="nome-cliente" name="nome-cliente" required>
-            </div>
-            <div class="form-group">
-                <label for="telefone-cliente">Telefone:</label>
-                <input type="tel" id="telefone-cliente" name="telefone-cliente" placeholder="(XX) XXXXX-XXXX">
-            </div>
-            <div class="form-group">
-                <label for="email-cliente">Email:</label>
-                <input type="email" id="email-cliente" name="email-cliente">
-            </div>
-            <button type="submit" class="btn-submit">Salvar Cliente</button>
-        </form>
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script type="module" src="novo-cliente.js"></script>
-    <script>
-      // Sidebar padronizada via AJAX
-      document.addEventListener("DOMContentLoaded", function() {
-        fetch('menu-lateral.html')
-          .then(res => res.text())
-          .then(html => {
-            document.getElementById('sidebar-placeholder').innerHTML = html;
-            // Destaca o link de clientes
-            const links = document.querySelectorAll('.sidebar-links a');
-            links.forEach(link => link.classList.remove('active'));
-            const clientesLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
-            if (clientesLink) clientesLink.classList.add('active');
-            if (window.ativarLogout) window.ativarLogout();
-          });
-      });
-    </script>
-</body>
-</html>
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    clienteId = params.get('id');
+    isEditing = !!clienteId;
+
+    if (isEditing) {
+        if (formTitulo) formTitulo.textContent = 'Editar Cliente';
+        if (btnSalvar) btnSalvar.textContent = 'Atualizar Cliente';
+        await carregarDadosCliente();
+    }
+
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+    } else {
+        console.error("Formulário #form-cliente não encontrado.");
+    }
+});
