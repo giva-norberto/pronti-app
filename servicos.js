@@ -1,7 +1,7 @@
 // servicos.js
 // Gerencia a listagem, exclusão e navegação dos serviços.
 
-import { collection, doc, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, doc, getDocs, deleteDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./vitrini-firebase.js";
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
@@ -44,18 +44,16 @@ onAuthStateChanged(auth, async (user) => {
                 if (appContent) appContent.style.display = 'none';
                 return;
             }
-            // Busca dados da empresa para saber se é dono (permite lógica de permissão)
+            // Buscar a empresa pelo id diretamente
+            const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
             let empresa = null;
-            // Corrigido: buscar pelo id diretamente, não usando where(__name__, ...)
-            const empresaDocRef = doc(db, "empresarios", empresaId);
-            const empresaSnap = await getDocs(query(collection(db, "empresarios"), where("__name__", "==", empresaId)));
-            if (!empresaSnap.empty) {
-                empresa = { id: empresaId, ...empresaSnap.docs[0].data() };
+            if (empresaSnap.exists()) {
+                empresa = { id: empresaSnap.id, ...empresaSnap.data() };
                 isDono = empresa.donoId === user.uid;
             } else {
                 empresa = await getEmpresaDoUsuario(user.uid);
                 isDono = empresa && empresa.donoId === user.uid;
-                empresaId = empresa?.id || empresaId;
+                if (empresa && empresa.id) empresaId = empresa.id;
             }
 
             await carregarServicosDoFirebase();
