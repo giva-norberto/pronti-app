@@ -1,21 +1,31 @@
 // ======================================================================
 // ARQUIVO: firebase-config-vitrine.js
 // RESPONSABILIDADE: Ser o PONTO DE ENTRADA do Firebase para a VITRINE.
+// [VALIDADO] - Este arquivo está completo e correto.
 // ======================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-// [REVISADO] Adicionado 'GoogleAuthProvider' para permitir o login com Google.
 import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// Configuração do Firebase específica para a Vitrine.
-// [VALIDADO] Usando a chave de API que você designou para o app público.
+// --- CONFIGURAÇÃO PÚBLICA DO FIREBASE (VALIDADA) ---
 const firebaseConfig = {
-  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8", // Chave do app público
+  // Chave de API da Web para o app público (vitrine).
+  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
+
+  // Domínio de autenticação, derivado do ID do projeto.
   authDomain: "pronti-app-37c6e.firebaseapp.com",
+
+  // ID do seu projeto no Firebase.
   projectId: "pronti-app-37c6e",
+
+  // Local de armazenamento de arquivos (Storage).
   storageBucket: "pronti-app-37c6e.appspot.com",
+
+  // ID do remetente de mensagens.
   messagingSenderId: "736700619274",
+
+  // ID do seu aplicativo Web específico da vitrine no projeto.
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
@@ -37,11 +47,9 @@ const getFirebaseApp = () => {
 // --- INICIALIZAÇÃO DOS SERVIÇOS ---
 const app = getFirebaseApp();
 const auth = getAuth(app);
-const db = getFirestore(app, "pronti-app"); // Conecta ao banco de dados correto
-
-// [CORREÇÃO] O Provedor de Autenticação do Google é instanciado aqui.
-const provider = new GoogleAuthProvider();
+const db = getFirestore(app, "pronti-app"); // Conecta ao banco de dados nomeado "pronti-app".
+const provider = new GoogleAuthProvider(); // Cria o provedor de login com Google.
 
 // --- EXPORTAÇÕES ---
-// [REVISADO] Exporta as instâncias para uso da vitrine, incluindo o 'provider'.
+// Exporta as instâncias para uso exclusivo da vitrine.
 export { app, db, auth, provider };
