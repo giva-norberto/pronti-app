@@ -20,7 +20,6 @@
             --danger: #f87171;
             --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
         }
-
         body {
             margin: 0;
             padding: 0;
@@ -28,13 +27,11 @@
             background: var(--background);
             color: var(--text-main);
         }
-
         .dashboard-main {
             max-width: 1200px;
             margin: 0 auto;
             padding: 32px 18px 32px 18px;
         }
-
         .dashboard-header {
             display: flex;
             align-items: center;
@@ -43,7 +40,6 @@
             flex-wrap: wrap;
             margin-bottom: 32px;
         }
-
         .dashboard-header h1 {
             font-size: 2.1rem;
             font-weight: 800;
@@ -55,13 +51,11 @@
             text-fill-color: transparent;
             margin: 0;
         }
-
         .dashboard-actions {
             display: flex;
             align-items: center;
             gap: 14px;
         }
-
         .date-filter input[type="date"] {
             padding: 10px 14px;
             border-radius: 9px;
@@ -71,12 +65,10 @@
             color: var(--text-main);
             transition: border-color 0.18s;
         }
-
         .date-filter input[type="date"]:focus {
             border-color: var(--primary);
             outline: none;
         }
-
         .trial-banner {
             background: var(--warning);
             color: #92400e;
@@ -91,33 +83,28 @@
             box-shadow: 0 2px 6px #fde68a45;
             font-size: 1.08em;
         }
-
         .dashboard-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 30px;
         }
-
         @media (max-width: 1000px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
                 gap: 24px;
             }
         }
-
         .main-cards,
         .side-cards {
             display: flex;
             flex-direction: column;
             gap: 24px;
         }
-
         .kpi-row {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 22px;
         }
-
         @media (max-width: 700px) {
             .dashboard-header {
                 flex-direction: column;
@@ -135,7 +122,6 @@
                 gap: 14px;
             }
         }
-
         .card {
             background: var(--card-bg);
             border-radius: 18px;
@@ -148,12 +134,10 @@
             transition: box-shadow 0.18s, transform 0.16s;
             position: relative;
         }
-
         .card:hover {
             box-shadow: 0 10px 36px #6366f123, 0 2px 14px #6366f10a;
             transform: translateY(-2px) scale(1.012);
         }
-
         .card-title {
             margin: 0 0 13px 0;
             font-size: 1.13rem;
@@ -164,7 +148,6 @@
             gap: 10px;
             letter-spacing: -0.3px;
         }
-
         .card-main-value {
             font-size: 2.45rem;
             font-weight: 800;
@@ -172,20 +155,17 @@
             margin: 0;
             letter-spacing: -1px;
         }
-
         .card-sub-value {
             font-size: 1.03rem;
             color: var(--text-secondary);
             margin-top: 8px;
             font-weight: 500;
         }
-
         .agenda-list {
             display: flex;
             flex-direction: column;
             gap: 13px;
         }
-
         .agenda-item {
             display: flex;
             align-items: center;
@@ -196,28 +176,23 @@
             font-size: 1.08em;
             border: 1px solid #e0e7ff;
         }
-
         .agenda-info {
             display: flex;
             flex-direction: column;
         }
-
         .agenda-info strong {
             color: var(--text-main);
             font-size: 1.16em;
         }
-
         .agenda-info span {
             font-size: 0.99em;
             color: var(--text-secondary);
         }
-
         .agenda-horario {
             font-weight: 700;
             color: var(--primary);
             font-size: 1.14rem;
         }
-
         .ia-card {
             background: linear-gradient(120deg, #6366f1 60%, #8b5cf6 100%);
             color: #fff;
@@ -226,22 +201,18 @@
             position: relative;
             overflow: hidden;
         }
-
         .ia-card .card-title {
             color: #e0e7ff;
         }
-
         .ia-card p {
             font-size: 1.12rem;
             line-height: 1.7;
         }
-
         .ia-actions {
             margin-top: 15px;
             display: flex;
             gap: 12px;
         }
-
         .ia-btn {
             background: #fff2;
             color: #fff;
@@ -253,40 +224,32 @@
             font-size: 0.98em;
             transition: background 0.18s, color 0.13s;
         }
-
         .ia-btn:hover {
             background: #fff4;
             color: #ffffffe0;
         }
-
         .resumo-card {
             border-left: 6px solid var(--primary);
         }
-
         .resumo-card .card-title {
             color: var(--primary);
         }
-
         .card, .agenda-item {
             transition: box-shadow 0.18s, transform 0.14s;
         }
-
         .agenda-item:hover {
             box-shadow: 0 4px 16px #6366f123;
             transform: scale(1.015);
         }
-
         ::-webkit-scrollbar {
             height: 7px;
             width: 7px;
             background: #f1f5f9;
         }
-
         ::-webkit-scrollbar-thumb {
             background: #e0e7ff;
             border-radius: 4px;
         }
-
         @media (prefers-color-scheme: dark) {
             :root {
                 --background: #1c1c22;
@@ -320,9 +283,7 @@
 <body>
     <!-- Sidebar dinâmica -->
     <div id="sidebar-placeholder"></div>
-
     <main class="dashboard-main">
-
         <!-- Cabeçalho -->
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
@@ -332,24 +293,19 @@
                 </div>
             </div>
         </div>
-
         <!-- Banner de notificação de teste -->
         <div id="trial-notification-banner" class="trial-banner" style="display: none;">
             <!-- Banner do período de teste -->
         </div>
-
         <div class="dashboard-grid">
-
             <!-- Coluna Principal -->
             <div class="main-cards">
-
                 <!-- KPIs -->
                 <div class="kpi-row">
-
-                    <!-- Card Faturamento -->
+                    <!-- Card Faturamento Mensal -->
                     <div class="card">
                         <div class="card-title">
-                            <i class="fa-solid fa-dollar-sign"></i> Faturamento
+                            <i class="fa-solid fa-dollar-sign"></i> Faturamento Mensal
                         </div>
                         <div class="card-main-value" id="faturamento-realizado">
                             R$ 0,00
@@ -358,7 +314,18 @@
                             Previsto: <span id="faturamento-previsto">R$ 0,00</span>
                         </div>
                     </div>
-
+                    <!-- Card Faturamento do Dia -->
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fa-solid fa-coins"></i> Faturamento do Dia
+                        </div>
+                        <div class="card-main-value" id="faturamento-realizado-dia">
+                            R$ 0,00
+                        </div>
+                        <div class="card-sub-value">
+                            Previsto: <span id="faturamento-previsto-dia">R$ 0,00</span>
+                        </div>
+                    </div>
                     <!-- Card Agendamentos -->
                     <div class="card">
                         <div class="card-title">
@@ -371,22 +338,17 @@
                             <span id="agendamentos-pendentes">0</span> pendentes no dia
                         </div>
                     </div>
-
                 </div>
-
-                <!-- Card Serviços mais vendidos da semana (substituindo Agenda do Dia) -->
+                <!-- Card Serviços mais vendidos da semana -->
                 <div class="card">
                     <div class="card-title">
                         <i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos
                     </div>
                     <canvas id="servicos-mais-vendidos" style="width:100%; max-height:320px;"></canvas>
                 </div>
-
             </div>
-
             <!-- Coluna Lateral -->
             <div class="side-cards">
-
                 <!-- Card Sugestão Inteligente -->
                 <div class="card ia-card">
                     <div class="card-title">
@@ -404,7 +366,6 @@
                         </button>
                     </div>
                 </div>
-
                 <!-- Card Resumo Inteligente -->
                 <div class="card resumo-card">
                     <div class="card-title">
@@ -419,15 +380,11 @@
                         </ul>
                     </div>
                 </div>
-
             </div>
-
         </div>
     </main>
-
     <!-- Bibliotecas para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <script>
         // Sidebar dinâmica
         document.addEventListener("DOMContentLoaded", function() {
@@ -472,7 +429,6 @@
             };
         });
     </script>
-
     <script type="module" src="dashboard.js"></script>
 </body>
 </html>
