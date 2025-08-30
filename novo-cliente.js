@@ -1,13 +1,27 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
+// --- IMPORTS ---
+// Corrigido para importar apenas o que é exportado e necessário.
+import { db, auth } from "./firebase-config.js";
+import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// --- ELEMENTOS DO DOM ---
+const form = document.getElementById('form-cliente');
+const formTitulo = document.getElementById('form-titulo');
+const formSubtitulo = document.getElementById('form-subtitulo');
+const btnSalvar = document.getElementById('btn-salvar');
+const btnExcluir = document.getElementById('btn-excluir');
 
-// Função genérica para mostrar toast (ou alert fallback)
+// --- VARIÁVEIS DE ESTADO ---
+let empresaId = null;
+let clienteId = null;
+let userUid = null;
+let isEditing = false; // Controla se estamos em modo de criação ou edição
+
+// --- FUNÇÕES AUXILIARES ---
+
+/**
+ * Mostra uma notificação toast ou um alerta como alternativa.
+ */
 function mostrarToast(texto, cor) {
   if (typeof Toastify !== "undefined") {
     Toastify({
@@ -22,83 +36,152 @@ function mostrarToast(texto, cor) {
   }
 }
 
-// MULTIEMPRESA: Obtém o empresaId da empresa ativa do localStorage
-function getEmpresaIdAtiva() {
-  return localStorage.getItem("empresaAtivaId") || null;
+/**
+ * Busca no Firestore as empresas associadas ao UID do usuário.
+ */
+async function buscaEmpresasDoUsuario(uid) {
+    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
 }
 
-// Inicializa listeners e submissão do formulário
-function inicializarPaginaNovoCliente(empresaId) {
-  const formNovoCliente = document.getElementById('form-cliente');
-  const inputNome = document.getElementById('nome-cliente');
-  const inputTelefone = document.getElementById('telefone-cliente');
-  const inputEmail = document.getElementById('email-cliente');
-  const btnSalvar = formNovoCliente ? formNovoCliente.querySelector('.btn-submit') : null;
+/**
+ * Ajusta a interface para o modo de edição.
+ */
+function configurarModoEdicao() {
+    formTitulo.textContent = 'Editar Cliente';
+    formSubtitulo.textContent = 'Altere os dados do cliente abaixo.';
+    btnSalvar.innerHTML = '<i class="fa-solid fa-save"></i> Atualizar Cliente';
+    btnExcluir.style.display = 'inline-block'; // Mostra o botão de excluir
+}
 
-  if (!formNovoCliente || !inputNome || !btnSalvar) {
-    console.log("Algum elemento não foi encontrado no DOM.");
-    return;
-  }
+/**
+ * Carrega os dados do cliente do Firestore e preenche o formulário.
+ */
+async function carregarDadosCliente() {
+    try {
+        const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
+        const docSnap = await getDoc(clienteRef);
 
-  formNovoCliente.addEventListener('submit', async (event) => {
-    event.preventDefault();
+        if (docSnap.exists()) {
+            const cliente = docSnap.data();
+            document.getElementById('nome-cliente').value = cliente.nome || '';
+            document.getElementById('telefone-cliente').value = cliente.telefone || '';
+            document.getElementById('email-cliente').value = cliente.email || '';
+        } else {
+            mostrarToast("Cliente não encontrado. Você será redirecionado.", "#ef4444");
+            setTimeout(() => { window.location.href = 'clientes.html'; }, 2000);
+        }
+    } catch (error) {
+        console.error("Erro ao carregar dados do cliente:", error);
+        mostrarToast("Ocorreu um erro ao buscar os dados do cliente.", "#ef4444");
+    }
+}
+
+/**
+ * Lida com o envio do formulário (criação ou atualização).
+ */
+async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const nome = document.getElementById('nome-cliente').value.trim();
+    const telefone = document.getElementById('telefone-cliente').value.trim();
+    const email = document.getElementById('email-cliente').value.trim();
+
+    if (!nome) {
+        mostrarToast("O campo 'Nome Completo' é obrigatório.", "#ef4444");
+        return;
+    }
+
+    const dadosCliente = { 
+        nome, 
+        telefone, 
+        email,
+        // Adiciona/atualiza um campo para sabermos quando foi a última modificação
+        atualizadoEm: serverTimestamp() 
+    };
+
     btnSalvar.disabled = true;
-    btnSalvar.textContent = "Salvando...";
+    btnSalvar.textContent = 'Salvando...';
 
     try {
-      const nome = inputNome.value.trim();
-      const telefone = inputTelefone ? inputTelefone.value.trim() : "";
-      const email = inputEmail ? inputEmail.value.trim() : "";
-
-      if (!nome) {
-        mostrarToast("O nome do cliente é obrigatório.", "#ef4444");
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = "Salvar Cliente";
-        return;
-      }
-
-      if (!empresaId) {
-        mostrarToast("Empresa não encontrada para este usuário!", "#ef4444");
-        btnSalvar.disabled = false;
-        btnSalvar.textContent = "Salvar Cliente";
-        return;
-      }
-
-      const clientesCollection = collection(db, "empresarios", empresaId, "clientes");
-      await addDoc(clientesCollection, {
-        nome,
-        telefone,
-        email,
-        criadoEm: new Date().toISOString()
-      });
-
-      mostrarToast("Cliente cadastrado com sucesso!", "#22c55e");
-      formNovoCliente.reset();
-      setTimeout(() => {
-        window.location.href = "clientes.html";
-      }, 1200);
+        if (isEditing) {
+            // ATUALIZA um cliente existente
+            const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
+            await updateDoc(clienteRef, dadosCliente);
+            mostrarToast("Cliente atualizado com sucesso!", "#22c55e");
+        } else {
+            // CRIA um novo cliente
+            // Adiciona o campo 'criadoEm' apenas na criação
+            dadosCliente.criadoEm = serverTimestamp();
+            const clientesCollectionRef = collection(db, "empresarios", empresaId, "clientes");
+            await addDoc(clientesCollectionRef, dadosCliente);
+            mostrarToast("Cliente cadastrado com sucesso!", "#22c55e");
+        }
+        setTimeout(() => { window.location.href = 'clientes.html'; }, 1500);
     } catch (error) {
-      console.error("Erro ao cadastrar cliente:", error);
-      mostrarToast("Erro ao cadastrar cliente.", "#ef4444");
+        console.error("Erro ao salvar cliente:", error);
+        mostrarToast("Ocorreu um erro ao salvar o cliente.", "#ef4444");
     } finally {
-      btnSalvar.disabled = false;
-      btnSalvar.textContent = "Salvar Cliente";
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = isEditing ? '<i class="fa-solid fa-save"></i> Atualizar Cliente' : '<i class="fa-solid fa-save"></i> Salvar Cliente';
     }
-  });
 }
 
-// Monitora autenticação e inicia o fluxo
-onAuthStateChanged(auth, async (user) => {
-  const formNovoCliente = document.getElementById('form-cliente');
-  if (user) {
-    // MULTIEMPRESA: usa empresa ativa
-    const empresaId = getEmpresaIdAtiva();
-    if (empresaId) {
-      inicializarPaginaNovoCliente(empresaId);
-    } else if (formNovoCliente) {
-      formNovoCliente.innerHTML = "<p style='color:red;'>Nenhuma empresa ativa selecionada.</p>";
+/**
+ * Lida com a exclusão do cliente.
+ */
+async function handleExcluirCliente() {
+    if (!confirm("Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.")) {
+        return;
     }
-  } else {
-    window.location.href = 'login.html';
-  }
+
+    try {
+        const clienteRef = doc(db, "empresarios", empresaId, "clientes", clienteId);
+        await deleteDoc(clienteRef);
+        mostrarToast("Cliente excluído com sucesso!", "#22c55e");
+        setTimeout(() => { window.location.href = 'clientes.html'; }, 1500);
+    } catch (error) {
+        console.error("Erro ao excluir cliente:", error);
+        mostrarToast("Ocorreu um erro ao excluir o cliente.", "#ef4444");
+    }
+}
+
+// --- LÓGICA DE AUTENTICAÇÃO E INICIALIZAÇÃO DA PÁGINA ---
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+    userUid = user.uid;
+
+    // Lógica robusta para obter o ID da empresa
+    empresaId = localStorage.getItem("empresaAtivaId");
+    if (!empresaId) {
+        const empresas = await buscaEmpresasDoUsuario(userUid);
+        if (empresas.length === 1) {
+            empresaId = empresas[0].id;
+            localStorage.setItem("empresaAtivaId", empresaId);
+        } else {
+            mostrarToast("Nenhuma empresa ativa selecionada. Você será redirecionado.", "#ef4444");
+            const proximaPagina = empresas.length === 0 ? 'cadastro-empresa.html' : 'selecionar-empresa.html';
+            setTimeout(() => { window.location.href = proximaPagina; }, 2000);
+            return;
+        }
+    }
+
+    // Verifica se há um ID de cliente na URL para o modo de edição
+    const params = new URLSearchParams(window.location.search);
+    clienteId = params.get('id');
+    isEditing = !!clienteId;
+
+    if (isEditing) {
+        configurarModoEdicao();
+        await carregarDadosCliente();
+    }
+
+    // Adiciona os listeners de evento somente após toda a configuração estar pronta
+    form.addEventListener('submit', handleFormSubmit);
+    btnExcluir.addEventListener('click', handleExcluirCliente);
 });
