@@ -1,20 +1,18 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM FATURAMENTO MENSAL CORRIGIDO)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM FATURAMENTO MENSAL E DIÁRIO)
 // ======================================================================
 
 // --- IMPORTS ---
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-// Se você usa a IA, descomente a linha abaixo.
-// import { gerarResumoDiarioInteligente } from "./inteligencia.js";
 
 // --- CONSTANTES DE NEGÓCIO ---
-const STATUS_VALIDOS_DIA = ["ativo", "realizado"]; // Status para contagem do dia
-const STATUS_PARA_PREVISAO_MES = ["ativo", "realizado", "concluido", "efetivado"]; // Status para previsão do mês
-const STATUS_REALIZADOS_MES = ["realizado", "concluido", "efetivado"]; // Status para faturamento realizado do mês
+const STATUS_VALIDOS_DIA = ["ativo", "realizado"];
+const STATUS_PARA_PREVISAO_MES = ["ativo", "realizado", "concluido", "efetivado"];
+const STATUS_REALIZADOS_MES = ["realizado", "concluido", "efetivado"];
 
-// --- FUNÇÕES UTILITÁRIAS (Mantidas do seu código original) ---
+// --- FUNÇÕES UTILITÁRIAS ---
 function debounce(fn, delay) {
     let timer = null;
     return function (...args) {
@@ -26,7 +24,6 @@ function debounce(fn, delay) {
 // --- LÓGICA DE BUSCA DE DADOS ---
 
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
-    // Sua lógica original, sem alterações.
     try {
         const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
         if (!empresaDoc.exists()) return dataInicial;
@@ -53,8 +50,8 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 }
 
 /**
- * [FUNÇÃO REVISADA E UNIFICADA]
- * Busca todas as métricas necessárias: resumo do dia selecionado E faturamento do mês inteiro.
+ * Busca métricas do dia selecionado e do mês inteiro,
+ * e agora também retorna o faturamento previsto e o realizado do DIA.
  */
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
@@ -74,7 +71,22 @@ async function obterMetricas(empresaId, dataSelecionada) {
             agendamentosPendentes: snapshotDia.docs.filter(d => d.data().status === 'ativo').length
         };
 
-        // 2. Busca agendamentos do MÊS INTEIRO para o faturamento
+        // Calcula o faturamento previsto e realizado do DIA
+        let faturamentoPrevistoDia = 0;
+        let faturamentoRealizadoDia = 0;
+        snapshotDia.forEach((d) => {
+            const ag = d.data();
+            const preco = Number(ag.servicoPreco) || 0;
+            if (STATUS_PARA_PREVISAO_MES.includes(ag.status)) {
+                faturamentoPrevistoDia += preco;
+            }
+            if (STATUS_REALIZADOS_MES.includes(ag.status)) {
+                // Considera realizado se o status for dos válidos
+                faturamentoRealizadoDia += preco;
+            }
+        });
+
+        // 2. Busca agendamentos do MÊS INTEIRO para o faturamento mensal
         const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshotMes = await getDocs(qMes);
 
@@ -99,18 +111,30 @@ async function obterMetricas(empresaId, dataSelecionada) {
             }
         });
 
-        // Retorna um objeto único com todas as métricas
-        return { ...resumoDia, faturamentoRealizado: faturamentoRealizadoMes, faturamentoPrevisto: faturamentoPrevistoMes };
+        // Retorna objeto único com todas as métricas
+        return {
+            ...resumoDia,
+            faturamentoRealizado: faturamentoRealizadoMes,
+            faturamentoPrevisto: faturamentoPrevistoMes,
+            faturamentoPrevistoDia,
+            faturamentoRealizadoDia
+        };
 
     } catch (e) {
         console.error("Erro ao obter métricas:", e);
-        return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevisto: 0 };
+        return {
+            totalAgendamentosDia: 0,
+            agendamentosPendentes: 0,
+            faturamentoRealizado: 0,
+            faturamentoPrevisto: 0,
+            faturamentoPrevistoDia: 0,
+            faturamentoRealizadoDia: 0
+        };
     }
 }
 
 
 async function obterServicosMaisVendidosSemana(empresaId) {
-    // Sua lógica original, sem alterações.
     try {
         const hoje = new Date();
         const inicioSemana = new Date(hoje);
@@ -142,13 +166,20 @@ function preencherPainel(metricas, servicosSemana) {
 
     const faturamentoPrevistoEl = document.getElementById("faturamento-previsto");
     if (faturamentoPrevistoEl) faturamentoPrevistoEl.textContent = formatCurrency(metricas.faturamentoPrevisto);
-    
+
+    // NOVO: valores diários!
+    const faturamentoPrevistoDiaEl = document.getElementById("faturamento-previsto-dia");
+    if (faturamentoPrevistoDiaEl) faturamentoPrevistoDiaEl.textContent = formatCurrency(metricas.faturamentoPrevistoDia);
+
+    const faturamentoRealizadoDiaEl = document.getElementById("faturamento-realizado-dia");
+    if (faturamentoRealizadoDiaEl) faturamentoRealizadoDiaEl.textContent = formatCurrency(metricas.faturamentoRealizadoDia);
+
     const totalAgendamentosEl = document.getElementById("total-agendamentos-dia");
     if (totalAgendamentosEl) totalAgendamentosEl.textContent = metricas.totalAgendamentosDia;
 
     const agendamentosPendentesEl = document.getElementById("agendamentos-pendentes");
     if (agendamentosPendentesEl) agendamentosPendentesEl.textContent = metricas.agendamentosPendentes;
-    
+
     // ...Sua lógica de gráfico e IA permanece aqui...
 }
 
@@ -160,21 +191,20 @@ async function iniciarDashboard(empresaId) {
         console.warn("Elemento de filtro de data não encontrado.");
         return;
     }
-    
+
     const hojeString = new Date().toISOString().split("T")[0];
     const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
     filtroData.value = dataInicial;
-    
+
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
-        // Chama a nova função unificada de métricas
         const metricas = await obterMetricas(empresaId, dataSelecionada);
         const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
         preencherPainel(metricas, servicosSemana);
     };
 
     filtroData.addEventListener("change", debounce(atualizarPainel, 300));
-    await atualizarPainel(); // Carga inicial dos dados.
+    await atualizarPainel();
 }
 
 // --- PONTO DE ENTRADA: AUTENTICAÇÃO E LÓGICA MULTIEMPRESA ---
