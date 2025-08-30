@@ -241,3 +241,131 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "login.html";
     }
 });
+// --- IMPORTS ---
+import { db, auth } from "./firebase-config.js";
+import { doc, getDoc, collection, query, where, getDocs, getCountFromServer, Timestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+// --- ELEMENTOS DO DOM ---
+const welcomeMessageEl = document.getElementById('welcome-message');
+const companyNameEl = document.getElementById('company-name-display');
+const totalClientesEl = document.getElementById('metric-total-clientes');
+const agendamentosHojeEl = document.getElementById('metric-agendamentos-hoje');
+// [ADICIONADO] Elementos para o novo card de faturamento
+const faturamentoRealizadoEl = document.getElementById('faturamento-realizado');
+const faturamentoPrevistoEl = document.getElementById('faturamento-previsto');
+
+// --- FUNÇÕES DE BUSCA DE DADOS ---
+
+/**
+ * Busca os dados da empresa ativa no Firestore.
+ */
+async function getCompanyData(empresaId) {
+    if (!empresaId) return null;
+    const empresaRef = doc(db, "empresarios", empresaId);
+    const docSnap = await getDoc(empresaRef);
+    return docSnap.exists() ? docSnap.data() : null;
+}
+
+/**
+ * Busca as métricas principais do dashboard, incluindo o faturamento.
+ */
+async function getDashboardMetrics(empresaId) {
+    if (!empresaId) return { totalClientes: 0, agendamentosHoje: 0, faturamentoRealizado: 0, faturamentoPrevisto: 0 };
+
+    // Contar clientes
+    const clientesRef = collection(db, "empresarios", empresaId, "clientes");
+    const clientesSnapshot = await getCountFromServer(clientesRef);
+    const totalClientes = clientesSnapshot.data().count;
+
+    // Obter dados de agendamentos do dia
+    const hoje = new Date();
+    const inicioDoDia = new Date(hoje.setHours(0, 0, 0, 0));
+    const fimDoDia = new Date(hoje.setHours(23, 59, 59, 999));
+    
+    const agendamentosRef = collection(db, "empresarios", empresaId, "agendamentos");
+    const q = query(agendamentosRef,
+        where("dataAgendamento", ">=", Timestamp.fromDate(inicioDoDia)),
+        where("dataAgendamento", "<=", Timestamp.fromDate(fimDoDia))
+    );
+    const agendamentosSnapshot = await getDocs(q); // Usamos getDocs para poder somar os preços
+    
+    let faturamentoRealizado = 0;
+    let faturamentoPrevisto = 0;
+
+    agendamentosSnapshot.forEach(doc => {
+        const agendamento = doc.data();
+        const preco = Number(agendamento.servicoPreco) || 0;
+        
+        // A previsão inclui todos os agendamentos do dia
+        faturamentoPrevisto += preco;
+
+        // O realizado inclui apenas os com status 'realizado'
+        if (agendamento.status === 'realizado') {
+            faturamentoRealizado += preco;
+        }
+    });
+
+    return { 
+        totalClientes, 
+        agendamentosHoje: agendamentosSnapshot.size, 
+        faturamentoRealizado, 
+        faturamentoPrevisto 
+    };
+}
+
+// --- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO ---
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Lógica robusta para encontrar a empresa ativa
+    let empresaId = localStorage.getItem("empresaAtivaId");
+    if (!empresaId) {
+        const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
+        const snapshot = await getDocs(q);
+        if (snapshot.docs.length === 1) {
+            empresaId = snapshot.docs[0].id;
+            localStorage.setItem("empresaAtivaId", empresaId);
+        } else {
+            window.location.href = snapshot.empty ? 'cadastro-empresa.html' : 'selecionar-empresa.html';
+            return;
+        }
+    }
+
+    try {
+        const companyData = await getCompanyData(empresaId);
+        const metrics = await getDashboardMetrics(empresaId);
+
+        // Atualiza a interface com todos os dados
+        if (welcomeMessageEl) {
+            const userName = user.displayName || 'Empreendedor';
+            welcomeMessageEl.textContent = `Olá, ${userName.split(' ')[0]}!`;
+        }
+        if (companyNameEl && companyData) {
+            companyNameEl.textContent = `Exibindo dados da empresa: ${companyData.nomeFantasia || 'Empresa sem nome'}`;
+        }
+        if (totalClientesEl) {
+            totalClientesEl.textContent = metrics.totalClientes;
+        }
+        if (agendamentosHojeEl) {
+            agendamentosHojeEl.textContent = metrics.agendamentosHoje;
+        }
+        // [ADICIONADO] Atualiza os novos campos de faturamento formatados como moeda
+        if (faturamentoRealizadoEl) {
+            faturamentoRealizadoEl.textContent = metrics.faturamentoRealizado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        if (faturamentoPrevistoEl) {
+            faturamentoPrevistoEl.textContent = metrics.faturamentoPrevisto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+    } catch (error) {
+        console.error("Erro ao carregar dados do dashboard:", error);
+        if (companyNameEl) {
+            companyNameEl.textContent = "Não foi possível carregar os dados.";
+        }
+    }
+});
