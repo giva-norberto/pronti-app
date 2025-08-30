@@ -1,9 +1,9 @@
 /**
- * agenda.js - Pronti (Versão Revisada para Firebase 10.13.2)
- * - Três modos: Dia, Semana, Histórico.
- * - Modal "Ausência" (Não Compareceu) para agendamentos 'ativo'.
- * - Multi-empresa: lê empresaAtivaId do localStorage, redireciona se não houver.
- * - Fechamento automático: Sempre pergunta sobre ausências de dias anteriores ou fim do expediente ANTES de mostrar a agenda.
+ * agenda.js - Pronti (com expediente dos profissionais, fechamento automático e filtro inteligente)
+ * - Firebase 10.13.2
+ * - Modal "Ausência" (Não Compareceu) só após expediente do dia.
+ * - Filtro DIA já pula para o próximo expediente se o atual acabou.
+ * - Multi-empresa, profissional, e lógica completa de fechamento.
  */
 
 import { db, auth } from "./firebase-config.js";
@@ -17,9 +17,7 @@ import {
   updateDoc,
   getDoc,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import {
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // ----------- MULTI-EMPRESA: Checa empresa ativa -----------
 let empresaId = localStorage.getItem("empresaAtivaId");
@@ -85,13 +83,53 @@ function formatarDataBrasileira(dataISO) {
   return `${dia}/${mes}/${ano}`;
 }
 
+// ----------- EXPEDIENTE PROFISSIONAIS -----------
+async function expedienteAcabou(empresaId, dataISO) {
+  const profs = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+  let maxFim = null;
+  const dt = new Date(`${dataISO}T00:00:00`);
+  const nomeDia = diasDaSemanaArr[dt.getDay()];
+  for (const docProf of profs.docs) {
+    const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docProf.id, "configuracoes", "horarios");
+    const horariosSnap = await getDoc(horariosRef);
+    if (!horariosSnap.exists()) continue;
+    const conf = horariosSnap.data();
+    if (conf[nomeDia] && conf[nomeDia].ativo && conf[nomeDia].blocos && conf[nomeDia].blocos.length > 0) {
+      for (const bloco of conf[nomeDia].blocos) {
+        if (!maxFim || bloco.fim > maxFim) maxFim = bloco.fim;
+      }
+    }
+  }
+  if (!maxFim) return true; // não há expediente hoje
+  const [h, m] = maxFim.split(":").map(Number);
+  const fimExpediente = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), h, m);
+  return Date.now() > fimExpediente.getTime();
+}
+
+async function encontrarProximoDiaComExpediente(empresaId, dataInicialISO) {
+  let data = new Date(`${dataInicialISO}T00:00:00`);
+  for (let i = 0; i < 14; i++) { // até 2 semanas
+    const nomeDia = diasDaSemanaArr[data.getDay()];
+    const profs = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+    for (const docProf of profs.docs) {
+      const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docProf.id, "configuracoes", "horarios");
+      const horariosSnap = await getDoc(horariosRef);
+      if (!horariosSnap.exists()) continue;
+      const conf = horariosSnap.data();
+      if (conf[nomeDia] && conf[nomeDia].ativo && conf[nomeDia].blocos && conf[nomeDia].blocos.length > 0) {
+        return data.toISOString().split("T")[0];
+      }
+    }
+    data.setDate(data.getDate() + 1);
+  }
+  return dataInicialISO; // fallback para o mesmo dia se não encontrar
+}
+
 // ----------- LÓGICA DE DATAS -----------
 function getFimSemana(dataBaseStr) {
-  // Retorna o domingo da semana do dia selecionado
   const [ano, mes, dia] = dataBaseStr.split("-").map(Number);
   const inicio = new Date(ano, mes - 1, dia);
-  const diaDaSemana = inicio.getDay(); // 0=domingo, 1=segunda,...
-  // Dias até domingo
+  const diaDaSemana = inicio.getDay();
   const diasAteDomingo = 7 - diaDaSemana;
   const fim = new Date(inicio);
   fim.setDate(inicio.getDate() + diasAteDomingo - 1);
@@ -99,15 +137,11 @@ function getFimSemana(dataBaseStr) {
 }
 function atualizarLegendaSemana(inicioISO, fimISO) {
   if (legendaSemana) {
-    legendaSemana.innerHTML = `Mostrando de <strong>${formatarDataBrasileira(
-      inicioISO
-    )}</strong> a <strong>${formatarDataBrasileira(fimISO)}</strong>`;
+    legendaSemana.innerHTML = `Mostrando de <strong>${formatarDataBrasileira(inicioISO)}</strong> a <strong>${formatarDataBrasileira(fimISO)}</strong>`;
   }
 }
-// -------- CORREÇÃO: Verifica se já passou do horário FINAL DA AGENDA do profissional --------
 function agendamentoJaVenceu(dataISO, horarioStr, horarioFimExpediente) {
   if (!dataISO) return false;
-  // Se passado horário fim do expediente, considera vencido para todos agendamentos do dia
   if (horarioFimExpediente) {
     const [ano, mes, dia] = dataISO.split("-").map(Number);
     const [horaFim, minFim] = horarioFimExpediente.split(":").map(Number);
@@ -139,7 +173,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function checarTipoUsuario(uid, empresaId) {
-  // Confirma se é dono ou funcionário da empresa ativa
   const docEmp = await getDocs(
     query(
       collection(db, "empresarios"),
@@ -150,20 +183,37 @@ async function checarTipoUsuario(uid, empresaId) {
   return docEmp.empty ? "funcionario" : "dono";
 }
 
-// ----------- INICIALIZAÇÃO DA PÁGINA -----------
+// ----------- INICIALIZAÇÃO DA PÁGINA/FILTRO INTELIGENTE -----------
 async function inicializarPaginaAgenda() {
   if (perfilUsuario === "dono") {
     await popularFiltroProfissionais();
   } else {
     document.getElementById("filtro-profissional-item").style.display = "none";
   }
-  inputDataSemana.value = formatarDataISO(new Date());
+  // Filtro inteligente: já pula para o próximo expediente se o atual acabou
+  let hojeISO = formatarDataISO(new Date());
+  let acabou = await expedienteAcabou(empresaId, hojeISO);
+  let dataFiltrar = hojeISO;
+  if (acabou) {
+    dataFiltrar = await encontrarProximoDiaComExpediente(empresaId, hojeISO);
+  }
+  inputDataSemana.value = dataFiltrar;
   configurarListeners();
   ativarModoAgenda("dia");
 }
 
 function configurarListeners() {
-  btnAgendaDia.addEventListener("click", () => ativarModoAgenda("dia"));
+  btnAgendaDia.addEventListener("click", async () => {
+    // Filtro inteligente: pular para o próximo expediente se necessário
+    let hojeISO = formatarDataISO(new Date());
+    let acabou = await expedienteAcabou(empresaId, hojeISO);
+    let dataFiltrar = hojeISO;
+    if (acabou) {
+      dataFiltrar = await encontrarProximoDiaComExpediente(empresaId, hojeISO);
+    }
+    inputDataSemana.value = dataFiltrar;
+    ativarModoAgenda("dia");
+  });
   btnAgendaSemana.addEventListener("click", () => ativarModoAgenda("semana"));
   btnHistorico.addEventListener("click", () => ativarModoAgenda("historico"));
   filtroProfissionalEl.addEventListener("change", carregarAgendamentosConformeModo);
@@ -181,23 +231,18 @@ function configurarListeners() {
     carregarAgendamentosHistorico();
   });
 
-  // Delegação para botão de ausência (não compareceu)
   listaAgendamentosDiv.addEventListener("click", async (e) => {
     const btnAusencia = e.target.closest(".btn-ausencia");
     if (btnAusencia) {
       const agendamentoId = btnAusencia.dataset.id;
-      if (
-        confirm(
-          "Marcar ausência deste cliente? Isso ficará registrado no histórico."
-        )
-      ) {
+      if (confirm("Marcar ausência deste cliente? Isso ficará registrado no histórico.")) {
         await marcarNaoCompareceu(agendamentoId);
       }
     }
   });
 }
 
-// ----------- FECHAMENTO DE DIAS PENDENTES ANTES DE QUALQUER FILTRO -----------
+// ----------- FECHAMENTO DE DIAS PENDENTES (considera expediente) -----------
 async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
   const hojeISO = formatarDataISO(new Date());
   const ref = collection(db, "empresarios", empresaId, "agendamentos");
@@ -208,8 +253,8 @@ async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
   );
   const snapshotRetroativos = await getDocs(queryRetroativos);
 
+  // Só fecha dias cujo expediente já acabou
   if (!window._finalizouDiasRetroativos && !snapshotRetroativos.empty) {
-    // Agrupa por data, pega o mais antigo
     const diasPendentes = {};
     snapshotRetroativos.docs.forEach((docSnap) => {
       const ag = docSnap.data();
@@ -219,15 +264,16 @@ async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
     const diasOrdenados = Object.keys(diasPendentes).sort();
     const dataPend = diasOrdenados[0];
     const docsPend = diasPendentes[dataPend];
-
-    // Exibe os cards e o modal daquele dia
-    exibirCardsAgendamento(docsPend, false);
-    exibirModalFinalizarDia(docsPend, dataPend, async () => {
-      window._finalizouDiasRetroativos = false; // Permite rodar múltiplas vezes
-      await checarFechamentoDiasPendentes(callbackQuandoFinalizar); // Checa o próximo dia pendente
-    });
-    window._finalizouDiasRetroativos = true;
-    return; // Só processa um dia retroativo por vez
+    // Só exibe fechamento se expediente daquele dia acabou
+    if (await expedienteAcabou(empresaId, dataPend)) {
+      exibirCardsAgendamento(docsPend, false);
+      exibirModalFinalizarDia(docsPend, dataPend, async () => {
+        window._finalizouDiasRetroativos = false;
+        await checarFechamentoDiasPendentes(callbackQuandoFinalizar);
+      });
+      window._finalizouDiasRetroativos = true;
+      return;
+    }
   }
   window._finalizouDiasRetroativos = false;
   if (typeof callbackQuandoFinalizar === "function") callbackQuandoFinalizar();
@@ -236,13 +282,7 @@ async function checarFechamentoDiasPendentes(callbackQuandoFinalizar) {
 // ----------- FUNÇÃO PARA MARCAR AUSÊNCIA -----------
 async function marcarNaoCompareceu(agendamentoId) {
   try {
-    const agRef = doc(
-      db,
-      "empresarios",
-      empresaId,
-      "agendamentos",
-      agendamentoId
-    );
+    const agRef = doc(db, "empresarios", empresaId, "agendamentos", agendamentoId);
     await updateDoc(agRef, { status: "nao_compareceu" });
     mostrarToast("Agendamento marcado como ausência.", "#f59e42");
     carregarAgendamentosConformeModo();
@@ -275,9 +315,7 @@ function ativarModoAgenda(modo) {
 // ----------- FILTRO PROFISSIONAL -----------
 async function popularFiltroProfissionais() {
   try {
-    const snapshot = await getDocs(
-      collection(db, "empresarios", empresaId, "profissionais")
-    );
+    const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
     filtroProfissionalEl.innerHTML =
       '<option value="todos">Todos os Profissionais</option>';
     snapshot.forEach((doc) => {
@@ -289,16 +327,10 @@ async function popularFiltroProfissionais() {
 }
 
 // ----------- CARREGAMENTO DE AGENDAMENTOS -----------
-async function buscarEExibirAgendamentos(
-  constraints,
-  mensagemVazio,
-  isHistorico = false
-) {
+async function buscarEExibirAgendamentos(constraints, mensagemVazio, isHistorico = false) {
   listaAgendamentosDiv.innerHTML = `<p>Carregando agendamentos...</p>`;
   try {
-    // FECHAMENTO DE DIAS ANTES DE QUALQUER FILTRO
     await checarFechamentoDiasPendentes(async () => {
-      // 2. Busca os agendamentos do filtro/método normal
       const ref = collection(db, "empresarios", empresaId, "agendamentos");
       const q = query(ref, ...constraints, orderBy("data"), orderBy("horario"));
       const snapshot = await getDocs(q);
@@ -308,26 +340,15 @@ async function buscarEExibirAgendamentos(
         return;
       }
 
-      // NOVO: Busque configuração de horários de todos os profissionais envolvidos para o(s) dia(s)
-      // Monta um map: {profissionalId: horariosObj}
       let profConfigs = {};
       let profissionaisIds = new Set();
       snapshot.docs.forEach((docSnap) => {
         const ag = docSnap.data();
         if (ag.profissionalId) profissionaisIds.add(ag.profissionalId);
       });
-      // Busca os configs de todos os profissionais (paralelo)
       const profConfigsArr = await Promise.all(
         Array.from(profissionaisIds).map(async (profId) => {
-          const horariosRef = doc(
-            db,
-            "empresarios",
-            empresaId,
-            "profissionais",
-            profId,
-            "configuracoes",
-            "horarios"
-          );
+          const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profId, "configuracoes", "horarios");
           const horariosSnap = await getDoc(horariosRef);
           return { profId, horarios: horariosSnap.exists() ? horariosSnap.data() : null };
         })
@@ -336,16 +357,12 @@ async function buscarEExibirAgendamentos(
         profConfigs[profId] = horarios;
       });
 
-      // --- Lógica normal do dia/semana/histórico ---
-      // Detecta se há agendamentos vencidos (ativos) para o(s) dia(s) anterior(es) ou turno do dia já acabou
       const docsVencidos = [];
       let ultimoHorarioDia = null;
       let dataReferencia = null;
       let horarioFimExpediente = null;
       snapshot.docs.forEach((docSnap) => {
         const ag = docSnap.data();
-
-        // Pegue o fim de expediente do profissional para o dia do agendamento
         let horarioFim = null;
         if (ag.profissionalId && ag.data) {
           const dt = new Date(`${ag.data}T00:00:00`);
@@ -364,21 +381,18 @@ async function buscarEExibirAgendamentos(
         }
         ag.horarioFimExpediente = horarioFim;
 
-        // Detecta vencidos
         if (
           ag.status === "ativo" &&
           agendamentoJaVenceu(ag.data, ag.horario, ag.horarioFimExpediente)
         ) {
           docsVencidos.push(docSnap);
         }
-        // Descobre o último horário do dia para a data selecionada (para exibição)
         if (!isHistorico && ag.data) {
           if (!dataReferencia) dataReferencia = ag.data;
           if (ag.data === dataReferencia) {
             if (!ultimoHorarioDia || ag.horario > ultimoHorarioDia) {
               ultimoHorarioDia = ag.horario;
             }
-            // Pega o maior fim de expediente entre os profissionais do dia
             if (
               ag.horarioFimExpediente &&
               (!horarioFimExpediente ||
@@ -390,7 +404,7 @@ async function buscarEExibirAgendamentos(
         }
       });
 
-      // Se há agendamentos vencidos e (é dia anterior ou já passou do horário de fim do expediente do dia)
+      // Só mostra fechamento do dia atual se expediente acabou!
       if (
         docsVencidos.length > 0 &&
         ((dataReferencia &&
@@ -399,7 +413,8 @@ async function buscarEExibirAgendamentos(
             dataReferencia,
             ultimoHorarioDia,
             horarioFimExpediente
-          )) ||
+          ) &&
+          await expedienteAcabou(empresaId, dataReferencia)) ||
           (dataReferencia && dataReferencia < formatarDataISO(new Date())))
       ) {
         exibirCardsAgendamento(snapshot.docs, isHistorico, horarioFimExpediente);
@@ -415,11 +430,7 @@ async function buscarEExibirAgendamentos(
   }
 }
 
-function exibirModalFinalizarDia(
-  docsVencidos,
-  dataReferencia,
-  onFinalizarDia
-) {
+function exibirModalFinalizarDia(docsVencidos, dataReferencia, onFinalizarDia) {
   if (modalFinalizarDia) modalFinalizarDia.remove();
 
   modalFinalizarDia = document.createElement("div");
@@ -450,18 +461,12 @@ function exibirModalFinalizarDia(
   document.body.appendChild(modalFinalizarDia);
 
   document.getElementById("btn-finalizar-dia").onclick = async () => {
-    // Atualiza todos os docs vencidos para realizado
     const updates = [];
     for (const docSnap of docsVencidos) {
-      // Não atualiza se já foi marcado como ausência/cancelado
       const ag = docSnap.data();
       if (
         ag.status === "ativo" &&
-        agendamentoJaVenceu(
-          ag.data,
-          ag.horario,
-          ag.horarioFimExpediente
-        ) &&
+        agendamentoJaVenceu(ag.data, ag.horario, ag.horarioFimExpediente) &&
         ag.status !== "nao_compareceu" &&
         ag.status !== "cancelado" &&
         ag.status !== "cancelado_pelo_gestor"
@@ -491,54 +496,35 @@ function exibirModalFinalizarDia(
 }
 
 // ----------- CARD PADRÃO MAIS BONITO -----------
-function exibirCardsAgendamento(
-  docs,
-  isHistorico,
-  horarioFimExpediente
-) {
+function exibirCardsAgendamento(docs, isHistorico, horarioFimExpediente) {
   listaAgendamentosDiv.innerHTML = "";
   docs.forEach((doc) => {
     const ag = { id: doc.id, ...doc.data() };
 
-    // Se não for histórico, mostra apenas status 'ativo'
     if (!isHistorico && ag.status !== "ativo") {
       return;
     }
 
     let statusLabel = "<span class='status-label status-ativo'>Ativo</span>";
-    if (
-      ag.status === "cancelado_pelo_gestor" ||
-      ag.status === "cancelado"
-    )
-      statusLabel =
-        "<span class='status-label status-cancelado'>Cancelado</span>";
+    if (ag.status === "cancelado_pelo_gestor" || ag.status === "cancelado")
+      statusLabel = "<span class='status-label status-cancelado'>Cancelado</span>";
     else if (ag.status === "nao_compareceu")
-      statusLabel =
-        "<span class='status-label status-falta'>Falta</span>";
+      statusLabel = "<span class='status-label status-falta'>Falta</span>";
     else if (ag.status === "realizado")
-      statusLabel =
-        "<span class='status-label status-realizado'>Realizado</span>";
+      statusLabel = "<span class='status-label status-realizado'>Realizado</span>";
 
     const cardElement = document.createElement("div");
     cardElement.className = "card card--agenda";
     cardElement.innerHTML = `
             <div class="card-title">${ag.servicoNome || "Serviço não informado"}</div>
             <div class="card-info">
-                <p><b>Cliente:</b> ${
-                  ag.clienteNome || "Não informado"
-                }</p>
-                <p><b>Profissional:</b> ${
-                  ag.profissionalNome || "Não informado"
-                }</p>
+                <p><b>Cliente:</b> ${ag.clienteNome || "Não informado"}</p>
+                <p><b>Profissional:</b> ${ag.profissionalNome || "Não informado"}</p>
                 <p>
                     <i class="fa-solid fa-calendar-day"></i>
-                    <span class="card-agenda-dia">${formatarDataBrasileira(
-                      ag.data
-                    )}</span>
+                    <span class="card-agenda-dia">${formatarDataBrasileira(ag.data)}</span>
                     <i class="fa-solid fa-clock"></i>
-                    <span class="card-agenda-hora">${
-                      ag.horario || "Não informada"
-                    }</span>
+                    <span class="card-agenda-hora">${ag.horario || "Não informada"}</span>
                 </p>
                 <p><b>Status:</b> ${statusLabel}</p>
                 ${
@@ -548,7 +534,6 @@ function exibirCardsAgendamento(
                 }
             </div>
             ${
-              // Só mostra o botão "Ausência" se for status ativo E não estiver no histórico
               !isHistorico && ag.status === "ativo"
                 ? `
                 <div class="card-actions">
@@ -563,7 +548,6 @@ function exibirCardsAgendamento(
     listaAgendamentosDiv.appendChild(cardElement);
   });
 
-  // CARD PADRÃO BONITO E COLORIDO
   if (listaAgendamentosDiv.childElementCount === 0) {
     const cardPadrao = document.createElement("div");
     cardPadrao.className = "card card--agenda card--padrao-pronti";
@@ -576,7 +560,6 @@ function exibirCardsAgendamento(
                 </div>
             </div>
         `;
-    // CSS extra para destacar o card
     cardPadrao.style.background =
       "linear-gradient(135deg, #e0f7fa 60%, #b2ebf2 100%)";
     cardPadrao.style.borderRadius = "14px";
@@ -588,23 +571,19 @@ function exibirCardsAgendamento(
   }
 }
 
-// ----------- MODO DIA (NOVO) -----------
+// ----------- MODO DIA (INTELIGENTE) -----------
 function carregarAgendamentosDiaAtual() {
   const diaSelecionado = inputDataSemana.value;
   atualizarLegendaSemana(diaSelecionado, diaSelecionado);
   const constraints = [where("data", "==", diaSelecionado)];
-  const profissionalId =
-    perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
+  const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
   if (profissionalId !== "todos") {
     constraints.push(where("profissionalId", "==", profissionalId));
   }
-  buscarEExibirAgendamentos(
-    constraints,
-    "Nenhum agendamento ativo para este dia."
-  );
+  buscarEExibirAgendamentos(constraints, "Nenhum agendamento ativo para este dia.");
 }
 
-// ----------- MODO SEMANA (ajustado: só do dia selecionado em diante) -----------
+// ----------- MODO SEMANA -----------
 function carregarAgendamentosSemana() {
   const diaSelecionado = inputDataSemana.value;
   const fimISO = getFimSemana(diaSelecionado);
@@ -613,15 +592,11 @@ function carregarAgendamentosSemana() {
     where("data", ">=", diaSelecionado),
     where("data", "<=", fimISO),
   ];
-  const profissionalId =
-    perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
+  const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
   if (profissionalId !== "todos") {
     constraints.push(where("profissionalId", "==", profissionalId));
   }
-  buscarEExibirAgendamentos(
-    constraints,
-    "Nenhum agendamento ativo para este período."
-  );
+  buscarEExibirAgendamentos(constraints, "Nenhum agendamento ativo para este período.");
 }
 
 // ----------- MODO HISTÓRICO -----------
@@ -629,10 +604,7 @@ function carregarAgendamentosHistorico() {
   const dataIni = dataInicialEl.value;
   const dataFim = dataFinalEl.value;
   if (!dataIni || !dataFim) {
-    mostrarToast(
-      "Por favor, selecione as datas de início e fim.",
-      "#ef4444"
-    );
+    mostrarToast("Por favor, selecione as datas de início e fim.", "#ef4444");
     return;
   }
   atualizarLegendaSemana(dataIni, dataFim);
@@ -640,16 +612,11 @@ function carregarAgendamentosHistorico() {
     where("data", ">=", dataIni),
     where("data", "<=", dataFim),
   ];
-  const profissionalId =
-    perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
+  const profissionalId = perfilUsuario === "dono" ? filtroProfissionalEl.value : meuUid;
   if (profissionalId !== "todos") {
     constraints.push(where("profissionalId", "==", profissionalId));
   }
-  buscarEExibirAgendamentos(
-    constraints,
-    "Nenhum agendamento encontrado no histórico para este período.",
-    true
-  );
+  buscarEExibirAgendamentos(constraints, "Nenhum agendamento encontrado no histórico para este período.", true);
 }
 
 // ----------- FUNÇÕES AUXILIARES -----------
