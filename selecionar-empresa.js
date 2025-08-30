@@ -37,7 +37,7 @@ onAuthStateChanged(auth, (user) => {
  */
 async function carregarEmpresas(donoId) {
     try {
-        // CORREÇÃO: Passe sempre o 'db' como primeiro argumento de collection
+        // CORREÇÃO: Passe sempre o 'db' como primeiro argumento de collection!
         const q = query(collection(db, "empresarios"), where("donoId", "==", donoId));
         const querySnapshot = await getDocs(q);
 
