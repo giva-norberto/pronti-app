@@ -10,7 +10,7 @@
     <style>
         /* Fundo geral do dashboard */
         .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298 );
+            background: linear-gradient(135deg, #1e3c72, #2a5298  );
             min-height: 100vh;
         }
         body.is-loading {
@@ -165,11 +165,15 @@
  <button class="status-button">Ver status de hoje</button>
 </main>
 
+<!-- ====================================================== -->
+<!--          INÍCIO DA LÓGICA DE ROTEAMENTO CORRIGIDA        -->
+<!-- ====================================================== -->
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { auth } from "./firebase-config.js";
     import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
+    // --- Funções de UI (movidas para cima para organização ) ---
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
@@ -197,8 +201,6 @@
                 localStorage.removeItem('empresaAtivaId');
                 signOut(auth).then(() => {
                     window.location.replace('login.html');
-                }).catch((error) => {
-                    console.error('Erro ao fazer logout:', error);
                 });
             });
         }
@@ -206,13 +208,9 @@
 
     function definirSaudacao() {
         const hora = new Date().getHours();
-        if (hora >= 5 && hora < 12) {
-            return "Bom dia";
-        } else if (hora >= 12 && hora < 18) {
-            return "Boa tarde";
-        } else {
-            return "Boa noite";
-        }
+        if (hora >= 5 && hora < 12) return "Bom dia";
+        if (hora >= 12 && hora < 18) return "Boa tarde";
+        return "Boa noite";
     }
 
     function mostrarPrimeiroAcessoCard() {
@@ -220,11 +218,10 @@
             mainContent.innerHTML = `
                 <div class="primeiro-acesso-card">
                     <h2>Seja bem-vindo ao Pronti!</h2>
-                    <p>Inicie o cadastro da sua empresa.</p>
+                    <p>Para começar, vamos cadastrar as informações da sua empresa.</p>
                     <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
                 </div>
             `;
-            document.body.classList.remove('is-loading');
             document.getElementById("btn-criar-empresa").addEventListener("click", () => {
                 localStorage.removeItem('empresaAtivaId');
                 window.location.href = "perfil.html";
@@ -232,99 +229,81 @@
         }
     }
 
-    // NOVA LÓGICA: Remover sempre is-loading, mesmo se der erro de import ou execução!
     function removerIsLoading() {
         document.body.classList.remove('is-loading');
     }
 
-    // Safety: Remover is-loading após 3 segundos no máximo (garantia visual)
-    setTimeout(removerIsLoading, 3000);
-
-    // LOG EXTRA para debug (verificar execução)
-    console.log("[index.html] Script carregado, aguardando autenticação...");
+    // --- Lógica de Roteamento e Inicialização ---
+    console.log("[ROTEADOR GLOBAL] Script iniciado.");
 
     onAuthStateChanged(auth, async (user) => {
-        // LOG EXTRA para debug
-        console.log("[index.html] onAuthStateChanged disparou. user:", user);
+        console.log("[ROTEADOR GLOBAL] onAuthStateChanged disparou.");
+
+        const currentPage = window.location.pathname.split('/').pop();
+        const paginasPublicas = ['login.html', 'cadastro.html'];
+        const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html'];
 
         try {
             if (user) {
-                try {
-                    // LOG EXTRA
-                    console.log("[index.html] Usuário autenticado, executando ensureUserAndTrialDoc/verificarAcesso...");
+                // --- USUÁRIO LOGADO ---
+                console.log("[ROTEADOR GLOBAL] Usuário autenticado.");
 
-                    await ensureUserAndTrialDoc();
-                    const userSession = await verificarAcesso();
+                if (paginasPublicas.includes(currentPage)) {
+                    console.log(`[ROTEADOR GLOBAL] Usuário logado em página pública (${currentPage}). Redirecionando para index.html.`);
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const userSession = await verificarAcesso();
+                const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+
+                if (!empresaAtivaId && !paginasDeConfiguracao.includes(currentPage)) {
+                    console.log(`[ROTEADOR GLOBAL] Nenhuma empresa ativa. Redirecionando para seleção.`);
+                    window.location.href = 'selecionar-empresa.html';
+                    return;
+                }
+
+                // Se o script está rodando na PÁGINA INDEX.HTML, ele popula o conteúdo.
+                // Se estiver em outra página (servicos.html, etc.), ele apenas carrega o menu e para.
+                if (currentPage === 'index.html' || currentPage === '') {
+                    console.log("[ROTEADOR GLOBAL] Populando conteúdo do dashboard (index.html).");
                     const { perfil, role } = userSession;
-
-                    // LOG EXTRA
-                    console.log("[index.html] userSession:", userSession);
-
-                    if (role === 'funcionario') {
-                        window.location.replace('agenda.html');
-                        return;
-                    }
-
                     const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
                     nomeUsuarioSpan.textContent = primeiroNome;
                     saudacaoSpan.textContent = definirSaudacao();
-
                     if (perfil.nomeFantasia) {
                         nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
-                    } else {
-                        nomeEmpresaSpan.textContent = "";
-                    }
-
-                    fetch('menu-lateral.html')
-                        .then(res => res.text())
-                        .then(html => {
-                            document.getElementById('sidebar-placeholder').innerHTML = html;
-                            destacarLinkAtivo();
-                            ativarLogout();
-
-                            if (role === 'admin') {
-                                const navLinks = document.querySelector('.sidebar-links');
-                                if (navLinks) {
-                                    const adminLink = document.createElement('a');
-                                    adminLink.href = 'admin-clientes.html';
-                                    adminLink.innerHTML = '<span>🔒</span> Administração';
-                                    if (window.location.pathname.includes('admin-clientes.html')) {
-                                        adminLink.classList.add('active');
-                                    }
-                                    navLinks.appendChild(adminLink);
-                                }
-                            }
-                            removerIsLoading();
-                        })
-                        .catch((err) => {
-                            console.error("[index.html] Erro ao carregar menu-lateral.html:", err);
-                            removerIsLoading();
-                        });
-
-                } catch (error) {
-                    if (error.message === "primeiro_acesso") {
-                        mostrarPrimeiroAcessoCard();
-                    } else if (!error.message.includes("Redirecionando") && !error.message.includes("Assinatura expirada")) {
-                        console.error("[index.html] Erro fatal na verificação de acesso:", error.message);
-                        removerIsLoading();
-                    } else {
-                        removerIsLoading();
                     }
                 }
+
+                // Carrega o menu lateral em TODAS as páginas do painel.
+                fetch('menu-lateral.html')
+                    .then(res => res.text())
+                    .then(html => {
+                        document.getElementById('sidebar-placeholder').innerHTML = html;
+                        destacarLinkAtivo();
+                        ativarLogout();
+                        // Adiciona links de admin se necessário
+                        if (userSession.role === 'admin') {
+                            const navLinks = document.querySelector('.sidebar-links');
+                            if (navLinks) {
+                                const adminLink = document.createElement('a');
+                                adminLink.href = 'admin-clientes.html';
+                                adminLink.innerHTML = '<span>🔒</span> Administração';
+                                if (window.location.pathname.includes('admin-clientes.html')) {
+                                    adminLink.classList.add('active');
+                                }
+                                navLinks.appendChild(adminLink);
+                            }
+                        }
+                    });
+
             } else {
-                console.log("[index.html] Usuário não autenticado, redirecionando para login.");
-                window.location.replace('login.html');
-                removerIsLoading();
+                // --- USUÁRIO NÃO LOGADO ---
+                if (!paginasPublicas.includes(currentPage)) {
+                    console.log(`[ROTEADOR GLOBAL] Usuário não logado em página privada (${currentPage}). Redirecionando para login.`);
+                    window.location.href = 'login.html';
+                }
             }
-        } catch (outerError) {
-            console.error("[index.html] Erro externo:", outerError);
-            removerIsLoading();
-        }
-    });
-
-    // Garantia extra: Remover is-loading no caso de erro fatal de JS antes de qualquer coisa
-    window.addEventListener('error', removerIsLoading);
-</script>
-
-</body>
-</html>
+        } catch (error) {
+            if (error.message === "
