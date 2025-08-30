@@ -1,7 +1,10 @@
 // --- IMPORTS ---
 import { db, auth } from "./firebase-config.js";
-import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// CORRIGIDO: Versão do Firebase atualizada para 10.13.2 para ser consistente com o seu firebase-config.js
+import { doc, getDoc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
 
 // --- ELEMENTOS DO DOM ---
 const form = document.getElementById('form-cliente');
@@ -39,10 +42,10 @@ async function buscaEmpresasDoUsuario(uid) {
 }
 
 function configurarModoEdicao() {
-    formTitulo.textContent = 'Editar Cliente';
-    formSubtitulo.textContent = 'Altere os dados do cliente abaixo.';
-    btnSalvar.innerHTML = '<i class="fa-solid fa-save"></i> Atualizar Cliente';
-    if (btnExcluir) { // Adicionando verificação aqui também
+    if (formTitulo) formTitulo.textContent = 'Editar Cliente';
+    if (formSubtitulo) formSubtitulo.textContent = 'Altere os dados do cliente abaixo.';
+    if (btnSalvar) btnSalvar.innerHTML = '<i class="fa-solid fa-save"></i> Atualizar Cliente';
+    if (btnExcluir) {
         btnExcluir.style.display = 'inline-block';
     }
 }
@@ -84,8 +87,10 @@ async function handleFormSubmit(e) {
         atualizadoEm: serverTimestamp() 
     };
 
-    btnSalvar.disabled = true;
-    btnSalvar.textContent = 'Salvando...';
+    if (btnSalvar) {
+        btnSalvar.disabled = true;
+        btnSalvar.textContent = 'Salvando...';
+    }
 
     try {
         if (isEditing) {
@@ -103,8 +108,10 @@ async function handleFormSubmit(e) {
         console.error("Erro ao salvar cliente:", error);
         mostrarToast("Ocorreu um erro ao salvar o cliente.", "#ef4444");
     } finally {
-        btnSalvar.disabled = false;
-        btnSalvar.innerHTML = isEditing ? '<i class="fa-solid fa-save"></i> Atualizar Cliente' : '<i class="fa-solid fa-save"></i> Salvar Cliente';
+        if (btnSalvar) {
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = isEditing ? '<i class="fa-solid fa-save"></i> Atualizar Cliente' : '<i class="fa-solid fa-save"></i> Salvar Cliente';
+        }
     }
 }
 
@@ -155,14 +162,10 @@ onAuthStateChanged(auth, async (user) => {
         await carregarDadosCliente();
     }
 
-    // ================== AQUI ESTÁ A CORREÇÃO ==================
-    // Adiciona os listeners de evento somente se os elementos existirem,
-    // prevenindo o erro "Cannot read properties of null". ✅
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
     }
     if (btnExcluir) {
         btnExcluir.addEventListener('click', handleExcluirCliente);
     }
-    // ==========================================================
 });
