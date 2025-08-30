@@ -20,8 +20,8 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// USE O MESMO projectId do config!
-const db = getFirestore(app, "pronti-app-37c6e");
+// VOLTA AO PADRÃO ORIGINAL: apenas getFirestore(app)
+const db = getFirestore(app);
 
 setPersistence(auth, browserLocalPersistence);
 
