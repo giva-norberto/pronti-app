@@ -1,17 +1,18 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (FINAL MULTI-EMPRESA, TUDO VALIDADO FIREBASE)
+// ARQUIVO: DASHBOARD.JS (FUNCIONAL, MULTIEMPRESA, FIREBASE PURO, EXCLUINDO AUSENTE/NÃO COMPARECEU)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// --- CONSTANTES DE NEGÓCIO ---
-const STATUS_VALIDOS_DIA = ["ativo", "realizado"];
-const STATUS_PARA_PREVISAO_MES = ["ativo", "realizado", "concluido", "efetivado"];
-const STATUS_REALIZADOS_MES = ["realizado", "concluido", "efetivado"];
+// Status para métricas
+const STATUS_PREVISTO_DIA = ["ativo", "realizado", "concluido", "efetivado"];
+const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
+const STATUS_SEMANA = ["ativo", "realizado"];
+const STATUS_EXCLUIR_TOTAL = ["não compareceu", "ausente"];
 
-// --- FUNÇÕES UTILITÁRIAS ---
+// Debounce para filtro de data
 function debounce(fn, delay) {
     let timer = null;
     return function (...args) {
@@ -20,8 +21,7 @@ function debounce(fn, delay) {
     };
 }
 
-// --- LÓGICA DE BUSCA DE DADOS ---
-
+// Descobre próxima data disponível, respeitando multiempresa
 async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     try {
         const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
@@ -48,10 +48,7 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     }
 }
 
-/**
- * Busca métricas do dia selecionado e do mês inteiro,
- * e retorna o faturamento previsto e o realizado do DIA.
- */
+// Busca todas as métricas do painel
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
         const agora = new Date();
@@ -60,7 +57,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
         const inicioDoMesStr = new Date(anoAtual, mesAtual, 1).toISOString().split("T")[0];
         const fimDoMesStr = new Date(anoAtual, mesAtual + 1, 0).toISOString().split("T")[0];
 
-        // 1. Busca agendamentos do DIA SELECIONADO para as métricas diárias (todos, independente do status)
+        // 1. Agendamentos do dia
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
         const qDia = query(agRef, where("data", "==", dataSelecionada));
         const snapshotDia = await getDocs(qDia);
@@ -73,32 +70,24 @@ async function obterMetricas(empresaId, dataSelecionada) {
         snapshotDia.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
-            totalAgendamentosDia += 1;
-
-            // Pendentes
-            if (ag.status === "ativo") agendamentosPendentes += 1;
-
-            // Previsto do dia (todos os status previstos)
-            if (STATUS_PARA_PREVISAO_MES.includes(ag.status)) {
-                faturamentoPrevistoDia += preco;
-            }
-            // Realizado do dia (status realizados)
-            if (STATUS_REALIZADOS_MES.includes(ag.status)) {
-                faturamentoRealizadoDia += preco;
+            // Exclui "não compareceu" e "ausente" do total do dia
+            if (!STATUS_EXCLUIR_TOTAL.includes((ag.status || "").toLowerCase())) {
+                totalAgendamentosDia += 1;
+                if (ag.status === "ativo") agendamentosPendentes++;
+                if (STATUS_PREVISTO_DIA.includes(ag.status)) faturamentoPrevistoDia += preco;
+                if (STATUS_REALIZADO.includes(ag.status)) faturamentoRealizadoDia += preco;
             }
         });
 
-        // 2. Busca agendamentos do MÊS INTEIRO para o faturamento mensal (todos os agendamentos do mês)
+        // 2. Faturamento mensal realizado
         const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshotMes = await getDocs(qMes);
 
         let faturamentoRealizadoMes = 0;
-
         snapshotMes.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
-            // Realizado do mês (status realizados e até agora)
-            if (STATUS_REALIZADOS_MES.includes(ag.status)) {
+            if (STATUS_REALIZADO.includes(ag.status)) {
                 const dataHoraAgendamento = new Date(`${ag.data}T${ag.horario || '00:00:00'}`);
                 if (dataHoraAgendamento <= agora) {
                     faturamentoRealizadoMes += preco;
@@ -106,7 +95,6 @@ async function obterMetricas(empresaId, dataSelecionada) {
             }
         });
 
-        // Retorna objeto único com todas as métricas
         return {
             totalAgendamentosDia,
             agendamentosPendentes,
@@ -114,7 +102,6 @@ async function obterMetricas(empresaId, dataSelecionada) {
             faturamentoPrevistoDia,
             faturamentoRealizadoDia
         };
-
     } catch (e) {
         console.error("Erro ao obter métricas:", e);
         return {
@@ -127,14 +114,21 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
+// Serviços mais vendidos na semana (multiempresa, só dados reais)
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
         const inicioSemana = new Date(hoje);
         inicioSemana.setDate(hoje.getDate() - 6);
         const dataISOInicio = inicioSemana.toISOString().split("T")[0];
+        const dataISOFim = hoje.toISOString().split("T")[0];
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-        const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", hoje.toISOString().split("T")[0]), where("status", "in", STATUS_VALIDOS_DIA));
+        const q = query(
+            agRef,
+            where("data", ">=", dataISOInicio),
+            where("data", "<=", dataISOFim),
+            where("status", "in", STATUS_SEMANA)
+        );
         const snapshot = await getDocs(q);
         const contagem = {};
         snapshot.forEach((d) => {
@@ -149,8 +143,7 @@ async function obterServicosMaisVendidosSemana(empresaId) {
     }
 }
 
-// --- FUNÇÕES DE RENDERIZAÇÃO NA UI ---
-
+// Preenche todos os cards e gráfico
 function preencherPainel(metricas, servicosSemana) {
     const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -201,8 +194,7 @@ function preencherPainel(metricas, servicosSemana) {
     });
 }
 
-// --- FUNÇÃO DE INICIALIZAÇÃO DO DASHBOARD ---
-
+// Inicializa o dashboard multiempresa
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) {
@@ -225,8 +217,7 @@ async function iniciarDashboard(empresaId) {
     await atualizarPainel();
 }
 
-// --- PONTO DE ENTRADA: AUTENTICAÇÃO E LÓGICA MULTIEMPRESA ---
-
+// Multiempresa: valida empresa ativa no localStorage, senão busca do user
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = 'login.html';
