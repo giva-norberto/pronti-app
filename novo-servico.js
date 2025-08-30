@@ -17,7 +17,6 @@ let userUid = null;
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Igual às suas regras
 
 // ====== MODAL PRONTI PARA CONFIRMAÇÃO E ALERTA ======
-// Adicione este bloco no final do seu HTML também (veja instrução anterior)
 function prontiAlert(msg, callback) {
     showProntiModal(msg, [{ text: "OK", className: "pronti-btn pronti-btn-ok", onClick: callback }]);
 }
@@ -32,7 +31,6 @@ function prontiConfirm(msg, onOk, onCancel) {
 function showProntiModal(msg, actions) {
     let modal = document.getElementById('pronti-modal');
     if (!modal) {
-        // Cria o modal se não existir
         modal = document.createElement('div');
         modal.id = 'pronti-modal';
         modal.className = 'pronti-modal';
@@ -45,7 +43,6 @@ function showProntiModal(msg, actions) {
           </div>
         `;
         document.body.appendChild(modal);
-        // CSS inline
         const style = document.createElement('style');
         style.textContent = `
 .pronti-modal { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(44,54,80,0.25); display:flex; align-items:center; justify-content:center; z-index:9999; }
@@ -75,7 +72,6 @@ function showProntiModal(msg, actions) {
     modal.style.display = 'flex';
     modal.querySelector('#pronti-modal-close').onclick = () => { modal.style.display = 'none'; };
 }
-
 // =====================================================
 
 function getEmpresaIdAtiva() {
@@ -147,8 +143,9 @@ onAuthStateChanged(auth, async (user) => {
     const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
     if (empresaSnap.exists()) {
         empresa = { id: empresaSnap.id, ...empresaSnap.data() };
-        console.log("Usuário autenticado:", userUid, "Empresa ativa:", empresaId, "É admin:", isAdmin);
-        console.log("Dono da empresa ativa (donoId):", empresa.donoId);
+        // Para debug/log mobile
+        // console.log("Usuário autenticado:", userUid, "Empresa ativa:", empresaId, "É admin:", isAdmin);
+        // console.log("Dono da empresa ativa (donoId):", empresa.donoId);
     } else {
         console.warn("Empresa ativa não encontrada no Firestore!");
         prontiAlert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa ou selecione uma empresa existente.", () => {
@@ -196,8 +193,6 @@ if (btnExcluir) btnExcluir.addEventListener('click', handleServicoExcluir);
 
 async function handleFormSubmit(e) {
     e.preventDefault();
-
-    console.log("SUBMIT - empresaId:", empresaId, "UID:", userUid, "isDono:", isDono, "isAdmin:", isAdmin);
 
     if (!empresaId) {
         redirecionaSeSemEmpresa();
