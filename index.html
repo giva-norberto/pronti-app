@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Fundo geral do dashboard */
+        /* SEU CSS ORIGINAL - SEM ALTERAÇÕES */
         .dashboard-body {
             background: linear-gradient(135deg, #1e3c72, #2a5298  );
             min-height: 100vh;
@@ -21,7 +20,6 @@
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
         }
-        /* Card de primeiro acesso */
         .primeiro-acesso-card {
             max-width: 400px;
             margin: 80px auto;
@@ -65,7 +63,6 @@
         .primeiro-btn:hover {
             background: linear-gradient(90deg, #1741ad 0%, #2563eb 100%);
         }
-        /* Estilização dos cards de ação do dashboard */
         .dashboard-main-actions {
             display: flex;
             justify-content: center;
@@ -104,7 +101,6 @@
             box-shadow: 0 6px 30px #2563eb22;
             color: #183d7a !important;
         }
-        /* Outras melhorias */
         .dashboard-welcome-center {
             text-align: center;
             margin-top: 40px;
@@ -126,7 +122,6 @@
         .status-button:hover {
             background: #1741ad;
         }
-        /* Garante que os links não fiquem invisíveis em modo escuro */
         a {
             color: inherit;
         }
@@ -166,15 +161,15 @@
 </main>
 
 <!-- ====================================================== -->
-<!--          INÍCIO DA LÓGICA DE ROTEAMENTO CORRIGIDA        -->
+<!--          INÍCIO DA LÓGICA SIMPLES E RESTAURADA           -->
 <!-- ====================================================== -->
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { auth } from "./firebase-config.js";
     import { verificarAcesso, ensureUserAndTrialDoc } from "./userService.js";
 
-    // --- Funções de UI (movidas para cima para organização ) ---
-    const nomeUsuarioSpan = document.getElementById("nome-usuario");
+    // --- Funções de UI ---
+    const nomeUsuarioSpan = document.getElementById("nome-usuario" );
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
@@ -218,7 +213,7 @@
             mainContent.innerHTML = `
                 <div class="primeiro-acesso-card">
                     <h2>Seja bem-vindo ao Pronti!</h2>
-                    <p>Para começar, vamos cadastrar as informações da sua empresa.</p>
+                    <p>Inicie o cadastro da sua empresa.</p>
                     <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
                 </div>
             `;
@@ -233,77 +228,65 @@
         document.body.classList.remove('is-loading');
     }
 
-    // --- Lógica de Roteamento e Inicialização ---
-    console.log("[ROTEADOR GLOBAL] Script iniciado.");
+    // --- Lógica de Inicialização (Focada apenas nesta página) ---
+    console.log("[index.html] Script da página principal iniciado.");
 
     onAuthStateChanged(auth, async (user) => {
-        console.log("[ROTEADOR GLOBAL] onAuthStateChanged disparou.");
-
-        const currentPage = window.location.pathname.split('/').pop();
-        const paginasPublicas = ['login.html', 'cadastro.html'];
-        const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html'];
+        if (!user) {
+            // Se não há usuário, a única página permitida é a de login.
+            window.location.replace('login.html');
+            return;
+        }
 
         try {
-            if (user) {
-                // --- USUÁRIO LOGADO ---
-                console.log("[ROTEADOR GLOBAL] Usuário autenticado.");
-
-                if (paginasPublicas.includes(currentPage)) {
-                    console.log(`[ROTEADOR GLOBAL] Usuário logado em página pública (${currentPage}). Redirecionando para index.html.`);
-                    window.location.href = 'index.html';
-                    return;
-                }
-
-                const userSession = await verificarAcesso();
-                const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-
-                if (!empresaAtivaId && !paginasDeConfiguracao.includes(currentPage)) {
-                    console.log(`[ROTEADOR GLOBAL] Nenhuma empresa ativa. Redirecionando para seleção.`);
-                    window.location.href = 'selecionar-empresa.html';
-                    return;
-                }
-
-                // Se o script está rodando na PÁGINA INDEX.HTML, ele popula o conteúdo.
-                // Se estiver em outra página (servicos.html, etc.), ele apenas carrega o menu e para.
-                if (currentPage === 'index.html' || currentPage === '') {
-                    console.log("[ROTEADOR GLOBAL] Populando conteúdo do dashboard (index.html).");
-                    const { perfil, role } = userSession;
-                    const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
-                    nomeUsuarioSpan.textContent = primeiroNome;
-                    saudacaoSpan.textContent = definirSaudacao();
-                    if (perfil.nomeFantasia) {
-                        nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
-                    }
-                }
-
-                // Carrega o menu lateral em TODAS as páginas do painel.
-                fetch('menu-lateral.html')
-                    .then(res => res.text())
-                    .then(html => {
-                        document.getElementById('sidebar-placeholder').innerHTML = html;
-                        destacarLinkAtivo();
-                        ativarLogout();
-                        // Adiciona links de admin se necessário
-                        if (userSession.role === 'admin') {
-                            const navLinks = document.querySelector('.sidebar-links');
-                            if (navLinks) {
-                                const adminLink = document.createElement('a');
-                                adminLink.href = 'admin-clientes.html';
-                                adminLink.innerHTML = '<span>🔒</span> Administração';
-                                if (window.location.pathname.includes('admin-clientes.html')) {
-                                    adminLink.classList.add('active');
-                                }
-                                navLinks.appendChild(adminLink);
-                            }
-                        }
-                    });
-
-            } else {
-                // --- USUÁRIO NÃO LOGADO ---
-                if (!paginasPublicas.includes(currentPage)) {
-                    console.log(`[ROTEADOR GLOBAL] Usuário não logado em página privada (${currentPage}). Redirecionando para login.`);
-                    window.location.href = 'login.html';
-                }
+            // Verifica se o usuário tem uma empresa. Se não, redireciona para a seleção.
+            const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+            if (!empresaAtivaId) {
+                window.location.href = 'selecionar-empresa.html';
+                return;
             }
+
+            // Se chegou aqui, o usuário está logado e tem uma empresa ativa.
+            // Agora, podemos popular o conteúdo do dashboard.
+            const userSession = await verificarAcesso();
+            const { perfil, role } = userSession;
+
+            const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+            nomeUsuarioSpan.textContent = primeiroNome;
+            saudacaoSpan.textContent = definirSaudacao();
+
+            if (perfil.nomeFantasia) {
+                nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+            }
+
+            // Carrega o menu lateral
+            fetch('menu-lateral.html')
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('sidebar-placeholder').innerHTML = html;
+                    destacarLinkAtivo();
+                    ativarLogout();
+                });
+
         } catch (error) {
-            if (error.message === "
+            // Trata o caso especial de ser o primeiro acesso do usuário.
+            if (error.message === "primeiro_acesso") {
+                mostrarPrimeiroAcessoCard();
+            } else {
+                console.error("[index.html] Erro na inicialização:", error);
+                // Em caso de outro erro, pode ser útil redirecionar para a tela de login ou seleção.
+                // signOut(auth); // Opcional: deslogar o usuário se a sessão estiver corrompida.
+                // window.location.href = 'login.html';
+            }
+        } finally {
+            // Garante que a página sempre se torne visível.
+            removerIsLoading();
+        }
+    });
+
+    // Garantia extra para remover o loading.
+    setTimeout(removerIsLoading, 2000);
+</script>
+
+</body>
+</html>
