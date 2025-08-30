@@ -37,6 +37,7 @@ onAuthStateChanged(auth, (user) => {
  */
 async function carregarEmpresas(donoId) {
     try {
+        // CORREÇÃO: Passe sempre o 'db' como primeiro argumento de collection
         const q = query(collection(db, "empresarios"), where("donoId", "==", donoId));
         const querySnapshot = await getDocs(q);
 
@@ -75,7 +76,10 @@ function criarEmpresaCard(id, data) {
     const card = document.createElement('a');
     card.className = 'empresa-card';
     card.href = '#';
-    card.onclick = () => selecionarEmpresa(id);
+    card.onclick = (e) => {
+        e.preventDefault();
+        selecionarEmpresa(id);
+    };
 
     const nomeFantasia = data.nomeFantasia || "Empresa";
     const logoSrc = data.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(nomeFantasia.charAt(0))}`;
@@ -113,11 +117,13 @@ function selecionarEmpresa(empresaId) {
 }
 
 // --- EVENTOS ---
-btnLogout.addEventListener('click', async () => {
-    try {
-        await signOut(auth);
-        window.location.href = 'login.html';
-    } catch (error) {
-        console.error("Erro ao fazer logout:", error);
-    }
-});
+if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+        try {
+            await signOut(auth);
+            window.location.href = 'login.html';
+        } catch (error) {
+            console.error("Erro ao fazer logout:", error);
+        }
+    });
+}
