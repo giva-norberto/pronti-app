@@ -138,7 +138,8 @@ async function excluirServico(servicoId) {
 }
 
 function formatarPreco(preco) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco || 0);
+    if (preco === undefined || preco === null) return '';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(preco);
 }
 
 // Delegação de eventos para editar e excluir
