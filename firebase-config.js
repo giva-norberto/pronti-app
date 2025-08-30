@@ -9,7 +9,7 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-
 
 // Configuração do seu projeto Firebase. Use esta em todo o app.
 const firebaseConfig = {
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // Sua chave de API principal
+  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
@@ -28,8 +28,8 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// Conecta ao banco de dados correto (com nome "pronti-app")
-const db = getFirestore(app, "pronti-app");
+// CORRIGIDO: NÃO passe o segundo parâmetro!
+const db = getFirestore(app);
 
 // Define a persistência do login
 setPersistence(auth, browserLocalPersistence);
