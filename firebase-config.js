@@ -12,15 +12,15 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-const getFirebaseApp = () => getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const getFirebaseApp = () =>
+  getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 const app = getFirebaseApp();
 const auth = getAuth(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// CORRETO! Não passe o segundo parâmetro!
-const db = getFirestore(app);
+const db = getFirestore(app); // <-- SÓ ISSO! NÃO PASSE NOME NENHUM!
 
 setPersistence(auth, browserLocalPersistence);
 
