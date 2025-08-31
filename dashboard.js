@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL AJUSTADA - PRESENTE, FUTURO + CONCLUÍDOS)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL AJUSTADA + TOTAL AGENDAMENTOS MÊS)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -103,6 +103,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
             if (STATUS_REALIZADO.includes(status)) faturamentoRealizadoDia += preco;
         });
 
+        // --- Total do Mês ---
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth();
@@ -113,19 +114,38 @@ async function obterMetricas(empresaId, dataSelecionada) {
 
         const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshotMes = await getDocs(qMes);
+
         let faturamentoRealizadoMes = 0;
+        let totalAgendamentosMes = 0;
         snapshotMes.forEach((d) => {
             const ag = d.data();
             if (STATUS_REALIZADO.includes(getStatus(ag))) {
                 faturamentoRealizadoMes += getPreco(ag, mapaDePrecos);
             }
+            if (STATUS_VALIDOS_DIA.includes(getStatus(ag))) {
+                totalAgendamentosMes++;
+            }
         });
 
-        return { totalAgendamentosDia, agendamentosPendentes, faturamentoRealizado: faturamentoRealizadoMes, faturamentoPrevistoDia, faturamentoRealizadoDia };
+        return { 
+            totalAgendamentosDia, 
+            agendamentosPendentes, 
+            faturamentoRealizado: faturamentoRealizadoMes, 
+            faturamentoPrevistoDia, 
+            faturamentoRealizadoDia,
+            totalAgendamentosMes
+        };
 
     } catch (e) {
         console.error("Erro ao obter métricas:", e);
-        return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevistoDia: 0, faturamentoRealizadoDia: 0 };
+        return { 
+            totalAgendamentosDia: 0, 
+            agendamentosPendentes: 0, 
+            faturamentoRealizado: 0, 
+            faturamentoPrevistoDia: 0, 
+            faturamentoRealizadoDia: 0,
+            totalAgendamentosMes: 0
+        };
     }
 }
 
@@ -135,9 +155,7 @@ async function obterServicosMaisVendidos(empresaId) {
         const hoje = new Date().toISOString().split("T")[0];
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
 
-        // Ativos e futuros (>= hoje)
         const qAtivos = query(agRef, where("data", ">=", hoje));
-        // Concluídos no passado (< hoje)
         const qConcluidos = query(agRef, where("data", "<", hoje));
 
         const [snapAtivos, snapConcluidos] = await Promise.all([getDocs(qAtivos), getDocs(qConcluidos)]);
@@ -147,15 +165,11 @@ async function obterServicosMaisVendidos(empresaId) {
         snapshot.forEach((d) => {
             const ag = d.data();
             const status = getStatus(ag);
-            console.log("Agendamento:", getServicoNome(ag), "| Status:", status);
-
             if (!STATUS_VALIDOS_DIA.includes(status)) return;
-
             const nome = getServicoNome(ag);
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
 
-        console.log("Serviços mais vendidos (contagem):", contagem);
         return contagem;
     } catch (e) {
         console.error("Erro ao buscar serviços mais vendidos:", e);
@@ -170,6 +184,11 @@ function preencherPainel(metricas, servicosVendidos) {
     document.getElementById("faturamento-realizado-dia").textContent = formatCurrency(metricas.faturamentoRealizadoDia);
     document.getElementById("total-agendamentos-dia").textContent = metricas.totalAgendamentosDia;
     document.getElementById("agendamentos-pendentes").textContent = metricas.agendamentosPendentes;
+
+    // --- NOVO: Total agendamentos mês ---
+    const totalMesEl = document.getElementById("total-agendamentos-mes");
+    if(totalMesEl) totalMesEl.textContent = metricas.totalAgendamentosMes;
+
     const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
     if (window.servicosChart) window.servicosChart.destroy();
     window.servicosChart = new window.Chart(ctx, {
@@ -197,18 +216,15 @@ async function iniciarDashboard(empresaId) {
 
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
-        
         const [metricas, servicosVendidos] = await Promise.all([
              obterMetricas(empresaId, dataSelecionada),
              obterServicosMaisVendidos(empresaId) 
         ]);
-        
         preencherPainel(metricas, servicosVendidos);
     };
 
     const hojeString = new Date().toISOString().split("T")[0];
     filtroData.value = await encontrarProximaDataDisponivel(empresaId, hojeString);
-    
     filtroData.addEventListener("change", debounce(atualizarPainel, 300));
     
     await atualizarPainel();
@@ -244,3 +260,4 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "login.html";
     }
 });
+
