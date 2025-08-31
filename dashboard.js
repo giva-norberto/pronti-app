@@ -1,17 +1,20 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (REVISADO PARA LER DADOS DE MÚLTIPLAS FONTES)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DE CONTAGEM CORRIGIDA)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// Status de faturamento (centralizados para fácil manutenção )
+// --- Listas de Status para Controle Preciso ---
 const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
-const STATUS_EXCLUIR = ["não compareceu", "ausente"];
+// CORREÇÃO: Lista expandida para ignorar qualquer tipo de cancelamento/exclusão.
+const STATUS_EXCLUIR = ["não compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
+// CORREÇÃO: Status que contam como um agendamento válido no total do dia.
+const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado"];
 
 // Debounce para filtro de data
-function debounce(fn, delay) {
+function debounce(fn, delay ) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -47,34 +50,27 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 }
 
 // --- FUNÇÕES AUXILIARES "INTELIGENTES" PARA LER OS DADOS ---
-
-/**
- * Pega o status de um agendamento, procurando em 'status' ou 'statusAgendamento'.
- * @param {object} ag - O objeto do agendamento.
- * @returns {string|null} O valor do status em minúsculas ou null.
- */
 function getStatus(ag) {
     const status = ag.status || ag.statusAgendamento;
     return status ? status.toLowerCase() : null;
 }
-
-/**
- * Pega o preço de um agendamento, procurando em 'servicoPreco' ou 'preco'.
- * @param {object} ag - O objeto do agendamento.
- * @returns {number} O valor do preço ou 0.
- */
 function getPreco(ag) {
-    // Verifica se 'servicoPreco' existe (mesmo que seja 0), senão, usa 'preco'.
-    const preco = ag.servicoPreco !== undefined ? ag.servicoPreco : ag.preco;
+    const preco = ag.servicoPreco !== undefined ? ag.servicoPreco :
+                  ag.preco !== undefined ? ag.preco :
+                  ag.valor !== undefined ? ag.valor :
+                  ag.servicoValor !== undefined ? ag.servicoValor :
+                  ag.valorServico;
     return Number(preco) || 0;
 }
+function getServicoNome(ag) {
+    return ag.servicoNome || ag.nomeServico || "Serviço não informado";
+}
 
-// --- FUNÇÃO DE MÉTRICAS CORRIGIDA E FLEXÍVEL ---
+// --- FUNÇÃO DE MÉTRICAS COM CONTAGEM CORRIGIDA ---
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
 
-        // --- 1. BUSCA PARA OS CARDS DO DIA ---
         const qDia = query(agRef, where("data", "==", dataSelecionada));
         const snapshotDia = await getDocs(qDia);
 
@@ -82,15 +78,31 @@ async function obterMetricas(empresaId, dataSelecionada) {
 
         snapshotDia.forEach((d) => {
             const ag = d.data();
-            const status = getStatus(ag); // Usa a função inteligente
-            const preco = getPreco(ag);   // Usa a função inteligente
+            const status = getStatus(ag);
+            const preco = getPreco(ag);
 
-            if (STATUS_EXCLUIR.includes(status)) return;
+            // CORREÇÃO: Total de agendamentos só conta os que são válidos para o dia.
+            if (STATUS_VALIDOS_DIA.includes(status)) {
+                totalAgendamentosDia++;
+            }
 
-            totalAgendamentosDia++;
-            if (status === "ativo") agendamentosPendentes++;
+            // Se o status for de exclusão, não entra nos cálculos de faturamento.
+            if (STATUS_EXCLUIR.includes(status)) {
+                return;
+            }
+            
+            // Agendamentos pendentes (lógica correta)
+            if (status === "ativo") {
+                agendamentosPendentes++;
+            }
+            
+            // Faturamento previsto (soma todos que não são excluídos)
             faturamentoPrevistoDia += preco;
-            if (STATUS_REALIZADO.includes(status)) faturamentoRealizadoDia += preco;
+
+            // Faturamento realizado (soma apenas os concluídos)
+            if (STATUS_REALIZADO.includes(status)) {
+                faturamentoRealizadoDia += preco;
+            }
         });
 
         // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL ---
@@ -105,11 +117,8 @@ async function obterMetricas(empresaId, dataSelecionada) {
         let faturamentoRealizadoMes = 0;
         snapshotMes.forEach((d) => {
             const ag = d.data();
-            const status = getStatus(ag);
-            const preco = getPreco(ag);
-
-            if (STATUS_REALIZADO.includes(status)) {
-                faturamentoRealizadoMes += preco;
+            if (STATUS_REALIZADO.includes(getStatus(ag))) {
+                faturamentoRealizadoMes += getPreco(ag);
             }
         });
 
@@ -121,7 +130,9 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// Serviços mais vendidos na semana
+// As demais funções (obterServicosMaisVendidosSemana, preencherPainel, etc.) não precisam de alteração.
+// Colei abaixo para garantir o arquivo completo.
+
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
@@ -135,10 +146,8 @@ async function obterServicosMaisVendidosSemana(empresaId) {
         const contagem = {};
         snapshot.forEach((d) => {
             const ag = d.data();
-            const status = getStatus(ag);
-            if (STATUS_EXCLUIR.includes(status)) return;
-            
-            const nome = ag.servicoNome || ag.nomeServico || "Serviço";
+            if (STATUS_EXCLUIR.includes(getStatus(ag))) return;
+            const nome = getServicoNome(ag);
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
         return contagem;
@@ -150,13 +159,11 @@ async function obterServicosMaisVendidosSemana(empresaId) {
 
 function preencherPainel(metricas, servicosSemana) {
     const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
     document.getElementById("faturamento-realizado").textContent = formatCurrency(metricas.faturamentoRealizado);
     document.getElementById("faturamento-previsto-dia").textContent = formatCurrency(metricas.faturamentoPrevistoDia);
     document.getElementById("faturamento-realizado-dia").textContent = formatCurrency(metricas.faturamentoRealizadoDia);
     document.getElementById("total-agendamentos-dia").textContent = metricas.totalAgendamentosDia;
     document.getElementById("agendamentos-pendentes").textContent = metricas.agendamentosPendentes;
-
     const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
     if (window.servicosChart) window.servicosChart.destroy();
     window.servicosChart = new window.Chart(ctx, {
@@ -180,10 +187,8 @@ function preencherPainel(metricas, servicosSemana) {
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) return;
-
     const hojeString = new Date().toISOString().split("T")[0];
     filtroData.value = await encontrarProximaDataDisponivel(empresaId, hojeString);
-
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
         const [metricas, servicosSemana] = await Promise.all([
@@ -192,7 +197,6 @@ async function iniciarDashboard(empresaId) {
         ]);
         preencherPainel(metricas, servicosSemana);
     };
-
     filtroData.addEventListener("change", debounce(atualizarPainel, 300));
     await atualizarPainel();
 }
