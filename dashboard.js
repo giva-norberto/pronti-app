@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (REVISÃO FINAL NO FATURAMENTO MENSAL)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM CORREÇÃO DE STATUS "CONCLUÍDO")
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -7,9 +7,10 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // --- Listas de Status para Controle Preciso ---
-const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
+// CORREÇÃO: Adicionado "concluído" com acento para corresponder aos seus dados.
+const STATUS_REALIZADO = ["realizado", "concluido", "concluído", "efetivado"];
 const STATUS_EXCLUIR = ["não compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
-const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado"];
+const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "efetivado"];
 
 // Debounce para filtro de data
 function debounce(fn, delay   ) {
@@ -64,7 +65,7 @@ function getServicoNome(ag) {
     return ag.servicoNome || ag.nomeServico || "Serviço não informado";
 }
 
-// --- FUNÇÃO DE MÉTRICAS COM CONTAGEM CORRIGIDA ---
+// --- FUNÇÃO DE MÉTRICAS COM CÁLCULO DE DATAS CORRIGIDO ---
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
@@ -94,20 +95,17 @@ async function obterMetricas(empresaId, dataSelecionada) {
             }
         });
 
-        // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL (REVISÃO APLICADA AQUI) ---
+        // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL ---
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth(); // 0-11
 
-        // REVISÃO: Construindo a string da data manualmente para evitar problemas de fuso horário.
         const pad = (n) => n.toString().padStart(2, '0');
         const inicioDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-01`;
         
-        // REVISÃO: Pega o último dia do mês corretamente.
         const ultimoDiaDoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
         const fimDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-${pad(ultimoDiaDoMes)}`;
 
-        // A consulta agora usa as datas corretas, sem influência do fuso horário.
         const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshotMes = await getDocs(qMes);
 
