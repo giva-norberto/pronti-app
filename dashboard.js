@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DE CONTAGEM CORRIGIDA)
+// ARQUIVO: DASHBOARD.JS (REVISÃO FINAL NO FATURAMENTO MENSAL)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -8,13 +8,11 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/f
 
 // --- Listas de Status para Controle Preciso ---
 const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
-// CORREÇÃO: Lista expandida para ignorar qualquer tipo de cancelamento/exclusão.
 const STATUS_EXCLUIR = ["não compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
-// CORREÇÃO: Status que contam como um agendamento válido no total do dia.
 const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado"];
 
 // Debounce para filtro de data
-function debounce(fn, delay ) {
+function debounce(fn, delay  ) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -81,42 +79,37 @@ async function obterMetricas(empresaId, dataSelecionada) {
             const status = getStatus(ag);
             const preco = getPreco(ag);
 
-            // CORREÇÃO: Total de agendamentos só conta os que são válidos para o dia.
             if (STATUS_VALIDOS_DIA.includes(status)) {
                 totalAgendamentosDia++;
             }
-
-            // Se o status for de exclusão, não entra nos cálculos de faturamento.
             if (STATUS_EXCLUIR.includes(status)) {
                 return;
             }
-            
-            // Agendamentos pendentes (lógica correta)
             if (status === "ativo") {
                 agendamentosPendentes++;
             }
-            
-            // Faturamento previsto (soma todos que não são excluídos)
             faturamentoPrevistoDia += preco;
-
-            // Faturamento realizado (soma apenas os concluídos)
             if (STATUS_REALIZADO.includes(status)) {
                 faturamentoRealizadoDia += preco;
             }
         });
 
-        // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL ---
+        // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL (REVISÃO APLICADA AQUI) ---
         const anoAtual = new Date().getFullYear();
         const mesAtual = new Date().getMonth();
         const inicioDoMesStr = new Date(anoAtual, mesAtual, 1).toISOString().split("T")[0];
         const fimDoMesStr = new Date(anoAtual, mesAtual + 1, 0).toISOString().split("T")[0];
 
+        // REVISÃO: A consulta agora busca TODOS os agendamentos do mês, sem filtrar pelo status.
+        // Isso evita o erro do Firebase caso algum documento não tenha o campo 'status'.
         const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshotMes = await getDocs(qMes);
 
         let faturamentoRealizadoMes = 0;
         snapshotMes.forEach((d) => {
             const ag = d.data();
+            // REVISÃO: O filtro de status é aplicado aqui no código, de forma segura,
+            // usando a função 'getStatus' que já lida com nomes de campo diferentes.
             if (STATUS_REALIZADO.includes(getStatus(ag))) {
                 faturamentoRealizadoMes += getPreco(ag);
             }
