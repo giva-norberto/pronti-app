@@ -291,75 +291,46 @@
                 </div>
             </div>
         </div>
-        <div id="trial-notification-banner" class="trial-banner" style="display: none;">
-        </div>
+        <div id="trial-notification-banner" class="trial-banner" style="display: none;"></div>
         <div class="dashboard-grid">
             <div class="main-cards">
                 <div class="kpi-row">
-                    <!-- Card Faturamento Mensal (só realizado) -->
+                    <!-- Card Faturamento Mensal -->
                     <div class="card">
-                        <div class="card-title">
-                            <i class="fa-solid fa-dollar-sign"></i> Faturamento Mensal
-                        </div>
-                        <div class="card-main-value" id="faturamento-realizado">
-                            R$ 0,00
-                        </div>
+                        <div class="card-title"><i class="fa-solid fa-dollar-sign"></i> Faturamento Mensal</div>
+                        <div class="card-main-value" id="faturamento-realizado">R$ 0,00</div>
                     </div>
-                    <!-- Card Faturamento do Dia (realizado + previsto) -->
+                    <!-- Card Faturamento + Agendamentos do Dia (didático) -->
                     <div class="card">
-                        <div class="card-title">
-                            <i class="fa-solid fa-coins"></i> Faturamento do Dia
-                        </div>
-                        <div class="card-main-value" id="faturamento-realizado-dia">
-                            R$ 0,00
-                        </div>
+                        <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Faturamento e Agendamentos do Dia</div>
+                        <div class="card-main-value" id="faturamento-realizado-dia">R$ 0,00</div>
                         <div class="card-sub-value">
                             Previsto: <span id="faturamento-previsto-dia">R$ 0,00</span>
                         </div>
-                    </div>
-                    <!-- Card Agendamentos -->
-                    <div class="card">
-                        <div class="card-title">
-                            <i class="fa-solid fa-calendar-check"></i> Agendamentos
-                        </div>
-                        <div class="card-main-value" id="total-agendamentos-dia">
-                            0
-                        </div>
-                        <div class="card-sub-value">
-                            <span id="agendamentos-pendentes">0</span> pendentes no dia
+                        <div style="margin-top:12px; font-weight:600; font-size:1.05rem;">
+                            Total Agendamentos: <span id="total-agendamentos-dia">0</span><br>
+                            Pendentes: <span id="agendamentos-pendentes">0</span>
                         </div>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title">
-                        <i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos
-                    </div>
+                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos</div>
                     <canvas id="servicos-mais-vendidos" style="width:100%; max-height:320px;"></canvas>
                 </div>
             </div>
             <div class="side-cards">
                 <div class="card ia-card">
-                    <div class="card-title">
-                        <i class="fa-solid fa-brain"></i> Sugestão Inteligente
-                    </div>
-                    <div id="ia-sugestao">
-                        <p>Analisando tendências, aguarde...</p>
-                    </div>
+                    <div class="card-title"><i class="fa-solid fa-brain"></i> Sugestão Inteligente</div>
+                    <div id="ia-sugestao"><p>Analisando tendências, aguarde...</p></div>
                     <div class="ia-actions">
-                        <button class="ia-btn" id="btn-gerar-sugestao">
-                            Gerar nova sugestão
-                        </button>
-                        <button class="ia-btn" id="btn-ver-tendencia">
-                            Ver tendência
-                        </button>
+                        <button class="ia-btn" id="btn-gerar-sugestao">Gerar nova sugestão</button>
+                        <button class="ia-btn" id="btn-ver-tendencia">Ver tendência</button>
                     </div>
                 </div>
                 <div class="card resumo-card">
-                    <div class="card-title">
-                        <i class="fa-solid fa-lightbulb"></i> Resumo Inteligente
-                    </div>
+                    <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Resumo Inteligente</div>
                     <div id="resumo-inteligente">
-                        <ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">
+                        <ul style="margin:0; padding-left:1.1em; line-height:1.7;">
                             <li>Aproveite o intervalo das <strong>11:00</strong> às <strong>11:55</strong> para encaixe rápido.</li>
                             <li>Movimento de hoje igual à média da semana passada.</li>
                             <li>Considere divulgar promoções para horários da tarde.</li>
@@ -371,15 +342,11 @@
         </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- CORREÇÃO: O script que desenhava o gráfico de exemplo foi removido. -->
     <script>
-        document.addEventListener("DOMContentLoaded", function( ) {
-            // Este script agora só busca o menu lateral e controla os botões da IA.
+        document.addEventListener("DOMContentLoaded", function() {
             fetch('menu-lateral.html')
                 .then(res => res.text())
-                .then(html => {
-                    document.getElementById('sidebar-placeholder').innerHTML = html;
-                });
+                .then(html => { document.getElementById('sidebar-placeholder').innerHTML = html; });
 
             document.getElementById('btn-gerar-sugestao').onclick = function() {
                 document.getElementById('ia-sugestao').innerHTML = '<p>Consultando IA, aguarde...</p>';
