@@ -1,15 +1,13 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (FATURAMENTO CORRETO, MULTIEMPRESA, EXCLUINDO AUSENTE)
+// ARQUIVO: DASHBOARD.JS (FATURAMENTO CORRETO, MULTIEMPRESA, OTIMIZADO)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// Status de faturamento
-const STATUS_PREVISTO_DIA = ["ativo", "realizado", "concluido", "efetivado"];
+// Status de faturamento (centralizados para fácil manutenção )
 const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
-const STATUS_SEMANA = ["ativo", "realizado"];
 const STATUS_EXCLUIR = ["não compareceu", "ausente"];
 
 // Debounce para filtro de data
@@ -47,60 +45,61 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     }
 }
 
-// --- NOVA FUNÇÃO: verifica se status é "ausente" ou "não compareceu" (case insensitive)
+// Função auxiliar para verificar status a ser excluído (case-insensitive)
 function isExcluido(status) {
     if (!status) return false;
-    const s = status.toLowerCase();
-    return STATUS_EXCLUIR.includes(s);
+    return STATUS_EXCLUIR.includes(status.toLowerCase());
 }
 
-// Busca todas as métricas do painel
+// --- FUNÇÃO DE MÉTRICAS OTIMIZADA ---
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
-        const agora = new Date();
-        const anoAtual = agora.getFullYear();
-        const mesAtual = agora.getMonth();
+        const anoAtual = new Date().getFullYear();
+        const mesAtual = new Date().getMonth();
         const inicioDoMesStr = new Date(anoAtual, mesAtual, 1).toISOString().split("T")[0];
         const fimDoMesStr = new Date(anoAtual, mesAtual + 1, 0).toISOString().split("T")[0];
 
-        // 1. Agendamentos do dia
+        // 1. FAZ UMA ÚNICA BUSCA para todos os agendamentos do mês.
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-        const qDia = query(agRef, where("data", "==", dataSelecionada));
-        const snapshotDia = await getDocs(qDia);
+        const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
+        const snapshotMes = await getDocs(qMes);
 
+        // 2. INICIALIZA AS MÉTRICAS
+        let faturamentoRealizadoMes = 0;
         let totalAgendamentosDia = 0;
         let agendamentosPendentes = 0;
         let faturamentoPrevistoDia = 0;
         let faturamentoRealizadoDia = 0;
 
-        snapshotDia.forEach((d) => {
-            const ag = d.data();
-            const preco = Number(ag.servicoPreco) || 0;
-
-            // Exclui "não compareceu" e "ausente"
-            if (isExcluido(ag.status)) return;
-
-            totalAgendamentosDia += 1;
-            if (ag.status === "ativo") agendamentosPendentes++;
-            if (STATUS_PREVISTO_DIA.includes(ag.status)) faturamentoPrevistoDia += preco;
-            if (STATUS_REALIZADO.includes(ag.status)) faturamentoRealizadoDia += preco;
-        });
-
-        // 2. Faturamento mensal realizado
-        const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
-        const snapshotMes = await getDocs(qMes);
-
-        let faturamentoRealizadoMes = 0;
+        // 3. PROCESSA OS DADOS EM MEMÓRIA
         snapshotMes.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
 
-            if (isExcluido(ag.status)) return;
+            // Ignora agendamentos com status de exclusão para todos os cálculos
+            if (isExcluido(ag.status)) {
+                return;
+            }
 
+            // --- CÁLCULO DO FATURAMENTO MENSAL (CORRIGIDO) ---
+            // Soma se o status for de realizado, dentro do mês inteiro.
             if (STATUS_REALIZADO.includes(ag.status)) {
-                const dataHoraAgendamento = new Date(`${ag.data}T${ag.horario || '00:00:00'}`);
-                if (dataHoraAgendamento <= agora) {
-                    faturamentoRealizadoMes += preco;
+                faturamentoRealizadoMes += preco;
+            }
+
+            // --- CÁLCULOS ESPECÍFICOS PARA O DIA SELECIONADO ---
+            if (ag.data === dataSelecionada) {
+                totalAgendamentosDia++;
+                if (ag.status === "ativo") {
+                    agendamentosPendentes++;
+                }
+
+                // Faturamento Previsto do Dia (CORRIGIDO): Todos que não são 'excluídos'
+                faturamentoPrevistoDia += preco;
+
+                // Faturamento Realizado do Dia (CORRIGIDO): Apenas os concluídos
+                if (STATUS_REALIZADO.includes(ag.status)) {
+                    faturamentoRealizadoDia += preco;
                 }
             }
         });
@@ -112,19 +111,15 @@ async function obterMetricas(empresaId, dataSelecionada) {
             faturamentoPrevistoDia,
             faturamentoRealizadoDia
         };
+
     } catch (e) {
         console.error("Erro ao obter métricas:", e);
-        return {
-            totalAgendamentosDia: 0,
-            agendamentosPendentes: 0,
-            faturamentoRealizado: 0,
-            faturamentoPrevistoDia: 0,
-            faturamentoRealizadoDia: 0
-        };
+        return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevistoDia: 0, faturamentoRealizadoDia: 0 };
     }
 }
 
-// Serviços mais vendidos na semana (sem inventar nada!)
+
+// Serviços mais vendidos na semana (sem alteração, já estava bom)
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
@@ -136,14 +131,14 @@ async function obterServicosMaisVendidosSemana(empresaId) {
         const q = query(
             agRef,
             where("data", ">=", dataISOInicio),
-            where("data", "<=", dataISOFim),
-            where("status", "in", STATUS_SEMANA)
+            where("data", "<=", dataISOFim)
+            // Removido o filtro de status daqui para pegar tudo e filtrar no código
         );
         const snapshot = await getDocs(q);
         const contagem = {};
         snapshot.forEach((d) => {
             const ag = d.data();
-            if (isExcluido(ag.status)) return;
+            if (isExcluido(ag.status)) return; // Exclui faltas etc.
             const nome = ag.servicoNome || "Serviço";
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
@@ -214,8 +209,10 @@ async function iniciarDashboard(empresaId) {
 
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
-        const metricas = await obterMetricas(empresaId, dataSelecionada);
-        const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
+        const [metricas, servicosSemana] = await Promise.all([
+             obterMetricas(empresaId, dataSelecionada),
+             obterServicosMaisVendidosSemana(empresaId)
+        ]);
         preencherPainel(metricas, servicosSemana);
     };
 
