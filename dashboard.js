@@ -104,7 +104,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
             if (STATUS_REALIZADO.includes(status)) faturamentoRealizadoDia += preco;
         });
 
-        // --- Total do mês ---
+        // --- Total do mês (conta apenas ativo e concluído) ---
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth();
@@ -120,11 +120,12 @@ async function obterMetricas(empresaId, dataSelecionada) {
         let totalAgendamentosMes = 0;
         snapshotMes.forEach((d) => {
             const ag = d.data();
-            if (STATUS_REALIZADO.includes(getStatus(ag))) {
-                faturamentoRealizadoMes += getPreco(ag, mapaDePrecos);
-            }
-            if (STATUS_VALIDOS_DIA.includes(getStatus(ag))) {
+            const status = getStatus(ag);
+            if (status === "ativo" || status === "concluido") {
                 totalAgendamentosMes++;
+                if (STATUS_REALIZADO.includes(status)) {
+                    faturamentoRealizadoMes += getPreco(ag, mapaDePrecos);
+                }
             }
         });
 
