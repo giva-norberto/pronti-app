@@ -13,7 +13,7 @@ const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "ef
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
-function debounce(fn, delay   ) {
+function debounce(fn, delay    ) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -250,3 +250,4 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "login.html";
     }
 });
+
