@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM GRÁFICO CORRIGIDO PARA O MÊS ATUAL)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DO GRÁFICO CORRIGIDA)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -7,11 +7,10 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // --- Listas de Status para Controle Preciso ---
-const STATUS_REALIZADO = ["realizado", "concluido", "concluído", "efetivado"];
+// CORREÇÃO: Removida a lista STATUS_GRAFICO para evitar inconsistências.
+const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
 const STATUS_EXCLUIR = ["nao compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
-const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "efetivado"];
-// CORREÇÃO: Nova lista de status para o gráfico, conforme solicitado.
-const STATUS_GRAFICO = ["ativo", "realizado", "concluido", "concluído", "efetivado"];
+const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado"];
 
 
 // --- FUNÇÕES UTILITÁRIAS ---
@@ -137,7 +136,6 @@ async function obterMetricas(empresaId, dataSelecionada) {
 // CORREÇÃO FINAL APLICADA AQUI: Lógica do gráfico alterada para o mês atual e status corretos.
 async function obterServicosMaisVendidos(empresaId) {
     try {
-        // CORREÇÃO: Define o período como o mês atual.
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth();
@@ -148,7 +146,6 @@ async function obterServicosMaisVendidos(empresaId) {
 
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
         
-        // A consulta busca todos os agendamentos do mês. O filtro de status será feito no código.
         const q = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshot = await getDocs(q);
         
@@ -157,9 +154,9 @@ async function obterServicosMaisVendidos(empresaId) {
             const ag = d.data();
             const status = getStatus(ag);
             
-            // CORREÇÃO: A lógica agora conta apenas os status "ativo" e "realizado/concluído".
-            if (!STATUS_GRAFICO.includes(status)) {
-                return; // Pula para o próximo se não for ativo ou concluído.
+            // CORREÇÃO: Usa a lista STATUS_VALIDOS_DIA, que é consistente e não tem acentos.
+            if (!STATUS_VALIDOS_DIA.includes(status)) {
+                return; 
             }
             
             const nome = getServicoNome(ag);
@@ -210,7 +207,7 @@ async function iniciarDashboard(empresaId) {
         
         const [metricas, servicosVendidos] = await Promise.all([
              obterMetricas(empresaId, dataSelecionada),
-             obterServicosMaisVendidos(empresaId) // Nome da função atualizado para clareza
+             obterServicosMaisVendidos(empresaId) 
         ]);
         
         preencherPainel(metricas, servicosVendidos);
