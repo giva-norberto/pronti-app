@@ -10,7 +10,7 @@
             --cor-branco: #fff;
             --cor-primaria: #4f46e5;
             --cor-texto-leve: #6b7280;
-            --sombra-elevada: 0 4px 12px rgba(0,0,0,0.1);
+            --sombra-elevada: 0 4px 12px rgba(0,0,0,0.1 );
         }
         body {
             display: flex; justify-content: center; align-items: center;
@@ -91,42 +91,36 @@
     </div>
 
     <script type="module">
-        // Importa todas as funções de autenticação e firestore que vamos usar
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { auth, db } from './firebase-config.js'; // Verifique o caminho para sua config
+        // CORREÇÃO: Importa as funções necessárias do SDK, mas confia no 'auth' e 'db' da sua configuração.
+        import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        
+        // CORREÇÃO: As instâncias 'auth' e 'db' vêm do seu arquivo central, garantindo a conexão correta.
+        import { auth, db } from './firebase-config.js';
 
-        const btnGoogle = document.getElementById('btn-google-login');
+        const btnGoogle = document.getElementById('btn-google-login' );
         const formEmail = document.getElementById('form-email-login');
         const statusMessage = document.getElementById('status-message');
         const inviteBox = document.getElementById('invite-box');
 
-        // ======================================================================
-        //                  CORREÇÃO CIRÚRGICA APLICADA AQUI
-        // ======================================================================
-        // Nova função "inteligente" que verifica se o usuário já existe
-        // antes de criar um novo perfil, quebrando o loop de aprovação.
         async function processInviteAcceptance(user, empresaId) {
             statusMessage.textContent = "Autenticação OK. Verificando seu perfil...";
 
+            // Esta função agora usa o 'db' correto importado de firebase-config.js
             const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
             const profissionalSnap = await getDoc(profissionalRef);
 
             if (profissionalSnap.exists()) {
-                // Se o usuário já existe, não faz nada, apenas informa e redireciona.
                 inviteBox.innerHTML = `
                     <h1>✅ Você já faz parte da equipe!</h1>
                     <p>Seu perfil já está cadastrado. Você será redirecionado para a tela de login para acessar o sistema.</p>
                 `;
-                setTimeout(() => { window.location.href = 'login.html'; }, 4000); // Redireciona após 4 segundos
+                setTimeout(() => { window.location.href = 'login.html'; }, 4000);
             } else {
-                // Se o usuário é novo, cria o perfil pendente.
                 await createPendingProfile(user, empresaId);
             }
         }
-        // ======================================================================
 
-        // Função reutilizável para criar o perfil pendente
         async function createPendingProfile(user, empresaId) {
             statusMessage.textContent = "Verificação OK. Criando seu perfil pendente...";
             
@@ -134,18 +128,15 @@
             const mapaUsuarioRef = doc(db, "mapaUsuarios", user.uid);
 
             const nomeDisplay = user.displayName || user.email.split('@')[0];
-            const fotoDisplay = user.photoURL || `https://placehold.co/150x150/eef2ff/4f46e5?text=${nomeDisplay.charAt(0).toUpperCase()}`;
+            const fotoDisplay = user.photoURL || `https://placehold.co/150x150/eef2ff/4f46e5?text=${nomeDisplay.charAt(0 ).toUpperCase()}`;
 
-            // Cria o perfil do funcionário
             await setDoc(profissionalRef, {
                 nome: nomeDisplay, email: user.email, fotoUrl: fotoDisplay,
                 uid: user.uid, status: 'pendente', criadoEm: serverTimestamp()
             }, { merge: true });
 
-            // Cria o mapa para encontrar o usuário depois
             await setDoc(mapaUsuarioRef, { empresaId: empresaId });
 
-            // Exibe a mensagem final de sucesso
             inviteBox.innerHTML = `
                 <h1>⏳ Quase lá!</h1>
                 <p style="color: #28a745; font-weight: bold;">Seu perfil foi enviado para aprovação!</p>
@@ -158,7 +149,6 @@
             });
         }
 
-        // Função para tratar erros de forma centralizada
         function handleError(error) {
             console.error("Erro ao aceitar convite:", error);
             if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
@@ -171,7 +161,6 @@
             statusMessage.className = 'error-message';
         }
 
-        // Função genérica para lidar com o login e chamar o processamento do convite
         async function handleLogin(loginFunction) {
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get('empresaId');
@@ -187,7 +176,7 @@
 
             try {
                 const user = await loginFunction();
-                await processInviteAcceptance(user, empresaId); // Chama a nova função inteligente
+                await processInviteAcceptance(user, empresaId);
             } catch (error) {
                 handleError(error);
                 btnGoogle.disabled = false;
@@ -195,7 +184,6 @@
             }
         }
 
-        // Evento para o botão do Google
         btnGoogle.addEventListener('click', () => {
             handleLogin(async () => {
                 const provider = new GoogleAuthProvider();
@@ -204,7 +192,6 @@
             });
         });
 
-        // Evento para o formulário de E-mail/Senha
         formEmail.addEventListener('submit', (event) => {
             event.preventDefault();
             handleLogin(async () => {
