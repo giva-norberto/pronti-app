@@ -1,4 +1,6 @@
- import { db } from './firebase-config.js';
+// vitrini-agendamento.js (VERSÃO CORRIGIDA E COMPLETA)
+
+import { db } from './firebase-config.js';
 import {
     collection,
     query,
@@ -8,11 +10,11 @@ import {
     doc,
     updateDoc,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { limparUIAgendamento } from './vitrini-ui.js'; // <-- ADICIONADO
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"; // <-- CORREÇÃO: Versão atualizada para 10.13.2
+import { limparUIAgendamento } from './vitrini-ui.js';
 
 // --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr) {
+function timeStringToMinutes(timeStr ) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
@@ -208,4 +210,4 @@ export async function cancelarAgendamento(empresaId, agendamentoId) {
         console.error("Erro ao cancelar agendamento:", error);
         throw new Error("Ocorreu um erro ao cancelar o agendamento.");
     }
-} 
+}
