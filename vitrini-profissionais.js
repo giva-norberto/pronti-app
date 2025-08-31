@@ -34,7 +34,7 @@ export async function getDadosEmpresa(empresaId) {
 export async function getProfissionaisDaEmpresa(empresaId) {
     try {
         const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
-        const snapshot = await getDocs(query(profissionaisRef));
+        const snapshot = await getDocs(profissionaisRef);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         console.error("Erro ao buscar profissionais:", error);
@@ -50,7 +50,7 @@ export async function getProfissionaisDaEmpresa(empresaId) {
 export async function getTodosServicosDaEmpresa(empresaId) {
     try {
         const servicosRef = collection(db, 'empresarios', empresaId, 'servicos');
-        const snapshot = await getDocs(query(servicosRef));
+        const snapshot = await getDocs(servicosRef);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         console.error("Erro ao buscar todos os serviços:", error);
