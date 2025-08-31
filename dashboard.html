@@ -300,22 +300,26 @@
                         <div class="card-title"><i class="fa-solid fa-dollar-sign"></i> Faturamento Mensal</div>
                         <div class="card-main-value" id="faturamento-realizado">R$ 0,00</div>
                     </div>
-                    <!-- Card Faturamento e Agendamentos do Dia -->
+                    <!-- Card Faturamento do Dia -->
                     <div class="card">
-                        <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Faturamento e Agendamentos do Dia</div>
+                        <div class="card-title"><i class="fa-solid fa-coins"></i> Faturamento do Dia</div>
                         <div class="card-main-value" id="faturamento-realizado-dia">R$ 0,00</div>
                         <div class="card-sub-value">
                             Previsto: <span id="faturamento-previsto-dia">R$ 0,00</span>
                         </div>
-                        <div style="margin-top:12px; font-weight:600; font-size:1.05rem;">
-                            Total Agendamentos: <span id="total-agendamentos-dia">0</span><br>
-                            Pendentes: <span id="agendamentos-pendentes">0</span>
+                    </div>
+                    <!-- Card Agendamentos -->
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Agendamentos</div>
+                        <div class="card-main-value" id="total-agendamentos-dia">0</div>
+                        <div class="card-sub-value">
+                            <span id="agendamentos-pendentes">0</span> pendentes no dia
                         </div>
                     </div>
-                    <!-- Card Total Agendamentos Mês -->
+                    <!-- Card Total do Mês -->
                     <div class="card">
                         <div class="card-title"><i class="fa-solid fa-calendar"></i> Total do Mês</div>
-                        <div class="card-main-value" id="total-agendamentos-mes">0</div>
+                        <div class="card-main-value" id="total-mes">R$ 0,00</div>
                     </div>
                 </div>
                 <div class="card">
@@ -364,3 +368,4 @@
     <script type="module" src="dashboard.js"></script>
 </body>
 </html>
+
