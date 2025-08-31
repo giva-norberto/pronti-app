@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DO GRÁFICO CORRIGIDA)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM CORREÇÃO DE SINCRONIA)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -13,7 +13,7 @@ const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "ef
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
-function debounce(fn, delay  ) {
+function debounce(fn, delay   ) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -57,7 +57,6 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 
 function normalizarString(str) {
     if (!str) return null;
-    // .trim() remove espaços em branco do início e do fim
     return str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
@@ -132,7 +131,6 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// CORREÇÃO FINAL APLICADA AQUI
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
@@ -150,8 +148,6 @@ async function obterServicosMaisVendidosSemana(empresaId) {
             const ag = d.data();
             const status = getStatus(ag);
             
-            // CORREÇÃO: A lógica agora é mais simples e segura.
-            // Se o status estiver na lista de exclusão, pula para o próximo.
             if (STATUS_EXCLUIR.includes(status)) {
                 return;
             }
@@ -193,22 +189,34 @@ function preencherPainel(metricas, servicosSemana) {
     });
 }
 
-// --- INICIALIZAÇÃO DA PÁGINA ---
+// --- INICIALIZAÇÃO DA PÁGINA (CORRIGIDA) ---
 
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) return;
-    const hojeString = new Date().toISOString().split("T")[0];
-    filtroData.value = await encontrarProximaDataDisponivel(empresaId, hojeString);
+
+    // Define uma função separada para buscar e preencher os dados
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
+        
+        // CORREÇÃO: Espera (await) que as buscas terminem ANTES de continuar.
         const [metricas, servicosSemana] = await Promise.all([
              obterMetricas(empresaId, dataSelecionada),
              obterServicosMaisVendidosSemana(empresaId)
         ]);
+        
+        // CORREÇÃO: Só chama preencherPainel DEPOIS que os dados chegaram.
         preencherPainel(metricas, servicosSemana);
     };
+
+    // 1. Define a data inicial no filtro
+    const hojeString = new Date().toISOString().split("T")[0];
+    filtroData.value = await encontrarProximaDataDisponivel(empresaId, hojeString);
+    
+    // 2. Adiciona o listener para futuras mudanças
     filtroData.addEventListener("change", debounce(atualizarPainel, 300));
+    
+    // 3. Chama a função para carregar os dados pela primeira vez
     await atualizarPainel();
 }
 
