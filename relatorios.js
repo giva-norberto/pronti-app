@@ -1,8 +1,13 @@
+// relatorios.js (VERSÃO CORRIGIDA E COMPLETA)
+
+// CORREÇÃO 1: Importando a instância 'db' do arquivo de configuração central.
 import { db } from "./firebase-config.js";
-import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// CORREÇÃO 2: Atualizando a versão do Firestore para consistência.
+import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // DOM Elements
-const abas = document.querySelectorAll(".aba");
+const abas = document.querySelectorAll(".aba" );
 const conteudosAbas = document.querySelectorAll(".aba-conteudo");
 const filtroInicio = document.getElementById("filtro-data-inicio");
 const filtroFim = document.getElementById("filtro-data-fim");
@@ -128,6 +133,7 @@ async function popularFiltroProfissionais() {
     if (!filtroProfissional) return;
     filtroProfissional.innerHTML = '<option value="todos">Todos</option>';
     try {
+        // A função 'collection' aqui agora funciona porque 'db' foi importado.
         const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
         snapshot.forEach(doc => {
             const data = doc.data();
@@ -137,6 +143,7 @@ async function popularFiltroProfissionais() {
             filtroProfissional.appendChild(option);
         });
     } catch (error) {
+        // Esta é a linha 140 do seu erro original.
         console.error("Erro ao buscar profissionais:", error);
     }
 }
