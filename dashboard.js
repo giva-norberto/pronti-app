@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM GRÁFICO CORRIGIDO)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DO GRÁFICO CORRIGIDA)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -57,7 +57,8 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
 
 function normalizarString(str) {
     if (!str) return null;
-    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // .trim() remove espaços em branco do início e do fim
+    return str.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function getStatus(ag) {
@@ -131,7 +132,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// REVISÃO APLICADA AQUI
+// CORREÇÃO FINAL APLICADA AQUI
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
@@ -141,21 +142,20 @@ async function obterServicosMaisVendidosSemana(empresaId) {
         const dataISOFim = hoje.toISOString().split("T")[0];
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
         
-        // A consulta busca todos os agendamentos da semana. O filtro de status será feito no código.
         const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim));
         const snapshot = await getDocs(q);
         
         const contagem = {};
         snapshot.forEach((d) => {
             const ag = d.data();
+            const status = getStatus(ag);
             
-            // REVISÃO: Usa a função getStatus para normalizar e verificar se o agendamento deve ser excluído.
-            // O gráfico deve contar apenas agendamentos válidos (ativos ou realizados).
-            if (!STATUS_VALIDOS_DIA.includes(getStatus(ag))) {
+            // CORREÇÃO: A lógica agora é mais simples e segura.
+            // Se o status estiver na lista de exclusão, pula para o próximo.
+            if (STATUS_EXCLUIR.includes(status)) {
                 return;
             }
             
-            // REVISÃO: Usa a função getServicoNome para encontrar o nome correto do serviço.
             const nome = getServicoNome(ag);
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
