@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM CORREÇÃO DE SINCRONIA)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM GRÁFICO CORRIGIDO PARA O MÊS ATUAL)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -10,10 +10,13 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/f
 const STATUS_REALIZADO = ["realizado", "concluido", "concluído", "efetivado"];
 const STATUS_EXCLUIR = ["nao compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
 const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "efetivado"];
+// CORREÇÃO: Nova lista de status para o gráfico, conforme solicitado.
+const STATUS_GRAFICO = ["ativo", "realizado", "concluido", "concluído", "efetivado"];
+
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
-function debounce(fn, delay    ) {
+function debounce(fn, delay  ) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -131,16 +134,22 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-async function obterServicosMaisVendidosSemana(empresaId) {
+// CORREÇÃO FINAL APLICADA AQUI: Lógica do gráfico alterada para o mês atual e status corretos.
+async function obterServicosMaisVendidos(empresaId) {
     try {
+        // CORREÇÃO: Define o período como o mês atual.
         const hoje = new Date();
-        const inicioSemana = new Date(hoje);
-        inicioSemana.setDate(hoje.getDate() - 6);
-        const dataISOInicio = inicioSemana.toISOString().split("T")[0];
-        const dataISOFim = hoje.toISOString().split("T")[0];
+        const anoAtual = hoje.getFullYear();
+        const mesAtual = hoje.getMonth();
+        const pad = (n) => n.toString().padStart(2, '0');
+        const inicioDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-01`;
+        const ultimoDiaDoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
+        const fimDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-${pad(ultimoDiaDoMes)}`;
+
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
         
-        const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim));
+        // A consulta busca todos os agendamentos do mês. O filtro de status será feito no código.
+        const q = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshot = await getDocs(q);
         
         const contagem = {};
@@ -148,8 +157,9 @@ async function obterServicosMaisVendidosSemana(empresaId) {
             const ag = d.data();
             const status = getStatus(ag);
             
-            if (STATUS_EXCLUIR.includes(status)) {
-                return;
+            // CORREÇÃO: A lógica agora conta apenas os status "ativo" e "realizado/concluído".
+            if (!STATUS_GRAFICO.includes(status)) {
+                return; // Pula para o próximo se não for ativo ou concluído.
             }
             
             const nome = getServicoNome(ag);
@@ -157,12 +167,12 @@ async function obterServicosMaisVendidosSemana(empresaId) {
         });
         return contagem;
     } catch (e) {
-        console.error("Erro ao buscar serviços semanais:", e);
+        console.error("Erro ao buscar serviços mais vendidos:", e);
         return {};
     }
 }
 
-function preencherPainel(metricas, servicosSemana) {
+function preencherPainel(metricas, servicosVendidos) {
     const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     document.getElementById("faturamento-realizado").textContent = formatCurrency(metricas.faturamentoRealizado);
     document.getElementById("faturamento-previsto-dia").textContent = formatCurrency(metricas.faturamentoPrevistoDia);
@@ -174,10 +184,10 @@ function preencherPainel(metricas, servicosSemana) {
     window.servicosChart = new window.Chart(ctx, {
         type: 'bar',
         data: {
-            labels: Object.keys(servicosSemana),
+            labels: Object.keys(servicosVendidos),
             datasets: [{
                 label: 'Vendas',
-                data: Object.values(servicosSemana),
+                data: Object.values(servicosVendidos),
                 backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa','#fcd34d','#f87171','#34d399','#60a5fa']
             }]
         },
@@ -189,34 +199,28 @@ function preencherPainel(metricas, servicosSemana) {
     });
 }
 
-// --- INICIALIZAÇÃO DA PÁGINA (CORRIGIDA) ---
+// --- INICIALIZAÇÃO DA PÁGINA ---
 
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) return;
 
-    // Define uma função separada para buscar e preencher os dados
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
         
-        // CORREÇÃO: Espera (await) que as buscas terminem ANTES de continuar.
-        const [metricas, servicosSemana] = await Promise.all([
+        const [metricas, servicosVendidos] = await Promise.all([
              obterMetricas(empresaId, dataSelecionada),
-             obterServicosMaisVendidosSemana(empresaId)
+             obterServicosMaisVendidos(empresaId) // Nome da função atualizado para clareza
         ]);
         
-        // CORREÇÃO: Só chama preencherPainel DEPOIS que os dados chegaram.
-        preencherPainel(metricas, servicosSemana);
+        preencherPainel(metricas, servicosVendidos);
     };
 
-    // 1. Define a data inicial no filtro
     const hojeString = new Date().toISOString().split("T")[0];
     filtroData.value = await encontrarProximaDataDisponivel(empresaId, hojeString);
     
-    // 2. Adiciona o listener para futuras mudanças
     filtroData.addEventListener("change", debounce(atualizarPainel, 300));
     
-    // 3. Chama a função para carregar os dados pela primeira vez
     await atualizarPainel();
 }
 
@@ -250,4 +254,3 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "login.html";
     }
 });
-
