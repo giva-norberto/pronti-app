@@ -89,6 +89,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
             mapaDePrecos.set(doc.id, getPreco(doc.data(), new Map()));
         });
 
+        // --- Métricas do dia ---
         const qDia = query(agRef, where("data", "==", dataSelecionada));
         const snapshotDia = await getDocs(qDia);
         let totalAgendamentosDia = 0, agendamentosPendentes = 0, faturamentoPrevistoDia = 0, faturamentoRealizadoDia = 0;
@@ -103,7 +104,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
             if (STATUS_REALIZADO.includes(status)) faturamentoRealizadoDia += preco;
         });
 
-        // --- Total do Mês ---
+        // --- Total do mês ---
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth();
@@ -149,7 +150,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// --- Lógica do gráfico (presentes, futuros e concluídos passados) ---
+// --- Lógica do gráfico ---
 async function obterServicosMaisVendidos(empresaId) {
     try {
         const hoje = new Date().toISOString().split("T")[0];
@@ -179,13 +180,17 @@ async function obterServicosMaisVendidos(empresaId) {
 
 function preencherPainel(metricas, servicosVendidos) {
     const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+    // --- Card Faturamento Mensal ---
     document.getElementById("faturamento-realizado").textContent = formatCurrency(metricas.faturamentoRealizado);
+
+    // --- Card Faturamento e Agendamentos do Dia ---
     document.getElementById("faturamento-previsto-dia").textContent = formatCurrency(metricas.faturamentoPrevistoDia);
     document.getElementById("faturamento-realizado-dia").textContent = formatCurrency(metricas.faturamentoRealizadoDia);
     document.getElementById("total-agendamentos-dia").textContent = metricas.totalAgendamentosDia;
     document.getElementById("agendamentos-pendentes").textContent = metricas.agendamentosPendentes;
 
-    // --- NOVO: Total agendamentos mês ---
+    // --- Card Total Agendamentos Mês ---
     const totalMesEl = document.getElementById("total-agendamentos-mes");
     if(totalMesEl) totalMesEl.textContent = metricas.totalAgendamentosMes;
 
@@ -260,4 +265,3 @@ onAuthStateChanged(auth, async (user) => {
         window.location.href = "login.html";
     }
 });
-
