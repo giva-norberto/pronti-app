@@ -1,19 +1,59 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM BUSCA DE PREÇO NO SERVIÇO)
+// ARQUIVO: DASHBOARD.JS (VERSÃO COMPLETA E FINAL)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+// --- Listas de Status para Controle Preciso ---
 const STATUS_REALIZADO = ["realizado", "concluido", "concluído", "efetivado"];
 const STATUS_EXCLUIR = ["nao compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
 const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "efetivado"];
 
-function debounce(fn, delay ) { /* ...código sem alteração... */ }
-async function encontrarProximaDataDisponivel(empresaId, dataInicial) { /* ...código sem alteração... */ }
+// --- FUNÇÕES UTILITÁRIAS ---
 
-// --- FUNÇÕES AUXILIARES FINAIS ---
+function debounce(fn, delay ) {
+    let timer = null;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
+    try {
+        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
+        if (!empresaDoc.exists()) return dataInicial;
+
+        const donoId = empresaDoc.data().donoId;
+        if (!donoId) return dataInicial;
+
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios");
+        const horariosSnap = await getDoc(horariosRef);
+        
+        if (!horariosSnap.exists()) return dataInicial;
+
+        const horarios = horariosSnap.data();
+        const diaDaSemana = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+        let dataAtual = new Date(`${dataInicial}T12:00:00`);
+
+        for (let i = 0; i < 90; i++) {
+            const nomeDia = diaDaSemana[dataAtual.getDay()];
+            const diaConfig = horarios[nomeDia];
+            if (diaConfig && diaConfig.ativo) {
+                return dataAtual.toISOString().split("T")[0];
+            }
+            dataAtual.setDate(dataAtual.getDate() + 1);
+        }
+
+        return dataInicial; 
+
+    } catch (e) {
+        console.error("Erro ao buscar próxima data disponível, usando hoje como padrão:", e);
+        return dataInicial; 
+    }
+}
 
 function normalizarString(str) {
     if (!str) return null;
@@ -25,56 +65,39 @@ function getStatus(ag) {
     return normalizarString(status);
 }
 
-/**
- * Pega o preço de um agendamento. Se não estiver no agendamento, busca no mapa de serviços.
- * @param {object} ag - O objeto do agendamento.
- * @param {Map} mapaDePrecos - Um mapa com { servicoId => preco }.
- * @returns {number} O valor do preço ou 0.
- */
 function getPreco(ag, mapaDePrecos) {
-    // 1. Tenta pegar o preço diretamente do agendamento
     let preco = ag.servicoPreco !== undefined ? ag.servicoPreco :
                 ag.preco !== undefined ? ag.preco :
                 ag.valor;
-    
-    if (preco !== undefined && preco !== null) {
-        return Number(preco) || 0;
-    }
-
-    // 2. Se não encontrou, busca o preço no mapa de serviços usando o ID do serviço
-    if (ag.servicoId && mapaDePrecos.has(ag.servicoId)) {
-        return Number(mapaDePrecos.get(ag.servicoId)) || 0;
-    }
-
-    return 0; // Retorna 0 se não encontrou de nenhuma forma
+    if (preco !== undefined && preco !== null) return Number(preco) || 0;
+    if (ag.servicoId && mapaDePrecos.has(ag.servicoId)) return Number(mapaDePrecos.get(ag.servicoId)) || 0;
+    return 0;
 }
 
 function getServicoNome(ag) {
     return ag.servicoNome || ag.nomeServico || "Serviço não informado";
 }
 
-// --- FUNÇÃO DE MÉTRICAS FINAL ---
+// --- FUNÇÕES PRINCIPAIS DO DASHBOARD ---
+
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
         const servicosRef = collection(db, "empresarios", empresaId, "servicos");
 
-        // 1. CARREGA TODOS OS SERVIÇOS E CRIA UM MAPA DE PREÇOS
         const snapshotServicos = await getDocs(servicosRef);
         const mapaDePrecos = new Map();
         snapshotServicos.forEach(doc => {
-            // Usa a função getPreco para ser consistente
-            mapaDePrecos.set(doc.id, getPreco(doc.data()));
+            mapaDePrecos.set(doc.id, getPreco(doc.data(), new Map()));
         });
 
-        // 2. BUSCA PARA OS CARDS DO DIA
         const qDia = query(agRef, where("data", "==", dataSelecionada));
         const snapshotDia = await getDocs(qDia);
         let totalAgendamentosDia = 0, agendamentosPendentes = 0, faturamentoPrevistoDia = 0, faturamentoRealizadoDia = 0;
         snapshotDia.forEach((d) => {
             const ag = d.data();
             const status = getStatus(ag);
-            const preco = getPreco(ag, mapaDePrecos); // Passa o mapa de preços
+            const preco = getPreco(ag, mapaDePrecos);
             if (STATUS_VALIDOS_DIA.includes(status)) totalAgendamentosDia++;
             if (STATUS_EXCLUIR.includes(status)) return;
             if (status === "ativo") agendamentosPendentes++;
@@ -82,7 +105,6 @@ async function obterMetricas(empresaId, dataSelecionada) {
             if (STATUS_REALIZADO.includes(status)) faturamentoRealizadoDia += preco;
         });
 
-        // 3. BUSCA PARA O FATURAMENTO MENSAL
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth();
@@ -97,7 +119,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
         snapshotMes.forEach((d) => {
             const ag = d.data();
             if (STATUS_REALIZADO.includes(getStatus(ag))) {
-                faturamentoRealizadoMes += getPreco(ag, mapaDePrecos); // Passa o mapa de preços
+                faturamentoRealizadoMes += getPreco(ag, mapaDePrecos);
             }
         });
 
@@ -108,9 +130,6 @@ async function obterMetricas(empresaId, dataSelecionada) {
         return { totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevistoDia: 0, faturamentoRealizadoDia: 0 };
     }
 }
-
-// As demais funções (obterServicosMaisVendidosSemana, preencherPainel, etc.) não precisam de alteração.
-// Colei abaixo para garantir o arquivo completo.
 
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
@@ -162,6 +181,8 @@ function preencherPainel(metricas, servicosSemana) {
         }
     });
 }
+
+// --- INICIALIZAÇÃO DA PÁGINA ---
 
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
