@@ -4,14 +4,15 @@
 //                      deleção da foto de perfil do profissional.
 // ======================================================================
 
-import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { db, storage } from './firebase-config.js'; // Verifique se o caminho para sua configuração do Firebase está correto.
+// CORREÇÃO: Importações centralizadas e versão do SDK atualizada para consistência.
+import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+import { db, storage } from './firebase-config.js'; // A sua configuração central
 
 /**
  * MULTIEMPRESA: Obtém o empresaId da empresa ativa do localStorage.
  */
-function getEmpresaIdAtiva() {
+function getEmpresaIdAtiva( ) {
     return localStorage.getItem("empresaAtivaId") || null;
 }
 
@@ -28,18 +29,17 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
         return;
     }
 
-    // Adiciona o botão de remover apenas se já existir uma foto
     const botaoDeletarHtml = fotoUrl ?
         `<button type="button" id="btn-deletar-foto-profissional" class="botao-perigo">Remover foto</button>` :
         '';
 
-    // Template HTML para o componente de foto
     fotoContainer.innerHTML = `
         <img id="perfil-profissional-foto" 
              src="${fotoUrl || 'https://placehold.co/80x80/6366f1/white?text=Foto'}" 
              alt="Foto do profissional"
              style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; object-fit: cover; border: 2px solid #e5e7eb;">
-        <br>
+          
+
         <input type="file" id="input-foto-profissional" accept="image/*" style="display:none;">
         <div style="display: flex; gap: 10px;">
             <button type="button" id="btn-trocar-foto-profissional" class="botao-secundario">Trocar foto</button>
@@ -48,21 +48,18 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
         <span id="status-foto-profissional" style="display: block; margin-top: 8px; color: #6b7280; font-size: 0.875em;"></span>
     `;
 
-    const btnTrocar = document.getElementById('btn-trocar-foto-profissional');
+    const btnTrocar = document.getElementById('btn-trocar-foto-profissional' );
     const inputFoto = document.getElementById('input-foto-profissional');
     const statusSpan = document.getElementById('status-foto-profissional');
     const imgPreview = document.getElementById('perfil-profissional-foto');
     const btnDeletar = document.getElementById('btn-deletar-foto-profissional');
 
-    // Abre o seletor de arquivos ao clicar no botão "Trocar foto"
     btnTrocar.onclick = () => inputFoto.click();
 
-    // Lida com a seleção de um novo arquivo
     inputFoto.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validações do arquivo
         if (!file.type.startsWith('image/')) {
             statusSpan.textContent = "Arquivo inválido, escolha uma imagem.";
             return;
@@ -83,7 +80,6 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
                 const url = await onTrocarFoto(file);
                 if (url) {
                     statusSpan.textContent = "Foto atualizada com sucesso!";
-                    // Recarrega o componente para mostrar o botão de deletar
                     renderizarFotoProfissional(url, onTrocarFoto, onDeletarFoto);
                 } else {
                     throw new Error("Callback de upload não retornou uma URL.");
@@ -96,8 +92,7 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
         }
     };
 
-    // Adiciona o evento de clique para o botão de deletar, se ele existir
-    if (btnDeletar && onDeletarFoto) {
+    if (btnDeletar && onDeletarFoto ) {
         btnDeletar.onclick = async () => {
             if (confirm("Tem certeza que deseja remover a foto de perfil?")) {
                 statusSpan.textContent = "Removendo foto...";
@@ -105,8 +100,7 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
                 if (sucesso) {
                     statusSpan.textContent = "Foto removida.";
                     imgPreview.src = 'https://placehold.co/80x80/6366f1/white?text=Foto';
-                    // Recarrega o componente para remover o botão de deletar
-                    renderizarFotoProfissional(null, onTrocarFoto, onDeletarFoto);
+                    renderizarFotoProfissional(null, onTrocarFoto, onDeletarFoto );
                 } else {
                     statusSpan.textContent = "Erro ao remover a foto.";
                 }
@@ -117,13 +111,8 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
 
 /**
  * Realiza o upload de um arquivo para o Firebase Storage e atualiza o documento correspondente no Firestore.
- * @param {File} file - O arquivo de imagem a ser enviado.
- * @param {string} empresaId - O ID da empresa (para organizar o caminho no Storage).
- * @param {string} profissionalId - O ID do profissional (para organizar o caminho e localizar o documento no Firestore).
- * @returns {Promise<string|null>} - A URL de download da imagem ou null em caso de erro.
  */
 export async function uploadFotoProfissional(file, empresaId, profissionalId) {
-    // MULTIEMPRESA: empresaId vem do parâmetro, deve ser passado da empresa ativa
     if (!file || !empresaId || !profissionalId) {
         console.error("uploadFotoProfissional chamado com parâmetros inválidos.");
         return null;
@@ -131,11 +120,13 @@ export async function uploadFotoProfissional(file, empresaId, profissionalId) {
 
     try {
         const nomeUnico = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+        // A função 'ref' agora usa a instância 'storage' correta importada de firebase-config.js
         const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${nomeUnico}`);
 
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
 
+        // A função 'doc' agora usa a instância 'db' correta importada de firebase-config.js
         const profDocRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profDocRef, { fotoUrl: url });
 
@@ -150,12 +141,8 @@ export async function uploadFotoProfissional(file, empresaId, profissionalId) {
 
 /**
  * Deleta a foto de um profissional do Firebase Storage e remove a referência do Firestore.
- * @param {string} empresaId - O ID da empresa do profissional.
- * @param {string} profissionalId - O ID do profissional cuja foto será deletada.
- * @returns {Promise<boolean>} - Retorna true se a operação for bem-sucedida, false caso contrário.
  */
 export async function deletarFotoProfissional(empresaId, profissionalId) {
-    // MULTIEMPRESA: empresaId vem do parâmetro, deve ser passado da empresa ativa
     if (!empresaId || !profissionalId) {
         console.error("deletarFotoProfissional chamado com parâmetros inválidos.");
         return false;
@@ -171,12 +158,10 @@ export async function deletarFotoProfissional(empresaId, profissionalId) {
         }
 
         const fotoUrl = docSnap.data().fotoUrl;
-        // Corrige referência do storage: se fotoUrl é uma URL, precisa do caminho
-        // Se fotoUrl já for path do storage, pode passar direto
         let fotoRef;
-        if (fotoUrl.startsWith('https://')) {
-            // Firebase Storage URLs format: https://firebasestorage.googleapis.com/v0/b/[BUCKET]/o/[PATH]?alt=media
-            // Queremos extrair [PATH]
+        
+        // Esta lógica para extrair o caminho da URL está correta e mantida.
+        if (fotoUrl.startsWith('https://' )) {
             try {
                 const urlObj = new URL(fotoUrl);
                 const pathParam = urlObj.pathname.split('/o/')[1];
