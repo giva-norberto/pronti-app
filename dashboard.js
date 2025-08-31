@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO COMPLETA E FINAL)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM GRÁFICO CORRIGIDO)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -13,7 +13,7 @@ const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "ef
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
-function debounce(fn, delay ) {
+function debounce(fn, delay  ) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -131,6 +131,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
+// REVISÃO APLICADA AQUI
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
@@ -139,12 +140,22 @@ async function obterServicosMaisVendidosSemana(empresaId) {
         const dataISOInicio = inicioSemana.toISOString().split("T")[0];
         const dataISOFim = hoje.toISOString().split("T")[0];
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
+        
+        // A consulta busca todos os agendamentos da semana. O filtro de status será feito no código.
         const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim));
         const snapshot = await getDocs(q);
+        
         const contagem = {};
         snapshot.forEach((d) => {
             const ag = d.data();
-            if (STATUS_EXCLUIR.includes(getStatus(ag))) return;
+            
+            // REVISÃO: Usa a função getStatus para normalizar e verificar se o agendamento deve ser excluído.
+            // O gráfico deve contar apenas agendamentos válidos (ativos ou realizados).
+            if (!STATUS_VALIDOS_DIA.includes(getStatus(ag))) {
+                return;
+            }
+            
+            // REVISÃO: Usa a função getServicoNome para encontrar o nome correto do serviço.
             const nome = getServicoNome(ag);
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
