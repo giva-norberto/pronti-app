@@ -1,16 +1,15 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM CORREÇÃO DE STATUS "CONCLUÍDO")
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM NORMALIZAÇÃO DE STATUS)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// --- Listas de Status para Controle Preciso ---
-// CORREÇÃO: Adicionado "concluído" com acento para corresponder aos seus dados.
-const STATUS_REALIZADO = ["realizado", "concluido", "concluído", "efetivado"];
-const STATUS_EXCLUIR = ["não compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
-const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "concluído", "efetivado"];
+// --- Listas de Status (agora sem acentos, pois a normalização cuida disso ) ---
+const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
+const STATUS_EXCLUIR = ["nao compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
+const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado"];
 
 // Debounce para filtro de data
 function debounce(fn, delay   ) {
@@ -48,11 +47,26 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     }
 }
 
-// --- FUNÇÕES AUXILIARES "INTELIGENTES" PARA LER OS DADOS ---
+// --- FUNÇÕES AUXILIARES "DETETIVE" COM NORMALIZAÇÃO ---
+
+/**
+ * CORREÇÃO: Normaliza uma string (remove acentos e converte para minúsculas).
+ * @param {string} str - A string de entrada.
+ * @returns {string} A string normalizada.
+ */
+function normalizarString(str) {
+    if (!str) return null;
+    // Converte para minúsculas, depois usa normalize('NFD') para separar acentos dos caracteres,
+    // e remove os acentos com replace.
+    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function getStatus(ag) {
     const status = ag.status || ag.statusAgendamento;
-    return status ? status.toLowerCase() : null;
+    // CORREÇÃO: Usa a nova função para garantir que "concluído" vire "concluido".
+    return normalizarString(status);
 }
+
 function getPreco(ag) {
     const preco = ag.servicoPreco !== undefined ? ag.servicoPreco :
                   ag.preco !== undefined ? ag.preco :
@@ -61,11 +75,12 @@ function getPreco(ag) {
                   ag.valorServico;
     return Number(preco) || 0;
 }
+
 function getServicoNome(ag) {
     return ag.servicoNome || ag.nomeServico || "Serviço não informado";
 }
 
-// --- FUNÇÃO DE MÉTRICAS COM CÁLCULO DE DATAS CORRIGIDO ---
+// --- FUNÇÃO DE MÉTRICAS COM LÓGICA FINAL ---
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
@@ -98,11 +113,9 @@ async function obterMetricas(empresaId, dataSelecionada) {
         // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL ---
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
-        const mesAtual = hoje.getMonth(); // 0-11
-
+        const mesAtual = hoje.getMonth();
         const pad = (n) => n.toString().padStart(2, '0');
         const inicioDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-01`;
-        
         const ultimoDiaDoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
         const fimDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-${pad(ultimoDiaDoMes)}`;
 
@@ -112,6 +125,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
         let faturamentoRealizadoMes = 0;
         snapshotMes.forEach((d) => {
             const ag = d.data();
+            // A verificação agora funciona corretamente graças à normalização.
             if (STATUS_REALIZADO.includes(getStatus(ag))) {
                 faturamentoRealizadoMes += getPreco(ag);
             }
