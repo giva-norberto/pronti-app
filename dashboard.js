@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DO GRÁFICO CORRIGIDA)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DO GRAFICO + LOGS)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -7,15 +7,15 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // --- Listas de Status para Controle Preciso ---
-// CORREÇÃO: Removida a lista STATUS_GRAFICO para evitar inconsistências.
-const STATUS_REALIZADO = ["realizado", "concluido", "efetivado"];
+const STATUS_REALIZADO = ["realizado", "concluido", "efetivado", "pago", "finalizado"];
 const STATUS_EXCLUIR = ["nao compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
-const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado"];
+// ampliada para evitar perda de dados
+const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado", "pago", "finalizado", "andamento", "agendado"];
 
 
 // --- FUNÇÕES UTILITÁRIAS ---
 
-function debounce(fn, delay  ) {
+function debounce(fn, delay) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -133,7 +133,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// CORREÇÃO FINAL APLICADA AQUI: Lógica do gráfico alterada para o mês atual e status corretos.
+// --- Lógica do gráfico com LOGS ---
 async function obterServicosMaisVendidos(empresaId) {
     try {
         const hoje = new Date();
@@ -153,8 +153,8 @@ async function obterServicosMaisVendidos(empresaId) {
         snapshot.forEach((d) => {
             const ag = d.data();
             const status = getStatus(ag);
+            console.log("Agendamento:", getServicoNome(ag), "| Status:", status); // LOG DE DEBUG
             
-            // CORREÇÃO: Usa a lista STATUS_VALIDOS_DIA, que é consistente e não tem acentos.
             if (!STATUS_VALIDOS_DIA.includes(status)) {
                 return; 
             }
@@ -162,6 +162,8 @@ async function obterServicosMaisVendidos(empresaId) {
             const nome = getServicoNome(ag);
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
+
+        console.log("Serviços mais vendidos (contagem):", contagem); // LOG FINAL
         return contagem;
     } catch (e) {
         console.error("Erro ao buscar serviços mais vendidos:", e);
