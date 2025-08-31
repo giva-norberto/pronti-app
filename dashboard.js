@@ -12,7 +12,7 @@ const STATUS_EXCLUIR = ["não compareceu", "ausente", "cancelado", "cancelado_pe
 const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado"];
 
 // Debounce para filtro de data
-function debounce(fn, delay  ) {
+function debounce(fn, delay   ) {
     let timer = null;
     return function (...args) {
         clearTimeout(timer);
@@ -95,21 +95,25 @@ async function obterMetricas(empresaId, dataSelecionada) {
         });
 
         // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL (REVISÃO APLICADA AQUI) ---
-        const anoAtual = new Date().getFullYear();
-        const mesAtual = new Date().getMonth();
-        const inicioDoMesStr = new Date(anoAtual, mesAtual, 1).toISOString().split("T")[0];
-        const fimDoMesStr = new Date(anoAtual, mesAtual + 1, 0).toISOString().split("T")[0];
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+        const mesAtual = hoje.getMonth(); // 0-11
 
-        // REVISÃO: A consulta agora busca TODOS os agendamentos do mês, sem filtrar pelo status.
-        // Isso evita o erro do Firebase caso algum documento não tenha o campo 'status'.
+        // REVISÃO: Construindo a string da data manualmente para evitar problemas de fuso horário.
+        const pad = (n) => n.toString().padStart(2, '0');
+        const inicioDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-01`;
+        
+        // REVISÃO: Pega o último dia do mês corretamente.
+        const ultimoDiaDoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
+        const fimDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-${pad(ultimoDiaDoMes)}`;
+
+        // A consulta agora usa as datas corretas, sem influência do fuso horário.
         const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
         const snapshotMes = await getDocs(qMes);
 
         let faturamentoRealizadoMes = 0;
         snapshotMes.forEach((d) => {
             const ag = d.data();
-            // REVISÃO: O filtro de status é aplicado aqui no código, de forma segura,
-            // usando a função 'getStatus' que já lida com nomes de campo diferentes.
             if (STATUS_REALIZADO.includes(getStatus(ag))) {
                 faturamentoRealizadoMes += getPreco(ag);
             }
