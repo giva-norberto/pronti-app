@@ -9,7 +9,7 @@
     <style>
         :root {
             --primary: #6366f1;
-            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
+            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100% );
             --background: #f6f7fb;
             --card-bg: #fff;
             --text-main: #21243d;
@@ -371,37 +371,15 @@
         </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CORREÇÃO: O script que desenhava o gráfico de exemplo foi removido. -->
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function( ) {
+            // Este script agora só busca o menu lateral e controla os botões da IA.
             fetch('menu-lateral.html')
                 .then(res => res.text())
                 .then(html => {
                     document.getElementById('sidebar-placeholder').innerHTML = html;
                 });
-
-            // Gráfico de serviços mais vendidos (exemplo)
-            const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
-            window.servicosChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Corte Masculino', 'Manicure', 'Penteado', 'Coloração'],
-                    datasets: [{
-                        label: 'Vendas',
-                        data: [12, 7, 5, 3],
-                        backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: true }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
 
             document.getElementById('btn-gerar-sugestao').onclick = function() {
                 document.getElementById('ia-sugestao').innerHTML = '<p>Consultando IA, aguarde...</p>';
