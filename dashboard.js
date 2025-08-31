@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (FATURAMENTO CORRETO, MULTIEMPRESA, OTIMIZADO)
+// ARQUIVO: DASHBOARD.JS (LÓGICA DE CÁLCULO CORRIGIDA E ROBUSTA)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -45,63 +45,65 @@ async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
     }
 }
 
-// Função auxiliar para verificar status a ser excluído (case-insensitive)
-function isExcluido(status) {
+// Função auxiliar para verificar status (case-insensitive)
+function isStatus(status, listaStatus) {
     if (!status) return false;
-    return STATUS_EXCLUIR.includes(status.toLowerCase());
+    return listaStatus.includes(status.toLowerCase());
 }
 
-// --- FUNÇÃO DE MÉTRICAS OTIMIZADA ---
+// --- FUNÇÃO DE MÉTRICAS CORRIGIDA ---
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
-        const anoAtual = new Date().getFullYear();
-        const mesAtual = new Date().getMonth();
-        const inicioDoMesStr = new Date(anoAtual, mesAtual, 1).toISOString().split("T")[0];
-        const fimDoMesStr = new Date(anoAtual, mesAtual + 1, 0).toISOString().split("T")[0];
-
-        // 1. FAZ UMA ÚNICA BUSCA para todos os agendamentos do mês.
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-        const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
-        const snapshotMes = await getDocs(qMes);
 
-        // 2. INICIALIZA AS MÉTRICAS
-        let faturamentoRealizadoMes = 0;
+        // --- 1. BUSCA PARA OS CARDS DO DIA ---
+        const qDia = query(agRef, where("data", "==", dataSelecionada));
+        const snapshotDia = await getDocs(qDia);
+
         let totalAgendamentosDia = 0;
         let agendamentosPendentes = 0;
         let faturamentoPrevistoDia = 0;
         let faturamentoRealizadoDia = 0;
 
-        // 3. PROCESSA OS DADOS EM MEMÓRIA
-        snapshotMes.forEach((d) => {
+        snapshotDia.forEach((d) => {
             const ag = d.data();
             const preco = Number(ag.servicoPreco) || 0;
 
-            // Ignora agendamentos com status de exclusão para todos os cálculos
-            if (isExcluido(ag.status)) {
+            // Pula agendamentos com status de exclusão
+            if (isStatus(ag.status, STATUS_EXCLUIR)) {
                 return;
             }
 
-            // --- CÁLCULO DO FATURAMENTO MENSAL (CORRIGIDO) ---
-            // Soma se o status for de realizado, dentro do mês inteiro.
-            if (STATUS_REALIZADO.includes(ag.status)) {
-                faturamentoRealizadoMes += preco;
+            totalAgendamentosDia++;
+            if (isStatus(ag.status, ["ativo"])) {
+                agendamentosPendentes++;
             }
+            
+            // Faturamento Previsto do Dia: Soma todos que não foram excluídos
+            faturamentoPrevistoDia += preco;
 
-            // --- CÁLCULOS ESPECÍFICOS PARA O DIA SELECIONADO ---
-            if (ag.data === dataSelecionada) {
-                totalAgendamentosDia++;
-                if (ag.status === "ativo") {
-                    agendamentosPendentes++;
-                }
-
-                // Faturamento Previsto do Dia (CORRIGIDO): Todos que não são 'excluídos'
-                faturamentoPrevistoDia += preco;
-
-                // Faturamento Realizado do Dia (CORRIGIDO): Apenas os concluídos
-                if (STATUS_REALIZADO.includes(ag.status)) {
-                    faturamentoRealizadoDia += preco;
-                }
+            // Faturamento Realizado do Dia: Soma apenas os concluídos
+            if (isStatus(ag.status, STATUS_REALIZADO)) {
+                faturamentoRealizadoDia += preco;
             }
+        });
+
+        // --- 2. BUSCA SEPARADA PARA O FATURAMENTO MENSAL ---
+        const anoAtual = new Date().getFullYear();
+        const mesAtual = new Date().getMonth();
+        const inicioDoMesStr = new Date(anoAtual, mesAtual, 1).toISOString().split("T")[0];
+        const fimDoMesStr = new Date(anoAtual, mesAtual + 1, 0).toISOString().split("T")[0];
+
+        const qMes = query(agRef, 
+            where("data", ">=", inicioDoMesStr), 
+            where("data", "<=", fimDoMesStr),
+            where("status", "in", STATUS_REALIZADO) // Filtra direto na query
+        );
+        const snapshotMes = await getDocs(qMes);
+
+        let faturamentoRealizadoMes = 0;
+        snapshotMes.forEach((d) => {
+            faturamentoRealizadoMes += Number(d.data().servicoPreco) || 0;
         });
 
         return {
@@ -118,8 +120,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-
-// Serviços mais vendidos na semana (sem alteração, já estava bom)
+// Serviços mais vendidos na semana
 async function obterServicosMaisVendidosSemana(empresaId) {
     try {
         const hoje = new Date();
@@ -132,13 +133,12 @@ async function obterServicosMaisVendidosSemana(empresaId) {
             agRef,
             where("data", ">=", dataISOInicio),
             where("data", "<=", dataISOFim)
-            // Removido o filtro de status daqui para pegar tudo e filtrar no código
         );
         const snapshot = await getDocs(q);
         const contagem = {};
         snapshot.forEach((d) => {
             const ag = d.data();
-            if (isExcluido(ag.status)) return; // Exclui faltas etc.
+            if (isStatus(ag.status, STATUS_EXCLUIR)) return;
             const nome = ag.servicoNome || "Serviço";
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
@@ -152,60 +152,39 @@ async function obterServicosMaisVendidosSemana(empresaId) {
 function preencherPainel(metricas, servicosSemana) {
     const formatCurrency = (value) => (value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-    const faturamentoRealizadoEl = document.getElementById("faturamento-realizado");
-    if (faturamentoRealizadoEl) faturamentoRealizadoEl.textContent = formatCurrency(metricas.faturamentoRealizado);
-
-    const faturamentoPrevistoDiaEl = document.getElementById("faturamento-previsto-dia");
-    if (faturamentoPrevistoDiaEl) faturamentoPrevistoDiaEl.textContent = formatCurrency(metricas.faturamentoPrevistoDia);
-
-    const faturamentoRealizadoDiaEl = document.getElementById("faturamento-realizado-dia");
-    if (faturamentoRealizadoDiaEl) faturamentoRealizadoDiaEl.textContent = formatCurrency(metricas.faturamentoRealizadoDia);
-
-    const totalAgendamentosEl = document.getElementById("total-agendamentos-dia");
-    if (totalAgendamentosEl) totalAgendamentosEl.textContent = metricas.totalAgendamentosDia;
-
-    const agendamentosPendentesEl = document.getElementById("agendamentos-pendentes");
-    if (agendamentosPendentesEl) agendamentosPendentesEl.textContent = metricas.agendamentosPendentes;
+    document.getElementById("faturamento-realizado").textContent = formatCurrency(metricas.faturamentoRealizado);
+    document.getElementById("faturamento-previsto-dia").textContent = formatCurrency(metricas.faturamentoPrevistoDia);
+    document.getElementById("faturamento-realizado-dia").textContent = formatCurrency(metricas.faturamentoRealizadoDia);
+    document.getElementById("total-agendamentos-dia").textContent = metricas.totalAgendamentosDia;
+    document.getElementById("agendamentos-pendentes").textContent = metricas.agendamentosPendentes;
 
     // Gráfico de Serviços mais vendidos
     const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
-    const labels = Object.keys(servicosSemana);
-    const data = Object.values(servicosSemana);
-
     if (window.servicosChart) window.servicosChart.destroy();
     window.servicosChart = new window.Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: Object.keys(servicosSemana),
             datasets: [{
                 label: 'Vendas',
-                data: data,
+                data: Object.values(servicosSemana),
                 backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa','#fcd34d','#f87171','#34d399','#60a5fa']
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: { enabled: true }
-            },
-            scales: {
-                y: { beginAtZero: true }
-            }
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+            scales: { y: { beginAtZero: true } }
         }
     });
 }
 
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
-    if (!filtroData) {
-        console.warn("Elemento de filtro de data não encontrado.");
-        return;
-    }
+    if (!filtroData) return;
 
     const hojeString = new Date().toISOString().split("T")[0];
-    const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
-    filtroData.value = dataInicial;
+    filtroData.value = await encontrarProximaDataDisponivel(empresaId, hojeString);
 
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
