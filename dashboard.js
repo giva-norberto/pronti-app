@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL COM LÓGICA DO GRAFICO + LOGS)
+// ARQUIVO: DASHBOARD.JS (VERSÃO FINAL AJUSTADA - PRESENTE, FUTURO + CONCLUÍDOS)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
@@ -9,12 +9,9 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/f
 // --- Listas de Status para Controle Preciso ---
 const STATUS_REALIZADO = ["realizado", "concluido", "efetivado", "pago", "finalizado"];
 const STATUS_EXCLUIR = ["nao compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
-// ampliada para evitar perda de dados
 const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado", "pago", "finalizado", "andamento", "agendado"];
 
-
 // --- FUNÇÕES UTILITÁRIAS ---
-
 function debounce(fn, delay) {
     let timer = null;
     return function (...args) {
@@ -81,7 +78,6 @@ function getServicoNome(ag) {
 }
 
 // --- FUNÇÕES PRINCIPAIS DO DASHBOARD ---
-
 async function obterMetricas(empresaId, dataSelecionada) {
     try {
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
@@ -133,37 +129,33 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// --- Lógica do gráfico com LOGS ---
+// --- Lógica do gráfico (presentes, futuros e concluídos passados) ---
 async function obterServicosMaisVendidos(empresaId) {
     try {
-        const hoje = new Date();
-        const anoAtual = hoje.getFullYear();
-        const mesAtual = hoje.getMonth();
-        const pad = (n) => n.toString().padStart(2, '0');
-        const inicioDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-01`;
-        const ultimoDiaDoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
-        const fimDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-${pad(ultimoDiaDoMes)}`;
-
+        const hoje = new Date().toISOString().split("T")[0];
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-        
-        const q = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
-        const snapshot = await getDocs(q);
-        
+
+        // Ativos e futuros (>= hoje)
+        const qAtivos = query(agRef, where("data", ">=", hoje));
+        // Concluídos no passado (< hoje)
+        const qConcluidos = query(agRef, where("data", "<", hoje));
+
+        const [snapAtivos, snapConcluidos] = await Promise.all([getDocs(qAtivos), getDocs(qConcluidos)]);
+        const snapshot = [...snapAtivos.docs, ...snapConcluidos.docs];
+
         const contagem = {};
         snapshot.forEach((d) => {
             const ag = d.data();
             const status = getStatus(ag);
-            console.log("Agendamento:", getServicoNome(ag), "| Status:", status); // LOG DE DEBUG
-            
-            if (!STATUS_VALIDOS_DIA.includes(status)) {
-                return; 
-            }
-            
+            console.log("Agendamento:", getServicoNome(ag), "| Status:", status);
+
+            if (!STATUS_VALIDOS_DIA.includes(status)) return;
+
             const nome = getServicoNome(ag);
             contagem[nome] = (contagem[nome] || 0) + 1;
         });
 
-        console.log("Serviços mais vendidos (contagem):", contagem); // LOG FINAL
+        console.log("Serviços mais vendidos (contagem):", contagem);
         return contagem;
     } catch (e) {
         console.error("Erro ao buscar serviços mais vendidos:", e);
@@ -199,7 +191,6 @@ function preencherPainel(metricas, servicosVendidos) {
 }
 
 // --- INICIALIZAÇÃO DA PÁGINA ---
-
 async function iniciarDashboard(empresaId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) return;
