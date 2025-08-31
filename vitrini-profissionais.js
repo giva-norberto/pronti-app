@@ -1,14 +1,13 @@
-// vitrini-profissionais.js (versão corrigida)
+// vitrini-profissionais.js (versão 100% correta)
 
 import { db } from './firebase-config.js';
-// Importei a versão mais recente do Firestore que você usou no config, para manter a consistência.
 import { doc, getDoc, collection, getDocs, query } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 /**
- * Pega o ID da empresa a partir da URL ou do localStorage (multiempresa ).
+ * Pega o ID da empresa a partir da URL ou do localStorage.
  * @returns {string|null} O ID da empresa ou nulo.
  */
-export function getEmpresaIdFromURL() {
+export function getEmpresaIdFromURL( ) {
     const params = new URLSearchParams(window.location.search);
     return params.get('empresa') || localStorage.getItem('empresaAtivaId');
 }
@@ -20,8 +19,8 @@ export function getEmpresaIdFromURL() {
  */
 export async function getDadosEmpresa(empresaId) {
     try {
-        // CORREÇÃO: Alterado de 'empresarios' para 'empresas' para corresponder à estrutura do banco.
-        const empresaRef = doc(db, 'empresas', empresaId);
+        // CORRIGIDO: Usando 'empresarios' para corresponder às suas regras de segurança.
+        const empresaRef = doc(db, 'empresarios', empresaId);
         const empresaSnap = await getDoc(empresaRef);
         return empresaSnap.exists() ? empresaSnap.data() : null;
     } catch (error) {
@@ -37,8 +36,8 @@ export async function getDadosEmpresa(empresaId) {
  */
 export async function getProfissionaisDaEmpresa(empresaId) {
     try {
-        // CORREÇÃO: Alterado de 'empresarios' para 'empresas'.
-        const profissionaisRef = collection(db, 'empresas', empresaId, 'profissionais');
+        // CORRIGIDO: Usando 'empresarios'.
+        const profissionaisRef = collection(db, 'empresarios', empresaId, 'profissionais');
         const snapshot = await getDocs(profissionaisRef);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
@@ -54,8 +53,8 @@ export async function getProfissionaisDaEmpresa(empresaId) {
  */
 export async function getTodosServicosDaEmpresa(empresaId) {
     try {
-        // CORREÇÃO: Alterado de 'empresarios' para 'empresas'.
-        const servicosRef = collection(db, 'empresas', empresaId, 'servicos');
+        // CORRIGIDO: Usando 'empresarios'.
+        const servicosRef = collection(db, 'empresarios', empresaId, 'servicos');
         const snapshot = await getDocs(servicosRef);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
@@ -72,8 +71,8 @@ export async function getTodosServicosDaEmpresa(empresaId) {
  */
 export async function getHorariosDoProfissional(empresaId, profissionalId) {
     try {
-        // CORREÇÃO: Alterado de 'empresarios' para 'empresas'.
-        const horariosRef = doc(db, 'empresas', empresaId, 'profissionais', profissionalId, 'configuracoes', 'horarios');
+        // CORRIGIDO: Usando 'empresarios'.
+        const horariosRef = doc(db, 'empresarios', empresaId, 'profissionais', profissionalId, 'configuracoes', 'horarios');
         const horariosSnap = await getDoc(horariosRef);
         return horariosSnap.exists() ? horariosSnap.data() : null;
     } catch (error) {
