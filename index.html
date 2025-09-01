@@ -7,7 +7,6 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Apenas ajustes de transição e links, fundo via style.css */
         body.is-loading {
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
@@ -27,27 +26,26 @@
 <div id="sidebar-placeholder"></div>
 
 <main class="main-content" id="main-content">
- <!-- SEU CONTEÚDO HTML ORIGINAL - SEM ALTERAÇÕES -->
- <div class="dashboard-welcome-center" id="dashboard-welcome-center">
-    <h2 id="nome-empresa-ativa" style="color: #a7b3c4; font-size: 1.2rem; font-weight: 500; margin-bottom: 5px; min-height: 29px;"></h2>
-    <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
-    <p>Pronto para gerenciar seu dia?</p>
- </div>
- <div class="dashboard-main-actions" id="dashboard-main-actions">
-  <a href="dashboard.html" class="action-card">
-   <i class="fa-solid fa-chart-line"></i>
-   <span>Painel Inteligente</span>
-  </a>
-  <a href="agenda.html" class="action-card">
-   <i class="fa-solid fa-calendar-check"></i>
-   <span>Agenda</span>
-  </a>
-  <a href="servicos.html" class="action-card" id="acao-servicos">
-   <i class="fa-solid fa-scissors"></i>
-   <span>Serviços</span>
-  </a>
- </div>
- <button class="status-button">Ver status de hoje</button>
+    <div class="dashboard-welcome-center" id="dashboard-welcome-center">
+        <h2 id="nome-empresa-ativa" style="color: #a7b3c4; font-size: 1.2rem; font-weight: 500; margin-bottom: 5px; min-height: 29px;"></h2>
+        <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
+        <p>Pronto para gerenciar seu dia?</p>
+    </div>
+    <div class="dashboard-main-actions" id="dashboard-main-actions">
+        <a href="dashboard.html" class="action-card">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Painel Inteligente</span>
+        </a>
+        <a href="agenda.html" class="action-card">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span>Agenda</span>
+        </a>
+        <a href="servicos.html" class="action-card" id="acao-servicos">
+            <i class="fa-solid fa-scissors"></i>
+            <span>Serviços</span>
+        </a>
+    </div>
+    <button class="status-button">Ver status de hoje</button>
 </main>
 
 <script type="module">
@@ -76,7 +74,6 @@
         });
     }
 
-    // A função que "liga" o botão de logout
     function ativarLogout() {
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
@@ -119,7 +116,6 @@
         document.body.classList.remove('is-loading');
     }
 
-    // --- Lógica de Inicialização ---
     async function inicializarDashboard() {
         console.log("[index.html] Iniciando verificação de acesso...");
         try {
@@ -161,7 +157,7 @@
     }
 
     inicializarDashboard();
-    setTimeout(removerIsLoading, 3000); // Garantia de segurança
+    setTimeout(removerIsLoading, 3000);
 </script>
 
 </body>
