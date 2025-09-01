@@ -98,10 +98,6 @@ function preencherFormulario(servico) {
     document.getElementById('descricao-servico').value = servico.descricao || '';
     document.getElementById('preco-servico').value = servico.preco !== undefined ? servico.preco : '';
     document.getElementById('duracao-servico').value = servico.duracao !== undefined ? servico.duracao : '';
-    // Adiciona categoria se existir (opcional)
-    if (document.getElementById('categoria-servico')) {
-        document.getElementById('categoria-servico').value = servico.categoria || '';
-    }
 }
 
 function usuarioEDono(empresa, uid) {
@@ -212,9 +208,6 @@ async function handleFormSubmit(e) {
     const descricao = document.getElementById('descricao-servico').value.trim();
     const preco = parseFloat(document.getElementById('preco-servico').value);
     const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
-    // Categoria é opcional
-    const categoriaInput = document.getElementById('categoria-servico');
-    const categoria = categoriaInput ? categoriaInput.value.trim() : undefined;
 
     if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
         prontiAlert("Atenção: Preencha todos os campos obrigatórios corretamente.");
@@ -229,22 +222,17 @@ async function handleFormSubmit(e) {
         if (servicoEditando) {
             if (!empresaId || !servicoId) throw new Error("Dados de identificação do serviço incompletos.");
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
-            // Só envia o campo categoria se foi preenchido
-            let updateData = { nome, descricao, preco, duracao };
-            if (categoria !== undefined) updateData.categoria = categoria;
-            await updateDoc(servicoRef, updateData);
+            await updateDoc(servicoRef, { nome, descricao, preco, duracao });
         } else {
             if (!empresaId) throw new Error("Empresa ativa não definida.");
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-            let newData = { 
+            await addDoc(servicosCol, { 
                 nome, 
                 descricao, 
                 preco, 
                 duracao, 
                 visivelNaVitrine: true 
-            };
-            if (categoria) newData.categoria = categoria;
-            await addDoc(servicosCol, newData);
+            });
         }
 
         prontiAlert(servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!", () => {
