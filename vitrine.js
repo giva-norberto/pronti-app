@@ -124,9 +124,10 @@ async function handleProfissionalClick(e) {
         const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
         
         const servicosDoProfissional = (profissional.servicos || []).map(servicoId => state.todosOsServicos.find(servico => servico.id === servicoId)).filter(Boolean);
-        
+
+        // --- AGRUPAMENTO POR CATEGORIA ---
         UI.mostrarContainerForm(true);
-        UI.renderizarServicos(servicosDoProfissional, permiteMultiplos);
+        UI.renderizarServicos(servicosDoProfissional, permiteMultiplos); // <-- O agrupamento deve ser feito dentro desta função do UI!
         UI.configurarModoAgendamento(permiteMultiplos);
 
     } catch (error) {
