@@ -55,24 +55,40 @@ function renderizarServicos(servicos) {
     listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. ${isDono ? 'Clique em "Adicionar Novo Serviço" para começar.' : ''}</p>`;
     return;
   }
-  
-  servicos.sort((a, b) => a.nome.localeCompare(b.nome));
-  listaServicosDiv.innerHTML = servicos.map(servico => `
-    <div class="servico-card">
-      <div class="servico-header">
-        <h3 class="servico-titulo">${servico.nome}</h3>
-      </div>
-      <p class="servico-descricao">${servico.descricao || 'Sem descrição.'}</p>
-      <div class="servico-footer">
-        <div>
-          <span class="servico-preco">${formatarPreco(servico.preco)}</span>
-          <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
+
+  // Agrupa os serviços por categoria (categoria vazia vai para "Sem Categoria")
+  const agrupados = {};
+  servicos.forEach(servico => {
+    const cat = (servico.categoria && servico.categoria.trim()) ? servico.categoria.trim() : "Sem Categoria";
+    if (!agrupados[cat]) agrupados[cat] = [];
+    agrupados[cat].push(servico);
+  });
+
+  // Ordena as categorias alfabeticamente
+  const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  // Monta HTML agrupado por categoria
+  listaServicosDiv.innerHTML = categoriasOrdenadas.map(cat => `
+    <div class="categoria-bloco">
+      <h2 class="categoria-titulo" style="color: #6366f1; margin-top: 24px; margin-bottom: 12px;">${cat}</h2>
+      ${agrupados[cat].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(servico => `
+        <div class="servico-card">
+          <div class="servico-header">
+            <h3 class="servico-titulo">${servico.nome}</h3>
+          </div>
+          <p class="servico-descricao">${servico.descricao || 'Sem descrição.'}</p>
+          <div class="servico-footer">
+            <div>
+              <span class="servico-preco">${formatarPreco(servico.preco)}</span>
+              <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
+            </div>
+            <div class="servico-acoes">
+              <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
+              ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
+            </div>
+          </div>
         </div>
-        <div class="servico-acoes">
-          <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
-          ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
-        </div>
-      </div>
+      `).join('')}
     </div>
   `).join('');
 }
