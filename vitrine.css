@@ -20,8 +20,6 @@ body {
 /* ===============================================
    LAYOUT GRID PRINCIPAL DA VITRINE
    =============================================== */
-
-/* Container principal: grid com sidebar e área principal */
 .vitrine-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -33,7 +31,7 @@ body {
     min-height: 100vh;
 }
 
-/* Sidebar lateral da vitrine: visual moderno, sombra e sticky */
+/* Sidebar lateral da vitrine */
 .sidebar-vitrine {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -50,9 +48,10 @@ body {
     width: 100%;
     padding-bottom: 20px;
     margin: 0 auto;
+    /* Centralização só pelo margin */
 }
 
-/* Áreas de conteúdo das abas: começa escondido, aparece se .ativo */
+/* Áreas de conteúdo das abas */
 .menu-content { 
     display: none; 
     animation: fadeIn 0.3s ease-in-out;
@@ -69,8 +68,6 @@ body {
 /* ===============================================
    CABEÇALHO E MENU LATERAL DA VITRINE
    =============================================== */
-
-/* Header com logo e nome do negócio */
 .header-vitrine {
     text-align: center;
     padding-bottom: 25px;
@@ -78,7 +75,6 @@ body {
     border-bottom: 2px solid rgba(79, 70, 229, 0.1);
 }
 
-/* Logo do negócio */
 #logo-publico {
     width: 80px;
     height: 80px;
@@ -92,7 +88,6 @@ body {
     transform: scale(1.05);
 }
 
-/* Nome do negócio com gradiente no texto */
 #nome-negocio-publico {
     font-size: 1.3rem;
     font-weight: 700;
@@ -104,7 +99,6 @@ body {
     background-clip: text;
 }
 
-/* Botões do menu lateral */
 .sidebar-menu .menu-btn {
     width: 100%;
     padding: 15px 20px;
@@ -135,8 +129,6 @@ body {
 /* ===============================================
    CARDS E CONTEÚDO PRINCIPAL
    =============================================== */
-
-/* Card visual padrão usado em várias partes da UI */
 .card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -151,8 +143,6 @@ body {
     transform: translateY(-5px);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
-
-/* Título dentro do card */
 .card h2 {
     font-size: 1.6rem;
     font-weight: 700;
@@ -165,8 +155,6 @@ body {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
-
-/* Grupos de formulário */
 .form-group {
     margin-bottom: 30px;
 }
@@ -177,8 +165,6 @@ body {
     color: #374151;
     margin-bottom: 15px;
 }
-
-/* Input de data estilizado */
 input[type="date"] {
     width: 100%;
     padding: 15px;
@@ -198,15 +184,11 @@ input[type="date"]:focus {
 /* ===============================================
    SELEÇÃO DE PROFISSIONAIS E SERVIÇOS
    =============================================== */
-
-/* Grid dos profissionais */
 .profissionais-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 20px;
 }
-
-/* Card individual do profissional */
 .card-profissional {
     border: 2px solid rgba(229, 231, 235, 0.5);
     border-radius: 16px;
@@ -245,22 +227,16 @@ input[type="date"]:focus {
     font-weight: 600;
     color: #1F2937;
 }
-
-/* Container do formulário de agendamento */
 #agendamento-form-container {
     margin-top: 2rem;
     border-top: 2px solid rgba(79, 70, 229, 0.1);
     padding-top: 2rem;
 }
-
-/* Lista de cards de serviços */
 .servicos-container-cards {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
-
-/* Card individual de serviço */
 .card-servico {
     background: rgba(249, 250, 251, 0.9);
     border: 2px solid rgba(229, 231, 235, 0.5);
@@ -284,8 +260,6 @@ input[type="date"]:focus {
     color: white;
     box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
 }
-
-/* Nome e detalhes do serviço */
 .servico-nome { 
     font-weight: 700; 
     font-size: 1.1rem;
@@ -297,15 +271,11 @@ input[type="date"]:focus {
 .card-servico.selecionado .servico-detalhes { 
     color: rgba(255, 255, 255, 0.9); 
 }
-
-/* Grade dos horários */
 .horarios-container-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 15px;
 }
-
-/* Botão de horário individual */
 .btn-horario {
     background: rgba(255, 255, 255, 0.9);
     border: 2px solid #D1D5DB;
@@ -332,8 +302,6 @@ input[type="date"]:focus {
     box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
     transform: translateY(-3px);
 }
-
-/* Aviso de horários */
 .aviso-horarios {
     color: #6B7280;
     text-align: center;
@@ -344,8 +312,6 @@ input[type="date"]:focus {
 /* ===============================================
    BOTÕES E AGENDAMENTOS
    =============================================== */
-
-/* Botão de confirmar agendamento */
 #btn-confirmar-agendamento {
     background: linear-gradient(135deg, #10B981, #059669);
     color: white;
@@ -370,8 +336,6 @@ input[type="date"]:focus {
     transform: none;
     box-shadow: none;
 }
-
-/* Botões de filtro de agendamento */
 .botoes-agendamento {
     display: flex;
     gap: 15px;
@@ -395,15 +359,11 @@ input[type="date"]:focus {
     border-color: #4F46E5;
     box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
 }
-
-/* Lista de cards de agendamento */
 .lista-agendamentos-resultado {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
-
-/* Card de agendamento individual */
 .card-agendamento {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -412,10 +372,12 @@ input[type="date"]:focus {
     border-radius: 16px;
     padding: 25px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column; /* Importante: fica vertical no mobile */
+    align-items: flex-start; /* Centraliza à esquerda dentro do card */
+    gap: 12px;
     transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 .card-agendamento:hover {
     transform: translateY(-3px);
@@ -427,8 +389,6 @@ input[type="date"]:focus {
 .card-agendamento.status-concluido { 
     border-left-color: #10B981; 
 }
-
-/* Informações do agendamento */
 .agendamento-info {
     display: flex;
     flex-direction: column;
@@ -443,8 +403,6 @@ input[type="date"]:focus {
     color: #6B7280;
     font-size: 0.9rem;
 }
-
-/* Botão de cancelar agendamento */
 .btn-cancelar {
     background: linear-gradient(135deg, #EF4444, #DC2626);
     color: white;
@@ -463,8 +421,6 @@ input[type="date"]:focus {
 /* ===============================================
    ABA DE INFORMAÇÕES
    =============================================== */
-
-/* Lista de serviços do info */
 #info-servicos {
     display: flex;
     flex-direction: column;
@@ -499,8 +455,6 @@ input[type="date"]:focus {
 /* ===============================================
    NAVEGAÇÃO MOBILE E RESPONSIVIDADE
    =============================================== */
-
-/* Barra de navegação inferior: só aparece no mobile */
 .bottom-nav-vitrine {
     display: none;
     position: fixed;
@@ -533,61 +487,50 @@ input[type="date"]:focus {
    RESPONSIVO PARA MOBILE E CENTRALIZAÇÃO
    =============================================== */
 @media (max-width: 900px) {
-    /* Centraliza absolutamente tudo no mobile/tablet */
-    html, body {
-        height: 100%;
-    }
-    body {
-        min-height: 100vh;
-        width: 100vw;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .vitrine-container { 
-        display: flex; 
-        flex-direction: column; 
-        margin: 0 auto !important; 
-        padding: 0;
-        gap: 0;
-        align-items: center;
-        justify-content: center;
+    .vitrine-container {
+        display: block;
+        margin: 0 auto !important;
+        padding: 0 0 80px 0;
         max-width: 100vw;
         min-height: 100vh;
         background: none;
     }
     .sidebar-vitrine { display: none !important; }
     .bottom-nav-vitrine { display: flex; }
-    .main-content-vitrine { 
-        padding-bottom: 90px; 
-        width: 100vw;
+    .main-content-vitrine {
+        width: 100%;
         max-width: 430px;
         margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        padding: 0 8px 90px 8px;
+        box-sizing: border-box;
+        display: block;
         min-height: 100vh;
-        padding: 0;
     }
-    .card { 
-        width: 95vw;
-        max-width: 380px;
+    .card {
+        width: 100%;
+        max-width: 100%;
         margin: 0 auto 20px auto;
+        box-sizing: border-box;
     }
-    .profissionais-container { 
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
-        gap: 10px; 
+    .profissionais-container {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
         justify-content: center;
     }
     .card-profissional { padding: 10px 4px; border-radius: 12px; }
     .card-profissional img { width: 60px; height: 60px; }
-    .horarios-container-grid { 
-        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); 
-        gap: 10px; 
+    .horarios-container-grid {
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 10px;
     }
     .btn-horario { padding: 12px 8px; font-size: 0.9rem; }
-    .card-agendamento { flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; }
+    .card-agendamento {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 20px;
+        width: 100%;
+    }
     .agendamento-acao { width: 100%; }
     .agendamento-acao .btn-cancelar { width: 100%; padding: 15px; }
     .botoes-agendamento { gap: 10px; }
@@ -610,27 +553,26 @@ input[type="date"]:focus {
 }
 
 @media (max-width: 480px) {
-    .vitrine-container { 
-        padding: 10px; 
-        max-width: 100vw;
-        align-items: center;
-        justify-content: center;
-    }
     .main-content-vitrine {
-        max-width: 98vw;
-        margin: 0 auto;
+        max-width: 100vw;
+        padding: 0 4px 90px 4px;
     }
-    .card { padding: 15px; }
-    .profissionais-container { 
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
-        gap: 8px; 
+    .card { 
+        max-width: 100%;
+        width: 100%;
+        margin: 0 auto 15px auto;
+        padding: 10px;
+    }
+    .profissionais-container {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 8px;
     }
     .card-profissional { padding: 8px 2px; }
     .card-profissional img { width: 50px; height: 50px; }
     .card-profissional span { font-size: 0.9rem; }
-    .horarios-container-grid { 
-        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); 
-        gap: 8px; 
+    .horarios-container-grid {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 8px;
     }
     .btn-horario { padding: 10px 6px; font-size: 0.85rem; }
     .servicos-container-cards { gap: 8px; }
@@ -650,8 +592,6 @@ input[type="date"]:focus {
 /* ===============================================
    ANIMAÇÕES E ESTADOS DE LOADING
    =============================================== */
-
-/* Animação pulse ao selecionar profissional */
 .card-profissional.selecionado {
     animation: pulse 2s infinite;
 }
@@ -659,8 +599,6 @@ input[type="date"]:focus {
     0%, 100% { transform: scale(1); box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3); }
     50% { transform: scale(1.03); box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4); }
 }
-
-/* Loading visual para elementos */
 .loading::after {
     content: '';
     position: absolute;
@@ -677,8 +615,6 @@ input[type="date"]:focus {
 /* ===============================================
    MODAL DE MENSAGENS "PRONTI" (VERSÃO FINAL)
    =============================================== */
-
-/* Overlay do modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -687,15 +623,13 @@ input[type="date"]:focus {
     height: 100vh;
     background: rgba(30, 60, 114, 0.6);
     backdrop-filter: blur(8px);
-    display: none; /* Começa escondido */
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 9999;
     animation: fadeInModal 0.3s ease-out;
 }
 @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
-
-/* Caixa do modal */
 .modal-box {
     max-width: 400px;
     width: 90%;
@@ -708,8 +642,6 @@ input[type="date"]:focus {
     animation: slideInModal 0.4s ease-out;
 }
 @keyframes slideInModal { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-
-/* Título e texto do modal */
 .modal-box h3 {
     color: #2563eb;
     font-weight: 700;
@@ -724,8 +656,6 @@ input[type="date"]:focus {
     margin-bottom: 30px;
     line-height: 1.5;
 }
-
-/* Botões do modal */
 .modal-botoes {
     display: flex;
     gap: 15px;
@@ -761,16 +691,12 @@ input[type="date"]:focus {
 /* ===============================================
    ESTILOS PARA SELEÇÃO MÚLTIPLA DE SERVIÇOS
    =============================================== */
-
-/* Card servico como label clicável para seleção múltipla */
 .card-checkbox {
     display: flex;
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
 }
-
-/* Círculo visual do checkmark */
 .checkmark {
     width: 24px;
     height: 24px;
@@ -781,21 +707,15 @@ input[type="date"]:focus {
     align-items: center;
     justify-content: center;
 }
-
-/* Checkmark preenchido quando selecionado */
 .card-checkbox.selecionado .checkmark {
     background-color: #fff;
     border-color: #fff;
 }
-
-/* Visto dentro do checkmark */
 .card-checkbox.selecionado .checkmark::after {
     content: '✔';
     font-size: 16px;
     color: #4F46E5;
 }
-
-/* Container do resumo de serviços */
 .servicos-resumo-container {
     margin-top: 20px;
     padding-top: 20px;
@@ -807,8 +727,6 @@ input[type="date"]:focus {
     color: #374151;
     margin-bottom: 15px;
 }
-
-/* Botão de prosseguir agendamento */
 .btn-prosseguir {
     width: 100%;
     padding: 15px;
