@@ -195,7 +195,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
     }
 }
 
-// --- Lógica do gráfico (mantida igual) ---
+// --- Lógica do gráfico (agora mostra só os 5 mais vendidos) ---
 async function obterServicosMaisVendidos(empresaId) {
     try {
         const hoje = new Date().toISOString().split("T")[0];
@@ -223,30 +223,29 @@ async function obterServicosMaisVendidos(empresaId) {
     }
 }
 
-// --- NOVA FUNÇÃO: Resumo Inteligente (SOMENTE ESTE CAMPO ALTERADO) ---
+// --- Resumo Inteligente 100% dinâmico (só mostra se houver dado real) ---
 function preencherResumoInteligente(servicosVendidos) {
     const resumoEl = document.getElementById("resumo-inteligente");
     if (!resumoEl) return;
 
-    // Serviço mais agendado real
-    let servicoMaisAgendado = "Nenhum serviço encontrado";
+    let html = "<ul>";
+
+    // Serviço mais agendado (se existir)
+    let servicoMaisAgendado = null;
     let max = 0;
     for (const [nome, qtd] of Object.entries(servicosVendidos)) {
-        if (qtd > max) {
+        if (qtd > max && nome && nome !== "Serviço não informado") {
             servicoMaisAgendado = nome;
             max = qtd;
         }
     }
+    if (servicoMaisAgendado) {
+        html += `<li>Seu serviço mais agendado: <strong>${servicoMaisAgendado}</strong>.</li>`;
+    }
 
-    // O restante são exemplos, mantido estático
-    resumoEl.innerHTML = `
-        <ul>
-            <li>Aproveite o intervalo das <b>11:00</b> às <b>11:55</b> para encaixe rápido.</li>
-            <li>Movimento de hoje igual à média da semana passada.</li>
-            <li>Considere divulgar promoções para horários da tarde.</li>
-            <li>Seu serviço mais agendado: <b>${servicoMaisAgendado}</b>.</li>
-        </ul>
-    `;
+    html += "</ul>";
+    // Só mostra a UL se houver pelo menos um item real
+    resumoEl.innerHTML = html === "<ul></ul>" ? "" : html;
 }
 
 function preencherPainel(metricas, servicosVendidos) {
@@ -289,19 +288,27 @@ function preencherPainel(metricas, servicosVendidos) {
         totalMesEl.textContent = metricas.totalAgendamentosMes;
     }
 
-    // --- Gráfico de Serviços Mais Vendidos ---
+    // --- Gráfico de Serviços Mais Vendidos (apenas top 5) ---
     const canvasEl = document.getElementById('servicos-mais-vendidos');
     if (canvasEl) {
         const ctx = canvasEl.getContext('2d');
         if (window.servicosChart) window.servicosChart.destroy();
-        
+
+        // LIMITAR AO TOP 5 MAIS VENDIDOS
+        const entries = Object.entries(servicosVendidos)
+            .sort((a, b) => b[1] - a[1]) // Ordena do maior pro menor
+            .slice(0, 5); // Pega só os 5 primeiros
+
+        const labels = entries.map(([nome]) => nome);
+        const values = entries.map(([, qtd]) => qtd);
+
         window.servicosChart = new window.Chart(ctx, {
             type: 'bar',
             data: {
-                labels: Object.keys(servicosVendidos),
+                labels: labels,
                 datasets: [{
                     label: 'Vendas',
-                    data: Object.values(servicosVendidos),
+                    data: values,
                     backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa','#fcd34d','#f87171','#34d399','#60a5fa']
                 }]
             },
