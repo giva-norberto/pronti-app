@@ -98,6 +98,10 @@ function preencherFormulario(servico) {
     document.getElementById('descricao-servico').value = servico.descricao || '';
     document.getElementById('preco-servico').value = servico.preco !== undefined ? servico.preco : '';
     document.getElementById('duracao-servico').value = servico.duracao !== undefined ? servico.duracao : '';
+    // Nova linha: categoria é opcional
+    if (document.getElementById('categoria-servico')) {
+        document.getElementById('categoria-servico').value = servico.categoria || '';
+    }
 }
 
 function usuarioEDono(empresa, uid) {
@@ -143,9 +147,6 @@ onAuthStateChanged(auth, async (user) => {
     const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
     if (empresaSnap.exists()) {
         empresa = { id: empresaSnap.id, ...empresaSnap.data() };
-        // Para debug/log mobile
-        // console.log("Usuário autenticado:", userUid, "Empresa ativa:", empresaId, "É admin:", isAdmin);
-        // console.log("Dono da empresa ativa (donoId):", empresa.donoId);
     } else {
         console.warn("Empresa ativa não encontrada no Firestore!");
         prontiAlert("Erro: empresa ativa não encontrada! Refaça o cadastro da empresa ou selecione uma empresa existente.", () => {
@@ -208,6 +209,9 @@ async function handleFormSubmit(e) {
     const descricao = document.getElementById('descricao-servico').value.trim();
     const preco = parseFloat(document.getElementById('preco-servico').value);
     const duracao = parseInt(document.getElementById('duracao-servico').value, 10);
+    // Nova linha: categoria é opcional
+    const categoriaInput = document.getElementById('categoria-servico');
+    const categoria = categoriaInput ? categoriaInput.value.trim() : undefined;
 
     if (!nome || isNaN(preco) || isNaN(duracao) || preco < 0 || duracao <= 0) {
         prontiAlert("Atenção: Preencha todos os campos obrigatórios corretamente.");
@@ -222,17 +226,23 @@ async function handleFormSubmit(e) {
         if (servicoEditando) {
             if (!empresaId || !servicoId) throw new Error("Dados de identificação do serviço incompletos.");
             const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
-            await updateDoc(servicoRef, { nome, descricao, preco, duracao });
+            const updateData = { nome, descricao, preco, duracao };
+            // Só adiciona categoria se existir input (campo opcional)
+            if (categoriaInput) updateData.categoria = categoria;
+            await updateDoc(servicoRef, updateData);
         } else {
             if (!empresaId) throw new Error("Empresa ativa não definida.");
             const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-            await addDoc(servicosCol, { 
+            const novoServico = { 
                 nome, 
                 descricao, 
                 preco, 
                 duracao, 
                 visivelNaVitrine: true 
-            });
+            };
+            // Só adiciona categoria se existir input (campo opcional)
+            if (categoriaInput) novoServico.categoria = categoria;
+            await addDoc(servicosCol, novoServico);
         }
 
         prontiAlert(servicoEditando ? "Serviço atualizado com sucesso!" : "Serviço salvo com sucesso!", () => {
@@ -268,4 +278,4 @@ async function handleServicoExcluir(e) {
         },
         () => { /* Cancelado */ }
     );
-} 
+}
