@@ -59,7 +59,7 @@ export function renderizarProfissionais(profissionais) {
 }
 
 /**
- * REVISADO: Renderiza os cards de serviços, adaptando para seleção única ou múltipla.
+ * REVISADO: Renderiza os cards de serviços agrupados por categoria, adaptando para seleção única ou múltipla.
  */
 export function renderizarServicos(servicos, permiteMultiplos = false) {
     const container = document.getElementById('lista-servicos');
@@ -71,26 +71,71 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
         return;
     }
 
+    // ---- AGRUPAMENTO POR CATEGORIA ----
+    // Agrupa por categoria
+    const agrupados = {};
     servicos.forEach(s => {
-        if (permiteMultiplos) {
-            container.innerHTML += `
-                <div class="card-servico card-checkbox" data-id="${s.id}">
-                    <div class="servico-info-multi">
+        const cat = (s.categoria && s.categoria.trim()) ? s.categoria.trim() : "Sem Categoria";
+        if (!agrupados[cat]) agrupados[cat] = [];
+        agrupados[cat].push(s);
+    });
+
+    // Ordena categorias
+    const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+    // Renderiza categorias como botões/lista
+    let htmlCategorias = `<div class="categorias-lista" style="margin-bottom:22px; display:flex; gap:8px; flex-wrap:wrap;">`;
+    categoriasOrdenadas.forEach((cat, idx) => {
+        htmlCategorias += `
+            <button class="categoria-btn" data-cat="${cat}" style="padding:8px 18px; border-radius:20px; border:none; background:${idx===0 ?'#6366f1':'#e0e7ef'}; color:${idx===0 ?'#fff':'#22223b'}; font-weight:bold; cursor:pointer;">${cat}</button>
+        `;
+    });
+    htmlCategorias += `</div><div id="servicos-por-categoria"></div>`;
+
+    container.innerHTML = htmlCategorias;
+
+    // Função para renderizar serviços de uma categoria
+    function renderizarServicosDaCategoria(catAtual) {
+        const servicosCat = agrupados[catAtual];
+        document.getElementById('servicos-por-categoria').innerHTML = servicosCat.map(s => {
+            if (permiteMultiplos) {
+                return `
+                    <div class="card-servico card-checkbox" data-id="${s.id}">
+                        <div class="servico-info-multi">
+                            <span class="servico-nome">${s.nome}</span>
+                            <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
+                        </div>
+                        <span class="checkmark"></span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="card-servico" data-id="${s.id}">
                         <span class="servico-nome">${s.nome}</span>
                         <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
                     </div>
-                    <span class="checkmark"></span>
-                </div>
-            `;
-        } else {
-            container.innerHTML += `
-                <div class="card-servico" data-id="${s.id}">
-                    <span class="servico-nome">${s.nome}</span>
-                    <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
-                </div>
-            `;
-        }
+                `;
+            }
+        }).join('');
+    }
+
+    // Eventos nos botões de categoria
+    container.querySelectorAll('.categoria-btn').forEach((btn, idx) => {
+        btn.onclick = () => {
+            container.querySelectorAll('.categoria-btn').forEach((b, i) => {
+                b.style.background = '#e0e7ef';
+                b.style.color = '#22223b';
+            });
+            btn.style.background = '#6366f1';
+            btn.style.color = '#fff';
+            renderizarServicosDaCategoria(btn.dataset.cat);
+        };
     });
+
+    // Inicializa mostrando a primeira categoria
+    if (categoriasOrdenadas.length > 0) {
+        renderizarServicosDaCategoria(categoriasOrdenadas[0]);
+    }
 }
 
 /**
