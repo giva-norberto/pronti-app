@@ -59,7 +59,7 @@ export function renderizarProfissionais(profissionais) {
 }
 
 /**
- * REVISADO: Renderiza os cards de serviços agrupados por categoria, adaptando para seleção única ou múltipla.
+ * REVISADO: Renderiza os cards de serviços agrupados por categoria, SEMPRE mostrando categoria, adaptando para seleção única ou múltipla.
  */
 export function renderizarServicos(servicos, permiteMultiplos = false) {
     const container = document.getElementById('lista-servicos');
