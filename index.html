@@ -31,21 +31,32 @@
         <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
         <p>Pronto para gerenciar seu dia?</p>
     </div>
-    <div class="dashboard-main-actions" id="dashboard-main-actions">
-        <a href="dashboard.html" class="action-card">
+    <div class="dashboard-main-actions color-cards" id="dashboard-main-actions">
+        <a href="dashboard.html" class="action-card card-primary">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
         </a>
-        <a href="agenda.html" class="action-card">
+        <a href="agenda.html" class="action-card card-blue">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Agenda</span>
         </a>
-        <a href="servicos.html" class="action-card" id="acao-servicos">
+        <a href="servicos.html" class="action-card card-cyan" id="acao-servicos">
             <i class="fa-solid fa-scissors"></i>
             <span>Serviços</span>
         </a>
+        <a href="clientes.html" class="action-card card-green">
+            <i class="fa-solid fa-user-friends"></i>
+            <span>Clientes</span>
+        </a>
+        <a href="equipe.html" class="action-card card-purple">
+            <i class="fa-solid fa-people-group"></i>
+            <span>Equipe</span>
+        </a>
+        <a href="relatorios.html" class="action-card card-orange">
+            <i class="fa-solid fa-file-chart-column"></i>
+            <span>Relatórios</span>
+        </a>
     </div>
-    <button class="status-button">Ver status de hoje</button>
 </main>
 
 <script type="module">
@@ -77,15 +88,12 @@
     function ativarLogout() {
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
-            console.log("[index.html] Botão de logout encontrado. Adicionando listener.");
             btnLogout.addEventListener('click', () => {
                 localStorage.removeItem('empresaAtivaId');
                 signOut(auth).then(() => {
                     window.location.replace('login.html');
                 });
             });
-        } else {
-            console.warn("[index.html] Botão de logout não encontrado no menu lateral.");
         }
     }
 
@@ -117,10 +125,8 @@
     }
 
     async function inicializarDashboard() {
-        console.log("[index.html] Iniciando verificação de acesso...");
         try {
             const userSession = await verificarAcesso();
-            console.log("[index.html] Acesso permitido. Populando dashboard...");
             const { perfil } = userSession;
 
             const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
@@ -131,7 +137,6 @@
                 if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
             }
 
-            // Carrega o menu lateral e, DEPOIS, ativa os botões
             fetch('menu-lateral.html')
                 .then(res => res.text())
                 .then(html => {
@@ -142,16 +147,13 @@
                         ativarLogout(); 
                     }
                 });
-
         } catch (error) {
             if (error.message === "primeiro_acesso") {
-                console.log("[index.html] Recebido 'primeiro_acesso'.");
                 mostrarPrimeiroAcessoCard();
             } else if (!error.message.includes("Redirecionando")) {
                 console.error("[index.html] Erro não tratado na inicialização:", error);
             }
         } finally {
-            console.log("[index.html] Finalizando inicialização, removendo 'is-loading'.");
             removerIsLoading();
         }
     }
