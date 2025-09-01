@@ -7,7 +7,6 @@
     box-sizing: border-box;
 }
 
-/* Estilo básico do body: fonte, cor, fundo gradiente, altura mínima */
 body {
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -48,7 +47,7 @@ body {
     width: 100%;
     padding-bottom: 20px;
     margin: 0 auto;
-    /* Centralização só pelo margin */
+    position: relative; /* Para facilitar posicionamento do header mobile */
 }
 
 /* Áreas de conteúdo das abas */
@@ -99,31 +98,38 @@ body {
     background-clip: text;
 }
 
-.sidebar-menu .menu-btn {
+/* Header mobile: aparece só no mobile */
+.header-vitrine-mobile {
+    display: none; /* Só mostra no mobile */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    margin-top: 16px;
     width: 100%;
-    padding: 15px 20px;
-    border: none;
-    background: none;
-    text-align: left;
-    font-size: 16px;
-    font-weight: 600;
-    color: #4B5563;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    margin-bottom: 8px;
     position: relative;
-    overflow: hidden;
+    z-index: 10;
 }
-.sidebar-menu .menu-btn:hover:not(.ativo) {
-    background: rgba(79, 70, 229, 0.1);
-    transform: translateX(5px);
+#logo-publico-mobile {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 6px;
+    border: 3px solid rgba(79, 70, 229, 0.16);
 }
-.sidebar-menu .menu-btn.ativo {
+#nome-negocio-publico-mobile {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1F2937;
+    margin: 0 0 12px 0;
     background: linear-gradient(135deg, #4F46E5, #7C3AED);
-    color: white;
-    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
-    transform: translateX(5px);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    word-break: break-word;
+    max-width: 95vw;
 }
 
 /* ===============================================
@@ -372,8 +378,8 @@ input[type="date"]:focus {
     border-radius: 16px;
     padding: 25px;
     display: flex;
-    flex-direction: column; /* Importante: fica vertical no mobile */
-    align-items: flex-start; /* Centraliza à esquerda dentro do card */
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
     transition: all 0.3s ease;
     width: 100%;
@@ -497,6 +503,9 @@ input[type="date"]:focus {
     }
     .sidebar-vitrine { display: none !important; }
     .bottom-nav-vitrine { display: flex; }
+    .header-vitrine-mobile {
+        display: flex !important;
+    }
     .main-content-vitrine {
         width: 100%;
         max-width: 430px;
@@ -741,31 +750,4 @@ input[type="date"]:focus {
 }
 .btn-prosseguir:hover {
     background: #4338ca;
-}
-.agenda-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 18px;
-    margin-top: 18px;
-    width: 100%;
-}
-#logo-publico {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 8px;
-    border: 3px solid rgba(79, 70, 229, 0.2);
-}
-#nome-negocio-publico {
-    font-size: 1.18rem;
-    font-weight: 700;
-    color: #1F2937;
-    background: linear-gradient(135deg, #4F46E5, #7C3AED);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0;
 }
