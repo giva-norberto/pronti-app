@@ -2,7 +2,6 @@ import { db, collection, getDocs, query, where } from './vitrini-firebase.js';
 
 const listaServicosDiv = document.getElementById('lista-servicos');
 const detalhesServicoDiv = document.getElementById('detalhes-servico');
-const categoriasDiv = document.getElementById('categorias-servicos');
 
 /**
  * Formata preço para moeda brasileira
@@ -21,7 +20,7 @@ function formatarDuracao(duracao) {
 }
 
 /**
- * Renderiza as categorias e permite expandir/recolher serviços por categoria
+ * Renderiza categorias como botões e exibe serviços da categoria escolhida
  */
 function renderizarCategoriasEServicos(servicos) {
     if (!listaServicosDiv) return;
@@ -44,12 +43,10 @@ function renderizarCategoriasEServicos(servicos) {
     const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
     // Renderiza categorias como botões/lista
-    let htmlCategorias = `<div class="categorias-lista">`;
+    let htmlCategorias = `<div class="categorias-lista" style="margin-bottom:22px; display:flex; gap:8px; flex-wrap:wrap;">`;
     categoriasOrdenadas.forEach((cat, idx) => {
         htmlCategorias += `
-            <button class="categoria-btn" data-cat="${cat}" ${idx === 0 ? 'data-ativo="1"' : ''}>
-                ${cat}
-            </button>
+            <button class="categoria-btn" data-cat="${cat}" style="padding:8px 18px; border-radius:20px; border:none; background:${idx===0 ?'#6366f1':'#e0e7ef'}; color:${idx===0 ?'#fff':'#22223b'}; font-weight:bold; cursor:pointer;">${cat}</button>
         `;
     });
     htmlCategorias += `</div><div id="servicos-por-categoria"></div>`;
@@ -65,9 +62,9 @@ function renderizarCategoriasEServicos(servicos) {
             return;
         }
         document.getElementById('servicos-por-categoria').innerHTML = servicosCat.map((servico, idx) => `
-            <div class="servico-card" data-idx="${idx}" data-cat="${catAtual}">
-                <h3>${servico.nome ? servico.nome : '<span style="color:red">Sem nome</span>'}</h3>
-                <div>${servico.preco !== undefined && servico.preco !== null ? formatarPreco(servico.preco) : '<span style="color:red">Preço não informado</span>'}</div>
+            <div class="servico-card" data-idx="${idx}" data-cat="${catAtual}" style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:18px; margin-bottom:12px; box-shadow:0 2px 4px rgba(0,0,0,0.04); cursor:pointer;">
+                <h3 style="font-size:1.15em; margin:0 0 8px 0;">${servico.nome ? servico.nome : '<span style="color:red">Sem nome</span>'}</h3>
+                <div style="color:#666;">${servico.preco !== undefined && servico.preco !== null ? formatarPreco(servico.preco) : '<span style="color:red">Preço não informado</span>'}</div>
             </div>
         `).join('');
 
@@ -81,10 +78,14 @@ function renderizarCategoriasEServicos(servicos) {
     }
 
     // Evento de click nos botões de categoria
-    listaServicosDiv.querySelectorAll('.categoria-btn').forEach(btn => {
+    listaServicosDiv.querySelectorAll('.categoria-btn').forEach((btn, idx) => {
         btn.onclick = () => {
-            listaServicosDiv.querySelectorAll('.categoria-btn').forEach(b => b.removeAttribute('data-ativo'));
-            btn.setAttribute('data-ativo', '1');
+            listaServicosDiv.querySelectorAll('.categoria-btn').forEach((b, i) => {
+                b.style.background = '#e0e7ef';
+                b.style.color = '#22223b';
+            });
+            btn.style.background = '#6366f1';
+            btn.style.color = '#fff';
             renderizarServicosDaCategoria(btn.dataset.cat);
         };
     });
@@ -112,7 +113,6 @@ function renderizarDetalhesServicoVitrine(servico) {
  * Busca e carrega os serviços do Firebase para a vitrine.
  * Filtra apenas os serviços visíveis na vitrine.
  * Se profissionalId for fornecido, busca por profissional. Caso contrário, pela empresa.
- * MULTIEMPRESA: empresaId deve ser passado corretamente pelo contexto de chamada.
  */
 export async function carregarServicosVitrine(empresaId, profissionalId = null) {
     try {
