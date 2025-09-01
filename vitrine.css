@@ -1,10 +1,13 @@
-/* =============================================== */
-/* ESTILOS GERAIS E LAYOUT MODERNO             */
-/* =============================================== */
+/* ===============================================
+   ESTILOS GERAIS E LAYOUT MODERNO
+   =============================================== */
+
+/* Garante que todo elemento use border-box para facilitar o layout */
 * {
     box-sizing: border-box;
 }
 
+/* Estilo básico do body: fonte, cor, fundo gradiente, altura mínima */
 body {
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -14,7 +17,11 @@ body {
     line-height: 1.6;
 }
 
-/* --- LAYOUT GRID PRINCIPAL --- */
+/* ===============================================
+   LAYOUT GRID PRINCIPAL DA VITRINE
+   =============================================== */
+
+/* Container principal: grid com sidebar e área principal */
 .vitrine-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -26,6 +33,7 @@ body {
     min-height: 100vh;
 }
 
+/* Sidebar lateral da vitrine: visual moderno, sombra e sticky */
 .sidebar-vitrine {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -37,17 +45,18 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+/* Conteúdo principal da vitrine */
 .main-content-vitrine {
     width: 100%;
     padding-bottom: 20px;
     margin: 0 auto;
 }
 
+/* Áreas de conteúdo das abas: começa escondido, aparece se .ativo */
 .menu-content { 
     display: none; 
     animation: fadeIn 0.3s ease-in-out;
 }
-
 .menu-content.ativo { 
     display: block; 
 }
@@ -57,9 +66,11 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* =============================================== */
-/* CABEÇALHO E MENU LATERAL MODERNO            */
-/* =============================================== */
+/* ===============================================
+   CABEÇALHO E MENU LATERAL DA VITRINE
+   =============================================== */
+
+/* Header com logo e nome do negócio */
 .header-vitrine {
     text-align: center;
     padding-bottom: 25px;
@@ -67,6 +78,7 @@ body {
     border-bottom: 2px solid rgba(79, 70, 229, 0.1);
 }
 
+/* Logo do negócio */
 #logo-publico {
     width: 80px;
     height: 80px;
@@ -76,11 +88,11 @@ body {
     border: 3px solid rgba(79, 70, 229, 0.2);
     transition: transform 0.3s ease;
 }
-
 #logo-publico:hover {
     transform: scale(1.05);
 }
 
+/* Nome do negócio com gradiente no texto */
 #nome-negocio-publico {
     font-size: 1.3rem;
     font-weight: 700;
@@ -92,6 +104,7 @@ body {
     background-clip: text;
 }
 
+/* Botões do menu lateral */
 .sidebar-menu .menu-btn {
     width: 100%;
     padding: 15px 20px;
@@ -108,12 +121,10 @@ body {
     position: relative;
     overflow: hidden;
 }
-
 .sidebar-menu .menu-btn:hover:not(.ativo) {
     background: rgba(79, 70, 229, 0.1);
     transform: translateX(5px);
 }
-
 .sidebar-menu .menu-btn.ativo {
     background: linear-gradient(135deg, #4F46E5, #7C3AED);
     color: white;
@@ -121,9 +132,11 @@ body {
     transform: translateX(5px);
 }
 
-/* =============================================== */
-/* CARDS E CONTEÚDO PRINCIPAL MODERNO            */
-/* =============================================== */
+/* ===============================================
+   CARDS E CONTEÚDO PRINCIPAL
+   =============================================== */
+
+/* Card visual padrão usado em várias partes da UI */
 .card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -134,12 +147,12 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-
 .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
+/* Título dentro do card */
 .card h2 {
     font-size: 1.6rem;
     font-weight: 700;
@@ -153,10 +166,10 @@ body {
     background-clip: text;
 }
 
+/* Grupos de formulário */
 .form-group {
     margin-bottom: 30px;
 }
-
 .form-group label {
     display: block;
     font-weight: 700;
@@ -165,6 +178,7 @@ body {
     margin-bottom: 15px;
 }
 
+/* Input de data estilizado */
 input[type="date"] {
     width: 100%;
     padding: 15px;
@@ -175,22 +189,24 @@ input[type="date"] {
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
     background: rgba(255, 255, 255, 0.9);
 }
-
 input[type="date"]:focus {
     outline: none;
     border-color: #4F46E5;
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-/* =============================================== */
-/* SELEÇÃO DE PROFISSIONAIS E SERVIÇOS           */
-/* =============================================== */
+/* ===============================================
+   SELEÇÃO DE PROFISSIONAIS E SERVIÇOS
+   =============================================== */
+
+/* Grid dos profissionais */
 .profissionais-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 20px;
 }
 
+/* Card individual do profissional */
 .card-profissional {
     border: 2px solid rgba(229, 231, 235, 0.5);
     border-radius: 16px;
@@ -201,20 +217,17 @@ input[type="date"]:focus {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
 }
-
 .card-profissional:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 12px 30px rgba(79, 70, 229, 0.2);
     border-color: #A5B4FC;
 }
-
 .card-profissional.selecionado {
     border-color: #4F46E5;
     background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
     box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
     transform: translateY(-5px);
 }
-
 .card-profissional img {
     width: 80px;
     height: 80px;
@@ -224,29 +237,30 @@ input[type="date"]:focus {
     border: 3px solid rgba(79, 70, 229, 0.2);
     transition: transform 0.3s ease;
 }
-
 .card-profissional:hover img {
     transform: scale(1.1);
 }
-
 .card-profissional span {
     font-size: 1rem;
     font-weight: 600;
     color: #1F2937;
 }
 
+/* Container do formulário de agendamento */
 #agendamento-form-container {
     margin-top: 2rem;
     border-top: 2px solid rgba(79, 70, 229, 0.1);
     padding-top: 2rem;
 }
 
+/* Lista de cards de serviços */
 .servicos-container-cards {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
+/* Card individual de serviço */
 .card-servico {
     background: rgba(249, 250, 251, 0.9);
     border: 2px solid rgba(229, 231, 235, 0.5);
@@ -258,14 +272,12 @@ input[type="date"]:focus {
     justify-content: space-between;
     align-items: center;
 }
-
 .card-servico:hover {
     border-color: #C7D2FE;
     background: rgba(238, 242, 255, 0.9);
     transform: translateX(5px);
     box-shadow: 0 4px 15px rgba(79, 70, 229, 0.1);
 }
-
 .card-servico.selecionado {
     border-color: #4F46E5;
     background: linear-gradient(135deg, #4F46E5, #7C3AED);
@@ -273,26 +285,27 @@ input[type="date"]:focus {
     box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
 }
 
+/* Nome e detalhes do serviço */
 .servico-nome { 
     font-weight: 700; 
     font-size: 1.1rem;
 }
-
 .servico-detalhes { 
     font-size: 0.9rem; 
     opacity: 0.8;
 }
-
 .card-servico.selecionado .servico-detalhes { 
     color: rgba(255, 255, 255, 0.9); 
 }
 
+/* Grade dos horários */
 .horarios-container-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 15px;
 }
 
+/* Botão de horário individual */
 .btn-horario {
     background: rgba(255, 255, 255, 0.9);
     border: 2px solid #D1D5DB;
@@ -305,7 +318,6 @@ input[type="date"]:focus {
     font-weight: 600;
     font-size: 1rem;
 }
-
 .btn-horario:hover {
     color: white;
     border-color: #4F46E5;
@@ -313,7 +325,6 @@ input[type="date"]:focus {
     box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
     background: linear-gradient(135deg, #4F46E5, #7C3AED);
 }
-
 .btn-horario.selecionado {
     background: linear-gradient(135deg, #4F46E5, #7C3AED);
     border-color: #4F46E5;
@@ -322,6 +333,7 @@ input[type="date"]:focus {
     transform: translateY(-3px);
 }
 
+/* Aviso de horários */
 .aviso-horarios {
     color: #6B7280;
     text-align: center;
@@ -329,9 +341,11 @@ input[type="date"]:focus {
     font-style: italic;
 }
 
-/* =============================================== */
-/* BOTÕES E AGENDAMENTOS                         */
-/* =============================================== */
+/* ===============================================
+   BOTÕES E AGENDAMENTOS
+   =============================================== */
+
+/* Botão de confirmar agendamento */
 #btn-confirmar-agendamento {
     background: linear-gradient(135deg, #10B981, #059669);
     color: white;
@@ -345,12 +359,10 @@ input[type="date"]:focus {
     transition: all 0.3s ease;
     margin-top: 1rem;
 }
-
 #btn-confirmar-agendamento:hover:not(:disabled) {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
-
 #btn-confirmar-agendamento:disabled {
     background: #E5E7EB;
     color: #9CA3AF;
@@ -359,12 +371,12 @@ input[type="date"]:focus {
     box-shadow: none;
 }
 
+/* Botões de filtro de agendamento */
 .botoes-agendamento {
     display: flex;
     gap: 15px;
     margin-bottom: 25px;
 }
-
 .botoes-agendamento .btn-toggle {
     background: rgba(243, 244, 246, 0.9);
     border: 2px solid rgba(229, 231, 235, 0.5);
@@ -377,7 +389,6 @@ input[type="date"]:focus {
     flex-grow: 1;
     text-align: center;
 }
-
 .botoes-agendamento .btn-toggle.ativo {
     background: linear-gradient(135deg, #4F46E5, #7C3AED);
     color: white;
@@ -385,12 +396,14 @@ input[type="date"]:focus {
     box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
 }
 
+/* Lista de cards de agendamento */
 .lista-agendamentos-resultado {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
+/* Card de agendamento individual */
 .card-agendamento {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -404,38 +417,35 @@ input[type="date"]:focus {
     gap: 20px;
     transition: all 0.3s ease;
 }
-
 .card-agendamento:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
-
 .card-agendamento.status-cancelado_pelo_cliente { 
     border-left-color: #EF4444; 
 }
-
 .card-agendamento.status-concluido { 
     border-left-color: #10B981; 
 }
 
+/* Informações do agendamento */
 .agendamento-info {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
-
 .agendamento-info strong {
     font-size: 1.1rem;
     font-weight: 700;
     color: #111827;
 }
-
 .agendamento-info span, .agendamento-info small {
     color: #6B7280;
     font-size: 0.9rem;
 }
 
-.btn-cancelar { /* Movido de .agendamento-acao para ser mais genérico */
+/* Botão de cancelar agendamento */
+.btn-cancelar {
     background: linear-gradient(135deg, #EF4444, #DC2626);
     color: white;
     border: none;
@@ -445,21 +455,21 @@ input[type="date"]:focus {
     font-weight: 600;
     transition: all 0.3s ease;
 }
-
 .btn-cancelar:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
-/* =============================================== */
-/* ABA DE INFORMAÇÕES                            */
-/* =============================================== */
+/* ===============================================
+   ABA DE INFORMAÇÕES
+   =============================================== */
+
+/* Lista de serviços do info */
 #info-servicos {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
-
 .servico-info-item {
     background: rgba(249, 250, 251, 0.9);
     border: 2px solid rgba(229, 231, 235, 0.5);
@@ -470,28 +480,27 @@ input[type="date"]:focus {
     justify-content: space-between;
     align-items: center;
 }
-
 .servico-info-item:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     border-color: #A5B4FC;
 }
-
 .servico-info-item strong { 
     font-size: 1.1rem; 
     font-weight: 700; 
     color: #1F2937; 
 }
-
 .servico-info-item span { 
     color: #4F46E5; 
     font-weight: 700;
     font-size: 1.1rem;
 }
 
-/* =============================================== */
-/* NAVEGAÇÃO MOBILE E RESPONSIVIDADE             */
-/* =============================================== */
+/* ===============================================
+   NAVEGAÇÃO MOBILE E RESPONSIVIDADE
+   =============================================== */
+
+/* Barra de navegação inferior: só aparece no mobile */
 .bottom-nav-vitrine {
     display: none;
     position: fixed;
@@ -503,7 +512,6 @@ input[type="date"]:focus {
     height: 70px;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 }
-
 .bottom-nav-vitrine button {
     flex: 1; border: none; background: none;
     color: #6B7280; font-size: 0.9rem; font-weight: 600;
@@ -512,45 +520,65 @@ input[type="date"]:focus {
     transition: all 0.3s ease; height: 70px;
     cursor: pointer; position: relative; gap: 4px;
 }
-
 .bottom-nav-vitrine button.ativo {
     color: #4F46E5;
     background: rgba(79, 70, 229, 0.05);
 }
-
 .bottom-nav-vitrine button span {
     font-size: 0.75rem;
     margin-top: 2px;
 }
 
-/* =============================================== */
-/* RESPONSIVO PARA MOBILE E CENTRALIZAÇÃO         */
-/* =============================================== */
+/* ===============================================
+   RESPONSIVO PARA MOBILE E CENTRALIZAÇÃO
+   =============================================== */
 @media (max-width: 900px) {
-    body { background-attachment: fixed; }
+    /* Centraliza absolutamente tudo no mobile/tablet */
+    html, body {
+        height: 100%;
+    }
+    body {
+        min-height: 100vh;
+        width: 100vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     .vitrine-container { 
         display: flex; 
         flex-direction: column; 
         margin: 0 auto !important; 
-        padding: 15px; 
-        gap: 20px;
+        padding: 0;
+        gap: 0;
         align-items: center;
         justify-content: center;
         max-width: 100vw;
+        min-height: 100vh;
+        background: none;
     }
     .sidebar-vitrine { display: none !important; }
     .bottom-nav-vitrine { display: flex; }
     .main-content-vitrine { 
         padding-bottom: 90px; 
-        width: 100%; 
+        width: 100vw;
         max-width: 430px;
         margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 0;
     }
-    .card { padding: 20px; margin-bottom: 20px; border-radius: 16px; }
-    .card h2 { font-size: 1.4rem; margin-bottom: 20px; }
+    .card { 
+        width: 95vw;
+        max-width: 380px;
+        margin: 0 auto 20px auto;
+    }
     .profissionais-container { 
         grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
         gap: 10px; 
+        justify-content: center;
     }
     .card-profissional { padding: 10px 4px; border-radius: 12px; }
     .card-profissional img { width: 60px; height: 60px; }
@@ -619,9 +647,11 @@ input[type="date"]:focus {
     }
 }
 
-/* =============================================== */
-/* ANIMAÇÕES E ESTADOS DE LOADING                */
-/* =============================================== */
+/* ===============================================
+   ANIMAÇÕES E ESTADOS DE LOADING
+   =============================================== */
+
+/* Animação pulse ao selecionar profissional */
 .card-profissional.selecionado {
     animation: pulse 2s infinite;
 }
@@ -629,6 +659,8 @@ input[type="date"]:focus {
     0%, 100% { transform: scale(1); box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3); }
     50% { transform: scale(1.03); box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4); }
 }
+
+/* Loading visual para elementos */
 .loading::after {
     content: '';
     position: absolute;
@@ -642,10 +674,11 @@ input[type="date"]:focus {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ===============================================
+   MODAL DE MENSAGENS "PRONTI" (VERSÃO FINAL)
+   =============================================== */
 
-/* =============================================== */
-/* MODAL DE MENSAGENS "PRONTI" (VERSÃO FINAL)  */
-/* =============================================== */
+/* Overlay do modal */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -661,6 +694,8 @@ input[type="date"]:focus {
     animation: fadeInModal 0.3s ease-out;
 }
 @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+
+/* Caixa do modal */
 .modal-box {
     max-width: 400px;
     width: 90%;
@@ -673,6 +708,8 @@ input[type="date"]:focus {
     animation: slideInModal 0.4s ease-out;
 }
 @keyframes slideInModal { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+
+/* Título e texto do modal */
 .modal-box h3 {
     color: #2563eb;
     font-weight: 700;
@@ -683,10 +720,12 @@ input[type="date"]:focus {
 }
 .modal-box p {
     font-size: 16px;
-    color: #374151; /* Cor de texto escura para bom contraste */
+    color: #374151;
     margin-bottom: 30px;
     line-height: 1.5;
 }
+
+/* Botões do modal */
 .modal-botoes {
     display: flex;
     gap: 15px;
@@ -718,11 +757,12 @@ input[type="date"]:focus {
 #modal-btn-cancelar:hover {
     background-color: #c7d2fe;
 }
-/* =============================================== */
-/* ESTILOS PARA SELEÇÃO MÚLTIPLA DE SERVIÇOS     */
-/* =============================================== */
 
-/* Transforma o card num 'label' para poder ser clicado */
+/* ===============================================
+   ESTILOS PARA SELEÇÃO MÚLTIPLA DE SERVIÇOS
+   =============================================== */
+
+/* Card servico como label clicável para seleção múltipla */
 .card-checkbox {
     display: flex;
     align-items: center;
@@ -730,7 +770,7 @@ input[type="date"]:focus {
     cursor: pointer;
 }
 
-/* O checkmark visual */
+/* Círculo visual do checkmark */
 .checkmark {
     width: 24px;
     height: 24px;
@@ -742,26 +782,25 @@ input[type="date"]:focus {
     justify-content: center;
 }
 
-/* Estilo do checkmark quando selecionado */
+/* Checkmark preenchido quando selecionado */
 .card-checkbox.selecionado .checkmark {
     background-color: #fff;
     border-color: #fff;
 }
 
-/* O "visto" que aparece dentro do checkmark */
+/* Visto dentro do checkmark */
 .card-checkbox.selecionado .checkmark::after {
     content: '✔';
     font-size: 16px;
     color: #4F46E5;
 }
 
-/* Container do resumo */
+/* Container do resumo de serviços */
 .servicos-resumo-container {
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #e5e7eb;
 }
-
 .servicos-resumo p {
     font-size: 1rem;
     font-weight: 500;
@@ -769,6 +808,7 @@ input[type="date"]:focus {
     margin-bottom: 15px;
 }
 
+/* Botão de prosseguir agendamento */
 .btn-prosseguir {
     width: 100%;
     padding: 15px;
@@ -781,37 +821,6 @@ input[type="date"]:focus {
     cursor: pointer;
     transition: background 0.2s;
 }
-
 .btn-prosseguir:hover {
     background: #4338ca;
-}
-@media (max-width: 900px) {
-    .main-content-vitrine {
-        width: 100%;
-        max-width: 440px;   /* ajuste para mobile, pode diminuir se quiser */
-        margin: 0 auto !important;
-        display: flex;
-        flex-direction: column;
-        align-items: center;      /* centraliza horizontal */
-    }
-    .card {
-        width: 100%;
-        max-width: 380px;    /* limite real do card para centralizar, ajuste se quiser mais estreito */
-        margin: 0 auto 20px auto;
-    }
-    .profissionais-container {
-        justify-content: center;
-    }
-}
-@media (max-width: 480px) {
-    .main-content-vitrine {
-        max-width: 98vw;
-        padding: 0;
-    }
-    .card {
-        max-width: 98vw;
-        width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-    }
 }
