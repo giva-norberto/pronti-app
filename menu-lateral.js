@@ -72,15 +72,21 @@ function setupMobileMenu() {
 
   if (!hamburger || !sidebar) return;
 
+  // Remove event listeners antigos (garante que só 1 vez)
+  hamburger.replaceWith(hamburger.cloneNode(true));
+  const newHamburger = document.getElementById('sidebar-hamburger');
+
   // Abre/fecha menu mobile ao clicar no ícone
-  hamburger.addEventListener('click', (e) => {
+  newHamburger.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleMenu();
   });
 
   // Fecha menu ao clicar no overlay
   if (overlay) {
-    overlay.addEventListener('click', () => {
+    overlay.replaceWith(overlay.cloneNode(true));
+    const newOverlay = document.getElementById('sidebar-overlay');
+    newOverlay.addEventListener('click', () => {
       closeMenu();
     });
   }
@@ -91,7 +97,7 @@ function setupMobileMenu() {
       if (
         sidebar.classList.contains('show') &&
         !sidebar.contains(evt.target) &&
-        !hamburger.contains(evt.target)
+        !newHamburger.contains(evt.target)
       ) {
         closeMenu();
       }
@@ -111,7 +117,7 @@ function setupMobileMenu() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && sidebar.classList.contains('show')) {
       closeMenu();
-      hamburger.focus(); // Retorna foco para o botão
+      newHamburger.focus(); // Retorna foco para o botão
     }
   });
 
@@ -152,9 +158,9 @@ function setupMobileMenu() {
 
   function openMenu() {
     sidebar.classList.add('show');
-    hamburger.classList.add('active');
+    newHamburger.classList.add('active');
     document.body.classList.add('menu-open');
-    if (overlay) overlay.classList.add('show');
+    if (overlay) document.getElementById('sidebar-overlay').classList.add('show');
 
     // Foco no primeiro link para acessibilidade
     const firstLink = sidebar.querySelector('.sidebar-links a');
@@ -163,17 +169,17 @@ function setupMobileMenu() {
     }
 
     // Atualiza aria-label
-    hamburger.setAttribute('aria-label', 'Fechar menu');
+    newHamburger.setAttribute('aria-label', 'Fechar menu');
   }
 
   function closeMenu() {
     sidebar.classList.remove('show');
-    hamburger.classList.remove('active');
+    newHamburger.classList.remove('active');
     document.body.classList.remove('menu-open');
-    if (overlay) overlay.classList.remove('show');
+    if (overlay) document.getElementById('sidebar-overlay').classList.remove('show');
 
     // Atualiza aria-label
-    hamburger.setAttribute('aria-label', 'Abrir menu');
+    newHamburger.setAttribute('aria-label', 'Abrir menu');
   }
 
   // Garante estado correto ao abrir a página/redimensionar
