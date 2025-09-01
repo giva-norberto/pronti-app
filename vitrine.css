@@ -785,3 +785,33 @@ input[type="date"]:focus {
 .btn-prosseguir:hover {
     background: #4338ca;
 }
+@media (max-width: 900px) {
+    .main-content-vitrine {
+        width: 100%;
+        max-width: 440px;   /* ajuste para mobile, pode diminuir se quiser */
+        margin: 0 auto !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;      /* centraliza horizontal */
+    }
+    .card {
+        width: 100%;
+        max-width: 380px;    /* limite real do card para centralizar, ajuste se quiser mais estreito */
+        margin: 0 auto 20px auto;
+    }
+    .profissionais-container {
+        justify-content: center;
+    }
+}
+@media (max-width: 480px) {
+    .main-content-vitrine {
+        max-width: 98vw;
+        padding: 0;
+    }
+    .card {
+        max-width: 98vw;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
