@@ -223,6 +223,32 @@ async function obterServicosMaisVendidos(empresaId) {
     }
 }
 
+// --- NOVA FUNÇÃO: Resumo Inteligente (SOMENTE ESTE CAMPO ALTERADO) ---
+function preencherResumoInteligente(servicosVendidos) {
+    const resumoEl = document.getElementById("resumo-inteligente");
+    if (!resumoEl) return;
+
+    // Serviço mais agendado real
+    let servicoMaisAgendado = "Nenhum serviço encontrado";
+    let max = 0;
+    for (const [nome, qtd] of Object.entries(servicosVendidos)) {
+        if (qtd > max) {
+            servicoMaisAgendado = nome;
+            max = qtd;
+        }
+    }
+
+    // O restante são exemplos, mantido estático
+    resumoEl.innerHTML = `
+        <ul>
+            <li>Aproveite o intervalo das <b>11:00</b> às <b>11:55</b> para encaixe rápido.</li>
+            <li>Movimento de hoje igual à média da semana passada.</li>
+            <li>Considere divulgar promoções para horários da tarde.</li>
+            <li>Seu serviço mais agendado: <b>${servicoMaisAgendado}</b>.</li>
+        </ul>
+    `;
+}
+
 function preencherPainel(metricas, servicosVendidos) {
     const formatCurrency = (value) => {
         const numValue = Number(value) || 0;
@@ -286,6 +312,9 @@ function preencherPainel(metricas, servicosVendidos) {
             }
         });
     }
+
+    // --- Chamar Resumo Inteligente ---
+    preencherResumoInteligente(servicosVendidos);
 }
 
 // --- INICIALIZAÇÃO DA PÁGINA (mantida igual) ---
