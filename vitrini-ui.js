@@ -15,6 +15,7 @@ export function toggleLoader(mostrar, mensagem = 'A carregar informações do ne
 
 /**
  * Preenche os dados iniciais da empresa.
+ * ALTERAÇÃO: Serviços agrupados por categoria, visual centralizado, sem botões.
  */
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
     document.getElementById('logo-publico').src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
@@ -27,12 +28,38 @@ export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
         document.getElementById('nome-negocio-publico-mobile').textContent = document.getElementById('nome-negocio-publico').textContent;
     }
     document.getElementById('info-negocio').innerHTML = `<p>${dadosEmpresa.descricao || "Descrição não informada."}</p>`;
+
+    // ----------- SERVIÇOS AGRUPADOS POR CATEGORIA (ALTERAÇÃO AQUI) -----------
     const servicosContainer = document.getElementById('info-servicos');
     if (todosOsServicos && todosOsServicos.length > 0) {
-        servicosContainer.innerHTML = todosOsServicos.map(s => `<div class="servico-info-item"><strong>${s.nome}</strong><span>R$ ${s.preco.toFixed(2)} (${s.duracao} min)</span></div>`).join('');
+        // Agrupa por categoria
+        const agrupados = {};
+        todosOsServicos.forEach(s => {
+            const cat = (s.categoria && s.categoria.trim()) ? s.categoria.trim() : "Sem Categoria";
+            if (!agrupados[cat]) agrupados[cat] = [];
+            agrupados[cat].push(s);
+        });
+        // Ordena categorias
+        const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        // Monta HTML agrupado, centralizado, sem botões
+        servicosContainer.innerHTML = categoriasOrdenadas.map(cat =>
+            `<div class="info-categoria-bloco">
+                <div class="info-categoria-titulo">${cat}</div>
+                <div class="info-categoria-servicos">
+                    ${agrupados[cat].map(s =>
+                        `<div class="servico-info-item">
+                            <strong>${s.nome}</strong>
+                            <span>R$ ${s.preco.toFixed(2)} (${s.duracao} min)</span>
+                        </div>`
+                    ).join('')}
+                </div>
+            </div>`
+        ).join('');
     } else {
         servicosContainer.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
     }
+    // ------------------------------------------------------------------------
+
     const contatoContainer = document.getElementById('info-contato');
     let htmlContato = '';
     if (dadosEmpresa.localizacao) {
