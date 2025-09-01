@@ -16,6 +16,7 @@
     </div>
 
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
+        <!-- Sidebar para desktop (desaparece no mobile) -->
         <aside class="sidebar-vitrine">
             <div class="header-vitrine">
                 <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
@@ -30,6 +31,11 @@
         </aside>
 
         <main class="main-content-vitrine">
+            <!-- HEADER MOBILE: Logo + Nome aparecem no topo só no mobile -->
+            <div class="header-vitrine-mobile" style="display: none;">
+                <img id="logo-publico-mobile" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">
+                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
+            </div>
             <!-- TELA: Agendamento -->
             <div id="menu-agendamento" class="menu-content ativo">
                 <div class="card">
@@ -53,11 +59,10 @@
                                     <p id="resumo-texto"></p>
                                 </div>
                                 <button id="btn-prosseguir-data" class="btn-prosseguir">Escolher Data e Horário</button>
-                                <!-- Botão "Salvar" removido -->
                             </div>
                         </div>
                         
-                        <!-- Container para agrupar data, horário, resumo final e botão confirmar -->
+                        <!-- Data, horário, resumo final e botão confirmar -->
                         <div id="data-e-horario-container" style="display:none;">
                             <div class="form-group">
                                 <label for="data-agendamento">3. Escolha uma data</label>
@@ -69,7 +74,7 @@
                                     <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
                                 </div>
                             </div>
-                            <!-- RESUMO FINAL DO AGENDAMENTO ABAIXO DE DATA/HORÁRIO E ANTES DO BOTÃO -->
+                            <!-- RESUMO FINAL DO AGENDAMENTO -->
                             <div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div>
                             <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                         </div>
@@ -89,9 +94,7 @@
                 </div>
                 <div class="card">
                     <h2>Contato e Localização</h2>
-                    <div id="info-contato">
-                        <!-- Os dados serão preenchidos aqui pelo vitrini-ui.js -->
-                    </div>
+                    <div id="info-contato"></div>
                 </div>
             </div>
             
@@ -183,6 +186,20 @@
     <!-- SCRIPTS -->
     <script>
       document.addEventListener("DOMContentLoaded", function() {
+        // Mostra logo e nome no topo do main-content no mobile
+        function toggleMobileHeader() {
+          if(window.innerWidth <= 900) {
+            document.querySelector('.header-vitrine-mobile').style.display = "flex";
+            // Sincroniza logo e nome (pode ser dinâmico do Firebase)
+            document.getElementById('logo-publico-mobile').src = document.getElementById('logo-publico').src;
+            document.getElementById('nome-negocio-publico-mobile').textContent = document.getElementById('nome-negocio-publico').textContent;
+          } else {
+            document.querySelector('.header-vitrine-mobile').style.display = "none";
+          }
+        }
+        toggleMobileHeader();
+        window.addEventListener('resize', toggleMobileHeader);
+
         function showMenu(menu) {
           document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
           document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
