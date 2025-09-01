@@ -33,6 +33,7 @@ body.dashboard-body {
 /* =================================================================== */
 
 /* --- Sidebar (Menu Lateral) --- */
+/* NÃO sobrescreva responsividade aqui! O menu-lateral.html controla o drawer. */
 .sidebar {
     width: 250px;
     position: fixed;
@@ -43,7 +44,6 @@ body.dashboard-body {
     z-index: 100;
     transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease;
     box-sizing: border-box;
-    /* [REVISADO] Cores e fundos foram removidos para serem controlados pelo HTML injetado, evitando conflitos. */
 }
 
 /* Placeholder para garantir o espaçamento correto */
@@ -108,20 +108,18 @@ body.dashboard-body {
 
 /* --- Área de Conteúdo Principal --- */
 .main-content {
-    /* [REVISADO] Unificado com outras definições para evitar duplicidade. */
     margin-left: 250px;
     padding: 40px;
     width: calc(100% - 250px);
     min-height: 100vh;
     box-sizing: border-box;
-    background: transparent; /* <<< ALTERADO PARA TRANSPARENTE!!! */
+    background: transparent;
 }
 
 /* =================================================================== */
 /* COMPONENTES REUTILIZÁVEIS                      */
 /* =================================================================== */
 
-/* --- Cabeçalho de Página Padrão --- */
 .page-header {
     display: flex;
     justify-content: flex-start;
@@ -148,7 +146,6 @@ body.dashboard-body {
     flex-direction: column;
     transition: box-shadow 0.2s, transform 0.2s;
     overflow: hidden;
-    /* [REVISADO] Propriedades de tamanho movidas para seletores mais específicos. */
 }
 
 .card:hover {
@@ -245,7 +242,6 @@ body.dashboard-body {
 }
 
 .form-group label {
-    /* [REVISADO] Unificado. */
     font-size: 1rem;
     font-weight: 600;
     margin-bottom: 8px;
@@ -292,7 +288,6 @@ textarea.form-input:focus {
 
 /* --- Modais --- */
 .modal-overlay {
-    /* [REVISADO] Unificado com a definição do modal "Pronti" para criar um padrão único. */
     display: none;
     position: fixed;
     z-index: 9999;
@@ -309,7 +304,6 @@ textarea.form-input:focus {
 }
 
 .modal-card, .modal-box {
-    /* [REVISADO] Unificado em um único estilo de modal. */
     max-width: 400px;
     width: 90%;
     padding: 36px 28px 32px 28px;
@@ -398,7 +392,6 @@ textarea.form-input:focus {
 
 /* --- Página: Agenda --- */
 .filtros-agenda {
-    /* [REVISADO] Unificado para evitar duplicidade. */
     display: flex;
     align-items: flex-end;
     gap: 16px;
@@ -470,8 +463,6 @@ textarea.form-input:focus {
 /* RESPONSIVIDADE                             */
 /* =================================================================== */
 
-/* [REVISADO] Todas as media queries foram agrupadas aqui para fácil manutenção. */
-
 /* Telas Grandes (Desktop) */
 @media (max-width: 1200px) {
     .main-content {
@@ -482,17 +473,8 @@ textarea.form-input:focus {
 }
 
 /* Telas Médias (Tablet) */
+/* NÃO sobrescreva a .sidebar aqui! O menu-lateral.html controla drawer! */
 @media (max-width: 992px) {
-    .sidebar {
-        width: 100%;
-        height: auto;
-        position: static;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 20px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
     #sidebar-placeholder {
         float: none;
         width: 100%;
@@ -517,16 +499,14 @@ textarea.form-input:focus {
         gap: 10px;
         flex-grow: 0;
     }
-    /* Esconde a barra de rolagem do menu horizontal */
     .sidebar-links::-webkit-scrollbar { display: none; }
     .sidebar-links { -ms-overflow-style: none; scrollbar-width: none; }
-
     .sidebar-links a {
         white-space: nowrap;
         flex-shrink: 0;
     }
     .dashboard-body .main-content {
-        min-height: calc(100vh - 70px); /* Altura da tela menos a altura do menu */
+        min-height: calc(100vh - 70px);
     }
 }
 
@@ -577,6 +557,7 @@ textarea.form-input:focus {
         padding: 0 0 14px 0;
     }
 }
+
 .color-cards {
   gap: 32px;
   flex-wrap: wrap;
@@ -644,4 +625,18 @@ textarea.form-input:focus {
     grid-template-columns: 1fr;
     gap: 10px;
   }
+}
+
+/* RESPONSIVIDADE DO SIDEBAR/MAIN-CONTENT CONTROLADA PELO MENU-LATERAL.HTML! */
+@media (max-width: 768px) {
+    #sidebar-placeholder {
+        width: 0;
+        min-width: 0;
+        height: 0;
+    }
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 16px;
+    }
 }
