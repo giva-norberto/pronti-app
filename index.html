@@ -18,6 +18,75 @@
         a {
             color: inherit;
         }
+        /* Cores personalizadas dos 3 cards principais */
+        .dashboard-main-actions {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            justify-content: flex-start; /* Grudado no menu lateral */
+        }
+        .action-card {
+            min-width: 190px;
+            min-height: 140px;
+            max-width: 220px;
+            padding: 32px 24px 24px 24px;
+            border-radius: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            font-size: 1.07rem;
+            font-weight: 500;
+            transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+            position: relative;
+            border: none;
+            background: #fff;
+            color: var(--cor-texto-escuro, #22223b);
+        }
+        .action-card i {
+            font-size: 2.1rem;
+            margin-bottom: 16px;
+        }
+
+        /* Card 1: Painel Inteligente */
+        .action-card.card-dashboard {
+            background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%);
+            color: #fff;
+        }
+        /* Card 2: Agenda */
+        .action-card.card-agenda {
+            background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%);
+            color: #fff;
+        }
+        /* Card 3: Serviços */
+        .action-card.card-servicos {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: #fff;
+        }
+
+        .action-card:hover, .action-card:focus {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 16px 32px rgba(0,0,0,0.14);
+            filter: brightness(1.02);
+            cursor: pointer;
+        }
+        @media (max-width: 900px) {
+            .dashboard-main-actions {
+                grid-template-columns: 1fr 1fr;
+                display: grid;
+                gap: 18px;
+            }
+        }
+        @media (max-width: 700px) {
+            .dashboard-main-actions {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+        /* Esconde botão "status do dia" */
+        .status-button { display: none !important; }
     </style>
 </head>
 <body class="dashboard-body is-loading">
@@ -32,15 +101,15 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
     <div class="dashboard-main-actions" id="dashboard-main-actions">
-        <a href="dashboard.html" class="action-card">
+        <a href="dashboard.html" class="action-card card-dashboard">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
         </a>
-        <a href="agenda.html" class="action-card">
+        <a href="agenda.html" class="action-card card-agenda">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Agenda</span>
         </a>
-        <a href="servicos.html" class="action-card" id="acao-servicos">
+        <a href="servicos.html" class="action-card card-servicos" id="acao-servicos">
             <i class="fa-solid fa-scissors"></i>
             <span>Serviços</span>
         </a>
@@ -77,15 +146,12 @@
     function ativarLogout() {
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
-            console.log("[index.html] Botão de logout encontrado. Adicionando listener.");
             btnLogout.addEventListener('click', () => {
                 localStorage.removeItem('empresaAtivaId');
                 signOut(auth).then(() => {
                     window.location.replace('login.html');
                 });
             });
-        } else {
-            console.warn("[index.html] Botão de logout não encontrado no menu lateral.");
         }
     }
 
@@ -117,10 +183,8 @@
     }
 
     async function inicializarDashboard() {
-        console.log("[index.html] Iniciando verificação de acesso...");
         try {
             const userSession = await verificarAcesso();
-            console.log("[index.html] Acesso permitido. Populando dashboard...");
             const { perfil } = userSession;
 
             const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
@@ -131,7 +195,6 @@
                 if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
             }
 
-            // Carrega o menu lateral e, DEPOIS, ativa os botões
             fetch('menu-lateral.html')
                 .then(res => res.text())
                 .then(html => {
@@ -142,16 +205,13 @@
                         ativarLogout(); 
                     }
                 });
-
         } catch (error) {
             if (error.message === "primeiro_acesso") {
-                console.log("[index.html] Recebido 'primeiro_acesso'.");
                 mostrarPrimeiroAcessoCard();
             } else if (!error.message.includes("Redirecionando")) {
                 console.error("[index.html] Erro não tratado na inicialização:", error);
             }
         } finally {
-            console.log("[index.html] Finalizando inicialização, removendo 'is-loading'.");
             removerIsLoading();
         }
     }
