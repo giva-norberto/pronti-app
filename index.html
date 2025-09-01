@@ -7,11 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* SEU CSS ORIGINAL - SEM ALTERAÇÕES */
-        .dashboard-body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298    );
-            min-height: 100vh;
-        }
+        /* Apenas ajustes de transição e links, fundo via style.css */
         body.is-loading {
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
@@ -20,7 +16,6 @@
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
         }
-        /* ... (o resto do seu CSS continua igual) ... */
         a {
             color: inherit;
         }
@@ -55,16 +50,13 @@
  <button class="status-button">Ver status de hoje</button>
 </main>
 
-<!-- ====================================================== -->
-<!--          INÍCIO DO SCRIPT CORRIGIDO                    -->
-<!-- ====================================================== -->
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { auth } from "./firebase-config.js";
     import { verificarAcesso } from "./userService.js";
 
     // --- Funções de UI ---
-    const nomeUsuarioSpan = document.getElementById("nome-usuario"   );
+    const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
@@ -150,14 +142,8 @@
                     const sidebar = document.getElementById('sidebar-placeholder');
                     if (sidebar) {
                         sidebar.innerHTML = html;
-                        // ======================================================
-                        //          A CORREÇÃO DEFINITIVA ESTÁ AQUI
-                        // ======================================================
-                        // As funções que dependem do menu são chamadas AQUI,
-                        // depois que o HTML do menu foi inserido na página.
                         destacarLinkAtivo();
                         ativarLogout(); 
-                        // ======================================================
                     }
                 });
 
