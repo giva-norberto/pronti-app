@@ -19,6 +19,13 @@ export function toggleLoader(mostrar, mensagem = 'A carregar informações do ne
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
     document.getElementById('logo-publico').src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
     document.getElementById('nome-negocio-publico').textContent = dadosEmpresa.nomeFantasia || "Nome do Negócio";
+    // Preenche nome/logo do mobile também, se existir
+    if (document.getElementById('logo-publico-mobile')) {
+        document.getElementById('logo-publico-mobile').src = document.getElementById('logo-publico').src;
+    }
+    if (document.getElementById('nome-negocio-publico-mobile')) {
+        document.getElementById('nome-negocio-publico-mobile').textContent = document.getElementById('nome-negocio-publico').textContent;
+    }
     document.getElementById('info-negocio').innerHTML = `<p>${dadosEmpresa.descricao || "Descrição não informada."}</p>`;
     const servicosContainer = document.getElementById('info-servicos');
     if (todosOsServicos && todosOsServicos.length > 0) {
