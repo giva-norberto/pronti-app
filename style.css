@@ -114,7 +114,7 @@ body.dashboard-body {
     width: calc(100% - 250px);
     min-height: 100vh;
     box-sizing: border-box;
-    background: var(--cor-fundo-app);
+    background: transparent; /* <<< ALTERADO PARA TRANSPARENTE!!! */
 }
 
 /* =================================================================== */
