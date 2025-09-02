@@ -1,10 +1,14 @@
-// Arquivo: admin-clientes.js (Versão Final SEM JSX)
+// Arquivo: admin-clientes.js (Versão Final ATUALIZADA E CORRIGIDA)
 
 import React from "https://esm.sh/react";
 import ReactDOM from "https://esm.sh/react-dom/client";
-import { auth, db } from "./vitrini-firebase.js"; // USA SUA CONEXÃO EXISTENTE
-import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// CORREÇÃO 1: Importa 'auth' e 'db' do seu arquivo de configuração principal e correto.
+import { auth, db } from "./firebase-config.js"; 
+
+// CORREÇÃO 2: Atualiza a versão do SDK para 10.13.2 e centraliza as importações.
+import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 const e = React.createElement;
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
@@ -37,6 +41,7 @@ function AdminClientes( ) {
             );
             setEmpresas(lista);
         } catch (err) {
+            console.error("Erro ao carregar empresas:", err); // Adicionado log de erro para depuração
             setError("Falha ao buscar dados: " + err.message);
         } finally {
             setDataLoading(false);
