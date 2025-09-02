@@ -1,4 +1,4 @@
-// Arquivo: admin-clientes-logic.js (VERSÃO FINAL CORRIGIDA)
+// Arquivo: admin-clientes-logic.js (VERSÃO FINAL CORRIGIDA E ATUALIZADA 10.13.2)
 
 // Importa as dependências do Firebase usando a sintaxe moderna e a versão 10.13.2
 import { auth, db } from "./firebase-config.js";
@@ -154,7 +154,6 @@ function renderizarDados(empresas) {
                     <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
                         <thead><tr style="background: #f3f4f6;"><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
                         <tbody>
-                            ${/* CORREÇÃO APLICADA AQUI: 'funcionários' com acento foi trocado por 'funcionarios' sem acento */''}
                             ${(empresa.funcionarios && empresa.funcionarios.length > 0)
                                 ? empresa.funcionarios.map(f => `
                                     <tr class="${f.bloqueado ? 'blocked' : ''}">
