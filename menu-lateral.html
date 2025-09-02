@@ -283,50 +283,8 @@
   <!-- O conteúdo principal da sua página viria aqui, dentro de uma tag <main> ou <div> -->
   <!-- Exemplo: <main class="main-content"><h1>Bem-vindo!</h1></main> -->
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const sidebar = document.getElementById("sidebar");
-      const hamburger = document.getElementById("sidebar-hamburger");
-      const overlay = document.getElementById("sidebar-overlay");
-      const body = document.body;
+  <!-- O SCRIPT FOI REMOVIDO DAQUI PARA EVITAR CONFLITOS. -->
+  <!-- A lógica agora está centralizada no 'menu-guardiao.js' -->
 
-      if (!sidebar || !hamburger || !overlay) {
-        console.error("Erro: Um ou mais elementos essenciais do menu não foram encontrados.");
-        return;
-      }
-
-      function openMenu() {
-        sidebar.classList.add("show");
-        hamburger.classList.add("active");
-        overlay.classList.add("show");
-        body.classList.add("menu-open");
-        hamburger.setAttribute('aria-label', 'Fechar menu');
-      }
-
-      function closeMenu() {
-        sidebar.classList.remove("show");
-        hamburger.classList.remove("active");
-        overlay.classList.remove("show");
-        body.classList.remove("menu-open");
-        hamburger.setAttribute('aria-label', 'Abrir menu');
-      }
-
-      hamburger.addEventListener("click", () => {
-        if (sidebar.classList.contains("show")) {
-          closeMenu();
-        } else {
-          openMenu();
-        }
-      });
-
-      overlay.addEventListener("click", closeMenu);
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && sidebar.classList.contains("show")) {
-          closeMenu();
-        }
-      });
-    });
-  </script>
 </body>
 </html>
