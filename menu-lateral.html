@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (ADMIN FUNCIONAL - SEM HAMBURGUER)      -->
+<!--      MENU-LATERAL.HTML (ADMIN FUNCIONAL - SEM HAMBURGUER/DIAGNÓSTICO)  -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
@@ -26,21 +26,9 @@
     </div>
 </aside>
 
-<!-- Overlay para fechar menu em mobile (opcional, removido junto com hambúrguer) -->
-<!-- <div class="sidebar-overlay" id="sidebar-overlay"></div> -->
-
-<!-- NOVO: Bloco de Diagnóstico de Admin - REMOVA ISTO DEPOIS DE RESOLVER -->
-<div id="admin-debug-box" style="position: fixed; top: 10px; right: 10px; background: #fff; border: 2px solid red; padding: 15px; z-index: 9999; font-family: monospace; font-size: 12px; color: #000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-width: 280px; border-radius: 8px;">
-    <h4 style="margin: 0 0 10px 0; padding: 0 0 5px 0; border-bottom: 1px solid #ccc; font-size: 14px;">Diagnóstico de Admin</h4>
-    <div id="debug-status" style="margin-bottom: 5px;">A verificar...</div>
-    <div id="debug-uid" style="word-wrap: break-word;"></div>
-    <div id="debug-match" style="margin-top: 10px; font-weight: bold;"></div>
-</div>
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* O seu CSS foi mantido exatamente como estava, sem alterações */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -172,32 +160,9 @@
      */
     onAuthStateChanged(auth, (user) => {
         const adminLink = document.getElementById('admin-link');
-        
-        // NOVO: Elementos do bloco de diagnóstico
-        const debugStatus = document.getElementById('debug-status');
-        const debugUid = document.getElementById('debug-uid');
-        const debugMatch = document.getElementById('debug-match');
-
-        if (user) {
-            // Atualiza o bloco de diagnóstico
-            debugStatus.textContent = "Estado: Logado";
-            debugUid.innerHTML = `Seu UID atual: <br><strong>${user.uid}</strong>`;
-
-            if (user.uid === ADMIN_UID) {
-                debugMatch.textContent = "Resultado: SUCESSO! Os UIDs correspondem.";
-                debugMatch.style.color = 'green';
-                if (adminLink) adminLink.style.display = 'flex';
-            } else {
-                debugMatch.textContent = "Resultado: FALHA! Os UIDs NÃO correspondem.";
-                debugMatch.style.color = 'red';
-                if (adminLink) adminLink.style.display = 'none';
-            }
+        if (user && user.uid === ADMIN_UID) {
+            if (adminLink) adminLink.style.display = 'flex';
         } else {
-            // Atualiza o bloco de diagnóstico para utilizador não logado
-            debugStatus.textContent = "Estado: Não Logado";
-            debugUid.textContent = "UID: (nenhum)";
-            debugMatch.textContent = "Resultado: Acesso de Admin impossível.";
-            debugMatch.style.color = 'red';
             if (adminLink) adminLink.style.display = 'none';
         }
     });
