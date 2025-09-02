@@ -1,15 +1,15 @@
-// Arquivo: admin-clientes-logic.js (VERSÃO FINAL CORRIGIDA E ATUALIZADA 10.13.2)
+// Arquivo: admin-clientes-logic.js (VERSÃO FINAL COM DEBUG)
 
-// Importa as dependências do Firebase usando a sintaxe moderna e a versão 10.13.2
+// Importa as dependências do Firebase
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-const conteudoDiv = document.getElementById('conteudo-admin' );
-let currentData = []; // Mantém os dados em memória para evitar releituras
+const conteudoDiv = document.getElementById('conteudo-admin');
+let currentData = []; 
 
-// Função para renderizar o HTML na tela
+// Função para renderizar o HTML
 function render(html) {
     if (conteudoDiv) {
         conteudoDiv.innerHTML = html;
@@ -18,6 +18,7 @@ function render(html) {
 
 // Funções de ação (bloquear, excluir, etc.)
 async function toggleBloqueio(empresaId, novoStatus, button) {
+    console.log("toggleBloqueio chamado", { empresaId, novoStatus });
     const acao = novoStatus ? 'bloquear' : 'desbloquear';
     if (!confirm(`Tem certeza que deseja ${acao} esta empresa e todos os seus funcionários?`)) return;
     
@@ -31,6 +32,7 @@ async function toggleBloqueio(empresaId, novoStatus, button) {
 
         const profCollectionRef = collection(db, "empresarios", empresaId, "profissionais");
         const profSnap = await getDocs(profCollectionRef);
+        console.log("Profissionais encontrados:", profSnap.docs.length);
         const updates = profSnap.docs.map(p => updateDoc(p.ref, { bloqueado: novoStatus }));
         await Promise.all(updates);
 
@@ -40,6 +42,7 @@ async function toggleBloqueio(empresaId, novoStatus, button) {
             currentData[empresaIndex].funcionarios.forEach(f => f.bloqueado = novoStatus);
             renderizarDados(currentData);
         }
+        console.log("Status atualizado com sucesso:", empresaId, novoStatus);
     } catch (error) {
         console.error("Erro ao atualizar status:", error);
         alert("Não foi possível atualizar o status da empresa.");
@@ -49,6 +52,7 @@ async function toggleBloqueio(empresaId, novoStatus, button) {
 }
 
 async function excluirEmpresa(empresaId, button) {
+    console.log("excluirEmpresa chamado", { empresaId });
     if (!confirm("ATENÇÃO: Esta ação é irreversível. Deseja realmente EXCLUIR esta empresa e todos os seus funcionários?")) return;
     
     const originalText = button.textContent;
@@ -59,6 +63,7 @@ async function excluirEmpresa(empresaId, button) {
         const empresaRef = doc(db, "empresarios", empresaId);
         const profCollectionRef = collection(db, "empresarios", empresaId, "profissionais");
         const profSnap = await getDocs(profCollectionRef);
+        console.log("Profissionais encontrados para exclusão:", profSnap.docs.length);
         
         const deletes = profSnap.docs.map(p => deleteDoc(p.ref));
         await Promise.all(deletes);
@@ -68,6 +73,7 @@ async function excluirEmpresa(empresaId, button) {
         currentData = currentData.filter(e => e.uid !== empresaId);
         renderizarDados(currentData);
         alert('Empresa excluída com sucesso!');
+        console.log("Empresa excluída:", empresaId);
     } catch (error) {
         console.error("Erro ao excluir empresa:", error);
         alert("Não foi possível excluir a empresa.");
@@ -77,6 +83,7 @@ async function excluirEmpresa(empresaId, button) {
 }
 
 async function salvarDiasTeste(empresaId, button) {
+    console.log("salvarDiasTeste chamado", { empresaId });
     const input = document.getElementById(`trial-input-${empresaId}`);
     const novoValor = parseInt(input.value, 10);
     if (isNaN(novoValor) || novoValor < 0) {
@@ -97,6 +104,7 @@ async function salvarDiasTeste(empresaId, button) {
             currentData[empresaIndex].freeEmDias = novoValor;
         }
         alert('Dias de teste atualizados com sucesso!');
+        console.log("Dias de teste atualizados:", empresaId, novoValor);
     } catch (error) {
         console.error("Erro ao salvar dias de teste:", error);
         alert("Não foi possível salvar os dias de teste.");
@@ -123,6 +131,7 @@ conteudoDiv.addEventListener('click', function(event) {
 
 // Função para renderizar a tabela de dados
 function renderizarDados(empresas) {
+    console.log("renderizarDados chamado. Total empresas:", empresas.length);
     currentData = empresas;
     let htmlFinal = '<h2>Gestão de Empresas e Funcionários</h2>';
     if (empresas.length === 0) {
@@ -175,15 +184,18 @@ function renderizarDados(empresas) {
 
 // Função principal para carregar os dados
 async function carregarDados() {
+    console.log("carregarDados iniciado");
     render('<div class="loading">Carregando dados das empresas...</div>');
     try {
         const empresasCollectionRef = collection(db, "empresarios");
         const snap = await getDocs(empresasCollectionRef);
+        console.log("Número de empresas encontradas:", snap.docs.length);
         
         const empresasComFuncionarios = await Promise.all(snap.docs.map(async (empresaDoc) => {
             const empresa = { uid: empresaDoc.id, ...empresaDoc.data() };
             const profCollectionRef = collection(db, "empresarios", empresa.uid, "profissionais");
             const profSnap = await getDocs(profCollectionRef);
+            console.log(`Empresa ${empresa.uid} tem ${profSnap.docs.length} profissionais`);
             empresa.funcionarios = profSnap.docs.map(p => ({ id: p.id, ...p.data() }));
             return empresa;
         }));
@@ -191,20 +203,25 @@ async function carregarDados() {
         renderizarDados(empresasComFuncionarios);
     } catch (error) {
         render(`<div class="restricted" style="color: red;"><strong>Erro ao carregar dados:</strong> ${error.message}</div>`);
-        console.error("Erro detalhado:", error);
+        console.error("Erro detalhado ao carregar dados:", error);
     }
 }
 
 // Ponto de entrada: verifica a autenticação do administrador
 onAuthStateChanged(auth, async (user) => {
+    console.log("onAuthStateChanged disparado", user);
     if (!user) {
         render('<div class="restricted">Acesso negado. Por favor, faça o login.</div>');
+        console.log("Usuário não logado");
         return;
     }
+    console.log("UID logado:", user.uid);
     if (user.uid !== ADMIN_UID) {
         render(`<div class="restricted">Acesso restrito. Apenas administradores. (Seu UID: ${user.uid})</div>`);
+        console.log("UID não autorizado:", user.uid);
         return;
     }
+    console.log("Acesso concedido ao administrador");
     await carregarDados();
 });
 
@@ -212,7 +229,9 @@ onAuthStateChanged(auth, async (user) => {
 const btnLogout = document.getElementById('btn-logout');
 if (btnLogout) {
     btnLogout.addEventListener('click', () => {
+        console.log("Logout iniciado");
         signOut(auth).then(() => {
+            console.log("Logout concluído");
             window.location.href = 'login.html';
         });
     });
