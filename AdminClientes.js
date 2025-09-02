@@ -213,4 +213,28 @@ async function carregarDados() {
 onAuthStateChanged(auth, async (user) => {
     console.log("onAuthStateChanged disparado", user);
     if (!user) {
-        render('<div class="restricted">Acesso negado. Por
+        render('<div class="restricted">Acesso negado. Por favor, faça o login.</div>');
+        console.log("Usuário não logado");
+        return;
+    }
+    console.log("UID logado:", user.uid);
+    if (user.uid !== ADMIN_UID) {
+        render(`<div class="restricted">Acesso restrito. Apenas administradores. (Seu UID: ${user.uid})</div>`);
+        console.log("UID não autorizado:", user.uid);
+        return;
+    }
+    console.log("Acesso concedido ao administrador");
+    await carregarDados();
+});
+
+// Adiciona listener para o botão de logout no menu lateral
+const btnLogout = document.getElementById('btn-logout');
+if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+        console.log("Logout iniciado");
+        signOut(auth).then(() => {
+            console.log("Logout concluído");
+            window.location.href = 'login.html';
+        });
+    });
+}
