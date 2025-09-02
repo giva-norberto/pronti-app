@@ -20,10 +20,7 @@ body {
     background-color: var(--cor-fundo-app);
     margin: 0;
     color: var(--cor-texto-escuro);
-    /* A transição foi removida do body para evitar conflitos com o seu design. */
 }
-
-/* A REGRA ERRADA 'body.dashboard-body' FOI REMOVIDA DAQUI. */
 
 /* =================================================================== */
 /* LAYOUT PRINCIPAL E MENU (SIDEBAR)                                   */
@@ -211,7 +208,7 @@ body {
     min-height: 100vh;
     box-sizing: border-box;
     background: transparent;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* A transição foi movida para as regras de responsividade para evitar comportamento inesperado */
 }
 
 /* =================================================================== */
@@ -562,7 +559,7 @@ textarea.form-input:focus {
 }
 
 /* =================================================================== */
-/* RESPONSIVIDADE (A PARTE MAIS IMPORTANTE)                            */
+/* RESPONSIVIDADE                                                      */
 /* =================================================================== */
 
 @media (max-width: 992px) {
@@ -594,16 +591,16 @@ textarea.form-input:focus {
 @media (max-width: 768px) {
     /* Layout do Menu para Celular */
     .sidebar {
-        transform: translateX(-100%);
+        transform: translateX(-100%); /* Esconde o menu */
     }
     .sidebar.show {
-        transform: translateX(0);
+        transform: translateX(0); /* Mostra o menu */
     }
     .sidebar-hamburger {
-        display: flex;
+        display: flex; /* Mostra o botão hambúrguer */
     }
     body.menu-open {
-        overflow: hidden;
+        overflow: hidden; /* Trava o scroll da página */
     }
     .main-content {
         padding: 16px;
@@ -641,15 +638,5 @@ textarea.form-input:focus {
     }
 }
 
-@media (min-width: 769px) {
-    /* Layout do Menu para Desktop */
-    .sidebar {
-        transform: translateX(0);
-    }
-    .sidebar-hamburger {
-        display: none;
-    }
-    .main-content {
-        margin-left: 250px; /* Empurra o conteúdo para a direita */
-    }
-}
+/* A REGRA @media (min-width: 769px) QUE CAUSOU O PROBLEMA FOI REMOVIDA. */
+/* O layout de desktop agora será controlado pelo seu HTML e JS, como era antes. */
