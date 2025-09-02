@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (VERSÃO FINAL COM LÓGICA DE ADMIN)      -->
+<!--      MENU-LATERAL.HTML (VERSÃO COM DIAGNÓSTICO DE ADMIN)      -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
@@ -16,7 +16,7 @@
         <a href="perfil.html"><span><i class="fa-solid fa-user-gear"></i></span> Meu Perfil</a>
         <a href="relatorios.html"><span><i class="fa-solid fa-file-invoice"></i></span> Relatórios</a>
 
-        <!-- NOVO: Link de Administração, escondido por defeito -->
+        <!-- Link de Administração, escondido por defeito -->
         <a href="admin-clientes.html" id="admin-link" style="display: none;">
             <span><i class="fa-solid fa-user-shield"></i></span>
             <span>Administração</span>
@@ -88,7 +88,7 @@
 .sidebar-links a {
   display: flex; 
   align-items: center; 
-  gap: 12px; /* Aumentado para melhor espaçamento com ícone */
+  gap: 12px;
   background: #fff;
   color: #4f46e5; 
   font-weight: 600; 
@@ -128,7 +128,6 @@
   border-color: #d1d5fa; 
 }
 
-/* NOVO: Estilo para destacar o link de Admin */
 #admin-link {
     margin-top: 10px;
     background: #2d3748;
@@ -172,7 +171,6 @@
   border: 2px solid #fff; 
 }
 
-/* ===== HAMBURGER BUTTON ===== */
 .sidebar-hamburger {
   display: none;
   flex-direction: column;
@@ -213,20 +211,16 @@
   margin-bottom: 0; 
 }
 
-/* Animação do hamburger quando ativo */
 .sidebar.show .sidebar-hamburger span:nth-child(1) {
   transform: rotate(45deg) translate(6px, 6px);
 }
-
 .sidebar.show .sidebar-hamburger span:nth-child(2) {
   opacity: 0;
 }
-
 .sidebar.show .sidebar-hamburger span:nth-child(3) {
   transform: rotate(-45deg) translate(6px, -6px);
 }
 
-/* ===== OVERLAY PARA MOBILE ===== */
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -241,7 +235,6 @@
   display: block;
 }
 
-/* ===== MEDIA QUERIES PARA RESPONSIVIDADE ===== */
 @media (max-width: 768px) {
   .sidebar {
     width: 280px;
@@ -260,11 +253,9 @@
 </style>
 
 <script type="module">
-    // Firebase imports
     import { auth } from "./firebase-config.js"; 
     import { onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    // NOVO: UID do Administrador. Este é o "segredo".
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
     setPersistence(auth, browserLocalPersistence)
@@ -278,17 +269,28 @@
 
     function iniciarGuardiao() {
         onAuthStateChanged(auth, (user) => {
-            // --- NOVO: Lógica para mostrar o menu de admin ---
+            // --- NOVO: LÓGICA DE DIAGNÓSTICO ---
+            console.log("--- INICIANDO VERIFICAÇÃO DE ADMIN ---");
             const adminLink = document.getElementById('admin-link');
-            if (adminLink) {
-                // Se o utilizador estiver logado E o seu UID for o do admin...
-                if (user && user.uid === ADMIN_UID) {
-                    adminLink.style.display = 'flex'; // ...mostra o link.
-                } else {
-                    adminLink.style.display = 'none'; // ...senão, esconde-o.
-                }
-            }
+            
+            if (user) {
+                console.log("Utilizador LOGADO encontrado.");
+                console.log("UID do utilizador atual:", user.uid);
+                console.log("UID do Admin esperado:", ADMIN_UID);
 
+                if (user.uid === ADMIN_UID) {
+                    console.log("SUCESSO: Os UIDs correspondem. A mostrar o link de Admin.");
+                    if (adminLink) adminLink.style.display = 'flex';
+                } else {
+                    console.warn("AVISO: O utilizador logado NÃO é o Admin. A esconder o link.");
+                    if (adminLink) adminLink.style.display = 'none';
+                }
+            } else {
+                console.error("FALHA: Nenhum utilizador logado encontrado.");
+                if (adminLink) adminLink.style.display = 'none';
+            }
+            console.log("--- FIM DA VERIFICAÇÃO ---");
+            
             // --- Lógica de redirecionamento original (mantida) ---
             const isLoginPage = window.location.pathname.endsWith('login.html');
             const precisaEmpresa = !isLoginPage && !window.location.pathname.endsWith('selecionar-empresa.html');
@@ -296,12 +298,10 @@
 
             if (!user && !isLoginPage) {
                 window.location.replace('login.html');
-            } else if (user && precisaEmpresa && !empresaId) { // Adicionado 'user' para segurança
+            } else if (user && precisaEmpresa && !empresaId) {
                 window.location.replace('selecionar-empresa.html');
             } else {
-                // Se tudo estiver certo, configura o resto do menu
-                // (O cloneNode foi removido para simplificar, já que a lógica agora é mais limpa)
-                if (document.readyState === 'complete') {
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
                     setupMenu();
                 } else {
                     document.addEventListener('DOMContentLoaded', setupMenu);
@@ -310,25 +310,21 @@
         });
     }
 
-    // Flag para garantir que o setup rode apenas uma vez
     let menuConfigurado = false;
-
     function setupMenu() {
         if (menuConfigurado) return;
         menuConfigurado = true;
 
-        // Marca link ativo
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         links.forEach(link => {
-            link.classList.remove('active'); // Limpa primeiro
+            link.classList.remove('active');
             const linkPage = link.getAttribute('href').split('/').pop();
             if (linkPage === currentPage) {
                 link.classList.add('active');
             }
         });
 
-        // Setup logout button
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
             btnLogout.addEventListener('click', () => {
@@ -338,8 +334,6 @@
                 });
             });
         }
-
-        // Setup mobile menu
         setupMobileMenu();
     }
 
@@ -355,7 +349,6 @@
             document.body.classList.add('menu-open');
             if (overlay) overlay.classList.add('show');
         };
-
         const closeMenu = () => {
             sidebar.classList.remove('show');
             document.body.classList.remove('menu-open');
@@ -370,7 +363,6 @@
         if (overlay) {
             overlay.addEventListener('click', closeMenu);
         }
-
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && sidebar.classList.contains('show')) {
                 closeMenu();
