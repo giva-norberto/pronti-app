@@ -37,30 +37,32 @@
         }
         .dashboard-welcome-center {
             text-align: center;
-            margin-bottom: 4vh; /* Espaçamento dinâmico baseado na altura da tela */
+            margin-bottom: 4vh;
         }
+        
+        /* =================================================================== */
+        /* ALTERAÇÃO DA FONTE PROPORCIONAL                                   */
+        /* =================================================================== */
         .dashboard-welcome-center h1 {
-            font-size: clamp(2rem, 5vh, 3rem ); /* Fonte que se adapta à tela */
+            /* A fonte agora se ajusta à largura da tela, com limites mínimo e máximo */
+            font-size: clamp(1.8rem, 5vw, 3rem ); 
         }
         .dashboard-welcome-center p {
-            font-size: clamp(1rem, 2.5vh, 1.25rem);
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
         }
 
-        /* =================================================================== */
-        /* ESTILOS PARA O PAINEL DE CARDS (AJUSTADO PARA CABER NA TELA)      */
-        /* =================================================================== */
         .dashboard-grid-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
             width: 100%;
-            max-width: 900px;
+            max-width: 850px;
             margin: 0 auto;
         }
         .menu-card {
             color: #fff;
-            border-radius: 16px;
-            padding: 20px 15px;
+            border-radius: 14px;
+            padding: 20px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -68,20 +70,20 @@
             text-align: center;
             gap: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            font-size: 0.85rem;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
             border: none;
-            aspect-ratio: 4 / 3;
+            aspect-ratio: 4 / 3.2;
         }
         .menu-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
             filter: brightness(1.05);
             cursor: pointer;
         }
         .menu-card i {
-            font-size: 1.7rem;
+            font-size: 1.6rem;
             color: #fff;
         }
 
@@ -95,33 +97,29 @@
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
         .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
 
-        /* =================================================================== */
-        /* AJUSTES FINOS PARA CELULAR (A PARTE MAIS IMPORTANTE)              */
-        /* =================================================================== */
         @media (max-width: 768px) {
             body {
-                overflow: auto; /* Permite rolagem se o conteúdo realmente não couber */
+                overflow: auto;
             }
             main.main-content {
-                justify-content: flex-start; /* Alinha ao topo para dar mais espaço */
-                padding: 15px;
+                justify-content: flex-start;
+                padding-top: 30px;
             }
             .dashboard-welcome-center {
-                margin-bottom: 20px; /* Margem fixa menor no celular */
+                margin-bottom: 20px;
             }
             .dashboard-grid-cards {
-                /* A MUDANÇA PRINCIPAL: 3 colunas para economizar espaço vertical */
                 grid-template-columns: repeat(3, 1fr);
-                gap: 10px; /* Espaçamento ainda menor */
+                gap: 10px;
             }
             .menu-card {
-                padding: 15px 5px; /* Menos preenchimento vertical */
-                font-size: 0.75rem; /* Fonte menor */
+                padding: 15px 5px;
+                font-size: 0.75rem;
                 gap: 8px;
                 border-radius: 12px;
             }
             .menu-card i {
-                font-size: 1.5rem; /* Ícone menor */
+                font-size: 1.5rem;
             }
         }
     </style>
