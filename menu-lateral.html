@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Menu Lateral - Pronti</title>
   <style>
+    /* =================================================================== */
+    /* ESTILOS DO MENU AUTÔNOMO                                          */
+    /* Este CSS contém TUDO o que é necessário para o menu funcionar.    */
+    /* Ele controla a si mesmo e o layout do body ao seu redor.          */
+    /* =================================================================== */
+
     /* ===== RESET BÁSICO E CONFIGURAÇÕES GLOBAIS ===== */
     * {
       margin: 0;
@@ -13,10 +19,11 @@
     }
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Adicionado para suavizar a transição do conteúdo */
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background-color: #f6f7fb; /* Cor de fundo padrão */
     }
 
-    /* ===== SIDEBAR DESKTOP ===== */
+    /* ===== SIDEBAR (MENU LATERAL) ===== */
     .sidebar {
       width: 250px;
       background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -57,7 +64,7 @@
       flex-direction: column;
       gap: 10px;
       padding: 0 24px;
-      flex-grow: 1; /* Garante que os links ocupem o espaço disponível */
+      flex-grow: 1;
     }
 
     .sidebar-links a {
@@ -80,7 +87,7 @@
     }
 
     .sidebar-links a.active,
-    .sidebar-links a:focus-visible { /* Melhorado para acessibilidade */
+    .sidebar-links a:focus-visible {
       background: #4f46e5;
       color: #fff;
       font-weight: 700;
@@ -107,7 +114,7 @@
     }
 
     .sidebar-footer {
-      margin-top: auto; /* Empurra o rodapé para o final */
+      margin-top: auto;
       padding: 32px 32px 24px 32px;
     }
 
@@ -129,7 +136,7 @@
     }
 
     .btn-logout:hover,
-    .btn-logout:focus-visible { /* Melhorado para acessibilidade */
+    .btn-logout:focus-visible {
       background: #4f46e5;
       color: #fff;
       border: 2px solid #fff;
@@ -139,7 +146,7 @@
 
     /* ===== HAMBURGER BUTTON ===== */
     .sidebar-hamburger {
-      display: none; /* Escondido por padrão em telas grandes */
+      display: none;
       flex-direction: column;
       gap: 4px;
       background: #4f46e5;
@@ -165,7 +172,7 @@
       box-shadow: 0 6px 16px rgba(79,70,229,0.4);
     }
 
-    .sidebar-hamburger:focus-visible { /* Melhorado para acessibilidade */
+    .sidebar-hamburger:focus-visible {
       background: #3b2fd6;
       outline: 2px solid #fff;
       outline-offset: 2px;
@@ -180,7 +187,6 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Animação do hamburger quando ativo */
     .sidebar-hamburger.active span:nth-child(1) {
       transform: rotate(45deg) translate(5px, 5px);
     }
@@ -196,7 +202,7 @@
     .sidebar-overlay {
       display: none;
       position: fixed;
-      inset: 0; /* atalho para top, right, bottom, left = 0 */
+      inset: 0;
       background: rgba(0, 0, 0, 0.5);
       z-index: 999;
       backdrop-filter: blur(4px);
@@ -208,77 +214,52 @@
       opacity: 1;
     }
 
-    /* ===== MEDIA QUERIES PARA RESPONSIVIDADE ===== */
+    /* =================================================================== */
+    /* RESPONSIVIDADE (A PARTE MAIS IMPORTANTE)                          */
+    /* =================================================================== */
+
+    /* Regras para telemóvel e tablet (até 768px) */
     @media (max-width: 768px) {
       .sidebar {
-        width: 280px;
         transform: translateX(-100%); /* Esconde o menu fora da tela */
-        box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-        padding-top: 20px;
       }
-
       .sidebar.show {
-        transform: translateX(0); /* Traz o menu para a tela */
+        transform: translateX(0); /* Mostra o menu */
       }
-
       .sidebar-hamburger {
         display: flex; /* Mostra o botão hambúrguer */
       }
-      
-      .sidebar-brand {
-        font-size: 1.6rem;
-        padding: 10px 20px 8px 24px;
-        margin-bottom: 4px;
+      body {
+        margin-left: 0;
+        padding-top: 80px; /* Cria espaço para o conteúdo não ficar atrás do botão */
       }
-      .sidebar hr {
-        margin: 8px 24px 12px 24px;
-      }
-      .sidebar-links {
-        gap: 8px;
-        padding: 0 16px;
-      }
-      .sidebar-links a {
-        font-size: 1.05em;
-        padding: 16px;
-        min-height: 52px;
-        gap: 14px;
-      }
-      .sidebar-footer {
-        padding: 16px;
-      }
-      .btn-logout {
-        padding: 16px 0;
-        font-size: 1.05em;
-        min-height: 52px;
-      }
-
-      /* Estilo do body quando o menu está aberto para prevenir scroll */
       body.menu-open {
-        overflow: hidden;
-      }
-
-      /* Remove a margem e adiciona padding para o conteúdo não ficar embaixo do botão */
-      body {
-        margin-left: 0; 
-        padding-top: 80px;
+        overflow: hidden; /* Trava o scroll do conteúdo quando o menu está aberto */
       }
     }
 
-    /* Ajuste para telas maiores, para o conteúdo não ficar embaixo do menu */
+    /* Regras para desktop (acima de 768px) */
     @media (min-width: 769px) {
+      .sidebar {
+        transform: translateX(0); /* Garante que o menu está sempre visível */
+      }
+      .sidebar-hamburger {
+        display: none; /* Esconde o botão hambúrguer */
+      }
       body {
-        margin-left: 250px;
+        margin-left: 250px; /* Empurra o conteúdo principal para a direita */
       }
     }
-
   </style>
 </head>
 <body>
+
   <aside class="sidebar" id="sidebar">
       <a href="index.html" class="sidebar-brand">Pronti</a>
       <hr />
       <nav class="sidebar-links" id="sidebar-links">
-          <a href="index.html" class="active"><span>🏠</span> Início</a> <a href="dashboard.html"><span>📊</span> Dashboard</a>
+          <a href="index.html" class="active"><span>🏠</span> Início</a>
+          <a href="dashboard.html"><span>📊</span> Dashboard</a>
           <a href="servicos.html"><span>🛠️</span> Serviços</a>
           <a href="agenda.html"><span>📅</span> Agenda</a>
           <a href="clientes.html"><span>👤</span> Clientes</a>
@@ -299,41 +280,38 @@
 
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
+  <!-- O conteúdo principal da sua página viria aqui, dentro de uma tag <main> ou <div> -->
+  <!-- Exemplo: <main class="main-content"><h1>Bem-vindo!</h1></main> -->
+
   <script>
-    // Espera o HTML ser totalmente carregado antes de executar o script
     document.addEventListener("DOMContentLoaded", () => {
       const sidebar = document.getElementById("sidebar");
       const hamburger = document.getElementById("sidebar-hamburger");
       const overlay = document.getElementById("sidebar-overlay");
       const body = document.body;
 
-      // ---- Funções para controlar o menu ----
+      if (!sidebar || !hamburger || !overlay) {
+        console.error("Erro: Um ou mais elementos essenciais do menu não foram encontrados.");
+        return;
+      }
 
       function openMenu() {
-        if (!sidebar || !hamburger || !overlay) return; // Checagem de segurança
-        
         sidebar.classList.add("show");
         hamburger.classList.add("active");
-        overlay.classList.add("show"); // <-- CORREÇÃO: Adiciona a classe 'show' ao overlay
+        overlay.classList.add("show");
         body.classList.add("menu-open");
         hamburger.setAttribute('aria-label', 'Fechar menu');
       }
 
       function closeMenu() {
-        if (!sidebar || !hamburger || !overlay) return; // Checagem de segurança
-
         sidebar.classList.remove("show");
         hamburger.classList.remove("active");
-        overlay.classList.remove("show"); // <-- CORREÇÃO: Remove a classe 'show' do overlay
+        overlay.classList.remove("show");
         body.classList.remove("menu-open");
         hamburger.setAttribute('aria-label', 'Abrir menu');
       }
 
-      // ---- Adicionando os Eventos ----
-
-      // 1. Clicar no botão de hambúrguer
       hamburger.addEventListener("click", () => {
-        // Verifica se o menu já está aberto para decidir a ação
         if (sidebar.classList.contains("show")) {
           closeMenu();
         } else {
@@ -341,10 +319,8 @@
         }
       });
 
-      // 2. Clicar no overlay (fundo escuro) para fechar o menu
       overlay.addEventListener("click", closeMenu);
 
-      // 3. Apertar a tecla "Escape" para fechar o menu
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && sidebar.classList.contains("show")) {
           closeMenu();
