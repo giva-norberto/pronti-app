@@ -19,116 +19,79 @@
             color: inherit;
             text-decoration: none;
         }
-        /* Estilos para os cards de ação principais */
-        .dashboard-main-actions {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 40px;
-            flex-wrap: wrap;
-            justify-content: center; /* Centralizado para melhor visual */
-        }
-        .action-card {
-            min-width: 190px;
-            min-height: 140px;
-            max-width: 220px;
-            padding: 32px 24px 24px 24px;
-            border-radius: 18px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08 );
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-decoration: none;
-            font-size: 1.07rem;
-            font-weight: 500;
-            transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
-            position: relative;
-            border: none;
-            background: #fff;
-            color: var(--cor-texto-escuro, #22223b);
-        }
-        .action-card i {
-            font-size: 2.1rem;
-            margin-bottom: 16px;
-        }
-        .action-card.card-dashboard {
-            background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%);
-            color: #fff;
-        }
-        .action-card.card-agenda {
-            background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%);
-            color: #fff;
-        }
-        .action-card.card-servicos {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            color: #fff;
-        }
-        .action-card:hover, .action-card:focus {
-            transform: translateY(-6px) scale(1.03);
-            box-shadow: 0 16px 32px rgba(0,0,0,0.14);
-            filter: brightness(1.02);
-            cursor: pointer;
-        }
 
         /* =================================================================== */
-        /* NOVOS ESTILOS PARA OS CARDS DE MENU (MENORES)                     */
+        /* ESTILOS PARA O NOVO GRID UNIFICADO DE CARDS                       */
         /* =================================================================== */
-        .dashboard-menu-cards {
+        .dashboard-grid-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Layout responsivo */
-            gap: 15px;
+            /* Cria um grid responsivo que se ajusta ao tamanho da tela */
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr ));
+            gap: 20px;
             width: 100%;
-            max-width: 800px; /* Limita a largura máxima para não esticar demais */
-            margin: 0 auto; /* Centraliza o grid de cards */
+            max-width: 900px; /* Limita a largura para não esticar demais em telas grandes */
+            margin: 0 auto; /* Centraliza o grid */
         }
         .menu-card {
             background-color: #fff;
             color: #4f46e5;
-            border-radius: 12px;
-            padding: 20px 15px;
+            border-radius: 16px;
+            padding: 25px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            gap: 10px;
+            gap: 12px;
             font-weight: 600;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+            font-size: 0.95rem;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
             transition: transform 0.2s, box-shadow 0.2s;
             border: 1px solid #e0e7ff;
         }
         .menu-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(79,70,229,0.15);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(79,70,229,0.18);
         }
         .menu-card i {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             color: #4f46e5;
         }
 
-        /* Responsividade dos cards */
-        @media (max-width: 900px) {
-            .dashboard-main-actions {
-                grid-template-columns: 1fr 1fr;
-                display: grid;
-                gap: 18px;
-            }
+        /* CORES ESPECIAIS PARA OS CARDS PRINCIPAIS */
+        .menu-card.card-dashboard,
+        .menu-card.card-agenda,
+        .menu-card.card-servicos {
+            color: #fff; /* Texto branco para os cards coloridos */
         }
+        .menu-card.card-dashboard i,
+        .menu-card.card-agenda i,
+        .menu-card.card-servicos i {
+            color: #fff; /* Ícone branco para os cards coloridos */
+        }
+        .menu-card.card-dashboard {
+            background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%);
+            border: none;
+        }
+        .menu-card.card-agenda {
+            background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%);
+            border: none;
+        }
+        .menu-card.card-servicos {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            border: none;
+        }
+
+        /* Responsividade do grid */
         @media (max-width: 700px) {
-            .dashboard-main-actions {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            .dashboard-menu-cards {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                gap: 12px;
+            .dashboard-grid-cards {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                gap: 15px;
             }
         }
     </style>
 </head>
 <body class="dashboard-body is-loading">
-
-<!-- O MENU LATERAL FOI REMOVIDO DAQUI -->
 
 <main class="main-content" id="main-content">
     <div class="dashboard-welcome-center" id="dashboard-welcome-center">
@@ -137,41 +100,25 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
 
-    <!-- Seus 3 cards principais permanecem aqui -->
-    <div class="dashboard-main-actions" id="dashboard-main-actions">
-        <a href="dashboard.html" class="action-card card-dashboard">
+    <!-- NOVO GRID UNIFICADO COM TODOS OS CARDS -->
+    <div class="dashboard-grid-cards">
+        <!-- Os 3 cards principais com suas cores -->
+        <a href="dashboard.html" class="menu-card card-dashboard">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
         </a>
-        <a href="agenda.html" class="action-card card-agenda">
+        <a href="agenda.html" class="menu-card card-agenda">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Agenda</span>
         </a>
-        <a href="servicos.html" class="action-card card-servicos" id="acao-servicos">
+        <a href="servicos.html" class="menu-card card-servicos">
             <i class="fa-solid fa-scissors"></i>
             <span>Serviços</span>
         </a>
-    </div>
-
-    <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 40px auto; width: 80%;">
-
-    <!-- NOVA SEÇÃO COM TODOS OS MENUS COMO CARDS -->
-    <div class="dashboard-menu-cards">
+        <!-- Restante dos cards de menu -->
         <a href="index.html" class="menu-card">
             <i class="fa-solid fa-house"></i>
             <span>Início</span>
-        </a>
-        <a href="dashboard.html" class="menu-card">
-            <i class="fa-solid fa-chart-pie"></i>
-            <span>Dashboard</span>
-        </a>
-        <a href="servicos.html" class="menu-card">
-            <i class="fa-solid fa-screwdriver-wrench"></i>
-            <span>Serviços</span>
-        </a>
-        <a href="agenda.html" class="menu-card">
-            <i class="fa-solid fa-calendar-days"></i>
-            <span>Agenda</span>
         </a>
         <a href="clientes.html" class="menu-card">
             <i class="fa-solid fa-user-group"></i>
@@ -198,14 +145,10 @@
     import { auth } from "./firebase-config.js";
     import { verificarAcesso } from "./userService.js";
 
-    // --- Funções de UI ---
     const nomeUsuarioSpan = document.getElementById("nome-usuario" );
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
-
-    // A função destacarLinkAtivo não é mais necessária neste layout
-    // A função ativarLogout não é mais necessária, pois não há botão de logout visível aqui
 
     function definirSaudacao() {
         const hora = new Date().getHours();
@@ -246,8 +189,6 @@
             if (perfil.nomeFantasia) {
                 if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
             }
-
-            // A lógica de carregar o menu-lateral.html foi removida.
             
         } catch (error) {
             if (error.message === "primeiro_acesso") {
