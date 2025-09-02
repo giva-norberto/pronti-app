@@ -14,9 +14,8 @@
         <a href="equipe.html"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
         <a href="perfil.html"><span><i class="fa-solid fa-user-gear"></i></span> Meu Perfil</a>
         <a href="relatorios.html"><span><i class="fa-solid fa-file-invoice"></i></span> Relatórios</a>
-
-        <!-- Link de Administração, escondido por defeito -->
-        <a href="admin-clientes.html" id="admin-link" style="display: none;">
+        <!-- Link de Administração, SEM display:none, será ocultado dinamicamente -->
+        <a href="admin-clientes.html" id="admin-link">
             <span><i class="fa-solid fa-user-shield"></i></span>
             <span>Administração</span>
         </a>
@@ -157,13 +156,16 @@
 
     /**
      * LÓGICA DE AUTENTICAÇÃO E UI DO ADMIN
+     * Exibe o menu de Administração APENAS para o admin.
      */
     onAuthStateChanged(auth, (user) => {
         const adminLink = document.getElementById('admin-link');
-        if (user && user.uid === ADMIN_UID) {
-            if (adminLink) adminLink.style.display = 'flex';
-        } else {
-            if (adminLink) adminLink.style.display = 'none';
+        if (adminLink) {
+            if (!user || user.uid !== ADMIN_UID) {
+                adminLink.style.display = 'none';
+            } else {
+                adminLink.style.display = 'flex';
+            }
         }
     });
 
