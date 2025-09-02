@@ -21,22 +21,22 @@
         }
 
         /* =================================================================== */
-        /* ESTILOS PARA O NOVO GRID UNIFICADO DE CARDS                       */
+        /* ESTILOS PARA O GRID UNIFICADO DE CARDS (VERSÃO FINAL )             */
         /* =================================================================== */
         .dashboard-grid-cards {
             display: grid;
             /* Cria um grid responsivo que se ajusta ao tamanho da tela */
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr ));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 20px;
             width: 100%;
-            max-width: 900px; /* Limita a largura para não esticar demais em telas grandes */
-            margin: 0 auto; /* Centraliza o grid */
+            max-width: 900px; /* Limita a largura para não esticar demais */
+            margin: 40px auto 0 auto; /* Centraliza o grid e adiciona espaço no topo */
         }
         .menu-card {
             background-color: #fff;
             color: #4f46e5;
             border-radius: 16px;
-            padding: 25px 20px;
+            padding: 25px 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -44,10 +44,11 @@
             text-align: center;
             gap: 12px;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             box-shadow: 0 6px 15px rgba(0,0,0,0.08);
             transition: transform 0.2s, box-shadow 0.2s;
             border: 1px solid #e0e7ff;
+            aspect-ratio: 4 / 3; /* Proporção para manter os cards consistentes */
         }
         .menu-card:hover {
             transform: translateY(-5px);
@@ -59,33 +60,27 @@
         }
 
         /* CORES ESPECIAIS PARA OS CARDS PRINCIPAIS */
-        .menu-card.card-dashboard,
-        .menu-card.card-agenda,
-        .menu-card.card-servicos {
+        .menu-card.card-colored {
             color: #fff; /* Texto branco para os cards coloridos */
+            border: none;
         }
-        .menu-card.card-dashboard i,
-        .menu-card.card-agenda i,
-        .menu-card.card-servicos i {
+        .menu-card.card-colored i {
             color: #fff; /* Ícone branco para os cards coloridos */
         }
         .menu-card.card-dashboard {
             background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%);
-            border: none;
         }
         .menu-card.card-agenda {
             background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%);
-            border: none;
         }
         .menu-card.card-servicos {
             background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            border: none;
         }
 
         /* Responsividade do grid */
         @media (max-width: 700px) {
             .dashboard-grid-cards {
-                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                grid-template-columns: repeat(2, 1fr); /* Força 2 colunas no celular */
                 gap: 15px;
             }
         }
@@ -100,25 +95,25 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
 
-    <!-- NOVO GRID UNIFICADO COM TODOS OS CARDS -->
+    <!-- GRID UNIFICADO COM TODOS OS CARDS DE NAVEGAÇÃO -->
     <div class="dashboard-grid-cards">
-        <!-- Os 3 cards principais com suas cores -->
-        <a href="dashboard.html" class="menu-card card-dashboard">
+        <!-- Cards coloridos -->
+        <a href="dashboard.html" class="menu-card card-colored card-dashboard">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
         </a>
-        <a href="agenda.html" class="menu-card card-agenda">
+        <a href="agenda.html" class="menu-card card-colored card-agenda">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Agenda</span>
         </a>
-        <a href="servicos.html" class="menu-card card-servicos">
+        <a href="servicos.html" class="menu-card card-colored card-servicos">
             <i class="fa-solid fa-scissors"></i>
             <span>Serviços</span>
         </a>
-        <!-- Restante dos cards de menu -->
-        <a href="index.html" class="menu-card">
-            <i class="fa-solid fa-house"></i>
-            <span>Início</span>
+        <!-- Cards brancos -->
+        <a href="dashboard.html" class="menu-card">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Dashboard</span>
         </a>
         <a href="clientes.html" class="menu-card">
             <i class="fa-solid fa-user-group"></i>
