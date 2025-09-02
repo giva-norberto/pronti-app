@@ -208,7 +208,6 @@ body {
     min-height: 100vh;
     box-sizing: border-box;
     background: transparent;
-    /* A transição foi movida para as regras de responsividade para evitar comportamento inesperado */
 }
 
 /* =================================================================== */
@@ -591,20 +590,20 @@ textarea.form-input:focus {
 @media (max-width: 768px) {
     /* Layout do Menu para Celular */
     .sidebar {
-        transform: translateX(-100%); /* Esconde o menu */
+        transform: translateX(-100%);
     }
     .sidebar.show {
-        transform: translateX(0); /* Mostra o menu */
+        transform: translateX(0);
     }
     .sidebar-hamburger {
-        display: flex; /* Mostra o botão hambúrguer */
+        display: flex;
     }
     body.menu-open {
-        overflow: hidden; /* Trava o scroll da página */
+        overflow: hidden;
     }
     .main-content {
         padding: 16px;
-        padding-top: 80px; /* Garante que o conteúdo não fique atrás do botão */
+        padding-top: 80px; /* CORREÇÃO: Garante que o conteúdo não fique atrás do botão */
     }
 
     /* Ajustes de componentes para celular */
@@ -638,5 +637,5 @@ textarea.form-input:focus {
     }
 }
 
-/* A REGRA @media (min-width: 769px) QUE CAUSOU O PROBLEMA FOI REMOVIDA. */
-/* O layout de desktop agora será controlado pelo seu HTML e JS, como era antes. */
+/* A regra para min-width: 769px foi removida para restaurar seu layout original de desktop. */
+/* O layout de desktop será controlado pelo seu HTML e JS, como era antes. */
