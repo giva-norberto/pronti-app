@@ -20,13 +20,10 @@ body {
     background-color: var(--cor-fundo-app);
     margin: 0;
     color: var(--cor-texto-escuro);
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Adicionado para transição suave */
+    /* A transição foi removida do body para evitar conflitos com o seu design. */
 }
 
-body.dashboard-body {
-    background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
-    color: #fff;
-}
+/* A REGRA ERRADA 'body.dashboard-body' FOI REMOVIDA DAQUI. */
 
 /* =================================================================== */
 /* LAYOUT PRINCIPAL E MENU (SIDEBAR)                                   */
@@ -214,7 +211,7 @@ body.dashboard-body {
     min-height: 100vh;
     box-sizing: border-box;
     background: transparent;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Adicionado para transição suave */
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* =================================================================== */
@@ -238,7 +235,6 @@ body.dashboard-body {
     letter-spacing: -0.5px;
 }
 
-/* --- Cards --- */
 .card {
     background: #fff;
     border-radius: 13px;
@@ -287,7 +283,6 @@ body.dashboard-body {
     background-color: #fafbff;
 }
 
-/* --- Botões --- */
 .btn {
     font-family: 'Inter', Arial, sans-serif;
     font-weight: 600;
@@ -337,7 +332,6 @@ body.dashboard-body {
     color: #991b1b;
 }
 
-/* --- Formulários --- */
 .form-group {
     margin-bottom: 20px;
 }
@@ -372,7 +366,6 @@ textarea.form-input:focus {
     box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.3);
 }
 
-/* --- Status Labels --- */
 .status-label {
     display: inline-block;
     padding: 2px 10px;
@@ -387,7 +380,6 @@ textarea.form-input:focus {
 .status-falta { background: #f1f5f9; color: #64748b; }
 .status-realizado { background: #e0f2fe; color: #0ea5e9; }
 
-/* --- Modais --- */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -433,7 +425,6 @@ textarea.form-input:focus {
     to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-
 /* =================================================================== */
 /* ESTILOS ESPECÍFICOS DE PÁGINAS (Seu código original)                */
 /* =================================================================== */
@@ -461,7 +452,6 @@ textarea.form-input:focus {
     margin-bottom: 40px;
 }
 
-/* --- Página: Agenda --- */
 .filtros-agenda {
     display: flex;
     align-items: flex-end;
@@ -500,7 +490,6 @@ textarea.form-input:focus {
     margin-top: 14px;
 }
 
-/* --- Página: Perfil --- */
 .main-content > .card#form-perfil {
     max-width: 800px;
     margin-left: auto;
@@ -525,7 +514,6 @@ textarea.form-input:focus {
     margin: 0 auto;
 }
 
-/* --- COMPONENTES DE CARDS DE AÇÃO (DASHBOARD) --- */
 .dashboard-main-actions {
     display: flex;
     gap: 30px;
@@ -573,12 +561,10 @@ textarea.form-input:focus {
     cursor: pointer;
 }
 
-
 /* =================================================================== */
 /* RESPONSIVIDADE (A PARTE MAIS IMPORTANTE)                            */
 /* =================================================================== */
 
-/* --- Telas de Tablet e menores --- */
 @media (max-width: 992px) {
      .main-content {
         padding: 20px;
@@ -605,24 +591,23 @@ textarea.form-input:focus {
     }
 }
 
-/* --- Telas de Celular --- */
 @media (max-width: 768px) {
     /* Layout do Menu para Celular */
     .sidebar {
-        transform: translateX(-100%); /* Esconde o menu */
+        transform: translateX(-100%);
     }
     .sidebar.show {
-        transform: translateX(0); /* Mostra o menu */
+        transform: translateX(0);
     }
     .sidebar-hamburger {
-        display: flex; /* Mostra o botão hambúrguer */
+        display: flex;
     }
     body.menu-open {
-        overflow: hidden; /* Trava o scroll da página */
+        overflow: hidden;
     }
     .main-content {
         padding: 16px;
-        padding-top: 80px; /* Cria espaço para o conteúdo não ficar atrás do botão */
+        padding-top: 80px; /* Garante que o conteúdo não fique atrás do botão */
     }
 
     /* Ajustes de componentes para celular */
@@ -656,16 +641,15 @@ textarea.form-input:focus {
     }
 }
 
-/* --- Telas de Desktop --- */
 @media (min-width: 769px) {
     /* Layout do Menu para Desktop */
     .sidebar {
-        transform: translateX(0); /* Garante que o menu está sempre visível */
+        transform: translateX(0);
     }
     .sidebar-hamburger {
-        display: none; /* Esconde o botão hambúrguer */
+        display: none;
     }
     .main-content {
-        margin-left: 250px; /* Empurra o conteúdo principal para a direita */
+        margin-left: 250px; /* Empurra o conteúdo para a direita */
     }
 }
