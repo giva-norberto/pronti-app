@@ -30,16 +30,16 @@ body.dashboard-body {
 
 /* =================================================================== */
 /* LAYOUT PRINCIPAL                                                    */
+/* As regras de layout do menu/sidebar foram REMOVIDAS daqui.          */
+/* O ficheiro 'menu-lateral.html' agora controla 100% do layout.       */
 /* =================================================================== */
 
 /* --- Área de Conteúdo Principal --- */
-/* A margem e a largura foram removidas. O menu-lateral.html agora controla isso. */
 .main-content {
     padding: 40px;
     min-height: 100vh;
     box-sizing: border-box;
     background: transparent;
-    /* A transição foi movida para o body no menu-lateral.html para melhor performance */
 }
 
 
@@ -264,10 +264,6 @@ textarea.form-input:focus {
 /* ESTILOS ESPECÍFICOS DE PÁGINAS                                      */
 /* =================================================================== */
 
-/* --- Página: Dashboard (index.html) --- */
-/* A regra .dashboard-body .sidebar foi removida pois conflitava. */
-/* O estilo do sidebar na dashboard deve ser controlado pelo menu-lateral.html se necessário. */
-
 .dashboard-body .main-content {
     min-height: 100vh;
     display: flex;
@@ -290,9 +286,6 @@ textarea.form-input:focus {
     margin-top: 10px;
     margin-bottom: 40px;
 }
-
-/* Os estilos dos cards de ação foram movidos para baixo para melhor organização */
-
 
 /* --- Página: Agenda --- */
 .filtros-agenda {
@@ -358,10 +351,7 @@ textarea.form-input:focus {
     margin: 0 auto;
 }
 
-
-/* =================================================================== */
-/* COMPONENTES DE CARDS DE AÇÃO (DASHBOARD)                            */
-/* =================================================================== */
+/* --- COMPONENTES DE CARDS DE AÇÃO (DASHBOARD) --- */
 .dashboard-main-actions {
     display: flex;
     gap: 30px;
@@ -395,7 +385,6 @@ textarea.form-input:focus {
     margin-bottom: 16px;
 }
 
-/* Gradientes padrão Pronti */
 .card-primary { background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%); color: #fff; }
 .card-blue     { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); color: #fff; }
 .card-cyan     { background: linear-gradient(135deg, #00f2fe 0%, #43e97b 100%); color: #fff; }
@@ -413,19 +402,14 @@ textarea.form-input:focus {
 
 /* =================================================================== */
 /* RESPONSIVIDADE (APENAS PARA COMPONENTES)                            */
-/* O layout principal é controlado pelo menu-lateral.html              */
 /* =================================================================== */
 
-/* Telas Médias (Tablet) */
 @media (max-width: 992px) {
-    /* As regras conflitantes foram removidas. */
-    /* Regras específicas para tablet podem vir aqui, se necessário. */
      .main-content {
         padding: 20px;
      }
 }
 
-/* Telas pequenas (Tablet em modo retrato, celulares grandes) */
 @media (max-width: 900px) {
     .filtros-agenda {
         flex-direction: column;
@@ -446,7 +430,6 @@ textarea.form-input:focus {
     }
 }
 
-/* Celulares */
 @media (max-width: 700px) {
     .page-header {
         flex-direction: column;
@@ -472,17 +455,12 @@ textarea.form-input:focus {
         padding-left: 10px;
         padding-right: 10px;
     }
-    #modal-perfil-profissional .modal-content {
-        max-width: 98vw;
-        padding: 0 0 14px 0;
-    }
     .dashboard-main-actions {
         grid-template-columns: 1fr;
         gap: 10px;
     }
 }
 
-/* Responsividade final para o .main-content em telas pequenas */
 @media (max-width: 768px) {
     .main-content {
         padding: 16px;
