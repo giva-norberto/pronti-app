@@ -17,7 +17,7 @@
             flex-direction: column;
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
-            overflow: hidden; /* Impede a rolagem em telas grandes */
+            overflow: hidden;
         }
         body.is-loading {
             opacity: 0;
@@ -39,18 +39,12 @@
             text-align: center;
             margin-bottom: 4vh;
         }
-        
-        /* =================================================================== */
-        /* ALTERAÇÃO DA FONTE PROPORCIONAL                                   */
-        /* =================================================================== */
         .dashboard-welcome-center h1 {
-            /* A fonte agora se ajusta à largura da tela, com limites mínimo e máximo */
             font-size: clamp(1.8rem, 5vw, 3rem ); 
         }
         .dashboard-welcome-center p {
             font-size: clamp(1rem, 2.5vw, 1.25rem);
         }
-
         .dashboard-grid-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -86,8 +80,6 @@
             font-size: 1.6rem;
             color: #fff;
         }
-
-        /* GRADIENTES PARA CADA CARD */
         .card-painel    { background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%); }
         .card-agenda    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
         .card-servicos  { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
@@ -96,7 +88,6 @@
         .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
         .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
-
         @media (max-width: 768px) {
             body {
                 overflow: auto;
@@ -125,6 +116,9 @@
     </style>
 </head>
 <body class="dashboard-body is-loading">
+
+<!-- Placeholder para menu lateral -->
+<div id="sidebar-placeholder"></div>
 
 <main class="main-content" id="main-content">
     <div class="dashboard-welcome-center" id="dashboard-welcome-center">
@@ -170,6 +164,13 @@
 </main>
 
 <script type="module">
+    // Carrega o menu lateral igual em todas as páginas
+    fetch('menu-lateral.html')
+      .then(res => res.text())
+      .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+      });
+
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { auth } from "./firebase-config.js";
     import { verificarAcesso } from "./userService.js";
