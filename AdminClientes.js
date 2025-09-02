@@ -1,4 +1,4 @@
-// Arquivo: admin-clientes-logic.js (NOVO ARQUIVO)
+// Arquivo: admin-clientes-logic.js (VERSÃO FINAL CORRIGIDA)
 
 // Importa as dependências do Firebase usando a sintaxe moderna e a versão 10.13.2
 import { auth, db } from "./firebase-config.js";
@@ -34,7 +34,6 @@ async function toggleBloqueio(empresaId, novoStatus, button) {
         const updates = profSnap.docs.map(p => updateDoc(p.ref, { bloqueado: novoStatus }));
         await Promise.all(updates);
 
-        // Atualiza os dados em memória e renderiza novamente
         const empresaIndex = currentData.findIndex(e => e.uid === empresaId);
         if (empresaIndex > -1) {
             currentData[empresaIndex].bloqueado = novoStatus;
@@ -107,7 +106,6 @@ async function salvarDiasTeste(empresaId, button) {
     }
 }
 
-// Adiciona um único "ouvinte" de eventos para a página inteira (delegação de eventos)
 conteudoDiv.addEventListener('click', function(event) {
     const target = event.target;
     const empresaId = target.dataset.id;
@@ -156,6 +154,7 @@ function renderizarDados(empresas) {
                     <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
                         <thead><tr style="background: #f3f4f6;"><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
                         <tbody>
+                            ${/* CORREÇÃO APLICADA AQUI: 'funcionários' com acento foi trocado por 'funcionarios' sem acento */''}
                             ${(empresa.funcionarios && empresa.funcionarios.length > 0)
                                 ? empresa.funcionarios.map(f => `
                                     <tr class="${f.bloqueado ? 'blocked' : ''}">
@@ -207,7 +206,6 @@ onAuthStateChanged(auth, async (user) => {
         render(`<div class="restricted">Acesso restrito. Apenas administradores. (Seu UID: ${user.uid})</div>`);
         return;
     }
-    // Se for o admin, carrega os dados
     await carregarDados();
 });
 
