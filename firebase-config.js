@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: firebase-config.js (VERSÃO ÚNICA E CENTRAL)
+// ARQUIVO: firebase-config.js (VERSÃO CORRIGIDA PARA ADMIN)
 // ======================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -7,7 +7,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebas
 import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-// Configuração do seu projeto Firebase. Use esta em todo o app.
+// Configuração do seu projeto Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -17,7 +17,7 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Função Singleton: Garante que o app seja inicializado apenas uma vez.
+// Função Singleton: garante que o app seja inicializado apenas uma vez
 const getFirebaseApp = () => {
   return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 };
@@ -28,8 +28,8 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// (Voltou) Conecta ao banco de dados com nome "pronti-app"
-const db = getFirestore(app, "pronti-app");
+// ⚡ CORREÇÃO: Conecta ao Firestore usando a instância padrão
+const db = getFirestore(app); // removido "pronti-app"
 
 // Define a persistência do login
 setPersistence(auth, browserLocalPersistence);
