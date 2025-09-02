@@ -7,6 +7,10 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        html, body {
+            height: 100%; /* Garante que o body ocupe a altura total */
+            overflow: hidden; /* Impede a rolagem da página */
+        }
         body.is-loading {
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
@@ -14,74 +18,91 @@
         body {
             opacity: 1;
             transition: opacity 0.3s ease-in-out;
+            display: flex; /* Permite centralização vertical */
+            flex-direction: column;
         }
         a {
             color: inherit;
-            text-decoration: none; /* Garante que os cards não tenham sublinhado */
+            text-decoration: none;
+        }
+        main.main-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Centraliza o conteúdo verticalmente */
+            align-items: center;
+            flex-grow: 1; /* Faz o main ocupar o espaço disponível */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .dashboard-welcome-center {
+            text-align: center;
+            margin-bottom: 3vh; /* Espaçamento dinâmico */
         }
 
         /* =================================================================== */
-        /* ESTILOS PARA O PAINEL DE CARDS UNIFICADO (COMO NA IMAGEM )         */
+        /* ESTILOS PARA O PAINEL DE CARDS (AJUSTADO PARA CABER NA TELA )      */
         /* =================================================================== */
         .dashboard-grid-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Cards um pouco menores */
+            gap: 15px; /* Espaçamento menor */
             width: 100%;
-            max-width: 900px;
-            margin: 40px auto 0 auto; /* Centraliza o grid */
+            max-width: 850px;
+            margin: 0 auto;
         }
         .menu-card {
-            /* Estilo base para TODOS os cards */
-            color: #fff; /* Texto branco para todos */
-            border-radius: 16px;
-            padding: 25px 15px;
+            color: #fff;
+            border-radius: 14px; /* Borda um pouco menor */
+            padding: 20px 10px; /* Padding menor */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            gap: 12px;
+            gap: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            font-size: 0.85rem; /* Fonte um pouco menor */
+            box-shadow: 0 5px 12px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
             border: none;
-            aspect-ratio: 4 / 3; /* Proporção para manter os cards consistentes */
+            aspect-ratio: 4 / 3.2; /* Proporção ajustada */
         }
         .menu-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
             filter: brightness(1.05);
             cursor: pointer;
         }
         .menu-card i {
-            font-size: 1.8rem;
-            color: #fff; /* Ícone branco para todos */
+            font-size: 1.6rem; /* Ícone um pouco menor */
+            color: #fff;
         }
 
         /* GRADIENTES PARA CADA CARD */
         .card-painel    { background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%); }
         .card-agenda    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
         .card-servicos  { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .card-dashboard { background: linear-gradient(135deg, #a18cd1 0%, #6366f1 100%); } /* Roxo */
-        .card-clientes  { background: linear-gradient(135deg, #f59e42 0%, #ff5858 100%); } /* Laranja */
-        .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); } /* Azul/Roxo */
-        .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); } /* Ciano/Roxo */
-        .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); } /* Vermelho/Roxo */
+        .card-dashboard { background: linear-gradient(135deg, #a18cd1 0%, #6366f1 100%); }
+        .card-clientes  { background: linear-gradient(135deg, #f59e42 0%, #ff5858 100%); }
+        .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
+        .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
+        .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
 
         /* Responsividade do grid */
         @media (max-width: 700px) {
+            html, body { overflow: auto; } /* Permite rolagem em telas pequenas se necessário */
             .dashboard-grid-cards {
-                grid-template-columns: repeat(2, 1fr); /* Força 2 colunas no celular */
-                gap: 15px;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            main.main-content {
+                justify-content: flex-start; /* Alinha ao topo em telas pequenas */
+                padding-top: 30px;
             }
         }
     </style>
 </head>
 <body class="dashboard-body is-loading">
-
-<!-- O placeholder do menu lateral foi removido -->
 
 <main class="main-content" id="main-content">
     <div class="dashboard-welcome-center" id="dashboard-welcome-center">
@@ -90,7 +111,6 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
 
-    <!-- O contêiner antigo foi substituído por este grid único -->
     <div class="dashboard-grid-cards">
         <a href="dashboard.html" class="menu-card card-painel">
             <i class="fa-solid fa-chart-line"></i>
@@ -127,20 +147,17 @@
     </div>
 </main>
 
-<!-- SEU SCRIPT ORIGINAL, COM A LÓGICA DO MENU LATERAL REMOVIDA -->
+<!-- SEU SCRIPT ORIGINAL FOI MANTIDO 100% INTACTO -->
 <script type="module">
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { auth } from "./firebase-config.js";
     import { verificarAcesso } from "./userService.js";
 
-    // --- Funções de UI ---
     const nomeUsuarioSpan = document.getElementById("nome-usuario" );
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
-    // As funções destacarLinkAtivo e ativarLogout foram removidas pois não são mais necessárias neste layout
-    
     function definirSaudacao() {
         const hora = new Date().getHours();
         if (hora >= 5 && hora < 12) return "Bom dia";
@@ -180,8 +197,6 @@
             if (perfil.nomeFantasia) {
                 if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
             }
-
-            // A chamada fetch para 'menu-lateral.html' foi removida.
             
         } catch (error) {
             if (error.message === "primeiro_acesso") {
