@@ -20,19 +20,193 @@ body {
     background-color: var(--cor-fundo-app);
     margin: 0;
     color: var(--cor-texto-escuro);
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Adicionado para transição suave */
 }
 
-/* Estilo específico para a página do dashboard */
 body.dashboard-body {
     background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
     color: #fff;
 }
 
 /* =================================================================== */
-/* LAYOUT PRINCIPAL                                                    */
-/* As regras de layout do menu/sidebar foram REMOVIDAS daqui.          */
-/* O ficheiro 'menu-lateral.html' agora controla 100% do layout.       */
+/* LAYOUT PRINCIPAL E MENU (SIDEBAR)                                   */
 /* =================================================================== */
+
+/* --- Sidebar (Menu Lateral) --- */
+.sidebar {
+    width: 250px;
+    background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+    min-height: 100vh;
+    color: #fff;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    padding-top: 24px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-brand {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: 2px;
+    padding: 0 32px 12px 32px;
+    display: block;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.sidebar hr {
+    margin: 0 32px 16px 32px;
+    border: none;
+    border-top: 1px solid rgba(120, 124, 255, 0.33);
+}
+
+.sidebar-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 24px;
+    flex-grow: 1;
+}
+
+.sidebar-links a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    color: #4f46e5;
+    font-weight: 600;
+    font-size: 1.08em;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+    transition: all 0.2s ease;
+    padding: 14px 18px;
+    text-decoration: none;
+    border: 2px solid transparent;
+    min-height: 48px;
+}
+
+.sidebar-links a.active,
+.sidebar-links a:focus-visible {
+    background: #4f46e5;
+    color: #fff;
+    font-weight: 700;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.sidebar-links a:hover:not(.active) {
+    background: #f8faff;
+    color: #3b2fd6;
+    border: 2px solid #d1d5fa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.15);
+}
+
+.sidebar-links a span {
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 32px 32px 24px 32px;
+}
+
+.btn-logout {
+    background: #fff;
+    color: #4f46e5;
+    border: none;
+    padding: 14px 0;
+    width: 100%;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1.05em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+    border: 2px solid transparent;
+    outline: none;
+    min-height: 48px;
+}
+
+.btn-logout:hover,
+.btn-logout:focus-visible {
+    background: #4f46e5;
+    color: #fff;
+    border: 2px solid #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+}
+
+/* --- Botão Hambúrguer --- */
+.sidebar-hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    background: #4f46e5;
+    border: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    min-width: 48px;
+    min-height: 48px;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+}
+
+.sidebar-hamburger:hover {
+    background: #3b2fd6;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79,70,229,0.4);
+}
+
+.sidebar-hamburger span {
+    display: block;
+    width: 24px;
+    height: 3px;
+    background: #fff;
+    border-radius: 2px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.sidebar-hamburger.active span:nth-child(2) { opacity: 0; transform: scale(0); }
+.sidebar-hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(7px, -6px); }
+
+/* --- Overlay (Fundo escuro mobile) --- */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s ease;
+    opacity: 0;
+}
+.sidebar-overlay.show {
+    display: block;
+    opacity: 1;
+}
 
 /* --- Área de Conteúdo Principal --- */
 .main-content {
@@ -40,11 +214,11 @@ body.dashboard-body {
     min-height: 100vh;
     box-sizing: border-box;
     background: transparent;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Adicionado para transição suave */
 }
 
-
 /* =================================================================== */
-/* COMPONENTES REUTILIZÁVEIS                                           */
+/* COMPONENTES REUTILIZÁVEIS (Seu código original)                     */
 /* =================================================================== */
 
 .page-header {
@@ -261,7 +435,7 @@ textarea.form-input:focus {
 
 
 /* =================================================================== */
-/* ESTILOS ESPECÍFICOS DE PÁGINAS                                      */
+/* ESTILOS ESPECÍFICOS DE PÁGINAS (Seu código original)                */
 /* =================================================================== */
 
 .dashboard-body .main-content {
@@ -401,9 +575,10 @@ textarea.form-input:focus {
 
 
 /* =================================================================== */
-/* RESPONSIVIDADE (APENAS PARA COMPONENTES)                            */
+/* RESPONSIVIDADE (A PARTE MAIS IMPORTANTE)                            */
 /* =================================================================== */
 
+/* --- Telas de Tablet e menores --- */
 @media (max-width: 992px) {
      .main-content {
         padding: 20px;
@@ -430,7 +605,27 @@ textarea.form-input:focus {
     }
 }
 
-@media (max-width: 700px) {
+/* --- Telas de Celular --- */
+@media (max-width: 768px) {
+    /* Layout do Menu para Celular */
+    .sidebar {
+        transform: translateX(-100%); /* Esconde o menu */
+    }
+    .sidebar.show {
+        transform: translateX(0); /* Mostra o menu */
+    }
+    .sidebar-hamburger {
+        display: flex; /* Mostra o botão hambúrguer */
+    }
+    body.menu-open {
+        overflow: hidden; /* Trava o scroll da página */
+    }
+    .main-content {
+        padding: 16px;
+        padding-top: 80px; /* Cria espaço para o conteúdo não ficar atrás do botão */
+    }
+
+    /* Ajustes de componentes para celular */
     .page-header {
         flex-direction: column;
         align-items: stretch;
@@ -461,8 +656,16 @@ textarea.form-input:focus {
     }
 }
 
-@media (max-width: 768px) {
+/* --- Telas de Desktop --- */
+@media (min-width: 769px) {
+    /* Layout do Menu para Desktop */
+    .sidebar {
+        transform: translateX(0); /* Garante que o menu está sempre visível */
+    }
+    .sidebar-hamburger {
+        display: none; /* Esconde o botão hambúrguer */
+    }
     .main-content {
-        padding: 16px;
+        margin-left: 250px; /* Empurra o conteúdo principal para a direita */
     }
 }
