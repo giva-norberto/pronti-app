@@ -1,12 +1,11 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (VERSÃO FINAL COM DIAGNÓSTICO)      -->
+<!--      MENU-LATERAL.HTML (ADMIN FUNCIONAL - SEM HAMBURGUER)      -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
-        <!-- Ícones Font Awesome adicionados para consistência visual -->
         <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
         <a href="dashboard.html"><span><i class="fa-solid fa-chart-pie"></i></span> Dashboard</a>
         <a href="servicos.html"><span><i class="fa-solid fa-scissors"></i></span> Serviços</a>
@@ -25,16 +24,10 @@
     <div class="sidebar-footer">
         <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
-    <!-- Hamburger para mobile -->
-    <button id="sidebar-hamburger" aria-label="Abrir menu" class="sidebar-hamburger" tabindex="0">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
 </aside>
 
-<!-- Overlay para fechar menu em mobile -->
-<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<!-- Overlay para fechar menu em mobile (opcional, removido junto com hambúrguer) -->
+<!-- <div class="sidebar-overlay" id="sidebar-overlay"></div> -->
 
 <!-- NOVO: Bloco de Diagnóstico de Admin - REMOVA ISTO DEPOIS DE RESOLVER -->
 <div id="admin-debug-box" style="position: fixed; top: 10px; right: 10px; background: #fff; border: 2px solid red; padding: 15px; z-index: 9999; font-family: monospace; font-size: 12px; color: #000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-width: 280px; border-radius: 8px;">
@@ -44,8 +37,6 @@
     <div id="debug-match" style="margin-top: 10px; font-weight: bold;"></div>
 </div>
 
-
-<!-- Font Awesome (necessário para os ícones) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -167,76 +158,6 @@
   color: #fff; 
   border: 2px solid #fff; 
 }
-.sidebar-hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  background: none;
-  border: none;
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 1001;
-  cursor: pointer;
-  padding: 12px;
-  border-radius: 6px;
-  transition: background 0.2s;
-  min-width: 44px;
-  min-height: 44px;
-  box-sizing: border-box;
-  justify-content: center;
-  align-items: center;
-}
-.sidebar-hamburger span {
-  display: block;
-  width: 28px;
-  height: 3px;
-  background: #fff;
-  border-radius: 2px;
-  margin-bottom: 4px;
-  transition: all 0.3s ease;
-}
-.sidebar-hamburger:focus { 
-  background: #4f46e522; 
-  outline: 2px solid #fff; 
-}
-.sidebar-hamburger span:last-child { 
-  margin-bottom: 0; 
-}
-.sidebar.show .sidebar-hamburger span:nth-child(1) {
-  transform: rotate(45deg) translate(6px, 6px);
-}
-.sidebar.show .sidebar-hamburger span:nth-child(2) {
-  opacity: 0;
-}
-.sidebar.show .sidebar-hamburger span:nth-child(3) {
-  transform: rotate(-45deg) translate(6px, -6px);
-}
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(30,30,50,0.5);
-  z-index: 999;
-  backdrop-filter: blur(2px);
-  transition: opacity 0.3s ease;
-}
-.sidebar-overlay.show {
-  display: block;
-}
-@media (max-width: 768px) {
-  .sidebar {
-    width: 280px;
-    left: -290px;
-    transition: left 0.35s cubic-bezier(.7,0,.3,1);
-  }
-  .sidebar.show {
-    left: 0;
-  }
-  .sidebar-hamburger {
-    display: flex;
-  }
-}
 </style>
 
 <script type="module">
@@ -305,41 +226,5 @@
                 link.classList.add('active');
             }
         });
-
-        // Configura a funcionalidade do menu móvel (hambúrguer)
-        setupMobileMenu();
     });
-
-    function setupMobileMenu() {
-        const hamburger = document.getElementById('sidebar-hamburger');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        
-        if (!hamburger || !sidebar) return;
-
-        const openMenu = () => {
-            sidebar.classList.add('show');
-            document.body.classList.add('menu-open');
-            if (overlay) overlay.classList.add('show');
-        };
-        const closeMenu = () => {
-            sidebar.classList.remove('show');
-            document.body.classList.remove('menu-open');
-            if (overlay) overlay.classList.remove('show');
-        };
-
-        hamburger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            sidebar.classList.contains('show') ? closeMenu() : openMenu();
-        });
-
-        if (overlay) {
-            overlay.addEventListener('click', closeMenu);
-        }
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && sidebar.classList.contains('show')) {
-                closeMenu();
-            }
-        });
-    }
 </script>
