@@ -7,11 +7,7 @@
   <style>
     /* =================================================================== */
     /* ESTILOS DO MENU AUTÔNOMO                                          */
-    /* Este CSS contém TUDO o que é necessário para o menu funcionar.    */
-    /* Ele controla a si mesmo e o layout do body ao seu redor.          */
     /* =================================================================== */
-
-    /* ===== RESET BÁSICO E CONFIGURAÇÕES GLOBAIS ===== */
     * {
       margin: 0;
       padding: 0;
@@ -20,7 +16,7 @@
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      background-color: #f6f7fb; /* Cor de fundo padrão */
+      background-color: #f6f7fb;
     }
 
     /* ===== SIDEBAR (MENU LATERAL) ===== */
@@ -40,7 +36,6 @@
       padding-top: 24px;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
     .sidebar-brand {
       font-size: 2rem;
       font-weight: 900;
@@ -52,13 +47,11 @@
       margin-bottom: 8px;
       text-align: left;
     }
-
     .sidebar hr {
       margin: 0 32px 16px 32px;
       border: none;
       border-top: 1px solid rgba(120, 124, 255, 0.33);
     }
-
     .sidebar-links {
       display: flex;
       flex-direction: column;
@@ -66,7 +59,6 @@
       padding: 0 24px;
       flex-grow: 1;
     }
-
     .sidebar-links a {
       display: flex;
       align-items: center;
@@ -79,13 +71,10 @@
       box-shadow: 0 2px 6px rgba(79,70,229,0.07);
       transition: all 0.2s ease;
       padding: 14px 18px;
-      text-align: left;
       text-decoration: none;
-      letter-spacing: 0.01em;
       border: 2px solid transparent;
       min-height: 48px;
     }
-
     .sidebar-links a.active,
     .sidebar-links a:focus-visible {
       background: #4f46e5;
@@ -96,7 +85,6 @@
       outline: none;
       transform: translateY(-1px);
     }
-
     .sidebar-links a:hover:not(.active) {
       background: #f8faff;
       color: #3b2fd6;
@@ -104,7 +92,6 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(79,70,229,0.15);
     }
-
     .sidebar-links a span {
       font-size: 1.1em;
       display: flex;
@@ -112,12 +99,10 @@
       justify-content: center;
       width: 20px;
     }
-
     .sidebar-footer {
       margin-top: auto;
       padding: 32px 32px 24px 32px;
     }
-
     .btn-logout {
       background: #fff;
       color: #4f46e5;
@@ -134,7 +119,6 @@
       outline: none;
       min-height: 48px;
     }
-
     .btn-logout:hover,
     .btn-logout:focus-visible {
       background: #4f46e5;
@@ -165,19 +149,16 @@
       align-items: center;
       box-shadow: 0 4px 12px rgba(79,70,229,0.3);
     }
-
     .sidebar-hamburger:hover {
       background: #3b2fd6;
       transform: translateY(-1px);
       box-shadow: 0 6px 16px rgba(79,70,229,0.4);
     }
-
     .sidebar-hamburger:focus-visible {
       background: #3b2fd6;
       outline: 2px solid #fff;
       outline-offset: 2px;
     }
-
     .sidebar-hamburger span {
       display: block;
       width: 24px;
@@ -186,17 +167,9 @@
       border-radius: 2px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    .sidebar-hamburger.active span:nth-child(1) {
-      transform: rotate(45deg) translate(5px, 5px);
-    }
-    .sidebar-hamburger.active span:nth-child(2) {
-      opacity: 0;
-      transform: scale(0);
-    }
-    .sidebar-hamburger.active span:nth-child(3) {
-      transform: rotate(-45deg) translate(7px, -6px);
-    }
+    .sidebar-hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+    .sidebar-hamburger.active span:nth-child(2) { opacity: 0; transform: scale(0); }
+    .sidebar-hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(7px, -6px); }
 
     /* ===== OVERLAY PARA MOBILE ===== */
     .sidebar-overlay {
@@ -214,40 +187,44 @@
       opacity: 1;
     }
 
-    /* =================================================================== */
-    /* RESPONSIVIDADE (A PARTE MAIS IMPORTANTE)                          */
-    /* =================================================================== */
+    /* ===== CONTEÚDO PRINCIPAL ===== */
+    .main-content {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 20px;
+    }
 
-    /* Regras para telemóvel e tablet (até 768px) */
+    /* =================================================================== */
+    /* RESPONSIVIDADE                                                    */
+    /* =================================================================== */
     @media (max-width: 768px) {
       .sidebar {
-        transform: translateX(-100%); /* Esconde o menu fora da tela */
+        transform: translateX(-100%);
       }
       .sidebar.show {
-        transform: translateX(0); /* Mostra o menu */
+        transform: translateX(0);
       }
       .sidebar-hamburger {
-        display: flex; /* Mostra o botão hambúrguer */
-      }
-      body {
-        margin-left: 0;
-        padding-top: 80px; /* Cria espaço para o conteúdo não ficar atrás do botão */
+        display: flex;
       }
       body.menu-open {
-        overflow: hidden; /* Trava o scroll do conteúdo quando o menu está aberto */
+        overflow: hidden;
+      }
+      /* CORREÇÃO: Aplicar o padding ao conteúdo, não ao body */
+      .main-content {
+        padding-top: 80px; /* Garante que o conteúdo não fique atrás do botão */
       }
     }
 
-    /* Regras para desktop (acima de 768px) */
     @media (min-width: 769px) {
       .sidebar {
-        transform: translateX(0); /* Garante que o menu está sempre visível */
+        transform: translateX(0);
       }
       .sidebar-hamburger {
-        display: none; /* Esconde o botão hambúrguer */
+        display: none;
       }
-      body {
-        margin-left: 250px; /* Empurra o conteúdo principal para a direita */
+      /* CORREÇÃO: Aplicar a margem ao conteúdo, não ao body */
+      .main-content {
+        margin-left: 250px;
       }
     }
   </style>
@@ -280,11 +257,14 @@
 
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <!-- O conteúdo principal da sua página viria aqui, dentro de uma tag <main> ou <div> -->
-  <!-- Exemplo: <main class="main-content"><h1>Bem-vindo!</h1></main> -->
+  <main class="main-content">
+    <h1>Página de Início</h1>
+    <p>Este é o conteúdo principal da sua página. Ele será empurrado corretamente em todas as telas.</p>
+  </main>
 
-  <!-- O SCRIPT FOI REMOVIDO DAQUI PARA EVITAR CONFLITOS. -->
-  <!-- A lógica agora está centralizada no 'menu-guardiao.js' -->
+  <!-- Carregamento dos Scripts -->
+  <script src="menu-mobile.js" defer></script>
+  <script src="menu-guardiao.js" type="module"></script>
 
 </body>
 </html>
