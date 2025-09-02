@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (VERSÃO COM DIAGNÓSTICO DE ADMIN)      -->
+<!--      MENU-LATERAL.HTML (VERSÃO FINAL CORRIGIDA)      -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
@@ -40,7 +40,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* ===== SIDEBAR DESKTOP ===== */
+/* O seu CSS foi mantido exatamente como estava, sem alterações */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -58,7 +58,6 @@
   transition: left 0.3s ease;
   box-sizing: border-box;
 }
-
 .sidebar-brand {
   font-size: 2rem; 
   font-weight: 900; 
@@ -70,13 +69,11 @@
   margin-bottom: 8px; 
   text-align: left;
 }
-
 .sidebar hr { 
   margin: 0 32px 16px 32px; 
   border: none; 
   border-top: 1px solid #787cff55; 
 }
-
 .sidebar-links { 
   display: flex; 
   flex-direction: column; 
@@ -84,7 +81,6 @@
   padding: 0 24px; 
   flex-grow: 1;
 }
-
 .sidebar-links a {
   display: flex; 
   align-items: center; 
@@ -105,13 +101,11 @@
   min-height: 44px;
   box-sizing: border-box;
 }
-
 .sidebar-links a span {
     display: inline-block;
     width: 20px;
     text-align: center;
 }
-
 .sidebar-links a.active, 
 .sidebar-links a:focus {
   background: #4f46e5; 
@@ -121,13 +115,11 @@
   box-shadow: 0 4px 12px rgba(79,70,229,0.3);
   outline: none;
 }
-
 .sidebar-links a:hover:not(.active) { 
   background: #f0f1ff; 
   color: #3b2fd6; 
   border-color: #d1d5fa; 
 }
-
 #admin-link {
     margin-top: 10px;
     background: #2d3748;
@@ -139,13 +131,10 @@
     color: #fff !important;
     border-color: #718096 !important;
 }
-
-
 .sidebar-footer { 
   margin-top: auto; 
   padding: 32px 32px 24px 32px; 
 }
-
 .btn-logout {
   background: #fff; 
   color: #4f46e5; 
@@ -163,14 +152,12 @@
   min-height: 44px;
   box-sizing: border-box;
 }
-
 .btn-logout:hover, 
 .btn-logout:focus { 
   background: #4f46e5; 
   color: #fff; 
   border: 2px solid #fff; 
 }
-
 .sidebar-hamburger {
   display: none;
   flex-direction: column;
@@ -191,7 +178,6 @@
   justify-content: center;
   align-items: center;
 }
-
 .sidebar-hamburger span {
   display: block;
   width: 28px;
@@ -201,16 +187,13 @@
   margin-bottom: 4px;
   transition: all 0.3s ease;
 }
-
 .sidebar-hamburger:focus { 
   background: #4f46e522; 
   outline: 2px solid #fff; 
 }
-
 .sidebar-hamburger span:last-child { 
   margin-bottom: 0; 
 }
-
 .sidebar.show .sidebar-hamburger span:nth-child(1) {
   transform: rotate(45deg) translate(6px, 6px);
 }
@@ -220,7 +203,6 @@
 .sidebar.show .sidebar-hamburger span:nth-child(3) {
   transform: rotate(-45deg) translate(6px, -6px);
 }
-
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -230,22 +212,18 @@
   backdrop-filter: blur(2px);
   transition: opacity 0.3s ease;
 }
-
 .sidebar-overlay.show {
   display: block;
 }
-
 @media (max-width: 768px) {
   .sidebar {
     width: 280px;
     left: -290px;
     transition: left 0.35s cubic-bezier(.7,0,.3,1);
   }
- 
   .sidebar.show {
     left: 0;
   }
- 
   .sidebar-hamburger {
     display: flex;
   }
@@ -254,88 +232,67 @@
 
 <script type="module">
     import { auth } from "./firebase-config.js"; 
-    import { onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+    // UID do Administrador. Este é o ponto central da verificação.
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        iniciarGuardiao();
-      })
-      .catch((error) => {
-        console.error("Guardião do Menu: Falha ao ativar persistência!", error);
-        iniciarGuardiao();
-      });
+    /**
+     * LÓGICA DE AUTENTICAÇÃO E UI DO ADMIN
+     * Este bloco de código agora é o único responsável por verificar o estado do utilizador
+     * e decidir se mostra o link de administração.
+     */
+    onAuthStateChanged(auth, (user) => {
+        console.log("--- Verificando estado de autenticação (menu-lateral.html) ---");
+        const adminLink = document.getElementById('admin-link');
 
-    function iniciarGuardiao() {
-        onAuthStateChanged(auth, (user) => {
-            // --- NOVO: LÓGICA DE DIAGNÓSTICO ---
-            console.log("--- INICIANDO VERIFICAÇÃO DE ADMIN ---");
-            const adminLink = document.getElementById('admin-link');
-            
-            if (user) {
-                console.log("Utilizador LOGADO encontrado.");
-                console.log("UID do utilizador atual:", user.uid);
-                console.log("UID do Admin esperado:", ADMIN_UID);
-
-                if (user.uid === ADMIN_UID) {
-                    console.log("SUCESSO: Os UIDs correspondem. A mostrar o link de Admin.");
-                    if (adminLink) adminLink.style.display = 'flex';
-                } else {
-                    console.warn("AVISO: O utilizador logado NÃO é o Admin. A esconder o link.");
-                    if (adminLink) adminLink.style.display = 'none';
-                }
+        if (user) {
+            console.log("Utilizador encontrado. UID:", user.uid);
+            // Compara o UID do utilizador logado com o UID do admin
+            if (user.uid === ADMIN_UID) {
+                console.log("SUCESSO: Utilizador é o Admin. A mostrar o link.");
+                if (adminLink) adminLink.style.display = 'flex';
             } else {
-                console.error("FALHA: Nenhum utilizador logado encontrado.");
+                console.warn("AVISO: Este utilizador NÃO é o Admin.");
                 if (adminLink) adminLink.style.display = 'none';
             }
-            console.log("--- FIM DA VERIFICAÇÃO ---");
-            
-            // --- Lógica de redirecionamento original (mantida) ---
-            const isLoginPage = window.location.pathname.endsWith('login.html');
-            const precisaEmpresa = !isLoginPage && !window.location.pathname.endsWith('selecionar-empresa.html');
-            const empresaId = localStorage.getItem("empresaAtivaId");
+        } else {
+            // Se não houver utilizador, garante que o link de admin está escondido.
+            console.log("Nenhum utilizador logado.");
+            if (adminLink) adminLink.style.display = 'none';
+        }
+    });
 
-            if (!user && !isLoginPage) {
-                window.location.replace('login.html');
-            } else if (user && precisaEmpresa && !empresaId) {
-                window.location.replace('selecionar-empresa.html');
-            } else {
-                if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                    setupMenu();
-                } else {
-                    document.addEventListener('DOMContentLoaded', setupMenu);
-                }
-            }
-        });
-    }
-
-    let menuConfigurado = false;
-    function setupMenu() {
-        if (menuConfigurado) return;
-        menuConfigurado = true;
-
+    /**
+     * LÓGICA DE UI E EVENTOS DO MENU
+     * Este bloco configura os elementos visuais do menu (hambúrguer, logout, link ativo).
+     * Ele é executado assim que o HTML da página está pronto.
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        // Configura o botão de logout
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    localStorage.clear(); // Limpa tudo para segurança
+                    window.location.href = 'login.html';
+                });
+            });
+        }
+        
+        // Configura o destaque do link da página atual
         const links = document.querySelectorAll('.sidebar-links a');
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         links.forEach(link => {
-            link.classList.remove('active');
             const linkPage = link.getAttribute('href').split('/').pop();
             if (linkPage === currentPage) {
                 link.classList.add('active');
             }
         });
 
-        const btnLogout = document.getElementById('btn-logout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                signOut(auth).then(() => {
-                    localStorage.removeItem("empresaAtivaId");
-                    window.location.replace('login.html');
-                });
-            });
-        }
+        // Configura a funcionalidade do menu móvel (hambúrguer)
         setupMobileMenu();
-    }
+    });
 
     function setupMobileMenu() {
         const hamburger = document.getElementById('sidebar-hamburger');
