@@ -1,3 +1,5 @@
+INDEX HTML
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -32,7 +34,7 @@
             max-width: 220px;
             padding: 32px 24px 24px 24px;
             border-radius: 18px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08 );
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -88,38 +90,6 @@
         /* Esconde botão "status do dia" */
         .status-button { display: none !important; }
     </style>
-
-    <!-- =================================================================== -->
-    <!-- INÍCIO DA CORREÇÃO DO MENU HAMBÚRGUER                             -->
-    <!-- Este bloco corrige o problema de clique no celular sem alterar    -->
-    <!-- o arquivo style.css principal.                                    -->
-    <!-- =================================================================== -->
-    <style>
-        @media (max-width: 768px) {
-            /* Remove o padding do body que cobria o botão */
-            body {
-                padding-top: 0 !important;
-            }
-            /* Adiciona o padding ao contêiner principal para não sobrepor o conteúdo */
-            .main-content {
-                padding-top: 80px !important;
-            }
-        }
-        @media (min-width: 769px) {
-            /* Remove a margem do body */
-            body {
-                margin-left: 0 !important;
-            }
-            /* Adiciona a margem ao contêiner principal para alinhar com o menu */
-            .main-content {
-                margin-left: 250px !important;
-            }
-        }
-    </style>
-    <!-- =================================================================== -->
-    <!-- FIM DA CORREÇÃO                                                   -->
-    <!-- =================================================================== -->
-
 </head>
 <body class="dashboard-body is-loading">
 
@@ -155,7 +125,7 @@
     import { verificarAcesso } from "./userService.js";
 
     // --- Funções de UI ---
-    const nomeUsuarioSpan = document.getElementById("nome-usuario" );
+    const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
@@ -227,23 +197,16 @@
                 if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
             }
 
-            // Injeta o menu lateral e o script de controle do menu
-            const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
-            if (sidebarPlaceholder) {
-                const response = await fetch('menu-lateral.html');
-                const menuHTML = await response.text();
-                sidebarPlaceholder.innerHTML = menuHTML;
-
-                // Adiciona o script de controle do menu dinamicamente
-                const menuScript = document.createElement('script');
-                menuScript.src = 'menu-mobile.js';
-                menuScript.defer = true;
-                document.body.appendChild(menuScript);
-
-                destacarLinkAtivo();
-                ativarLogout();
-            }
-
+            fetch('menu-lateral.html')
+                .then(res => res.text())
+                .then(html => {
+                    const sidebar = document.getElementById('sidebar-placeholder');
+                    if (sidebar) {
+                        sidebar.innerHTML = html;
+                        destacarLinkAtivo();
+                        ativarLogout(); 
+                    }
+                });
         } catch (error) {
             if (error.message === "primeiro_acesso") {
                 mostrarPrimeiroAcessoCard();
