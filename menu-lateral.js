@@ -10,11 +10,11 @@ import {
   browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// A PARTE DE CONTROLE DO HAMBÚRGUER FOI REMOVIDA DAQUI.
-// Este arquivo agora foca 100% na autenticação e segurança.
+// === UID do administrador ===
+const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 // Função que configura funcionalidades que dependem do usuário estar logado.
-function setupAuthenticatedFeatures( ) {
+function setupAuthenticatedFeatures(user) {
     // Lógica do botão de logout
     const btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
@@ -44,6 +44,16 @@ function setupAuthenticatedFeatures( ) {
             link.classList.add('active');
         }
     });
+
+    // Lógica para exibir o menu de administração somente para o admin
+    const adminLink = document.getElementById('admin-link');
+    if (adminLink) {
+        if (user && user.uid === ADMIN_UID) {
+            adminLink.style.display = 'flex';
+        } else {
+            adminLink.style.display = 'none';
+        }
+    }
 }
 
 // Inicia a verificação de login do Firebase
@@ -61,7 +71,7 @@ function initializeAuthGuard() {
       window.location.replace('selecionar-empresa.html');
     } else if (user) {
       // Se está logado e tudo certo, configura as funcionalidades autenticadas.
-      setupAuthenticatedFeatures();
+      setupAuthenticatedFeatures(user);
     }
   });
 }
