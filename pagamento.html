@@ -44,6 +44,12 @@
         import { auth, db } from "./firebase-config.js"; // Certifique-se que o caminho está correto
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+        // ======================================================================
+        // AJUSTE CRÍTICO: Defina a URL pública do seu servidor aqui
+        // ======================================================================
+        const serverUrl = 'https://seu-projeto.sua-plataforma.com'; // <-- SUBSTITUA PELA SUA URL REAL
+        // ======================================================================
+
         // Elementos da página
         const infoUsuarioDiv = document.getElementById('info-usuario');
         const listaPlanosContainer = document.querySelector('.lista-planos');
@@ -121,7 +127,7 @@
         async function inicializarPagina(user) {
             try {
                 // PASSO 1: Perguntar ao servidor qual a situação da empresa
-                const response = await fetch('/get-status-empresa', {
+                const response = await fetch(`${serverUrl}/get-status-empresa`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: user.uid })
@@ -163,7 +169,7 @@
             btnPagar.textContent = 'Criando link de pagamento...';
 
             try {
-                const response = await fetch('/create-preference', {
+                const response = await fetch(`${serverUrl}/create-preference`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -171,6 +177,12 @@
                         planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios }
                     })
                 });
+                
+                if (!response.ok) { // Adicionado para melhor tratamento de erro do servidor
+                    const err = await response.json();
+                    throw new Error(err.error || 'Erro do servidor');
+                }
+
                 const preference = await response.json();
                 if (preference.init_point) {
                     window.location.href = preference.init_point;
