@@ -1,5 +1,5 @@
-// ======================================================================
-//                      USERSERVICE.JS (O "Guarda de Trânsito" Definitivo)
+/ ======================================================================
+//                      USERSERVICE.JS (CORRIGIDO PARA ESTABILIDADE)
 // ======================================================================
 
 import {
@@ -11,7 +11,7 @@ import { db, auth } from './firebase-config.js';
 // "Memória" para evitar re-verificação
 let cachedSessionProfile = null;
 
-// --- Funções Auxiliares (sem alterações ) ---
+// --- Funções Auxiliares (mantidas, mas getEmpresasDoDono não será mais usada no fluxo principal) ---
 async function getEmpresasDoDono(uid) {
     if (!uid) return null;
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
@@ -39,7 +39,6 @@ export async function ensureUserAndTrialDoc() {
 }
 
 async function checkUserStatus(user, empresaData) {
-    // ... (sua função checkUserStatus continua a mesma)
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
@@ -57,7 +56,7 @@ async function checkUserStatus(user, empresaData) {
 }
 
 // ======================================================================
-// FUNÇÃO PRINCIPAL COM A LÓGICA DE ROTEAMENTO CENTRALIZADA
+// FUNÇÃO PRINCIPAL COM A LÓGICA DE ROTEAMENTO CENTRALIZADA (CORRIGIDA)
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
@@ -70,10 +69,10 @@ export async function verificarAcesso() {
 
             const currentPage = window.location.pathname.split('/').pop();
             const paginasPublicas = ['login.html', 'cadastro.html'];
-            const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html'];
+            const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html']; // Assinatura também é config
 
+            // 1. Usuário não logado
             if (!user) {
-                // Se não há usuário e a página não é pública, redireciona para o login.
                 if (!paginasPublicas.includes(currentPage)) {
                     console.log("[AuthGuard] Usuário não logado. Redirecionando para login.");
                     window.location.replace('login.html');
@@ -84,41 +83,70 @@ export async function verificarAcesso() {
             try {
                 await ensureUserAndTrialDoc();
 
+                // 2. Admin
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 if (user.uid === ADMIN_UID) {
-                    // ... (sua lógica de admin continua a mesma)
                     cachedSessionProfile = { user, isAdmin: true, perfil: { nome: "Admin" }, isOwner: true, role: 'admin' };
                     return resolve(cachedSessionProfile);
                 }
 
-                const empresasSnapshot = await getEmpresasDoDono(user.uid);
+                // 3. Obter empresaId do mapaUsuarios (fonte primária para todos os usuários)
                 const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
+                let empresaAtivaId = null;
 
-                // LÓGICA CORRIGIDA: Se usuário tem só UMA empresa, seta ela como ativa automaticamente
-                let empresaAtivaId = localStorage.getItem('empresaAtivaId');
-                if (!empresaAtivaId && empresasSnapshot && empresasSnapshot.size === 1) {
-                    empresaAtivaId = empresasSnapshot.docs[0].id;
-                    localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                    if (currentPage === 'selecionar-empresa.html') {
-                        window.location.replace('index.html');
-                        return;
+                if (mapaSnap.exists()) {
+                    empresaAtivaId = mapaSnap.data().empresaId;
+                } else {
+                    // Se não tem mapa, é primeiro acesso ou erro. Redireciona para perfil.
+                    if (!paginasDeConfiguracao.includes(currentPage)) {
+                        console.log("[AuthGuard] Primeiro acesso (sem mapa). Redirecionando para perfil.");
+                        window.location.replace('perfil.html');
+                    }
+                    return reject(new Error("primeiro_acesso"));
+                }
+
+                // 4. Lógica de seleção de empresa (se não tiver uma empresa ativa no localStorage)
+                let empresaSelecionadaId = localStorage.getItem('empresaAtivaId');
+                if (!empresaSelecionadaId) {
+                    // Se o mapa tem empresaId, usa ele como padrão
+                    if (empresaAtivaId) {
+                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                        empresaSelecionadaId = empresaAtivaId;
+                    } else {
+                        // Se nem no mapa nem no localStorage tem empresa, redireciona para seleção
+                        if (!paginasDeConfiguracao.includes(currentPage)) {
+                            console.log("[AuthGuard] Nenhuma empresa ativa. Redirecionando para seleção.");
+                            window.location.replace('selecionar-empresa.html');
+                        }
+                        return reject(new Error("Redirecionando para seleção de empresa."));
                     }
                 }
 
-                // LÓGICA DE REDIRECIONAMENTO PARA SELEÇÃO DE EMPRESA
-                if (!empresaAtivaId && !paginasDeConfiguracao.includes(currentPage)) {
-                    // Se não há empresa ativa e o usuário não está numa página de configuração,
-                    // ele é forçado a ir para a seleção.
-                    console.log("[AuthGuard] Nenhuma empresa ativa. Redirecionando para seleção.");
-                    window.location.replace('selecionar-empresa.html');
-                    return reject(new Error("Redirecionando para seleção de empresa."));
+                // 5. Carregar dados da empresa (agora com empresaSelecionadaId garantido)
+                let empresaDocSnap = null;
+                let empresaData = null;
+                if (empresaSelecionadaId) {
+                    empresaDocSnap = await getDoc(doc(db, "empresarios", empresaSelecionadaId));
+                    if (empresaDocSnap.exists()) {
+                        empresaData = empresaDocSnap.data();
+                    } else {
+                        // Inconsistência: empresaId no mapa/localStorage não existe mais.
+                        console.error(`[AuthGuard] Inconsistência: empresaId ${empresaSelecionadaId} inexistente.`);
+                        localStorage.removeItem('empresaAtivaId'); // Limpa para forçar nova seleção
+                        if (!paginasDeConfiguracao.includes(currentPage)) {
+                            window.location.replace('selecionar-empresa.html');
+                        }
+                        return reject(new Error("Empresa não encontrada ou removida."));
+                    }
+                } else {
+                    // Se por algum motivo empresaSelecionadaId ainda for nulo aqui, é um erro lógico.
+                    if (!paginasDeConfiguracao.includes(currentPage)) {
+                        window.location.replace('selecionar-empresa.html');
+                    }
+                    return reject(new Error("Erro: Empresa ativa não definida."));
                 }
 
-                // LÓGICA DE REDIRECIONAMENTO PARA ASSINATURA
-                let empresaData = null;
-                if (empresasSnapshot && !empresasSnapshot.empty) {
-                    empresaData = empresasSnapshot.docs[0].data();
-                }
+                // 6. Verificar status da assinatura (agora com empresaData seguro)
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
                 if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
                     console.log("[AuthGuard] Assinatura expirada. Redirecionando.");
@@ -126,46 +154,21 @@ export async function verificarAcesso() {
                     return reject(new Error("Assinatura expirada."));
                 }
 
-                // Se chegou aqui, o usuário tem permissão para estar na página.
-                // O código continua para resolver o perfil (dono ou funcionário).
-                if ((empresasSnapshot && !empresasSnapshot.empty) || mapaSnap.exists()) {
-                    // ... (o resto da sua lógica para resolver o perfil de dono/funcionário continua exatamente a mesma)
-                    if (empresasSnapshot && !empresasSnapshot.empty) {
-                        const empresaDoc = empresasSnapshot.docs[0];
-                        const empresaData = empresaDoc.data();
-                        // ... (preenchimento defensivo)
-                        const userProfile = { user, empresaId: empresaDoc.id, perfil: empresaData, isOwner: true, role: "dono" };
-                        cachedSessionProfile = userProfile;
-                        return resolve(userProfile);
+                // 7. Determinar o perfil (dono ou funcionário) com base na empresa selecionada
+                const isOwner = empresaData.donoId === user.uid;
+                let userProfile = null;
+
+                if (isOwner) {
+                    userProfile = { user, empresaId: empresaDocSnap.id, perfil: empresaData, isOwner: true, role: "dono" };
+                } else {
+                    // É um funcionário, verifica o status na subcoleção 'profissionais'
+                    const profissionalRef = doc(db, "empresarios", empresaDocSnap.id, "profissionais", user.uid);
+                    const profissionalSnap = await getDoc(profissionalRef);
+
+                    if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
+                        userProfile = { user, perfil: profissionalSnap.data(), empresaId: empresaDocSnap.id, isOwner: false, role: "funcionario" };
                     } else {
-                        // ... (lógica de funcionário)
-                        const empresaId = mapaSnap.data().empresaId;
-                        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
-                        const profissionalSnap = await getDoc(profissionalRef);
-                        if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
-                            const userProfile = { user, perfil: profissionalSnap.data(), empresaId, isOwner: false, role: "funcionario" };
-                            cachedSessionProfile = userProfile;
-                            return resolve(userProfile);
-                        } else {
-                            return reject(new Error("aguardando_aprovacao"));
-                        }
-                    }
-                }
-
-                // Se não caiu em nenhuma das lógicas acima, é o primeiro acesso.
-                // Redireciona para a página de perfil para criar a primeira empresa.
-                if (!paginasDeConfiguracao.includes(currentPage)) {
-                    console.log("[AuthGuard] Primeiro acesso. Redirecionando para perfil.");
-                    window.location.replace('perfil.html');
-                    return reject(new Error("primeiro_acesso"));
-                }
-                // Se já estiver na página de perfil, apenas rejeita para que a página possa continuar.
-                return reject(new Error("primeiro_acesso"));
-
-            } catch (error) {
-                console.error("[AuthGuard] Erro final em verificarAcesso:", error);
-                return reject(error);
-            }
-        });
-    });
-}
+                        // Funcionário existe mas não está ativo, ou não foi encontrado
+                        console.log("[AuthGuard] Funcionário pendente ou inativo. Redirecionando para login.");
+                        // Se o usuário não é dono e não é um profissional ativo, ele não pode acessar.
+                        // Redireciona para login ou uma página de 
