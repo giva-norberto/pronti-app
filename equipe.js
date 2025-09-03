@@ -117,7 +117,7 @@ async function inicializar() {
 function voltarMenuLateral() { window.location.href = "index.html"; }
 
 async function carregarServicos() {
-    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const servicosRef = collection(db, "empresarios", empresaId, "servicos");
         const snapshot = await getDocs(servicosRef);
@@ -129,7 +129,9 @@ async function carregarServicos() {
 }
 
 async function iniciarListenerDaEquipe() {
-    const { collection, onSnapshot, query, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
+    const { collection, onSnapshot, query, where, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
+    // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
     if (!empresaSnap.exists()) {
@@ -144,7 +146,13 @@ async function iniciarListenerDaEquipe() {
         nomeCorretoDono = donoUsuarioSnap.data().nome;
     }
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-    onSnapshot(query(profissionaisRef), (snapshot) => {
+    
+    // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
+    // A query agora inclui o filtro 'where' que é exigido pelas regras de segurança.
+    const q = query(profissionaisRef, where("empresaId", "==", empresaId));
+
+    onSnapshot(q, (snapshot) => {
+    // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
         const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
         if (donoNaEquipe) {
@@ -157,7 +165,8 @@ async function iniciarListenerDaEquipe() {
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
-        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.<br>Clique em "Adicionar Profissional" ou "Convidar Funcionário" para começar.</p></div>`;
+        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.  
+Clique em "Adicionar Profissional" ou "Convidar Funcionário" para começar.</p></div>`;
         return;
     }
     equipe.forEach(profissional => {
@@ -182,7 +191,7 @@ function renderizarEquipe(equipe) {
             <div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
             <div class="profissional-info">
                 <span class="profissional-nome">${profissional.nome}</span>
-                <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário')}</span>
+                <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário' )}</span>
             </div>
             <div class="profissional-actions">${botoesDeAcao}</div>`;
         elementos.listaProfissionaisPainel.appendChild(div);
@@ -204,7 +213,7 @@ async function abrirPerfilProfissional(profissionalId) {
 }
 
 async function carregarDadosProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
@@ -382,7 +391,7 @@ function adicionarAgendaEspecial() {
 }
 
 async function salvarPerfilProfissional() {
-    const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
         const horarios = coletarHorarios();
@@ -442,8 +451,8 @@ async function gerarLinkDeConvite() {
 }
 
 async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js");
+    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js" );
     const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
     btnSubmit.disabled = true; btnSubmit.textContent = "Salvando...";
     const nome = elementos.nomeProfissional.value.trim();
@@ -471,7 +480,12 @@ async function adicionarProfissional() {
         status: 'ativo',
         criadoEm: serverTimestamp(),
         agendaEspecial: [],
-        uid: ""
+        uid: "",
+        // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
+        // Adiciona o campo 'empresaId' no momento da criação.
+        // Isso é crucial para a regra de segurança de listagem funcionar.
+        empresaId: empresaId 
+        // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
     };
     try {
         const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
@@ -490,7 +504,7 @@ async function adicionarProfissional() {
 }
 
 async function editarProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
@@ -512,8 +526,8 @@ async function editarProfissional(profissionalId) {
 }
 
 async function salvarEdicaoProfissional(profissionalId) {
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
+    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js" );
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) return alert("O nome do profissional é obrigatório.");
     let fotoURL = "";
@@ -541,7 +555,7 @@ async function salvarEdicaoProfissional(profissionalId) {
 
 async function excluirProfissional(profissionalId) {
     if (!confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.")) return;
-    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await deleteDoc(profissionalRef);
@@ -553,7 +567,7 @@ async function excluirProfissional(profissionalId) {
 
 async function ativarFuncionario(profissionalId) {
     if (!confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.")) return;
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, { status: 'ativo' });
@@ -580,4 +594,4 @@ window.excluirProfissional = excluirProfissional;
 window.ativarFuncionario = ativarFuncionario;
 window.recusarFuncionario = recusarFuncionario;
 
-window.addEventListener("DOMContentLoaded", inicializar);    
+window.addEventListener("DOMContentLoaded", inicializar);
