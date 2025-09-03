@@ -94,8 +94,18 @@ export async function verificarAcesso() {
                 const empresasSnapshot = await getEmpresasDoDono(user.uid);
                 const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
 
+                // LÓGICA CORRIGIDA: Se usuário tem só UMA empresa, seta ela como ativa automaticamente
+                let empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                if (!empresaAtivaId && empresasSnapshot && empresasSnapshot.size === 1) {
+                    empresaAtivaId = empresasSnapshot.docs[0].id;
+                    localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                    if (currentPage === 'selecionar-empresa.html') {
+                        window.location.replace('index.html');
+                        return;
+                    }
+                }
+
                 // LÓGICA DE REDIRECIONAMENTO PARA SELEÇÃO DE EMPRESA
-                const empresaAtivaId = localStorage.getItem('empresaAtivaId');
                 if (!empresaAtivaId && !paginasDeConfiguracao.includes(currentPage)) {
                     // Se não há empresa ativa e o usuário não está numa página de configuração,
                     // ele é forçado a ir para a seleção.
