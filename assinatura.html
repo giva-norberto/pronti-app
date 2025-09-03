@@ -100,7 +100,10 @@
                     return;
                 }
                 const data = snap.data();
-                // Só bloqueia se for 0 ou ausente
+                // DEBUG: Mostra o valor lido no console
+                console.log("[DEBUG] Valor lido de freeEmDias:", data.freeEmDias);
+
+                // Só bloqueia se for 0, ausente ou não numérico
                 if (typeof data.freeEmDias === "number" && data.freeEmDias > 0) {
                     window.location.href = "index.html";
                     return;
@@ -108,6 +111,7 @@
                     container.style.display = "block";
                 }
             } catch (e) {
+                console.error("[DEBUG] Erro ao buscar empresa:", e);
                 container.style.display = "block";
             }
         }
