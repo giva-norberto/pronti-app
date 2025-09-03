@@ -169,6 +169,24 @@
       .then(res => res.text())
       .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
+
+          // Adiciona o evento do botão sair após o menu ser inserido no DOM
+          import("./firebase-config.js").then(({ auth }) => {
+              import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
+                  const btnLogout = document.getElementById("btn-logout");
+                  if (btnLogout) {
+                      btnLogout.addEventListener("click", async () => {
+                          try {
+                              await signOut(auth);
+                              localStorage.clear();
+                              window.location.href = "login.html";
+                          } catch(e) {
+                              alert("Erro ao sair: " + e.message);
+                          }
+                      });
+                  }
+              });
+          });
       });
 
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
