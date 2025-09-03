@@ -11,8 +11,9 @@
         .btn-delete { background: #6b7280; color: #fff; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.9em; }
         .btn-delete:hover { background: #4b5563; }
         .button-group { display: flex; gap: 8px; align-items: center; }
-        /* APLICANDO ESTILO UNIFICADO PARA OS CAMPOS DE GESTÃO */
-        .trial-management, .license-management { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-size: 0.9em; padding-top: 12px; border-top: 1px solid #eee;}
+        
+        /* */
+        .trial-management, .license-management { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-size: 0.9em; padding-top: 12px; border-top: 1px solid #eee; }
         .trial-input, .license-input { width: 50px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; }
         .btn-save-trial, .btn-save-license { background: #2563eb; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; }
         .btn-save-trial:hover, .btn-save-license:hover { background: #1d4ed8; }
@@ -27,7 +28,6 @@
     </div>
 
     <script type="module">
-        // 1. Importa a configuração correta e as funções do SDK modular
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -63,7 +63,6 @@
             if (!confirm("ATENÇÃO: Ação irreversível. Excluir empresa?")) return;
             button.disabled = true;
             try {
-                // Para ser completo, o ideal é excluir a subcoleção antes.
                 const profCollectionRef = collection(db, "empresarios", empresaId, "profissionais");
                 const profSnap = await getDocs(profCollectionRef);
                 const deletes = profSnap.docs.map(p => deleteDoc(p.ref));
@@ -75,7 +74,6 @@
                 alert('Empresa excluída.');
             } catch (error) {
                 alert("Erro ao excluir empresa.");
-                console.error("Erro ao excluir:", error);
             } finally {
                 button.disabled = false;
             }
@@ -108,7 +106,6 @@
                 alert('Número de licenças atualizado!');
             } catch (error) {
                 alert("Erro ao salvar licenças.");
-                 console.error("Erro ao salvar licenças:", error);
             } finally {
                 button.disabled = false;
             }
@@ -137,11 +134,10 @@
             if (empresas.length === 0) {
                 htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
             } else {
-                htmlFinal += empresas.map(empresa => {
-                    // const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0;
-                    // Se 'usuariosLicenciados' não existir no banco, usa o total real como padrão.
+                // htmlFinal += empresas.map(empresa => {
+                    const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0;
                     const licencaValue = empresa.usuariosLicenciados === undefined ? totalFuncionarios : empresa.usuariosLicenciados;
-
+                
                     return `
                         <div class="empresa">
                             <div class="empresa-header">
@@ -212,7 +208,8 @@
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 render('<div class="restricted">Acesso negado. Por favor, faça o login.</div>');
-                setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                // Adicionei um redirecionamento para maior segurança
+                setTimeout(() => { if (!auth.currentUser) window.location.href = 'login.html'; }, 2500);
                 return;
             }
             if (user.uid !== ADMIN_UID) {
