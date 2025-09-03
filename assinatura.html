@@ -86,10 +86,8 @@
         const container = document.getElementById('assinatura-container');
         const empresaAtivaId = localStorage.getItem('empresaAtivaId');
 
-        // Função para verificar freeEmDias e exibir tela somente se estiver zerado ou ausente
         async function checarDiasTeste() {
             if (!empresaAtivaId) {
-                // Se não houver empresa ativa, mostra o bloqueio mesmo assim
                 container.style.display = "block";
                 return;
             }
@@ -102,17 +100,14 @@
                     return;
                 }
                 const data = snap.data();
-                // Foco APENAS no campo freeEmDias
+                // Só bloqueia se for 0 ou ausente
                 if (typeof data.freeEmDias === "number" && data.freeEmDias > 0) {
-                    // Tem dias de teste, não mostra bloqueio
                     window.location.href = "index.html";
                     return;
                 } else {
-                    // Não tem dias de teste, mostra bloqueio
                     container.style.display = "block";
                 }
             } catch (e) {
-                // Em caso de erro, por segurança mostra bloqueio
                 container.style.display = "block";
             }
         }
