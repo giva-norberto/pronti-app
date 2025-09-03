@@ -72,7 +72,6 @@
         <h1>O seu período de teste terminou!</h1>
         <p>Agradecemos por experimentar o Pronti. Para continuar a gerir o seu negócio, por favor, escolha um dos nossos planos.</p>
         
-        <!-- Futuramente, aqui entrará a integração com o Stripe -->
         <button id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</button>
 
         <button id="btn-logout" class="btn-logout">Sair da conta</button>
@@ -99,8 +98,8 @@
         
         if(btnAssinar) {
             btnAssinar.addEventListener('click', () => {
-                // Futuramente, esta ação levará para a página de checkout do Stripe
-                alert("A página de planos e pagamentos será implementada aqui!");
+                // ALTERAÇÃO CIRÚRGICA: A linha abaixo redireciona para a tela de pagamento.
+                window.location.href = 'pagamento.html';
             });
         }
     </script>
