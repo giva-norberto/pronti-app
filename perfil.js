@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL E FUNCIONAL - build 4)
+// PERFIL.JS (VERSÃO FINAL E FUNCIONAL - build 4 + mapaUsuarios fix)
 // ======================================================================
 
 import {
@@ -122,6 +122,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 console.log("Editando empresa existente:", empresaId);
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
+                // Atualiza o mapaUsuarios para garantir consistência
+                await setDoc(doc(db, "mapaUsuarios", uid), { empresaId: empresaId });
             } else {
                 dadosEmpresa.createdAt = timestampCliente; // Usando a data do cliente
                 
@@ -131,6 +133,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 
                 console.log("SUCESSO! Empresa criada com o ID:", novaEmpresaRef.id);
                 empresaId = novaEmpresaRef.id;
+
+                // Cria o documento mapaUsuarios vinculando o usuário à empresa criada
+                await setDoc(doc(db, "mapaUsuarios", uid), { empresaId: empresaId });
 
                 const dadosProfissional = {
                     uid: uid,
