@@ -1,5 +1,5 @@
 // ======================================================================
-// Arquivo: admin-clientes-logic.js (VERSÃO COM FLUXO DE AUTH CORRIGIDO)
+// Arquivo: admin-clientes-logic.js (VERSÃO COM CAMPO DE LICENÇAS EDITÁVEL)
 // ======================================================================
 
 // Importa as dependências do Firebase
@@ -18,9 +18,8 @@ function render(html) {
     }
 }
 
-// --- Funções de ação (toggleBloqueio, excluirEmpresa, salvarDiasTeste) ---
-// SUAS FUNÇÕES DE AÇÃO ORIGINAIS ESTÃO PERFEITAS E CONTINUAM AQUI, SEM ALTERAÇÕES.
-// ... (cole suas funções toggleBloqueio, excluirEmpresa, e salvarDiasTeste aqui) ...
+// --- Funções de ação ---
+
 async function toggleBloqueio(empresaId, novoStatus, button) {
     console.log("toggleBloqueio chamado", { empresaId, novoStatus });
     const acao = novoStatus ? 'bloquear' : 'desbloquear';
@@ -113,9 +112,40 @@ async function salvarDiasTeste(empresaId, button) {
     }
 }
 
+// NOVA FUNÇÃO PARA SALVAR AS LICENÇAS
+async function salvarLicencas(empresaId, button) {
+    const input = document.getElementById(`license-input-${empresaId}`);
+    const novoValor = parseInt(input.value, 10);
+
+    if (isNaN(novoValor) || novoValor < 1) {
+        alert("O número de licenças deve ser no mínimo 1.");
+        return;
+    }
+
+    const originalText = button.textContent;
+    button.textContent = '...';
+    button.disabled = true;
+
+    try {
+        const empresaRef = doc(db, "empresarios", empresaId);
+        await updateDoc(empresaRef, { usuariosLicenciados: novoValor });
+        
+        const empresaIndex = currentData.findIndex(e => e.uid === empresaId);
+        if (empresaIndex > -1) {
+            currentData[empresaIndex].usuariosLicenciados = novoValor;
+        }
+        alert('Número de licenças atualizado com sucesso!');
+    } catch (error) {
+        console.error("Erro ao salvar licenças:", error);
+        alert("Não foi possível salvar o número de licenças.");
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
 
 // --- Listener de Eventos (delegação) ---
-// SEU LISTENER DE EVENTOS ORIGINAL ESTÁ PERFEITO E CONTINUA AQUI, SEM ALTERAÇÕES.
 conteudoDiv.addEventListener('click', function(event) {
     const target = event.target;
     const empresaId = target.dataset.id;
@@ -128,11 +158,12 @@ conteudoDiv.addEventListener('click', function(event) {
         excluirEmpresa(empresaId, target);
     } else if (target.classList.contains('btn-save-trial')) {
         salvarDiasTeste(empresaId, target);
+    } else if (target.classList.contains('btn-save-license')) { // NOVO 'ELSE IF'
+        salvarLicencas(empresaId, target);
     }
 });
 
 // --- Função de Renderização da Tabela ---
-// SUA FUNÇÃO DE RENDERIZAÇÃO ORIGINAL ESTÁ PERFEITA E CONTINUA AQUI, SEM ALTERAÇÕES.
 function renderizarDados(empresas) {
     console.log("renderizarDados chamado. Total empresas:", empresas.length);
     currentData = empresas;
@@ -140,53 +171,64 @@ function renderizarDados(empresas) {
     if (empresas.length === 0) {
         htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
     } else {
-        htmlFinal += empresas.map(empresa => `
-            <div class="empresa">
-                <div class="empresa-header">
-                    <div>
-                        <div><strong>Empresa:</strong> ${empresa.nome || empresa.email || empresa.uid}</div>
-                        <div><strong>Status:</strong> <span style="color: ${empresa.bloqueado ? '#dc2626' : '#10b981'}">${empresa.bloqueado ? 'Bloqueada' : 'Ativa'}</span></div>
-                    </div>
-                    <div class="button-group">
-                        <button data-id="${empresa.uid}" class="btn-delete">Excluir</button>
-                        <button data-id="${empresa.uid}" class="${empresa.bloqueado ? 'btn-unblock' : 'btn-block'}">
-                            ${empresa.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="trial-management">
-                    <strong>Dias de Teste Grátis:</strong>
-                    <input type="number" class="trial-input" id="trial-input-${empresa.uid}" value="${empresa.freeEmDias === undefined ? 15 : empresa.freeEmDias}">
-                    <button data-id="${empresa.uid}" class="btn-save-trial">Salvar</button>
-                </div>
+        htmlFinal += empresas.map(empresa => {
+            const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0;
+            const licencaValue = empresa.usuariosLicenciados === undefined ? totalFuncionarios : empresa.usuariosLicenciados;
 
-                <div style="margin-top: 16px;">
-                    <strong>Funcionários:</strong>
-                    <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
-                        <thead><tr style="background: #f3f4f6;"><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
-                        <tbody>
-                            ${(empresa.funcionarios && empresa.funcionarios.length > 0)
-                                ? empresa.funcionarios.map(f => `
-                                    <tr class="${f.bloqueado ? 'blocked' : ''}">
-                                        <td>${f.nome || '-'}</td>
-                                        <td>${f.email || '-'}</td>
-                                        <td><span style="color: ${f.bloqueado ? '#dc2626' : '#10b981'}">${f.bloqueado ? 'Bloqueado' : 'Ativo'}</span></td>
-                                    </tr>
-                                `).join('')
-                                : '<tr><td colspan="3" style="text-align: center; color: #aaa;">Nenhum funcionário</td></tr>'
-                            }
-                        </tbody>
-                    </table>
+            return `
+                <div class="empresa">
+                    <div class="empresa-header">
+                        <div>
+                            <div><strong>Empresa:</strong> ${empresa.nome || empresa.email || empresa.uid}</div>
+                            <div><strong>Status:</strong> <span style="color: ${empresa.bloqueado ? '#dc2626' : '#10b981'}">${empresa.bloqueado ? 'Bloqueada' : 'Ativa'}</span></div>
+                            <div><strong>Funcionários Cadastrados:</strong> <strong>${totalFuncionarios}</strong></div>
+                        </div>
+                        <div class="button-group">
+                            <button data-id="${empresa.uid}" class="btn-delete">Excluir</button>
+                            <button data-id="${empresa.uid}" class="${empresa.bloqueado ? 'btn-unblock' : 'btn-block'}">
+                                ${empresa.bloqueado ? 'Desbloquear' : 'Bloquear'}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="trial-management">
+                        <strong>Dias de Teste Grátis:</strong>
+                        <input type="number" class="trial-input" id="trial-input-${empresa.uid}" value="${empresa.freeEmDias === undefined ? 15 : empresa.freeEmDias}">
+                        <button data-id="${empresa.uid}" class="btn-save-trial">Salvar</button>
+                    </div>
+
+                    <div class="license-management" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #f3f4f6;">
+                        <strong>Licenças Contratadas (para cobrança):</strong>
+                        <input type="number" class="license-input" id="license-input-${empresa.uid}" value="${licencaValue}">
+                        <button data-id="${empresa.uid}" class="btn-save-license">Salvar</button>
+                    </div>
+
+                    <div style="margin-top: 16px;">
+                        <strong>Funcionários:</strong>
+                        <table style="width: 100%; margin-top: 8px; border-collapse: collapse;">
+                            <thead><tr style="background: #f3f4f6;"><th>Nome</th><th>Email</th><th>Status</th></tr></thead>
+                            <tbody>
+                                ${(empresa.funcionarios && empresa.funcionarios.length > 0)
+                                    ? empresa.funcionarios.map(f => `
+                                        <tr class="${f.bloqueado ? 'blocked' : ''}">
+                                            <td>${f.nome || '-'}</td>
+                                            <td>${f.email || '-'}</td>
+                                            <td><span style="color: ${f.bloqueado ? '#dc2626' : '#10b981'}">${f.bloqueado ? 'Bloqueado' : 'Ativo'}</span></td>
+                                        </tr>
+                                    `).join('')
+                                    : '<tr><td colspan="3" style="text-align: center; color: #aaa;">Nenhum funcionário</td></tr>'
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
     render(htmlFinal);
 }
 
 // --- Função Principal para Carregar os Dados ---
-// SUA FUNÇÃO DE CARREGAMENTO ORIGINAL ESTÁ PERFEITA E CONTINUA AQUI, SEM ALTERAÇÕES.
 async function carregarDados() {
     console.log("carregarDados iniciado");
     render('<div class="loading">Carregando dados das empresas...</div>');
@@ -210,7 +252,7 @@ async function carregarDados() {
 }
 
 // ======================================================================
-//          PONTO DE ENTRADA: LÓGICA DE AUTENTICAÇÃO ROBUSTA
+//         PONTO DE ENTRADA: LÓGICA DE AUTENTICAÇÃO ROBUSTA
 // ======================================================================
 function inicializarPainelAdmin() {
     render('<div class="loading">Verificando permissões de administrador...</div>');
