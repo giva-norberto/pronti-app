@@ -1,4 +1,4 @@
-/ ======================================================================
+// ======================================================================
 //                      USERSERVICE.JS (CORRIGIDO PARA ESTABILIDADE)
 // ======================================================================
 
@@ -172,3 +172,16 @@ export async function verificarAcesso() {
                         console.log("[AuthGuard] Funcionário pendente ou inativo. Redirecionando para login.");
                         // Se o usuário não é dono e não é um profissional ativo, ele não pode acessar.
                         // Redireciona para login ou uma página de 
+                    }
+                }
+
+                cachedSessionProfile = userProfile;
+                resolve(userProfile);
+
+            } catch (error) {
+                console.error("[AuthGuard] Erro de verificação de acesso:", error);
+                reject(error);
+            }
+        });
+    });
+}
