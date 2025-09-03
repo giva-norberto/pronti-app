@@ -68,21 +68,56 @@
 </head>
 <body>
 
-    <div class="container-assinatura">
+    <div class="container-assinatura" id="assinatura-container" style="display:none;">
         <h1>O seu período de teste terminou!</h1>
         <p>Agradecemos por experimentar o Pronti. Para continuar a gerir o seu negócio, por favor, escolha um dos nossos planos.</p>
         
         <button id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</button>
-
         <button id="btn-logout" class="btn-logout">Sair da conta</button>
     </div>
 
     <script type="module">
         import { auth } from "./firebase-config.js";
         import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { doc, getDoc, getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const btnLogout = document.getElementById('btn-logout');
         const btnAssinar = document.getElementById('btn-assinar');
+        const container = document.getElementById('assinatura-container');
+        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+
+        // Função para verificar freeEmDias e exibir tela somente se estiver zerado ou ausente
+        async function checarDiasTeste() {
+            if (!empresaAtivaId) {
+                // Se não houver empresa ativa, mostra o bloqueio mesmo assim
+                container.style.display = "block";
+                return;
+            }
+            try {
+                const db = getFirestore();
+                const empresaRef = doc(db, "empresarios", empresaAtivaId);
+                const snap = await getDoc(empresaRef);
+                if (!snap.exists()) {
+                    container.style.display = "block";
+                    return;
+                }
+                const data = snap.data();
+                // Foco APENAS no campo freeEmDias
+                if (typeof data.freeEmDias === "number" && data.freeEmDias > 0) {
+                    // Tem dias de teste, não mostra bloqueio
+                    window.location.href = "index.html";
+                    return;
+                } else {
+                    // Não tem dias de teste, mostra bloqueio
+                    container.style.display = "block";
+                }
+            } catch (e) {
+                // Em caso de erro, por segurança mostra bloqueio
+                container.style.display = "block";
+            }
+        }
+
+        checarDiasTeste();
 
         if (btnLogout) {
             btnLogout.addEventListener('click', async () => {
@@ -98,7 +133,6 @@
         
         if(btnAssinar) {
             btnAssinar.addEventListener('click', () => {
-                // ALTERAÇÃO CIRÚRGICA: A linha abaixo redireciona para a tela de pagamento.
                 window.location.href = 'pagamento.html';
             });
         }
