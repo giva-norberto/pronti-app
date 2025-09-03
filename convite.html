@@ -98,7 +98,7 @@
         // CORREÇÃO: As instâncias 'auth' e 'db' vêm do seu arquivo central, garantindo a conexão correta.
         import { auth, db } from './firebase-config.js';
 
-        const btnGoogle = document.getElementById('btn-google-login' );
+        const btnGoogle = document.getElementById('btn-google-login'  );
         const formEmail = document.getElementById('form-email-login');
         const statusMessage = document.getElementById('status-message');
         const inviteBox = document.getElementById('invite-box');
@@ -128,12 +128,24 @@
             const mapaUsuarioRef = doc(db, "mapaUsuarios", user.uid);
 
             const nomeDisplay = user.displayName || user.email.split('@')[0];
-            const fotoDisplay = user.photoURL || `https://placehold.co/150x150/eef2ff/4f46e5?text=${nomeDisplay.charAt(0 ).toUpperCase()}`;
+            const fotoDisplay = user.photoURL || `https://placehold.co/150x150/eef2ff/4f46e5?text=${nomeDisplay.charAt(0  ).toUpperCase()}`;
 
-            await setDoc(profissionalRef, {
-                nome: nomeDisplay, email: user.email, fotoUrl: fotoDisplay,
-                uid: user.uid, status: 'pendente', criadoEm: serverTimestamp()
-            }, { merge: true });
+            // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
+            // O objeto de dados agora inclui o campo 'empresaId'.
+            // Isso é ESSENCIAL para que a regra de segurança 'allow list' funcione
+            // e o novo funcionário apareça na lista da equipe.
+            const dadosNovoProfissional = {
+                nome: nomeDisplay,
+                email: user.email,
+                fotoUrl: fotoDisplay,
+                uid: user.uid,
+                status: 'pendente',
+                criadoEm: serverTimestamp(),
+                empresaId: empresaId // <-- ESTA É A LINHA ADICIONADA
+            };
+            
+            await setDoc(profissionalRef, dadosNovoProfissional, { merge: true });
+            // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
 
             await setDoc(mapaUsuarioRef, { empresaId: empresaId });
 
