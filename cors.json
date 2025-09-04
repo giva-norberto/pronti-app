@@ -9,7 +9,7 @@
       "http://localhost:5001",
       "http://localhost:8080"
     ],
-    "method": [
+    "methodS": [
       "GET",
       "POST",
       "PUT",
@@ -19,7 +19,9 @@
     "responseHeader": [
       "Content-Type",
       "Authorization",
-      "x-goog-resumable"
+      "x-goog-resumable",
+      "x-goog-meta-*",
+      "x-goog-content-length-range"
     ],
     "maxAgeSeconds": 3600
   }
