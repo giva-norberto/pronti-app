@@ -230,7 +230,7 @@
             const userSession = await verificarAcesso();
             const { perfil } = userSession;
 
-            const primeiroNome = perfil.nome ? perfil.nome.split(' ')[0] : 'Usuário';
+            const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
             if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
             if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
 
