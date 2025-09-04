@@ -1,12 +1,15 @@
 // ======================================================================
 //                          EQUIPE.JS
-//        VERSÃO REVISADA: CRIAÇÃO DE FUNCIONÁRIO APENAS VIA CONVITE
+//        VERSÃO COM LÓGICA DE AUTO-CORREÇÃO PARA O PERFIL DO DONO
 // ======================================================================
 
 // Importação centralizada do Firebase config (nome do banco garantido)
 import { db, auth, storage } from "./firebase-config.js";
+import { collection, onSnapshot, query, where, doc, getDoc, setDoc, updateDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-// Horários base com dias INATIVOS por padrão, para novos funcionários
+
+// (O resto do seu código inicial: horariosBase, elementos, etc. permanece o mesmo)
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
     terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -18,13 +21,10 @@ let horariosBase = {
 };
 let intervaloBase = 30;
 let agendaEspecial = [];
-
 let empresaId = null;
 let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
-
-// Elementos DOM
 const elementos = {
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
     modalAddProfissional: document.getElementById('modal-add-profissional'),
@@ -49,11 +49,144 @@ const elementos = {
     agendaInicio: document.getElementById('agenda-inicio'),
     agendaFim: document.getElementById('agenda-fim'),
     btnAgendaEspecial: document.getElementById('btn-agenda-especial'),
-    agendaEspecialLista: document.getElementById('agenda-special-lista'),
+    agendaEspecialLista: document.getElementById('agenda-especial-lista'),
     inputIntervalo: document.getElementById('intervalo-atendimento'),
     btnConvite: document.getElementById('btn-convite'),
     permitirAgendamentoMultiplo: document.getElementById('permitir-agendamento-multiplo')
 };
+
+
+// ======================================================================
+//                      ✨ NOVA FUNÇÃO DE AUTO-CORREÇÃO ✨
+// Esta função verifica se o dono existe na equipe e se seus dados estão
+// corretos. Se não, ela cria ou corrige o perfil dele automaticamente.
+// ======================================================================
+async function garantirPerfilDoDono() {
+    const user = auth.currentUser;
+    // empresaId já é pego na função inicializar
+    if (!user || !empresaId) {
+        console.error("Usuário ou Empresa não identificado. Não foi possível garantir o perfil do dono.");
+        return;
+    }
+
+    try {
+        const empresaRef = doc(db, "empresarios", empresaId);
+        const empresaSnap = await getDoc(empresaRef);
+        if (!empresaSnap.exists() || empresaSnap.data().donoId !== user.uid) {
+            // Garante que o usuário logado é de fato o dono da empresa ativa.
+            console.error("Conflito de permissão: Usuário atual não é o dono da empresa ativa.");
+            return;
+        }
+
+        const donoId = user.uid;
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", donoId);
+        const profissionalSnap = await getDoc(profissionalRef);
+
+        if (!profissionalSnap.exists()) {
+            // CASO 1: O dono NÃO EXISTE na subcoleção 'profissionais'. VAMOS CRIÁ-LO.
+            console.log("Perfil do dono não encontrado na equipe. Criando agora...");
+
+            const usuarioRef = doc(db, "usuarios", donoId);
+            const usuarioSnap = await getDoc(usuarioRef);
+            const nomeDono = usuarioSnap.exists() && usuarioSnap.data().nome ? usuarioSnap.data().nome : "Dono";
+
+            await setDoc(profissionalRef, {
+                nome: nomeDono,
+                ehDono: true,
+                status: 'ativo',
+                criadoEm: serverTimestamp(),
+                uid: donoId,
+                fotoUrl: user.photoURL || "",
+                empresaId: empresaId // <-- O campo crucial é adicionado aqui!
+            });
+            console.log("Perfil do dono criado com sucesso na equipe.");
+
+        } else {
+            // CASO 2: O dono EXISTE, mas vamos verificar se o campo 'empresaId' está lá.
+            if (!profissionalSnap.data().empresaId) {
+                console.log("Perfil do dono está desatualizado. Corrigindo agora...");
+                await updateDoc(profissionalRef, {
+                    empresaId: empresaId // <-- O campo crucial é corrigido aqui!
+                });
+                console.log("Perfil do dono atualizado com sucesso.");
+            }
+        }
+    } catch (error) {
+        console.error("Erro crítico ao garantir o perfil do dono:", error);
+        mostrarErro("Não foi possível verificar e corrigir o perfil do dono da equipe.");
+    }
+}
+
+
+// Inicialização da equipe
+async function inicializar() {
+    try {
+        empresaId = localStorage.getItem("empresaAtivaId");
+        if (!empresaId) {
+            alert("Nenhuma empresa ativa selecionada!");
+            window.location.href = "selecionar-empresa.html";
+            return;
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // ======================================================================
+                //                  ✨ CHAMADA DA NOVA LÓGICA DE CORREÇÃO ✨
+                // Executa a verificação/correção ANTES de tentar carregar a equipe.
+                // ======================================================================
+                await garantirPerfilDoDono();
+
+                // Após a garantia, o resto do código funcionará normalmente.
+                await carregarServicos();
+                iniciarListenerDaEquipe();
+                adicionarEventListeners();
+
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+    } catch (error) {
+        console.error("Erro na inicialização:", error);
+        mostrarErro("Erro ao inicializar o sistema.");
+    }
+}
+
+async function iniciarListenerDaEquipe() {
+    // Esta função agora vai funcionar, pois garantirPerfilDoDono() já preparou os dados.
+    const empresaRef = doc(db, "empresarios", empresaId);
+    const empresaSnap = await getDoc(empresaRef);
+    if (!empresaSnap.exists()) {
+        console.error("Empresa não encontrada.");
+        return;
+    }
+    const donoId = empresaSnap.data().donoId;
+    let nomeCorretoDono = 'Dono';
+    const donoUsuarioRef = doc(db, "usuarios", donoId);
+    const donoUsuarioSnap = await getDoc(donoUsuarioRef);
+    if (donoUsuarioSnap.exists() && donoUsuarioSnap.data().nome) {
+        nomeCorretoDono = donoUsuarioSnap.data().nome;
+    }
+
+    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+    const q = query(profissionaisRef, where("empresaId", "==", empresaId));
+
+    onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            console.warn("Snapshot vazio. A função de garantir o dono pode não ter sido executada ou falhou.");
+            renderizarEquipe([]); // Renderiza o estado vazio se algo ainda der errado
+            return;
+        }
+        const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
+        if (donoNaEquipe) {
+            donoNaEquipe.nome = nomeCorretoDono;
+        }
+        renderizarEquipe(equipe);
+    }, (error) => console.error("Erro no listener da equipe:", error));
+}
+
+// ... (O RESTO DO SEU ARQUIVO `equipe.js` CONTINUA EXATAMENTE IGUAL DAQUI PARA BAIXO)
+// (renderizarEquipe, abrirPerfilProfissional, editarProfissional, etc.)
 
 // TABS do perfil
 function setupPerfilTabs() {
@@ -85,37 +218,10 @@ function setupPerfilTabs() {
 }
 window.addEventListener('DOMContentLoaded', setupPerfilTabs);
 
-// Inicialização da equipe
-async function inicializar() {
-    try {
-        // MULTIEMPRESA: PEGA empresaId do localStorage
-        empresaId = localStorage.getItem("empresaAtivaId");
-        // Validação: só mostra tela se não houver empresa ativa
-        if (!empresaId) {
-            alert("Nenhuma empresa ativa selecionada!");
-            window.location.href = "selecionar-empresa.html";
-            return;
-        }
-        // Autenticação
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                await carregarServicos();
-                iniciarListenerDaEquipe();
-                adicionarEventListeners();
-            } else {
-                window.location.href = "login.html";
-            }
-        });
-    } catch (error) {
-        console.error("Erro na inicialização:", error);
-        mostrarErro("Erro ao inicializar o sistema.");
-    }
-}
 
 function voltarMenuLateral() { window.location.href = "index.html"; }
 
 async function carregarServicos() {
-    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const servicosRef = collection(db, "empresarios", empresaId, "servicos");
         const snapshot = await getDocs(servicosRef);
@@ -126,43 +232,17 @@ async function carregarServicos() {
     }
 }
 
-async function iniciarListenerDaEquipe() {
-    const { collection, onSnapshot, query, where, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
-    const empresaRef = doc(db, "empresarios", empresaId);
-    const empresaSnap = await getDoc(empresaRef);
-    if (!empresaSnap.exists()) {
-        console.error("Empresa não encontrada, não foi possível corrigir o nome do dono.");
-        return;
-    }
-    const donoId = empresaSnap.data().donoId;
-    let nomeCorretoDono = 'Dono';
-    const donoUsuarioRef = doc(db, "usuarios", donoId);
-    const donoUsuarioSnap = await getDoc(donoUsuarioRef);
-    if (donoUsuarioSnap.exists() && donoUsuarioSnap.data().nome) {
-        nomeCorretoDono = donoUsuarioSnap.data().nome;
-    }
-    const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-    
-    // A query agora inclui o filtro 'where' que pode ser exigido por regras de segurança.
-    const q = query(profissionaisRef, where("empresaId", "==", empresaId));
-
-    onSnapshot(q, (snapshot) => {
-        const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
-        if (donoNaEquipe) {
-            donoNaEquipe.nome = nomeCorretoDono;
-        }
-        renderizarEquipe(equipe);
-    }, (error) => console.error("Erro no listener da equipe:", error));
-}
-
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
         elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda. Clique em "Convidar Funcionário" para começar.</p></div>`;
         return;
     }
-    equipe.forEach(profissional => {
+    equipe.sort((a, b) => {
+        if (a.ehDono) return -1;
+        if (b.ehDono) return 1;
+        return a.nome.localeCompare(b.nome);
+    }).forEach(profissional => {
         const div = document.createElement("div");
         div.className = "profissional-card";
         if (profissional.status === 'pendente') div.classList.add('pendente');
@@ -206,7 +286,6 @@ async function abrirPerfilProfissional(profissionalId) {
 }
 
 async function carregarDadosProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
@@ -259,9 +338,7 @@ function renderizarHorarios(horariosDataCompleta = {}) {
         { key: 'sexta', nome: 'Sexta-feira' }, { key: 'sabado', nome: 'Sábado' },
         { key: 'domingo', nome: 'Domingo' }
     ];
-
     elementos.inputIntervalo.value = horariosDataCompleta.intervalo || intervaloBase;
-
     diasSemana.forEach(dia => {
         const diaData = horariosDataCompleta[dia.key] || { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] };
         const estaAtivo = diaData.ativo;
@@ -293,7 +370,6 @@ function renderizarHorarios(horariosDataCompleta = {}) {
             </div>`;
         horariosLista.appendChild(div);
     });
-
     horariosLista.querySelectorAll('.toggle-dia').forEach(toggle => {
         toggle.addEventListener('change', function() {
             this.closest('.dia-horario').classList.toggle('inativo', !this.checked);
@@ -384,7 +460,6 @@ function adicionarAgendaEspecial() {
 }
 
 async function salvarPerfilProfissional() {
-    const { doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
         const horarios = coletarHorarios();
@@ -401,8 +476,6 @@ async function salvarPerfilProfissional() {
 }
 
 function adicionarEventListeners() {
-    // A FUNÇÃO DE ADICIONAR PROFISSIONAL MANUALMENTE FOI REMOVIDA DAQUI.
-
     if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
     elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
     elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
@@ -434,10 +507,7 @@ async function gerarLinkDeConvite() {
     }
 }
 
-// FUNÇÃO REMOVIDA - A função adicionarProfissional() estava aqui.
-
 async function editarProfissional(profissionalId) {
-    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         const profissionalDoc = await getDoc(profissionalRef);
@@ -459,8 +529,6 @@ async function editarProfissional(profissionalId) {
 }
 
 async function salvarEdicaoProfissional(profissionalId) {
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js" );
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) return alert("O nome do profissional é obrigatório.");
     let fotoURL = "";
@@ -488,7 +556,6 @@ async function salvarEdicaoProfissional(profissionalId) {
 
 async function excluirProfissional(profissionalId) {
     if (!confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.")) return;
-    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await deleteDoc(profissionalRef);
@@ -500,7 +567,6 @@ async function excluirProfissional(profissionalId) {
 
 async function ativarFuncionario(profissionalId) {
     if (!confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.")) return;
-    const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, { status: 'ativo' });
