@@ -234,8 +234,11 @@
             if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
             if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
 
-            if (perfil.nomeFantasia) {
+            // CORRIGIDO: só mostra "Gerenciando: ..." se o usuário logado for diferente do dono da empresa
+            if (perfil.nomeFantasia && perfil.donoId && perfil.donoId !== perfil.uid) {
                 if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `Gerenciando: ${perfil.nomeFantasia}`;
+            } else {
+                if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = ""; // Não mostra nada se for o dono
             }
             
         } catch (error) {
