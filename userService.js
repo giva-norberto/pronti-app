@@ -1,16 +1,16 @@
 // ======================================================================
-// USERSERVICE.JS (REVISADO, ESTÁVEL E MULTIEMPRESAS)
+// USERSERVICE.JS (MULTIEMPRESAS: ENTRA DIRETO SE SÓ TEM UMA EMPRESA - REVISADO)
 // ======================================================================
 
 import {
-    collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
+    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
 let cachedSessionProfile = null;
 
-// --- Funções Auxiliares ---
+// --- Garante que o usuário tem um doc na coleção "usuarios" e trial ativo ---
 export async function ensureUserAndTrialDoc() {
     const user = auth.currentUser;
     if (!user) return;
@@ -30,6 +30,7 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
+// --- Checa status do usuário/plano ---
 async function checkUserStatus(user, empresaData) {
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
@@ -47,9 +48,7 @@ async function checkUserStatus(user, empresaData) {
     return { hasActivePlan: false, isTrialActive: endDate > new Date() };
 }
 
-// ======================================================================
-// FUNÇÃO PRINCIPAL DE AUTENTICAÇÃO E PERMISSÃO MULTIEMPRESAS
-// ======================================================================
+// --- Autenticação, multiempresas: entra direto se só tem uma empresa ---
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
         return Promise.resolve(cachedSessionProfile);
@@ -125,47 +124,36 @@ export async function verificarAcesso() {
                     return reject(new Error("Sem empresa vinculada."));
                 }
 
-                // Se mais de uma empresa, redireciona para seleção
-                if (empresasDoUsuario.length > 1 && !paginasDeConfiguracao.includes(currentPage) && currentPage !== 'selecionar-empresa.html') {
-                    window.location.replace('selecionar-empresa.html');
-                    return reject(new Error("Multiempresas: necessário selecionar empresa."));
-                }
-
-                // 5. Seleção automática se só tem uma empresa
+                // --- ENTRA DIRETO SE SÓ TEM UMA EMPRESA ---
                 let empresaSelecionadaId = localStorage.getItem('empresaAtivaId');
                 let empresaEscolhida = null;
 
-                if (!empresaSelecionadaId) {
-                    if (empresasDoUsuario.length === 1) {
-                        empresaEscolhida = empresasDoUsuario[0];
+                if (empresasDoUsuario.length === 1) {
+                    empresaEscolhida = empresasDoUsuario[0];
+                    if (empresaSelecionadaId !== empresaEscolhida.id) {
                         localStorage.setItem('empresaAtivaId', empresaEscolhida.id);
                         empresaSelecionadaId = empresaEscolhida.id;
-                    } else {
-                        // Se não selecionou, pede seleção
-                        if (!paginasDeConfiguracao.includes(currentPage)) {
-                            window.location.replace('selecionar-empresa.html');
-                        }
-                        return reject(new Error("Seleção de empresa necessária."));
                     }
+                    // NÃO redireciona para seleção!
                 } else {
-                    empresaEscolhida = empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId);
-                    if (!empresaEscolhida) {
-                        localStorage.removeItem('empresaAtivaId');
-                        if (!paginasDeConfiguracao.includes(currentPage)) {
+                    // Mais de uma empresa, precisa selecionar
+                    if (!empresaSelecionadaId || !empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId)) {
+                        if (!paginasDeConfiguracao.includes(currentPage) && currentPage !== 'selecionar-empresa.html') {
                             window.location.replace('selecionar-empresa.html');
                         }
-                        return reject(new Error("Empresa selecionada não encontrada."));
+                        return reject(new Error("Multiempresas: necessário selecionar empresa."));
                     }
+                    empresaEscolhida = empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId);
                 }
 
-                // 6. Verificar status da assinatura
+                // 5. Verificar status da assinatura
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaEscolhida.empresaData);
                 if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
                     window.location.replace('assinatura.html');
                     return reject(new Error("Assinatura expirada."));
                 }
 
-                // 7. Determinar perfil: dono, admin ou funcionário
+                // 6. Determinar perfil: dono, admin ou funcionário
                 const isOwner = empresaEscolhida.empresaData.donoId === user.uid;
                 let userProfile = null;
 
@@ -193,7 +181,6 @@ export async function verificarAcesso() {
                             role: "funcionario"
                         };
                     } else {
-                        // Funcionário existe mas não está ativo, ou não foi encontrado
                         if (!paginasPublicas.includes(currentPage)) {
                             window.location.replace('login.html');
                         }
