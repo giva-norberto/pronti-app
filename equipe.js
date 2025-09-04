@@ -147,15 +147,10 @@ async function iniciarListenerDaEquipe() {
         }
         const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // ======================= CORREÇÃO 1: NOME DO DONO =======================
-        // A lógica de sobrescrever o nome foi removida.
-        // Agora, confiamos no nome que vem diretamente do snapshot.
         const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
         if (donoNaEquipe && !donoNaEquipe.nome) {
-            // Usa o nome da coleção /usuarios apenas como um fallback se o nome estiver vazio.
             donoNaEquipe.nome = nomeCorretoDonoFallback;
         }
-        // ======================= FIM DA CORREÇÃO 1 =======================
 
         renderizarEquipe(equipe);
     }, (error) => console.error("Erro no listener da equipe:", error));
@@ -501,7 +496,13 @@ async function salvarEdicaoProfissional(profissionalId) {
     try {
         if (fotoFile) {
             console.log("Iniciando upload da foto...");
-            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
+            
+            // ======================= INÍCIO DA CORREÇÃO CIRÚRGICA =======================
+            // O caminho agora inclui o `profissionalId` para corresponder às regras de
+            // segurança e para uma melhor organização dos arquivos no Storage.
+            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`);
+            // ======================= FIM DA CORREÇÃO CIRÚRGICA =======================
+
             const snapshot = await uploadBytes(storageRef, fotoFile);
             const fotoURL = await getDownloadURL(snapshot.ref);
             updateData.fotoUrl = fotoURL; 
