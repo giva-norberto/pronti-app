@@ -495,12 +495,8 @@ async function salvarEdicaoProfissional(profissionalId) {
         if (fotoFile) {
             console.log("Iniciando upload da foto...");
             
-            // ======================= INÍCIO DA CORREÇÃO CIRÚRGICA =======================
-            // O caminho agora inclui o `profissionalId` para corresponder às regras de
-            // segurança e para uma melhor organização dos arquivos no Storage.
             const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`);
-            // ======================= FIM DA CORREÇÃO CIRÚRGICA =======================
-
+            
             const snapshot = await uploadBytes(storageRef, fotoFile);
             const fotoURL = await getDownloadURL(snapshot.ref);
             updateData.fotoUrl = fotoURL; 
@@ -559,4 +555,3 @@ window.ativarFuncionario = ativarFuncionario;
 window.recusarFuncionario = recusarFuncionario;
 
 window.addEventListener("DOMContentLoaded", inicializar);
-
