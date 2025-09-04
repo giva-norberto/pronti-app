@@ -1,5 +1,5 @@
 // ======================================================================
-//                      USERSERVICE.JS (REVISADO: ESTABILIDADE + PERFIL ADMIN/DONO/FUNCIONÁRIO)
+// USERSERVICE.JS (REVISADO, ESTÁVEL E MULTIEMPRESAS)
 // ======================================================================
 
 import {
@@ -8,17 +8,9 @@ import {
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
-// "Memória" para evitar re-verificação
 let cachedSessionProfile = null;
 
 // --- Funções Auxiliares ---
-async function getEmpresasDoDono(uid) {
-    if (!uid) return null;
-    const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot;
-}
-
 export async function ensureUserAndTrialDoc() {
     const user = auth.currentUser;
     if (!user) return;
@@ -56,7 +48,7 @@ async function checkUserStatus(user, empresaData) {
 }
 
 // ======================================================================
-// FUNÇÃO PRINCIPAL: PERFIL ADMIN/DONO/FUNCIONÁRIO COM ESTABILIDADE
+// FUNÇÃO PRINCIPAL DE AUTENTICAÇÃO E PERMISSÃO MULTIEMPRESAS
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
@@ -74,7 +66,6 @@ export async function verificarAcesso() {
             // 1. Usuário não logado
             if (!user) {
                 if (!paginasPublicas.includes(currentPage)) {
-                    console.log("[AuthGuard] Usuário não logado. Redirecionando para login.");
                     window.location.replace('login.html');
                 }
                 return reject(new Error("Utilizador não autenticado."));
@@ -86,99 +77,123 @@ export async function verificarAcesso() {
                 // 2. Admin
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 if (user.uid === ADMIN_UID) {
-                    cachedSessionProfile = { user, isAdmin: true, perfil: { nome: "Admin" }, isOwner: true, role: 'admin' };
+                    cachedSessionProfile = {
+                        user,
+                        isAdmin: true,
+                        perfil: { nome: "Admin" },
+                        isOwner: true,
+                        role: 'admin',
+                        empresaId: null
+                    };
                     return resolve(cachedSessionProfile);
                 }
 
-                // 3. Obter empresaId do mapaUsuarios
-                const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
-                let empresaAtivaId = null;
-
-                if (mapaSnap.exists()) {
-                    empresaAtivaId = mapaSnap.data().empresaId;
-                } else {
-                    if (!paginasDeConfiguracao.includes(currentPage)) {
-                        console.log("[AuthGuard] Primeiro acesso (sem mapa). Redirecionando para perfil.");
-                        window.location.replace('perfil.html');
+                // 3. Buscar empresas do usuário (multiempresas)
+                const empresasCol = collection(db, "empresarios");
+                const empresasSnap = await getDocs(empresasCol);
+                const empresasDoUsuario = [];
+                empresasSnap.forEach(docRef => {
+                    const empresaData = docRef.data();
+                    const isOwner = empresaData.donoId === user.uid;
+                    let isProfissional = false;
+                    let ehDonoProfissional = false;
+                    if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
+                        isProfissional = empresaData.profissionais.some(prof =>
+                            prof && prof.uid === user.uid
+                        );
+                        ehDonoProfissional = empresaData.profissionais.some(prof =>
+                            prof && prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true")
+                        );
                     }
-                    return reject(new Error("primeiro_acesso"));
+                    const isDonoFinal = isOwner || ehDonoProfissional;
+                    if (isDonoFinal || isProfissional) {
+                        empresasDoUsuario.push({
+                            id: docRef.id,
+                            nome: empresaData.nome || 'Empresa sem nome',
+                            isDono: isDonoFinal,
+                            isProfissional,
+                            empresaData
+                        });
+                    }
+                });
+
+                // 4. Validação de múltiplas empresas
+                if (empresasDoUsuario.length === 0) {
+                    if (!paginasDeConfiguracao.includes(currentPage)) {
+                        window.location.replace('selecionar-empresa.html');
+                    }
+                    return reject(new Error("Sem empresa vinculada."));
                 }
 
-                // 4. Seleciona empresa ativa pelo localStorage ou mapa
+                // Se mais de uma empresa, redireciona para seleção
+                if (empresasDoUsuario.length > 1 && !paginasDeConfiguracao.includes(currentPage) && currentPage !== 'selecionar-empresa.html') {
+                    window.location.replace('selecionar-empresa.html');
+                    return reject(new Error("Multiempresas: necessário selecionar empresa."));
+                }
+
+                // 5. Seleção automática se só tem uma empresa
                 let empresaSelecionadaId = localStorage.getItem('empresaAtivaId');
+                let empresaEscolhida = null;
+
                 if (!empresaSelecionadaId) {
-                    if (empresaAtivaId) {
-                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                        empresaSelecionadaId = empresaAtivaId;
+                    if (empresasDoUsuario.length === 1) {
+                        empresaEscolhida = empresasDoUsuario[0];
+                        localStorage.setItem('empresaAtivaId', empresaEscolhida.id);
+                        empresaSelecionadaId = empresaEscolhida.id;
                     } else {
+                        // Se não selecionou, pede seleção
                         if (!paginasDeConfiguracao.includes(currentPage)) {
-                            console.log("[AuthGuard] Nenhuma empresa ativa. Redirecionando para seleção.");
                             window.location.replace('selecionar-empresa.html');
                         }
-                        return reject(new Error("Redirecionando para seleção de empresa."));
+                        return reject(new Error("Seleção de empresa necessária."));
                     }
-                }
-
-                // 5. Carregar dados da empresa
-                let empresaDocSnap = null;
-                let empresaData = null;
-                if (empresaSelecionadaId) {
-                    empresaDocSnap = await getDoc(doc(db, "empresarios", empresaSelecionadaId));
-                    if (empresaDocSnap.exists()) {
-                        empresaData = empresaDocSnap.data();
-                    } else {
-                        console.error(`[AuthGuard] Inconsistência: empresaId ${empresaSelecionadaId} inexistente.`);
+                } else {
+                    empresaEscolhida = empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId);
+                    if (!empresaEscolhida) {
                         localStorage.removeItem('empresaAtivaId');
                         if (!paginasDeConfiguracao.includes(currentPage)) {
                             window.location.replace('selecionar-empresa.html');
                         }
-                        return reject(new Error("Empresa não encontrada ou removida."));
+                        return reject(new Error("Empresa selecionada não encontrada."));
                     }
-                } else {
-                    if (!paginasDeConfiguracao.includes(currentPage)) {
-                        window.location.replace('selecionar-empresa.html');
-                    }
-                    return reject(new Error("Erro: Empresa ativa não definida."));
                 }
 
                 // 6. Verificar status da assinatura
-                const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+                const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaEscolhida.empresaData);
                 if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
-                    console.log("[AuthGuard] Assinatura expirada. Redirecionando.");
                     window.location.replace('assinatura.html');
                     return reject(new Error("Assinatura expirada."));
                 }
 
                 // 7. Determinar perfil: dono, admin ou funcionário
-                const isOwner = empresaData.donoId === user.uid;
+                const isOwner = empresaEscolhida.empresaData.donoId === user.uid;
                 let userProfile = null;
 
                 if (isOwner) {
                     userProfile = {
                         user,
-                        empresaId: empresaDocSnap.id,
-                        perfil: empresaData,
+                        empresaId: empresaEscolhida.id,
+                        perfil: empresaEscolhida.empresaData,
                         isOwner: true,
                         isAdmin: false,
                         role: "dono"
                     };
                 } else {
                     // Verifica funcionário ativo na SUBCOLEÇÃO profissionais
-                    const profissionalRef = doc(db, "empresarios", empresaDocSnap.id, "profissionais", user.uid);
+                    const profissionalRef = doc(db, "empresarios", empresaEscolhida.id, "profissionais", user.uid);
                     const profissionalSnap = await getDoc(profissionalRef);
 
                     if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
                         userProfile = {
                             user,
                             perfil: profissionalSnap.data(),
-                            empresaId: empresaDocSnap.id,
+                            empresaId: empresaEscolhida.id,
                             isOwner: false,
                             isAdmin: false,
                             role: "funcionario"
                         };
                     } else {
                         // Funcionário existe mas não está ativo, ou não foi encontrado
-                        console.log("[AuthGuard] Funcionário pendente ou inativo. Redirecionando para login.");
                         if (!paginasPublicas.includes(currentPage)) {
                             window.location.replace('login.html');
                         }
@@ -190,7 +205,6 @@ export async function verificarAcesso() {
                 resolve(userProfile);
 
             } catch (error) {
-                console.error("[AuthGuard] Erro de verificação de acesso:", error);
                 reject(error);
             }
         });
