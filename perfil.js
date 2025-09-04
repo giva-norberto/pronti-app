@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (LÓGICA CORRIGIDA - CRIAR NOVA EMPRESA SEM ALTERAR ANTERIOR)
+// PERFIL.JS (COMPLETO E REVISADO - MULTIEMPRESAS, LOGOUT AUTOMÁTICO E SELEÇÃO)
 // ======================================================================
 
 import {
@@ -42,43 +42,63 @@ window.addEventListener('DOMContentLoaded', () => {
         btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
         btnLogout: document.getElementById('btn-logout'),
         msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
-        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa')
+        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa'),
+        empresaSelectorGroup: document.getElementById('empresa-selector-group'),
+        selectEmpresa: document.getElementById('selectEmpresa')
     };
 
-    // Variável GLOBAL que controla o contexto do cadastro/edição
     let empresaId = null;
     let currentUser;
+    let empresasDoDono = [];
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             currentUser = user;
-            await carregarDadosDaPagina(user.uid);
+            await carregarEmpresasDoUsuario(user.uid);
             adicionarListenersDeEvento();
         } else {
             window.location.href = 'login.html';
         }
     });
 
-    async function carregarDadosDaPagina(uid) {
-        try {
-            const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
-            const snapshot = await getDocs(q);
+    async function carregarEmpresasDoUsuario(uid) {
+        const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
+        const snapshot = await getDocs(q);
+        empresasDoDono = snapshot.docs.map(doc => ({
+            id: doc.id,
+            nome: doc.data().nomeFantasia || doc.id,
+            dados: doc.data()
+        }));
 
-            if (snapshot.empty) {
+        // Mostra dropdown se houver mais de uma empresa
+        if (elements.empresaSelectorGroup && elements.selectEmpresa) {
+            if (empresasDoDono.length > 1) {
+                elements.empresaSelectorGroup.style.display = '';
+                elements.selectEmpresa.innerHTML = '';
+                empresasDoDono.forEach(empresa => {
+                    const opt = document.createElement('option');
+                    opt.value = empresa.id;
+                    opt.textContent = empresa.nome;
+                    elements.selectEmpresa.appendChild(opt);
+                });
+                empresaId = empresasDoDono[0].id;
+                preencherFormulario(empresasDoDono[0].dados);
+                mostrarCamposExtras();
+                elements.selectEmpresa.onchange = function() {
+                    empresaId = this.value;
+                    const empresaSel = empresasDoDono.find(e => e.id === empresaId);
+                    preencherFormulario(empresaSel.dados);
+                    mostrarCamposExtras();
+                };
+            } else if (empresasDoDono.length === 1) {
+                elements.empresaSelectorGroup.style.display = 'none';
+                empresaId = empresasDoDono[0].id;
+                preencherFormulario(empresasDoDono[0].dados);
+                mostrarCamposExtras();
+            } else {
                 empresaId = null;
                 atualizarTelaParaNovoPerfil();
-            } else {
-                const empresaDoc = snapshot.docs[0];
-                empresaId = empresaDoc.id;
-                const dadosEmpresa = empresaDoc.data();
-                preencherFormulario(dadosEmpresa);
-                mostrarCamposExtras();
-                if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
-                if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
             }
-        } catch (error) {
-            console.error("Erro ao carregar dados:", error);
-            alert("Erro ao carregar dados do perfil: " + error.message);
         }
     }
 
@@ -86,14 +106,11 @@ window.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         elements.btnSalvar.disabled = true;
         elements.btnSalvar.textContent = 'A salvar...';
-
         try {
             const uid = currentUser?.uid;
             if (!uid) throw new Error("Utilizador não autenticado.");
-
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
-
             const timestampCliente = new Date();
 
             const dadosEmpresa = {
@@ -120,38 +137,24 @@ window.addEventListener('DOMContentLoaded', () => {
                 dadosEmpresa.createdAt = timestampCliente;
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 empresaId = novaEmpresaRef.id;
-
                 await setDoc(doc(db, "mapaUsuarios", uid), { empresaId: empresaId });
-
-                const dadosProfissional = {
+                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), {
                     uid: uid,
                     nome: currentUser.displayName || nomeNegocio,
                     fotoUrl: currentUser.photoURL || "",
                     ehDono: true,
                     criadoEm: timestampCliente,
                     status: "ativo"
-                };
-                await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
-
-                preencherFormulario(dadosEmpresa);
-                mostrarCamposExtras();
-                if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
-                if (elements.msgCadastroSucesso) {
-                    elements.msgCadastroSucesso.innerHTML = `O seu negócio foi cadastrado com sucesso!<br>
-Você ganhou <strong>15 dias grátis</strong>!`;
-                    elements.msgCadastroSucesso.style.display = "block";
-                    setTimeout(() => {
-                        elements.msgCadastroSucesso.style.display = "none";
-                    }, 6000);
-                }
-                alert("Negócio cadastrado com sucesso!");
+                });
+                alert("Negócio cadastrado! Você irá sair para logar novamente e selecionar sua empresa.");
+                await signOut(auth);
+                window.location.href = 'login.html';
+                return; // Para aqui
             } else {
                 // EDITANDO EMPRESA EXISTENTE
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
-                await setDoc(doc(db, "mapaUsuarios", uid), { empresaId: empresaId });
             }
-
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
             alert("Ocorreu um erro ao salvar: " + error.message);
@@ -161,13 +164,11 @@ Você ganhou <strong>15 dias grátis</strong>!`;
         }
     }
 
-    // NOVA LÓGICA: Quando clicar em "Criar Nova Empresa", zera empresaId e limpa tudo
     function handleCriarNovaEmpresa() {
-        empresaId = null; // ESSENCIAL: garante que o próximo submit é NOVO CADASTRO!
+        empresaId = null;
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
-        camposExtras.forEach(el => { if (el) el.style.display = 'none'; });
+        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Negócio";
     }
@@ -185,7 +186,11 @@ Você ganhou <strong>15 dias grátis</strong>!`;
             }
         });
         if (elements.btnCriarNovaEmpresa) {
-            elements.btnCriarNovaEmpresa.addEventListener('click', handleCriarNovaEmpresa);
+            elements.btnCriarNovaEmpresa.addEventListener('click', function() {
+                if (confirm("Você irá sair e precisará logar novamente para selecionar sua empresa. Deseja continuar?")) {
+                    handleCriarNovaEmpresa();
+                }
+            });
         }
         if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
             try { 
@@ -202,15 +207,14 @@ Você ganhou <strong>15 dias grátis</strong>!`;
         if (elements.form) elements.form.reset();
         empresaId = null;
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
-        camposExtras.forEach(el => { if (el ) el.style.display = 'none'; });
+        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
-        if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'none';
+        if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
+        if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
     }
 
     function mostrarCamposExtras() {
-        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
-        camposExtras.forEach(el => { if (el) el.style.display = ''; });
+        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el) el.style.display = ''; });
         if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
     }
 
@@ -223,7 +227,6 @@ Você ganhou <strong>15 dias grátis</strong>!`;
         if (elements.logoPreview && dadosEmpresa.logoUrl) {
             elements.logoPreview.src = dadosEmpresa.logoUrl;
         }
-
         if (!empresaId) return;
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
