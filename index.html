@@ -226,31 +226,44 @@
     }
 
     async function inicializarDashboard() {
+        console.debug("[DEBUG] inicializarDashboard: Iniciando");
         try {
             const userSession = await verificarAcesso();
+            console.debug("[DEBUG] inicializarDashboard: userSession", userSession);
+
             const { perfil } = userSession;
+            console.debug("[DEBUG] inicializarDashboard: perfil", perfil);
 
             const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
+            console.debug("[DEBUG] inicializarDashboard: primeiroNome", primeiroNome);
+
             if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
             if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
 
             if (perfil.nomeFantasia) {
+                console.debug("[DEBUG] inicializarDashboard: nomeFantasia", perfil.nomeFantasia);
                 if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
             }
             
         } catch (error) {
+            console.debug("[DEBUG] inicializarDashboard: catch error", error);
             if (error.message === "primeiro_acesso") {
                 mostrarPrimeiroAcessoCard();
+                console.debug("[DEBUG] inicializarDashboard: primeiro_acesso - mostrando card de primeiro acesso");
             } else if (!error.message.includes("Redirecionando")) {
                 console.error("[index.html] Erro não tratado na inicialização:", error);
             }
         } finally {
+            console.debug("[DEBUG] inicializarDashboard: removendo is-loading");
             removerIsLoading();
         }
     }
 
     inicializarDashboard();
-    setTimeout(removerIsLoading, 3000);
+    setTimeout(() => {
+        console.debug("[DEBUG] Timeout removerIsLoading");
+        removerIsLoading();
+    }, 3000);
 </script>
 
 </body>
