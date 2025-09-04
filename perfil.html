@@ -251,7 +251,6 @@
                     <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">
                         <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
                     </a>
-                    <!-- BOTÃO PARA CRIAR NOVA EMPRESA -->
                     <button id="btn-criar-nova-empresa" class="btn-new" type="button" style="background-color: #10b981;">
                         <i class="fa-solid fa-plus"></i> Criar Nova Empresa
                     </button>
@@ -335,17 +334,15 @@
           }, 10);
         });
 
-      // CORREÇÃO DO BOTÃO "Criar Nova Empresa"
+      // Lógica do botão "Criar Nova Empresa" - Limpa o formulário e zera empresaId global
       document.getElementById('btn-criar-nova-empresa').addEventListener('click', function() {
-        // Limpa o formulário e prepara para novo cadastro
         document.getElementById('main-title').textContent = "Crie o Perfil do seu Negócio";
         document.getElementById('form-perfil').reset();
         document.getElementById('logo-preview').src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         document.getElementById('container-link-vitrine').style.display = 'none';
         document.getElementById('mensagem-cadastro-sucesso').style.display = 'none';
         // Sinaliza para o JS principal que é novo cadastro
-        if (window.empresaId !== undefined) window.empresaId = null;
-        // Se você usa variável empresaId no perfil.js, garanta que ela é zerada aqui!
+        window.empresaId = null; // Zera a variável global usada no perfil.js
       });
     });
     </script>
