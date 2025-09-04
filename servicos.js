@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO CORRIGIDA - SEM REDIRECIONAMENTO INDEVIDO)
+// ARQUIVO: servicos.js (VERSÃO COMPLETA, REVISADA, MULTIEMPRESAS, SEM REDIRECIONAMENTO INDEVIDO)
 // ======================================================================
 
 // 1. Importa as funções da versão correta e consistente do Firebase
