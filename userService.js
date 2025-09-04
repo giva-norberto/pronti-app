@@ -1,5 +1,5 @@
 // ======================================================================
-//                      USERSERVICE.JS (CORRIGIDO PARA ESTABILIDADE)
+//                      USERSERVICE.JS (REVISADO: ESTABILIDADE + PERFIL ADMIN/DONO/FUNCIONÁRIO)
 // ======================================================================
 
 import {
@@ -11,7 +11,7 @@ import { db, auth } from './firebase-config.js';
 // "Memória" para evitar re-verificação
 let cachedSessionProfile = null;
 
-// --- Funções Auxiliares (mantidas, mas getEmpresasDoDono não será mais usada no fluxo principal) ---
+// --- Funções Auxiliares ---
 async function getEmpresasDoDono(uid) {
     if (!uid) return null;
     const q = query(collection(db, "empresarios"), where("donoId", "==", uid));
@@ -56,7 +56,7 @@ async function checkUserStatus(user, empresaData) {
 }
 
 // ======================================================================
-// FUNÇÃO PRINCIPAL COM A LÓGICA DE ROTEAMENTO CENTRALIZADA (CORRIGIDA)
+// FUNÇÃO PRINCIPAL: PERFIL ADMIN/DONO/FUNCIONÁRIO COM ESTABILIDADE
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
@@ -69,7 +69,7 @@ export async function verificarAcesso() {
 
             const currentPage = window.location.pathname.split('/').pop();
             const paginasPublicas = ['login.html', 'cadastro.html'];
-            const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html']; // Assinatura também é config
+            const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html'];
 
             // 1. Usuário não logado
             if (!user) {
@@ -90,14 +90,13 @@ export async function verificarAcesso() {
                     return resolve(cachedSessionProfile);
                 }
 
-                // 3. Obter empresaId do mapaUsuarios (fonte primária para todos os usuários)
+                // 3. Obter empresaId do mapaUsuarios
                 const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
                 let empresaAtivaId = null;
 
                 if (mapaSnap.exists()) {
                     empresaAtivaId = mapaSnap.data().empresaId;
                 } else {
-                    // Se não tem mapa, é primeiro acesso ou erro. Redireciona para perfil.
                     if (!paginasDeConfiguracao.includes(currentPage)) {
                         console.log("[AuthGuard] Primeiro acesso (sem mapa). Redirecionando para perfil.");
                         window.location.replace('perfil.html');
@@ -105,15 +104,13 @@ export async function verificarAcesso() {
                     return reject(new Error("primeiro_acesso"));
                 }
 
-                // 4. Lógica de seleção de empresa (se não tiver uma empresa ativa no localStorage)
+                // 4. Seleciona empresa ativa pelo localStorage ou mapa
                 let empresaSelecionadaId = localStorage.getItem('empresaAtivaId');
                 if (!empresaSelecionadaId) {
-                    // Se o mapa tem empresaId, usa ele como padrão
                     if (empresaAtivaId) {
                         localStorage.setItem('empresaAtivaId', empresaAtivaId);
                         empresaSelecionadaId = empresaAtivaId;
                     } else {
-                        // Se nem no mapa nem no localStorage tem empresa, redireciona para seleção
                         if (!paginasDeConfiguracao.includes(currentPage)) {
                             console.log("[AuthGuard] Nenhuma empresa ativa. Redirecionando para seleção.");
                             window.location.replace('selecionar-empresa.html');
@@ -122,7 +119,7 @@ export async function verificarAcesso() {
                     }
                 }
 
-                // 5. Carregar dados da empresa (agora com empresaSelecionadaId garantido)
+                // 5. Carregar dados da empresa
                 let empresaDocSnap = null;
                 let empresaData = null;
                 if (empresaSelecionadaId) {
@@ -130,23 +127,21 @@ export async function verificarAcesso() {
                     if (empresaDocSnap.exists()) {
                         empresaData = empresaDocSnap.data();
                     } else {
-                        // Inconsistência: empresaId no mapa/localStorage não existe mais.
                         console.error(`[AuthGuard] Inconsistência: empresaId ${empresaSelecionadaId} inexistente.`);
-                        localStorage.removeItem('empresaAtivaId'); // Limpa para forçar nova seleção
+                        localStorage.removeItem('empresaAtivaId');
                         if (!paginasDeConfiguracao.includes(currentPage)) {
                             window.location.replace('selecionar-empresa.html');
                         }
                         return reject(new Error("Empresa não encontrada ou removida."));
                     }
                 } else {
-                    // Se por algum motivo empresaSelecionadaId ainda for nulo aqui, é um erro lógico.
                     if (!paginasDeConfiguracao.includes(currentPage)) {
                         window.location.replace('selecionar-empresa.html');
                     }
                     return reject(new Error("Erro: Empresa ativa não definida."));
                 }
 
-                // 6. Verificar status da assinatura (agora com empresaData seguro)
+                // 6. Verificar status da assinatura
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
                 if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
                     console.log("[AuthGuard] Assinatura expirada. Redirecionando.");
@@ -154,24 +149,40 @@ export async function verificarAcesso() {
                     return reject(new Error("Assinatura expirada."));
                 }
 
-                // 7. Determinar o perfil (dono ou funcionário) com base na empresa selecionada
+                // 7. Determinar perfil: dono, admin ou funcionário
                 const isOwner = empresaData.donoId === user.uid;
                 let userProfile = null;
 
                 if (isOwner) {
-                    userProfile = { user, empresaId: empresaDocSnap.id, perfil: empresaData, isOwner: true, role: "dono" };
+                    userProfile = {
+                        user,
+                        empresaId: empresaDocSnap.id,
+                        perfil: empresaData,
+                        isOwner: true,
+                        isAdmin: false,
+                        role: "dono"
+                    };
                 } else {
-                    // É um funcionário, verifica o status na subcoleção 'profissionais'
+                    // Verifica funcionário ativo na SUBCOLEÇÃO profissionais
                     const profissionalRef = doc(db, "empresarios", empresaDocSnap.id, "profissionais", user.uid);
                     const profissionalSnap = await getDoc(profissionalRef);
 
                     if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
-                        userProfile = { user, perfil: profissionalSnap.data(), empresaId: empresaDocSnap.id, isOwner: false, role: "funcionario" };
+                        userProfile = {
+                            user,
+                            perfil: profissionalSnap.data(),
+                            empresaId: empresaDocSnap.id,
+                            isOwner: false,
+                            isAdmin: false,
+                            role: "funcionario"
+                        };
                     } else {
                         // Funcionário existe mas não está ativo, ou não foi encontrado
                         console.log("[AuthGuard] Funcionário pendente ou inativo. Redirecionando para login.");
-                        // Se o usuário não é dono e não é um profissional ativo, ele não pode acessar.
-                        // Redireciona para login ou uma página de 
+                        if (!paginasPublicas.includes(currentPage)) {
+                            window.location.replace('login.html');
+                        }
+                        return reject(new Error("funcionario_inativo"));
                     }
                 }
 
