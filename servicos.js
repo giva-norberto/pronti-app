@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO FINAL, COMPLETA, MULTIEMPRESAS, ADMIN E DONO NÃO BLOQUEADOS)
+// ARQUIVO: servicos.js (VERSÃO REVISADA, COMPLETA, IDENTIFICAÇÃO DE USUÁRIO LOGADO, DONO E ADMIN)
 // ======================================================================
 
 import {
@@ -140,7 +140,7 @@ async function verificarAcessoEmpresa(user, empresaId) {
       ehDonoProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true"));
     }
     const isDonoFinal = isOwner || ehDonoProfissional;
-    const hasAccess = isDonoFinal || isProfissional;
+    const hasAccess = isDonoFinal || isProfissional || isAdmin;
 
     console.log("🔐 [DEBUG] Resultado da verificação:", {
       isOwner,
@@ -153,7 +153,7 @@ async function verificarAcessoEmpresa(user, empresaId) {
 
     return {
       hasAccess,
-      isDono: isDonoFinal,
+      isDono: isDonoFinal || isAdmin,
       isProfissional,
       empresaNome: empresaData.nome,
       reason: hasAccess ? "OK" : "SEM_PERMISSAO"
@@ -181,11 +181,11 @@ async function buscarEmpresasDoUsuario(user) {
         ehDonoProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true"));
       }
       const isDonoFinal = isOwner || ehDonoProfissional;
-      if (isDonoFinal || isProfissional) {
+      if (isDonoFinal || isProfissional || isAdmin) {
         empresasDoUsuario.push({
           id: doc.id,
           nome: empresaData.nome,
-          isDono: isDonoFinal,
+          isDono: isDonoFinal || isAdmin,
           isProfissional
         });
       }
@@ -198,7 +198,7 @@ async function buscarEmpresasDoUsuario(user) {
   }
 }
 
-// --- Ponto de Entrada Principal (Lógica Corrigida) ---
+// --- Ponto de Entrada Principal ---
 onAuthStateChanged(auth, async (user) => {
   if (isInitialized) {
     console.log("⚠️ [DEBUG] onAuthStateChanged já foi inicializado, ignorando...");
@@ -211,78 +211,78 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   console.log("✅ [DEBUG] Usuário logado:", user.uid);
-  if (loader) loader.style.display = 'block';
-  if (appContent) appContent.style.display = 'none';
 
   const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
   isAdmin = (user.uid === ADMIN_UID);
 
-  // --- ADMIN SEMPRE TEM ACESSO ---
-  if (isAdmin) {
-    empresaId = getEmpresaIdAtiva();
-    if (!empresaId) {
-      // Tenta buscar qualquer empresa (primeira existente)
-      const empresasCol = collection(db, "empresarios");
-      const snap = await getDocs(empresasCol);
-      if (!snap.empty) {
-        empresaId = snap.docs[0].id;
-        setEmpresaIdAtiva(empresaId);
-      }
-    }
-    if (!empresaId) {
-      listaServicosDiv.innerHTML = '<p style="color:red;">Nenhuma empresa encontrada.</p>';
-      if (loader) loader.style.display = 'none';
-      if (appContent) appContent.style.display = 'block';
-      isInitialized = true;
-      return;
-    }
-    if (btnAddServico) btnAddServico.style.display = 'inline-flex';
-    await carregarServicosDoFirebase();
-    if (loader) loader.style.display = 'none';
-    if (appContent) appContent.style.display = 'block';
-    isInitialized = true;
-    return;
-  }
+  if (loader) loader.style.display = 'block';
+  if (appContent) appContent.style.display = 'none';
 
-  // --- FLUXO NORMAL (DONO/PROF) ---
   try {
+    // 1. Pega o ID da empresa ativa do localStorage
     const empresaIdSalva = getEmpresaIdAtiva();
+
     if (empresaIdSalva) {
+      // 2. Se há uma empresa salva, verifica se o usuário ainda tem acesso
+      console.log("🔍 [DEBUG] Verificando empresa salva:", empresaIdSalva);
       const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
+
       if (verificacao.hasAccess) {
+        // ✅ Usuário tem acesso à empresa salva
+        console.log("✅ [DEBUG] Acesso confirmado à empresa salva");
         empresaId = empresaIdSalva;
         isDono = verificacao.isDono;
-        if (btnAddServico) btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+
+        // Configura UI baseado nas permissões
+        if (btnAddServico) {
+          btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+        }
+
+        // Carrega os serviços
         await carregarServicosDoFirebase();
         isInitialized = true;
-        if (loader) loader.style.display = 'none';
-        if (appContent) appContent.style.display = 'block';
         return;
+
       } else {
-        setEmpresaIdAtiva(null);
+        // ❌ Usuário perdeu acesso à empresa salva
+        console.log("❌ [DEBUG] Usuário perdeu acesso à empresa salva:", verificacao.reason);
+        setEmpresaIdAtiva(null); // Remove do localStorage
       }
     }
+
+    // 3. Se não há empresa salva OU perdeu acesso, busca empresas disponíveis
+    console.log("🔍 [DEBUG] Buscando empresas disponíveis para o usuário");
     const empresasDisponiveis = await buscarEmpresasDoUsuario(user);
+
     if (empresasDisponiveis.length === 0) {
+      // Usuário não tem acesso a nenhuma empresa
+      console.log("❌ [DEBUG] Usuário não tem acesso a nenhuma empresa");
       if (loader) loader.innerHTML = '<p style="color:red;">Você não tem acesso a nenhuma empresa. Entre em contato com o administrador.</p>';
-      isInitialized = true;
-      if (appContent) appContent.style.display = 'block';
       return;
+
     } else if (empresasDisponiveis.length === 1) {
+      // Usuário tem acesso a apenas uma empresa - seleciona automaticamente
+      console.log("✅ [DEBUG] Usuário tem acesso a apenas uma empresa, selecionando automaticamente");
       const empresa = empresasDisponiveis[0];
       empresaId = empresa.id;
       isDono = empresa.isDono;
       setEmpresaIdAtiva(empresaId);
-      if (btnAddServico) btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+
+      // Configura UI
+      if (btnAddServico) {
+        btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+      }
+
+      // Carrega os serviços
       await carregarServicosDoFirebase();
-      isInitialized = true;
-      if (loader) loader.style.display = 'none';
-      if (appContent) appContent.style.display = 'block';
-      return;
+
     } else {
+      // Usuário tem acesso a múltiplas empresas - precisa selecionar
+      console.log("🔄 [DEBUG] Usuário tem acesso a múltiplas empresas, redirecionando para seleção");
       window.location.href = 'selecionar-empresa.html';
       return;
     }
+
   } catch (error) {
     console.error("❌ [ERROR] Erro fatal durante a inicialização:", error);
     if (loader) {
@@ -296,6 +296,7 @@ onAuthStateChanged(auth, async (user) => {
       `;
     }
   } finally {
+    // Esconde o loader e mostra o conteúdo
     if (loader) loader.style.display = 'none';
     if (appContent) appContent.style.display = 'block';
     isInitialized = true;
