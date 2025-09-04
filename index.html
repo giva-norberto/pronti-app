@@ -164,22 +164,30 @@
 
 <script type="module">
     // Carrega o menu lateral igual em todas as páginas
+    console.debug("[DEBUG] carregando menu lateral...");
     fetch('menu-lateral.html')
-      .then(res => res.text())
+      .then(res => {
+          console.debug("[DEBUG] menu-lateral.html fetch status:", res.status);
+          return res.text();
+      })
       .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
+          console.debug("[DEBUG] menu-lateral.html carregado e inserido no DOM");
 
           // Adiciona o evento do botão sair após o menu ser inserido no DOM
           import("./firebase-config.js").then(({ auth }) => {
               import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
                   const btnLogout = document.getElementById("btn-logout");
+                  console.debug("[DEBUG] btn-logout encontrado?", !!btnLogout);
                   if (btnLogout) {
                       btnLogout.addEventListener("click", async () => {
                           try {
+                              console.debug("[DEBUG] Logout clicado, tentando sair...");
                               await signOut(auth);
                               localStorage.clear();
                               window.location.href = "login.html";
                           } catch(e) {
+                              console.error("[DEBUG] Erro ao sair:", e);
                               alert("Erro ao sair: " + e.message);
                           }
                       });
@@ -199,13 +207,14 @@
 
     function definirSaudacao() {
         const hora = new Date().getHours();
-        // TEXTO CORRIGIDO: Removido "(usuário Logado)"
+        console.debug("[DEBUG] definirSaudacao: hora atual", hora);
         if (hora >= 5 && hora < 12) return "Bom dia";
         if (hora >= 12 && hora < 18) return "Boa tarde";
         return "Boa noite";
     }
 
     function mostrarPrimeiroAcessoCard() {
+        console.debug("[DEBUG] mostrarPrimeiroAcessoCard: exibindo card de primeiro acesso");
         if (mainContent) {
             mainContent.innerHTML = `
                 <div class="primeiro-acesso-card">
@@ -215,6 +224,7 @@
                 </div>
             `;
             document.getElementById("btn-criar-empresa").addEventListener("click", () => {
+                console.debug("[DEBUG] btn-criar-empresa clicado, redirecionando para perfil.html");
                 localStorage.removeItem('empresaAtivaId');
                 window.location.href = "perfil.html";
             });
@@ -222,6 +232,7 @@
     }
 
     function removerIsLoading() {
+        console.debug("[DEBUG] removerIsLoading: removendo is-loading do body");
         document.body.classList.remove('is-loading');
     }
 
@@ -237,8 +248,14 @@
             const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
             console.debug("[DEBUG] inicializarDashboard: primeiroNome", primeiroNome);
 
-            if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
-            if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
+            if (nomeUsuarioSpan) {
+                nomeUsuarioSpan.textContent = primeiroNome;
+                console.debug("[DEBUG] nomeUsuarioSpan atualizado");
+            }
+            if (saudacaoSpan) {
+                saudacaoSpan.textContent = definirSaudacao();
+                console.debug("[DEBUG] saudacaoSpan atualizado");
+            }
 
             if (perfil.nomeFantasia) {
                 console.debug("[DEBUG] inicializarDashboard: nomeFantasia", perfil.nomeFantasia);
