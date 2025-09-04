@@ -19,10 +19,11 @@ function getEmpresaIdAtiva( ) {
 /**
  * Renderiza o componente de foto do profissional na tela e configura os eventos.
  * @param {string} fotoUrl - URL atual da foto do profissional (pode ser nula).
- * @param {(file: File) => Promise<string|null>} onTrocarFoto - Callback para fazer o upload de uma nova foto.
+ * @param {(file: File, profissionalId: string) => Promise<string|null>} onTrocarFoto - Callback para fazer o upload de uma nova foto.
  * @param {() => Promise<boolean>} onDeletarFoto - Callback para deletar a foto existente.
+ * @param {string} profissionalId - UID do profissional logado.
  */
-export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto) {
+export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto, profissionalId) {
     const fotoContainer = document.getElementById('perfil-profissional-foto-container');
     if (!fotoContainer) {
         console.error("Elemento 'perfil-profissional-foto-container' não encontrado no DOM.");
@@ -77,10 +78,10 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
 
         if (onTrocarFoto) {
             try {
-                const url = await onTrocarFoto(file);
+                const url = await onTrocarFoto(file, profissionalId);
                 if (url) {
                     statusSpan.textContent = "Foto atualizada com sucesso!";
-                    renderizarFotoProfissional(url, onTrocarFoto, onDeletarFoto);
+                    renderizarFotoProfissional(url, onTrocarFoto, onDeletarFoto, profissionalId);
                 } else {
                     throw new Error("Callback de upload não retornou uma URL.");
                 }
@@ -100,7 +101,7 @@ export function renderizarFotoProfissional(fotoUrl, onTrocarFoto, onDeletarFoto)
                 if (sucesso) {
                     statusSpan.textContent = "Foto removida.";
                     imgPreview.src = 'https://placehold.co/80x80/6366f1/white?text=Foto';
-                    renderizarFotoProfissional(null, onTrocarFoto, onDeletarFoto );
+                    renderizarFotoProfissional(null, onTrocarFoto, onDeletarFoto, profissionalId );
                 } else {
                     statusSpan.textContent = "Erro ao remover a foto.";
                 }
@@ -120,7 +121,7 @@ export async function uploadFotoProfissional(file, empresaId, profissionalId) {
 
     try {
         const nomeUnico = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
-        // A função 'ref' agora usa a instância 'storage' correta importada de firebase-config.js
+        // Corrigido: garantir que profissionalId seja o UID do usuário autenticado
         const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${nomeUnico}`);
 
         await uploadBytes(storageRef, file);
