@@ -1,16 +1,7 @@
 [
   {
-    "origin": [
-      "https://pronti-app.vercel.app",
-      "https://pronti.vercel.app"
-    ],
-    "method": [
-      "GET",
-      "POST",
-      "PUT",
-      "DELETE",
-      "OPTIONS"
-    ],
+    "origin": ["*"],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     "responseHeader": [
       "Content-Type",
       "Authorization",
