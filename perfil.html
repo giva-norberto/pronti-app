@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil e Configurações - Pronti IA</title>
-    <!-- Google Fonts para fonte igual ao restante do sistema -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <!-- FontAwesome (para ícones dos botões de link) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
     body {
@@ -17,7 +15,6 @@
         background: #f6f8fa;
         margin: 0;
     }
-    /* Ajuste para a logo do negócio ficar SEMPRE contida dentro do card, mesmo que seja grande. */
     .logo-upload-container img#logo-preview {
         max-width: 120px;
         max-height: 120px;
@@ -205,7 +202,6 @@
         align-items: center;
         justify-content: center;
     }
-    /* CARD ESPECIAL DE CADASTRO SUCESSO */
     #mensagem-cadastro-sucesso {
         display: none;
         margin: 20px auto;
@@ -243,9 +239,7 @@
     </style>
 </head>
 <body>
-    <!-- Menu lateral incluso dinamicamente -->
     <div id="sidebar-placeholder"></div>
-
     <main class="main-content">
         <div class="form-card">
             <div class="header-section">
@@ -257,15 +251,13 @@
                     <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">
                         <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
                     </a>
-                    <!-- BOTÃO PARA CRIAR NOVA EMPRESA ADICIONADO AQUI -->
-                    <button id="btn-criar-nova-empresa" class="btn-new" style="background-color: #10b981;">
+                    <!-- BOTÃO PARA CRIAR NOVA EMPRESA -->
+                    <button id="btn-criar-nova-empresa" class="btn-new" type="button" style="background-color: #10b981;">
                         <i class="fa-solid fa-plus"></i> Criar Nova Empresa
                     </button>
                 </div>
             </div>
-            <!-- CARD ESPECIAL DE CADASTRO SUCESSO -->
             <div id="mensagem-cadastro-sucesso"></div>
-            <!-- Card padrão do plano free -->
             <div id="mensagem-free" style="display:none; margin:20px auto; max-width:560px; background:#e0e7ff; color:#3730a3; border-radius:10px; padding:12px 18px; text-align:center; font-weight:bold;">
                 Plano atual: FREE
             </div>
@@ -306,7 +298,6 @@
                         <label for="descricao">Descrição Curta</label>
                         <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
                     </div>
-                    <!-- NOVOS CAMPOS ADICIONADOS PARA SINCRONIZAR COM O JS -->
                     <div class="form-group">
                         <label for="localizacao">Localização (Endereço)</label>
                         <input type="text" id="localizacao" placeholder="Ex: Rua das Flores, 123, São Paulo">
@@ -330,13 +321,12 @@
         <!-- O conteúdo do seu modal vai aqui dentro -->
     </div>
     <script>
-    // Inclusão dinâmica do menu lateral e destaque do menu de perfil (mesmo se o menu já tem JS de active)
+    // Inclusão dinâmica do menu lateral e destaque do menu de perfil
     document.addEventListener("DOMContentLoaded", function() {
       fetch('menu-lateral.html')
         .then(res => res.text())
         .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
-          // Garante que só "perfil" fica ativo (mesmo se o menu já tem lógica de active)
           setTimeout(() => {
             const links = document.querySelectorAll('.sidebar-links a');
             links.forEach(link => link.classList.remove('active'));
@@ -344,11 +334,20 @@
             if (perfilLink) perfilLink.classList.add('active');
           }, 10);
         });
-    });
 
-    // PROTEÇÃO CONTRA LOOP: 
-    // No seu perfil.js, garanta que NUNCA redirecione para index.html se for dono e não tiver empresa.
-    // Apenas exiba o formulário normalmente!
+      // CORREÇÃO DO BOTÃO "Criar Nova Empresa"
+      document.getElementById('btn-criar-nova-empresa').addEventListener('click', function() {
+        // Limpa o formulário e prepara para novo cadastro
+        document.getElementById('main-title').textContent = "Crie o Perfil do seu Negócio";
+        document.getElementById('form-perfil').reset();
+        document.getElementById('logo-preview').src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
+        document.getElementById('container-link-vitrine').style.display = 'none';
+        document.getElementById('mensagem-cadastro-sucesso').style.display = 'none';
+        // Sinaliza para o JS principal que é novo cadastro
+        if (window.empresaId !== undefined) window.empresaId = null;
+        // Se você usa variável empresaId no perfil.js, garanta que ela é zerada aqui!
+      });
+    });
     </script>
     <script src="perfil.js" type="module"></script>
 </body>
