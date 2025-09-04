@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (COMPLETO E REVISADO - MULTIEMPRESAS, LOGOUT AUTOMÁTICO E SELEÇÃO)
+// PERFIL.JS (COMPLETO E REVISADO - MULTIEMPRESAS, LOGOUT AUTOMÁTICO E MENSAGEM PADRÃO PRONTI)
 // ======================================================================
 
 import {
@@ -146,9 +146,25 @@ window.addEventListener('DOMContentLoaded', () => {
                     criadoEm: timestampCliente,
                     status: "ativo"
                 });
-                alert("Negócio cadastrado! Você irá sair para logar novamente e selecionar sua empresa.");
-                await signOut(auth);
-                window.location.href = 'login.html';
+
+                // MENSAGEM PADRÃO PRONTI - CADASTRO COM SUCESSO E ORIENTAÇÃO DE LOGIN
+                if (elements.msgCadastroSucesso) {
+                    elements.msgCadastroSucesso.innerHTML = `
+                        <div style="padding:12px 2px;">
+                            <span style="font-size:1.14em;">
+                                ✅ Seu negócio foi cadastrado com sucesso!<br>
+                                <span style="color:#065f46;">Você ganhou <strong>15 dias grátis</strong>!</span><br>
+                                <span style="color:#22223b;">Por segurança, será necessário sair e fazer login novamente.<br>
+                                Após logar, selecione sua empresa no menu.</span>
+                            </span>
+                        </div>
+                    `;
+                    elements.msgCadastroSucesso.style.display = "block";
+                }
+                setTimeout(async () => {
+                    await signOut(auth);
+                    window.location.href = 'login.html';
+                }, 3000); // Dá tempo pro usuário ver a mensagem
                 return; // Para aqui
             } else {
                 // EDITANDO EMPRESA EXISTENTE
