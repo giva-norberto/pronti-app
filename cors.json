@@ -3,6 +3,8 @@
     "origin": [
       "https://pronti-app.vercel.app",
       "https://pronti.vercel.app",
+      "https://prontiapp.com.br",
+      "https://www.prontiapp.com.br",
       "https://pronti-app-37c6e.web.app",
       "https://pronti-app-37c6e.firebaseapp.com",
       "http://localhost:3000",
@@ -14,7 +16,8 @@
       "POST",
       "PUT",
       "DELETE",
-      "OPTIONS"
+      "OPTIONS",
+      "HEAD"
     ],
     "responseHeader": [
       "Content-Type",
@@ -26,3 +29,4 @@
     "maxAgeSeconds": 3600
   }
 ]
+
