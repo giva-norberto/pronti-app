@@ -2,7 +2,6 @@
 // ARQUIVO: servicos.js (VERSÃO FINAL, COMPLETA, MULTIEMPRESAS, ADMIN E DONO NÃO BLOQUEADOS)
 // ======================================================================
 
-// 1. Importa as funções da versão correta e consistente do Firebase
 import {
   collection, doc, getDocs, getDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -131,21 +130,33 @@ async function verificarAcessoEmpresa(user, empresaId) {
       return { hasAccess: false, isDono: false, reason: "EMPRESA_NAO_EXISTE" };
     }
     const empresaData = empresaSnap.data();
+
+    // CORREÇÃO: aceitando donoId ou profissionais[uid].ehDono
     const isOwner = empresaData.donoId === user.uid;
+
     let isProfissional = false;
+    let ehDonoProfissional = false;
     if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
       isProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid);
+      ehDonoProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true"));
     }
-    const hasAccess = isOwner || isProfissional;
+
+    // Aceita dono se for donoId OU se for profissional com ehDono true
+    const isDonoFinal = isOwner || ehDonoProfissional;
+    const hasAccess = isDonoFinal || isProfissional;
+
     console.log("🔐 [DEBUG] Resultado da verificação:", {
       isOwner,
       isProfissional,
+      ehDonoProfissional,
+      isDonoFinal,
       hasAccess,
       empresaNome: empresaData.nome
     });
+
     return {
       hasAccess,
-      isDono: isOwner,
+      isDono: isDonoFinal,
       isProfissional,
       empresaNome: empresaData.nome,
       reason: hasAccess ? "OK" : "SEM_PERMISSAO"
@@ -166,15 +177,21 @@ async function buscarEmpresasDoUsuario(user) {
     empresasSnap.forEach(doc => {
       const empresaData = doc.data();
       const isOwner = empresaData.donoId === user.uid;
+
       let isProfissional = false;
+      let ehDonoProfissional = false;
       if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
         isProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid);
+        ehDonoProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true"));
       }
-      if (isOwner || isProfissional) {
+
+      const isDonoFinal = isOwner || ehDonoProfissional;
+
+      if (isDonoFinal || isProfissional) {
         empresasDoUsuario.push({
           id: doc.id,
           nome: empresaData.nome,
-          isDono: isOwner,
+          isDono: isDonoFinal,
           isProfissional
         });
       }
@@ -241,7 +258,7 @@ onAuthStateChanged(auth, async (user) => {
       if (verificacao.hasAccess) {
         empresaId = empresaIdSalva;
         isDono = verificacao.isDono;
-        if (btnAddServico) btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
+        if (btnAddServico) btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
         await carregarServicosDoFirebase();
         isInitialized = true;
         if (loader) loader.style.display = 'none';
@@ -262,7 +279,7 @@ onAuthStateChanged(auth, async (user) => {
       empresaId = empresa.id;
       isDono = empresa.isDono;
       setEmpresaIdAtiva(empresaId);
-      if (btnAddServico) btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
+      if (btnAddServico) btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
       await carregarServicosDoFirebase();
       isInitialized = true;
       if (loader) loader.style.display = 'none';
