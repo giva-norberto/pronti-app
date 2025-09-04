@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL E FUNCIONAL - build 4 + mapaUsuarios fix + CORREÇÃO CRIAR EMPRESA)
+// PERFIL.JS (LÓGICA CORRIGIDA - CRIAR NOVA EMPRESA SEM ALTERAR ANTERIOR)
 // ======================================================================
 
 import {
@@ -42,11 +42,12 @@ window.addEventListener('DOMContentLoaded', () => {
         btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
         btnLogout: document.getElementById('btn-logout'),
         msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
-        btnCriarOutraEmpresa: document.getElementById('btn-criar-outra-empresa') // NOVO
+        btnCriarNovaEmpresa: document.getElementById('btn-criar-nova-empresa')
     };
 
-    let currentUser;
+    // Variável GLOBAL que controla o contexto do cadastro/edição
     let empresaId = null;
+    let currentUser;
 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -64,25 +65,23 @@ window.addEventListener('DOMContentLoaded', () => {
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                console.log("Nenhuma empresa encontrada. Preparando para novo cadastro.");
                 empresaId = null;
                 atualizarTelaParaNovoPerfil();
             } else {
                 const empresaDoc = snapshot.docs[0];
                 empresaId = empresaDoc.id;
-                console.log("Empresa encontrada:", empresaId);
                 const dadosEmpresa = empresaDoc.data();
                 preencherFormulario(dadosEmpresa);
                 mostrarCamposExtras();
                 if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
-                if (elements.btnCriarOutraEmpresa) elements.btnCriarOutraEmpresa.style.display = 'block';
+                if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
             }
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             alert("Erro ao carregar dados do perfil: " + error.message);
         }
     }
-    
+
     async function handleFormSubmit(event) {
         event.preventDefault();
         elements.btnSalvar.disabled = true;
@@ -95,11 +94,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
 
-            // ===== MUDANÇA ESTRATÉGICA PARA GARANTIR O FUNCIONAMENTO =====
-            // Usamos a data do cliente (new Date()) em vez do serverTimestamp()
-            // para evitar a falha silenciosa na comunicação com o servidor.
             const timestampCliente = new Date();
-            // ============================================================
 
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
@@ -110,7 +105,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 donoId: uid,
                 plano: "free",
                 status: "ativo",
-                updatedAt: timestampCliente // Usando a data do cliente
+                updatedAt: timestampCliente
             };
 
             const logoFile = elements.logoInput.files[0];
@@ -119,24 +114,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 const firebaseDependencies = { storage, ref, uploadBytes, getDownloadURL };
                 dadosEmpresa.logoUrl = await uploadFile(firebaseDependencies, logoFile, storagePath);
             }
-            
-            if (empresaId) {
-                console.log("Editando empresa existente:", empresaId);
-                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
-                alert("Perfil atualizado com sucesso!");
-                // Atualiza o mapaUsuarios para garantir consistência
-                await setDoc(doc(db, "mapaUsuarios", uid), { empresaId: empresaId });
-            } else {
-                dadosEmpresa.createdAt = timestampCliente; // Usando a data do cliente
-                
-                console.log("Criando nova empresa com os dados (usando data do cliente):", dadosEmpresa);
-                
+
+            if (!empresaId) {
+                // CRIANDO NOVA EMPRESA
+                dadosEmpresa.createdAt = timestampCliente;
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
-                
-                console.log("SUCESSO! Empresa criada com o ID:", novaEmpresaRef.id);
                 empresaId = novaEmpresaRef.id;
 
-                // Cria o documento mapaUsuarios vinculando o usuário à empresa criada
                 await setDoc(doc(db, "mapaUsuarios", uid), { empresaId: empresaId });
 
                 const dadosProfissional = {
@@ -144,7 +128,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     nome: currentUser.displayName || nomeNegocio,
                     fotoUrl: currentUser.photoURL || "",
                     ehDono: true,
-                    criadoEm: timestampCliente, // Usando a data do cliente
+                    criadoEm: timestampCliente,
                     status: "ativo"
                 };
                 await setDoc(doc(db, "empresarios", empresaId, "profissionais", uid), dadosProfissional);
@@ -152,10 +136,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 preencherFormulario(dadosEmpresa);
                 mostrarCamposExtras();
                 if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
-                if (elements.btnCriarOutraEmpresa) elements.btnCriarOutraEmpresa.style.display = 'block';
-
                 if (elements.msgCadastroSucesso) {
-                    elements.msgCadastroSucesso.innerHTML = `O seu negócio foi cadastrado com sucesso!  
+                    elements.msgCadastroSucesso.innerHTML = `O seu negócio foi cadastrado com sucesso!<br>
 Você ganhou <strong>15 dias grátis</strong>!`;
                     elements.msgCadastroSucesso.style.display = "block";
                     setTimeout(() => {
@@ -163,6 +145,11 @@ Você ganhou <strong>15 dias grátis</strong>!`;
                     }, 6000);
                 }
                 alert("Negócio cadastrado com sucesso!");
+            } else {
+                // EDITANDO EMPRESA EXISTENTE
+                await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
+                alert("Perfil atualizado com sucesso!");
+                await setDoc(doc(db, "mapaUsuarios", uid), { empresaId: empresaId });
             }
 
         } catch (error) {
@@ -174,12 +161,14 @@ Você ganhou <strong>15 dias grátis</strong>!`;
         }
     }
 
-    // NOVA FUNÇÃO: CRIAR OUTRA EMPRESA
-    function handleCriarOutraEmpresa() {
-        empresaId = null;
+    // NOVA LÓGICA: Quando clicar em "Criar Nova Empresa", zera empresaId e limpa tudo
+    function handleCriarNovaEmpresa() {
+        empresaId = null; // ESSENCIAL: garante que o próximo submit é NOVO CADASTRO!
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        atualizarTelaParaNovoPerfil();
+        const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
+        camposExtras.forEach(el => { if (el) el.style.display = 'none'; });
+        if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Negócio";
     }
 
@@ -195,8 +184,8 @@ Você ganhou <strong>15 dias grátis</strong>!`;
                 reader.readAsDataURL(file);
             }
         });
-        if (elements.btnCriarOutraEmpresa) {
-            elements.btnCriarOutraEmpresa.addEventListener('click', handleCriarOutraEmpresa);
+        if (elements.btnCriarNovaEmpresa) {
+            elements.btnCriarNovaEmpresa.addEventListener('click', handleCriarNovaEmpresa);
         }
         if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
             try { 
@@ -216,12 +205,13 @@ Você ganhou <strong>15 dias grátis</strong>!`;
         const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
         camposExtras.forEach(el => { if (el ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
-        if (elements.btnCriarOutraEmpresa) elements.btnCriarOutraEmpresa.style.display = 'none';
+        if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'none';
     }
 
     function mostrarCamposExtras() {
         const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
         camposExtras.forEach(el => { if (el) el.style.display = ''; });
+        if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
     }
 
     function preencherFormulario(dadosEmpresa) {
