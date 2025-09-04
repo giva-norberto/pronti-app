@@ -1,5 +1,5 @@
 // ======================================================================
-// USERSERVICE.JS (MULTIEMPRESAS: ENTRA DIRETO SE SÓ TEM UMA EMPRESA - REVISADO)
+// USERSERVICE.JS (MULTIEMPRESAS: ENTRA DIRETO SE SÓ TEM UMA EMPRESA - REVISADO + DEBUG)
 // ======================================================================
 
 import {
@@ -17,6 +17,7 @@ export async function ensureUserAndTrialDoc() {
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
+        console.debug("[DEBUG][ensureUserAndTrialDoc] Criando usuário na coleção 'usuarios':", user.uid);
         await setDoc(userRef, {
             nome: user.displayName || user.email,
             email: user.email,
@@ -24,6 +25,7 @@ export async function ensureUserAndTrialDoc() {
             isPremium: false,
         });
     } else if (!userSnap.data().trialStart) {
+        console.debug("[DEBUG][ensureUserAndTrialDoc] Adicionando trialStart para usuário:", user.uid);
         await updateDoc(userRef, {
             trialStart: serverTimestamp(),
         });
@@ -34,10 +36,19 @@ export async function ensureUserAndTrialDoc() {
 async function checkUserStatus(user, empresaData) {
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
+    if (!userSnap.exists()) {
+        console.debug("[DEBUG][checkUserStatus] Usuário não existe na coleção 'usuarios':", user.uid);
+        return { hasActivePlan: false, isTrialActive: true };
+    }
     const userData = userSnap.data();
-    if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
-    if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
+    if (userData.isPremium === true) {
+        console.debug("[DEBUG][checkUserStatus] Usuário é premium:", user.uid);
+        return { hasActivePlan: true, isTrialActive: false };
+    }
+    if (!userData.trialStart?.seconds) {
+        console.debug("[DEBUG][checkUserStatus] Usuário sem trialStart:", user.uid);
+        return { hasActivePlan: false, isTrialActive: true };
+    }
     let trialDurationDays = 15;
     if (empresaData && empresaData.freeEmDias !== undefined) {
         trialDurationDays = empresaData.freeEmDias;
@@ -45,12 +56,15 @@ async function checkUserStatus(user, empresaData) {
     const startDate = new Date(userData.trialStart.seconds * 1000);
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + trialDurationDays);
-    return { hasActivePlan: false, isTrialActive: endDate > new Date() };
+    const trialActive = endDate > new Date();
+    console.debug(`[DEBUG][checkUserStatus] Trial ativo? ${trialActive} | premium: ${userData.isPremium} | trialEnd: ${endDate}`);
+    return { hasActivePlan: false, isTrialActive: trialActive };
 }
 
 // --- Autenticação, multiempresas: entra direto se só tem uma empresa ---
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
+        console.debug("[DEBUG][verificarAcesso] Retornando sessão cache:", cachedSessionProfile);
         return Promise.resolve(cachedSessionProfile);
     }
 
@@ -62,8 +76,12 @@ export async function verificarAcesso() {
             const paginasPublicas = ['login.html', 'cadastro.html'];
             const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html'];
 
+            console.debug(`[DEBUG][verificarAcesso] Página atual: ${currentPage}`);
+            console.debug("[DEBUG][verificarAcesso] Usuário Firebase:", user);
+
             // 1. Usuário não logado
             if (!user) {
+                console.debug("[DEBUG][verificarAcesso] Usuário não autenticado.");
                 if (!paginasPublicas.includes(currentPage)) {
                     window.location.replace('login.html');
                 }
@@ -76,6 +94,7 @@ export async function verificarAcesso() {
                 // 2. Admin
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 if (user.uid === ADMIN_UID) {
+                    console.debug("[DEBUG][verificarAcesso] Usuário é admin:", user.uid);
                     cachedSessionProfile = {
                         user,
                         isAdmin: true,
@@ -115,9 +134,11 @@ export async function verificarAcesso() {
                         });
                     }
                 });
+                console.debug("[DEBUG][verificarAcesso] Empresas do usuário:", empresasDoUsuario);
 
                 // 4. Validação de múltiplas empresas
                 if (empresasDoUsuario.length === 0) {
+                    console.debug("[DEBUG][verificarAcesso] Usuário sem empresas vinculadas!");
                     if (!paginasDeConfiguracao.includes(currentPage)) {
                         window.location.replace('selecionar-empresa.html');
                     }
@@ -131,24 +152,29 @@ export async function verificarAcesso() {
                 if (empresasDoUsuario.length === 1) {
                     empresaEscolhida = empresasDoUsuario[0];
                     if (empresaSelecionadaId !== empresaEscolhida.id) {
+                        console.debug("[DEBUG][verificarAcesso] Definindo única empresa ativa:", empresaEscolhida.id);
                         localStorage.setItem('empresaAtivaId', empresaEscolhida.id);
                         empresaSelecionadaId = empresaEscolhida.id;
                     }
-                    // NÃO redireciona para seleção!
                 } else {
                     // Mais de uma empresa, precisa selecionar
                     if (!empresaSelecionadaId || !empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId)) {
+                        console.debug("[DEBUG][verificarAcesso] Multiempresas: necessário selecionar empresa.");
                         if (!paginasDeConfiguracao.includes(currentPage) && currentPage !== 'selecionar-empresa.html') {
                             window.location.replace('selecionar-empresa.html');
                         }
                         return reject(new Error("Multiempresas: necessário selecionar empresa."));
                     }
                     empresaEscolhida = empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId);
+                    console.debug("[DEBUG][verificarAcesso] Empresa selecionada:", empresaSelecionadaId, empresaEscolhida);
                 }
 
                 // 5. Verificar status da assinatura
+                console.debug("[DEBUG][verificarAcesso] Verificando status da assinatura...");
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaEscolhida.empresaData);
+                console.debug(`[DEBUG][verificarAcesso] Plano ativo: ${hasActivePlan} | Trial ativo: ${isTrialActive}`);
                 if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
+                    console.debug("[DEBUG][verificarAcesso] Assinatura expirada! Redirecionando.");
                     window.location.replace('assinatura.html');
                     return reject(new Error("Assinatura expirada."));
                 }
@@ -158,6 +184,7 @@ export async function verificarAcesso() {
                 let userProfile = null;
 
                 if (isOwner) {
+                    console.debug("[DEBUG][verificarAcesso] Usuário é dono da empresa:", empresaEscolhida.id);
                     userProfile = {
                         user,
                         empresaId: empresaEscolhida.id,
@@ -172,6 +199,7 @@ export async function verificarAcesso() {
                     const profissionalSnap = await getDoc(profissionalRef);
 
                     if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
+                        console.debug("[DEBUG][verificarAcesso] Usuário é funcionário ativo:", empresaEscolhida.id);
                         userProfile = {
                             user,
                             perfil: profissionalSnap.data(),
@@ -181,6 +209,7 @@ export async function verificarAcesso() {
                             role: "funcionario"
                         };
                     } else {
+                        console.debug("[DEBUG][verificarAcesso] Usuário não é dono nem funcionário ativo. Bloqueando.");
                         if (!paginasPublicas.includes(currentPage)) {
                             window.location.replace('login.html');
                         }
@@ -189,9 +218,11 @@ export async function verificarAcesso() {
                 }
 
                 cachedSessionProfile = userProfile;
+                console.debug("[DEBUG][verificarAcesso] Sessão definida:", cachedSessionProfile);
                 resolve(userProfile);
 
             } catch (error) {
+                console.debug("[DEBUG][verificarAcesso] ERRO:", error);
                 reject(error);
             }
         });
