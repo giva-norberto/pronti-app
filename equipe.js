@@ -146,12 +146,10 @@ async function iniciarListenerDaEquipe() {
             return;
         }
         const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
         const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
         if (donoNaEquipe && !donoNaEquipe.nome) {
             donoNaEquipe.nome = nomeCorretoDonoFallback;
         }
-
         renderizarEquipe(equipe);
     }, (error) => console.error("Erro no listener da equipe:", error));
 }
@@ -561,3 +559,4 @@ window.ativarFuncionario = ativarFuncionario;
 window.recusarFuncionario = recusarFuncionario;
 
 window.addEventListener("DOMContentLoaded", inicializar);
+
