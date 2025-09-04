@@ -131,17 +131,14 @@ async function verificarAcessoEmpresa(user, empresaId) {
     }
     const empresaData = empresaSnap.data();
 
-    // CORREÇÃO: aceitando donoId ou profissionais[uid].ehDono
+    // Aceita donoId OU profissionais[uid].ehDono
     const isOwner = empresaData.donoId === user.uid;
-
     let isProfissional = false;
     let ehDonoProfissional = false;
     if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
       isProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid);
       ehDonoProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true"));
     }
-
-    // Aceita dono se for donoId OU se for profissional com ehDono true
     const isDonoFinal = isOwner || ehDonoProfissional;
     const hasAccess = isDonoFinal || isProfissional;
 
@@ -177,16 +174,13 @@ async function buscarEmpresasDoUsuario(user) {
     empresasSnap.forEach(doc => {
       const empresaData = doc.data();
       const isOwner = empresaData.donoId === user.uid;
-
       let isProfissional = false;
       let ehDonoProfissional = false;
       if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
         isProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid);
         ehDonoProfissional = empresaData.profissionais.some(prof => prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true"));
       }
-
       const isDonoFinal = isOwner || ehDonoProfissional;
-
       if (isDonoFinal || isProfissional) {
         empresasDoUsuario.push({
           id: doc.id,
