@@ -1,7 +1,6 @@
 // ======================================================================
 //                          EQUIPE.JS
-//          VERSÃO FINAL COM FLUXO DE CONVITE E ATIVAÇÃO MANUAL
-//             (100% Frontend, Sem Cloud Functions)
+//        VERSÃO REVISADA: CRIAÇÃO DE FUNCIONÁRIO APENAS VIA CONVITE
 // ======================================================================
 
 // Importação centralizada do Firebase config (nome do banco garantido)
@@ -27,7 +26,6 @@ let editandoProfissionalId = null;
 
 // Elementos DOM
 const elementos = {
-    btnAddProfissional: document.getElementById('btn-add-profissional'),
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
     modalAddProfissional: document.getElementById('modal-add-profissional'),
     formAddProfissional: document.getElementById('form-add-profissional'),
@@ -51,7 +49,7 @@ const elementos = {
     agendaInicio: document.getElementById('agenda-inicio'),
     agendaFim: document.getElementById('agenda-fim'),
     btnAgendaEspecial: document.getElementById('btn-agenda-especial'),
-    agendaEspecialLista: document.getElementById('agenda-especial-lista'),
+    agendaEspecialLista: document.getElementById('agenda-special-lista'),
     inputIntervalo: document.getElementById('intervalo-atendimento'),
     btnConvite: document.getElementById('btn-convite'),
     permitirAgendamentoMultiplo: document.getElementById('permitir-agendamento-multiplo')
@@ -129,9 +127,7 @@ async function carregarServicos() {
 }
 
 async function iniciarListenerDaEquipe() {
-    // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
     const { collection, onSnapshot, query, where, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
-    // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
     if (!empresaSnap.exists()) {
@@ -147,12 +143,10 @@ async function iniciarListenerDaEquipe() {
     }
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
     
-    // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
-    // A query agora inclui o filtro 'where' que é exigido pelas regras de segurança.
+    // A query agora inclui o filtro 'where' que pode ser exigido por regras de segurança.
     const q = query(profissionaisRef, where("empresaId", "==", empresaId));
 
     onSnapshot(q, (snapshot) => {
-    // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
         const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const donoNaEquipe = equipe.find(p => p.id === donoId || p.ehDono === true);
         if (donoNaEquipe) {
@@ -165,8 +159,7 @@ async function iniciarListenerDaEquipe() {
 function renderizarEquipe(equipe) {
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
-        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda.  
-Clique em "Adicionar Profissional" ou "Convidar Funcionário" para começar.</p></div>`;
+        elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda. Clique em "Convidar Funcionário" para começar.</p></div>`;
         return;
     }
     equipe.forEach(profissional => {
@@ -408,16 +401,7 @@ async function salvarPerfilProfissional() {
 }
 
 function adicionarEventListeners() {
-    elementos.btnAddProfissional.addEventListener("click", () => {
-        elementos.formAddProfissional.reset();
-        editandoProfissionalId = null;
-        elementos.tituloModalProfissional.textContent = "➕ Adicionar Novo Profissional";
-        elementos.modalAddProfissional.classList.add('show');
-        elementos.formAddProfissional.onsubmit = async (e) => {
-            e.preventDefault();
-            await adicionarProfissional();
-        };
-    });
+    // A FUNÇÃO DE ADICIONAR PROFISSIONAL MANUALMENTE FOI REMOVIDA DAQUI.
 
     if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
     elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
@@ -450,58 +434,7 @@ async function gerarLinkDeConvite() {
     }
 }
 
-async function adicionarProfissional() {
-    const { collection, addDoc, serverTimestamp, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
-    const { ref, uploadBytes, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js" );
-    const btnSubmit = elementos.formAddProfissional.querySelector('.btn-submit');
-    btnSubmit.disabled = true; btnSubmit.textContent = "Salvando...";
-    const nome = elementos.nomeProfissional.value.trim();
-    if (!nome) {
-        alert("O nome do profissional é obrigatório.");
-        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
-        return;
-    }
-    let fotoURL = "";
-    const fotoFile = elementos.fotoProfissional.files[0];
-    if (fotoFile) {
-        try {
-            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${Date.now()}-${fotoFile.name}`);
-            await uploadBytes(storageRef, fotoFile);
-            fotoURL = await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error("Erro no upload da foto:", error);
-        }
-    }
-    const novoProfissional = {
-        nome,
-        fotoUrl: fotoURL,
-        ehDono: false,
-        servicos: [],
-        status: 'ativo',
-        criadoEm: serverTimestamp(),
-        agendaEspecial: [],
-        uid: "",
-        // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
-        // Adiciona o campo 'empresaId' no momento da criação.
-        // Isso é crucial para a regra de segurança de listagem funcionar.
-        empresaId: empresaId 
-        // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
-    };
-    try {
-        const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-        const docRef = await addDoc(profissionaisRef, novoProfissional);
-        const horariosPadrao = { ...horariosBase, intervalo: intervaloBase };
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", docRef.id, "configuracoes", "horarios");
-        await setDoc(horariosRef, horariosPadrao);
-        elementos.modalAddProfissional.classList.remove('show');
-        alert("✅ Profissional adicionado com sucesso!");
-    } catch (error) {
-        console.error("Erro ao adicionar profissional:", error);
-        alert("Erro ao adicionar profissional: " + error.message);
-    } finally {
-        btnSubmit.disabled = false; btnSubmit.textContent = "💾 Salvar Profissional";
-    }
-}
+// FUNÇÃO REMOVIDA - A função adicionarProfissional() estava aqui.
 
 async function editarProfissional(profissionalId) {
     const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js" );
