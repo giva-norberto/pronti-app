@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL E FUNCIONAL - build 4 + mapaUsuarios fix)
+// PERFIL.JS (VERSÃO FINAL E FUNCIONAL - build 4 + mapaUsuarios fix + CORREÇÃO CRIAR EMPRESA)
 // ======================================================================
 
 import {
@@ -41,7 +41,8 @@ window.addEventListener('DOMContentLoaded', () => {
         btnAbrirVitrine: document.getElementById('btn-abrir-vitrine'),
         btnAbrirVitrineInline: document.getElementById('btn-abrir-vitrine-inline'),
         btnLogout: document.getElementById('btn-logout'),
-        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso')
+        msgCadastroSucesso: document.getElementById('mensagem-cadastro-sucesso'),
+        btnCriarOutraEmpresa: document.getElementById('btn-criar-outra-empresa') // NOVO
     };
 
     let currentUser;
@@ -74,6 +75,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 preencherFormulario(dadosEmpresa);
                 mostrarCamposExtras();
                 if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
+                if (elements.btnCriarOutraEmpresa) elements.btnCriarOutraEmpresa.style.display = 'block';
             }
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -150,6 +152,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 preencherFormulario(dadosEmpresa);
                 mostrarCamposExtras();
                 if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
+                if (elements.btnCriarOutraEmpresa) elements.btnCriarOutraEmpresa.style.display = 'block';
 
                 if (elements.msgCadastroSucesso) {
                     elements.msgCadastroSucesso.innerHTML = `O seu negócio foi cadastrado com sucesso!  
@@ -171,6 +174,15 @@ Você ganhou <strong>15 dias grátis</strong>!`;
         }
     }
 
+    // NOVA FUNÇÃO: CRIAR OUTRA EMPRESA
+    function handleCriarOutraEmpresa() {
+        empresaId = null;
+        if (elements.form) elements.form.reset();
+        if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
+        atualizarTelaParaNovoPerfil();
+        if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Negócio";
+    }
+
     function adicionarListenersDeEvento() {
         if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
@@ -183,7 +195,9 @@ Você ganhou <strong>15 dias grátis</strong>!`;
                 reader.readAsDataURL(file);
             }
         });
-        
+        if (elements.btnCriarOutraEmpresa) {
+            elements.btnCriarOutraEmpresa.addEventListener('click', handleCriarOutraEmpresa);
+        }
         if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
             try { 
                 localStorage.removeItem('empresaAtivaId'); 
@@ -197,10 +211,12 @@ Você ganhou <strong>15 dias grátis</strong>!`;
     function atualizarTelaParaNovoPerfil() {
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Negócio";
         if (elements.form) elements.form.reset();
+        empresaId = null;
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         const camposExtras = [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline];
         camposExtras.forEach(el => { if (el ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
+        if (elements.btnCriarOutraEmpresa) elements.btnCriarOutraEmpresa.style.display = 'none';
     }
 
     function mostrarCamposExtras() {
