@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO CORRIGIDA - PROBLEMAS DE CRASH RESOLVIDOS)
+// ARQUIVO: servicos.js (VERSÃO FINAL MULTIEMPRESAS, CRASH-FREE, E ACESSO ROBUSTO)
 // ======================================================================
 
 import {
@@ -95,11 +95,9 @@ function renderizarServicos(servicos) {
     const agrupados = {};
     servicos.forEach(servico => {
       if (!servico || typeof servico !== 'object') return;
-      
       const cat = (servico.categoria && typeof servico.categoria === 'string' && servico.categoria.trim()) 
         ? servico.categoria.trim() 
         : "Sem Categoria";
-      
       if (!agrupados[cat]) agrupados[cat] = [];
       agrupados[cat].push(servico);
     });
@@ -193,7 +191,6 @@ async function carregarServicosDoFirebase() {
       return { 
         id: doc.id, 
         ...data,
-        // Garante que campos essenciais existam
         nome: data.nome || '',
         descricao: data.descricao || '',
         preco: data.preco || 0,
@@ -268,53 +265,50 @@ async function excluirServico(servicoId) {
 }
 
 // --- Função para verificar se usuário tem acesso à empresa ---
+// Busca o array 'empresas' em mapaUsuarios, ou permissões diretas.
 async function verificarAcessoEmpresa(user, empresaId) {
   try {
     if (!user || !empresaId) {
       return { hasAccess: false, isDono: false, reason: "PARAMETROS_INVALIDOS" };
     }
 
-    console.log("🔐 [DEBUG] Verificando acesso à empresa:", empresaId);
+    // Busca a lista de empresas do usuário em mapaUsuarios
+    const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
+    let empresasPermitidas = [];
+    if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
+      empresasPermitidas = mapaSnap.data().empresas;
+    }
+
+    // Se o ID não está no array de empresas do usuário, não há acesso
+    if (!empresasPermitidas.includes(empresaId)) {
+      return { hasAccess: false, isDono: false, reason: "SEM_PERMISSAO_EM_MAPAUSUARIOS" };
+    }
+
+    // Busca dados da empresa
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
-    
     if (!empresaSnap.exists()) {
-      console.log("❌ [DEBUG] Empresa não existe no Firestore");
       return { hasAccess: false, isDono: false, reason: "EMPRESA_NAO_EXISTE" };
     }
-
     const empresaData = empresaSnap.data();
-    if (!empresaData) {
-      return { hasAccess: false, isDono: false, reason: "DADOS_EMPRESA_INVALIDOS" };
-    }
 
-    // Verifica se é dono direto
+    // Verifica se é dono
     const isOwner = empresaData.donoId === user.uid;
-    
-    // Verifica se é profissional
+
+    // Busca profissional na subcoleção (melhor que array no doc!)
     let isProfissional = false;
     let ehDonoProfissional = false;
-    
-    if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
-      isProfissional = empresaData.profissionais.some(prof => 
-        prof && prof.uid === user.uid
-      );
-      ehDonoProfissional = empresaData.profissionais.some(prof => 
-        prof && prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true")
-      );
-    }
+    try {
+      const profSnap = await getDoc(doc(db, "empresarios", empresaId, "profissionais", user.uid));
+      if (profSnap.exists()) {
+        isProfissional = true;
+        const profData = profSnap.data();
+        ehDonoProfissional = !!profData.ehDono;
+      }
+    } catch {}
 
     const isDonoFinal = isOwner || ehDonoProfissional;
     const hasAccess = isDonoFinal || isProfissional || isAdmin;
-
-    console.log("🔐 [DEBUG] Resultado da verificação:", {
-      isOwner,
-      isProfissional,
-      ehDonoProfissional,
-      isDonoFinal,
-      hasAccess,
-      empresaNome: empresaData.nome
-    });
 
     return {
       hasAccess,
@@ -330,55 +324,40 @@ async function verificarAcessoEmpresa(user, empresaId) {
   }
 }
 
-// --- Função para buscar empresas do usuário ---
+// --- Função para buscar empresas do usuário (via mapaUsuarios) ---
 async function buscarEmpresasDoUsuario(user) {
   try {
-    if (!user) {
-      console.error("❌ [ERROR] Usuário não fornecido para busca de empresas");
-      return [];
-    }
-
-    console.log("🔍 [DEBUG] Buscando empresas do usuário:", user.uid);
-    const empresasCol = collection(db, "empresarios");
-    const empresasSnap = await getDocs(empresasCol);
-    const empresasDoUsuario = [];
-
-    empresasSnap.forEach(doc => {
-      try {
-        const empresaData = doc.data();
-        if (!empresaData) return;
-
-        const isOwner = empresaData.donoId === user.uid;
-        let isProfissional = false;
-        let ehDonoProfissional = false;
-
-        if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
-          isProfissional = empresaData.profissionais.some(prof => 
-            prof && prof.uid === user.uid
-          );
-          ehDonoProfissional = empresaData.profissionais.some(prof => 
-            prof && prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true")
-          );
-        }
-
-        const isDonoFinal = isOwner || ehDonoProfissional;
-        
-        if (isDonoFinal || isProfissional || isAdmin) {
-          empresasDoUsuario.push({
-            id: doc.id,
-            nome: empresaData.nome || 'Empresa sem nome',
-            isDono: isDonoFinal || isAdmin,
-            isProfissional
-          });
-        }
-      } catch (error) {
-        console.error("❌ [ERROR] Erro ao processar empresa:", doc.id, error);
+    if (!user) return [];
+    const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
+    const empresas = mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas) 
+      ? mapaSnap.data().empresas 
+      : [];
+    // Busca dados de cada empresa
+    const promessas = empresas.map(async id => {
+      const empresaSnap = await getDoc(doc(db, "empresarios", id));
+      if (empresaSnap.exists()) {
+        const empresaData = empresaSnap.data();
+        // Busca profissional na subcoleção
+        let isProfissional = false, ehDonoProfissional = false;
+        try {
+          const profSnap = await getDoc(doc(db, "empresarios", id, "profissionais", user.uid));
+          if (profSnap.exists()) {
+            isProfissional = true;
+            ehDonoProfissional = !!profSnap.data().ehDono;
+          }
+        } catch {}
+        const isDonoFinal = empresaData.donoId === user.uid || ehDonoProfissional;
+        return {
+          id,
+          nome: empresaData.nome || empresaData.nomeFantasia || 'Empresa sem nome',
+          isDono: isDonoFinal || isAdmin,
+          isProfissional
+        };
       }
+      return null;
     });
-
-    console.log("🏢 [DEBUG] Empresas encontradas:", empresasDoUsuario);
-    return empresasDoUsuario;
-
+    const empresasObjs = await Promise.all(promessas);
+    return empresasObjs.filter(Boolean);
   } catch (error) {
     console.error("❌ [ERROR] Erro ao buscar empresas do usuário:", error);
     return [];
@@ -413,19 +392,13 @@ function setupEventListeners() {
     if (listaServicosDiv) {
       listaServicosDiv.addEventListener('click', async function(e) {
         try {
-          if (isProcessing) {
-            console.log("⚠️ [DEBUG] Operação em andamento, ignorando clique...");
-            return;
-          }
+          if (isProcessing) return;
 
           const target = e.target.closest('.btn-acao');
           if (!target) return;
 
           const id = target.dataset.id;
-          if (!id) {
-            console.error("❌ [ERROR] ID do serviço não encontrado no botão");
-            return;
-          }
+          if (!id) return;
 
           e.preventDefault();
           e.stopPropagation();
@@ -453,10 +426,7 @@ function setupEventListeners() {
           e.preventDefault();
           e.stopPropagation();
 
-          if (isProcessing) {
-            console.log("⚠️ [DEBUG] Operação em andamento, ignorando clique...");
-            return;
-          }
+          if (isProcessing) return;
 
           if (isDono || isAdmin) {
             window.location.href = 'novo-servico.html';
@@ -496,15 +466,11 @@ function initializeApp() {
   // Configura autenticação
   onAuthStateChanged(auth, async (user) => {
     try {
-      if (isInitialized) {
-        console.log("⚠️ [DEBUG] onAuthStateChanged já foi inicializado, ignorando...");
-        return;
-      }
+      if (isInitialized) return;
 
       console.log("🔐 [DEBUG] Estado de autenticação alterado");
       
       if (!user) {
-        console.log("❌ [DEBUG] Usuário não logado, redirecionando para login");
         window.location.href = 'login.html';
         return;
       }
@@ -521,12 +487,10 @@ function initializeApp() {
 
       if (empresaIdSalva) {
         // 2. Se há uma empresa salva, verifica se o usuário ainda tem acesso
-        console.log("🔍 [DEBUG] Verificando empresa salva:", empresaIdSalva);
         const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
 
         if (verificacao.hasAccess) {
           // ✅ Usuário tem acesso à empresa salva
-          console.log("✅ [DEBUG] Acesso confirmado à empresa salva");
           empresaId = empresaIdSalva;
           isDono = verificacao.isDono;
 
@@ -537,18 +501,15 @@ function initializeApp() {
 
         } else {
           // ❌ Usuário perdeu acesso à empresa salva
-          console.log("❌ [DEBUG] Usuário perdeu acesso à empresa salva:", verificacao.reason);
           setEmpresaIdAtiva(null);
         }
       }
 
       // 3. Se não há empresa salva OU perdeu acesso, busca empresas disponíveis
-      console.log("🔍 [DEBUG] Buscando empresas disponíveis para o usuário");
       const empresasDisponiveis = await buscarEmpresasDoUsuario(user);
 
       if (empresasDisponiveis.length === 0) {
         // Usuário não tem acesso a nenhuma empresa
-        console.log("❌ [DEBUG] Usuário não tem acesso a nenhuma empresa");
         if (loader) {
           loader.innerHTML = `
             <div style="color:red; text-align: center; padding: 20px;">
@@ -561,7 +522,6 @@ function initializeApp() {
 
       } else if (empresasDisponiveis.length === 1) {
         // Usuário tem acesso a apenas uma empresa - seleciona automaticamente
-        console.log("✅ [DEBUG] Usuário tem acesso a apenas uma empresa, selecionando automaticamente");
         const empresa = empresasDisponiveis[0];
         empresaId = empresa.id;
         isDono = empresa.isDono;
@@ -572,7 +532,6 @@ function initializeApp() {
 
       } else {
         // Usuário tem acesso a múltiplas empresas - precisa selecionar
-        console.log("🔄 [DEBUG] Usuário tem acesso a múltiplas empresas, redirecionando para seleção");
         window.location.href = 'selecionar-empresa.html';
         return;
       }
