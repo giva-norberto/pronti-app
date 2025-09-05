@@ -2,8 +2,8 @@
 //             USER-SERVICE.JS (VERSÃO FINAL E CORRIGIDA)
 // - Lógica de busca de empresas compatível com estruturas de dados antigas e novas.
 // - Lógica de verificação inteligente e auto-corretiva.
-// - CORRIGIDO: O fluxo para utilizadores administradores agora respeita a
-//   propriedade real da empresa (donoId), em vez de assumir controlo total.
+// - CORRIGIDO: O fluxo para utilizadores administradores agora concede
+//   privilégios de 'dono' para qualquer empresa selecionada.
 // - Proteção contra múltiplas execuções simultâneas (race conditions).
 // ======================================================================
 
@@ -51,10 +51,13 @@ async function checkUserStatus(user, empresaData) {
         if (!userData) return { hasActivePlan: false, isTrialActive: true };
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
         if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
-        let trialDurationDays = 15;
-        if (empresaData && typeof empresaData.freeEmDias === 'number') {
+        
+        let trialDurationDays = 15; // Padrão
+        
+        if (empresaData && typeof empresaData.freeEmDias === 'number' && empresaData.freeEmDias > 0) {
             trialDurationDays = empresaData.freeEmDias;
         }
+
         const startDate = new Date(userData.trialStart.seconds * 1000);
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + trialDurationDays);
@@ -74,7 +77,6 @@ export async function getEmpresasDoUsuario(user) {
 
     try {
         if (user.uid === ADMIN_UID) {
-            console.log("👑 [getEmpresasDoUsuario] Utilizador é ADMIN. A buscar todas as empresas.");
             const empresasCol = collection(db, "empresarios");
             const snap = await getDocs(empresasCol);
             return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -174,9 +176,6 @@ export async function verificarAcesso() {
                     return reject(new Error("Assinatura expirada."));
                 }
                 
-                // ### CORREÇÃO FINAL DA LÓGICA DE 'DONO' ###
-                // 'isOwner' agora é estritamente sobre quem está no campo 'donoId'.
-                // Um admin não é automaticamente o dono, mas terá privilégios equivalentes.
                 const isOwner = empresaData.donoId === user.uid;
                 let perfilDetalhado = empresaData;
                 let role = 'dono';
@@ -192,11 +191,14 @@ export async function verificarAcesso() {
                     role = 'funcionario';
                 }
 
+                // ### CORREÇÃO FINAL DA LÓGICA DE 'DONO' E 'ADMIN' ###
+                // O perfil de sessão agora reflete a permissão correta.
+                // Um admin terá sempre privilégios de dono.
                 cachedSessionProfile = { 
                     user, 
                     empresaId: empresaAtivaId, 
                     perfil: perfilDetalhado, 
-                    isOwner: isOwner, // Baseado estritamente no donoId
+                    isOwner: isOwner || isAdmin, // <-- A CORREÇÃO ESTÁ AQUI
                     isAdmin: isAdmin, 
                     role 
                 };
