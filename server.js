@@ -1,9 +1,8 @@
 // ======================================================================
-// Arquivo: server.js (VERSÃO FINAL COM VALIDAÇÃO COMPLETA)
+// Arquivo: server.js (VERSÃO LIMPA, SEM MERCADO PAGO, SEM STRIPE)
 // ======================================================================
 
 const express = require('express');
-const mercadopago = require('mercadopago');
 const admin = require('firebase-admin');
 const app = express();
 
@@ -19,42 +18,9 @@ const db = admin.firestore();
 app.use(express.static('public')); // Para servir seus arquivos HTML, CSS, JS
 app.use(express.json());
 
-mercadopago.configure({
-    access_token: 'SEU_ACCESS_TOKEN_DO_MERCADO_PAGO_AQUI'
-});
-
-// "Tabela de Preços" segura no servidor. Esta é a fonte da verdade para os cálculos.
-const configuracaoPrecos = {
-    precoBase: 59.90,
-    funcionariosInclusos: 2,
-    faixasDePrecoExtra: [
-        { de: 3, ate: 10, valor: 29.90 },
-        { de: 11, ate: 50, valor: 24.90 },
-    ]
-};
-
-// Função de cálculo segura NO SERVIDOR
-function calcularPrecoNoServidor(totalFuncionarios) {
-    if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) {
-        return configuracaoPrecos.precoBase;
-    }
-    let total = configuracaoPrecos.precoBase;
-    for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
-        const inicioDaFaixa = faixa.de;
-        if (totalFuncionarios >= inicioDaFaixa) {
-            const fimDaFaixa = faixa.ate;
-            const funcionariosNestaFaixa = Math.min(totalFuncionarios, fimDaFaixa) - Math.max(configuracaoPrecos.funcionariosInclusos, inicioDaFaixa) + 1;
-            if(funcionariosNestaFaixa > 0) {
-                const funcionariosJaCobrados = Math.max(0, inicioDaFaixa - configuracaoPrecos.funcionariosInclusos -1)
-                total += (funcionariosNestaFaixa - funcionariosJaCobrados) * faixa.valor;
-            }
-        }
-    }
-    return total;
-}
-
-
-// ENDPOINT 1: Informa ao front-end o status da empresa
+// ======================================================================
+// ENDPOINT: Informa ao front-end o status da empresa (exemplo de uso)
+// ======================================================================
 app.post('/get-status-empresa', async (req, res) => {
     try {
         const { userId } = req.body;
@@ -90,44 +56,66 @@ app.post('/get-status-empresa', async (req, res) => {
     }
 });
 
+// ======================================================================
+// ENDPOINT: CRUD DE SERVIÇOS (exemplo de endpoints)
+// ======================================================================
 
-// ENDPOINT 2: Cria a preferência de pagamento
-app.post('/create-preference', async (req, res) => {
+// Buscar todos os serviços de uma empresa
+app.get('/empresas/:empresaId/servicos', async (req, res) => {
     try {
-        const { userId, planoEscolhido } = req.body;
-
-        if (!userId || !planoEscolhido || !planoEscolhido.totalFuncionarios) {
-            return res.status(400).json({ error: 'Dados insuficientes.' });
-        }
-
-        // Recalcula o preço no servidor baseado no plano ESCOLHIDO para garantir segurança
-        const precoCalculadoNoServidor = calcularPrecoNoServidor(planoEscolhido.totalFuncionarios);
-        const descricaoDoItem = `Plano Pronti para até ${planoEscolhido.totalFuncionarios} funcionário(s)`;
-
-        // Gera o pagamento com o valor do plano escolhido.
-        const preference = {
-            items: [{
-                title: descricaoDoItem,
-                unit_price: parseFloat(precoCalculadoNoServidor.toFixed(2)),
-                quantity: 1,
-            }],
-            back_urls: {
-                success: `https://seusite.com/sucesso.html`, // Altere para seu site
-                failure: `https://seusite.com/pagamento.html`, // Altere para seu site
-                pending: `https://seusite.com/pagamento.html`, // Altere para seu site
-            },
-            auto_return: 'approved'
-        };
-        
-        const response = await mercadopago.preferences.create(preference);
-        res.json({ init_point: response.body.init_point });
-
+        const { empresaId } = req.params;
+        const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos');
+        const snapshot = await servicosRef.get();
+        const servicos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        res.json(servicos);
     } catch (error) {
-        console.error("Erro no servidor ao criar preferência:", error);
-        res.status(500).json({ error: "Erro interno no servidor." });
+        console.error("Erro ao buscar serviços:", error);
+        res.status(500).json({ error: "Erro ao buscar serviços." });
     }
 });
 
+// Criar novo serviço
+app.post('/empresas/:empresaId/servicos', async (req, res) => {
+    try {
+        const { empresaId } = req.params;
+        const dados = req.body;
+        const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos');
+        const docRef = await servicosRef.add(dados);
+        res.json({ success: true, id: docRef.id });
+    } catch (error) {
+        console.error("Erro ao criar serviço:", error);
+        res.status(500).json({ error: "Erro ao criar serviço." });
+    }
+});
+
+// Editar serviço existente
+app.put('/empresas/:empresaId/servicos/:servicoId', async (req, res) => {
+    try {
+        const { empresaId, servicoId } = req.params;
+        const dados = req.body;
+        const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos').doc(servicoId);
+        await servicosRef.update(dados);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Erro ao editar serviço:", error);
+        res.status(500).json({ error: "Erro ao editar serviço." });
+    }
+});
+
+// Excluir serviço
+app.delete('/empresas/:empresaId/servicos/:servicoId', async (req, res) => {
+    try {
+        const { empresaId, servicoId } = req.params;
+        const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos').doc(servicoId);
+        await servicosRef.delete();
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Erro ao excluir serviço:", error);
+        res.status(500).json({ error: "Erro ao excluir serviço." });
+    }
+});
+
+// ======================================================================
 
 const PORT = 4242;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}!`));
