@@ -126,7 +126,6 @@
         <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
         <p>Pronto para gerenciar seu dia?</p>
     </div>
-
     <div class="dashboard-grid-cards">
         <a href="dashboard.html" class="menu-card card-painel">
             <i class="fa-solid fa-chart-line"></i>
@@ -160,93 +159,98 @@
 </main>
 
 <script type="module">
-    // Carrega o menu lateral igual em todas as páginas
-    fetch('menu-lateral.html')
-      .then(res => res.text())
-      .then(html => {
-          document.getElementById('sidebar-placeholder').innerHTML = html;
-
-          // Adiciona o evento do botão sair após o menu ser inserido no DOM
-          import("./firebase-config.js").then(({ auth }) => {
-              import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
-                  const btnLogout = document.getElementById("btn-logout");
-                  if (btnLogout) {
-                      btnLogout.addEventListener("click", async () => {
-                          try {
-                              await signOut(auth);
-                              localStorage.clear();
-                              window.location.href = "login.html";
-                          } catch(e) {
-                              alert("Erro ao sair: " + e.message);
-                          }
-                      });
-                  }
-              });
+// Carrega o menu lateral igual em todas as páginas
+fetch('menu-lateral.html')
+  .then(res => res.text())
+  .then(html => {
+      document.getElementById('sidebar-placeholder').innerHTML = html;
+      // Adiciona o evento do botão sair após o menu ser inserido no DOM
+      import("./firebase-config.js").then(({ auth }) => {
+          import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
+              const btnLogout = document.getElementById("btn-logout");
+              if (btnLogout) {
+                  btnLogout.addEventListener("click", async () => {
+                      try {
+                          await signOut(auth);
+                          localStorage.clear();
+                          window.location.href = "login.html";
+                      } catch(e) {
+                          alert("Erro ao sair: " + e.message);
+                      }
+                  });
+              }
           });
       });
+  })
+  .catch((e) => {
+      // Exibe mensagem básica de erro de menu lateral
+      document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
+  });
 
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { auth } from "./firebase-config.js";
-    import { verificarAcesso } from "./userService.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { auth } from "./firebase-config.js";
+import { verificarAcesso } from "./userService.js";
 
-    const nomeUsuarioSpan = document.getElementById("nome-usuario");
-    const saudacaoSpan = document.getElementById("saudacao");
-    const mainContent = document.getElementById("main-content");
-    const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
+const nomeUsuarioSpan = document.getElementById("nome-usuario");
+const saudacaoSpan = document.getElementById("saudacao");
+const mainContent = document.getElementById("main-content");
+const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
-    function definirSaudacao() {
-        const hora = new Date().getHours();
-        if (hora >= 5 && hora < 12) return "Bom dia";
-        if (hora >= 12 && hora < 18) return "Boa tarde";
-        return "Boa noite";
+function definirSaudacao() {
+    const hora = new Date().getHours();
+    if (hora >= 5 && hora < 12) return "Bom dia";
+    if (hora >= 12 && hora < 18) return "Boa tarde";
+    return "Boa noite";
+}
+
+function mostrarPrimeiroAcessoCard() {
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div class="primeiro-acesso-card">
+                <h2>Seja bem-vindo ao Pronti!</h2>
+                <p>Inicie o cadastro da sua empresa.</p>
+                <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
+            </div>
+        `;
+        document.getElementById("btn-criar-empresa").addEventListener("click", () => {
+            localStorage.removeItem('empresaAtivaId');
+            window.location.href = "perfil.html";
+        });
     }
+}
 
-    function mostrarPrimeiroAcessoCard() {
-        if (mainContent) {
-            mainContent.innerHTML = `
-                <div class="primeiro-acesso-card">
-                    <h2>Seja bem-vindo ao Pronti!</h2>
-                    <p>Inicie o cadastro da sua empresa.</p>
-                    <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
-                </div>
-            `;
-            document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                localStorage.removeItem('empresaAtivaId');
-                window.location.href = "perfil.html";
-            });
+function removerIsLoading() {
+    document.body.classList.remove('is-loading');
+}
+
+async function inicializarDashboard() {
+    try {
+        const userSession = await verificarAcesso();
+        const { perfil } = userSession;
+        const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
+
+        if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
+        if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
+
+        if (perfil.nomeFantasia && nomeEmpresaSpan) {
+            nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
         }
-    }
-
-    function removerIsLoading() {
-        document.body.classList.remove('is-loading');
-    }
-
-    async function inicializarDashboard() {
-        try {
-            const userSession = await verificarAcesso();
-            const { perfil } = userSession;
-            const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
-
-            if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
-            if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
-
-            if (perfil.nomeFantasia && nomeEmpresaSpan) {
-                nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
-            }
-        } catch (error) {
-            if (error.message === "primeiro_acesso") {
-                mostrarPrimeiroAcessoCard();
-            } else if (!error.message.includes("Redirecionando")) {
-                console.error("[index.html] Erro não tratado na inicialização:", error);
-            }
-        } finally {
-            removerIsLoading();
+    } catch (error) {
+        if (error.message === "primeiro_acesso") {
+            mostrarPrimeiroAcessoCard();
+        } else if (!error.message.includes("Redirecionando")) {
+            // Exiba ou logue o erro, mas nunca deixe de remover o loading!
+            console.error("[index.html] Erro não tratado na inicialização:", error);
         }
+    } finally {
+        removerIsLoading();
     }
+}
 
-    inicializarDashboard();
-    setTimeout(removerIsLoading, 3000);
+// Garante que o loading sempre será removido mesmo se algo travar
+Promise.resolve().then(inicializarDashboard);
+setTimeout(removerIsLoading, 3000);
+
 </script>
-
 </body>
 </html>
