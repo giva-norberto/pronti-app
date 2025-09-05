@@ -1,6 +1,6 @@
 // ======================================================================
-//             SELECIONAR-EMPRESA.JS (VERSÃO FINAL REVISADA)
-// - Usa a função centralizada getEmpresasDoUsuario para consistência.
+//             SELECIONAR-EMPRESA.JS (VERSÃO FINAL REVISADA - COMPATÍVEL COM MAPAUSUARIOS EMPRESAS ARRAY)
+// - Usa a função centralizada getEmpresasDoUsuario para consistência (compatível com array empresas em mapaUsuarios).
 // - Redireciona automaticamente se o utilizador tiver apenas uma empresa.
 // - Permite a seleção manual se o utilizador tiver múltiplas empresas.
 // ======================================================================
@@ -40,13 +40,13 @@ async function inicializarPagina(user) {
     if (grid) grid.style.display = "none";
 
     try {
-        // Utiliza a função centralizada do userService para garantir consistência
+        // Utiliza a função centralizada do userService para garantir consistência (compatível com array empresas em mapaUsuarios)
         const empresas = await getEmpresasDoUsuario(user);
 
         // --- LÓGICA DE DECISÃO INTELIGENTE ---
         if (empresas.length === 1) {
             // Se o utilizador tem exatamente uma empresa, seleciona-a automaticamente.
-            console.log(`Apenas uma empresa encontrada (${empresas[0].nome}). Redirecionando...`);
+            console.log(`Apenas uma empresa encontrada (${empresas[0].nomeFantasia || empresas[0].nome}). Redirecionando...`);
             selecionarEmpresa(empresas[0].id);
             return; // Interrompe a função para evitar renderizar a página
         }
