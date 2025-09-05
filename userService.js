@@ -3,7 +3,6 @@
 // - Lógica de busca de empresas compatível com estruturas de dados antigas e novas.
 // - Lógica de verificação inteligente e auto-corretiva.
 // - Corrigido o fluxo para utilizadores que também são administradores.
-// - Adicionada proteção contra múltiplas execuções simultâneas (race conditions).
 // ======================================================================
 
 import {
@@ -25,10 +24,13 @@ export async function ensureUserAndTrialDoc() {
             return;
         }
 
+        console.log("🔍 [ensureUserAndTrialDoc] Verificando documento do usuário:", user.uid);
+        
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
         
         if (!userSnap.exists()) {
+            console.log("📝 [ensureUserAndTrialDoc] Criando documento do usuário");
             await setDoc(userRef, {
                 nome: user.displayName || user.email || 'Usuário',
                 email: user.email || '',
@@ -36,42 +38,55 @@ export async function ensureUserAndTrialDoc() {
                 isPremium: false,
             });
         } else if (!userSnap.data().trialStart) {
+            console.log("📝 [ensureUserAndTrialDoc] Atualizando trialStart");
             await updateDoc(userRef, {
                 trialStart: serverTimestamp(),
             });
         }
     } catch (error) {
         console.error("❌ [ensureUserAndTrialDoc] Erro:", error);
+        // Não propaga o erro para não quebrar o fluxo principal
     }
 }
 
 async function checkUserStatus(user, empresaData) {
     try {
         if (!user) {
+            console.warn("❌ [checkUserStatus] Usuário não fornecido");
             return { hasActivePlan: false, isTrialActive: true };
         }
+
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
+        
         if (!userSnap.exists()) {
+            console.log("⚠️ [checkUserStatus] Documento do usuário não existe");
             return { hasActivePlan: false, isTrialActive: true };
         }
+        
         const userData = userSnap.data();
         if (!userData) {
+            console.warn("❌ [checkUserStatus] Dados do usuário inválidos");
             return { hasActivePlan: false, isTrialActive: true };
         }
+
         if (userData.isPremium === true) {
             return { hasActivePlan: true, isTrialActive: false };
         }
+        
         if (!userData.trialStart?.seconds) {
             return { hasActivePlan: false, isTrialActive: true };
         }
+        
         let trialDurationDays = 15;
         if (empresaData && typeof empresaData.freeEmDias === 'number') {
             trialDurationDays = empresaData.freeEmDias;
         }
+        
         const startDate = new Date(userData.trialStart.seconds * 1000);
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + trialDurationDays);
+        
         return { hasActivePlan: false, isTrialActive: endDate > new Date() };
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
@@ -79,131 +94,238 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
+// --- FUNÇÃO EXPORTADA (CORRIGIDA COM COMPATIBILIDADE) ---
+
 /**
  * Busca todas as empresas associadas a um utilizador a partir do mapaUsuarios.
+ * É compatível com o formato antigo (empresaId: string) e o novo (empresas: array).
+ * @param {User} user O objeto do utilizador autenticado.
+ * @returns {Promise<Array>} Uma lista de objetos de empresa aos quais o utilizador tem acesso.
  */
 export async function getEmpresasDoUsuario(user) {
     if (!user) {
         console.warn("❌ [getEmpresasDoUsuario] Usuário não fornecido");
         return [];
     }
+
     try {
+        console.log("🔍 [getEmpresasDoUsuario] Buscando empresas para:", user.uid);
+        
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
+
         if (!mapaSnap.exists()) {
-            console.warn("⚠️ [getEmpresasDoUsuario] Documento não encontrado em mapaUsuarios.");
+            console.warn("⚠️ [getEmpresasDoUsuario] Documento não encontrado em mapaUsuarios para este utilizador.");
             return [];
         }
+
         const mapaData = mapaSnap.data();
         if (!mapaData) {
+            console.warn("❌ [getEmpresasDoUsuario] Dados do mapa inválidos");
             return [];
         }
+
         let empresaIds = [];
+
+        // LÓGICA DE COMPATIBILIDADE PARA CORRIGIR O ERRO
         if (mapaData.empresas && Array.isArray(mapaData.empresas)) {
+            // Se encontrar o novo formato (array), usa-o.
+            console.log("✅ [getEmpresasDoUsuario] Formato 'empresas' (array) encontrado no mapaUsuarios.");
             empresaIds = mapaData.empresas.filter(id => id && typeof id === 'string');
         } else if (mapaData.empresaId && typeof mapaData.empresaId === 'string') {
-            console.warn("⚠️ [getEmpresasDoUsuario] Formato antigo 'empresaId' encontrado. Processando com compatibilidade.");
+            // Se encontrar o formato antigo (string), trata-o como uma lista de uma empresa.
+            console.warn("⚠️ [getEmpresasDoUsuario] Formato antigo 'empresaId' (string) encontrado. A processar com compatibilidade.");
             empresaIds = [mapaData.empresaId];
         } else {
+            // Se não encontrar nenhum dos formatos esperados.
+            console.warn("❌ [getEmpresasDoUsuario] Nenhum campo 'empresas' (array) ou 'empresaId' (string) encontrado no mapaUsuarios.");
             return [];
         }
+
         if (empresaIds.length === 0) {
+            console.log("⚠️ [getEmpresasDoUsuario] Nenhuma empresa encontrada");
             return [];
         }
-        const promessasEmpresas = empresaIds.map(id => getDoc(doc(db, "empresarios", id)));
+
+        console.log("🔍 [getEmpresasDoUsuario] Buscando dados das empresas:", empresaIds);
+
+        const promessasEmpresas = empresaIds.map(empresaId => {
+            try {
+                return getDoc(doc(db, "empresarios", empresaId));
+            } catch (error) {
+                console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresa:", empresaId, error);
+                return Promise.resolve(null);
+            }
+        });
+
         const docsEmpresas = await Promise.all(promessasEmpresas);
+
         const empresasValidas = [];
-        docsEmpresas.forEach((empresaDoc, i) => {
+        for (let i = 0; i < docsEmpresas.length; i++) {
+            const empresaDoc = docsEmpresas[i];
             if (empresaDoc && empresaDoc.exists()) {
-                empresasValidas.push({ id: empresaDoc.id, ...empresaDoc.data() });
+                const empresaData = empresaDoc.data();
+                if (empresaData) {
+                    empresasValidas.push({ 
+                        id: empresaDoc.id, 
+                        ...empresaData,
+                        nome: empresaData.nome || 'Empresa sem nome'
+                    });
+                }
             } else {
                 console.warn("⚠️ [getEmpresasDoUsuario] Empresa não encontrada:", empresaIds[i]);
             }
-        });
+        }
+
+        console.log("✅ [getEmpresasDoUsuario] Empresas válidas encontradas:", empresasValidas.length);
         return empresasValidas;
+
     } catch (error) {
-        console.error("❌ [getEmpresasDoUsuario] Erro:", error);
+        console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas do utilizador:", error);
         return [];
     }
 }
 
 // ======================================================================
-// FUNÇÃO GUARDA PRINCIPAL (REESCRITA COM PROTEÇÃO DE CONCORRÊNCIA)
+// FUNÇÃO GUARDA PRINCIPAL (REESCRITA COM LÓGICA RESILIENTE)
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
-        console.log("✅ [verificarAcesso] Usando perfil em cache.");
+        console.log("✅ [verificarAcesso] Usando perfil em cache");
         return Promise.resolve(cachedSessionProfile);
     }
 
     if (isProcessing) {
-        console.error("🔥 [CONCORRÊNCIA DETECTADA] A função verificarAcesso foi chamada novamente enquanto já estava em processamento. Isto indica uma condição de corrida (race condition). A chamada duplicada será rejeitada.");
-        return Promise.reject(new Error("Race condition detected."));
+        console.log("⚠️ [verificarAcesso] Verificação já em andamento, aguardando...");
+        return new Promise((resolve, reject) => {
+            const checkInterval = setInterval(() => {
+                if (!isProcessing) {
+                    clearInterval(checkInterval);
+                    if (cachedSessionProfile) {
+                        resolve(cachedSessionProfile);
+                    } else {
+                        reject(new Error("Verificação falhou"));
+                    }
+                }
+            }, 100);
+        });
     }
-    
-    console.log("🟢 [verificarAcesso] Iniciando processamento... isProcessing = true");
+
     isProcessing = true;
 
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe();
             try {
+                unsubscribe();
+
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html'];
                 const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html'];
 
+                console.log("🔍 [verificarAcesso] Página atual:", currentPage);
+
                 if (!user) {
+                    console.log("❌ [verificarAcesso] Usuário não autenticado");
                     if (!paginasPublicas.includes(currentPage)) {
                         window.location.replace('login.html');
                     }
+                    isProcessing = false;
                     return reject(new Error("Utilizador não autenticado."));
                 }
 
+                console.log("✅ [verificarAcesso] Usuário autenticado:", user.uid);
+
                 await ensureUserAndTrialDoc();
-                const isAdmin = user.uid === "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                let empresaAtivaId = localStorage.getItem('empresaAtivaId');
+
+                // MODIFICAÇÃO: A verificação de admin agora é apenas uma flag, não interrompe o fluxo.
+                const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                const isAdmin = user.uid === ADMIN_UID;
+
+                let empresaAtivaId = null;
+                try {
+                    empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                } catch (error) {
+                    console.error("❌ [verificarAcesso] Erro ao acessar localStorage:", error);
+                }
+
+                let acessoVerificado = false;
                 let empresaDocSnap = null;
 
                 if (empresaAtivaId) {
-                    const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                    if (empresaDoc.exists()) {
-                        empresaDocSnap = empresaDoc;
-                    } else {
-                        localStorage.removeItem('empresaAtivaId');
+                    console.log("🔍 [verificarAcesso] Verificando empresa salva:", empresaAtivaId);
+                    try {
+                        const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
+                        if (empresaDoc.exists()) {
+                            empresaDocSnap = empresaDoc;
+                            acessoVerificado = true;
+                            console.log("✅ [verificarAcesso] Empresa salva válida");
+                        } else {
+                            console.log("❌ [verificarAcesso] Empresa salva não existe mais");
+                            try {
+                                localStorage.removeItem('empresaAtivaId');
+                            } catch (error) {
+                                console.error("❌ [verificarAcesso] Erro ao remover do localStorage:", error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error("❌ [verificarAcesso] Erro ao verificar empresa salva:", error);
+                        try {
+                            localStorage.removeItem('empresaAtivaId');
+                        } catch (e) {
+                            console.error("❌ [verificarAcesso] Erro ao remover do localStorage:", e);
+                        }
                     }
                 }
 
-                if (!empresaDocSnap) {
+                if (!acessoVerificado) {
+                    console.log("🔍 [verificarAcesso] Buscando empresas do usuário");
                     const empresas = await getEmpresasDoUsuario(user);
+                    
                     if (empresas.length === 0) {
+                        console.log("❌ [verificarAcesso] Nenhuma empresa associada");
                         if (!paginasDeConfiguracao.includes(currentPage)) {
                             window.location.replace('perfil.html');
                         }
+                        isProcessing = false;
                         return reject(new Error("Nenhuma empresa associada."));
                     } else if (empresas.length === 1) {
+                        console.log("✅ [verificarAcesso] Uma empresa encontrada, selecionando automaticamente");
                         empresaAtivaId = empresas[0].id;
-                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                        try {
+                            localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                        } catch (error) {
+                            console.error("❌ [verificarAcesso] Erro ao salvar no localStorage:", error);
+                        }
                         empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     } else {
+                        console.log("🔄 [verificarAcesso] Múltiplas empresas, redirecionando para seleção");
                         if (currentPage !== 'selecionar-empresa.html') {
                             window.location.replace('selecionar-empresa.html');
                         }
+                        isProcessing = false;
                         return reject(new Error("Múltiplas empresas, seleção necessária."));
                     }
                 }
                 
                 if (!empresaDocSnap || !empresaDocSnap.exists()) {
+                    console.error("❌ [verificarAcesso] Documento da empresa não encontrado");
+                    isProcessing = false;
                     return reject(new Error("Empresa não encontrada."));
                 }
 
                 const empresaData = empresaDocSnap.data();
                 if (!empresaData) {
+                    console.error("❌ [verificarAcesso] Dados da empresa inválidos");
+                    isProcessing = false;
                     return reject(new Error("Dados da empresa inválidos."));
                 }
 
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+
                 if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
+                    console.log("❌ [verificarAcesso] Assinatura expirada, redirecionando");
                     window.location.replace('assinatura.html');
+                    isProcessing = false;
                     return reject(new Error("Assinatura expirada."));
                 }
                 
@@ -212,16 +334,44 @@ export async function verificarAcesso() {
                 let role = 'dono';
 
                 if (!isOwner) {
-                    const profSnap = await getDoc(doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid));
-                    if (!profSnap.exists() || profSnap.data().status !== 'ativo') {
-                        localStorage.removeItem('empresaAtivaId');
-                        window.location.replace('login.html');
-                        return reject(new Error("Acesso de profissional revogado ou pendente."));
+                    console.log("🔍 [verificarAcesso] Verificando perfil de profissional");
+                    try {
+                        const profSnap = await getDoc(doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid));
+                        if (!profSnap.exists()) {
+                            console.log("❌ [verificarAcesso] Profissional não encontrado");
+                            try {
+                                localStorage.removeItem('empresaAtivaId');
+                            } catch (error) {
+                                console.error("❌ [verificarAcesso] Erro ao remover do localStorage:", error);
+                            }
+                            window.location.replace('login.html');
+                            isProcessing = false;
+                            return reject(new Error("Acesso de profissional não encontrado."));
+                        }
+
+                        const profData = profSnap.data();
+                        if (!profData || profData.status !== 'ativo') {
+                            console.log("❌ [verificarAcesso] Profissional inativo ou dados inválidos");
+                            try {
+                                localStorage.removeItem('empresaAtivaId');
+                            } catch (error) {
+                                console.error("❌ [verificarAcesso] Erro ao remover do localStorage:", error);
+                            }
+                            window.location.replace('login.html');
+                            isProcessing = false;
+                            return reject(new Error("Acesso de profissional revogado ou pendente."));
+                        }
+
+                        perfilDetalhado = profData;
+                        role = 'funcionario';
+                    } catch (error) {
+                        console.error("❌ [verificarAcesso] Erro ao verificar profissional:", error);
+                        isProcessing = false;
+                        return reject(new Error("Erro ao verificar acesso de profissional."));
                     }
-                    perfilDetalhado = profSnap.data();
-                    role = 'funcionario';
                 }
 
+                // MODIFICAÇÃO: A flag 'isAdmin' é adicionada ao perfil final.
                 cachedSessionProfile = { 
                     user, 
                     empresaId: empresaAtivaId, 
@@ -230,20 +380,35 @@ export async function verificarAcesso() {
                     isAdmin: isAdmin, 
                     role 
                 };
-                console.log("✅ [verificarAcesso] Verificação concluída com sucesso.");
-                resolve(cachedSessionProfile);
+
+                console.log("✅ [verificarAcesso] Verificação concluída com sucesso");
+                isProcessing = false;
+                return resolve(cachedSessionProfile);
 
             } catch (error) {
                 console.error("❌ [verificarAcesso] Erro final:", error);
-                reject(error);
-            } finally {
-                console.log("🔵 [verificarAcesso] Finalizando processamento. isProcessing = false");
                 isProcessing = false;
+                
+                if (error.message.includes("autenticado") || 
+                    error.message.includes("revogado") || 
+                    error.message.includes("expirada") || 
+                    error.message.includes("seleção") ||
+                    error.message.includes("associada")) {
+                    return reject(error);
+                }
+                
+                window.location.replace('login.html');
+                return reject(new Error("Erro inesperado no acesso."));
             }
+        }, (error) => {
+            console.error("❌ [verificarAcesso] Erro no onAuthStateChanged:", error);
+            isProcessing = false;
+            reject(new Error("Erro de autenticação."));
         });
     });
 }
 
+// Função para limpar cache (útil para debug)
 export function clearCache() {
     cachedSessionProfile = null;
     isProcessing = false;
