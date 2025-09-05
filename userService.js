@@ -83,31 +83,17 @@ export async function verificarAcesso() {
                     return resolve(cachedSessionProfile);
                 }
 
-                // --- 3. Obter empresaId do mapaUsuarios (fonte primária para todos os usuários) ---
-                const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
-                let empresaAssociadaAoUsuario = null;
+                // --- 3. Lógica de seleção de empresa (Simplificada) ---
+                // ✅ CORREÇÃO: A lógica agora depende apenas do localStorage para determinar a empresa ativa.
+                // Isso força o utilizador com múltiplas empresas a ir para a página de seleção
+                // se nenhuma empresa estiver ativa, em vez de escolher uma automaticamente.
+                let empresaFinalId = localStorage.getItem('empresaAtivaId');
 
-                if (mapaSnap.exists()) {
-                    empresaAssociadaAoUsuario = mapaSnap.data().empresaId;
-                }
-
-                // --- 4. Lógica de seleção de empresa ---
-                let empresaAtivaIdNoLocalStorage = localStorage.getItem('empresaAtivaId');
-                let empresaFinalId = null;
-
-                if (empresaAtivaIdNoLocalStorage) {
-                    // Prioriza o localStorage se existir e for válido
-                    empresaFinalId = empresaAtivaIdNoLocalStorage;
-                } else if (empresaAssociadaAoUsuario) {
-                    // Se não tem no localStorage, usa o do mapaUsuarios como padrão
-                    localStorage.setItem('empresaAtivaId', empresaAssociadaAoUsuario);
-                    empresaFinalId = empresaAssociadaAoUsuario;
-                }
-
-                // Se ainda não temos uma empresa final, ou se o usuário está em uma página de configuração
-                // e precisa selecionar/criar uma empresa.
+                // --- 4. Redirecionamento ---
+                // Se ainda não temos uma empresa final (localStorage está vazio) e não estamos
+                // numa página de configuração, o utilizador deve ser redirecionado para escolher uma.
                 if (!empresaFinalId && !paginasDeConfiguracao.includes(currentPage)) {
-                    console.log("[AuthGuard] Nenhuma empresa ativa/associada. Redirecionando para seleção.");
+                    console.log("[AuthGuard] Nenhuma empresa ativa. Redirecionando para seleção.");
                     window.location.replace('selecionar-empresa.html');
                     return reject(new Error("Redirecionando para seleção de empresa."));
                 }
@@ -120,7 +106,7 @@ export async function verificarAcesso() {
                     if (empresaDocSnap.exists()) {
                         empresaData = empresaDocSnap.data();
                     } else {
-                        // Inconsistência: empresaId no mapa/localStorage não existe mais.
+                        // Inconsistência: empresaId no localStorage não existe mais.
                         console.error(`[AuthGuard] Inconsistência: empresaId ${empresaFinalId} inexistente. Limpando localStorage.`);
                         localStorage.removeItem('empresaAtivaId'); // Limpa para forçar nova seleção
                         if (!paginasDeConfiguracao.includes(currentPage)) {
@@ -167,7 +153,7 @@ export async function verificarAcesso() {
                         }
                     }
                 } else if (currentPage === 'perfil.html' || currentPage === 'selecionar-empresa.html') {
-                    // ✅ CORREÇÃO: Se não há empresa ativa, mas o usuário já está na página de perfil
+                    // Se não há empresa ativa, mas o utilizador já está na página de perfil
                     // ou na página de seleção, é um estado válido. A própria página cuidará da lógica.
                     // Apenas rejeitamos a promessa para parar a execução do guard.
                     return reject(new Error("primeiro_acesso_ou_selecao"));
