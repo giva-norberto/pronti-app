@@ -1,7 +1,3 @@
-// ======================================================================
-//                      USERSERVICE.JS (VERSÃO FINAL CORRIGIDA E ESTÁVEL)
-// ======================================================================
-
 import {
     collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -11,7 +7,7 @@ import { db, auth } from './firebase-config.js';
 // "Memória" para evitar re-verificação desnecessária
 let cachedSessionProfile = null;
 
-// --- Funções Auxiliares ---
+// --- Funções Auxiliares (sem alterações) ---
 export async function ensureUserAndTrialDoc() {
     const user = auth.currentUser;
     if (!user) return;
@@ -48,8 +44,60 @@ async function checkUserStatus(user, empresaData) {
     return { hasActivePlan: false, isTrialActive: endDate > new Date() };
 }
 
+// --- Nova Função Central de Verificação com DIAGNÓSTICO ---
+async function hasAccessToCompany(user, empresaId) {
+    console.log(`[DIAGNÓSTICO] A iniciar verificação para empresaId: ${empresaId}`);
+    if (!user || !empresaId) {
+        console.error("[DIAGNÓSTICO] Falha: Utilizador ou empresaId em falta.");
+        return { hasAccess: false };
+    }
+
+    try {
+        const empresaRef = doc(db, "empresarios", empresaId);
+        const empresaSnap = await getDoc(empresaRef);
+
+        if (!empresaSnap.exists()) {
+            console.error(`[DIAGNÓSTICO] Falha: A empresa com ID ${empresaId} não foi encontrada na base de dados.`);
+            return { hasAccess: false, error: "empresa_nao_existe" };
+        }
+        console.log("[DIAGNÓSTICO] Sucesso: Documento da empresa encontrado.");
+
+        const empresaData = empresaSnap.data();
+        const isOwner = empresaData.donoId === user.uid;
+
+        if (isOwner) {
+            console.log("[DIAGNÓSTICO] Sucesso: O utilizador é o DONO da empresa.");
+            return { hasAccess: true, isOwner: true, perfil: empresaData, empresaDoc: empresaSnap };
+        }
+        console.log("[DIAGNÓSTICO] Info: O utilizador não é o dono. A verificar se é um profissional...");
+
+        const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", user.uid);
+        const profissionalSnap = await getDoc(profissionalRef);
+
+        if (profissionalSnap.exists()) {
+            console.log("[DIAGNÓSTICO] Sucesso: O utilizador existe na subcoleção 'profissionais'.");
+            const profissionalData = profissionalSnap.data();
+            if (profissionalData.status === 'ativo') {
+                console.log("[DIAGNÓSTICO] Sucesso: O status do profissional é 'ativo'. Acesso concedido.");
+                return { hasAccess: true, isOwner: false, perfil: profissionalData, empresaDoc: empresaSnap };
+            } else {
+                console.error(`[DIAGNÓSTICO] Falha: O status do profissional é '${profissionalData.status}', mas deveria ser 'ativo'.`);
+                return { hasAccess: false };
+            }
+        } else {
+            console.error("[DIAGNÓSTICO] Falha: O utilizador não foi encontrado como DONO nem como PROFISSIONAL nesta empresa.");
+            return { hasAccess: false };
+        }
+
+    } catch (error) {
+        console.error("[DIAGNÓSTICO] Falha: Ocorreu um erro de base de dados durante a verificação de acesso.", error);
+        return { hasAccess: false };
+    }
+}
+
+
 // ======================================================================
-// FUNÇÃO PRINCIPAL COM A LÓGICA DE ROTEAMENTO CENTRALIZADA (CORRIGIDA E OTIMIZADA)
+// FUNÇÃO PRINCIPAL REESCRITA PARA SER A ÚNICA FONTE DE VERDADE
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) {
@@ -58,16 +106,15 @@ export async function verificarAcesso() {
 
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe(); // Garante que o listener rode apenas uma vez
+            unsubscribe();
 
             const currentPage = window.location.pathname.split('/').pop();
             const paginasPublicas = ['login.html', 'cadastro.html'];
             const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html'];
 
-            // --- 1. Usuário não logado ---
             if (!user) {
                 if (!paginasPublicas.includes(currentPage)) {
-                    console.log("[AuthGuard] Usuário não logado. Redirecionando para login.");
+                    console.log("[AuthGuard] Utilizador não autenticado. A redirecionar para o login.");
                     window.location.replace('login.html');
                 }
                 return reject(new Error("Utilizador não autenticado."));
@@ -76,120 +123,69 @@ export async function verificarAcesso() {
             try {
                 await ensureUserAndTrialDoc();
 
-                // --- 2. Admin ---
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 if (user.uid === ADMIN_UID) {
-                    cachedSessionProfile = { user, isAdmin: true, perfil: { nome: "Admin" }, isOwner: true, role: 'admin' };
+                    cachedSessionProfile = { user, isAdmin: true, perfil: { nome: "Admin" }, isOwner: true, role: 'admin', empresaId: null };
                     return resolve(cachedSessionProfile);
                 }
 
-                // --- 3. Lógica de seleção de empresa (Simplificada) ---
-                // ✅ CORREÇÃO: A lógica agora depende apenas do localStorage para determinar a empresa ativa.
-                // Isso força o utilizador com múltiplas empresas a ir para a página de seleção
-                // se nenhuma empresa estiver ativa, em vez de escolher uma automaticamente.
-                let empresaFinalId = localStorage.getItem('empresaAtivaId');
+                let empresaAtivaId = localStorage.getItem('empresaAtivaId');
 
-                // --- 4. Redirecionamento ---
-                // Se ainda não temos uma empresa final (localStorage está vazio) e não estamos
-                // numa página de configuração, o utilizador deve ser redirecionado para escolher uma.
-                if (!empresaFinalId && !paginasDeConfiguracao.includes(currentPage)) {
-                    console.log("[AuthGuard] Nenhuma empresa ativa. Redirecionando para seleção.");
-                    window.location.replace('selecionar-empresa.html');
-                    return reject(new Error("Redirecionando para seleção de empresa."));
-                }
-
-                // --- 5. Carregar dados da empresa (com empresaFinalId garantido ou nulo se na página de config) ---
-                let empresaDocSnap = null;
-                let empresaData = null;
-                if (empresaFinalId) {
-                    empresaDocSnap = await getDoc(doc(db, "empresarios", empresaFinalId));
-                    if (empresaDocSnap.exists()) {
-                        empresaData = empresaDocSnap.data();
+                // --- LÓGICA CENTRAL REATORIZADA ---
+                if (!empresaAtivaId) {
+                    // Se não há empresa ativa, o utilizador só pode estar nas páginas de configuração.
+                    // Se estiver noutra página, é forçado a escolher uma.
+                    if (!paginasDeConfiguracao.includes(currentPage)) {
+                        console.log("[AuthGuard] Nenhuma empresa ativa. A redirecionar para a seleção.");
+                        window.location.replace('selecionar-empresa.html');
+                        return reject(new Error("primeiro_acesso_ou_selecao"));
                     } else {
-                        // Inconsistência: empresaId no localStorage não existe mais.
-                        console.error(`[AuthGuard] Inconsistência: empresaId ${empresaFinalId} inexistente. Limpando localStorage.`);
-                        localStorage.removeItem('empresaAtivaId'); // Limpa para forçar nova seleção
-                        if (!paginasDeConfiguracao.includes(currentPage)) {
-                            window.location.replace('selecionar-empresa.html');
-                        }
-                        return reject(new Error("Empresa não encontrada ou removida."));
-                    }
-                } else if (!paginasDeConfiguracao.includes(currentPage)) {
-                    // Se não tem empresaFinalId e não está em página de config, algo deu errado.
-                    console.error("[AuthGuard] Erro lógico: empresaFinalId não definido fora de páginas de configuração.");
-                    window.location.replace('selecionar-empresa.html');
-                    return reject(new Error("Erro: Empresa ativa não definida."));
-                }
-
-                // --- 6. Verificar status da assinatura (apenas se tiver empresaData) ---
-                if (empresaData) {
-                    const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
-                    if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
-                        console.log("[AuthGuard] Assinatura expirada. Redirecionando.");
-                        window.location.replace('assinatura.html');
-                        return reject(new Error("Assinatura expirada."));
+                        // Se já está na página certa (ex: selecionar-empresa), não faz nada.
+                         return reject(new Error("A aguardar ação do utilizador na página de configuração."));
                     }
                 }
 
-                // --- 7. Determinar o perfil (dono ou funcionário) ---
-                let userProfile = null;
-                if (empresaData) { // Só tenta determinar o perfil se tiver dados da empresa
-                    const isOwner = empresaData.donoId === user.uid;
+                // Se temos uma empresaId no localStorage, validamos o acesso a ela.
+                const accessCheck = await hasAccessToCompany(user, empresaAtivaId);
 
-                    if (isOwner) {
-                        userProfile = { user, empresaId: empresaDocSnap.id, perfil: empresaData, isOwner: true, role: "dono" };
-                    } else {
-                        // É um funcionário, verifica o status na subcoleção 'profissionais'
-                        const profissionalRef = doc(db, "empresarios", empresaDocSnap.id, "profissionais", user.uid);
-                        const profissionalSnap = await getDoc(profissionalRef);
-
-                        if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
-                            userProfile = { user, perfil: profissionalSnap.data(), empresaId: empresaDocSnap.id, isOwner: false, role: "funcionario" };
-                        } else {
-                            // Funcionário existe mas não está ativo, ou não foi encontrado
-                            console.log("[AuthGuard] Funcionário pendente ou inativo. Redirecionando para login.");
-                            window.location.replace('login.html'); // Redireciona para login ou uma página de status
-                            return reject(new Error("aguardando_aprovacao"));
-                        }
+                if (!accessCheck.hasAccess) {
+                    console.warn(`[AuthGuard] Acesso negado ou empresa inválida (${empresaAtivaId}). A limpar e a redirecionar.`);
+                    localStorage.removeItem('empresaAtivaId');
+                    if (!paginasDeConfiguracao.includes(currentPage)) {
+                         window.location.replace('selecionar-empresa.html');
                     }
-                } else if (currentPage === 'perfil.html' || currentPage === 'selecionar-empresa.html') {
-                    // Se não há empresa ativa, mas o utilizador já está na página de perfil
-                    // ou na página de seleção, é um estado válido. A própria página cuidará da lógica.
-                    // Apenas rejeitamos a promessa para parar a execução do guard.
-                    return reject(new Error("primeiro_acesso_ou_selecao"));
-                } else {
-                    // Se não tem empresaData e não está em nenhuma das páginas de configuração permitidas,
-                    // redireciona para a página de perfil para criar a primeira empresa.
-                    console.log("[AuthGuard] Primeiro acesso (sem empresa). Redirecionando para perfil.");
-                    window.location.replace('perfil.html');
-                    return reject(new Error("primeiro_acesso"));
+                    return reject(new Error("O acesso à empresa foi revogado."));
                 }
+
+                // Acesso confirmado! Montamos o perfil do utilizador.
+                const empresaDocSnap = accessCheck.empresaDoc;
+
+                const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaDocSnap.data());
+                if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
+                    console.log("[AuthGuard] Assinatura expirada. A redirecionar.");
+                    window.location.replace('assinatura.html');
+                    return reject(new Error("Assinatura expirada."));
+                }
+
+                const userProfile = {
+                    user,
+                    empresaId: empresaDocSnap.id,
+                    perfil: accessCheck.perfil,
+                    isOwner: accessCheck.isOwner,
+                    isAdmin: false, // Garantir que apenas o admin real tenha este status
+                    role: accessCheck.isOwner ? "dono" : "funcionario"
+                };
 
                 cachedSessionProfile = userProfile;
                 return resolve(userProfile);
 
             } catch (error) {
                 console.error("[AuthGuard] Erro final em verificarAcesso:", error);
-                // Tratamento de erro mais robusto para evitar loops
-                if (error.message === "Utilizador não autenticado.") {
-                    // Já tratado no início, apenas rejeita
-                    return reject(error);
-                } else if (error.message === "Redirecionando para seleção de empresa." || error.message === "Assinatura expirada." || error.message === "primeiro_acesso" || error.message === "primeiro_acesso_ou_selecao") {
-                    // Erros de redirecionamento intencionais ou estados válidos, apenas rejeita para parar o guard
-                    return reject(error);
-                } else if (error.code === 'permission-denied') {
-                    console.log("[AuthGuard] Permissão negada. Possível funcionário não aprovado ou regra de segurança.");
-                    // Se for permission-denied e não for uma página de configuração, redireciona para login
-                    if (!paginasDeConfiguracao.includes(currentPage)) {
-                        window.location.replace('login.html');
-                    }
-                    return reject(new Error("Permissão negada ou aguardando aprovação."));
-                } else {
-                    // Erros inesperados, redireciona para login para resetar o estado
-                    console.error("[AuthGuard] Erro inesperado, forçando logout/redirecionamento.");
-                    window.location.replace('login.html');
-                    return reject(new Error("Erro inesperado no acesso."));
+                if (error.message.includes("autenticado") || error.message.includes("revogado") || error.message.includes("expirada") || error.message.includes("selecao") || error.message.includes("configuração")) {
+                    return reject(error); // Evita re-redirecionamento
                 }
+                window.location.replace('login.html');
+                return reject(new Error("Erro inesperado no acesso."));
             }
         });
     });
