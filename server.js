@@ -1,5 +1,5 @@
 // ======================================================================
-// Arquivo: server.js (VERSÃO LIMPA, SEM MERCADO PAGO, SEM STRIPE)
+// Arquivo: server.js (VERSÃO ROBUSTA, LIMPA, SEM MERCADO PAGO, SEM STRIPE)
 // ======================================================================
 
 const express = require('express');
@@ -7,12 +7,18 @@ const admin = require('firebase-admin');
 const app = express();
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
-// Lembre-se de ter o seu arquivo serviceAccountKey.json na mesma pasta
-const serviceAccount = require('./serviceAccountKey.json');
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-const db = admin.firestore();
+let db;
+try {
+  // Lembre-se de ter o seu arquivo serviceAccountKey.json na mesma pasta
+  const serviceAccount = require('./serviceAccountKey.json');
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+  db = admin.firestore();
+} catch (error) {
+  console.error("❌ Erro ao inicializar Firebase Admin SDK:", error);
+  process.exit(1); // Encerra se não conseguir inicializar
+}
 // -----------------------------------------
 
 app.use(express.static('public')); // Para servir seus arquivos HTML, CSS, JS
@@ -43,7 +49,7 @@ app.post('/get-status-empresa', async (req, res) => {
             numeroParaValidacao = empresaData.usuariosLicenciados;
         } else {
             // Se o campo não existir, usamos a contagem real como um fallback seguro.
-            const profCollectionRef = db.collection('empresarios', empresaDoc.id, 'profissionais');
+            const profCollectionRef = db.collection('empresarios').doc(empresaDoc.id).collection('profissionais');
             const profSnap = await profCollectionRef.get();
             numeroParaValidacao = profSnap.size;
         }
@@ -51,7 +57,7 @@ app.post('/get-status-empresa', async (req, res) => {
         res.json({ licencasNecessarias: numeroParaValidacao });
 
     } catch (error) {
-        console.error("Erro ao buscar status da empresa:", error);
+        console.error("❌ Erro ao buscar status da empresa:", error);
         res.status(500).json({ error: 'Erro interno no servidor.' });
     }
 });
@@ -64,12 +70,14 @@ app.post('/get-status-empresa', async (req, res) => {
 app.get('/empresas/:empresaId/servicos', async (req, res) => {
     try {
         const { empresaId } = req.params;
+        if (!empresaId) return res.status(400).json({ error: "empresaId não fornecido." });
+
         const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos');
         const snapshot = await servicosRef.get();
         const servicos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         res.json(servicos);
     } catch (error) {
-        console.error("Erro ao buscar serviços:", error);
+        console.error("❌ Erro ao buscar serviços:", error);
         res.status(500).json({ error: "Erro ao buscar serviços." });
     }
 });
@@ -79,11 +87,14 @@ app.post('/empresas/:empresaId/servicos', async (req, res) => {
     try {
         const { empresaId } = req.params;
         const dados = req.body;
+        if (!empresaId) return res.status(400).json({ error: "empresaId não fornecido." });
+        if (!dados || !dados.nome) return res.status(400).json({ error: "Dados do serviço inválidos ou nome ausente." });
+
         const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos');
         const docRef = await servicosRef.add(dados);
         res.json({ success: true, id: docRef.id });
     } catch (error) {
-        console.error("Erro ao criar serviço:", error);
+        console.error("❌ Erro ao criar serviço:", error);
         res.status(500).json({ error: "Erro ao criar serviço." });
     }
 });
@@ -93,11 +104,18 @@ app.put('/empresas/:empresaId/servicos/:servicoId', async (req, res) => {
     try {
         const { empresaId, servicoId } = req.params;
         const dados = req.body;
+        if (!empresaId || !servicoId) return res.status(400).json({ error: "empresaId ou servicoId não fornecido." });
+        if (!dados) return res.status(400).json({ error: "Dados do serviço ausentes." });
+
         const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos').doc(servicoId);
+        const docSnap = await servicosRef.get();
+        if (!docSnap.exists) {
+            return res.status(404).json({ error: "Serviço não encontrado." });
+        }
         await servicosRef.update(dados);
         res.json({ success: true });
     } catch (error) {
-        console.error("Erro ao editar serviço:", error);
+        console.error("❌ Erro ao editar serviço:", error);
         res.status(500).json({ error: "Erro ao editar serviço." });
     }
 });
@@ -106,16 +124,22 @@ app.put('/empresas/:empresaId/servicos/:servicoId', async (req, res) => {
 app.delete('/empresas/:empresaId/servicos/:servicoId', async (req, res) => {
     try {
         const { empresaId, servicoId } = req.params;
+        if (!empresaId || !servicoId) return res.status(400).json({ error: "empresaId ou servicoId não fornecido." });
+
         const servicosRef = db.collection('empresarios').doc(empresaId).collection('servicos').doc(servicoId);
+        const docSnap = await servicosRef.get();
+        if (!docSnap.exists) {
+            return res.status(404).json({ error: "Serviço não encontrado." });
+        }
         await servicosRef.delete();
         res.json({ success: true });
     } catch (error) {
-        console.error("Erro ao excluir serviço:", error);
+        console.error("❌ Erro ao excluir serviço:", error);
         res.status(500).json({ error: "Erro ao excluir serviço." });
     }
 });
 
 // ======================================================================
 
-const PORT = 4242;
+const PORT = process.env.PORT || 4242;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}!`));
