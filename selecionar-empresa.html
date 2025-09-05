@@ -16,73 +16,50 @@
         --cor-fundo-app: #f6f7fb;
         --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
       }
-
       body {
         font-family: 'Inter', Arial, sans-serif;
         background-color: var(--cor-fundo-app);
         margin: 0;
         color: var(--cor-texto-escuro);
       }
-
-      .selecao-container { max-width: 500px; margin: 40px auto; }
-      .header-selecao { text-align: center; margin-bottom: 30px; }
-      #empresas-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
-
-      .empresa-card, .criar-empresa-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 18px;
-        cursor: pointer;
-        background: #fff;
-        box-shadow: 0 2px 8px #eef2f7;
-        text-align: center;
-        width: 160px;
-        transition: box-shadow 0.2s;
+      .center-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      .empresa-card:hover, .criar-empresa-card:hover { box-shadow: 0 4px 16px #c3cfe2; }
-      .empresa-logo { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
-      .empresa-nome { font-weight: bold; margin-bottom: 4px; display: block; }
-      .criar-empresa-card { color: #2d9cdb; border-style: dashed; }
-
-      .logout-container { margin-top: 40px; text-align: center; }
-      .btn-logout { background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; }
-
-      .loader { border: 4px solid #eee; border-top: 4px solid #2d9cdb; border-radius: 50%; width: 36px; height: 36px; margin: 32px auto; animation: spin 1s linear infinite; }
-      @keyframes spin { 100% { transform: rotate(360deg); } }
-
-      /* ----------- INÍCIO: CARD BONITO PARA EMPTY STATE ----------- */
-      .empty-state-card {
+      .appear-card {
         background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 2px 16px #a0aec040;
-        padding: 2.5rem 2.2rem 2.2rem 2.2rem;
+        border-radius: 18px;
+        box-shadow: 0 2px 24px #a0aec040;
+        padding: 2.4rem 2.2rem 2.2rem 2.2rem;
         text-align: center;
-        max-width: 330px;
-        margin: 40px auto 0 auto;
+        max-width: 350px;
+        margin: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
-        animation: fadein 0.3s;
+        animation: fadein 0.35s;
       }
-      .empty-state-card img {
-        width: 75px;
-        margin-bottom: 1.2rem;
-        opacity: 0.93;
+      .appear-card img {
+        width: 84px;
+        margin-bottom: 1.1rem;
+        opacity: 0.94;
       }
-      .empty-state-card h2 {
-        font-size: 1.18rem;
-        font-weight: 700;
+      .appear-card h1 {
+        font-size: 1.35rem;
+        font-weight: 800;
         color: var(--cor-texto-escuro);
         margin: 0 0 .7rem 0;
         letter-spacing: -1px;
       }
-      .empty-state-card p {
-        color: #6b7280;
-        margin-bottom: 1.3rem;
-        font-size: 1.04em;
+      .appear-card p {
+        color: #667085;
+        margin-bottom: 1.5rem;
+        font-size: 1.07em;
       }
       .btn-criar-empresa {
-        background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
+        background: linear-gradient(90deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -98,79 +75,61 @@
         gap: .65em;
       }
       .btn-criar-empresa i { font-size: 1.15em; }
-      .btn-criar-empresa:hover { background: linear-gradient(135deg, #2795e6, #00d8ff);}
+      .btn-criar-empresa:hover { background: linear-gradient(90deg, #2795e6, #00d8ff);}
+      .btn-logout {
+        background: #fff;
+        color: var(--cor-perigo);
+        border: 1.5px solid var(--cor-perigo);
+        border-radius: 8px;
+        padding: 0.82rem 1.5rem;
+        font-size: 1em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.14s, color 0.14s;
+      }
+      .btn-logout:hover {
+        background: #ef4444;
+        color: #fff;
+      }
       @keyframes fadein {
         from { opacity: 0; transform: scale(0.97);}
         to   { opacity: 1; transform: scale(1);}
       }
       @media (max-width: 600px) {
-        .selecao-container { max-width: 96vw; }
-        .empresa-card, .criar-empresa-card { width: 96vw; }
-        .empty-state-card { padding: 2rem 0.5rem; max-width: 94vw; }
+        .appear-card { padding: 2rem 0.5rem; max-width: 96vw; }
       }
-      /* ----------- FIM: CARD BONITO ----------- */
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
-    <div class="selecao-container">
-        <div class="header-selecao">
-            <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
-            <p id="frase-empresas" style="display: none;">Selecione uma empresa para gerir ou crie uma nova.</p>
-        </div>
-        <div id="empresas-grid">
-            <div class="loader" id="loader"></div>
-        </div>
-        <!-- CARD BONITO PARA EMPTY STATE, inicialmente oculto -->
-        <div id="empty-state" style="display: none;">
-          <div class="empty-state-card">
-            <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" />
-            <h2 id="empty-titulo">Você ainda não possui empresas cadastradas</h2>
-            <p>
-              Comece agora a organizar sua empresa no Pronti!
-            </p>
-            <button class="btn-criar-empresa" id="empty-btn-criar">
-              <i class="fa fa-plus"></i> Criar Nova Empresa
-            </button>
-          </div>
-        </div>
-        <div class="logout-container">
-            <button id="btn-logout" class="btn-logout">Sair da conta</button>
-        </div>
+  <div class="center-wrapper">
+    <div class="appear-card">
+      <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" />
+      <h1>Bem-vindo(a), <span id="nome-usuario">GIVANILDO</span>!</h1>
+      <p>Você ainda não possui empresas cadastradas.<br>
+        <span style="color:#4facfe;font-size:.97em;">Comece agora a organizar sua empresa no Pronti!</span>
+      </p>
+      <button class="btn-criar-empresa" id="btn-criar-empresa">
+        <i class="fa fa-plus"></i> Criar Nova Empresa
+      </button>
+      <button class="btn-logout" id="btn-logout">Sair da conta</button>
     </div>
-    <script type="module" src="selecionar-empresa.js"></script>
-    <script>
-      // Exemplo de como seu selecionar-empresa.js pode controlar a dinâmica do nome/frase/card:
-      // Função para atualizar dinamicamente o nome do usuário
-      function setUserName(nome) {
-        document.getElementById('titulo-boas-vindas').innerText = `Bem-vindo(a), ${nome}!`;
-      }
-      // Função para controlar frase dinâmica conforme quantidade de empresas
-      function setFraseEmpresas(qtdEmpresas) {
-        const frase = document.getElementById('frase-empresas');
-        if (qtdEmpresas > 1) {
-          frase.style.display = '';
-        } else {
-          frase.style.display = 'none';
-        }
-      }
-      // Função para mostrar o empty state card bonito
-      function showEmptyStateCard(nomeUsuario = "") {
-        document.getElementById('empresas-grid').style.display = 'none';
-        document.getElementById('empty-state').style.display = 'block';
-        if (nomeUsuario) {
-          document.getElementById('empty-titulo').innerHTML = `Olá, <b>${nomeUsuario}</b>!<br>Você ainda não possui empresas cadastradas.`;
-        }
-      }
-      // Botão do card chama o mesmo fluxo do seu criar-empresa-card
-      document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('empty-btn-criar')?.addEventListener('click', function() {
-          // Simula clique no card padrão para manter o mesmo fluxo JS
-          const btnOriginal = document.querySelector('.criar-empresa-card');
-          if (btnOriginal) btnOriginal.click();
-        });
-      });
-      // Estas funções acima podem ser chamadas pelo seu selecionar-empresa.js!
-    </script>
+  </div>
+  <script>
+    // Se quiser trocar o nome do usuário dinamicamente:
+    // document.getElementById('nome-usuario').innerText = NOME_DO_USUARIO_LOGADO
+
+    // Para manter o JS funcional:
+    document.getElementById('btn-criar-empresa').onclick = function(){
+      // Chame aqui sua função normal de criar empresa ou simule o clique no card padrão se preferir
+      const cardOriginal = document.querySelector('.criar-empresa-card');
+      if(cardOriginal) cardOriginal.click();
+      // Ou chame sua função JS de criar empresa aqui
+    };
+    document.getElementById('btn-logout').onclick = function(){
+      // Chame aqui sua função normal de logout
+      if(typeof sairConta === "function") sairConta();
+    };
+  </script>
 </body>
 </html>
