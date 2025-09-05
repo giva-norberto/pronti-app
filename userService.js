@@ -131,36 +131,34 @@ export async function verificarAcesso() {
 
                 let empresaAtivaId = localStorage.getItem('empresaAtivaId');
 
-                // --- LÓGICA CENTRAL REATORIZADA ---
                 if (!empresaAtivaId) {
-                    // Se não há empresa ativa, o utilizador só pode estar nas páginas de configuração.
-                    // Se estiver noutra página, é forçado a escolher uma.
                     if (!paginasDeConfiguracao.includes(currentPage)) {
                         console.log("[AuthGuard] Nenhuma empresa ativa. A redirecionar para a seleção.");
                         window.location.replace('selecionar-empresa.html');
                         return reject(new Error("primeiro_acesso_ou_selecao"));
                     } else {
-                        // Se já está na página certa (ex: selecionar-empresa), não faz nada.
                          return reject(new Error("A aguardar ação do utilizador na página de configuração."));
                     }
                 }
 
-                // Se temos uma empresaId no localStorage, validamos o acesso a ela.
                 const accessCheck = await hasAccessToCompany(user, empresaAtivaId);
 
                 if (!accessCheck.hasAccess) {
-                    console.warn(`[AuthGuard] Acesso negado ou empresa inválida (${empresaAtivaId}). A limpar e a redirecionar.`);
+                    // ########## ALTERAÇÃO PRINCIPAL AQUI ##########
+                    console.error(`### ACESSO BLOQUEADO! ### O motivo do bloqueio está acima. A página será redirecionada em 10 segundos.`);
                     localStorage.removeItem('empresaAtivaId');
+                    
                     if (!paginasDeConfiguracao.includes(currentPage)) {
-                         window.location.replace('selecionar-empresa.html');
+                         setTimeout(() => {
+                            window.location.replace('selecionar-empresa.html');
+                         }, 10000); // Pausa de 10 segundos
                     }
-                    return reject(new Error("O acesso à empresa foi revogado."));
+                    return reject(new Error("O acesso à empresa foi revogado. A aguardar redirecionamento."));
                 }
 
-                // Acesso confirmado! Montamos o perfil do utilizador.
                 const empresaDocSnap = accessCheck.empresaDoc;
-
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaDocSnap.data());
+
                 if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
                     console.log("[AuthGuard] Assinatura expirada. A redirecionar.");
                     window.location.replace('assinatura.html');
@@ -172,7 +170,7 @@ export async function verificarAcesso() {
                     empresaId: empresaDocSnap.id,
                     perfil: accessCheck.perfil,
                     isOwner: accessCheck.isOwner,
-                    isAdmin: false, // Garantir que apenas o admin real tenha este status
+                    isAdmin: false,
                     role: accessCheck.isOwner ? "dono" : "funcionario"
                 };
 
@@ -182,7 +180,7 @@ export async function verificarAcesso() {
             } catch (error) {
                 console.error("[AuthGuard] Erro final em verificarAcesso:", error);
                 if (error.message.includes("autenticado") || error.message.includes("revogado") || error.message.includes("expirada") || error.message.includes("selecao") || error.message.includes("configuração")) {
-                    return reject(error); // Evita re-redirecionamento
+                    return reject(error);
                 }
                 window.location.replace('login.html');
                 return reject(new Error("Erro inesperado no acesso."));
