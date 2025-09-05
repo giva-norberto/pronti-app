@@ -1,135 +1,148 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Selecionar Empresa</title>
-    <style>
-      :root {
-        --cor-primaria: #4facfe;
-        --cor-secundaria: #00f2fe;
-        --cor-sucesso: #34d399;
-        --cor-aviso: #f59e42;
-        --cor-perigo: #ef4444;
-        --cor-cinza: #6b7280;
-        --cor-texto-escuro: #22223b;
-        --cor-texto-claro: #44446a;
-        --cor-fundo-app: #f6f7fb;
-        --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
-      }
-      body {
-        font-family: 'Inter', Arial, sans-serif;
-        background-color: var(--cor-fundo-app);
-        margin: 0;
-        color: var(--cor-texto-escuro);
-      }
-      .center-wrapper {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .appear-card {
-        background: #fff;
-        border-radius: 18px;
-        box-shadow: 0 2px 24px #a0aec040;
-        padding: 2.4rem 2.2rem 2.2rem 2.2rem;
-        text-align: center;
-        max-width: 350px;
-        margin: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        animation: fadein 0.35s;
-      }
-      .appear-card img {
-        width: 84px;
-        margin-bottom: 1.1rem;
-        opacity: 0.94;
-      }
-      .appear-card h1 {
-        font-size: 1.35rem;
-        font-weight: 800;
-        color: var(--cor-texto-escuro);
-        margin: 0 0 .7rem 0;
-        letter-spacing: -1px;
-      }
-      .appear-card p {
-        color: #667085;
-        margin-bottom: 1.5rem;
-        font-size: 1.07em;
-      }
-      .btn-criar-empresa {
-        background: linear-gradient(90deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        padding: 0.95rem 1.6rem;
-        font-size: 1.09rem;
-        font-weight: 600;
-        cursor: pointer;
-        box-shadow: 0 2px 8px #4facfe1a;
-        margin-bottom: 1.2rem;
-        transition: background 0.17s;
-        display: inline-flex;
-        align-items: center;
-        gap: .65em;
-      }
-      .btn-criar-empresa i { font-size: 1.15em; }
-      .btn-criar-empresa:hover { background: linear-gradient(90deg, #2795e6, #00d8ff);}
-      .btn-logout {
-        background: #fff;
-        color: var(--cor-perigo);
-        border: 1.5px solid var(--cor-perigo);
-        border-radius: 8px;
-        padding: 0.82rem 1.5rem;
-        font-size: 1em;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.14s, color 0.14s;
-      }
-      .btn-logout:hover {
-        background: #ef4444;
-        color: #fff;
-      }
-      @keyframes fadein {
-        from { opacity: 0; transform: scale(0.97);}
-        to   { opacity: 1; transform: scale(1);}
-      }
-      @media (max-width: 600px) {
-        .appear-card { padding: 2rem 0.5rem; max-width: 96vw; }
-      }
-    </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <meta charset="UTF-8">
+  <title>Selecionar Empresa</title>
+  <style>
+    :root {
+      --cor-primaria: #4facfe;
+      --cor-secundaria: #00f2fe;
+      --cor-sucesso: #34d399;
+      --cor-aviso: #f59e42;
+      --cor-perigo: #ef4444;
+      --cor-cinza: #6b7280;
+      --cor-texto-escuro: #22223b;
+      --cor-texto-claro: #44446a;
+      --cor-fundo-app: #f6f7fb;
+      --sombra-card: 0 4px 24px rgba(0, 0, 0, 0.09);
+    }
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background-color: var(--cor-fundo-app);
+      margin: 0;
+      color: var(--cor-texto-escuro);
+    }
+    .center-card-bg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--cor-fundo-app);
+    }
+    .card-empresa-empty {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: var(--sombra-card);
+      padding: 2.3rem 2.2rem 2.1rem 2.2rem;
+      text-align: center;
+      min-width: 320px;
+      max-width: 380px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadein 0.35s;
+    }
+    .card-empresa-empty img {
+      width: 64px;
+      margin-bottom: 0.8rem;
+      opacity: 0.93;
+    }
+    .card-empresa-empty h2 {
+      font-size: 1.13rem;
+      font-weight: 700;
+      color: var(--cor-texto-escuro);
+      margin: 0.7rem 0 0.7rem 0;
+      letter-spacing: -1px;
+    }
+    .card-empresa-empty .descricao {
+      color: #6b7280;
+      margin-bottom: 1.1rem;
+      font-size: 1.01em;
+    }
+    .card-empresa-empty .destaque {
+      color: #189cf7;
+      font-size: .98em;
+      display: block;
+      margin-bottom: 1.1rem;
+    }
+
+    /* Aqui só VISUAL do botão, não muda estrutura nem evento */
+    .criar-empresa-card {
+      color: #fff !important;
+      background: linear-gradient(90deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
+      border-radius: 8px;
+      font-size: 1.09rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5em;
+      box-shadow: 0 2px 8px #4facfe1a;
+      border: none !important;
+      width: 98%;
+      margin: 0 auto 1.1rem auto;
+      padding: 1rem 0;
+      cursor: pointer;
+      transition: background 0.17s;
+      min-height: unset;
+    }
+    .criar-empresa-card:hover {
+      background: linear-gradient(90deg, #2795e6 0%, #00d8ff 100%);
+      color: #fff;
+    }
+    .criar-empresa-card i {
+      font-size: 1.18em;
+      margin-right: 0.4em;
+    }
+
+    .btn-logout {
+      background: #fff;
+      color: var(--cor-perigo);
+      border: 1.5px solid var(--cor-perigo);
+      border-radius: 8px;
+      padding: 0.82rem 1.5rem;
+      font-size: 1em;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.14s, color 0.14s;
+      margin-top: 0.5rem;
+      display: block;
+      width: 100%;
+    }
+    .btn-logout:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+    @keyframes fadein {
+      from { opacity: 0; transform: scale(0.97);}
+      to   { opacity: 1; transform: scale(1);}
+    }
+    @media (max-width: 600px) {
+      .card-empresa-empty { padding: 1.1rem 0.5rem; max-width: 96vw; min-width: unset; }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
-  <div class="center-wrapper">
-    <div class="appear-card">
+  <div class="center-card-bg">
+    <div class="card-empresa-empty">
       <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" />
-      <h1>Bem-vindo(a), <span id="nome-usuario">GIVANILDO</span>!</h1>
-      <p>Você ainda não possui empresas cadastradas.<br>
-        <span style="color:#4facfe;font-size:.97em;">Comece agora a organizar sua empresa no Pronti!</span>
-      </p>
-      <button class="btn-criar-empresa" id="btn-criar-empresa">
+      <h2>Bem-vindo(a), <b id="nome-usuario">GIVANILDO</b>!</h2>
+      <div class="descricao">Você ainda não possui empresas cadastradas.</div>
+      <span class="destaque">Comece agora a organizar sua empresa no Pronti!</span>
+      <!-- Botão original, só muda o visual! -->
+      <div class="criar-empresa-card" tabindex="0">
         <i class="fa fa-plus"></i> Criar Nova Empresa
-      </button>
+      </div>
       <button class="btn-logout" id="btn-logout">Sair da conta</button>
     </div>
   </div>
   <script>
-    // Se quiser trocar o nome do usuário dinamicamente:
-    // document.getElementById('nome-usuario').innerText = NOME_DO_USUARIO_LOGADO
-
-    // Para manter o JS funcional:
-    document.getElementById('btn-criar-empresa').onclick = function(){
-      // Chame aqui sua função normal de criar empresa ou simule o clique no card padrão se preferir
-      const cardOriginal = document.querySelector('.criar-empresa-card');
-      if(cardOriginal) cardOriginal.click();
-      // Ou chame sua função JS de criar empresa aqui
-    };
-    document.getElementById('btn-logout').onclick = function(){
-      // Chame aqui sua função normal de logout
-      if(typeof sairConta === "function") sairConta();
-    };
+    // Atualize o nome dinamicamente se quiser:
+    // document.getElementById('nome-usuario').innerText = NOME_DO_USUARIO_LOGADO;
+    // O clique da .criar-empresa-card já funciona pelo seu JS antigo!
+    // O botão sair da conta também pode ser conectado ao seu fluxo.
   </script>
 </body>
 </html>
