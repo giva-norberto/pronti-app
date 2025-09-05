@@ -1,145 +1,49 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Selecionar Empresa</title>
-  <style>
-    :root {
-      --cor-primaria: #4facfe;
-      --cor-secundaria: #00f2fe;
-      --cor-perigo: #ef4444;
-      --cor-fundo-app: #f6f7fb;
-      --cor-texto-escuro: #22223b;
-      --cor-texto-claro: #44446a;
-      --sombra-card: 0 4px 24px rgba(0,0,0,0.10);
-    }
-    body {
-      font-family: 'Inter', Arial, sans-serif;
-      background: var(--cor-fundo-app);
-      margin: 0;
-      color: var(--cor-texto-escuro);
-    }
-    .container-centraliza {
-      width: 100vw;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card-empty-empresa {
-      background: #fff;
-      border-radius: 20px;
-      box-shadow: var(--sombra-card);
-      padding: 2.4rem 2.2rem 2.2rem 2.2rem;
-      text-align: center;
-      width: 100%;
-      max-width: 380px;
-      margin: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      animation: fadein 0.28s;
-    }
-    .card-empty-empresa img {
-      width: 68px;
-      margin-bottom: 0.8rem;
-      opacity: 0.93;
-    }
-    .card-empty-empresa h2,
-    .card-empty-empresa h1 {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: var(--cor-texto-escuro);
-      margin: 0.7rem 0 0.75rem 0;
-    }
-    .card-empty-empresa .descricao {
-      color: #6b7280;
-      margin-bottom: 0.8rem;
-      font-size: 1.08em;
-    }
-    .card-empty-empresa .destaque {
-      color: #189cf7;
-      font-size: .98em;
-      margin-bottom: 1.1rem;
-      display: block;
-    }
-    .criar-empresa-card {
-      color: #fff !important;
-      background: linear-gradient(90deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
-      border-radius: 8px;
-      font-size: 1.09rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5em;
-      box-shadow: 0 2px 8px #4facfe1a;
-      border: none !important;
-      width: 100%;
-      margin: 0 auto 1.15rem auto;
-      padding: 1rem 0;
-      cursor: pointer;
-      transition: background 0.17s;
-      min-height: unset;
-      border-style: dashed;
-      border-width: 2px;
-      border-color: transparent;
-    }
-    .criar-empresa-card:hover {
-      background: linear-gradient(90deg, #2795e6 0%, #00d8ff 100%);
-      color: #fff;
-      box-shadow: 0 4px 24px #4facfe2a;
-    }
-    .criar-empresa-card i {
-      font-size: 1.18em;
-      margin-right: 0.4em;
-    }
-    .btn-logout {
-      background: #fff;
-      color: var(--cor-perigo);
-      border: 1.5px solid var(--cor-perigo);
-      border-radius: 8px;
-      padding: 0.82rem 1.5rem;
-      font-size: 1em;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.14s, color 0.14s;
-      margin-top: 0.5rem;
-      display: block;
-      width: 100%;
-    }
-    .btn-logout:hover {
-      background: #ef4444;
-      color: #fff;
-    }
-    @keyframes fadein {
-      from { opacity: 0; transform: scale(0.97);}
-      to   { opacity: 1; transform: scale(1);}
-    }
-    @media (max-width: 600px) {
-      .card-empty-empresa { padding: 1.1rem 0.5rem; max-width: 96vw; }
-    }
-  </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <meta charset="UTF-8">
+    <title>Selecionar Empresa</title>
+    <!-- Adicione aqui seus arquivos CSS -->
+    <style>
+      .selecao-container { max-width: 500px; margin: 40px auto; }
+      .header-selecao { text-align: center; margin-bottom: 30px; }
+      #empresas-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+      .empresa-card, .criar-empresa-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 18px;
+        cursor: pointer;
+        background: #fff;
+        box-shadow: 0 2px 8px #eef2f7;
+        text-align: center;
+        width: 160px;
+        transition: box-shadow 0.2s;
+      }
+      .empresa-card:hover, .criar-empresa-card:hover { box-shadow: 0 4px 16px #c3cfe2; }
+      .empresa-logo { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+      .empresa-nome { font-weight: bold; margin-bottom: 4px; display: block; }
+      .criar-empresa-card { color: #2d9cdb; border-style: dashed; }
+      .logout-container { margin-top: 40px; text-align: center; }
+      .btn-logout { background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; }
+      .loader { border: 4px solid #eee; border-top: 4px solid #2d9cdb; border-radius: 50%; width: 36px; height: 36px; margin: 32px auto; animation: spin 1s linear infinite; }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+    <!-- Font Awesome para o ícone de adicionar (fa-plus) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
-  <div class="container-centraliza">
-    <div class="card-empty-empresa">
-      <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" />
-      <h1>Bem-vindo(a), <b id="nome-usuario">GIVANILDO!</b></h1>
-      <div class="descricao">Você ainda não possui empresas cadastradas.</div>
-      <span class="destaque">Comece agora a organizar sua empresa no Pronti!</span>
-      <!-- MANTENHA O BOTÃO EXATAMENTE ASSIM, como no seu projeto -->
-      <div class="criar-empresa-card" tabindex="0">
-        <i class="fa fa-plus"></i> Criar Nova Empresa
-      </div>
-      <button class="btn-logout" id="btn-logout">Sair da conta</button>
+    <div class="selecao-container">
+        <div class="header-selecao">
+            <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
+            <p>Selecione uma empresa para gerir ou crie uma nova.</p>
+        </div>
+        <div id="empresas-grid">
+            <div class="loader" id="loader"></div>
+        </div>
+        <div class="logout-container">
+            <button id="btn-logout" class="btn-logout">Sair da conta</button>
+        </div>
     </div>
-  </div>
-  <script>
-    // Opcional: atualizar nome do usuário via JS
-    // document.getElementById('nome-usuario').innerText = NOME_DO_USUARIO_LOGADO;
-    // Os botões continuam funcionando como no seu código original!
-  </script>
+    <script type="module" src="selecionar-empresa.js"></script>
 </body>
 </html>
