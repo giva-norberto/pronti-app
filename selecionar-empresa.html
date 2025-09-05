@@ -7,14 +7,9 @@
     :root {
       --cor-primaria: #4facfe;
       --cor-secundaria: #00f2fe;
-      --cor-sucesso: #34d399;
-      --cor-aviso: #f59e42;
       --cor-perigo: #ef4444;
-      --cor-cinza: #6b7280;
-      --cor-texto-escuro: #22223b;
-      --cor-texto-claro: #44446a;
       --cor-fundo-app: #f6f7fb;
-      --sombra-card: 0 4px 24px rgba(0, 0, 0, 0.09);
+      --cor-texto-escuro: #22223b;
     }
     body {
       font-family: 'Inter', Arial, sans-serif;
@@ -32,11 +27,11 @@
     .card-empresa-empty {
       background: #fff;
       border-radius: 20px;
-      box-shadow: var(--sombra-card);
-      padding: 2.3rem 2.2rem 2.1rem 2.2rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 2.4rem 2.1rem 2.1rem 2.1rem;
       text-align: center;
-      min-width: 320px;
-      max-width: 380px;
+      max-width: 370px;
+      width: 100%;
       margin: auto;
       display: flex;
       flex-direction: column;
@@ -44,32 +39,31 @@
       animation: fadein 0.35s;
     }
     .card-empresa-empty img {
-      width: 64px;
+      width: 68px;
       margin-bottom: 0.8rem;
-      opacity: 0.93;
+      opacity: 0.94;
     }
     .card-empresa-empty h2 {
-      font-size: 1.13rem;
+      font-size: 1.21rem;
       font-weight: 700;
       color: var(--cor-texto-escuro);
-      margin: 0.7rem 0 0.7rem 0;
+      margin: 0.7rem 0 0.8rem 0;
       letter-spacing: -1px;
     }
     .card-empresa-empty .descricao {
       color: #6b7280;
       margin-bottom: 1.1rem;
-      font-size: 1.01em;
+      font-size: 1.07em;
     }
     .card-empresa-empty .destaque {
       color: #189cf7;
       font-size: .98em;
-      display: block;
       margin-bottom: 1.1rem;
+      display: block;
     }
-
-    /* Aqui só VISUAL do botão, não muda estrutura nem evento */
+    /* VISUAL DO BOTÃO, NÃO MUDA A ESTRUTURA */
     .criar-empresa-card {
-      color: #fff !important;
+      color: #fff;
       background: linear-gradient(90deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
       border-radius: 8px;
       font-size: 1.09rem;
@@ -80,22 +74,25 @@
       gap: 0.5em;
       box-shadow: 0 2px 8px #4facfe1a;
       border: none !important;
-      width: 98%;
+      width: 100%;
       margin: 0 auto 1.1rem auto;
       padding: 1rem 0;
       cursor: pointer;
       transition: background 0.17s;
       min-height: unset;
+      border-style: dashed;
+      border-width: 2px;
+      border-color: transparent;
     }
     .criar-empresa-card:hover {
       background: linear-gradient(90deg, #2795e6 0%, #00d8ff 100%);
       color: #fff;
+      box-shadow: 0 4px 24px #4facfe2a;
     }
     .criar-empresa-card i {
       font-size: 1.18em;
       margin-right: 0.4em;
     }
-
     .btn-logout {
       background: #fff;
       color: var(--cor-perigo);
@@ -119,7 +116,7 @@
       to   { opacity: 1; transform: scale(1);}
     }
     @media (max-width: 600px) {
-      .card-empresa-empty { padding: 1.1rem 0.5rem; max-width: 96vw; min-width: unset; }
+      .card-empresa-empty { padding: 1.1rem 0.5rem; max-width: 96vw; }
     }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -131,7 +128,7 @@
       <h2>Bem-vindo(a), <b id="nome-usuario">GIVANILDO</b>!</h2>
       <div class="descricao">Você ainda não possui empresas cadastradas.</div>
       <span class="destaque">Comece agora a organizar sua empresa no Pronti!</span>
-      <!-- Botão original, só muda o visual! -->
+      <!-- Botão original, só mudou o visual. O JS segue funcionando! -->
       <div class="criar-empresa-card" tabindex="0">
         <i class="fa fa-plus"></i> Criar Nova Empresa
       </div>
@@ -139,7 +136,7 @@
     </div>
   </div>
   <script>
-    // Atualize o nome dinamicamente se quiser:
+    // Atualize o nome se desejar:
     // document.getElementById('nome-usuario').innerText = NOME_DO_USUARIO_LOGADO;
     // O clique da .criar-empresa-card já funciona pelo seu JS antigo!
     // O botão sair da conta também pode ser conectado ao seu fluxo.
