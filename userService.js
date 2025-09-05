@@ -1,7 +1,8 @@
 // ======================================================================
-//             USER-SERVICE.JS (VERSÃO FINAL REVISADA E COMPLETA)
+//             USER-SERVICE.JS (VERSÃO FINAL REVISADA E CORRIGIDA)
 // - Busca empresas usando apenas o campo NOVO "empresas" (array) de mapaUsuarios.
-// - Compatível com admin (vê todas as empresas).
+// - Admin NÃO vê todas as empresas na seleção, vê apenas as suas (igual usuário comum).
+// - Admin pode acessar painel administrativo separado para ver/editar todas se desejar.
 // - Lógica de validação resiliente para sessão, login, seleção de empresa ativa, trial/premium.
 // - Corrige e remove dependências de métodos/campos antigos (ignora empresaId legado).
 // - Protegido contra race conditions e multi-execução.
@@ -53,7 +54,7 @@ async function checkUserStatus(user, empresaData) {
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
         if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
 
-        let trialDurationDays = 15;
+        let trialDurationDays = 15; // padrão
         if (empresaData && typeof empresaData.freeEmDias === 'number') {
             trialDurationDays = empresaData.freeEmDias;
         }
@@ -68,25 +69,16 @@ async function checkUserStatus(user, empresaData) {
 }
 
 /**
- * Busca empresas do usuário:
- * - Admin vê todas as empresas da coleção 'empresarios'.
- * - Usuário comum: busca o array 'empresas' do doc mapaUsuarios/{uid}.
+ * Busca empresas do usuário (admin e usuários comuns veem apenas suas empresas na seleção):
+ * - Busca o array 'empresas' do doc mapaUsuarios/{uid}.
  * - IGNORA qualquer campo legado (ex: empresaId antigo).
  * - NÃO FILTRA por trial, plano, status, etc — a seleção mostra todas.
  */
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
-    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
     try {
-        // Admin: busca todas as empresas
-        if (user.uid === ADMIN_UID) {
-            const empresasCol = collection(db, "empresarios");
-            const snap = await getDocs(empresasCol);
-            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-
-        // Usuário comum: só o array 'empresas'
+        // Busca as empresas do array do usuário (igual para admin e usuário comum)
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
         if (!mapaSnap.exists()) return [];
@@ -128,7 +120,8 @@ export async function verificarAcesso() {
                 }
 
                 await ensureUserAndTrialDoc();
-                const isAdmin = user.uid === "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                const isAdmin = user.uid === ADMIN_UID;
                 let empresaAtivaId = localStorage.getItem('empresaAtivaId');
                 let empresaDocSnap = null;
 
@@ -223,4 +216,15 @@ export async function verificarAcesso() {
 export function clearCache() {
     cachedSessionProfile = null;
     isProcessing = false;
+}
+
+/**
+ * FUNÇÃO ADMINISTRATIVA OPCIONAL
+ * Use apenas no painel administrativo exclusivo para admin!
+ * Busca todas as empresas da coleção 'empresarios' (não interfere na tela de seleção comum).
+ */
+export async function getTodasEmpresas() {
+    const empresasCol = collection(db, "empresarios");
+    const snap = await getDocs(empresasCol);
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
