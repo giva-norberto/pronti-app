@@ -53,7 +53,7 @@ async function checkUserStatus(user, empresaData) {
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
         if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
 
-        let trialDurationDays = 15; // padrão
+        let trialDurationDays = 15;
         if (empresaData && typeof empresaData.freeEmDias === 'number') {
             trialDurationDays = empresaData.freeEmDias;
         }
@@ -72,6 +72,7 @@ async function checkUserStatus(user, empresaData) {
  * - Admin vê todas as empresas da coleção 'empresarios'.
  * - Usuário comum: busca o array 'empresas' do doc mapaUsuarios/{uid}.
  * - IGNORA qualquer campo legado (ex: empresaId antigo).
+ * - NÃO FILTRA por trial, plano, status, etc — a seleção mostra todas.
  */
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
@@ -172,7 +173,7 @@ export async function verificarAcesso() {
                     return reject(new Error("Dados da empresa inválidos."));
                 }
 
-                // Validação de assinatura/trial
+                // Validação de assinatura/trial: só para acesso ao painel, não para seleção!
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
                 if (!hasActivePlan && !isTrialActive) {
                     if (currentPage !== 'assinatura.html') window.location.replace('assinatura.html');
