@@ -256,6 +256,11 @@
                     </button>
                 </div>
             </div>
+            <!-- Seletor de empresas para multiempresas -->
+            <div class="form-group" id="empresa-selector-group" style="display:none;">
+                <label for="selectEmpresa"><i class="fa-solid fa-building"></i> Selecione sua empresa:</label>
+                <select id="selectEmpresa"></select>
+            </div>
             <div id="mensagem-cadastro-sucesso"></div>
             <div id="mensagem-free" style="display:none; margin:20px auto; max-width:560px; background:#e0e7ff; color:#3730a3; border-radius:10px; padding:12px 18px; text-align:center; font-weight:bold;">
                 Plano atual: FREE
@@ -334,15 +339,13 @@
           }, 10);
         });
 
-      // Lógica do botão "Criar Nova Empresa" - Limpa o formulário e zera empresaId global
       document.getElementById('btn-criar-nova-empresa').addEventListener('click', function() {
         document.getElementById('main-title').textContent = "Crie o Perfil do seu Negócio";
         document.getElementById('form-perfil').reset();
         document.getElementById('logo-preview').src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         document.getElementById('container-link-vitrine').style.display = 'none';
         document.getElementById('mensagem-cadastro-sucesso').style.display = 'none';
-        // Sinaliza para o JS principal que é novo cadastro
-        window.empresaId = null; // Zera a variável global usada no perfil.js
+        window.empresaId = null;
       });
     });
     </script>
