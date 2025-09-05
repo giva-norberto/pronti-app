@@ -166,11 +166,14 @@ export async function verificarAcesso() {
                             return reject(new Error("aguardando_aprovacao"));
                         }
                     }
-                } else if (currentPage === 'perfil.html') {
-                    // Se não tem empresaData, mas está na página de perfil, é o primeiro acesso para criar a empresa.
-                    return reject(new Error("primeiro_acesso"));
+                } else if (currentPage === 'perfil.html' || currentPage === 'selecionar-empresa.html') {
+                    // ✅ CORREÇÃO: Se não há empresa ativa, mas o usuário já está na página de perfil
+                    // ou na página de seleção, é um estado válido. A própria página cuidará da lógica.
+                    // Apenas rejeitamos a promessa para parar a execução do guard.
+                    return reject(new Error("primeiro_acesso_ou_selecao"));
                 } else {
-                    // Se não tem empresaData e não está na página de perfil, redireciona para perfil para criar a empresa.
+                    // Se não tem empresaData e não está em nenhuma das páginas de configuração permitidas,
+                    // redireciona para a página de perfil para criar a primeira empresa.
                     console.log("[AuthGuard] Primeiro acesso (sem empresa). Redirecionando para perfil.");
                     window.location.replace('perfil.html');
                     return reject(new Error("primeiro_acesso"));
@@ -185,8 +188,8 @@ export async function verificarAcesso() {
                 if (error.message === "Utilizador não autenticado.") {
                     // Já tratado no início, apenas rejeita
                     return reject(error);
-                } else if (error.message === "Redirecionando para seleção de empresa." || error.message === "Assinatura expirada." || error.message === "primeiro_acesso") {
-                    // Erros de redirecionamento intencionais, apenas rejeita
+                } else if (error.message === "Redirecionando para seleção de empresa." || error.message === "Assinatura expirada." || error.message === "primeiro_acesso" || error.message === "primeiro_acesso_ou_selecao") {
+                    // Erros de redirecionamento intencionais ou estados válidos, apenas rejeita para parar o guard
                     return reject(error);
                 } else if (error.code === 'permission-denied') {
                     console.log("[AuthGuard] Permissão negada. Possível funcionário não aprovado ou regra de segurança.");
