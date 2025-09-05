@@ -1,230 +1,256 @@
-// ======================================================================
-//             USER-SERVICE.JS (VERSÃO FINAL REVISADA E CORRIGIDA)
-// - Busca empresas usando apenas o campo NOVO "empresas" (array) de mapaUsuarios.
-// - Admin NÃO vê todas as empresas na seleção, vê apenas as suas (igual usuário comum).
-// - Admin pode acessar painel administrativo separado para ver/editar todas se desejar.
-// - Lógica de validação resiliente para sessão, login, seleção de empresa ativa, trial/premium.
-// - Corrige e remove dependências de métodos/campos antigos (ignora empresaId legado).
-// - Protegido contra race conditions e multi-execução.
-// ======================================================================
-
-import {
-    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { db, auth } from './firebase-config.js';
-
-// "Memória" para evitar re-verificação desnecessária
-let cachedSessionProfile = null;
-let isProcessing = false; // Previne múltiplas execuções simultâneas
-
-// --- Função: Garante doc do usuário e trial ---
-export async function ensureUserAndTrialDoc() {
-    try {
-        const user = auth.currentUser;
-        if (!user) return;
-        const userRef = doc(db, "usuarios", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) {
-            await setDoc(userRef, {
-                nome: user.displayName || user.email || 'Usuário',
-                email: user.email || '',
-                trialStart: serverTimestamp(),
-                isPremium: false,
-            });
-        } else if (!userSnap.data().trialStart) {
-            await updateDoc(userRef, {
-                trialStart: serverTimestamp(),
-            });
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Início</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
-    } catch (error) {
-        console.error("❌ [ensureUserAndTrialDoc] Erro:", error);
-    }
-}
-
-// --- Função: Checa status de plano/trial ---
-async function checkUserStatus(user, empresaData) {
-    try {
-        if (!user) return { hasActivePlan: false, isTrialActive: true };
-        const userRef = doc(db, "usuarios", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
-        const userData = userSnap.data();
-        if (!userData) return { hasActivePlan: false, isTrialActive: true };
-        if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
-        if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
-
-        let trialDurationDays = 15; // padrão
-        if (empresaData && typeof empresaData.freeEmDias === 'number') {
-            trialDurationDays = empresaData.freeEmDias;
+        body {
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
+            overflow: hidden;
         }
-        const startDate = new Date(userData.trialStart.seconds * 1000);
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + trialDurationDays);
-        return { hasActivePlan: false, isTrialActive: endDate > new Date() };
-    } catch (error) {
-        console.error("❌ [checkUserStatus] Erro:", error);
-        return { hasActivePlan: false, isTrialActive: true };
-    }
-}
+        body.is-loading {
+            opacity: 0;
+        }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        main.main-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .dashboard-welcome-center {
+            text-align: center;
+            margin-bottom: 4vh;
+        }
+        .dashboard-welcome-center h1 {
+            font-size: clamp(1.8rem, 5vw, 3rem ); 
+        }
+        .dashboard-welcome-center p {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        .dashboard-grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 15px;
+            width: 100%;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        .menu-card {
+            color: #fff;
+            border-radius: 14px;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+            border: none;
+            aspect-ratio: 4 / 3.2;
+        }
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+            filter: brightness(1.05);
+            cursor: pointer;
+        }
+        .menu-card i {
+            font-size: 1.6rem;
+            color: #fff;
+        }
+        .card-painel    { background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%); }
+        .card-agenda    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
+        .card-servicos  { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .card-clientes  { background: linear-gradient(135deg, #f59e42 0%, #ff5858 100%); }
+        .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
+        .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
+        .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
 
-/**
- * Busca empresas do usuário (admin e usuários comuns veem apenas suas empresas na seleção):
- * - Busca o array 'empresas' do doc mapaUsuarios/{uid}.
- * - IGNORA qualquer campo legado (ex: empresaId antigo).
- * - NÃO FILTRA por trial, plano, status, etc — a seleção mostra todas.
- */
-export async function getEmpresasDoUsuario(user) {
-    if (!user) return [];
-
-    try {
-        // Busca as empresas do array do usuário (igual para admin e usuário comum)
-        const mapaRef = doc(db, "mapaUsuarios", user.uid);
-        const mapaSnap = await getDoc(mapaRef);
-        if (!mapaSnap.exists()) return [];
-        const mapaData = mapaSnap.data();
-        if (!mapaData || !Array.isArray(mapaData.empresas)) return [];
-        const empresaIds = mapaData.empresas.filter(id => id && typeof id === 'string');
-        if (empresaIds.length === 0) return [];
-        const promessasEmpresas = empresaIds.map(id => getDoc(doc(db, "empresarios", id)));
-        const docsEmpresas = await Promise.all(promessasEmpresas);
-        return docsEmpresas
-            .filter(doc => doc.exists())
-            .map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.error("❌ [getEmpresasDoUsuario] Erro:", error);
-        return [];
-    }
-}
-
-// ======================================================================
-// FUNÇÃO GUARDA PRINCIPAL: Valida sessão, empresa ativa, plano, permissões
-// ======================================================================
-export async function verificarAcesso() {
-    if (cachedSessionProfile) return Promise.resolve(cachedSessionProfile);
-    if (isProcessing) return Promise.reject(new Error("Race condition detectada."));
-    isProcessing = true;
-
-    return new Promise((resolve, reject) => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe();
-            try {
-                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-                const paginasPublicas = ['login.html', 'cadastro.html'];
-                const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html'];
-
-                if (!user) {
-                    if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
-                    isProcessing = false;
-                    return reject(new Error("Utilizador não autenticado."));
-                }
-
-                await ensureUserAndTrialDoc();
-                const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                const isAdmin = user.uid === ADMIN_UID;
-                let empresaAtivaId = localStorage.getItem('empresaAtivaId');
-                let empresaDocSnap = null;
-
-                // Tenta usar empresa ativa salva
-                if (empresaAtivaId) {
-                    const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                    if (empresaDoc.exists()) {
-                        empresaDocSnap = empresaDoc;
-                    } else {
-                        localStorage.removeItem('empresaAtivaId');
-                        empresaAtivaId = null;
-                    }
-                }
-
-                // Se não há empresa ativa válida, busca todas as empresas do usuário
-                if (!empresaDocSnap) {
-                    const empresas = await getEmpresasDoUsuario(user);
-                    if (empresas.length === 0) {
-                        if (!paginasDeConfig.includes(currentPage)) window.location.replace('perfil.html');
-                        isProcessing = false;
-                        return reject(new Error("Nenhuma empresa associada."));
-                    } else if (empresas.length === 1) {
-                        empresaAtivaId = empresas[0].id;
-                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                        empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                    } else if (empresas.length > 1) {
-                        // Multiempresa: sempre força seleção
-                        if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
-                        isProcessing = false;
-                        return reject(new Error("Múltiplas empresas, seleção necessária."));
-                    }
-                }
-
-                if (!empresaDocSnap || !empresaDocSnap.exists()) {
-                    isProcessing = false;
-                    return reject(new Error("Empresa não encontrada."));
-                }
-
-                const empresaData = empresaDocSnap.data();
-                if (!empresaData) {
-                    isProcessing = false;
-                    return reject(new Error("Dados da empresa inválidos."));
-                }
-
-                // Validação de assinatura/trial: só para acesso ao painel, não para seleção!
-                const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
-                if (!hasActivePlan && !isTrialActive) {
-                    if (currentPage !== 'assinatura.html') window.location.replace('assinatura.html');
-                    isProcessing = false;
-                    return reject(new Error("Assinatura expirada."));
-                }
-
-                // Checagem de permissão
-                const isOwner = empresaData.donoId === user.uid;
-                let perfilDetalhado = empresaData;
-                let role = 'dono';
-
-                if (!isOwner && !isAdmin) {
-                    // Busca em profissionais (subcoleção)
-                    const profSnap = await getDoc(doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid));
-                    if (!profSnap.exists() || profSnap.data().status !== 'ativo') {
-                        localStorage.removeItem('empresaAtivaId');
-                        window.location.replace('login.html');
-                        isProcessing = false;
-                        return reject(new Error("Acesso de profissional revogado ou pendente."));
-                    }
-                    perfilDetalhado = profSnap.data();
-                    role = 'funcionario';
-                }
-
-                // Sessão cacheada
-                cachedSessionProfile = { 
-                    user, 
-                    empresaId: empresaAtivaId, 
-                    perfil: perfilDetalhado, 
-                    isOwner: isOwner || isAdmin,
-                    isAdmin: isAdmin, 
-                    role 
-                };
-                isProcessing = false;
-                resolve(cachedSessionProfile);
-
-            } catch (error) {
-                isProcessing = false;
-                reject(error);
+        @media (max-width: 768px) {
+            body {
+                overflow: auto;
             }
+            main.main-content {
+                justify-content: flex-start;
+                padding-top: 30px;
+            }
+            .dashboard-welcome-center {
+                margin-bottom: 20px;
+            }
+            .dashboard-grid-cards {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+            .menu-card {
+                padding: 15px 5px;
+                font-size: 0.75rem;
+                gap: 8px;
+                border-radius: 12px;
+            }
+            .menu-card i {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="dashboard-body is-loading">
+
+<div id="sidebar-placeholder"></div>
+
+<main class="main-content" id="main-content">
+    <div class="dashboard-welcome-center" id="dashboard-welcome-center">
+        <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
+        <p>Pronto para gerenciar seu dia?</p>
+    </div>
+    <div class="dashboard-grid-cards">
+        <a href="dashboard.html" class="menu-card card-painel">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Painel Inteligente</span>
+        </a>
+        <a href="agenda.html" class="menu-card card-agenda">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span>Agenda</span>
+        </a>
+        <a href="servicos.html" class="menu-card card-servicos">
+            <i class="fa-solid fa-concierge-bell"></i>
+            <span>Serviços</span>
+        </a>
+        <a href="clientes.html" class="menu-card card-clientes">
+            <i class="fa-solid fa-user-group"></i>
+            <span>Clientes</span>
+        </a>
+        <a href="equipe.html" class="menu-card card-equipe">
+            <i class="fa-solid fa-users"></i>
+            <span>Equipe</span>
+        </a>
+        <a href="perfil.html" class="menu-card card-perfil">
+            <i class="fa-solid fa-user-gear"></i>
+            <span>Meu Perfil</span>
+        </a>
+        <a href="relatorios.html" class="menu-card card-relatorios">
+            <i class="fa-solid fa-file-lines"></i>
+            <span>Relatórios</span>
+        </a>
+    </div>
+</main>
+
+<script type="module">
+// Carrega o menu lateral igual em todas as páginas
+fetch('menu-lateral.html')
+  .then(res => res.text())
+  .then(html => {
+      document.getElementById('sidebar-placeholder').innerHTML = html;
+      // Adiciona o evento do botão sair após o menu ser inserido no DOM
+      import("./firebase-config.js").then(({ auth }) => {
+          import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
+              const btnLogout = document.getElementById("btn-logout");
+              if (btnLogout) {
+                  btnLogout.addEventListener("click", async () => {
+                      try {
+                          await signOut(auth);
+                          localStorage.clear();
+                          window.location.href = "login.html";
+                      } catch(e) {
+                          alert("Erro ao sair: " + e.message);
+                      }
+                  });
+              }
+          });
+      });
+  })
+  .catch((e) => {
+      // Exibe mensagem básica de erro de menu lateral
+      document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
+  });
+
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { auth } from "./firebase-config.js";
+import { verificarAcesso } from "./userService.js";
+
+const nomeUsuarioSpan = document.getElementById("nome-usuario");
+const saudacaoSpan = document.getElementById("saudacao");
+const mainContent = document.getElementById("main-content");
+const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
+
+function definirSaudacao() {
+    const hora = new Date().getHours();
+    if (hora >= 5 && hora < 12) return "Bom dia";
+    if (hora >= 12 && hora < 18) return "Boa tarde";
+    return "Boa noite";
+}
+
+function mostrarPrimeiroAcessoCard() {
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div class="primeiro-acesso-card">
+                <h2>Seja bem-vindo ao Pronti!</h2>
+                <p>Inicie o cadastro da sua empresa.</p>
+                <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
+            </div>
+        `;
+        document.getElementById("btn-criar-empresa").addEventListener("click", () => {
+            localStorage.removeItem('empresaAtivaId');
+            window.location.href = "perfil.html";
         });
-    });
+    }
 }
 
-// --- Função para limpar cache ---
-export function clearCache() {
-    cachedSessionProfile = null;
-    isProcessing = false;
+function removerIsLoading() {
+    document.body.classList.remove('is-loading');
 }
 
-/**
- * FUNÇÃO ADMINISTRATIVA OPCIONAL
- * Use apenas no painel administrativo exclusivo para admin!
- * Busca todas as empresas da coleção 'empresarios' (não interfere na tela de seleção comum).
- */
-export async function getTodasEmpresas() {
-    const empresasCol = collection(db, "empresarios");
-    const snap = await getDocs(empresasCol);
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+async function inicializarDashboard() {
+    try {
+        const userSession = await verificarAcesso();
+        const { perfil } = userSession;
+        const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
+
+        if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
+        if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
+
+        if (perfil.nomeFantasia && nomeEmpresaSpan) {
+            nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
+        }
+    } catch (error) {
+        if (error.message === "primeiro_acesso") {
+            mostrarPrimeiroAcessoCard();
+        } else if (!error.message.includes("Redirecionando")) {
+            // Exiba ou logue o erro, mas nunca deixe de remover o loading!
+            console.error("[index.html] Erro não tratado na inicialização:", error);
+        }
+    } finally {
+        removerIsLoading();
+    }
 }
+
+// Garante que o loading sempre será removido mesmo se algo travar
+Promise.resolve().then(inicializarDashboard);
+setTimeout(removerIsLoading, 3000);
+
+</script>
+</body>
+</html>
