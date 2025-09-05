@@ -478,3 +478,104 @@ textarea.form-input:focus {
         gap: 10px;
     }
 }
+.empty-state-bg {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cor-fundo-app, #f6f7fb);
+}
+.card-empty-empresa {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  padding: 2.4rem 2.2rem 2.2rem 2.2rem;
+  text-align: center;
+  width: 100%;
+  max-width: 380px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadein 0.28s;
+}
+.card-empty-empresa img {
+  width: 68px;
+  margin-bottom: 0.8rem;
+  opacity: 0.93;
+}
+.card-empty-empresa h2,
+.card-empty-empresa h1 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #22223b;
+  margin: 0.7rem 0 0.75rem 0;
+}
+.card-empty-empresa .descricao {
+  color: #6b7280;
+  margin-bottom: 0.8rem;
+  font-size: 1.08em;
+}
+.card-empty-empresa .destaque {
+  color: #189cf7;
+  font-size: .98em;
+  margin-bottom: 1.1rem;
+  display: block;
+}
+.criar-empresa-card {
+  color: #fff !important;
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 8px;
+  font-size: 1.09rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  box-shadow: 0 2px 8px #4facfe1a;
+  border: none !important;
+  width: 100%;
+  margin: 0 auto 1.15rem auto;
+  padding: 1rem 0;
+  cursor: pointer;
+  transition: background 0.17s;
+  min-height: unset;
+  border-style: dashed;
+  border-width: 2px;
+  border-color: transparent;
+}
+.criar-empresa-card:hover {
+  background: linear-gradient(90deg, #2795e6 0%, #00d8ff 100%);
+  color: #fff;
+  box-shadow: 0 4px 24px #4facfe2a;
+}
+.criar-empresa-card i {
+  font-size: 1.18em;
+  margin-right: 0.4em;
+}
+.btn-logout {
+  background: #fff;
+  color: #ef4444;
+  border: 1.5px solid #ef4444;
+  border-radius: 8px;
+  padding: 0.82rem 1.5rem;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+  margin-top: 0.5rem;
+  display: block;
+  width: 100%;
+}
+.btn-logout:hover {
+  background: #ef4444;
+  color: #fff;
+}
+@keyframes fadein {
+  from { opacity: 0; transform: scale(0.97);}
+  to   { opacity: 1; transform: scale(1);}
+}
+@media (max-width: 600px) {
+  .card-empty-empresa { padding: 1.1rem 0.5rem; max-width: 96vw; }
+}
