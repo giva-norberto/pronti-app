@@ -3,8 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title>Selecionar Empresa</title>
-    <!-- Adicione aqui seus arquivos CSS -->
+    <!-- Configurações Globais CSS e Estilo da Tela de Seleção -->
     <style>
+      /* ======================== CONFIGURAÇÕES GLOBAIS ========================= */
+      :root {
+          --cor-primaria: #4facfe;
+          --cor-secundaria: #00f2fe;
+          --cor-sucesso: #34d399;
+          --cor-aviso: #f59e42;
+          --cor-perigo: #ef4444;
+          --cor-cinza: #6b7280;
+          --cor-texto-escuro: #22223b;
+          --cor-texto-claro: #44446a;
+          --cor-fundo-app: #f6f7fb;
+          --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+      }
+
+      body {
+          font-family: 'Inter', Arial, sans-serif;
+          background-color: var(--cor-fundo-app);
+          margin: 0;
+          color: var(--cor-texto-escuro);
+      }
+
+      /* ====================== SELEÇÃO DE EMPRESA ====================== */
       .selecao-container { max-width: 500px; margin: 40px auto; }
       .header-selecao { text-align: center; margin-bottom: 30px; }
       #empresas-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
@@ -57,8 +79,131 @@
         .empresa-card, .criar-empresa-card { width: 96vw; }
       }
       /* ---------- FIM MELHORIA: Empty State ---------- */
+
+      /* Inclui as suas CONFIGURAÇÕES GLOBAIS e COMPONENTES abaixo (não duplicar variáveis) */
+      /* =================================================================== */
+      /* LAYOUT PRINCIPAL, CARDS, BOTÕES, FORMULÁRIOS, MODAIS, ETC...       */
+      /* =================================================================== */
+
+      #sidebar-placeholder {
+          width: 250px;
+          min-width: 250px;
+          float: left;
+          height: 100vh;
+      }
+
+      .main-content {
+          margin-left: 250px;
+          padding: 40px;
+          width: calc(100% - 250px);
+          min-height: 100vh;
+          box-sizing: border-box;
+          background: transparent;
+      }
+
+      .page-header {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 18px;
+          margin-bottom: 28px;
+      }
+
+      .page-header h1 {
+          font-size: 1.25rem;
+          color: var(--cor-texto-escuro);
+          margin: 0;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+      }
+
+      .card {
+          background: #fff;
+          border-radius: 13px;
+          box-shadow: var(--sombra-card);
+          display: flex;
+          flex-direction: column;
+          transition: box-shadow 0.2s, transform 0.2s;
+          overflow: hidden;
+      }
+      .card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+      }
+      .card-title {
+          font-size: 1.05rem;
+          padding: 14px 15px 11px 15px;
+          margin: 0;
+          font-weight: 600;
+          color: #3730a3;
+      }
+      .card-info {
+          font-size: 0.96rem;
+          color: var(--cor-texto-claro);
+          line-height: 1.6;
+          flex-grow: 1;
+          word-break: break-word;
+          padding: 0 15px 11px 15px;
+      }
+      .card-info p {
+          margin: 0 0 8px 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+      }
+      .card-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: auto;
+          padding: 10px 15px;
+          border-top: 1px solid #f1f5f9;
+          background-color: #fafbff;
+      }
+      .btn {
+          font-family: 'Inter', Arial, sans-serif;
+          font-weight: 600;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 16px;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.2s ease-in-out;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.04);
+          background: #f3f4f6;
+          color: var(--cor-texto-escuro);
+      }
+      .btn-primary {
+          background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
+          color: #fff !important;
+          box-shadow: 0 2px 8px 0 rgba(79, 172, 254, 0.08);
+      }
+      .btn-primary:hover, .btn-primary:focus {
+          background: linear-gradient(135deg, #2795e6, #00d8ff);
+      }
+      .btn-edit {
+          background: #fff;
+          color: #6366f1;
+          border: 1px solid #c7d2fe;
+      }
+      .btn-edit:hover {
+          background: #e0e7ff;
+          color: #4f46e5;
+      }
+      .btn-remove {
+          background: #fff;
+          color: #ef4444;
+          border: 1px solid #fecaca;
+      }
+      .btn-remove:hover {
+          background: #fee2e2;
+          color: #991b1b;
+      }
+      /* ... (restante dos seus estilos globais, status, modais, responsividade, etc.) ... */
     </style>
-    <!-- Font Awesome para o ícone de adicionar (fa-plus) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
@@ -89,7 +234,6 @@
       // Este script só será ativado se o selecionar-empresa.js não implementar o empty state.
       // Ele intercepta a montagem da grid e mostra o empty-state se necessário.
       window.addEventListener('DOMContentLoaded', function () {
-        // Aguarda até que selecionar-empresa.js remova o loader e monte a lista
         const grid = document.getElementById('empresas-grid');
         const emptyState = document.getElementById('empty-state');
         const criarHolder = document.getElementById('empty-criar-empresa-holder');
