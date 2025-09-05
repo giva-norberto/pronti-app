@@ -50,6 +50,7 @@
             padding: 15px 0;
             font-size: 1.1rem;
             cursor: pointer;
+            text-decoration: none;
             transition: background 0.2s;
         }
         .btn-assinar:hover {
@@ -64,6 +65,10 @@
             text-decoration: underline;
             margin-top: 20px;
         }
+        #loader {
+            font-size: 1.2rem;
+            color: #4f46e5;
+        }
     </style>
 </head>
 <body>
@@ -72,52 +77,59 @@
         <h1>O seu período de teste terminou!</h1>
         <p>Agradecemos por experimentar o Pronti. Para continuar a gerir o seu negócio, por favor, escolha um dos nossos planos.</p>
         
-        <button id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</button>
+        <a href="pagamento.html" id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</a>
         <button id="btn-logout" class="btn-logout">Sair da conta</button>
     </div>
 
+    <div id="loader">
+        <p>A verificar o estado da sua assinatura...</p>
+    </div>
+
     <script type="module">
+        // ======================================================================
+        // ASSINATURA.HTML (REVISADO PARA USAR A LÓGICA CENTRAL)
+        // - Não contém lógica própria de verificação, evitando erros e conflitos.
+        // - Importa e utiliza o 'userService.js' como única fonte de verdade.
+        // ======================================================================
+
         import { auth } from "./firebase-config.js";
-        import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { doc, getDoc, getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        // Importa a função central de verificação de acesso
+        import { verificarAcesso } from "./userService.js";
 
         const btnLogout = document.getElementById('btn-logout');
-        const btnAssinar = document.getElementById('btn-assinar');
         const container = document.getElementById('assinatura-container');
-        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+        const loader = document.getElementById('loader');
 
-        async function checarDiasTeste() {
-            if (!empresaAtivaId) {
-                container.style.display = "block";
-                return;
-            }
+        // --- PONTO DE ENTRADA ---
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const db = getFirestore();
-                const empresaRef = doc(db, "empresarios", empresaAtivaId);
-                const snap = await getDoc(empresaRef);
-                if (!snap.exists()) {
-                    container.style.display = "block";
-                    return;
-                }
-                const data = snap.data();
-                // DEBUG: Mostra o valor lido no console
-                console.log("[DEBUG] Valor lido de freeEmDias:", data.freeEmDias);
+                // Tenta obter o perfil do utilizador. O userService.js trata toda a lógica.
+                console.log("A aguardar verificação de acesso...");
+                const userProfile = await verificarAcesso();
 
-                // Só bloqueia se for 0, ausente ou não numérico
-                if (typeof data.freeEmDias === "number" && data.freeEmDias > 0) {
-                    window.location.href = "index.html";
-                    return;
+                // Se a função acima for bem-sucedida, significa que o utilizador TEM
+                // uma assinatura ou trial ativos. Portanto, ele não deveria estar nesta página.
+                console.log("Assinatura ativa encontrada. A redirecionar para o painel...");
+                window.location.href = "index.html";
+
+            } catch (error) {
+                // Se a função 'verificarAcesso' falhar, verificamos o motivo.
+                console.log("A verificação de acesso falhou. Motivo:", error.message);
+
+                // Se o motivo da falha for "Assinatura expirada", mostramos a página.
+                if (error.message.includes("Assinatura expirada")) {
+                    loader.style.display = "none";
+                    container.style.display = "block";
                 } else {
-                    container.style.display = "block";
+                    // Para qualquer outro erro (ex: não logado), o userService.js já
+                    // deve ter tratado o redirecionamento. Apenas mostramos uma mensagem de erro.
+                    loader.innerHTML = `<p style="color:red;">Ocorreu um erro. Você será redirecionado.</p>`;
                 }
-            } catch (e) {
-                console.error("[DEBUG] Erro ao buscar empresa:", e);
-                container.style.display = "block";
             }
-        }
+        });
 
-        checarDiasTeste();
-
+        // --- OUVINTES DE EVENTOS ---
         if (btnLogout) {
             btnLogout.addEventListener('click', async () => {
                 try {
@@ -127,12 +139,6 @@
                 } catch (error) {
                     console.error("Erro ao fazer logout:", error);
                 }
-            });
-        }
-        
-        if(btnAssinar) {
-            btnAssinar.addEventListener('click', () => {
-                window.location.href = 'pagamento.html';
             });
         }
     </script>
