@@ -1,23 +1,23 @@
 // ======================================================================
-// USERSERVICE.JS (MULTIEMPRESAS: ENTRA DIRETO SE SÓ TEM UMA EMPRESA - REVISADO + DEBUG + MENUTRAVA FIX)
+//                      USERSERVICE.JS (VERSÃO FINAL CORRIGIDA E ESTÁVEL)
 // ======================================================================
 
 import {
-    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
+    collection, query, where, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
+// "Memória" para evitar re-verificação desnecessária
 let cachedSessionProfile = null;
 
-// --- Garante que o usuário tem um doc na coleção "usuarios" e trial ativo ---
+// --- Funções Auxiliares ---
 export async function ensureUserAndTrialDoc() {
     const user = auth.currentUser;
     if (!user) return;
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
-        console.debug("[DEBUG][ensureUserAndTrialDoc] Criando usuário na coleção 'usuarios':", user.uid);
         await setDoc(userRef, {
             nome: user.displayName || user.email,
             email: user.email,
@@ -25,30 +25,19 @@ export async function ensureUserAndTrialDoc() {
             isPremium: false,
         });
     } else if (!userSnap.data().trialStart) {
-        console.debug("[DEBUG][ensureUserAndTrialDoc] Adicionando trialStart para usuário:", user.uid);
         await updateDoc(userRef, {
             trialStart: serverTimestamp(),
         });
     }
 }
 
-// --- Checa status do usuário/plano ---
 async function checkUserStatus(user, empresaData) {
     const userRef = doc(db, "usuarios", user.uid);
     const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-        console.debug("[DEBUG][checkUserStatus] Usuário não existe na coleção 'usuarios':", user.uid);
-        return { hasActivePlan: false, isTrialActive: true };
-    }
+    if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
     const userData = userSnap.data();
-    if (userData.isPremium === true) {
-        console.debug("[DEBUG][checkUserStatus] Usuário é premium:", user.uid);
-        return { hasActivePlan: true, isTrialActive: false };
-    }
-    if (!userData.trialStart?.seconds) {
-        console.debug("[DEBUG][checkUserStatus] Usuário sem trialStart:", user.uid);
-        return { hasActivePlan: false, isTrialActive: true };
-    }
+    if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
+    if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
     let trialDurationDays = 15;
     if (empresaData && empresaData.freeEmDias !== undefined) {
         trialDurationDays = empresaData.freeEmDias;
@@ -56,44 +45,29 @@ async function checkUserStatus(user, empresaData) {
     const startDate = new Date(userData.trialStart.seconds * 1000);
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + trialDurationDays);
-    const trialActive = endDate > new Date();
-    console.debug(`[DEBUG][checkUserStatus] Trial ativo? ${trialActive} | premium: ${userData.isPremium} | trialEnd: ${endDate}`);
-    return { hasActivePlan: false, isTrialActive: trialActive };
+    return { hasActivePlan: false, isTrialActive: endDate > new Date() };
 }
 
-// --- Autenticação, multiempresas: entra direto se só tem uma empresa ---
+// ======================================================================
+// FUNÇÃO PRINCIPAL COM A LÓGICA DE ROTEAMENTO CENTRALIZADA (CORRIGIDA E OTIMIZADA)
+// ======================================================================
 export async function verificarAcesso() {
-    // Sempre invalida cache se empresa ativa mudou (para evitar travar menu)
-    const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-    if (
-        cachedSessionProfile &&
-        cachedSessionProfile.empresaId &&
-        empresaAtivaId &&
-        cachedSessionProfile.empresaId !== empresaAtivaId
-    ) {
-        cachedSessionProfile = null;
-    }
-
     if (cachedSessionProfile) {
-        console.debug("[DEBUG][verificarAcesso] Retornando sessão cache:", cachedSessionProfile);
         return Promise.resolve(cachedSessionProfile);
     }
 
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe();
+            unsubscribe(); // Garante que o listener rode apenas uma vez
 
             const currentPage = window.location.pathname.split('/').pop();
             const paginasPublicas = ['login.html', 'cadastro.html'];
             const paginasDeConfiguracao = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html'];
 
-            console.debug(`[DEBUG][verificarAcesso] Página atual: ${currentPage}`);
-            console.debug("[DEBUG][verificarAcesso] Usuário Firebase:", user);
-
-            // 1. Usuário não logado
+            // --- 1. Usuário não logado ---
             if (!user) {
-                console.debug("[DEBUG][verificarAcesso] Usuário não autenticado.");
                 if (!paginasPublicas.includes(currentPage)) {
+                    console.log("[AuthGuard] Usuário não logado. Redirecionando para login.");
                     window.location.replace('login.html');
                 }
                 return reject(new Error("Utilizador não autenticado."));
@@ -102,139 +76,131 @@ export async function verificarAcesso() {
             try {
                 await ensureUserAndTrialDoc();
 
-                // 2. Admin
+                // --- 2. Admin ---
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 if (user.uid === ADMIN_UID) {
-                    console.debug("[DEBUG][verificarAcesso] Usuário é admin:", user.uid);
-                    cachedSessionProfile = {
-                        user,
-                        isAdmin: true,
-                        perfil: { nome: "Admin" },
-                        isOwner: true,
-                        role: 'admin',
-                        empresaId: null
-                    };
+                    cachedSessionProfile = { user, isAdmin: true, perfil: { nome: "Admin" }, isOwner: true, role: 'admin' };
                     return resolve(cachedSessionProfile);
                 }
 
-                // 3. Buscar empresas do usuário (multiempresas)
-                const empresasCol = collection(db, "empresarios");
-                const empresasSnap = await getDocs(empresasCol);
-                const empresasDoUsuario = [];
-                empresasSnap.forEach(docRef => {
-                    const empresaData = docRef.data();
-                    const isOwner = empresaData.donoId === user.uid;
-                    let isProfissional = false;
-                    let ehDonoProfissional = false;
-                    if (empresaData.profissionais && Array.isArray(empresaData.profissionais)) {
-                        isProfissional = empresaData.profissionais.some(prof =>
-                            prof && prof.uid === user.uid
-                        );
-                        ehDonoProfissional = empresaData.profissionais.some(prof =>
-                            prof && prof.uid === user.uid && (prof.ehDono === true || prof.ehDono === "true")
-                        );
-                    }
-                    const isDonoFinal = isOwner || ehDonoProfissional;
-                    if (isDonoFinal || isProfissional) {
-                        empresasDoUsuario.push({
-                            id: docRef.id,
-                            nome: empresaData.nome || 'Empresa sem nome',
-                            isDono: isDonoFinal,
-                            isProfissional,
-                            empresaData
-                        });
-                    }
-                });
-                console.debug("[DEBUG][verificarAcesso] Empresas do usuário:", empresasDoUsuario);
+                // --- 3. Obter empresaId do mapaUsuarios (fonte primária para todos os usuários) ---
+                const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
+                let empresaAssociadaAoUsuario = null;
 
-                // 4. Validação de múltiplas empresas
-                if (empresasDoUsuario.length === 0) {
-                    console.debug("[DEBUG][verificarAcesso] Usuário sem empresas vinculadas!");
-                    if (!paginasDeConfiguracao.includes(currentPage)) {
-                        window.location.replace('selecionar-empresa.html');
-                    }
-                    return reject(new Error("Sem empresa vinculada."));
+                if (mapaSnap.exists()) {
+                    empresaAssociadaAoUsuario = mapaSnap.data().empresaId;
                 }
 
-                // --- ENTRA DIRETO SE SÓ TEM UMA EMPRESA ---
-                let empresaSelecionadaId = localStorage.getItem('empresaAtivaId');
-                let empresaEscolhida = null;
+                // --- 4. Lógica de seleção de empresa ---
+                let empresaAtivaIdNoLocalStorage = localStorage.getItem('empresaAtivaId');
+                let empresaFinalId = null;
 
-                if (empresasDoUsuario.length === 1) {
-                    empresaEscolhida = empresasDoUsuario[0];
-                    if (empresaSelecionadaId !== empresaEscolhida.id) {
-                        console.debug("[DEBUG][verificarAcesso] Definindo única empresa ativa:", empresaEscolhida.id);
-                        localStorage.setItem('empresaAtivaId', empresaEscolhida.id);
-                        empresaSelecionadaId = empresaEscolhida.id;
-                    }
-                } else {
-                    // Mais de uma empresa, precisa selecionar
-                    if (!empresaSelecionadaId || !empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId)) {
-                        console.debug("[DEBUG][verificarAcesso] Multiempresas: necessário selecionar empresa.");
-                        if (!paginasDeConfiguracao.includes(currentPage) && currentPage !== 'selecionar-empresa.html') {
+                if (empresaAtivaIdNoLocalStorage) {
+                    // Prioriza o localStorage se existir e for válido
+                    empresaFinalId = empresaAtivaIdNoLocalStorage;
+                } else if (empresaAssociadaAoUsuario) {
+                    // Se não tem no localStorage, usa o do mapaUsuarios como padrão
+                    localStorage.setItem('empresaAtivaId', empresaAssociadaAoUsuario);
+                    empresaFinalId = empresaAssociadaAoUsuario;
+                }
+
+                // Se ainda não temos uma empresa final, ou se o usuário está em uma página de configuração
+                // e precisa selecionar/criar uma empresa.
+                if (!empresaFinalId && !paginasDeConfiguracao.includes(currentPage)) {
+                    console.log("[AuthGuard] Nenhuma empresa ativa/associada. Redirecionando para seleção.");
+                    window.location.replace('selecionar-empresa.html');
+                    return reject(new Error("Redirecionando para seleção de empresa."));
+                }
+
+                // --- 5. Carregar dados da empresa (com empresaFinalId garantido ou nulo se na página de config) ---
+                let empresaDocSnap = null;
+                let empresaData = null;
+                if (empresaFinalId) {
+                    empresaDocSnap = await getDoc(doc(db, "empresarios", empresaFinalId));
+                    if (empresaDocSnap.exists()) {
+                        empresaData = empresaDocSnap.data();
+                    } else {
+                        // Inconsistência: empresaId no mapa/localStorage não existe mais.
+                        console.error(`[AuthGuard] Inconsistência: empresaId ${empresaFinalId} inexistente. Limpando localStorage.`);
+                        localStorage.removeItem('empresaAtivaId'); // Limpa para forçar nova seleção
+                        if (!paginasDeConfiguracao.includes(currentPage)) {
                             window.location.replace('selecionar-empresa.html');
                         }
-                        return reject(new Error("Multiempresas: necessário selecionar empresa."));
+                        return reject(new Error("Empresa não encontrada ou removida."));
                     }
-                    empresaEscolhida = empresasDoUsuario.find(emp => emp.id === empresaSelecionadaId);
-                    console.debug("[DEBUG][verificarAcesso] Empresa selecionada:", empresaSelecionadaId, empresaEscolhida);
+                } else if (!paginasDeConfiguracao.includes(currentPage)) {
+                    // Se não tem empresaFinalId e não está em página de config, algo deu errado.
+                    console.error("[AuthGuard] Erro lógico: empresaFinalId não definido fora de páginas de configuração.");
+                    window.location.replace('selecionar-empresa.html');
+                    return reject(new Error("Erro: Empresa ativa não definida."));
                 }
 
-                // 5. Verificar status da assinatura
-                console.debug("[DEBUG][verificarAcesso] Verificando status da assinatura...");
-                const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaEscolhida.empresaData);
-                console.debug(`[DEBUG][verificarAcesso] Plano ativo: ${hasActivePlan} | Trial ativo: ${isTrialActive}`);
-                if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
-                    console.debug("[DEBUG][verificarAcesso] Assinatura expirada! Redirecionando.");
-                    window.location.replace('assinatura.html');
-                    return reject(new Error("Assinatura expirada."));
+                // --- 6. Verificar status da assinatura (apenas se tiver empresaData) ---
+                if (empresaData) {
+                    const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+                    if (!hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
+                        console.log("[AuthGuard] Assinatura expirada. Redirecionando.");
+                        window.location.replace('assinatura.html');
+                        return reject(new Error("Assinatura expirada."));
+                    }
                 }
 
-                // 6. Determinar perfil: dono, admin ou funcionário
-                const isOwner = empresaEscolhida.empresaData.donoId === user.uid;
+                // --- 7. Determinar o perfil (dono ou funcionário) ---
                 let userProfile = null;
+                if (empresaData) { // Só tenta determinar o perfil se tiver dados da empresa
+                    const isOwner = empresaData.donoId === user.uid;
 
-                if (isOwner) {
-                    console.debug("[DEBUG][verificarAcesso] Usuário é dono da empresa:", empresaEscolhida.id);
-                    userProfile = {
-                        user,
-                        empresaId: empresaEscolhida.id,
-                        perfil: empresaEscolhida.empresaData,
-                        isOwner: true,
-                        isAdmin: false,
-                        role: "dono"
-                    };
-                } else {
-                    // Verifica funcionário ativo na SUBCOLEÇÃO profissionais
-                    const profissionalRef = doc(db, "empresarios", empresaEscolhida.id, "profissionais", user.uid);
-                    const profissionalSnap = await getDoc(profissionalRef);
-
-                    if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
-                        console.debug("[DEBUG][verificarAcesso] Usuário é funcionário ativo:", empresaEscolhida.id);
-                        userProfile = {
-                            user,
-                            perfil: profissionalSnap.data(),
-                            empresaId: empresaEscolhida.id,
-                            isOwner: false,
-                            isAdmin: false,
-                            role: "funcionario"
-                        };
+                    if (isOwner) {
+                        userProfile = { user, empresaId: empresaDocSnap.id, perfil: empresaData, isOwner: true, role: "dono" };
                     } else {
-                        console.debug("[DEBUG][verificarAcesso] Usuário não é dono nem funcionário ativo. Bloqueando.");
-                        if (!paginasPublicas.includes(currentPage)) {
-                            window.location.replace('login.html');
+                        // É um funcionário, verifica o status na subcoleção 'profissionais'
+                        const profissionalRef = doc(db, "empresarios", empresaDocSnap.id, "profissionais", user.uid);
+                        const profissionalSnap = await getDoc(profissionalRef);
+
+                        if (profissionalSnap.exists() && profissionalSnap.data().status === 'ativo') {
+                            userProfile = { user, perfil: profissionalSnap.data(), empresaId: empresaDocSnap.id, isOwner: false, role: "funcionario" };
+                        } else {
+                            // Funcionário existe mas não está ativo, ou não foi encontrado
+                            console.log("[AuthGuard] Funcionário pendente ou inativo. Redirecionando para login.");
+                            window.location.replace('login.html'); // Redireciona para login ou uma página de status
+                            return reject(new Error("aguardando_aprovacao"));
                         }
-                        return reject(new Error("funcionario_inativo"));
                     }
+                } else if (currentPage === 'perfil.html') {
+                    // Se não tem empresaData, mas está na página de perfil, é o primeiro acesso para criar a empresa.
+                    return reject(new Error("primeiro_acesso"));
+                } else {
+                    // Se não tem empresaData e não está na página de perfil, redireciona para perfil para criar a empresa.
+                    console.log("[AuthGuard] Primeiro acesso (sem empresa). Redirecionando para perfil.");
+                    window.location.replace('perfil.html');
+                    return reject(new Error("primeiro_acesso"));
                 }
 
                 cachedSessionProfile = userProfile;
-                console.debug("[DEBUG][verificarAcesso] Sessão definida:", cachedSessionProfile);
-                resolve(userProfile);
+                return resolve(userProfile);
 
             } catch (error) {
-                console.debug("[DEBUG][verificarAcesso] ERRO:", error);
-                reject(error);
+                console.error("[AuthGuard] Erro final em verificarAcesso:", error);
+                // Tratamento de erro mais robusto para evitar loops
+                if (error.message === "Utilizador não autenticado.") {
+                    // Já tratado no início, apenas rejeita
+                    return reject(error);
+                } else if (error.message === "Redirecionando para seleção de empresa." || error.message === "Assinatura expirada." || error.message === "primeiro_acesso") {
+                    // Erros de redirecionamento intencionais, apenas rejeita
+                    return reject(error);
+                } else if (error.code === 'permission-denied') {
+                    console.log("[AuthGuard] Permissão negada. Possível funcionário não aprovado ou regra de segurança.");
+                    // Se for permission-denied e não for uma página de configuração, redireciona para login
+                    if (!paginasDeConfiguracao.includes(currentPage)) {
+                        window.location.replace('login.html');
+                    }
+                    return reject(new Error("Permissão negada ou aguardando aprovação."));
+                } else {
+                    // Erros inesperados, redireciona para login para resetar o estado
+                    console.error("[AuthGuard] Erro inesperado, forçando logout/redirecionamento.");
+                    window.location.replace('login.html');
+                    return reject(new Error("Erro inesperado no acesso."));
+                }
             }
         });
     });
