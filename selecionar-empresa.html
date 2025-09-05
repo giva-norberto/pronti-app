@@ -27,6 +27,36 @@
       .btn-logout { background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; }
       .loader { border: 4px solid #eee; border-top: 4px solid #2d9cdb; border-radius: 50%; width: 36px; height: 36px; margin: 32px auto; animation: spin 1s linear infinite; }
       @keyframes spin { 100% { transform: rotate(360deg); } }
+      /* ---------- INÍCIO MELHORIA: Empty State ---------- */
+      .empty-state-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 320px;
+        width: 100%;
+      }
+      .empty-state-img {
+        width: 70px;
+        margin-bottom: 18px;
+        opacity: 0.85;
+      }
+      .empty-state-title {
+        font-size: 1.15em;
+        font-weight: 600;
+        margin-bottom: 0.7rem;
+        color: #24292f;
+      }
+      .empty-state-text {
+        font-size: 1em;
+        color: #667085;
+        margin-bottom: 1.4rem;
+      }
+      @media (max-width: 600px) {
+        .selecao-container { max-width: 96vw; }
+        .empresa-card, .criar-empresa-card { width: 96vw; }
+      }
+      /* ---------- FIM MELHORIA: Empty State ---------- */
     </style>
     <!-- Font Awesome para o ícone de adicionar (fa-plus) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -40,10 +70,38 @@
         <div id="empresas-grid">
             <div class="loader" id="loader"></div>
         </div>
+        <!-- MELHORIA: Empty State visual, inicialmente oculto -->
+        <div id="empty-state" class="empty-state-wrapper" style="display: none;">
+            <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" class="empty-state-img" loading="lazy" />
+            <div class="empty-state-title">Você ainda não possui empresas cadastradas</div>
+            <div class="empty-state-text">
+              Comece agora a organizar sua empresa no Pronti!<br>É rápido, simples e grátis para começar.
+            </div>
+            <div id="empty-criar-empresa-holder"></div>
+        </div>
         <div class="logout-container">
             <button id="btn-logout" class="btn-logout">Sair da conta</button>
         </div>
     </div>
     <script type="module" src="selecionar-empresa.js"></script>
+    <!-- MELHORIA: Lógica JS para empty state -->
+    <script>
+      // Este script só será ativado se o selecionar-empresa.js não implementar o empty state.
+      // Ele intercepta a montagem da grid e mostra o empty-state se necessário.
+      window.addEventListener('DOMContentLoaded', function () {
+        // Aguarda até que selecionar-empresa.js remova o loader e monte a lista
+        const grid = document.getElementById('empresas-grid');
+        const emptyState = document.getElementById('empty-state');
+        const criarHolder = document.getElementById('empty-criar-empresa-holder');
+        // Função para mostrar empty state (pode ser chamada pelo JS principal)
+        window.showEmptyState = function(criarNovaEmpresaCardHtml) {
+          grid.style.display = 'none';
+          if (criarHolder && criarNovaEmpresaCardHtml) {
+            criarHolder.innerHTML = criarNovaEmpresaCardHtml;
+          }
+          emptyState.style.display = 'flex';
+        };
+      });
+    </script>
 </body>
 </html>
