@@ -117,14 +117,21 @@
                 // Se a função 'verificarAcesso' falhar, verificamos o motivo.
                 console.log("A verificação de acesso falhou. Motivo:", error.message);
 
-                // Se o motivo da falha for "Assinatura expirada", mostramos a página.
+                // Analisa a mensagem de erro para decidir o que fazer.
                 if (error.message.includes("Assinatura expirada")) {
+                    // Este é o caso esperado: a assinatura expirou, então mostramos a página.
                     loader.style.display = "none";
                     container.style.display = "block";
+                } else if (error.message.includes("Utilizador não autenticado")) {
+                    // O userService já redireciona para o login, mas mostramos uma mensagem clara.
+                    loader.innerHTML = `<p>Você não está autenticado. A redirecionar para o login...</p>`;
+                } else if (error.message.includes("seleção necessária")) {
+                     // O userService já redireciona para a seleção de empresa.
+                    loader.innerHTML = `<p>Múltiplas empresas encontradas. A redirecionar para a seleção...</p>`;
                 } else {
-                    // Para qualquer outro erro (ex: não logado), o userService.js já
-                    // deve ter tratado o redirecionamento. Apenas mostramos uma mensagem de erro.
-                    loader.innerHTML = `<p style="color:red;">Ocorreu um erro. Você será redirecionado.</p>`;
+                    // Para outros erros, o userService já deve ter tratado o redirecionamento.
+                    // Apenas mostramos uma mensagem de erro genérica.
+                    loader.innerHTML = `<p style="color:red;">Ocorreu um erro (${error.message}). Você será redirecionado.</p>`;
                 }
             }
         });
