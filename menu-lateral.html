@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (ADMIN FUNCIONAL - SEM HAMBURGUER/DIAGNÓSTICO)  -->
+<!--      MENU-LATERAL.HTML (ADMIN FUNCIONAL + MULTIEMPRESAS AJUSTADO)     -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
@@ -7,14 +7,13 @@
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
         <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
-        <a href="dashboard.html"><span><i class="fa-solid fa-chart-pie"></i></span> Dashboard</a>
-        <a href="servicos.html"><span><i class="fa-solid fa-scissors"></i></span> Serviços</a>
-        <a href="agenda.html"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
-        <a href="clientes.html"><span><i class="fa-solid fa-user-group"></i></span> Clientes</a>
-        <a href="equipe.html"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+        <a href="dashboard.html" id="link-dashboard"><span><i class="fa-solid fa-chart-pie"></i></span> Dashboard</a>
+        <a href="servicos.html" id="link-servicos"><span><i class="fa-solid fa-scissors"></i></span> Serviços</a>
+        <a href="agenda.html" id="link-agenda"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+        <a href="clientes.html" id="link-clientes"><span><i class="fa-solid fa-user-group"></i></span> Clientes</a>
+        <a href="equipe.html" id="link-equipe"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
         <a href="perfil.html"><span><i class="fa-solid fa-user-gear"></i></span> Meu Perfil</a>
-        <a href="relatorios.html"><span><i class="fa-solid fa-file-invoice"></i></span> Relatórios</a>
-        <!-- Link de Administração, SEM display:none, será ocultado dinamicamente -->
+        <a href="relatorios.html" id="link-relatorios"><span><i class="fa-solid fa-file-invoice"></i></span> Relatórios</a>
         <a href="admin-clientes.html" id="admin-link">
             <span><i class="fa-solid fa-user-shield"></i></span>
             <span>Administração</span>
@@ -28,6 +27,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+/* ... seu CSS original mantido igual ... */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -154,10 +154,7 @@
     // UID do Administrador. Este é o ponto central da verificação.
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-    /**
-     * LÓGICA DE AUTENTICAÇÃO E UI DO ADMIN
-     * Exibe o menu de Administração APENAS para o admin.
-     */
+    // LÓGICA DE AUTENTICAÇÃO E UI DO ADMIN
     onAuthStateChanged(auth, (user) => {
         const adminLink = document.getElementById('admin-link');
         if (adminLink) {
@@ -169,11 +166,27 @@
         }
     });
 
-    /**
-     * LÓGICA DE UI E EVENTOS DO MENU
-     */
     document.addEventListener('DOMContentLoaded', () => {
-        // Configura o botão de logout
+        // MULTIEMPRESAS: Adapta links para empresa ativa
+        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+        if (empresaAtivaId) {
+            const linksParaAdaptar = [
+                { id: "link-dashboard", href: "dashboard.html" },
+                { id: "link-servicos", href: "servicos.html" },
+                { id: "link-agenda", href: "agenda.html" },
+                { id: "link-clientes", href: "clientes.html" },
+                { id: "link-equipe", href: "equipe.html" },
+                { id: "link-relatorios", href: "relatorios.html" }
+            ];
+            linksParaAdaptar.forEach(cfg => {
+                const el = document.getElementById(cfg.id);
+                if (el) {
+                    el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
+                }
+            });
+        }
+
+        // Botão de logout
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
             btnLogout.addEventListener('click', () => {
@@ -184,11 +197,12 @@
             });
         }
         
-        // Configura o destaque do link da página atual
+        // Destaque do link da página atual
         const links = document.querySelectorAll('.sidebar-links a');
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        // Corrige para ignorar querystring na comparação
+        const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
         links.forEach(link => {
-            const linkPage = link.getAttribute('href').split('/').pop();
+            const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
             if (linkPage === currentPage) {
                 link.classList.add('active');
             }
