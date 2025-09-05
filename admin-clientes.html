@@ -29,7 +29,7 @@
     <script type="module">
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { collection, getDocs, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
         const conteudoDiv = document.getElementById('conteudo-admin');
@@ -217,6 +217,18 @@
                     const empresa = { uid: empresaDoc.id, ...empresaDoc.data() };
                     const profSnap = await getDocs(collection(db, "empresarios", empresa.uid, "profissionais"));
                     empresa.funcionarios = profSnap.docs.map(p => ({ id: p.id, ...p.data() }));
+
+                    // Buscar trialStart do dono (se houver)
+                    if (empresa.donoId) {
+                        try {
+                            const donoDoc = await getDoc(doc(db, "usuarios", empresa.donoId));
+                            if (donoDoc.exists() && donoDoc.data().trialStart) {
+                                empresa.trialStart = donoDoc.data().trialStart;
+                            }
+                        } catch (e) {
+                            empresa.trialStart = null;
+                        }
+                    }
                     return empresa;
                 }));
                 renderizarDados(empresasComFuncionarios);
