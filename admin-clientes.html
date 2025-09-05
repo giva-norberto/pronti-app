@@ -15,6 +15,7 @@
         .trial-input, .license-input { width: 50px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; }
         .btn-save-trial, .btn-save-license { background: #2563eb; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; }
         .btn-save-trial:hover, .btn-save-license:hover { background: #1d4ed8; }
+        .dias-restantes-span { margin-left: 14px; color: #374151; background: #e0e7ff; border-radius: 8px; padding: 3px 8px; font-size: 0.98em; }
     </style>
 </head>
 <body>
@@ -129,6 +130,23 @@
             }
         });
 
+        // Função para calcular dias restantes do trial
+        function calcularDiasRestantes(trialStart, freeEmDias) {
+            if (!trialStart || typeof freeEmDias !== 'number') return '-';
+            // trialStart pode vir como objeto Timestamp do Firestore
+            let startDate;
+            if (trialStart.seconds) {
+                startDate = new Date(trialStart.seconds * 1000);
+            } else {
+                startDate = new Date(trialStart);
+            }
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + freeEmDias);
+            const now = new Date();
+            const diff = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+            return diff > 0 ? diff : 0;
+        }
+
         function renderizarDados(empresas) {
             currentData = empresas;
             let htmlFinal = '<h2>Gestão de Empresas e Funcionários</h2>';
@@ -138,7 +156,8 @@
                 htmlFinal += empresas.map(empresa => {
                     const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0;
                     const licencaValue = empresa.usuariosLicenciados === undefined ? totalFuncionarios : empresa.usuariosLicenciados;
-                
+                    // Exibir dias restantes
+                    const diasRestantes = calcularDiasRestantes(empresa.trialStart, empresa.freeEmDias === undefined ? 15 : empresa.freeEmDias);
                     return `
                         <div class="empresa">
                             <div class="empresa-header">
@@ -158,6 +177,7 @@
                                 <strong>Dias de Teste Grátis:</strong>
                                 <input type="number" class="trial-input" id="trial-input-${empresa.uid}" value="${empresa.freeEmDias === undefined ? 15 : empresa.freeEmDias}">
                                 <button data-id="${empresa.uid}" class="btn-save-trial">Salvar</button>
+                                <span class="dias-restantes-span"><strong>Dias Restantes:</strong> ${diasRestantes}</span>
                             </div>
                             <div class="license-management">
                                 <strong>Licenças Contratadas (para cobrança):</strong>
