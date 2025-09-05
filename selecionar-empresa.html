@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Selecionar Empresa</title>
-    <!-- Seu CSS global e o visual do novo card -->
     <style>
       :root {
         --cor-primaria: #4facfe;
@@ -116,8 +115,8 @@
 <body>
     <div class="selecao-container">
         <div class="header-selecao">
-            <h1 id="titulo-boas-vindas">Bem-vindo(a), GIVANILDO!</h1>
-            <p>Selecione uma empresa para gerir ou crie uma nova.</p>
+            <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
+            <p id="frase-empresas" style="display: none;">Selecione uma empresa para gerir ou crie uma nova.</p>
         </div>
         <div id="empresas-grid">
             <div class="loader" id="loader"></div>
@@ -126,7 +125,7 @@
         <div id="empty-state" style="display: none;">
           <div class="empty-state-card">
             <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" />
-            <h2>Você ainda não possui empresas cadastradas</h2>
+            <h2 id="empty-titulo">Você ainda não possui empresas cadastradas</h2>
             <p>
               Comece agora a organizar sua empresa no Pronti!
             </p>
@@ -140,23 +139,38 @@
         </div>
     </div>
     <script type="module" src="selecionar-empresa.js"></script>
-    <!-- Lógica para ativar o card do empty state conforme seu JS já faz -->
     <script>
-      window.addEventListener('DOMContentLoaded', function () {
-        // Este trecho permite compatibilidade com o seu selecionar-empresa.js
-        // Mostre o empty state card quando não houver empresas:
-        // Exemplo de uso no JS principal:
-        // document.getElementById('empresas-grid').style.display = 'none';
-        // document.getElementById('empty-state').style.display = 'block';
-
-        // Para manter o click do botão "Criar Nova Empresa" funcional:
+      // Exemplo de como seu selecionar-empresa.js pode controlar a dinâmica do nome/frase/card:
+      // Função para atualizar dinamicamente o nome do usuário
+      function setUserName(nome) {
+        document.getElementById('titulo-boas-vindas').innerText = `Bem-vindo(a), ${nome}!`;
+      }
+      // Função para controlar frase dinâmica conforme quantidade de empresas
+      function setFraseEmpresas(qtdEmpresas) {
+        const frase = document.getElementById('frase-empresas');
+        if (qtdEmpresas > 1) {
+          frase.style.display = '';
+        } else {
+          frase.style.display = 'none';
+        }
+      }
+      // Função para mostrar o empty state card bonito
+      function showEmptyStateCard(nomeUsuario = "") {
+        document.getElementById('empresas-grid').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
+        if (nomeUsuario) {
+          document.getElementById('empty-titulo').innerHTML = `Olá, <b>${nomeUsuario}</b>!<br>Você ainda não possui empresas cadastradas.`;
+        }
+      }
+      // Botão do card chama o mesmo fluxo do seu criar-empresa-card
+      document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('empty-btn-criar')?.addEventListener('click', function() {
-          // Selecione o mesmo código do seu botão de criar empresa
-          // Exemplo:
+          // Simula clique no card padrão para manter o mesmo fluxo JS
           const btnOriginal = document.querySelector('.criar-empresa-card');
           if (btnOriginal) btnOriginal.click();
         });
       });
+      // Estas funções acima podem ser chamadas pelo seu selecionar-empresa.js!
     </script>
 </body>
 </html>
