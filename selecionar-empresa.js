@@ -1,106 +1,107 @@
 // ======================================================================
-//          SELECIONAR-EMPRESA.JS (COM REDIRECIONAMENTO AUTOMÁTICO)
+//             SELECIONAR-EMPRESA.JS (VERSÃO FINAL REVISADA)
+// - Usa a função centralizada getEmpresasDoUsuario para consistência.
+// - Redireciona automaticamente se o utilizador tiver apenas uma empresa.
+// - Permite a seleção manual se o utilizador tiver múltiplas empresas.
 // ======================================================================
 
-import { auth, db } from "./firebase-config.js";
+import { auth } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// Importa a função correta e centralizada para buscar as empresas
+import { getEmpresasDoUsuario } from "./userService.js";
 
 // --- ELEMENTOS DO DOM ---
-const grid = document.getElementById('empresas-grid' );
+const grid = document.getElementById('empresas-grid');
 const loader = document.getElementById('loader');
 const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
 const btnLogout = document.getElementById('btn-logout');
 
-// --- INICIALIZAÇÃO ---
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        // A verificação de empresa ativa continua aqui. Se o usuário recarregar a página
-        // de seleção por engano, ele é enviado de volta para o painel.
-        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-        if (empresaAtivaId) {
-            window.location.href = 'index.html';
-            return;
+// --- PONTO DE ENTRADA ---
+document.addEventListener('DOMContentLoaded', () => {
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
+            if (tituloBoasVindas) tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+            
+            inicializarPagina(user);
+        } else {
+            // Se não houver utilizador, redireciona para o login
+            window.location.href = 'login.html';
         }
-        
-        const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-        if (tituloBoasVindas) tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-        
-        carregarEmpresas(user.uid);
-    } else {
-        window.location.href = 'login.html';
-    }
+    });
 });
 
 /**
- * Busca as empresas do dono e decide se redireciona ou mostra as opções.
- * @param {string} donoId - O UID do usuário autenticado.
+ * Função principal que busca as empresas e controla a interface.
+ * @param {object} user - O objeto do utilizador autenticado do Firebase.
  */
-async function carregarEmpresas(donoId) {
+async function inicializarPagina(user) {
     if (loader) loader.style.display = "block";
     if (grid) grid.style.display = "none";
 
     try {
-        const q = query(collection(db, "empresarios"), where("donoId", "==", donoId));
-        const querySnapshot = await getDocs(q);
+        // Utiliza a função centralizada do userService para garantir consistência
+        const empresas = await getEmpresasDoUsuario(user);
 
-        // ======================================================
-        //          A NOVA LÓGICA DE REDIRECIONAMENTO ESTÁ AQUI
-        // ======================================================
-        // Se encontrou EXATAMENTE uma empresa, entra direto.
-        if (querySnapshot.size === 1) {
-            const unicaEmpresaDoc = querySnapshot.docs[0];
-            console.log(`Apenas uma empresa encontrada (${unicaEmpresaDoc.data().nomeFantasia}). Redirecionando...`);
-            selecionarEmpresa(unicaEmpresaDoc.id); // Usa a função que já temos
-            return; // Interrompe a execução para não renderizar a página
-        }
-        // ======================================================
-
-        // Se encontrou 0 ou mais de 1 empresa, o código continua como antes.
-        if (loader) loader.style.display = "none";
-        if (grid) grid.innerHTML = '';
-
-        if (querySnapshot.empty) {
-            if (grid) grid.innerHTML = '<p class="nenhuma-empresa-aviso">Você ainda não possui empresas cadastradas.</p>';
-        } else {
-            querySnapshot.forEach((doc) => {
-                const empresa = doc.data();
-                const empresaCard = criarEmpresaCard(doc.id, empresa);
-                if (grid) grid.appendChild(empresaCard);
-            });
+        // --- LÓGICA DE DECISÃO INTELIGENTE ---
+        if (empresas.length === 1) {
+            // Se o utilizador tem exatamente uma empresa, seleciona-a automaticamente.
+            console.log(`Apenas uma empresa encontrada (${empresas[0].nome}). Redirecionando...`);
+            selecionarEmpresa(empresas[0].id);
+            return; // Interrompe a função para evitar renderizar a página
         }
 
-        const criarCard = criarNovoCard();
-        if (grid) grid.appendChild(criarCard);
+        // Se tiver 0 ou mais de 1 empresa, mostra as opções na tela.
+        renderizarOpcoes(empresas);
 
     } catch (error) {
         console.error("Erro ao carregar empresas:", error);
-        if (grid) grid.innerHTML = '<p style="color: red;">Não foi possível carregar suas empresas.</p>';
+        if (grid) grid.innerHTML = '<p class="nenhuma-empresa-aviso" style="color: red;">Não foi possível carregar as suas empresas.</p>';
     } finally {
-        // Garante que o loader seja escondido e o grid apareça apenas se não houver redirecionamento.
         if (loader) loader.style.display = "none";
         if (grid) grid.style.display = "grid";
     }
 }
 
 /**
+ * Renderiza os cards das empresas e o card de "Criar Nova".
+ * @param {Array<object>} empresas - A lista de empresas do utilizador.
+ */
+function renderizarOpcoes(empresas) {
+    if (!grid) return;
+    grid.innerHTML = ''; // Limpa o grid antes de adicionar novos elementos
+
+    if (empresas.length === 0) {
+        grid.innerHTML = '<p class="nenhuma-empresa-aviso">Você ainda não possui empresas cadastradas.</p>';
+    } else {
+        empresas.forEach(empresa => {
+            const empresaCard = criarEmpresaCard(empresa);
+            grid.appendChild(empresaCard);
+        });
+    }
+
+    // Adiciona sempre o card para criar uma nova empresa
+    const cardCriar = criarNovoCard();
+    grid.appendChild(cardCriar);
+}
+
+/**
  * Cria o elemento HTML para um card de empresa.
- * @param {string} id - O ID do documento da empresa.
- * @param {object} data - Os dados da empresa.
+ * @param {object} empresa - O objeto da empresa com id e outros dados.
  * @returns {HTMLAnchorElement} O elemento do card.
  */
-function criarEmpresaCard(id, data) {
+function criarEmpresaCard(empresa) {
     const card = document.createElement('a');
     card.className = 'empresa-card';
     card.href = '#';
-    card.onclick = (e) => {
+    card.addEventListener('click', (e) => {
         e.preventDefault();
-        selecionarEmpresa(id);
-    };
+        selecionarEmpresa(empresa.id);
+    });
 
-    const nomeFantasia = data.nomeFantasia || "Empresa Sem Nome";
+    const nomeFantasia = empresa.nomeFantasia || empresa.nome || "Empresa Sem Nome";
     const inicial = nomeFantasia.charAt(0).toUpperCase();
-    const logoSrc = data.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial )}`;
+    const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
 
     card.innerHTML = `
         <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
@@ -116,7 +117,7 @@ function criarEmpresaCard(id, data) {
 function criarNovoCard() {
     const card = document.createElement('a');
     card.className = 'criar-empresa-card';
-    card.href = 'perfil.html';
+    card.href = 'perfil.html'; // Página para criar/editar perfil/empresa
 
     card.innerHTML = `
         <div class="plus-icon">+</div>
@@ -131,13 +132,14 @@ function criarNovoCard() {
  */
 function selecionarEmpresa(empresaId) {
     localStorage.setItem('empresaAtivaId', empresaId);
-    window.location.href = 'index.html'; 
+    window.location.href = 'index.html';
 }
 
-// --- EVENTOS ---
+// --- EVENTO DE LOGOUT ---
 if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
         try {
+            // Limpa a empresa ativa antes de fazer logout para evitar inconsistências
             localStorage.removeItem('empresaAtivaId');
             await signOut(auth);
             window.location.href = 'login.html';
