@@ -3,249 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <title>Selecionar Empresa</title>
-    <!-- Configurações Globais CSS e Estilo da Tela de Seleção -->
     <style>
-      /* ======================== CONFIGURAÇÕES GLOBAIS ========================= */
       :root {
-          --cor-primaria: #4facfe;
-          --cor-secundaria: #00f2fe;
-          --cor-sucesso: #34d399;
-          --cor-aviso: #f59e42;
-          --cor-perigo: #ef4444;
-          --cor-cinza: #6b7280;
-          --cor-texto-escuro: #22223b;
-          --cor-texto-claro: #44446a;
-          --cor-fundo-app: #f6f7fb;
-          --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+        --cor-primaria: #4facfe;
+        --cor-secundaria: #00f2fe;
+        --cor-sucesso: #34d399;
+        --cor-aviso: #f59e42;
+        --cor-perigo: #ef4444;
+        --cor-cinza: #6b7280;
+        --cor-texto-escuro: #22223b;
+        --cor-texto-claro: #44446a;
+        --cor-fundo-app: #f6f7fb;
+        --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
       }
-
       body {
-          font-family: 'Inter', Arial, sans-serif;
-          background-color: var(--cor-fundo-app);
-          margin: 0;
-          color: var(--cor-texto-escuro);
+        font-family: 'Inter', Arial, sans-serif;
+        background-color: var(--cor-fundo-app);
+        margin: 0;
+        color: var(--cor-texto-escuro);
       }
-
-      /* ====================== SELEÇÃO DE EMPRESA ====================== */
-      .selecao-container { max-width: 500px; margin: 40px auto; }
-      .header-selecao { text-align: center; margin-bottom: 30px; }
-      #empresas-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
-      .empresa-card, .criar-empresa-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 18px;
-        cursor: pointer;
+      .empty-state-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--cor-fundo-app);
+      }
+      .empty-state-card {
         background: #fff;
-        box-shadow: 0 2px 8px #eef2f7;
+        border-radius: 18px;
+        box-shadow: var(--sombra-card);
+        padding: 2.5rem 2.2rem 2.2rem 2.2rem;
         text-align: center;
-        width: 160px;
-        transition: box-shadow 0.2s;
-      }
-      .empresa-card:hover, .criar-empresa-card:hover { box-shadow: 0 4px 16px #c3cfe2; }
-      .empresa-logo { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
-      .empresa-nome { font-weight: bold; margin-bottom: 4px; display: block; }
-      .criar-empresa-card { color: #2d9cdb; border-style: dashed; }
-      .logout-container { margin-top: 40px; text-align: center; }
-      .btn-logout { background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; }
-      .loader { border: 4px solid #eee; border-top: 4px solid #2d9cdb; border-radius: 50%; width: 36px; height: 36px; margin: 32px auto; animation: spin 1s linear infinite; }
-      @keyframes spin { 100% { transform: rotate(360deg); } }
-      /* ---------- INÍCIO MELHORIA: Empty State ---------- */
-      .empty-state-wrapper {
+        max-width: 340px;
+        margin: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        min-height: 320px;
-        width: 100%;
       }
-      .empty-state-img {
-        width: 70px;
-        margin-bottom: 18px;
-        opacity: 0.85;
+      .empty-state-card img {
+        width: 82px;
+        margin-bottom: 1.2rem;
+        opacity: 0.93;
       }
-      .empty-state-title {
-        font-size: 1.15em;
+      .empty-state-card h2 {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--cor-texto-escuro);
+        margin: 0 0 .6rem 0;
+        letter-spacing: -1px;
+      }
+      .empty-state-card p {
+        color: #6b7280;
+        margin-bottom: 1.6rem;
+        font-size: 1.05em;
+      }
+      .btn-pronti {
+        background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 1rem 1.6rem;
+        font-size: 1.09rem;
         font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 2px 8px #4facfe1a;
         margin-bottom: 0.7rem;
-        color: #24292f;
+        transition: background 0.17s;
+        display: inline-flex;
+        align-items: center;
+        gap: .65em;
       }
-      .empty-state-text {
+      .btn-pronti i { font-size: 1.21em; }
+      .btn-pronti:hover { background: linear-gradient(135deg, #2795e6, #00d8ff);}
+      .btn-logout {
+        background: #fff;
+        color: var(--cor-perigo);
+        border: 1.5px solid var(--cor-perigo);
+        border-radius: 8px;
+        padding: 0.82rem 1.5rem;
         font-size: 1em;
-        color: #667085;
-        margin-bottom: 1.4rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.14s, color 0.14s;
+      }
+      .btn-logout:hover {
+        background: var(--cor-perigo);
+        color: #fff;
       }
       @media (max-width: 600px) {
-        .selecao-container { max-width: 96vw; }
-        .empresa-card, .criar-empresa-card { width: 96vw; }
+        .empty-state-card { padding: 2rem 0.5rem; max-width: 94vw; }
       }
-      /* ---------- FIM MELHORIA: Empty State ---------- */
-
-      /* Inclui as suas CONFIGURAÇÕES GLOBAIS e COMPONENTES abaixo (não duplicar variáveis) */
-      /* =================================================================== */
-      /* LAYOUT PRINCIPAL, CARDS, BOTÕES, FORMULÁRIOS, MODAIS, ETC...       */
-      /* =================================================================== */
-
-      #sidebar-placeholder {
-          width: 250px;
-          min-width: 250px;
-          float: left;
-          height: 100vh;
-      }
-
-      .main-content {
-          margin-left: 250px;
-          padding: 40px;
-          width: calc(100% - 250px);
-          min-height: 100vh;
-          box-sizing: border-box;
-          background: transparent;
-      }
-
-      .page-header {
-          display: flex;
-          justify-content: flex-start;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 18px;
-          margin-bottom: 28px;
-      }
-
-      .page-header h1 {
-          font-size: 1.25rem;
-          color: var(--cor-texto-escuro);
-          margin: 0;
-          font-weight: 700;
-          letter-spacing: -0.5px;
-      }
-
-      .card {
-          background: #fff;
-          border-radius: 13px;
-          box-shadow: var(--sombra-card);
-          display: flex;
-          flex-direction: column;
-          transition: box-shadow 0.2s, transform 0.2s;
-          overflow: hidden;
-      }
-      .card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
-      }
-      .card-title {
-          font-size: 1.05rem;
-          padding: 14px 15px 11px 15px;
-          margin: 0;
-          font-weight: 600;
-          color: #3730a3;
-      }
-      .card-info {
-          font-size: 0.96rem;
-          color: var(--cor-texto-claro);
-          line-height: 1.6;
-          flex-grow: 1;
-          word-break: break-word;
-          padding: 0 15px 11px 15px;
-      }
-      .card-info p {
-          margin: 0 0 8px 0;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-      }
-      .card-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: auto;
-          padding: 10px 15px;
-          border-top: 1px solid #f1f5f9;
-          background-color: #fafbff;
-      }
-      .btn {
-          font-family: 'Inter', Arial, sans-serif;
-          font-weight: 600;
-          border: none;
-          border-radius: 8px;
-          padding: 9px 16px;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.2s ease-in-out;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.04);
-          background: #f3f4f6;
-          color: var(--cor-texto-escuro);
-      }
-      .btn-primary {
-          background: linear-gradient(135deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
-          color: #fff !important;
-          box-shadow: 0 2px 8px 0 rgba(79, 172, 254, 0.08);
-      }
-      .btn-primary:hover, .btn-primary:focus {
-          background: linear-gradient(135deg, #2795e6, #00d8ff);
-      }
-      .btn-edit {
-          background: #fff;
-          color: #6366f1;
-          border: 1px solid #c7d2fe;
-      }
-      .btn-edit:hover {
-          background: #e0e7ff;
-          color: #4f46e5;
-      }
-      .btn-remove {
-          background: #fff;
-          color: #ef4444;
-          border: 1px solid #fecaca;
-      }
-      .btn-remove:hover {
-          background: #fee2e2;
-          color: #991b1b;
-      }
-      /* ... (restante dos seus estilos globais, status, modais, responsividade, etc.) ... */
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
-    <div class="selecao-container">
-        <div class="header-selecao">
-            <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
-            <p>Selecione uma empresa para gerir ou crie uma nova.</p>
-        </div>
-        <div id="empresas-grid">
-            <div class="loader" id="loader"></div>
-        </div>
-        <!-- MELHORIA: Empty State visual, inicialmente oculto -->
-        <div id="empty-state" class="empty-state-wrapper" style="display: none;">
-            <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" class="empty-state-img" loading="lazy" />
-            <div class="empty-state-title">Você ainda não possui empresas cadastradas</div>
-            <div class="empty-state-text">
-              Comece agora a organizar sua empresa no Pronti!<br>É rápido, simples e grátis para começar.
-            </div>
-            <div id="empty-criar-empresa-holder"></div>
-        </div>
-        <div class="logout-container">
-            <button id="btn-logout" class="btn-logout">Sair da conta</button>
-        </div>
+  <div class="empty-state-container">
+    <div class="empty-state-card">
+      <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" />
+      <h2>Bem-vindo(a), GIVANILDO!</h2>
+      <p>
+        Você ainda não possui empresas cadastradas.<br>
+        <span style="color:#4facfe;font-size:.98em;">Comece agora a organizar sua empresa no Pronti!</span>
+      </p>
+      <button class="btn-pronti" onclick="criarNovaEmpresa()">
+        <i class="fa fa-plus"></i> Criar Nova Empresa
+      </button>
+      <button class="btn-logout" onclick="sairConta()">Sair da conta</button>
     </div>
-    <script type="module" src="selecionar-empresa.js"></script>
-    <!-- MELHORIA: Lógica JS para empty state -->
-    <script>
-      // Este script só será ativado se o selecionar-empresa.js não implementar o empty state.
-      // Ele intercepta a montagem da grid e mostra o empty-state se necessário.
-      window.addEventListener('DOMContentLoaded', function () {
-        const grid = document.getElementById('empresas-grid');
-        const emptyState = document.getElementById('empty-state');
-        const criarHolder = document.getElementById('empty-criar-empresa-holder');
-        // Função para mostrar empty state (pode ser chamada pelo JS principal)
-        window.showEmptyState = function(criarNovaEmpresaCardHtml) {
-          grid.style.display = 'none';
-          if (criarHolder && criarNovaEmpresaCardHtml) {
-            criarHolder.innerHTML = criarNovaEmpresaCardHtml;
-          }
-          emptyState.style.display = 'flex';
-        };
-      });
-    </script>
+  </div>
+  <script>
+    function criarNovaEmpresa() {
+      // Seu código para criar nova empresa
+      alert("Implementar criação de empresa...");
+    }
+    function sairConta() {
+      // Seu código para logout
+      alert("Implementar logout...");
+    }
+  </script>
 </body>
 </html>
