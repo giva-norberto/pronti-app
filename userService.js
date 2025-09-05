@@ -1,8 +1,9 @@
 // ======================================================================
-//             USER-SERVICE.JS (VERSÃO FINAL E REVISADA)
+//             USER-SERVICE.JS (VERSÃO FINAL E CORRIGIDA)
 // - Lógica de busca de empresas compatível com estruturas de dados antigas e novas.
 // - Lógica de verificação inteligente e auto-corretiva.
-// - Corrigido o fluxo para utilizadores que também são administradores.
+// - CORRIGIDO: O fluxo para utilizadores administradores agora respeita a
+//   propriedade real da empresa (donoId), em vez de assumir controlo total.
 // - Proteção contra múltiplas execuções simultâneas (race conditions).
 // ======================================================================
 
@@ -72,14 +73,12 @@ export async function getEmpresasDoUsuario(user) {
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
     try {
-        // ### CORREÇÃO FINAL PARA O ADMIN ###
         if (user.uid === ADMIN_UID) {
             console.log("👑 [getEmpresasDoUsuario] Utilizador é ADMIN. A buscar todas as empresas.");
             const empresasCol = collection(db, "empresarios");
             const snap = await getDocs(empresasCol);
             return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
-        // ### FIM DA CORREÇÃO ###
 
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
@@ -175,6 +174,9 @@ export async function verificarAcesso() {
                     return reject(new Error("Assinatura expirada."));
                 }
                 
+                // ### CORREÇÃO FINAL DA LÓGICA DE 'DONO' ###
+                // 'isOwner' agora é estritamente sobre quem está no campo 'donoId'.
+                // Um admin não é automaticamente o dono, mas terá privilégios equivalentes.
                 const isOwner = empresaData.donoId === user.uid;
                 let perfilDetalhado = empresaData;
                 let role = 'dono';
@@ -194,7 +196,7 @@ export async function verificarAcesso() {
                     user, 
                     empresaId: empresaAtivaId, 
                     perfil: perfilDetalhado, 
-                    isOwner: isOwner || isAdmin, 
+                    isOwner: isOwner, // Baseado estritamente no donoId
                     isAdmin: isAdmin, 
                     role 
                 };
