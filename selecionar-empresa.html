@@ -2,48 +2,180 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Selecionar Empresa</title>
-    <!-- Adicione aqui seus arquivos CSS -->
-    <style>
-      .selecao-container { max-width: 500px; margin: 40px auto; }
-      .header-selecao { text-align: center; margin-bottom: 30px; }
-      #empresas-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
-      .empresa-card, .criar-empresa-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 18px;
-        cursor: pointer;
-        background: #fff;
-        box-shadow: 0 2px 8px #eef2f7;
-        text-align: center;
-        width: 160px;
-        transition: box-shadow 0.2s;
-      }
-      .empresa-card:hover, .criar-empresa-card:hover { box-shadow: 0 4px 16px #c3cfe2; }
-      .empresa-logo { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
-      .empresa-nome { font-weight: bold; margin-bottom: 4px; display: block; }
-      .criar-empresa-card { color: #2d9cdb; border-style: dashed; }
-      .logout-container { margin-top: 40px; text-align: center; }
-      .btn-logout { background: #e53e3e; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; }
-      .loader { border: 4px solid #eee; border-top: 4px solid #2d9cdb; border-radius: 50%; width: 36px; height: 36px; margin: 32px auto; animation: spin 1s linear infinite; }
-      @keyframes spin { 100% { transform: rotate(360deg); } }
-    </style>
-    <!-- Font Awesome para o ícone de adicionar (fa-plus) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selecionar Empresa - Pronti</title>
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome (para ícones) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <style>
+        :root {
+            --cor-primaria: #4f46e5;
+            --cor-sucesso: #10b981;
+            --cor-perigo: #ef4444;
+            --cor-fundo: #f8fafc;
+            --cor-texto-titulo: #1e293b;
+            --cor-texto-corpo: #64748b;
+            --cor-borda: #e2e8f0;
+            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto-corpo);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: var(--sombra-card);
+            text-align: center;
+        }
+
+        .header-selecao h1 {
+            color: var(--cor-texto-titulo);
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+
+        .header-selecao p {
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        #empresas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            justify-items: center;
+        }
+
+        .empresa-card, .criar-empresa-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--cor-borda);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            background: #fff;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 180px;
+            box-sizing: border-box;
+        }
+
+        .empresa-card:hover, .criar-empresa-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--sombra-card-hover);
+            border-color: var(--cor-primaria);
+        }
+        
+        .empresa-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            background-color: #eef2ff;
+            color: var(--cor-primaria);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+
+        .empresa-nome {
+            font-weight: 600;
+            color: var(--cor-texto-titulo);
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .criar-empresa-card {
+            border: 2px dashed var(--cor-borda);
+        }
+
+        .criar-empresa-card .plus-icon {
+            font-size: 2.5rem;
+            color: var(--cor-primaria);
+            margin-bottom: 15px;
+        }
+        
+        .logout-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .btn-logout {
+            background-color: transparent;
+            color: var(--cor-perigo);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background-color: #fef2f2;
+        }
+
+        .loader {
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--cor-primaria);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin: 40px auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <div class="selecao-container">
+    <div class="container">
         <div class="header-selecao">
             <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
             <p>Selecione uma empresa para gerir ou crie uma nova.</p>
         </div>
+
         <div id="empresas-grid">
+            <!-- Os cards das empresas serão inseridos aqui pelo JavaScript -->
             <div class="loader" id="loader"></div>
         </div>
+
         <div class="logout-container">
             <button id="btn-logout" class="btn-logout">Sair da conta</button>
         </div>
     </div>
+
+    <!-- O seu script original. Ele continuará a funcionar com a nova estrutura. -->
     <script type="module" src="selecionar-empresa.js"></script>
 </body>
 </html>
