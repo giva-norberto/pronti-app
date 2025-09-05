@@ -1,5 +1,5 @@
 // ======================================================================
-// USERSERVICE.JS (MULTIEMPRESAS: ENTRA DIRETO SE SÓ TEM UMA EMPRESA - REVISADO + DEBUG)
+// USERSERVICE.JS (MULTIEMPRESAS: ENTRA DIRETO SE SÓ TEM UMA EMPRESA - REVISADO + DEBUG + MENUTRAVA FIX)
 // ======================================================================
 
 import {
@@ -63,6 +63,17 @@ async function checkUserStatus(user, empresaData) {
 
 // --- Autenticação, multiempresas: entra direto se só tem uma empresa ---
 export async function verificarAcesso() {
+    // Sempre invalida cache se empresa ativa mudou (para evitar travar menu)
+    const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+    if (
+        cachedSessionProfile &&
+        cachedSessionProfile.empresaId &&
+        empresaAtivaId &&
+        cachedSessionProfile.empresaId !== empresaAtivaId
+    ) {
+        cachedSessionProfile = null;
+    }
+
     if (cachedSessionProfile) {
         console.debug("[DEBUG][verificarAcesso] Retornando sessão cache:", cachedSessionProfile);
         return Promise.resolve(cachedSessionProfile);
