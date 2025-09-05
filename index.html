@@ -44,7 +44,6 @@
         }
         .dashboard-welcome-center p {
             font-size: clamp(1rem, 2.5vw, 1.25rem);
-            /* ALTERAÇÃO: Melhoria de contraste e legibilidade */
             font-weight: 400;
             opacity: 0.9;
         }
@@ -86,7 +85,6 @@
         .card-painel    { background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%); }
         .card-agenda    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
         .card-servicos  { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        /* A classe .card-dashboard foi removida junto com o card */
         .card-clientes  { background: linear-gradient(135deg, #f59e42 0%, #ff5858 100%); }
         .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
@@ -125,7 +123,6 @@
 
 <main class="main-content" id="main-content">
     <div class="dashboard-welcome-center" id="dashboard-welcome-center">
-        
         <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
         <p>Pronto para gerenciar seu dia?</p>
     </div>
@@ -159,35 +156,27 @@
             <i class="fa-solid fa-file-lines"></i>
             <span>Relatórios</span>
         </a>
-        </div>
+    </div>
 </main>
 
 <script type="module">
     // Carrega o menu lateral igual em todas as páginas
-    console.debug("[DEBUG] carregando menu lateral...");
     fetch('menu-lateral.html')
-      .then(res => {
-          console.debug("[DEBUG] menu-lateral.html fetch status:", res.status);
-          return res.text();
-      })
+      .then(res => res.text())
       .then(html => {
           document.getElementById('sidebar-placeholder').innerHTML = html;
-          console.debug("[DEBUG] menu-lateral.html carregado e inserido no DOM");
 
           // Adiciona o evento do botão sair após o menu ser inserido no DOM
           import("./firebase-config.js").then(({ auth }) => {
               import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
                   const btnLogout = document.getElementById("btn-logout");
-                  console.debug("[DEBUG] btn-logout encontrado?", !!btnLogout);
                   if (btnLogout) {
                       btnLogout.addEventListener("click", async () => {
                           try {
-                              console.debug("[DEBUG] Logout clicado, tentando sair...");
                               await signOut(auth);
                               localStorage.clear();
                               window.location.href = "login.html";
                           } catch(e) {
-                              console.error("[DEBUG] Erro ao sair:", e);
                               alert("Erro ao sair: " + e.message);
                           }
                       });
@@ -200,21 +189,19 @@
     import { auth } from "./firebase-config.js";
     import { verificarAcesso } from "./userService.js";
 
-    const nomeUsuarioSpan = document.getElementById("nome-usuario" );
+    const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
     function definirSaudacao() {
         const hora = new Date().getHours();
-        console.debug("[DEBUG] definirSaudacao: hora atual", hora);
         if (hora >= 5 && hora < 12) return "Bom dia";
         if (hora >= 12 && hora < 18) return "Boa tarde";
         return "Boa noite";
     }
 
     function mostrarPrimeiroAcessoCard() {
-        console.debug("[DEBUG] mostrarPrimeiroAcessoCard: exibindo card de primeiro acesso");
         if (mainContent) {
             mainContent.innerHTML = `
                 <div class="primeiro-acesso-card">
@@ -224,7 +211,6 @@
                 </div>
             `;
             document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-                console.debug("[DEBUG] btn-criar-empresa clicado, redirecionando para perfil.html");
                 localStorage.removeItem('empresaAtivaId');
                 window.location.href = "perfil.html";
             });
@@ -232,55 +218,34 @@
     }
 
     function removerIsLoading() {
-        console.debug("[DEBUG] removerIsLoading: removendo is-loading do body");
         document.body.classList.remove('is-loading');
     }
 
     async function inicializarDashboard() {
-        console.debug("[DEBUG] inicializarDashboard: Iniciando");
         try {
             const userSession = await verificarAcesso();
-            console.debug("[DEBUG] inicializarDashboard: userSession", userSession);
-
             const { perfil } = userSession;
-            console.debug("[DEBUG] inicializarDashboard: perfil", perfil);
-
             const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
-            console.debug("[DEBUG] inicializarDashboard: primeiroNome", primeiroNome);
 
-            if (nomeUsuarioSpan) {
-                nomeUsuarioSpan.textContent = primeiroNome;
-                console.debug("[DEBUG] nomeUsuarioSpan atualizado");
-            }
-            if (saudacaoSpan) {
-                saudacaoSpan.textContent = definirSaudacao();
-                console.debug("[DEBUG] saudacaoSpan atualizado");
-            }
+            if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
+            if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
 
-            if (perfil.nomeFantasia) {
-                console.debug("[DEBUG] inicializarDashboard: nomeFantasia", perfil.nomeFantasia);
-                if (nomeEmpresaSpan) nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
+            if (perfil.nomeFantasia && nomeEmpresaSpan) {
+                nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
             }
-            
         } catch (error) {
-            console.debug("[DEBUG] inicializarDashboard: catch error", error);
             if (error.message === "primeiro_acesso") {
                 mostrarPrimeiroAcessoCard();
-                console.debug("[DEBUG] inicializarDashboard: primeiro_acesso - mostrando card de primeiro acesso");
             } else if (!error.message.includes("Redirecionando")) {
                 console.error("[index.html] Erro não tratado na inicialização:", error);
             }
         } finally {
-            console.debug("[DEBUG] inicializarDashboard: removendo is-loading");
             removerIsLoading();
         }
     }
 
     inicializarDashboard();
-    setTimeout(() => {
-        console.debug("[DEBUG] Timeout removerIsLoading");
-        removerIsLoading();
-    }, 3000);
+    setTimeout(removerIsLoading, 3000);
 </script>
 
 </body>
