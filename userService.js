@@ -1,6 +1,6 @@
 // ======================================================================
 //             USER-SERVICE.JS (VERSÃO FINAL E RESILIENTE)
-// - Contém a função exportada 'getEmpresasDoUsuario'.
+// - Lógica de busca de empresas compatível com estruturas de dados antigas e novas.
 // - Lógica de verificação inteligente e auto-corretiva.
 // ======================================================================
 
@@ -50,11 +50,11 @@ async function checkUserStatus(user, empresaData) {
     return { hasActivePlan: false, isTrialActive: endDate > new Date() };
 }
 
-// --- FUNÇÃO EXPORTADA (A PEÇA QUE FALTAVA) ---
+// --- FUNÇÃO EXPORTADA (CORRIGIDA COM COMPATIBILIDADE) ---
 
 /**
  * Busca todas as empresas associadas a um utilizador a partir do mapaUsuarios.
- * Requer que o documento em mapaUsuarios/{userId} tenha um array 'empresas'.
+ * É compatível com o formato antigo (empresaId: string) e o novo (empresas: array).
  * @param {User} user O objeto do utilizador autenticado.
  * @returns {Promise<Array>} Uma lista de objetos de empresa aos quais o utilizador tem acesso.
  */
@@ -65,12 +65,34 @@ export async function getEmpresasDoUsuario(user) {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
 
-        if (!mapaSnap.exists() || !mapaSnap.data().empresas || !Array.isArray(mapaSnap.data().empresas)) {
-            console.warn("Nenhum array 'empresas' encontrado no mapaUsuarios para este utilizador.");
+        if (!mapaSnap.exists()) {
+            console.warn("Documento não encontrado em mapaUsuarios para este utilizador.");
             return [];
         }
 
-        const promessasEmpresas = mapaSnap.data().empresas.map(empresaId => getDoc(doc(db, "empresarios", empresaId)));
+        const mapaData = mapaSnap.data();
+        let empresaIds = [];
+
+        // LÓGICA DE COMPATIBILIDADE PARA CORRIGIR O ERRO
+        if (mapaData.empresas && Array.isArray(mapaData.empresas)) {
+            // Se encontrar o novo formato (array), usa-o.
+            console.log("Formato 'empresas' (array) encontrado no mapaUsuarios.");
+            empresaIds = mapaData.empresas;
+        } else if (mapaData.empresaId && typeof mapaData.empresaId === 'string') {
+            // Se encontrar o formato antigo (string), trata-o como uma lista de uma empresa.
+            console.warn("Formato antigo 'empresaId' (string) encontrado. A processar com compatibilidade.");
+            empresaIds = [mapaData.empresaId];
+        } else {
+            // Se não encontrar nenhum dos formatos esperados.
+            console.warn("Nenhum campo 'empresas' (array) ou 'empresaId' (string) encontrado no mapaUsuarios.");
+            return [];
+        }
+
+        if (empresaIds.length === 0) {
+            return [];
+        }
+
+        const promessasEmpresas = empresaIds.map(empresaId => getDoc(doc(db, "empresarios", empresaId)));
         const docsEmpresas = await Promise.all(promessasEmpresas);
 
         const empresasValidas = [];
@@ -184,4 +206,3 @@ export async function verificarAcesso() {
         });
     });
 }
-
