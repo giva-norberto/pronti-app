@@ -2,6 +2,7 @@
 //             USER-SERVICE.JS (VERSÃO FINAL E RESILIENTE)
 // - Lógica de busca de empresas compatível com estruturas de dados antigas e novas.
 // - Lógica de verificação inteligente e auto-corretiva.
+// - Corrigido o fluxo para utilizadores que também são administradores.
 // ======================================================================
 
 import {
@@ -134,11 +135,9 @@ export async function verificarAcesso() {
             try {
                 await ensureUserAndTrialDoc();
 
+                // MODIFICAÇÃO: A verificação de admin agora é apenas uma flag, não interrompe o fluxo.
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                if (user.uid === ADMIN_UID) {
-                    cachedSessionProfile = { user, isAdmin: true, perfil: { nome: "Admin" }, isOwner: true, role: 'admin' };
-                    return resolve(cachedSessionProfile);
-                }
+                const isAdmin = user.uid === ADMIN_UID;
 
                 let empresaAtivaId = localStorage.getItem('empresaAtivaId');
                 let acessoVerificado = false;
@@ -192,7 +191,15 @@ export async function verificarAcesso() {
                     role = 'funcionario';
                 }
 
-                cachedSessionProfile = { user, empresaId: empresaAtivaId, perfil: perfilDetalhado, isOwner, isAdmin: false, role };
+                // MODIFICAÇÃO: A flag 'isAdmin' é adicionada ao perfil final.
+                cachedSessionProfile = { 
+                    user, 
+                    empresaId: empresaAtivaId, 
+                    perfil: perfilDetalhado, 
+                    isOwner, 
+                    isAdmin: isAdmin, 
+                    role 
+                };
                 return resolve(cachedSessionProfile);
 
             } catch (error) {
