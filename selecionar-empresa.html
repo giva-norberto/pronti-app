@@ -10,60 +10,61 @@
       --cor-perigo: #ef4444;
       --cor-fundo-app: #f6f7fb;
       --cor-texto-escuro: #22223b;
+      --cor-texto-claro: #44446a;
+      --sombra-card: 0 4px 24px rgba(0,0,0,0.10);
     }
     body {
       font-family: 'Inter', Arial, sans-serif;
-      background-color: var(--cor-fundo-app);
+      background: var(--cor-fundo-app);
       margin: 0;
       color: var(--cor-texto-escuro);
     }
-    .center-card-bg {
+    .container-centraliza {
+      width: 100vw;
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      background: var(--cor-fundo-app);
     }
-    .card-empresa-empty {
+    .card-empty-empresa {
       background: #fff;
       border-radius: 20px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-      padding: 2.4rem 2.1rem 2.1rem 2.1rem;
+      box-shadow: var(--sombra-card);
+      padding: 2.4rem 2.2rem 2.2rem 2.2rem;
       text-align: center;
-      max-width: 370px;
       width: 100%;
+      max-width: 380px;
       margin: auto;
       display: flex;
       flex-direction: column;
       align-items: center;
-      animation: fadein 0.35s;
+      animation: fadein 0.28s;
     }
-    .card-empresa-empty img {
+    .card-empty-empresa img {
       width: 68px;
       margin-bottom: 0.8rem;
-      opacity: 0.94;
+      opacity: 0.93;
     }
-    .card-empresa-empty h2 {
-      font-size: 1.21rem;
-      font-weight: 700;
+    .card-empty-empresa h2,
+    .card-empty-empresa h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
       color: var(--cor-texto-escuro);
-      margin: 0.7rem 0 0.8rem 0;
-      letter-spacing: -1px;
+      margin: 0.7rem 0 0.75rem 0;
     }
-    .card-empresa-empty .descricao {
+    .card-empty-empresa .descricao {
       color: #6b7280;
-      margin-bottom: 1.1rem;
-      font-size: 1.07em;
+      margin-bottom: 0.8rem;
+      font-size: 1.08em;
     }
-    .card-empresa-empty .destaque {
+    .card-empty-empresa .destaque {
       color: #189cf7;
       font-size: .98em;
       margin-bottom: 1.1rem;
       display: block;
     }
-    /* VISUAL DO BOTÃO, NÃO MUDA A ESTRUTURA */
     .criar-empresa-card {
-      color: #fff;
+      color: #fff !important;
       background: linear-gradient(90deg, var(--cor-primaria) 0%, var(--cor-secundaria) 100%);
       border-radius: 8px;
       font-size: 1.09rem;
@@ -75,7 +76,7 @@
       box-shadow: 0 2px 8px #4facfe1a;
       border: none !important;
       width: 100%;
-      margin: 0 auto 1.1rem auto;
+      margin: 0 auto 1.15rem auto;
       padding: 1rem 0;
       cursor: pointer;
       transition: background 0.17s;
@@ -116,19 +117,19 @@
       to   { opacity: 1; transform: scale(1);}
     }
     @media (max-width: 600px) {
-      .card-empresa-empty { padding: 1.1rem 0.5rem; max-width: 96vw; }
+      .card-empty-empresa { padding: 1.1rem 0.5rem; max-width: 96vw; }
     }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
-  <div class="center-card-bg">
-    <div class="card-empresa-empty">
+  <div class="container-centraliza">
+    <div class="card-empty-empresa">
       <img src="https://cdn.jsdelivr.net/gh/saasbr/assets@main/office-empty-light.svg" alt="Sem Empresas" />
-      <h2>Bem-vindo(a), <b id="nome-usuario">GIVANILDO</b>!</h2>
+      <h1>Bem-vindo(a), <b id="nome-usuario">GIVANILDO!</b></h1>
       <div class="descricao">Você ainda não possui empresas cadastradas.</div>
       <span class="destaque">Comece agora a organizar sua empresa no Pronti!</span>
-      <!-- Botão original, só mudou o visual. O JS segue funcionando! -->
+      <!-- MANTENHA O BOTÃO EXATAMENTE ASSIM, como no seu projeto -->
       <div class="criar-empresa-card" tabindex="0">
         <i class="fa fa-plus"></i> Criar Nova Empresa
       </div>
@@ -136,10 +137,9 @@
     </div>
   </div>
   <script>
-    // Atualize o nome se desejar:
+    // Opcional: atualizar nome do usuário via JS
     // document.getElementById('nome-usuario').innerText = NOME_DO_USUARIO_LOGADO;
-    // O clique da .criar-empresa-card já funciona pelo seu JS antigo!
-    // O botão sair da conta também pode ser conectado ao seu fluxo.
+    // Os botões continuam funcionando como no seu código original!
   </script>
 </body>
 </html>
