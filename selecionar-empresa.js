@@ -1,5 +1,5 @@
 // ======================================================================
-//   SELECIONAR-EMPRESA.JS (VERSÃO FINAL REVISADA - COMPATÍVEL COM MAPAUSUARIOS EMPRESAS ARRAY)
+//   SELECIONAR-EMPRESA.JS (VERSÃO FINAL REVISADA - COMPATÍVEL COM MAPAUSUARIOS EMPRESAS ARRAY)
 // - Usa a função centralizada getEmpresasDoUsuario para consistência (compatível com array empresas em mapaUsuarios).
 // - Redireciona automaticamente se o utilizador tiver apenas uma empresa.
 // - Permite a seleção manual se o utilizador tiver múltiplas empresas.
@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-            if (tituloBoasVindas) tituloBoasVindas.textContent = Bem-vindo(a), ${primeiroNome}!;
+            // ✨ CORREÇÃO: A string agora é um template literal (usa crases ``)
+            if (tituloBoasVindas) tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
             
             inicializarPagina(user);
         } else {
@@ -46,7 +47,8 @@ async function inicializarPagina(user) {
         // --- LÓGICA DE DECISÃO INTELIGENTE ---
         if (empresas.length === 1) {
             // Se o utilizador tem exatamente uma empresa, seleciona-a automaticamente.
-            console.log(Apenas uma empresa encontrada (${empresas[0].nomeFantasia || empresas[0].nome}). Redirecionando...);
+            // ✨ CORREÇÃO: A string agora é um template literal (usa crases ``)
+            console.log(`Apenas uma empresa encontrada (${empresas[0].nomeFantasia || empresas[0].nome}). Redirecionando...`);
             selecionarEmpresa(empresas[0].id);
             return; // Interrompe a função para evitar renderizar a página
         }
@@ -101,12 +103,14 @@ function criarEmpresaCard(empresa) {
 
     const nomeFantasia = empresa.nomeFantasia || empresa.nome || "Empresa Sem Nome";
     const inicial = nomeFantasia.charAt(0).toUpperCase();
-    const logoSrc = empresa.logoUrl || https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)};
+    // ✨ CORREÇÃO: A string da URL agora é um template literal (usa crases ``)
+    const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
 
-    card.innerHTML = 
+    // ✨ CORREÇÃO: O HTML agora está dentro de um template literal (usa crases ``)
+    card.innerHTML = `
         <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
         <span class="empresa-nome">${nomeFantasia}</span>
-    ;
+    `;
     return card;
 }
 
@@ -119,10 +123,11 @@ function criarNovoCard() {
     card.className = 'criar-empresa-card';
     card.href = 'perfil.html'; // Página para criar/editar perfil/empresa
 
-    card.innerHTML = 
+    // ✨ CORREÇÃO: O HTML agora está dentro de um template literal (usa crases ``)
+    card.innerHTML = `
         <div class="plus-icon">+</div>
         <span class="empresa-nome">Criar Nova Empresa</span>
-    ;
+    `;
     return card;
 }
 
