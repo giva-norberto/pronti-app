@@ -1,13 +1,11 @@
 // ======================================================================
 //                          EQUIPE.JS
-//        VERSÃO CIRURGICAMENTE CORRIGIDA (NOME E FOTO)
+//        VERSÃO CORRIGIDA (NOME E FOTO - UPLOAD SEMPRE COM ID REAL)
 // ======================================================================
 
-// Importação centralizada do Firebase config (nome do banco garantido)
 import { db, auth, storage } from "./firebase-config.js";
 import { collection, onSnapshot, query, where, doc, getDoc, setDoc, updateDoc, serverTimestamp, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
-
 
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -476,7 +474,7 @@ async function editarProfissional(profissionalId) {
             elementos.modalAddProfissional.classList.add('show');
             elementos.formAddProfissional.onsubmit = async (e) => {
                 e.preventDefault();
-                await salvarEdicaoProfissional(profissionalId);
+                await salvarEdicaoProfissional();
             };
         }
     } catch (error) {
@@ -484,7 +482,14 @@ async function editarProfissional(profissionalId) {
     }
 }
 
-async function salvarEdicaoProfissional(profissionalId) {
+async function salvarEdicaoProfissional() {
+    // SEMPRE usa o ID real salvo no escopo global
+    const profissionalId = editandoProfissionalId;
+    if (!profissionalId || profissionalId === "NOVO_PROFISSIONAL_ID") {
+        alert("Erro: profissionalId não definido! Não é possível salvar profissional sem ID real.");
+        return;
+    }
+
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) return alert("O nome do profissional é obrigatório.");
 
@@ -494,13 +499,7 @@ async function salvarEdicaoProfissional(profissionalId) {
     try {
         if (fotoFile) {
             console.log("Iniciando upload da foto...");
-            
-            // ======================= INÍCIO DA CORREÇÃO CIRÚRGICA =======================
-            // O caminho agora inclui o `profissionalId` para corresponder às regras de
-            // segurança e para uma melhor organização dos arquivos no Storage.
             const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`);
-            // ======================= FIM DA CORREÇÃO CIRÚRGICA =======================
-            
             const snapshot = await uploadBytes(storageRef, fotoFile);
             const fotoURL = await getDownloadURL(snapshot.ref);
             updateData.fotoUrl = fotoURL; 
