@@ -25,7 +25,10 @@ const getFirebaseApp = () => {
 // Inicializa e exporta tudo a partir da instância única
 const app = getFirebaseApp();
 const auth = getAuth(app);
-const storage = getStorage(app);
+
+// ✨ Correção: inicializa o Storage com o bucket correto explicitamente
+const storage = getStorage(app, "gs://pronti-app-37c6e.appspot.com");
+
 const provider = new GoogleAuthProvider();
 
 // ==================================================
@@ -36,8 +39,7 @@ provider.setCustomParameters({
 });
 // ==================================================
 
-
-// (Voltou) Conecta ao banco de dados com nome "pronti-app"
+// Conecta ao banco de dados com nome "pronti-app"
 const db = getFirestore(app, "pronti-app");
 
 // Define a persistência do login
