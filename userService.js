@@ -78,6 +78,7 @@ export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
 
     try {
+        // Busca as empresas do array do usuário (igual para admin e usuário comum)
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
         if (!mapaSnap.exists()) return [];
@@ -208,9 +209,6 @@ export async function verificarAcesso() {
                 reject(error);
             }
         });
-
-        // Safety fallback: limpa isProcessing após 5s se algo travar
-        setTimeout(() => { isProcessing = false; }, 5000);
     });
 }
 
