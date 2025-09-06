@@ -24,9 +24,9 @@
       "Authorization",
       "x-goog-resumable",
       "x-goog-meta-*",
-      "x-goog-content-length-range"
+      "x-goog-content-length-range",
+      "Origin"
     ],
     "maxAgeSeconds": 3600
   }
 ]
-
