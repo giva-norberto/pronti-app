@@ -168,6 +168,10 @@ async function carregarServicosDoFirebase() {
     return;
   }
 
+  // >>>>>>>> ALTERAÇÃO CRÍTICA <<<<<<<<
+  // Sempre pegar o empresaId do localStorage antes de buscar os serviços!
+  empresaId = getEmpresaIdAtiva();
+
   if (!empresaId) {
     console.error("❌ [ERROR] Tentativa de carregar serviços sem empresaId");
     if (listaServicosDiv) {
