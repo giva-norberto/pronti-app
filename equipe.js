@@ -1,6 +1,6 @@
 // ======================================================================
 //                          EQUIPE.JS
-//        VERSÃO CORRIGIDA (NOME E FOTO - UPLOAD SEMPRE COM ID REAL)
+//        VERSÃO FINAL - UPLOAD SEMPRE COM ID REAL
 // ======================================================================
 
 import { db, auth, storage } from "./firebase-config.js";
@@ -69,7 +69,6 @@ async function garantirPerfilDoDono() {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", donoId);
         const profissionalSnap = await getDoc(profissionalRef);
         if (!profissionalSnap.exists()) {
-            console.log("Perfil do dono não encontrado na equipe. Criando agora...");
             const usuarioRef = doc(db, "usuarios", donoId);
             const usuarioSnap = await getDoc(usuarioRef);
             const nomeDono = usuarioSnap.exists() && usuarioSnap.data().nome ? usuarioSnap.data().nome : "Dono";
@@ -82,14 +81,11 @@ async function garantirPerfilDoDono() {
                 fotoUrl: user.photoURL || "",
                 empresaId: empresaId
             });
-            console.log("Perfil do dono criado com sucesso na equipe.");
         } else {
             if (!profissionalSnap.data().empresaId) {
-                console.log("Perfil do dono está desatualizado. Corrigindo agora...");
                 await updateDoc(profissionalRef, {
                     empresaId: empresaId
                 });
-                console.log("Perfil do dono atualizado com sucesso.");
             }
         }
     } catch (error) {
@@ -470,7 +466,8 @@ async function editarProfissional(profissionalId) {
             elementos.formAddProfissional.reset();
             elementos.nomeProfissional.value = dados.nome || "";
             elementos.tituloModalProfissional.textContent = "✏️ Editar Profissional";
-            editandoProfissionalId = profissionalId;
+            // CORREÇÃO: Sempre atribua o UID real do profissional
+            window.editandoProfissionalId = profissionalId;
             elementos.modalAddProfissional.classList.add('show');
             elementos.formAddProfissional.onsubmit = async (e) => {
                 e.preventDefault();
@@ -483,8 +480,8 @@ async function editarProfissional(profissionalId) {
 }
 
 async function salvarEdicaoProfissional() {
-    // SEMPRE usa o ID real salvo no escopo global
-    const profissionalId = editandoProfissionalId;
+    // Use o ID real salvo no escopo global
+    const profissionalId = window.editandoProfissionalId;
     if (!profissionalId || profissionalId === "NOVO_PROFISSIONAL_ID") {
         alert("Erro: profissionalId não definido! Não é possível salvar profissional sem ID real.");
         return;
@@ -498,8 +495,17 @@ async function salvarEdicaoProfissional() {
     
     try {
         if (fotoFile) {
-            console.log("Iniciando upload da foto...");
-            const storageRef = ref(storage, `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`);
+            // Debug para garantir o ID real
+            console.log("DEBUG UPLOAD PROFISSIONAL");
+            console.log("UID logado:", auth.currentUser?.uid);
+            console.log("empresaId:", empresaId);
+            console.log("profissionalId:", profissionalId);
+            console.log("nome:", nome);
+            console.log("arquivo:", fotoFile.name, "| tamanho:", fotoFile.size, "| tipo:", fotoFile.type);
+            const caminhoStorage = `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`;
+            console.log("caminhoStorage:", caminhoStorage);
+
+            const storageRef = ref(storage, caminhoStorage);
             const snapshot = await uploadBytes(storageRef, fotoFile);
             const fotoURL = await getDownloadURL(snapshot.ref);
             updateData.fotoUrl = fotoURL; 
