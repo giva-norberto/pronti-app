@@ -28,6 +28,15 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
+// ==================================================
+// ✨ CORREÇÃO IMPORTANTE ABAIXO ✨
+// Adiciona o parâmetro que força a tela de seleção de conta do Google
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
+// ==================================================
+
+
 // (Voltou) Conecta ao banco de dados com nome "pronti-app"
 const db = getFirestore(app, "pronti-app");
 
