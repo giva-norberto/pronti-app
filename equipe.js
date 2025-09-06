@@ -1,6 +1,6 @@
 // ======================================================================
-//                          EQUIPE.JS
-//        VERSÃO FINAL - UPLOAD SEMPRE COM ID REAL
+//                              EQUIPE.JS
+//              VERSÃO FINAL - UPLOAD SEMPRE COM ID REAL
 // ======================================================================
 
 import { db, auth, storage } from "./firebase-config.js";
@@ -492,7 +492,7 @@ async function salvarEdicaoProfissional() {
 
     const updateData = { nome }; 
     const fotoFile = elementos.fotoProfissional.files[0];
-    
+   
     try {
         if (fotoFile) {
             // Debug para garantir o ID real
@@ -514,7 +514,7 @@ async function salvarEdicaoProfissional() {
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, updateData);
-        
+       
         elementos.modalAddProfissional.classList.remove('show');
         alert("✅ Profissional editado com sucesso!");
 
