@@ -12,7 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com",
+  storageBucket: "pronti-app-37c6e.firebasestorage.app", // ✅ CORRIGIDO
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
@@ -26,8 +26,8 @@ const getFirebaseApp = () => {
 const app = getFirebaseApp();
 const auth = getAuth(app);
 
-// ✨ Correção: inicializa o Storage com o bucket correto explicitamente
-const storage = getStorage(app, "gs://pronti-app-37c6e.appspot.com");
+// ✅ Agora basta chamar getStorage(app), não precisa forçar gs://
+const storage = getStorage(app);
 
 const provider = new GoogleAuthProvider();
 
