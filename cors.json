@@ -25,7 +25,9 @@
       "x-goog-resumable",
       "x-goog-meta-*",
       "x-goog-content-length-range",
-      "Origin"
+      "Origin",
+      "Accept",
+      "X-Requested-With"
     ],
     "maxAgeSeconds": 3600
   }
