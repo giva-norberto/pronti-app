@@ -23,7 +23,7 @@ let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 const elementos = {
-    btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
+    btnCancelarEquipe: document.getElementById('btn-cancelar-equipe' ),
     modalAddProfissional: document.getElementById('modal-add-profissional'),
     formAddProfissional: document.getElementById('form-add-profissional'),
     btnCancelarProfissional: document.getElementById('btn-cancelar-profissional'),
@@ -61,6 +61,7 @@ async function garantirPerfilDoDono() {
     try {
         const empresaRef = doc(db, "empresarios", empresaId);
         const empresaSnap = await getDoc(empresaRef);
+        // Esta verificação agora é feita antes de chamar a função, mas mantê-la aqui é uma boa prática de segurança.
         if (!empresaSnap.exists() || empresaSnap.data().donoId !== user.uid) {
             console.error("Conflito de permissão: Usuário atual não é o dono da empresa ativa.");
             return;
@@ -102,21 +103,55 @@ async function inicializar() {
             window.location.href = "selecionar-empresa.html";
             return;
         }
+
+        // ======================================================================
+        // INÍCIO DA CORREÇÃO
+        // ======================================================================
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                await garantirPerfilDoDono();
-                await carregarServicos();
-                iniciarListenerDaEquipe();
-                adicionarEventListeners();
+                try {
+                    // 1. Busca os dados da empresa para verificar quem é o dono
+                    const empresaRef = doc(db, "empresarios", empresaId);
+                    const empresaSnap = await getDoc(empresaRef);
+
+                    if (empresaSnap.exists()) {
+                        const empresaData = empresaSnap.data();
+                        const isOwner = empresaData.donoId === user.uid;
+
+                        // 2. SÓ executa a função de garantir perfil se o usuário for o dono
+                        if (isOwner) {
+                            await garantirPerfilDoDono();
+                        }
+
+                        // 3. O restante do código roda para todos (dono e funcionários)
+                        await carregarServicos();
+                        iniciarListenerDaEquipe();
+                        adicionarEventListeners();
+
+                    } else {
+                        console.error("Empresa ativa não encontrada no banco de dados.");
+                        alert("A empresa selecionada não foi encontrada. Redirecionando...");
+                        window.location.href = "selecionar-empresa.html";
+                    }
+                } catch (error) {
+                    console.error("Erro ao verificar permissões e inicializar a página da equipe:", error);
+                    mostrarErro("Ocorreu um erro ao carregar os dados da equipe.");
+                }
             } else {
+                // Se não há usuário, redireciona para o login
                 window.location.href = "login.html";
             }
         });
+        // ======================================================================
+        // FIM DA CORREÇÃO
+        // ======================================================================
+
     } catch (error) {
         console.error("Erro na inicialização:", error);
         mostrarErro("Erro ao inicializar o sistema.");
     }
 }
+
 
 async function iniciarListenerDaEquipe() {
     const empresaRef = doc(db, "empresarios", empresaId);
@@ -216,7 +251,7 @@ function renderizarEquipe(equipe) {
         div.innerHTML = `<div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
                          <div class="profissional-info">
                              <span class="profissional-nome">${profissional.nome}</span>
-                             <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário' )}</span>
+                             <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário'  )}</span>
                          </div>
                          <div class="profissional-actions">${botoesDeAcao}</div>`;
         elementos.listaProfissionaisPainel.appendChild(div);
