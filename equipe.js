@@ -23,7 +23,7 @@ let profissionalAtual = null;
 let servicosDisponiveis = [];
 let editandoProfissionalId = null;
 const elementos = {
-    btnCancelarEquipe: document.getElementById('btn-cancelar-equipe' ),
+    btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'  ),
     modalAddProfissional: document.getElementById('modal-add-profissional'),
     formAddProfissional: document.getElementById('form-add-profissional'),
     btnCancelarProfissional: document.getElementById('btn-cancelar-profissional'),
@@ -61,7 +61,6 @@ async function garantirPerfilDoDono() {
     try {
         const empresaRef = doc(db, "empresarios", empresaId);
         const empresaSnap = await getDoc(empresaRef);
-        // Esta verificação agora é feita antes de chamar a função, mas mantê-la aqui é uma boa prática de segurança.
         if (!empresaSnap.exists() || empresaSnap.data().donoId !== user.uid) {
             console.error("Conflito de permissão: Usuário atual não é o dono da empresa ativa.");
             return;
@@ -103,31 +102,20 @@ async function inicializar() {
             window.location.href = "selecionar-empresa.html";
             return;
         }
-
-        // ======================================================================
-        // INÍCIO DA CORREÇÃO
-        // ======================================================================
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 try {
-                    // 1. Busca os dados da empresa para verificar quem é o dono
                     const empresaRef = doc(db, "empresarios", empresaId);
                     const empresaSnap = await getDoc(empresaRef);
-
                     if (empresaSnap.exists()) {
                         const empresaData = empresaSnap.data();
                         const isOwner = empresaData.donoId === user.uid;
-
-                        // 2. SÓ executa a função de garantir perfil se o usuário for o dono
                         if (isOwner) {
                             await garantirPerfilDoDono();
                         }
-
-                        // 3. O restante do código roda para todos (dono e funcionários)
                         await carregarServicos();
                         iniciarListenerDaEquipe();
                         adicionarEventListeners();
-
                     } else {
                         console.error("Empresa ativa não encontrada no banco de dados.");
                         alert("A empresa selecionada não foi encontrada. Redirecionando...");
@@ -138,20 +126,14 @@ async function inicializar() {
                     mostrarErro("Ocorreu um erro ao carregar os dados da equipe.");
                 }
             } else {
-                // Se não há usuário, redireciona para o login
                 window.location.href = "login.html";
             }
         });
-        // ======================================================================
-        // FIM DA CORREÇÃO
-        // ======================================================================
-
     } catch (error) {
         console.error("Erro na inicialização:", error);
         mostrarErro("Erro ao inicializar o sistema.");
     }
 }
-
 
 async function iniciarListenerDaEquipe() {
     const empresaRef = doc(db, "empresarios", empresaId);
@@ -251,7 +233,7 @@ function renderizarEquipe(equipe) {
         div.innerHTML = `<div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
                          <div class="profissional-info">
                              <span class="profissional-nome">${profissional.nome}</span>
-                             <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário'  )}</span>
+                             <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário'   )}</span>
                          </div>
                          <div class="profissional-actions">${botoesDeAcao}</div>`;
         elementos.listaProfissionaisPainel.appendChild(div);
@@ -501,7 +483,6 @@ async function editarProfissional(profissionalId) {
             elementos.formAddProfissional.reset();
             elementos.nomeProfissional.value = dados.nome || "";
             elementos.tituloModalProfissional.textContent = "✏️ Editar Profissional";
-            // CORREÇÃO: Sempre atribua o UID real do profissional
             window.editandoProfissionalId = profissionalId;
             elementos.modalAddProfissional.classList.add('show');
             elementos.formAddProfissional.onsubmit = async (e) => {
@@ -515,41 +496,46 @@ async function editarProfissional(profissionalId) {
 }
 
 async function salvarEdicaoProfissional() {
-    // Use o ID real salvo no escopo global
     const profissionalId = window.editandoProfissionalId;
-    if (!profissionalId || profissionalId === "NOVO_PROFISSIONAL_ID") {
-        alert("Erro: profissionalId não definido! Não é possível salvar profissional sem ID real.");
+    if (!profissionalId) {
+        alert("Erro: ID do profissional não definido.");
         return;
     }
 
     const nome = elementos.nomeProfissional.value.trim();
-    if (!nome) return alert("O nome do profissional é obrigatório.");
+    if (!nome) {
+        alert("O nome do profissional é obrigatório.");
+        return;
+    }
 
-    const updateData = { nome }; 
-    const fotoFile = elementos.fotoProfissional.files[0];
-   
+    // ✨ INÍCIO DA CORREÇÃO DEFINITIVA ✨
     try {
-        if (fotoFile) {
-            // Debug para garantir o ID real
-            console.log("DEBUG UPLOAD PROFISSIONAL");
-            console.log("UID logado:", auth.currentUser?.uid);
-            console.log("empresaId:", empresaId);
-            console.log("profissionalId:", profissionalId);
-            console.log("nome:", nome);
-            console.log("arquivo:", fotoFile.name, "| tamanho:", fotoFile.size, "| tipo:", fotoFile.type);
-            const caminhoStorage = `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`;
-            console.log("caminhoStorage:", caminhoStorage);
+        const updateData = { nome };
+        const fotoFile = elementos.fotoProfissional.files[0];
+        const usuarioLogadoId = auth.currentUser.uid; // Pega o UID de quem está logado
 
+        if (fotoFile) {
+            const caminhoStorage = `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`;
             const storageRef = ref(storage, caminhoStorage);
-            const snapshot = await uploadBytes(storageRef, fotoFile);
+
+            // Anexa metadados para verificação nas regras de segurança.
+            const metadata = {
+                customMetadata: {
+                    'uploaderId': usuarioLogadoId // Anexa o ID de quem está fazendo o upload
+                }
+            };
+
+            // Passa os metadados como terceiro argumento para uploadBytes
+            const snapshot = await uploadBytes(storageRef, fotoFile, metadata);
+            
             const fotoURL = await getDownloadURL(snapshot.ref);
-            updateData.fotoUrl = fotoURL; 
-            console.log("Upload da foto concluído. URL:", fotoURL);
+            updateData.fotoUrl = fotoURL;
+            console.log("Upload da foto concluído com metadados. URL:", fotoURL);
         }
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, updateData);
-       
+
         elementos.modalAddProfissional.classList.remove('show');
         alert("✅ Profissional editado com sucesso!");
 
@@ -557,7 +543,9 @@ async function salvarEdicaoProfissional() {
         console.error("Erro ao salvar edição do profissional:", error);
         alert("❌ Erro ao salvar edição: " + error.message + "\n\nVerifique suas regras de segurança do Storage se o erro for de permissão.");
     }
+    // ✨ FIM DA CORREÇÃO DEFINITIVA ✨
 }
+
 
 async function excluirProfissional(profissionalId) {
     if (!confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.")) return;
