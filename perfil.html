@@ -3,193 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Perfil & Configurações – Pronti</title>
+  <title>Meu Perfil & Configurações</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --bg-card: #fff;
-      --bg-section: #f6f8ff;
-      --divider: #e0e7ff;
-      --text-main: #181825;
-      --text-muted: #636e72;
-      --radius: 16px;
-    }
     html, body {
       margin: 0; padding: 0;
       font-family: 'Inter', Arial, sans-serif;
-      background: var(--bg-section);
-      color: var(--text-main);
+      background: #f6f8fa;
       min-height: 100vh;
+      color: #22223b;
     }
-    /* Mobile nav (icon) */
-    .mobile-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--primary);
-      color: #fff;
-      padding: 16px 18px;
-      position: sticky; top: 0; z-index: 9;
-      box-shadow: 0 2px 8px #6366f11a;
-    }
-    .mobile-nav .logo {
-      font-weight: 700;
-      font-size: 1.15em;
-      letter-spacing: -1px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .mobile-nav .menu-btn {
-      background: none; border: none; color: #fff; font-size: 1.5em; cursor: pointer;
-    }
-    /* Sidebar overlay (mobile) */
-    .sidebar-overlay {
-      display: none;
-      position: fixed; z-index: 99; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(50,52,80,0.14);
-    }
-    .sidebar-mobile {
-      position: fixed; z-index: 100; top: 0; left: 0; bottom: 0;
-      width: 84vw; max-width: 320px; background: #fff;
-      box-shadow: 2px 0 16px #6366f122;
-      transform: translateX(-102%);
-      transition: transform 0.2s;
-      padding-top: 32px;
-    }
-    .sidebar-mobile.active, .sidebar-overlay.active {
-      display: block;
-    }
-    .sidebar-mobile.active {
-      transform: translateX(0);
-    }
-    .sidebar-links {
-      display: flex; flex-direction: column; gap: 2px;
-    }
-    .sidebar-links a {
-      text-decoration: none;
-      color: var(--primary-dark);
-      font-weight: 600;
-      padding: 12px 22px;
-      border-radius: 0 20px 20px 0;
-      transition: background 0.15s;
-      display: flex; align-items: center; gap: 9px;
-    }
-    .sidebar-links a.active,
-    .sidebar-links a:hover {
-      background: #eef2ff;
-    }
-
     .main-content {
-      max-width: 520px;
-      margin: 32px auto 0 auto;
-      padding: 0 0 96px 0;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 0 0 80px 0;
     }
     .form-card {
-      background: var(--bg-card);
-      border-radius: var(--radius);
+      background: #fff;
+      border-radius: 16px;
       box-shadow: 0 3px 18px 0 #6366f120;
-      padding: 24px 16px 12px 16px;
-      margin: 0 12px;
+      padding: 22px 12px 12px 12px;
+      margin: 32px 10px 0 10px;
     }
-
     .header-section {
-      margin-bottom: 12px;
       text-align: center;
+      margin-bottom: 16px;
     }
     .header-section h1 {
-      font-size: 1.3rem;
-      color: var(--primary-dark);
-      margin: 0 0 5px 0;
+      font-size: 1.2rem;
       font-weight: 700;
+      color: #4f46e5;
+      margin: 0 0 2px 0;
     }
     .header-section p {
-      color: var(--text-muted);
+      color: #636e72;
       font-size: 1em;
       margin: 0;
     }
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin: 18px 0 0 0;
-      flex-wrap: wrap;
-    }
-    .btn {
-      border: none;
-      border-radius: 8px;
-      padding: 10px 18px;
-      font-size: 1em;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--primary);
-      color: #fff;
-      transition: background 0.16s;
-    }
-    .btn-green { background: #10b981; }
-    .btn-grey  { background: #f6f8fa; color: var(--primary); border: 1px solid var(--divider); }
-    .btn-grey:hover { background: #e0e7ff; color: var(--primary-dark); }
-    .btn-upload {
-      background: #fff;
-      color: var(--primary-dark);
-      border: 1px solid var(--divider);
-      padding: 8px 14px;
-      font-size: 0.98em;
-    }
-    .btn-upload:hover {
-      background: #e0e7ff;
-      color: var(--primary-dark);
-    }
-    /* Seções do formulário */
-    .section-divider {
-      border: none; height: 1px; background: var(--divider); margin: 32px 0 16px 0;
+    .form-section {
+      background: #f6f8ff;
+      border-radius: 10px;
+      box-shadow: 0 1px 6px #a5b4fc1a;
+      padding: 16px 8px 8px 8px;
+      margin-bottom: 22px;
+      border: 1px solid #e0e7ff;
     }
     .section-title {
-      font-size: 1.07em;
-      color: var(--primary-dark);
+      font-size: 1.06em;
+      color: #4f46e5;
       font-weight: 700;
-      margin-bottom: 18px;
-      margin-top: 14px;
+      margin-bottom: 12px;
+      margin-top: 4px;
       letter-spacing: -0.5px;
       padding-left: 4px;
     }
-    .form-section {
-      background: var(--bg-section);
-      border-radius: 12px;
-      box-shadow: 0 1px 6px #a5b4fc1a;
-      padding: 18px 10px 8px 10px;
-      margin-bottom: 24px;
-      border: 1px solid var(--divider);
-    }
     .form-group {
-      margin-bottom: 16px;
-      display: flex;
-      flex-direction: column;
+      margin-bottom: 12px;
+      display: flex; flex-direction: column;
     }
     .form-group label {
-      font-size: 0.99em;
-      color: var(--text-main);
+      font-size: 1em;
+      color: #22223b;
       margin-bottom: 4px;
-      font-weight: 600;
-      letter-spacing: -0.2px;
+      font-weight: 500;
     }
     .form-group input[type="text"],
-    .form-group textarea, .form-group select {
-      border: 1.3px solid var(--divider);
+    .form-group textarea,
+    .form-group select {
+      border: 1.3px solid #e0e7ff;
       border-radius: 8px;
       padding: 10px;
       font-size: 1em;
       background: #f8fafc;
-      color: var(--text-main);
+      color: #22223b;
       outline: none;
       font-family: inherit;
       transition: border 0.15s;
     }
     .form-group input[type="text"]:focus,
-    .form-group textarea:focus, .form-group select:focus {
-      border-color: var(--primary);
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: #6366f1;
       background: #fff;
     }
     .form-group textarea {
@@ -207,49 +102,28 @@
     .logo-label {
       position: relative;
       cursor: pointer;
-      width: 84px; height: 84px;
+      width: 74px; height: 74px;
       display: block;
       border-radius: 50%;
       overflow: hidden;
       box-shadow: 0 2px 14px #6366f110;
-      border: 2.5px solid var(--divider);
+      border: 2.5px solid #e0e7ff;
       background: #fff;
       transition: box-shadow 0.13s;
     }
-    .logo-label:hover, .logo-label.dragover { box-shadow: 0 0 0 4px #a5b4fc45, 0 4px 18px #4f46e51a;}
     .logo-label img#logo-preview {
       width: 100%; height: 100%;
       object-fit: cover;
       border-radius: 50%;
       display: block;
-      transition: filter 0.13s;
       background: #eef2ff;
-    }
-    .logo-label:hover img#logo-preview, .logo-label.dragover img#logo-preview {
-      filter: blur(1px) brightness(0.93);
-    }
-    .logo-hover {
-      position: absolute; inset: 0;
-      background: rgba(99,102,241,0.13);
-      color: var(--primary-dark);
-      font-weight: 500;
-      font-size: 0.96em;
-      display: flex;
-      flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s;
-    }
-    .logo-label:hover .logo-hover, .logo-label.dragover .logo-hover {
-      opacity: 1;
-      pointer-events: all;
     }
     .btn-remove-logo {
       background: #fff;
       color: #ef4444;
       border: 1.5px solid #eee;
       border-radius: 50%;
-      width: 30px; height: 30px; font-size: 1.13em;
+      width: 28px; height: 28px; font-size: 1.13em;
       display: flex; align-items: center; justify-content: center;
       margin-left: 5px;
       box-shadow: 0 0 6px #0002;
@@ -264,63 +138,46 @@
     .vitrine-link-container {
       display: flex;
       align-items: center;
-      gap: 10px; flex-wrap: wrap;
-      margin-top: 4px;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 2px;
     }
     .vitrine-url {
-      font-size: 0.95em;
-      color: var(--primary);
+      font-size: 0.96em;
+      color: #6366f1;
       background: #f6f8fa;
       border-radius: 6px;
-      padding: 7px 10px;
+      padding: 7px 8px;
       font-weight: 500;
-      border: 1px solid var(--divider);
+      border: 1px solid #e0e7ff;
       word-break: break-all;
     }
-    .vitrine-actions { display: flex; gap: 6px; align-items: center;}
+    .vitrine-actions { display: flex; gap: 5px; align-items: center;}
     .btn-copy, .btn-open {
       background: #f6f8fa;
-      color: var(--primary-dark);
-      border: 1px solid var(--divider);
+      color: #4f46e5;
+      border: 1px solid #e0e7ff;
       padding: 6px 10px;
       font-size: 0.92em;
       font-weight: 600;
     }
     .btn-copy:hover, .btn-open:hover {
       background: #e0e7ff;
-      color: var(--primary-dark);
-    }
-    /* Success message */
-    #mensagem-cadastro-sucesso {
-      display: none;
-      margin: 18px auto 0 auto;
-      max-width: 96vw;
-      background: #d1fae5;
-      color: #065f46;
-      border-radius: 10px;
-      padding: 12px 14px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 1em;
-      border: 2px solid #10b981;
-      box-shadow: 0 2px 10px #10b98122;
-      z-index: 2;
-      position: relative;
     }
     /* Botão fixo (mobile) */
     .fixed-bottom-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: #fff;
       box-shadow: 0 -2px 18px #6366f120;
-      padding: 14px 20px 18px 20px;
+      padding: 12px 18px 15px 18px;
       z-index: 12;
     }
     .btn-submit {
       width: 100%;
-      font-size: 1.14em;
-      padding: 14px 0;
-      border-radius: 10px;
-      background: var(--primary);
+      font-size: 1.07em;
+      padding: 13px 0;
+      border-radius: 9px;
+      background: #6366f1;
       color: #fff;
       border: none;
       font-weight: bold;
@@ -328,7 +185,7 @@
       box-shadow: 0 2px 6px #6366f115;
       transition: background 0.14s;
     }
-    .btn-submit:active { background: var(--primary-dark);}
+    .btn-submit:active { background: #4f46e5;}
     @media (min-width:600px) {
       .main-content {padding-bottom: 0;}
       .fixed-bottom-bar {position: static; box-shadow: none; padding: 0;}
@@ -340,49 +197,18 @@
   </style>
 </head>
 <body>
-  <!-- Mobile nav -->
-  <nav class="mobile-nav">
-    <div class="logo"><i class="fa-solid fa-store"></i> Pronti</div>
-    <button class="menu-btn" aria-label="Abrir menu" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-  </nav>
-  <!-- Sidebar (mobile overlay) -->
-  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
-  <aside class="sidebar-mobile" id="sidebar-mobile">
-    <nav class="sidebar-links">
-      <a href="perfil.html" class="active"><i class="fa-solid fa-user"></i> Perfil</a>
-      <a href="equipe.html"><i class="fa-solid fa-users"></i> Equipe</a>
-      <a href="servicos.html"><i class="fa-solid fa-scissors"></i> Serviços</a>
-      <a href="agenda.html"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
-      <a href="configuracoes.html"><i class="fa-solid fa-gear"></i> Configurações</a>
-      <a href="sair.html"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sair</a>
-    </nav>
-  </aside>
   <main class="main-content">
     <div class="form-card">
       <div class="header-section">
-        <h1 id="main-title">Editar Perfil do Negócio</h1>
-        <p>Defina todas as informações do seu negócio.</p>
+        <h1>Perfil do Negócio</h1>
+        <p>Edite suas informações.</p>
       </div>
-      <div class="header-actions">
-        <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn btn-grey" style="display: none;">
-          <i class="fa-solid fa-store"></i> Abrir Vitrine
-        </a>
-        <button id="btn-criar-nova-empresa" class="btn btn-green" type="button">
-          <i class="fa-solid fa-plus"></i> Nova Empresa
-        </button>
-      </div>
-
-      <div id="mensagem-cadastro-sucesso"></div>
-      <div id="mensagem-free" style="display:none;margin:20px auto 0 auto;max-width:96vw;background:#e0e7ff;color:#3730a3;border-radius:10px;padding:10px 16px;text-align:center;font-weight:bold;">
-        Plano atual: FREE
-      </div>
-
       <form id="form-perfil" autocomplete="off">
         <div class="form-section">
-          <div class="section-title">Informações do Negócio</div>
+          <div class="section-title">Informações Básicas</div>
           <div class="form-group">
             <label for="nomeNegocio">Nome do Negócio</label>
-            <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
+            <input type="text" id="nomeNegocio" placeholder="" required>
           </div>
           <div class="form-group" id="empresa-selector-group" style="display:none;">
             <label for="selectEmpresa"><i class="fa-solid fa-building"></i> Selecione sua empresa:</label>
@@ -407,10 +233,7 @@
           <div class="section-title">Logotipo</div>
           <div class="logo-upload-container">
             <label for="logoNegocio" class="logo-label" id="logo-dropzone">
-              <img id="logo-preview" src="https://placehold.co/84x84/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
-              <div class="logo-hover">
-                <i class="fa-regular fa-image"></i> <span>Enviar Logo</span>
-              </div>
+              <img id="logo-preview" src="https://placehold.co/74x74/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
               <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
             </label>
             <button type="button" id="btn-remove-logo" class="btn-remove-logo" style="display:none;">
@@ -422,25 +245,25 @@
           <div class="section-title">Descrição</div>
           <div class="form-group">
             <label for="descricao">Descrição Curta</label>
-            <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
+            <textarea id="descricao" rows="3" placeholder=""></textarea>
           </div>
         </div>
         <div class="form-section">
           <div class="section-title">Endereço & Funcionamento</div>
           <div class="form-group">
             <label for="localizacao">Localização (Endereço)</label>
-            <input type="text" id="localizacao" placeholder="Ex: Rua das Flores, 123, São Paulo">
+            <input type="text" id="localizacao" placeholder="">
           </div>
           <div class="form-group">
             <label for="horarioFuncionamento">Horário de Funcionamento</label>
-            <input type="text" id="horarioFuncionamento" placeholder="Ex: Seg a Sex, 9h - 18h">
+            <input type="text" id="horarioFuncionamento" placeholder="">
           </div>
         </div>
         <div class="form-section">
           <div class="section-title">Financeiro</div>
           <div class="form-group">
             <label for="chavePix">Chave PIX (Opcional)</label>
-            <input type="text" id="chavePix" placeholder="Digite sua chave PIX">
+            <input type="text" id="chavePix" placeholder="">
           </div>
         </div>
         <div style="height:10px;"></div>
@@ -452,16 +275,9 @@
     <button type="submit" form="form-perfil" class="btn-submit">Salvar Todas as Configurações</button>
   </div>
   <script>
-    // Toggle sidebar mobile
-    function toggleSidebar() {
-      document.getElementById('sidebar-mobile').classList.toggle('active');
-      document.getElementById('sidebar-overlay').classList.toggle('active');
-    }
-
     // Logo preview/remover
     const logoInput = document.getElementById('logoNegocio');
     const logoPreview = document.getElementById('logo-preview');
-    const logoLabel = document.getElementById('logo-dropzone');
     const btnRemoveLogo = document.getElementById('btn-remove-logo');
     if (logoInput && logoPreview) {
       logoInput.addEventListener('change', function(e) {
@@ -475,39 +291,11 @@
     }
     if (btnRemoveLogo && logoPreview && logoInput) {
       btnRemoveLogo.addEventListener('click', function() {
-        logoPreview.src = "https://placehold.co/84x84/eef2ff/4f46e5?text=Logo";
+        logoPreview.src = "https://placehold.co/74x74/eef2ff/4f46e5?text=Logo";
         logoInput.value = '';
         btnRemoveLogo.style.display = 'none';
       });
     }
-    // Drag and drop para logo
-    if (logoLabel && logoInput) {
-      ['dragenter','dragover'].forEach(evt => {
-        logoLabel.addEventListener(evt, e => {
-          e.preventDefault(); e.stopPropagation();
-          logoLabel.classList.add('dragover');
-        });
-      });
-      ['dragleave','drop'].forEach(evt => {
-        logoLabel.addEventListener(evt, e => {
-          e.preventDefault(); e.stopPropagation();
-          logoLabel.classList.remove('dragover');
-        });
-      });
-      logoLabel.addEventListener('drop', e => {
-        const files = e.dataTransfer.files;
-        if (files && files[0]) {
-          logoInput.files = files;
-          const event = new Event('change', { bubbles: true });
-          logoInput.dispatchEvent(event);
-        }
-      });
-    }
-
-    // Menu lateral highlight (opcional, se usar SPA)
-    // document.addEventListener("DOMContentLoaded", function() {
-    //   // ...
-    // });
   </script>
 </body>
 </html>
