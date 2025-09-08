@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO FINAL MULTIEMPRESAS, CRASH-FREE, E ACESSO ROBUSTO - DEBUG RESOLVIDO)
+// ARQUIVO: servicos.js (VERSÃO FINAL MULTIEMPRESAS, CRASH-FREE, E ACESSO ROBUSTO - DEBUG COMPLETO)
 // ======================================================================
 
 import {
@@ -129,11 +129,13 @@ async function carregarServicosDoFirebase() {
     return;
   }
 
+  console.log("[DEBUG] carregarServicosDoFirebase empresaId:", empresaId);
   isProcessing = true;
   try {
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
     const servicosCol = collection(db, "empresarios", empresaId, "servicos");
     const snap = await getDocs(servicosCol);
+    console.log("[DEBUG] Serviços retornados:", snap.docs.map(doc => ({id: doc.id, ...doc.data()})), "Qtd:", snap.docs.length);
     const servicos = snap.docs.map(doc => {
       const data = doc.data();
       return { 
@@ -193,7 +195,6 @@ async function excluirServico(servicoId) {
 }
 
 // Busca o array 'empresas' em mapaUsuarios, ou permissões diretas.
-// ADICIONADO DEBUG DE TUDO QUE DEFINE isDono/isAdmin
 async function verificarAcessoEmpresa(user, empresaId) {
   try {
     if (!user || !empresaId) {
@@ -239,7 +240,7 @@ async function verificarAcessoEmpresa(user, empresaId) {
       hasAccess,
       isDono: isDonoFinal || isAdmin,
       isProfissional,
-      empresaNome: empresaData.nome || 'Empresa sem nome'
+      empresaNome: empresaData.nome || empresaData.nomeFantasia || 'Empresa sem nome'
     };
   } catch (e) {
     console.log("[DEBUG] ERRO EM verificarAcessoEmpresa:", e);
@@ -353,7 +354,7 @@ function initializeApp() {
       if (verificacao.hasAccess) {
         empresaId = empresaIdSalva;
         isDono = verificacao.isDono;
-        console.log("[DEBUG] Empresa ativa:", empresaId, "| isDono:", isDono, "| isAdmin:", isAdmin);
+        console.log("[DEBUG] Empresa ativa:", empresaId, "| isDono:", isDono, "| isAdmin:", isAdmin, "| user.uid:", user.uid);
         configurarUI();
         await carregarServicosDoFirebase();
         isInitialized = true;
@@ -381,7 +382,7 @@ function initializeApp() {
       empresaId = empresa.id;
       isDono = empresa.isDono;
       setEmpresaIdAtiva(empresaId);
-      console.log("[DEBUG] Empresa única ativa:", empresaId, "| isDono:", isDono, "| isAdmin:", isAdmin);
+      console.log("[DEBUG] Empresa única ativa:", empresaId, "| isDono:", isDono, "| isAdmin:", isAdmin, "| user.uid:", user.uid);
       configurarUI();
       await carregarServicosDoFirebase();
       isInitialized = true;
