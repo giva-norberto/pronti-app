@@ -6,6 +6,7 @@
     <title>Pronti - Serviços</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <style>
+        /* SEU CSS ORIGINAL E INTACTO */
         .main-content { margin-left: 270px; padding: 32px; }
         .servico-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .servico-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
@@ -20,60 +21,33 @@
         .btn-excluir { background-color: #dc3545; color: white; }
         .btn-new { background-color: #4f46e5; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 20px;}
         @media (max-width: 900px) { .main-content { margin-left: 0; } }
-        /* Modal overlay */
-        .modal-overlay {
-            position: fixed;
-            left: 0; top: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .modal-overlay.ativo {
-            display: flex;
-            opacity: 1;
-        }
-        .modal-box {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
-            text-align: center;
-            max-width: 420px;
-            width: 90%;
-        }
-        .modal-botoes {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .modal-botoes button {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-        }
+        .modal-overlay { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 9999; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.ativo { display: flex; opacity: 1; }
+        .modal-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25); text-align: center; max-width: 420px; width: 90%; }
+        .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .modal-botoes button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; }
         #modal-btn-confirmar { background-color: #d9534f; color: white; }
         #modal-btn-cancelar { background-color: #f0f0f0; color: #333; }
+
+        /* ADIÇÃO NECESSÁRIA PARA O SCRIPT FUNCIONAR CORRETAMENTE */
+        #loader { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 9999; font-size: 1.2em; }
+        #app-content { display: none; } /* Começa escondido */
     </style>
 </head>
 <body>
 
+<div id="loader">Carregando...</div>
+
 <div id="sidebar-placeholder"></div>
 
-<main class="main-content">
-    <h1>Nossos Serviços</h1>
-    <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
-    <div id="lista-servicos" style="margin-top:20px;">
+<div id="app-content">
+    <main class="main-content">
+        <h1>Nossos Serviços</h1>
+        <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
+        <div id="lista-servicos" style="margin-top:20px;">
         </div>
-</main>
+    </main>
+</div>
 
 <div id="custom-confirm-modal" class="modal-overlay">
     <div class="modal-box">
@@ -87,13 +61,11 @@
 </div>
 
 <script>
-    // Inclusão dinâmica do menu lateral e destaque do menu de serviços
     document.addEventListener("DOMContentLoaded", function() {
         fetch('menu-lateral.html')
             .then(res => res.text())
             .then(html => {
                 document.getElementById('sidebar-placeholder').innerHTML = html;
-                // Destaca o item de serviços após inclusão do menu
                 const links = document.querySelectorAll('.sidebar-links a');
                 links.forEach(link => link.classList.remove('active'));
                 const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
@@ -105,11 +77,8 @@
 </script>
 
 <script src="./firebase-config.js" type="module"></script>
-
 <script src="./vitrini-utils.js" type="module"></script>
-<script src="./vitrini-profissionais.js" type="module"></script>
-
-<script src="./servicos.js" type="module"></script> 
+<script src="./servicos.js" type="module"></script>
 
 </body>
 </html>
