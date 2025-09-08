@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO FINAL - LAYOUT ORIGINAL + TEMPO REAL)
+// ARQUIVO: servicos.js (VERSÃO NOTA 10 - LAYOUT FINAL + TEMPO REAL)
 // ======================================================================
 
 import { collection, doc, getDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -30,19 +30,16 @@ onAuthStateChanged(auth, async (user) => {
                 return;
             }
 
-            // Lógica de permissão simplificada, como no seu original
             const empresaRef = doc(db, "empresarios", empresaId);
             const empresaSnap = await getDoc(empresaRef);
             if (empresaSnap.exists()) {
                 isDono = empresaSnap.data().donoId === user.uid;
             }
 
-            // Configura a UI com base na permissão
             if (btnAddServico) {
                 btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
             }
 
-            // Inicia o listener que atualiza a tela em tempo real
             iniciarListenerDeServicos();
 
         } catch (error) {
@@ -54,7 +51,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- Listener em Tempo Real (A correção do bug de atualização) ---
+// --- Listener em Tempo Real ---
 function iniciarListenerDeServicos() {
     if (!empresaId) return;
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
@@ -71,7 +68,7 @@ function iniciarListenerDeServicos() {
     });
 }
 
-// --- Renderização com o SEU LAYOUT ORIGINAL ---
+// --- ⭐ Renderização Final (Com Categoria + Card Limpo) ---
 function renderizarServicos(servicos) {
     if (!listaServicosDiv) return;
 
@@ -80,29 +77,50 @@ function renderizarServicos(servicos) {
         return;
     }
 
-    // Ordena por nome, sem agrupar por categoria
-    servicos.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+    // 1. Agrupa os serviços por categoria
+    const agrupados = {};
+    servicos.forEach(servico => {
+        const cat = (servico.categoria && servico.categoria.trim()) ? servico.categoria.trim() : "Sem Categoria";
+        if (!agrupados[cat]) agrupados[cat] = [];
+        agrupados[cat].push(servico);
+    });
 
-    // Gera o HTML do card exatamente como no seu código antigo, sem o "Dono"
-    listaServicosDiv.innerHTML = servicos.map(servico => `
-        <div class="servico-card">
-            <div class="servico-header">
-                <h3 class="servico-titulo">${sanitizeHTML(servico.nome)}</h3>
+    // 2. Ordena as categorias em ordem alfabética
+    const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    // 3. Gera o HTML final
+    listaServicosDiv.innerHTML = categoriasOrdenadas.map(cat => {
+        // Ordena os serviços dentro de cada categoria
+        const servicosCategoria = agrupados[cat].sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+        
+        return `
+            <div class="categoria-bloco">
+                <h2 class="categoria-titulo" style="color: #6366f1; margin-top: 24px; margin-bottom: 12px;">
+                    ${sanitizeHTML(cat)}
+                </h2>
+                ${servicosCategoria.map(servico => `
+                    <div class="servico-card">
+                        <div class="servico-header">
+                            <h3 class="servico-titulo">${sanitizeHTML(servico.nome)}</h3>
+                        </div>
+                        <p class="servico-descricao">${sanitizeHTML(servico.descricao) || ''}</p>
+                        <div class="servico-footer">
+                            <div>
+                                <span class="servico-preco">${formatarPreco(servico.preco)}</span>
+                                <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
+                            </div>
+                            <div class="servico-acoes">
+                                <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
+                                ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
+                            </div>
+                        </div>
+                    </div>
+                `).join("")}
             </div>
-            <p class="servico-descricao">${sanitizeHTML(servico.descricao) || ''}</p>
-            <div class="servico-footer">
-                <div>
-                    <span class="servico-preco">${formatarPreco(servico.preco)}</span>
-                    <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
-                </div>
-                <div class="servico-acoes">
-                    <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
-                    ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
-                </div>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join("");
 }
+
 
 async function excluirServico(servicoId) {
     if (!isDono) {
@@ -160,16 +178,3 @@ if (btnAddServico) {
         }
     });
 }
-
-// A função initializeApp não é mais necessária, pois o onAuthStateChanged
-// é chamado diretamente e lida com todo o fluxo de inicialização.
-
-// Abaixo está uma versão simplificada do seu código antigo, mesclada com a
-// lógica de listener em tempo real. Esta é uma forma mais direta de escrever.
-
-// A função 'buscarEmpresasDoUsuario' não foi incluída porque a lógica atual
-// depende do 'empresaAtivaId' do localStorage, como no seu código original mais recente.
-// Se a lógica de multi-empresa precisar ser mais complexa, ela pode ser readicionada.
-
-// O código original não tinha uma função initializeApp, então esta versão segue
-// esse padrão mais direto, anexando listeners e esperando o onAuthStateChanged.
