@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (DEBUG COMPLETO - IDENTIFICAÇÃO DE DONO, EMPRESA E SERVIÇOS)
+// ARQUIVO: servicos.js (DEBUG COMPLETO REVISADO - IDENTIFICAÇÃO DE DONO, ADMIN, PROFISSIONAL, EMPRESA E SERVIÇOS)
 // ======================================================================
 
 import {
@@ -20,6 +20,7 @@ let isProfissional = false;
 let isInitialized = false;
 let isProcessing = false;
 let userUid = null;
+let empresaDataDebug = null;
 
 // --- Inicialização segura do DOM ---
 function initializeDOMElements() {
@@ -122,6 +123,7 @@ function renderizarServicos(servicos) {
   }).join('');
 }
 
+// --- Firebase - Carregar Serviços ---
 async function carregarServicosDoFirebase() {
   if (isProcessing) return;
   empresaId = getEmpresaIdAtiva();
@@ -130,7 +132,6 @@ async function carregarServicosDoFirebase() {
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
     return;
   }
-
   console.log("[DEBUG] carregarServicosDoFirebase empresaId:", empresaId);
   isProcessing = true;
   try {
@@ -169,6 +170,7 @@ async function carregarServicosDoFirebase() {
   }
 }
 
+// --- Excluir Serviço ---
 async function excluirServico(servicoId) {
   if (isProcessing) return;
   if (!servicoId) {
@@ -197,7 +199,7 @@ async function excluirServico(servicoId) {
   }
 }
 
-// Busca permissões e identifica dono/admin/profissional
+// --- Verificação de Permissão e Identificação (Dono/Admin/Profissional) ---
 async function verificarAcessoEmpresa(user, empresaId) {
   try {
     if (!user || !empresaId) {
@@ -223,17 +225,20 @@ async function verificarAcessoEmpresa(user, empresaId) {
       return { hasAccess: false, isDono: false, isProfissional: false, empresaData: null };
     }
     const empresaData = empresaSnap.data();
+    empresaDataDebug = empresaData;
     const isOwner = empresaData.donoId === user.uid;
     console.log("[DEBUG] empresaData:", empresaData);
     console.log("[DEBUG] empresaData.donoId:", empresaData.donoId, "| user.uid:", user.uid, "| isOwner:", isOwner);
 
     let isProfissional_ = false;
     let ehDonoProfissional = false;
+    let profDataDebug = null;
     try {
       const profSnap = await getDoc(doc(db, "empresarios", empresaId, "profissionais", user.uid));
       if (profSnap.exists()) {
         isProfissional_ = true;
         const profData = profSnap.data();
+        profDataDebug = profData;
         ehDonoProfissional = !!profData.ehDono;
         console.log("[DEBUG] Profissional encontrado:", profData, "| ehDonoProfissional:", ehDonoProfissional);
       } else {
@@ -249,7 +254,8 @@ async function verificarAcessoEmpresa(user, empresaId) {
       hasAccess,
       isDono: isDonoFinal || isAdmin,
       isProfissional: isProfissional_,
-      empresaData
+      empresaData,
+      profDataDebug
     };
   } catch (e) {
     console.log("[DEBUG] ERRO EM verificarAcessoEmpresa:", e);
@@ -257,6 +263,7 @@ async function verificarAcessoEmpresa(user, empresaId) {
   }
 }
 
+// --- Buscar Empresas do Usuário ---
 async function buscarEmpresasDoUsuario(user) {
   try {
     if (!user) return [];
@@ -357,13 +364,22 @@ function initializeApp() {
     userUid = user.uid;
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
     isAdmin = (user.uid === ADMIN_UID);
+
     toggleLoader(true);
     const empresaIdSalva = getEmpresaIdAtiva();
     if (empresaIdSalva) {
       const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
       isDono = verificacao.isDono;
       isProfissional = verificacao.isProfissional;
-      console.log("[DEBUG] Empresa ativa:", empresaIdSalva, "| isDono:", isDono, "| isAdmin:", isAdmin, "| isProfissional:", isProfissional, "| user.uid:", user.uid, "| empresaData:", verificacao.empresaData);
+      empresaDataDebug = verificacao.empresaData;
+      console.log("[DEBUG] Empresa ativa:", empresaIdSalva, 
+        "| isDono:", isDono, 
+        "| isAdmin:", isAdmin, 
+        "| isProfissional:", isProfissional, 
+        "| user.uid:", user.uid, 
+        "| empresaData:", verificacao.empresaData, 
+        "| profDataDebug:", verificacao.profDataDebug
+      );
       if (verificacao.hasAccess) {
         empresaId = empresaIdSalva;
         configurarUI();
@@ -427,6 +443,7 @@ window.debugServicos = {
   getIsProfissional: () => isProfissional,
   getLocalStorage: () => getEmpresaIdAtiva(),
   getUserUid: () => userUid,
+  getEmpresaData: () => empresaDataDebug,
   getIsProcessing: () => isProcessing,
   clearEmpresa: () => {
     setEmpresaIdAtiva(null);
@@ -440,7 +457,6 @@ window.debugServicos = {
   }
 };
 
-// --- Inicialização ---
 initializeApp();
 
 console.log("🔧 [DEBUG] Funções de debug disponíveis em window.debugServicos");
