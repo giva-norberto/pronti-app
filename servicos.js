@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (CORRIGIDO - LÓGICA DE NEGÓCIOS INTACTA)
+// ARQUIVO: servicos.js (VERSÃO CORRIGIDA - AGUARDA AUTENTICAÇÃO)
 // ======================================================================
 
 import {
@@ -67,14 +67,10 @@ function setEmpresaIdAtiva(id) {
 }
 
 function formatarPreco(preco) {
-  console.log("[DEBUG] formatarPreco: Formatando preço:", preco);
   if (preco === undefined || preco === null || isNaN(preco)) {
-    console.log("[DEBUG] formatarPreco: Preço inválido, retornando R$ 0,00.");
     return "R$ 0,00";
   }
-  const formattedPrice = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(preco));
-  console.log("[DEBUG] formatarPreco: Preço formatado:", formattedPrice);
-  return formattedPrice;
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(preco));
 }
 
 function sanitizeHTML(str) {
@@ -362,94 +358,125 @@ function initializeApp() {
   initializeDOMElements();
   setupEventListeners();
   
+  // ⭐ INÍCIO DA CORREÇÃO ESTRUTURAL ⭐
+  // A tela começa com o loader visível, aguardando a resposta definitiva do Firebase.
+  toggleLoader(true);
+  if (appContent) appContent.style.display = 'none';
+
   onAuthStateChanged(auth, async (user) => {
-    console.log("[DEBUG] onAuthStateChanged: Estado de autenticação alterado. Usuário:", user ? user.uid : "NULO");
-    
-    // ⭐ INÍCIO DA CORREÇÃO ⭐
-    // Se não houver usuário, redireciona para a página de login em vez de travar no loader.
-    // Essa é a abordagem robusta usada no 'equipe.js'.
-    if (!user) {
-      console.log("[DEBUG] Usuário não encontrado, redirecionando para login.html");
-      window.location.href = "login.html";
-      return; 
-    }
-    // ⭐ FIM DA CORREÇÃO ⭐
+    console.log("[DEBUG] onAuthStateChanged disparado. Usuário:", user ? user.uid : "NULO");
 
-    // A partir daqui, a lógica original de negócios é mantida, pois agora temos certeza
-    // de que existe um usuário logado para executá-la.
-    if (isInitialized) return;
+    if (user) {
+      // --- O USUÁRIO ESTÁ AUTENTICADO ---
+      // A lógica de negócios original e complexa é executada aqui,
+      // pois agora temos certeza de que há uma sessão ativa.
+      console.log(`[DEBUG] Usuário AUTENTICADO: ${user.uid}. Iniciando lógica da aplicação.`);
+      
+      if (isInitialized) {
+          console.log("[DEBUG] Aplicação já inicializada. Ignorando evento de auth.");
+          return;
+      }
+      isInitialized = true; // Trava para evitar re-inicialização
+      userUid = user.uid;
+      const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+      isAdmin = (user.uid === ADMIN_UID);
+      
+      const empresaIdSalva = getEmpresaIdAtiva();
+      console.log("[DEBUG] Verificando empresa salva:", empresaIdSalva);
 
-    userUid = user.uid;
-    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-    isAdmin = (user.uid === ADMIN_UID);
-    toggleLoader(true);
+      if (empresaIdSalva) {
+        const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
+        console.log("[DEBUG] Resultado da verificação de acesso:", verificacao);
 
-    const empresaIdSalva = getEmpresaIdAtiva();
-    if (empresaIdSalva) {
-      const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
-      isDono = verificacao.isDono;
-      isProfissional = verificacao.isProfissional;
-      empresaDataDebug = verificacao.empresaData;
-      donoUid = verificacao.donoUid;
+        if (verificacao.hasAccess) {
+          console.log("[DEBUG] Acesso concedido à empresa salva. Carregando serviços...");
+          isDono = verificacao.isDono;
+          isProfissional = verificacao.isProfissional;
+          empresaDataDebug = verificacao.empresaData;
+          donoUid = verificacao.donoUid;
+          empresaId = empresaIdSalva;
+          configurarUI();
+          await carregarServicosDoFirebase();
+          toggleLoader(false);
+          return;
+        } else {
+          console.log("[DEBUG] Acesso NEGADO à empresa salva. Removendo do localStorage e buscando outras opções.");
+          setEmpresaIdAtiva(null);
+        }
+      }
 
-      if (verificacao.hasAccess) {
-        empresaId = empresaIdSalva;
+      console.log("[DEBUG] Nenhuma empresa salva válida. Buscando empresas do usuário...");
+      const empresasDisponiveis = await buscarEmpresasDoUsuario(user);
+      console.log(`[DEBUG] Encontradas ${empresasDisponiveis.length} empresas.`);
+
+      if (empresasDisponiveis.length === 0) {
+        console.log("[DEBUG] Nenhuma empresa encontrada para este usuário.");
+        if (loader) {
+          loader.innerHTML = `
+            <div style="color:red; text-align: center; padding: 20px;">
+              <p>Você não tem acesso a nenhuma empresa.</p>
+              <p>Entre em contato com o administrador.</p>
+            </div>`;
+        }
+        toggleLoader(true); // Manter o container do loader visível com a mensagem
+        if (appContent) appContent.style.display = 'none';
+        return;
+      } 
+       
+       if (empresasDisponiveis.length === 1) {
+        console.log("[DEBUG] Encontrada 1 empresa. Definindo como ativa e carregando serviços.");
+        const empresa = empresasDisponiveis[0];
+        empresaId = empresa.id;
+        isDono = empresa.isDono;
+        isProfissional = empresa.isProfissional;
+        setEmpresaIdAtiva(empresaId);
+        const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
+        donoUid = empresaSnap.exists() ? (empresaSnap.data().donoId || null) : null;
         configurarUI();
         await carregarServicosDoFirebase();
-        isInitialized = true;
         toggleLoader(false);
-        return;
       } else {
-        setEmpresaIdAtiva(null);
+        console.log("[DEBUG] Encontrada mais de 1 empresa. Redirecionando para seleção.");
+        window.location.href = "selecionar-empresa.html";
       }
-    }
 
-    const empresasDisponiveis = await buscarEmpresasDoUsuario(user);
-    if (empresasDisponiveis.length === 0) {
+    } else {
+      // --- O USUÁRIO NÃO ESTÁ AUTENTICADO ---
+      // Este é o estado final se o Firebase confirmar que não há sessão.
+      // Exibe uma mensagem clara em vez de travar ou redirecionar sem aviso.
+      console.log("[DEBUG] Usuário NÃO autenticado. Exibindo estado de logout.");
       if (loader) {
         loader.innerHTML = `
           <div style="color:red; text-align: center; padding: 20px;">
-            <p>Você não tem acesso a nenhuma empresa.</p>
-            <p>Entre em contato com o administrador.</p>
-          </div>
-        `;
+            <p>Sessão não encontrada ou expirada.</p>
+            <p>Por favor, faça o login novamente.</p>
+            <button onclick="window.location.href='login.html'" style="margin-top: 10px; padding: 8px 16px; background: #4facfe; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Ir para Login
+            </button>
+          </div>`;
       }
-      toggleLoader(false);
-      isInitialized = true;
-      return;
-    } else if (empresasDisponiveis.length === 1) {
-      const empresa = empresasDisponiveis[0];
-      empresaId = empresa.id;
-      isDono = empresa.isDono;
-      isProfissional = empresa.isProfissional;
-      setEmpresaIdAtiva(empresaId);
-      const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
-      donoUid = empresaSnap.exists() ? (empresaSnap.data().donoId || null) : null;
-      configurarUI();
-      await carregarServicosDoFirebase();
-      isInitialized = true;
-      toggleLoader(false);
-    } else {
-      window.location.href = "selecionar-empresa.html";
-      isInitialized = true;
-      toggleLoader(false);
-      return;
+      toggleLoader(true); // Garante que a mensagem no loader seja visível
+      if (appContent) appContent.style.display = 'none';
     }
+
   }, (error) => {
+    // --- OCORREU UM ERRO NA AUTENTICAÇÃO ---
+    console.error("[DEBUG] Erro no listener de autenticação:", error);
     if (loader) {
       loader.innerHTML = `
         <div style="color:red; text-align: center; padding: 20px;">
-          <p>Erro de autenticação.</p>
+          <p>Ocorreu um erro de autenticação.</p>
           <button onclick="window.location.href='login.html'" style="margin-top: 10px; padding: 8px 16px; background: #4facfe; color: white; border: none; border-radius: 4px; cursor: pointer;">
             Ir para Login
           </button>
-        </div>
-      `;
+        </div>`;
     }
-    toggleLoader(false);
-    isInitialized = true;
+    toggleLoader(true); // Garante que a mensagem de erro seja visível
+    if (appContent) appContent.style.display = 'none';
   });
-  console.log("[DEBUG] initializeApp: Função initializeApp concluída.");
+  // ⭐ FIM DA CORREÇÃO ESTRUTURAL ⭐
+
+  console.log("[DEBUG] initializeApp: Função initializeApp concluída. Aguardando resposta do onAuthStateChanged.");
 }
 
 // Inicia a aplicação quando o script é carregado
