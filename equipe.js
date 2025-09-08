@@ -1,6 +1,6 @@
 // ======================================================================
 //                              EQUIPE.JS
-//        VERSÃO FINAL COM CORREÇÃO DE EVENTO DE SUBMISSÃO DUPLICADO
+//        VERSÃO FINAL, COMPLETA E COM CORREÇÃO DE EVENTO DUPLICADO
 // ======================================================================
 
 import { db, auth, storage } from "./firebase-config.js";
@@ -26,7 +26,7 @@ let agendaEspecial = [];
 
 // --- MAPEAMENTO DE ELEMENTOS DO DOM ---
 const elementos = {
-    btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'  ),
+    btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'),
     modalAddProfissional: document.getElementById('modal-add-profissional'),
     formAddProfissional: document.getElementById('form-add-profissional'),
     btnCancelarProfissional: document.getElementById('btn-cancelar-profissional'),
@@ -77,7 +77,10 @@ async function garantirPerfilDoDono() {
                 fotoUrl: user.photoURL || "", empresaId: empresaId
             });
         }
-    } catch (error) { console.error("Erro ao garantir perfil do dono:", error); }
+    } catch (error) {
+        console.error("Erro ao garantir perfil do dono:", error);
+        mostrarErro("Não foi possível verificar o perfil do dono.");
+    }
 }
 
 async function inicializar() {
@@ -105,6 +108,7 @@ async function inicializar() {
                     iniciarListenerDaEquipe();
                     adicionarEventListeners();
                 } else {
+                    alert("A empresa selecionada não foi encontrada. Redirecionando...");
                     window.location.href = "selecionar-empresa.html";
                 }
             } else {
@@ -113,7 +117,7 @@ async function inicializar() {
         });
     } catch (error) {
         console.error("Erro na inicialização:", error);
-        mostrarErro("Erro ao inicializar o sistema.");
+        mostrarErro("Erro ao inicializar a página.");
     }
 }
 
@@ -121,7 +125,10 @@ async function iniciarListenerDaEquipe() {
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
     onSnapshot(query(profissionaisRef), (snapshot) => {
         renderizarEquipe(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => console.error("Erro no listener da equipe:", error));
+    }, (error) => {
+        console.error("Erro no listener da equipe:", error);
+        mostrarErro("Não foi possível carregar a equipe em tempo real.");
+    });
 }
 
 function setupPerfilTabs() {
@@ -132,18 +139,18 @@ function setupPerfilTabs() {
     const contentHorarios = document.getElementById('tab-content-horarios');
     const contentAgendaEspecial = document.getElementById('tab-content-agenda-especial');
     if (!tabServicos || !tabHorarios || !tabAgendaEspecial) return;
-    tabServicos.onclick = () => {
-        tabServicos.classList.add('active'); tabHorarios.classList.remove('active'); tabAgendaEspecial.classList.remove('active');
-        contentServicos.classList.add('active'); contentHorarios.classList.remove('active'); contentAgendaEspecial.classList.remove('active');
+    
+    const setActiveTab = (activeTab, activeContent) => {
+        [tabServicos, tabHorarios, tabAgendaEspecial].forEach(t => t.classList.remove('active'));
+        [contentServicos, contentHorarios, contentAgendaEspecial].forEach(c => c.classList.remove('active'));
+        activeTab.classList.add('active');
+        activeContent.classList.add('active');
     };
-    tabHorarios.onclick = () => {
-        tabHorarios.classList.add('active'); tabServicos.classList.remove('active'); tabAgendaEspecial.classList.remove('active');
-        contentHorarios.classList.add('active'); contentServicos.classList.remove('active'); contentAgendaEspecial.classList.remove('active');
-    };
-    tabAgendaEspecial.onclick = () => {
-        tabAgendaEspecial.classList.add('active'); tabServicos.classList.remove('active'); tabHorarios.classList.remove('active');
-        contentAgendaEspecial.classList.add('active'); contentServicos.classList.remove('active'); contentHorarios.classList.remove('active');
-    };
+
+    tabServicos.onclick = () => setActiveTab(tabServicos, contentServicos);
+    tabHorarios.onclick = () => setActiveTab(tabHorarios, contentHorarios);
+    tabAgendaEspecial.onclick = () => setActiveTab(tabAgendaEspecial, contentAgendaEspecial);
+    
     if (elementos.agendaTipo) {
         elementos.agendaTipo.onchange = function () {
             if(elementos.agendaMesArea) elementos.agendaMesArea.style.display = this.value === "mes" ? "block" : "none";
@@ -174,13 +181,14 @@ function renderizarEquipe(equipe) {
         return;
     }
     equipe.sort((a, b) => {
-        if (a.ehDono) return -1;
-        if (b.ehDono) return 1;
+        if (a.ehDono && !b.ehDono) return -1;
+        if (!a.ehDono && b.ehDono) return 1;
         return (a.nome || "").localeCompare(b.nome || "");
     }).forEach(profissional => {
         const div = document.createElement("div");
         div.className = "profissional-card";
         if (profissional.status === 'pendente') div.classList.add('pendente');
+        
         let botoesDeAcao = '';
         if (profissional.status === 'pendente') {
             botoesDeAcao = `<button class="btn btn-success" onclick="ativarFuncionario('${profissional.id}')">✅ Ativar</button>
@@ -190,6 +198,7 @@ function renderizarEquipe(equipe) {
                             <button class="btn btn-edit" onclick="editarProfissional('${profissional.id}')">✏️ Editar</button>
                             ${!profissional.ehDono ? `<button class="btn btn-danger" onclick="excluirProfissional('${profissional.id}')">🗑️ Excluir</button>` : ""}`;
         }
+
         div.innerHTML = `<div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
                          <div class="profissional-info">
                              <span class="profissional-nome">${profissional.nome}</span>
@@ -242,6 +251,7 @@ async function carregarDadosProfissional(profissionalId) {
 }
 
 function renderizarServicosNoPerfil(servicosSelecionados = []) {
+    if(!elementos.servicosLista) return;
     elementos.servicosLista.innerHTML = "";
     if (servicosDisponiveis.length === 0) {
         elementos.servicosLista.innerHTML = `<div class="servicos-empty-state"><p>Nenhum serviço cadastrado.</p><p>Vá para a página de serviços para adicioná-los.</p></div>`;
@@ -251,7 +261,7 @@ function renderizarServicosNoPerfil(servicosSelecionados = []) {
         const div = document.createElement("div");
         div.className = "servico-item";
         div.setAttribute('data-servico-id', servico.id);
-        div.innerHTML = `<div class="servico-nome">${servico.nome}</div><div class="servico-preco">R$ ${servico.preco.toFixed(2)}</div>`;
+        div.innerHTML = `<div class="servico-nome">${servico.nome}</div><div class="servico-preco">R$ ${Number(servico.preco || 0).toFixed(2)}</div>`;
         if (servicosSelecionados.includes(servico.id)) div.classList.add('selected');
         div.addEventListener('click', () => div.classList.toggle('selected'));
         elementos.servicosLista.appendChild(div);
@@ -260,7 +270,8 @@ function renderizarServicosNoPerfil(servicosSelecionados = []) {
 
 function renderizarHorarios(horariosDataCompleta = {}) {
     if(!elementos.horariosLista) return;
-    elementos.horariosLista.innerHTML = '';
+    const horariosLista = elementos.horariosLista;
+    horariosLista.innerHTML = '';
     const diasSemana = [
         { key: 'segunda', nome: 'Segunda-feira' }, { key: 'terca', nome: 'Terça-feira' },
         { key: 'quarta', nome: 'Quarta-feira' }, { key: 'quinta', nome: 'Quinta-feira' },
@@ -297,14 +308,14 @@ function renderizarHorarios(horariosDataCompleta = {}) {
                 </div>
                 <button type="button" class="btn-incluir-intervalo">+ Incluir horário</button>
             </div>`;
-        elementos.horariosLista.appendChild(div);
+        horariosLista.appendChild(div);
     });
-    elementos.horariosLista.querySelectorAll('.toggle-dia').forEach(toggle => {
+    horariosLista.querySelectorAll('.toggle-dia').forEach(toggle => {
         toggle.addEventListener('change', function() {
             this.closest('.dia-horario').classList.toggle('inativo', !this.checked);
         });
     });
-    elementos.horariosLista.querySelectorAll('.btn-incluir-intervalo').forEach(btn => {
+    horariosLista.querySelectorAll('.btn-incluir-intervalo').forEach(btn => {
         btn.onclick = function () {
             const container = this.previousElementSibling;
             const novoBloco = document.createElement('div');
@@ -318,6 +329,7 @@ function renderizarHorarios(horariosDataCompleta = {}) {
 }
 
 function setupRemoverIntervalo() {
+    if(!elementos.horariosLista) return;
     elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
         btn.onclick = function () {
             const container = this.closest('.horario-intervalos');
@@ -378,6 +390,7 @@ function renderizarAgendaEspecial() {
 }
 
 function adicionarAgendaEspecial() {
+    if(!elementos.agendaTipo) return;
     const tipo = elementos.agendaTipo.value;
     if (tipo === 'mes') {
         if (!elementos.agendaMes.value) return alert('Selecione o mês.');
@@ -397,7 +410,7 @@ async function salvarPerfilProfissional() {
         await updateDoc(profissionalRef, { servicos: servicosSelecionados, agendaEspecial: agendaEspecial });
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
         await setDoc(horariosRef, horarios, { merge: true });
-        elementos.modalPerfilProfissional.classList.remove('show');
+        if(elementos.modalPerfilProfissional) elementos.modalPerfilProfissional.classList.remove('show');
         alert("✅ Perfil atualizado com sucesso!");
     } catch (error) {
         console.error("Erro ao salvar perfil:", error);
@@ -415,14 +428,14 @@ function adicionarEventListeners() {
     if (elementos.btnConvite) elementos.btnConvite.addEventListener('click', gerarLinkDeConvite);
 
     [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
-        if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
+        if(modal) modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
     });
 
     // O listener de submissão do formulário é adicionado APENAS UMA VEZ, aqui.
     if (elementos.formAddProfissional) {
         elementos.formAddProfissional.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const submitButton = e.target.querySelector('button[type="submit"]');
+            const submitButton = e.target.querySelector('button[type="submit"]'); // Assumindo que há um botão submit no form
             if (submitButton) submitButton.disabled = true;
 
             await salvarEdicaoProfissional();
@@ -463,7 +476,7 @@ async function editarProfissional(profissionalId) {
             window.editandoProfissionalId = profissionalId; 
             elementos.modalAddProfissional.classList.add('show');
             
-            // A lógica de 'onsubmit' foi removida daqui.
+            // A lógica de 'onsubmit' foi removida daqui para evitar duplicatas.
         }
     } catch (error) {
         alert("Erro ao buscar profissional: " + error.message);
@@ -519,14 +532,14 @@ async function salvarEdicaoProfissional() {
     }
 }
 
-
 async function excluirProfissional(profissionalId) {
-    if (!isDono) { // Usa a variável de escopo global
-        alert("Apenas donos podem excluir funcionários.");
-        return;
-    }
     const confirmado = await confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.");
     if (!confirmado) return;
+    
+    if (!isDono) {
+        return alert("Apenas donos podem excluir funcionários.");
+    }
+
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await deleteDoc(profissionalRef);
@@ -552,6 +565,7 @@ async function ativarFuncionario(profissionalId) {
 async function recusarFuncionario(profissionalId) {
     const confirmado = await confirm("Tem certeza que deseja recusar e excluir este cadastro pendente? Esta ação não pode ser desfeita.");
     if(!confirmado) return;
+    // Para recusar, simplesmente excluímos o registro pendente.
     await excluirProfissional(profissionalId); 
 }
 
