@@ -1,6 +1,6 @@
 // ======================================================================
 //                              EQUIPE.JS
-//        VERSÃO FINAL COM CORREÇÃO DE EVENTOS E PADRÃO DE ALERTAS
+//        VERSÃO FINAL, COMPLETA E COM CORREÇÃO DE EVENTO E ALERTAS
 // ======================================================================
 
 import { db, auth, storage } from "./firebase-config.js";
@@ -211,16 +211,21 @@ function renderizarEquipe(equipe) {
 }
 
 async function abrirPerfilProfissional(profissionalId) {
-    const profissional = await carregarDadosProfissional(profissionalId);
-    if (!profissional) {
-        return mostrarErro("Não foi possível carregar os dados deste profissional.");
+    try {
+        const profissional = await carregarDadosProfissional(profissionalId);
+        if (!profissional) {
+            return mostrarErro("Não foi possível carregar os dados deste profissional.");
+        }
+        profissionalAtual = profissionalId;
+        elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${profissional.nome}`;
+        renderizarServicosNoPerfil(profissional.servicos || []);
+        agendaEspecial = profissional.agendaEspecial || [];
+        renderizarAgendaEspecial();
+        elementos.modalPerfilProfissional.classList.add('show');
+    } catch (error) {
+        console.error("Erro ao abrir perfil:", error);
+        await showAlert("Erro", "Não foi possível abrir o perfil do profissional.");
     }
-    profissionalAtual = profissionalId;
-    elementos.perfilNomeProfissional.textContent = `👤 Perfil de ${profissional.nome}`;
-    renderizarServicosNoPerfil(profissional.servicos || []);
-    agendaEspecial = profissional.agendaEspecial || [];
-    renderizarAgendaEspecial();
-    elementos.modalPerfilProfissional.classList.add('show');
 }
 
 async function carregarDadosProfissional(profissionalId) {
@@ -308,12 +313,12 @@ function renderizarHorarios(horariosDataCompleta = {}) {
 function setupRemoverIntervalo() {
     if(!elementos.horariosLista) return;
     elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
-        btn.onclick = function () {
+        btn.onclick = async function () {
             const container = this.closest('.horario-intervalos');
             if (container.children.length > 1) {
                 this.closest('.horario-inputs').remove();
             } else {
-                showAlert("Aviso", "Para desativar o dia, use o botão ao lado do nome do dia.");
+                await showAlert("Aviso", "Para desativar o dia, use o botão ao lado do nome do dia.");
             }
         };
     });
@@ -429,10 +434,11 @@ async function gerarLinkDeConvite() {
     const conviteUrl = `${baseUrl}/convite.html?empresaId=${empresaId}`;
     try {
         await navigator.clipboard.writeText(conviteUrl);
-        await showAlert("Sucesso!", "Link de convite copiado para a área de transferência! Envie para o novo funcionário.");
+        await showAlert("Sucesso!", "Link de convite copiado! Envie para o novo funcionário.");
     } catch (err) {
         console.error('Falha ao copiar: ', err);
-        prompt("Não foi possível copiar automaticamente. Por favor, copie o link abaixo:", conviteUrl);
+        // Fallback para caso o clipboard não funcione (ex: http)
+        window.prompt("Copie o link abaixo:", conviteUrl);
     }
 }
 
@@ -447,14 +453,11 @@ async function editarProfissional(profissionalId) {
             elementos.nomeProfissional.value = dados.nome || "";
             elementos.tituloModalProfissional.textContent = "✏️ Editar Profissional";
             
-            // A função agora só prepara os dados e abre o modal.
             window.editandoProfissionalId = profissionalId; 
             elementos.modalAddProfissional.classList.add('show');
-            
-            // A lógica de 'onsubmit' foi removida daqui.
         }
     } catch (error) {
-        await showAlert("Erro", "Erro ao buscar profissional: " + error.message);
+        await showAlert("Erro", `Erro ao buscar profissional: ${error.message}`);
     }
 }
 
@@ -475,18 +478,14 @@ async function salvarEdicaoProfissional() {
         
         if (fotoFile) {
             const usuarioLogadoId = auth.currentUser.uid;
-            console.log(`[UPLOAD DEBUG] Status de dono ao tentar upload: ${isDono}`);
-            
             const caminhoStorage = `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`;
             const storageRef = ref(storage, caminhoStorage);
-
             const metadata = {
                 customMetadata: {
                     'uploaderId': usuarioLogadoId,
                     'isOwnerUploading': isDono ? 'true' : 'false' 
                 }
             };
-            
             const snapshot = await uploadBytes(storageRef, fotoFile, metadata);
             updateData.fotoUrl = await getDownloadURL(snapshot.ref);
         }
@@ -499,10 +498,9 @@ async function salvarEdicaoProfissional() {
 
     } catch (error) {
         console.error("Erro ao salvar edição do profissional:", error);
-        await showAlert("Erro", "Ocorreu um erro ao salvar a edição. Verifique suas permissões de segurança se o erro persistir.");
+        await showAlert("Erro", `Ocorreu um erro ao salvar a edição. Verifique suas permissões de segurança se o erro persistir.`);
     }
 }
-
 
 async function excluirProfissional(profissionalId) {
     const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.");
@@ -517,7 +515,7 @@ async function excluirProfissional(profissionalId) {
         await deleteDoc(profissionalRef);
         await showAlert("Sucesso!", "Profissional excluído!");
     } catch (error) {
-        await showAlert("Erro", "Erro ao excluir profissional: " + error.message);
+        await showAlert("Erro", `Erro ao excluir profissional: ${error.message}`);
     }
 }
 
