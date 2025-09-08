@@ -1,18 +1,17 @@
 // ======================================================================
 //                              EQUIPE.JS
-//           VERSÃO FINAL COM CORREÇÃO DE PERMISSÃO DE DONO
+//        VERSÃO FINAL COM CORREÇÃO DE EVENTO DE SUBMISSÃO DUPLICADO
 // ======================================================================
 
 import { db, auth, storage } from "./firebase-config.js";
 import { collection, onSnapshot, query, where, doc, getDoc, setDoc, updateDoc, serverTimestamp, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-// ⭐ --- VARIÁVEIS DE ESTADO DEFINIDAS AQUI --- ⭐
-let isDono = false; // Garante que a variável exista para todo o script
+// --- VARIÁVEIS DE ESTADO ---
+let isDono = false;
 let empresaId = null;
 let profissionalAtual = null;
 let servicosDisponiveis = [];
-let editandoProfissionalId = null;
 let horariosBase = {
     segunda: { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
     terca:   { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] },
@@ -25,6 +24,7 @@ let horariosBase = {
 let intervaloBase = 30;
 let agendaEspecial = [];
 
+// --- MAPEAMENTO DE ELEMENTOS DO DOM ---
 const elementos = {
     btnCancelarEquipe: document.getElementById('btn-cancelar-equipe'  ),
     modalAddProfissional: document.getElementById('modal-add-profissional'),
@@ -57,44 +57,27 @@ const elementos = {
 
 async function garantirPerfilDoDono() {
     const user = auth.currentUser;
-    if (!user || !empresaId) {
-        console.error("Usuário ou Empresa não identificado. Não foi possível garantir o perfil do dono.");
-        return;
-    }
+    if (!user || !empresaId) return;
     try {
         const empresaRef = doc(db, "empresarios", empresaId);
         const empresaSnap = await getDoc(empresaRef);
-        if (!empresaSnap.exists() || empresaSnap.data().donoId !== user.uid) {
-            // Se não for o dono, não faz nada.
-            return;
-        }
+        if (!empresaSnap.exists() || empresaSnap.data().donoId !== user.uid) return;
+        
         const donoId = user.uid;
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", donoId);
         const profissionalSnap = await getDoc(profissionalRef);
+        
         if (!profissionalSnap.exists()) {
             const usuarioRef = doc(db, "usuarios", donoId);
             const usuarioSnap = await getDoc(usuarioRef);
             const nomeDono = usuarioSnap.exists() && usuarioSnap.data().nome ? usuarioSnap.data().nome : "Dono";
             await setDoc(profissionalRef, {
-                nome: nomeDono,
-                ehDono: true,
-                status: 'ativo',
-                criadoEm: serverTimestamp(),
-                uid: donoId,
-                fotoUrl: user.photoURL || "",
-                empresaId: empresaId
+                nome: nomeDono, ehDono: true, status: 'ativo', 
+                criadoEm: serverTimestamp(), uid: donoId, 
+                fotoUrl: user.photoURL || "", empresaId: empresaId
             });
-        } else {
-            if (!profissionalSnap.data().empresaId) {
-                await updateDoc(profissionalRef, {
-                    empresaId: empresaId
-                });
-            }
         }
-    } catch (error) {
-        console.error("Erro crítico ao garantir o perfil do dono:", error);
-        mostrarErro("Não foi possível verificar e corrigir o perfil do dono da equipe.");
-    }
+    } catch (error) { console.error("Erro ao garantir perfil do dono:", error); }
 }
 
 async function inicializar() {
@@ -107,33 +90,22 @@ async function inicializar() {
         }
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                try {
-                    const empresaRef = doc(db, "empresarios", empresaId);
-                    const empresaSnap = await getDoc(empresaRef);
-                    if (empresaSnap.exists()) {
-                        const empresaData = empresaSnap.data();
-                        
-                        // ⭐ AQUI ESTÁ A CORREÇÃO PRINCIPAL ⭐
-                        // Define a variável 'isDono' assim que a página carrega.
-                        const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                        isDono = (empresaData.donoId === user.uid) || (user.uid === adminUID);
-                        console.log(`[AUTH CHECK] Usuário é dono? ${isDono}`);
-                        
-                        if (empresaData.donoId === user.uid) { // Garante o perfil apenas se for o dono real
-                            await garantirPerfilDoDono();
-                        }
-
-                        await carregarServicos();
-                        iniciarListenerDaEquipe();
-                        adicionarEventListeners();
-                    } else {
-                        console.error("Empresa ativa não encontrada no banco de dados.");
-                        alert("A empresa selecionada não foi encontrada. Redirecionando...");
-                        window.location.href = "selecionar-empresa.html";
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaRef);
+                if (empresaSnap.exists()) {
+                    const empresaData = empresaSnap.data();
+                    const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                    isDono = (empresaData.donoId === user.uid) || (user.uid === adminUID);
+                    
+                    if (empresaData.donoId === user.uid) {
+                        await garantirPerfilDoDono();
                     }
-                } catch (error) {
-                    console.error("Erro ao verificar permissões e inicializar a página da equipe:", error);
-                    mostrarErro("Ocorreu um erro ao carregar os dados da equipe.");
+
+                    await carregarServicos();
+                    iniciarListenerDaEquipe();
+                    adicionarEventListeners();
+                } else {
+                    window.location.href = "selecionar-empresa.html";
                 }
             } else {
                 window.location.href = "login.html";
@@ -147,10 +119,8 @@ async function inicializar() {
 
 async function iniciarListenerDaEquipe() {
     const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
-    const q = query(profissionaisRef); // Simplificado para ouvir todos profissionais da empresa
-    onSnapshot(q, (snapshot) => {
-        const equipe = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderizarEquipe(equipe);
+    onSnapshot(query(profissionaisRef), (snapshot) => {
+        renderizarEquipe(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => console.error("Erro no listener da equipe:", error));
 }
 
@@ -197,6 +167,7 @@ async function carregarServicos() {
 }
 
 function renderizarEquipe(equipe) {
+    if (!elementos.listaProfissionaisPainel) return;
     elementos.listaProfissionaisPainel.innerHTML = "";
     if (equipe.length === 0) {
         elementos.listaProfissionaisPainel.innerHTML = `<div class="empty-state"><h3>👥 Equipe Vazia</h3><p>Nenhum profissional na equipe ainda. Clique em "Convidar Funcionário" para começar.</p></div>`;
@@ -222,7 +193,7 @@ function renderizarEquipe(equipe) {
         div.innerHTML = `<div class="profissional-foto"><img src="${profissional.fotoUrl || "https://placehold.co/150x150/eef2ff/4f46e5?text=P"}" alt="Foto de ${profissional.nome}" onerror="this.src='https://placehold.co/150x150/eef2ff/4f46e5?text=P'"></div>
                          <div class="profissional-info">
                              <span class="profissional-nome">${profissional.nome}</span>
-                             <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário'    )}</span>
+                             <span class="profissional-status">${profissional.status === 'pendente' ? 'Pendente de Ativação' : (profissional.ehDono ? 'Dono' : 'Funcionário')}</span>
                          </div>
                          <div class="profissional-actions">${botoesDeAcao}</div>`;
         elementos.listaProfissionaisPainel.appendChild(div);
@@ -273,7 +244,7 @@ async function carregarDadosProfissional(profissionalId) {
 function renderizarServicosNoPerfil(servicosSelecionados = []) {
     elementos.servicosLista.innerHTML = "";
     if (servicosDisponiveis.length === 0) {
-        elementos.servicosLista.innerHTML = `<div class="servicos-empty-state"><p>Nenhum serviço cadastrado ainda.</p><p>Vá para a página de serviços para adicioná-los.</p></div>`;
+        elementos.servicosLista.innerHTML = `<div class="servicos-empty-state"><p>Nenhum serviço cadastrado.</p><p>Vá para a página de serviços para adicioná-los.</p></div>`;
         return;
     }
     servicosDisponiveis.forEach(servico => {
@@ -288,23 +259,134 @@ function renderizarServicosNoPerfil(servicosSelecionados = []) {
 }
 
 function renderizarHorarios(horariosDataCompleta = {}) {
-    // ... (função renderizarHorarios original e completa)
+    if(!elementos.horariosLista) return;
+    elementos.horariosLista.innerHTML = '';
+    const diasSemana = [
+        { key: 'segunda', nome: 'Segunda-feira' }, { key: 'terca', nome: 'Terça-feira' },
+        { key: 'quarta', nome: 'Quarta-feira' }, { key: 'quinta', nome: 'Quinta-feira' },
+        { key: 'sexta', nome: 'Sexta-feira' }, { key: 'sabado', nome: 'Sábado' },
+        { key: 'domingo', nome: 'Domingo' }
+    ];
+    elementos.inputIntervalo.value = horariosDataCompleta.intervalo || intervaloBase;
+    diasSemana.forEach(dia => {
+        const diaData = horariosDataCompleta[dia.key] || { ativo: false, blocos: [{ inicio: '09:00', fim: '18:00' }] };
+        const estaAtivo = diaData.ativo;
+        const blocos = diaData.blocos && diaData.blocos.length > 0 ? diaData.blocos : [{ inicio: '09:00', fim: '18:00' }];
+        const div = document.createElement('div');
+        div.className = 'dia-horario';
+        if (!estaAtivo) div.classList.add('inativo');
+        div.setAttribute('data-dia', dia.key);
+        div.innerHTML = `
+            <div class="dia-header">
+                <label class="dia-nome">${dia.nome}</label>
+                <label class="switch">
+                    <input type="checkbox" class="toggle-dia" ${estaAtivo ? 'checked' : ''}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="horario-conteudo">
+                <div class="horario-intervalos">
+                    ${blocos.map(bloco => `
+                        <div class="horario-inputs">
+                            <input type="time" name="inicio" value="${bloco.inicio}">
+                            <span>até</span>
+                            <input type="time" name="fim" value="${bloco.fim}">
+                            <button type="button" class="btn-remover-intervalo" title="Remover intervalo">✖</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" class="btn-incluir-intervalo">+ Incluir horário</button>
+            </div>`;
+        elementos.horariosLista.appendChild(div);
+    });
+    elementos.horariosLista.querySelectorAll('.toggle-dia').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            this.closest('.dia-horario').classList.toggle('inativo', !this.checked);
+        });
+    });
+    elementos.horariosLista.querySelectorAll('.btn-incluir-intervalo').forEach(btn => {
+        btn.onclick = function () {
+            const container = this.previousElementSibling;
+            const novoBloco = document.createElement('div');
+            novoBloco.className = 'horario-inputs';
+            novoBloco.innerHTML = `<input type="time" name="inicio" value="09:00"><span>até</span><input type="time" name="fim" value="18:00"><button type="button" class="btn-remover-intervalo" title="Remover intervalo">✖</button>`;
+            container.appendChild(novoBloco);
+            setupRemoverIntervalo();
+        };
+    });
+    setupRemoverIntervalo();
 }
 
 function setupRemoverIntervalo() {
-    // ... (função setupRemoverIntervalo original e completa)
+    elementos.horariosLista.querySelectorAll('.btn-remover-intervalo').forEach(btn => {
+        btn.onclick = function () {
+            const container = this.closest('.horario-intervalos');
+            if (container.children.length > 1) {
+                this.closest('.horario-inputs').remove();
+            } else {
+                alert("Para desativar o dia, use o botão ao lado do nome do dia.");
+            }
+        };
+    });
 }
 
 function coletarHorarios() {
-    // ... (função coletarHorarios original e completa)
+    const horarios = {};
+    document.querySelectorAll('.dia-horario').forEach(diaDiv => {
+        const dia = diaDiv.getAttribute('data-dia');
+        const estaAtivo = diaDiv.querySelector('.toggle-dia').checked;
+        const blocos = [];
+
+        if (estaAtivo) {
+            diaDiv.querySelectorAll('.horario-inputs').forEach(inputDiv => {
+                const inicio = inputDiv.querySelector('input[name="inicio"]').value;
+                const fim = inputDiv.querySelector('input[name="fim"]').value;
+                if (inicio && fim) blocos.push({ inicio, fim });
+            });
+        }
+        horarios[dia] = { ativo: estaAtivo, blocos: blocos.length > 0 ? blocos : [{ inicio: '09:00', fim: '18:00' }] };
+    });
+    horarios.intervalo = parseInt(elementos.inputIntervalo.value, 10) || intervaloBase;
+    if (elementos.permitirAgendamentoMultiplo) {
+        horarios.permitirAgendamentoMultiplo = elementos.permitirAgendamentoMultiplo.checked;
+    }
+    return horarios;
 }
 
 function renderizarAgendaEspecial() {
-    // ... (função renderizarAgendaEspecial original e completa)
+    if(!elementos.agendaEspecialLista) return;
+    const lista = elementos.agendaEspecialLista;
+    lista.innerHTML = '';
+    if (!agendaEspecial || agendaEspecial.length === 0) {
+        lista.innerHTML = '<div class="empty-state-agenda-especial">Nenhuma agenda especial cadastrada.</div>';
+        return;
+    }
+    agendaEspecial.forEach((item, idx) => {
+        let desc = (item.tipo === 'mes') ? `Mês: <b>${item.mes}</b>` : `De <b>${item.inicio}</b> até <b>${item.fim}</b>`;
+        const div = document.createElement('div');
+        div.className = 'agenda-especial-item';
+        div.innerHTML = `<span>${desc}</span><button type="button" class="btn btn-danger" data-agenda-idx="${idx}">Excluir</button>`;
+        lista.appendChild(div);
+    });
+    lista.querySelectorAll('.btn-danger').forEach(btn => {
+        btn.onclick = function () {
+            const idx = parseInt(this.getAttribute('data-agenda-idx'), 10);
+            agendaEspecial.splice(idx, 1);
+            renderizarAgendaEspecial();
+        };
+    });
 }
 
 function adicionarAgendaEspecial() {
-    // ... (função adicionarAgendaEspecial original e completa)
+    const tipo = elementos.agendaTipo.value;
+    if (tipo === 'mes') {
+        if (!elementos.agendaMes.value) return alert('Selecione o mês.');
+        agendaEspecial.push({ tipo: 'mes', mes: elementos.agendaMes.value });
+    } else {
+        if (!elementos.agendaInicio.value || !elementos.agendaFim.value) return alert('Informe o intervalo.');
+        agendaEspecial.push({ tipo: 'intervalo', inicio: elementos.agendaInicio.value, fim: elementos.agendaFim.value });
+    }
+    renderizarAgendaEspecial();
 }
 
 async function salvarPerfilProfissional() {
@@ -323,17 +405,30 @@ async function salvarPerfilProfissional() {
     }
 }
 
+// ⭐ --- FUNÇÃO DE ADICIONAR LISTENERS CORRIGIDA --- ⭐
 function adicionarEventListeners() {
     if (elementos.btnCancelarEquipe) elementos.btnCancelarEquipe.addEventListener("click", voltarMenuLateral);
-    elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
-    elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
-    elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
+    if (elementos.btnCancelarProfissional) elementos.btnCancelarProfissional.addEventListener("click", () => elementos.modalAddProfissional.classList.remove('show'));
+    if (elementos.btnCancelarPerfil) elementos.btnCancelarPerfil.addEventListener("click", () => elementos.modalPerfilProfissional.classList.remove('show'));
+    if (elementos.btnSalvarPerfil) elementos.btnSalvarPerfil.addEventListener("click", salvarPerfilProfissional);
     if (elementos.btnAgendaEspecial) elementos.btnAgendaEspecial.addEventListener('click', adicionarAgendaEspecial);
+    if (elementos.btnConvite) elementos.btnConvite.addEventListener('click', gerarLinkDeConvite);
+
     [elementos.modalAddProfissional, elementos.modalPerfilProfissional].forEach(modal => {
-        modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
+        if (modal) modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove('show'); });
     });
-    if (elementos.btnConvite) {
-        elementos.btnConvite.addEventListener('click', gerarLinkDeConvite);
+
+    // O listener de submissão do formulário é adicionado APENAS UMA VEZ, aqui.
+    if (elementos.formAddProfissional) {
+        elementos.formAddProfissional.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
+
+            await salvarEdicaoProfissional();
+
+            if (submitButton) submitButton.disabled = false;
+        });
     }
 }
 
@@ -353,6 +448,7 @@ async function gerarLinkDeConvite() {
     }
 }
 
+// ⭐ --- FUNÇÃO DE EDITAR SIMPLIFICADA --- ⭐
 async function editarProfissional(profissionalId) {
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
@@ -362,19 +458,18 @@ async function editarProfissional(profissionalId) {
             elementos.formAddProfissional.reset();
             elementos.nomeProfissional.value = dados.nome || "";
             elementos.tituloModalProfissional.textContent = "✏️ Editar Profissional";
-            window.editandoProfissionalId = profissionalId;
+            
+            // A função agora só prepara os dados e abre o modal.
+            window.editandoProfissionalId = profissionalId; 
             elementos.modalAddProfissional.classList.add('show');
-            elementos.formAddProfissional.onsubmit = async (e) => {
-                e.preventDefault();
-                await salvarEdicaoProfissional();
-            };
+            
+            // A lógica de 'onsubmit' foi removida daqui.
         }
     } catch (error) {
         alert("Erro ao buscar profissional: " + error.message);
     }
 }
 
-// ⭐ --- FUNÇÃO DE UPLOAD CORRIGIDA E COMPLETA --- ⭐
 async function salvarEdicaoProfissional() {
     const profissionalId = window.editandoProfissionalId;
     if (!profissionalId) {
@@ -393,10 +488,8 @@ async function salvarEdicaoProfissional() {
         const fotoFile = elementos.fotoProfissional.files[0];
         const usuarioLogadoId = auth.currentUser.uid;
 
-        // Adiciona um log para depuração final
         console.log(`[UPLOAD DEBUG] Status de dono ao tentar upload: ${isDono}`);
-        console.log(`[UPLOAD DEBUG] Enviando metadata: { uploaderId: '${usuarioLogadoId}', isOwnerUploading: '${isDono ? 'true' : 'false'}' }`);
-
+        
         if (fotoFile) {
             const caminhoStorage = `fotos-profissionais/${empresaId}/${profissionalId}/${Date.now()}-${fotoFile.name}`;
             const storageRef = ref(storage, caminhoStorage);
@@ -426,8 +519,14 @@ async function salvarEdicaoProfissional() {
     }
 }
 
+
 async function excluirProfissional(profissionalId) {
-    if (!confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.")) return;
+    if (!isDono) { // Usa a variável de escopo global
+        alert("Apenas donos podem excluir funcionários.");
+        return;
+    }
+    const confirmado = await confirm("Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.");
+    if (!confirmado) return;
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await deleteDoc(profissionalRef);
@@ -438,7 +537,8 @@ async function excluirProfissional(profissionalId) {
 }
 
 async function ativarFuncionario(profissionalId) {
-    if (!confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.")) return;
+    const confirmado = await confirm("Tem certeza que deseja ativar este profissional? Ele terá acesso ao sistema.");
+    if(!confirmado) return;
     try {
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
         await updateDoc(profissionalRef, { status: 'ativo' });
@@ -450,12 +550,15 @@ async function ativarFuncionario(profissionalId) {
 }
 
 async function recusarFuncionario(profissionalId) {
-    if (!confirm("Tem certeza que deseja recusar e excluir este cadastro pendente? Esta ação não pode ser desfeita.")) return;
+    const confirmado = await confirm("Tem certeza que deseja recusar e excluir este cadastro pendente? Esta ação não pode ser desfeita.");
+    if(!confirmado) return;
     await excluirProfissional(profissionalId); 
 }
 
 function mostrarErro(mensagem) {
-    elementos.listaProfissionaisPainel.innerHTML = `<div class="error-message"><h4>❌ Erro</h4><p>${mensagem}</p></div>`;
+    if(elementos.listaProfissionaisPainel) {
+       elementos.listaProfissionaisPainel.innerHTML = `<div class="error-message"><h4>❌ Erro</h4><p>${mensagem}</p></div>`;
+    }
 }
 
 // Tornar funções globais para uso no HTML (onclick)
