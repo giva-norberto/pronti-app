@@ -432,6 +432,7 @@ function adicionarEventListeners() {
     }
 }
 
+// --- BOTÃO CONVITE CORRIGIDO ---
 async function gerarLinkDeConvite() {
     if (!empresaId) {
         return await showAlert("Erro", "Não foi possível identificar a sua empresa para gerar o convite.");
