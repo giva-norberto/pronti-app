@@ -374,10 +374,10 @@ async function adicionarAgendaEspecial() {
     if(!elementos.agendaTipo) return;
     const tipo = elementos.agendaTipo.value;
     if (tipo === 'mes') {
-        if (!elementos.agendaMes.value) return showAlert("Aviso", "Selecione o mês.");
+        if (!elementos.agendaMes.value) return await showAlert("Aviso", "Selecione o mês.");
         agendaEspecial.push({ tipo: 'mes', mes: elementos.agendaMes.value });
     } else {
-        if (!elementos.agendaInicio.value || !elementos.agendaFim.value) return showAlert("Aviso", "Informe o intervalo de datas.");
+        if (!elementos.agendaInicio.value || !elementos.agendaFim.value) return await showAlert("Aviso", "Informe o intervalo de datas.");
         agendaEspecial.push({ tipo: 'intervalo', inicio: elementos.agendaInicio.value, fim: elementos.agendaFim.value });
     }
     renderizarAgendaEspecial();
@@ -395,7 +395,7 @@ async function salvarPerfilProfissional() {
         await showAlert("Sucesso!", "Perfil atualizado com sucesso!");
     } catch (error) {
         console.error("Erro ao salvar perfil:", error);
-        await showAlert("Erro", "Ocorreu um erro ao salvar o perfil: " + error.message);
+        await showAlert("Erro", `Ocorreu um erro ao salvar o perfil: ${error.message}`);
     }
 }
 
@@ -428,7 +428,7 @@ function adicionarEventListeners() {
 
 async function gerarLinkDeConvite() {
     if (!empresaId) {
-        return showAlert("Erro", "Não foi possível identificar a sua empresa para gerar o convite.");
+        return await showAlert("Erro", "Não foi possível identificar a sua empresa para gerar o convite.");
     }
     const baseUrl = window.location.origin;
     const conviteUrl = `${baseUrl}/convite.html?empresaId=${empresaId}`;
@@ -437,7 +437,7 @@ async function gerarLinkDeConvite() {
         await showAlert("Sucesso!", "Link de convite copiado! Envie para o novo funcionário.");
     } catch (err) {
         console.error('Falha ao copiar: ', err);
-        // Fallback para caso o clipboard não funcione (ex: http)
+        // Fallback para caso o clipboard não funcione
         window.prompt("Copie o link abaixo:", conviteUrl);
     }
 }
@@ -464,12 +464,12 @@ async function editarProfissional(profissionalId) {
 async function salvarEdicaoProfissional() {
     const profissionalId = window.editandoProfissionalId;
     if (!profissionalId) {
-        return showAlert("Erro", "ID do profissional não definido.");
+        return await showAlert("Erro", "ID do profissional não definido.");
     }
 
     const nome = elementos.nomeProfissional.value.trim();
     if (!nome) {
-        return showAlert("Erro", "O nome do profissional é obrigatório.");
+        return await showAlert("Erro", "O nome do profissional é obrigatório.");
     }
 
     try {
@@ -488,6 +488,7 @@ async function salvarEdicaoProfissional() {
             };
             const snapshot = await uploadBytes(storageRef, fotoFile, metadata);
             updateData.fotoUrl = await getDownloadURL(snapshot.ref);
+            console.log("Upload da foto concluído com metadados. URL:", updateData.fotoUrl);
         }
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
@@ -502,12 +503,13 @@ async function salvarEdicaoProfissional() {
     }
 }
 
+
 async function excluirProfissional(profissionalId) {
     const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este profissional? Essa ação não pode ser desfeita.");
     if (!confirmado) return;
     
     if (!isDono) {
-        return showAlert("Acesso Negado", "Apenas donos podem excluir funcionários.");
+        return await showAlert("Acesso Negado", "Apenas donos podem excluir funcionários.");
     }
 
     try {
