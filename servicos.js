@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO DEFINITIVA - LIMPA E COM LISTENER)
+// ARQUIVO: servicos.js (VERSÃO DEFINITIVA - ADAPTADA AO LAYOUT ORIGINAL)
 // ======================================================================
 
 import {
@@ -10,7 +10,7 @@ import { db, auth } from "./firebase-config.js"; 
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
 // --- Mapeamento de Elementos do DOM ---
-let listaServicosDiv, btnAddServico, loader;
+let listaServicosDiv, btnAddServico;
 
 // --- Variáveis de Estado ---
 let empresaId = null;
@@ -19,17 +19,15 @@ let donoUid = null;
 let isAdmin = false;
 let isInitialized = false;
 let isProcessing = false;
-let userUid = null;
 
 // --- Inicialização segura do DOM ---
 function initializeDOMElements() {
   listaServicosDiv = document.getElementById("lista-servicos");
   btnAddServico = document.querySelector(".btn-new");
-  loader = document.getElementById("loader"); // O script precisa apenas do loader
-  console.log("[DEBUG] initializeDOMElements: Elementos DOM inicializados.");
+  // A referência ao 'loader' foi removida, pois não existe no seu HTML.
+  console.log("[DEBUG] initializeDOMElements: Elementos DOM essenciais inicializados.");
   if (!listaServicosDiv) console.error("[DEBUG] #lista-servicos não encontrado!");
   if (!btnAddServico) console.error("[DEBUG] .btn-new não encontrado!");
-  if (!loader) console.error("[DEBUG] #loader não encontrado!");
 }
 
 // --- Funções Auxiliares ---
@@ -168,7 +166,6 @@ async function verificarAcessoEmpresa(user, id) {
         if (profSnap.exists()) ehDonoProfissional = !!profSnap.data().ehDono;
     } catch (e) {}
     const isDonoFinal = isOwner || ehDonoProfissional;
-    // Simplificando a verificação de acesso para corresponder à lógica de dono
     const hasAccess = isDonoFinal || isAdmin;
     return { hasAccess, isDono: isDonoFinal || isAdmin };
 }
@@ -189,14 +186,6 @@ async function buscarEmpresasDoUsuario(user) {
         return null;
     });
     return (await Promise.all(promessas)).filter(Boolean);
-}
-
-// --- Função para mostrar/esconder loader ---
-function toggleLoader(show) {
-    // A função agora controla apenas o #loader, pois #app-content não é mais necessário.
-  if (loader) {
-    loader.style.display = show ? "flex" : "none";
-  }
 }
 
 function configurarUI() {
@@ -241,14 +230,11 @@ function initializeApp() {
   }
   initializeDOMElements();
   setupEventListeners();
-  
-  toggleLoader(true);
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       if (isInitialized) return;
       isInitialized = true;
-      userUid = user.uid;
       const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
       isAdmin = (user.uid === ADMIN_UID);
       
@@ -267,7 +253,7 @@ function initializeApp() {
       if (!empresaIdSalva) {
         const empresas = await buscarEmpresasDoUsuario(user);
         if (empresas.length === 1) {
-          empresaId = empresas[0].id;
+  _        empresaId = empresas[0].id;
           setEmpresaIdAtiva(empresaId);
           const verificacao = await verificarAcessoEmpresa(user, empresaId);
           isDono = verificacao.isDono;
@@ -275,15 +261,13 @@ function initializeApp() {
           window.location.href = "selecionar-empresa.html";
           return;
         } else {
-          // Caso de 0 empresas
-          if(loader) loader.innerHTML = `<p style="color:red;">Você não tem acesso a nenhuma empresa.</p>`;
+          listaServicosDiv.innerHTML = `<p style="color:red;">Você não tem acesso a nenhuma empresa.</p>`;
           return;
         }
       }
       
       configurarUI();
       iniciarListenerDeServicos();
-      toggleLoader(false);
 
     } else {
       window.location.href = "login.html";
