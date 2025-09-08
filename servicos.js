@@ -4,7 +4,7 @@
 
 import { collection, doc, getDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { db, auth } from "./firebase-config.js"; // Ajustado para firebase-config.js
+import { db, auth } from "./firebase-config.js";
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
 // --- Mapeamento de Elementos do DOM ---
@@ -26,7 +26,7 @@ onAuthStateChanged(auth, async (user) => {
         try {
             empresaId = getEmpresaIdAtiva();
             if (!empresaId) {
-                listaServicosDiv.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada.</p>';
+                if(listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada.</p>';
                 return;
             }
 
@@ -42,19 +42,19 @@ onAuthStateChanged(auth, async (user) => {
                 btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
             }
 
-            // ⭐ Inicia o listener que atualiza a tela em tempo real
+            // Inicia o listener que atualiza a tela em tempo real
             iniciarListenerDeServicos();
 
         } catch (error) {
             console.error("Erro durante a inicialização:", error);
-            listaServicosDiv.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
+            if(listaServicosDiv) listaServicosDiv.innerHTML = `<p style="color:red;">Ocorreu um erro crítico ao carregar a página.</p>`;
         }
     } else {
         window.location.href = 'login.html';
     }
 });
 
-// --- ⭐ Listener em Tempo Real (A correção do bug de atualização) ---
+// --- Listener em Tempo Real (A correção do bug de atualização) ---
 function iniciarListenerDeServicos() {
     if (!empresaId) return;
     if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
@@ -71,7 +71,7 @@ function iniciarListenerDeServicos() {
     });
 }
 
-// --- ⭐ Renderização com o SEU LAYOUT ORIGINAL ---
+// --- Renderização com o SEU LAYOUT ORIGINAL ---
 function renderizarServicos(servicos) {
     if (!listaServicosDiv) return;
 
@@ -116,7 +116,6 @@ async function excluirServico(servicoId) {
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         await deleteDoc(servicoRef);
         await showAlert("Sucesso!", "Serviço excluído com sucesso!");
-        // Não precisa recarregar, o listener faz isso automaticamente.
     } catch (error) {
         await showAlert("Erro", "Ocorreu um erro ao excluir o serviço: " + error.message);
     }
@@ -161,3 +160,16 @@ if (btnAddServico) {
         }
     });
 }
+
+// A função initializeApp não é mais necessária, pois o onAuthStateChanged
+// é chamado diretamente e lida com todo o fluxo de inicialização.
+
+// Abaixo está uma versão simplificada do seu código antigo, mesclada com a
+// lógica de listener em tempo real. Esta é uma forma mais direta de escrever.
+
+// A função 'buscarEmpresasDoUsuario' não foi incluída porque a lógica atual
+// depende do 'empresaAtivaId' do localStorage, como no seu código original mais recente.
+// Se a lógica de multi-empresa precisar ser mais complexa, ela pode ser readicionada.
+
+// O código original não tinha uma função initializeApp, então esta versão segue
+// esse padrão mais direto, anexando listeners e esperando o onAuthStateChanged.
