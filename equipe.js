@@ -416,18 +416,26 @@ function adicionarEventListeners() {
 // --- BOTÃO CONVITE COM LÓGICA DO DONO E CONFIRMAÇÃO PADRÃO PRONTI ---
 async function gerarLinkDeConvite() {
     if (!isDono) {
-        return await showAlert("Acesso negado", "Apenas o dono da empresa pode gerar links de convite.");
+        await showAlert("Acesso negado", "Apenas o dono da empresa pode gerar links de convite.");
+        return;
     }
     if (!empresaId) {
-        return await showAlert("Erro", "Não foi possível identificar a sua empresa para gerar o convite.");
+        await showAlert("Erro", "Não foi possível identificar a sua empresa para gerar o convite.");
+        return;
     }
     const baseUrl = window.location.origin;
     const conviteUrl = `${baseUrl}/convite.html?empresaId=${empresaId}`;
     try {
         await navigator.clipboard.writeText(conviteUrl);
-        await showAlert("Link copiado", "O link de convite foi copiado para a área de transferência. Compartilhe com o novo colaborador!");
+        await showAlert(
+            "Link de convite copiado!",
+            "O link de convite foi copiado para a área de transferência.<br>Compartilhe com o novo colaborador."
+        );
     } catch (err) {
-        window.prompt("Não foi possível copiar automaticamente. Por favor, copie o link abaixo:", conviteUrl);
+        await showAlert(
+            "Atenção",
+            "Não foi possível copiar automaticamente. Copie o link abaixo:<br><input style='width:90%;margin-top:10px;' value='" + conviteUrl + "' readonly onclick='this.select()'/>"
+        );
     }
 }
 
