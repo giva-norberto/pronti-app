@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO FINAL MULTIEMPRESAS, CRASH-FREE, E ACESSO ROBUSTO)
+// ARQUIVO: servicos.js (VERSÃO FINAL MULTIEMPRESAS, CRASH-FREE, E ACESSO ROBUSTO - DEBUG RESOLVIDO)
 // ======================================================================
 
 import {
@@ -29,15 +29,27 @@ function initializeDOMElements() {
 
 // --- Funções Auxiliares ---
 function getEmpresaIdAtiva() {
-  try { return localStorage.getItem("empresaAtivaId"); }
-  catch { return null; }
+  try { 
+    const eid = localStorage.getItem("empresaAtivaId"); 
+    console.log("[DEBUG] getEmpresaIdAtiva:", eid);
+    return eid;
+  }
+  catch (e) { console.error("[DEBUG] getEmpresaIdAtiva erro:", e); return null; }
 }
 
 function setEmpresaIdAtiva(id) {
   try {
-    if (id) localStorage.setItem("empresaAtivaId", id);
-    else localStorage.removeItem("empresaAtivaId");
-  } catch {}
+    if (id) {
+      localStorage.setItem("empresaAtivaId", id);
+      console.log("[DEBUG] setEmpresaIdAtiva: set", id);
+    }
+    else {
+      localStorage.removeItem("empresaAtivaId");
+      console.log("[DEBUG] setEmpresaIdAtiva: removido");
+    }
+  } catch (e) {
+    console.error("[DEBUG] setEmpresaIdAtiva erro:", e);
+  }
 }
 
 function formatarPreco(preco) {
@@ -181,20 +193,32 @@ async function excluirServico(servicoId) {
 }
 
 // Busca o array 'empresas' em mapaUsuarios, ou permissões diretas.
+// ADICIONADO DEBUG DE TUDO QUE DEFINE isDono/isAdmin
 async function verificarAcessoEmpresa(user, empresaId) {
   try {
-    if (!user || !empresaId) return { hasAccess: false, isDono: false };
+    if (!user || !empresaId) {
+      console.log("[DEBUG] verificarAcessoEmpresa: user ou empresaId nulo");
+      return { hasAccess: false, isDono: false };
+    }
     const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
     let empresasPermitidas = [];
     if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
       empresasPermitidas = mapaSnap.data().empresas;
     }
-    if (!empresasPermitidas.includes(empresaId)) return { hasAccess: false, isDono: false };
+    console.log("[DEBUG] Empresas permitidas (mapaUsuarios):", empresasPermitidas);
+    if (!empresasPermitidas.includes(empresaId)) {
+      console.log("[DEBUG] Usuario não possui empresaId em mapaUsuarios!");
+      return { hasAccess: false, isDono: false };
+    }
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
-    if (!empresaSnap.exists()) return { hasAccess: false, isDono: false };
+    if (!empresaSnap.exists()) {
+      console.log("[DEBUG] empresaId não existe em empresarios");
+      return { hasAccess: false, isDono: false };
+    }
     const empresaData = empresaSnap.data();
     const isOwner = empresaData.donoId === user.uid;
+    console.log("[DEBUG] empresaData.donoId:", empresaData.donoId, "| user.uid:", user.uid, "| isOwner:", isOwner);
     let isProfissional = false;
     let ehDonoProfissional = false;
     try {
@@ -203,17 +227,22 @@ async function verificarAcessoEmpresa(user, empresaId) {
         isProfissional = true;
         const profData = profSnap.data();
         ehDonoProfissional = !!profData.ehDono;
+        console.log("[DEBUG] Profissional:", profData, "| ehDonoProfissional:", ehDonoProfissional);
       }
-    } catch {}
+    } catch (e) {
+      console.log("[DEBUG] Erro ao buscar profissional:", e);
+    }
     const isDonoFinal = isOwner || ehDonoProfissional;
     const hasAccess = isDonoFinal || isProfissional || isAdmin;
+    console.log("[DEBUG] isDonoFinal:", isDonoFinal, "| isAdmin:", isAdmin, "| isProfissional:", isProfissional, "| hasAccess:", hasAccess);
     return {
       hasAccess,
       isDono: isDonoFinal || isAdmin,
       isProfissional,
       empresaNome: empresaData.nome || 'Empresa sem nome'
     };
-  } catch {
+  } catch (e) {
+    console.log("[DEBUG] ERRO EM verificarAcessoEmpresa:", e);
     return { hasAccess: false, isDono: false };
   }
 }
@@ -262,6 +291,7 @@ function toggleLoader(show) {
 
 // --- Função para configurar UI baseado nas permissões ---
 function configurarUI() {
+  console.log("[DEBUG] configurarUI: isDono:", isDono, "| isAdmin:", isAdmin);
   if (btnAddServico) btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
 }
 
@@ -313,6 +343,7 @@ function initializeApp() {
       user = auth.currentUser;
     }
     if (isInitialized) return;
+    console.log("[DEBUG] onAuthStateChanged, user.uid:", user.uid);
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
     isAdmin = (user.uid === ADMIN_UID);
     toggleLoader(true);
@@ -322,6 +353,7 @@ function initializeApp() {
       if (verificacao.hasAccess) {
         empresaId = empresaIdSalva;
         isDono = verificacao.isDono;
+        console.log("[DEBUG] Empresa ativa:", empresaId, "| isDono:", isDono, "| isAdmin:", isAdmin);
         configurarUI();
         await carregarServicosDoFirebase();
         isInitialized = true;
@@ -349,6 +381,7 @@ function initializeApp() {
       empresaId = empresa.id;
       isDono = empresa.isDono;
       setEmpresaIdAtiva(empresaId);
+      console.log("[DEBUG] Empresa única ativa:", empresaId, "| isDono:", isDono, "| isAdmin:", isAdmin);
       configurarUI();
       await carregarServicosDoFirebase();
       isInitialized = true;
@@ -394,3 +427,5 @@ window.debugServicos = {
 
 // --- Inicialização ---
 initializeApp();
+
+console.log("🔧 [DEBUG] Funções de debug disponíveis em window.debugServicos");
