@@ -2,300 +2,372 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Meu Perfil & Configurações</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu Perfil e Configurações - Pronti IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
-    html, body {
-      margin: 0; padding: 0;
+    body {
       font-family: 'Inter', Arial, sans-serif;
-      background: #f6f8fa;
-      min-height: 100vh;
+      background: linear-gradient(135deg, #f6f8fa, #eef2ff);
+      margin: 0;
       color: #22223b;
     }
-    .main-content {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 0 0 80px 0;
+
+    #sidebar-placeholder {
+      float: left;
+      width: 250px;
+      min-width: 250px;
+      height: 100vh;
     }
+
+    .main-content {
+      margin-left: 250px;
+      padding: 32px 24px;
+      min-height: 100vh;
+      width: calc(100% - 250px);
+      box-sizing: border-box;
+    }
+
+    @media (max-width:1200px){
+      .main-content {margin-left:0;width:100%;padding:24px;}
+      #sidebar-placeholder{float:none;width:100%;height:auto;min-width:unset;}
+    }
+
     .form-card {
       background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 3px 18px 0 #6366f120;
-      padding: 22px 12px 12px 12px;
-      margin: 32px 10px 0 10px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      padding: 32px 24px;
+      max-width: 600px;
+      margin: 24px auto;
     }
+
     .header-section {
-      text-align: center;
-      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
     }
-    .header-section h1 {
-      font-size: 1.2rem;
+
+    .header-content h1 {
+      font-size: 1.8rem;
+      margin: 0 0 6px 0;
+      color: #1e1b4b;
       font-weight: 700;
-      color: #4f46e5;
-      margin: 0 0 2px 0;
     }
-    .header-section p {
-      color: #636e72;
-      font-size: 1em;
+
+    .header-content p {
       margin: 0;
+      color: #6b7280;
+      font-size: 1rem;
     }
-    .form-section {
-      background: #f6f8ff;
-      border-radius: 10px;
-      box-shadow: 0 1px 6px #a5b4fc1a;
-      padding: 16px 8px 8px 8px;
-      margin-bottom: 22px;
-      border: 1px solid #e0e7ff;
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .section-title {
-      font-size: 1.06em;
+
+    .btn-new, .btn-copy, .btn-open, .btn-upload, .btn-submit {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-new {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+    }
+    .btn-new:hover {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+    }
+
+    .btn-copy, .btn-open {
+      background: #f9fafb;
       color: #4f46e5;
-      font-weight: 700;
-      margin-bottom: 12px;
-      margin-top: 4px;
-      letter-spacing: -0.5px;
-      padding-left: 4px;
+      border: 1px solid #e0e7ff;
+      padding: 8px 14px;
+      font-size: 0.95rem;
     }
+    .btn-copy:hover, .btn-open:hover {
+      background: #eef2ff;
+    }
+
+    .btn-upload {
+      background: #f9fafb;
+      color: #374151;
+      border: 1px dashed #cbd5e1;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+    }
+    .btn-upload:hover {
+      background: #eef2ff;
+      border-color: #6366f1;
+      color: #4f46e5;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff;
+      font-weight: 600;
+    }
+    .btn-submit:hover {
+      background: linear-gradient(135deg, #4338ca, #4f46e5);
+    }
+
+    .form-section {
+      margin-bottom: 24px;
+    }
+    .form-section h3 {
+      margin: 0 0 18px 0;
+      font-size: 1.2em;
+      color: #4f46e5;
+      font-weight: 600;
+    }
+
     .form-group {
-      margin-bottom: 12px;
-      display: flex; flex-direction: column;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
     }
+
     .form-group label {
       font-size: 1em;
-      color: #22223b;
-      margin-bottom: 4px;
+      color: #1e1b4b;
+      margin-bottom: 6px;
       font-weight: 500;
     }
+
     .form-group input[type="text"],
-    .form-group textarea,
-    .form-group select {
-      border: 1.3px solid #e0e7ff;
-      border-radius: 8px;
-      padding: 10px;
+    .form-group textarea {
+      border: 1px solid #e0e7ff;
+      border-radius: 10px;
+      padding: 12px;
       font-size: 1em;
       background: #f8fafc;
       color: #22223b;
-      outline: none;
-      font-family: inherit;
-      transition: border 0.15s;
+      transition: border 0.2s, background 0.2s;
     }
+
     .form-group input[type="text"]:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
+    .form-group textarea:focus {
       border-color: #6366f1;
       background: #fff;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
     }
+
     .form-group textarea {
       resize: vertical;
-      min-height: 44px;
-      max-height: 160px;
+      min-height: 60px;
+      max-height: 200px;
     }
-    /* Logo */
-    .logo-upload-container {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      position: relative;
+
+    .form-actions {
+      text-align: right;
+      margin-top: 28px;
     }
-    .logo-label {
-      position: relative;
-      cursor: pointer;
-      width: 74px; height: 74px;
-      display: block;
-      border-radius: 50%;
-      overflow: hidden;
-      box-shadow: 0 2px 14px #6366f110;
-      border: 2.5px solid #e0e7ff;
-      background: #fff;
-      transition: box-shadow 0.13s;
-    }
-    .logo-label img#logo-preview {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      border-radius: 50%;
-      display: block;
-      background: #eef2ff;
-    }
-    .btn-remove-logo {
-      background: #fff;
-      color: #ef4444;
-      border: 1.5px solid #eee;
-      border-radius: 50%;
-      width: 28px; height: 28px; font-size: 1.13em;
-      display: flex; align-items: center; justify-content: center;
-      margin-left: 5px;
-      box-shadow: 0 0 6px #0002;
-      cursor: pointer;
-      transition: background 0.12s, color 0.14s;
-    }
-    .btn-remove-logo:hover {
-      background: #ef4444;
-      color: #fff;
-    }
-    /* Link da vitrine */
+
     .vitrine-link-container {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-top: 2px;
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
     }
+
     .vitrine-url {
-      font-size: 0.96em;
-      color: #6366f1;
-      background: #f6f8fa;
-      border-radius: 6px;
-      padding: 7px 8px;
+      font-size: 0.95em;
+      color: #2563eb;
       font-weight: 500;
-      border: 1px solid #e0e7ff;
-      word-break: break-all;
-    }
-    .vitrine-actions { display: flex; gap: 5px; align-items: center;}
-    .btn-copy, .btn-open {
-      background: #f6f8fa;
-      color: #4f46e5;
-      border: 1px solid #e0e7ff;
-      padding: 6px 10px;
-      font-size: 0.92em;
-      font-weight: 600;
-    }
-    .btn-copy:hover, .btn-open:hover {
-      background: #e0e7ff;
-    }
-    /* Botão fixo (mobile) */
-    .fixed-bottom-bar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: #fff;
-      box-shadow: 0 -2px 18px #6366f120;
-      padding: 12px 18px 15px 18px;
-      z-index: 12;
-    }
-    .btn-submit {
-      width: 100%;
-      font-size: 1.07em;
-      padding: 13px 0;
-      border-radius: 9px;
-      background: #6366f1;
-      color: #fff;
+      background: transparent;
       border: none;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 2px 6px #6366f115;
-      transition: background 0.14s;
+      padding: 0;
     }
-    .btn-submit:active { background: #4f46e5;}
-    @media (min-width:600px) {
-      .main-content {padding-bottom: 0;}
-      .fixed-bottom-bar {position: static; box-shadow: none; padding: 0;}
+
+    /* Logo preview */
+    .logo-upload-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
-    @media (max-width:600px){
-      .main-content {margin: 7vw 0 0 0; padding-bottom: 84px;}
-      .form-card {margin: 0 1vw;}
+    .logo-upload-container img#logo-preview {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #e5e7eb;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+    }
+    .logo-upload-container img#logo-preview:hover {
+      transform: scale(1.05);
+    }
+
+    /* Sucesso */
+    #mensagem-cadastro-sucesso {
+      display: none;
+      margin: 20px auto;
+      max-width: 560px;
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: 12px;
+      padding: 14px 20px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.05em;
+      border: 2px solid #10b981;
+      box-shadow: 0 2px 10px rgba(16,185,129,0.2);
+    }
+
+    @media (max-width: 900px) {
+      #sidebar-placeholder {width: 100%; height: auto; float: none;}
+      .main-content {margin-left: 0; width: 100%; padding: 16px 5vw;}
+      .form-card {max-width: 100%; padding: 20px; margin: 8vw 0 0;}
     }
   </style>
 </head>
 <body>
+  <div id="sidebar-placeholder"></div>
   <main class="main-content">
     <div class="form-card">
       <div class="header-section">
-        <h1>Perfil do Negócio</h1>
-        <p>Edite suas informações.</p>
+        <div class="header-content">
+          <h1 id="main-title">Meu Perfil e Configurações</h1>
+          <p>Defina aqui todas as informações do seu negócio.</p>
+        </div>
+        <div class="header-actions">
+          <a id="btn-abrir-vitrine" href="#" target="_blank" class="btn-new" style="display: none;">
+            <i class="fa-solid fa-store"></i> Abrir Minha Vitrine
+          </a>
+          <button id="btn-criar-nova-empresa" class="btn-new" type="button" style="background:linear-gradient(135deg,#10b981,#059669);">
+            <i class="fa-solid fa-plus"></i> Criar Nova Empresa
+          </button>
+        </div>
       </div>
-      <form id="form-perfil" autocomplete="off">
+
+      <!-- Seletor de empresas -->
+      <div class="form-group" id="empresa-selector-group" style="display:none;">
+        <label for="selectEmpresa"><i class="fa-solid fa-building"></i> Selecione sua empresa:</label>
+        <select id="selectEmpresa"></select>
+      </div>
+
+      <div id="mensagem-cadastro-sucesso"></div>
+      <div id="mensagem-free" style="display:none; margin:20px auto; max-width:560px; background:#e0e7ff; color:#3730a3; border-radius:10px; padding:12px 18px; text-align:center; font-weight:bold;">
+        Plano atual: FREE
+      </div>
+
+      <form id="form-perfil">
         <div class="form-section">
-          <div class="section-title">Informações Básicas</div>
+          <h3>Informações do Negócio</h3>
+
           <div class="form-group">
             <label for="nomeNegocio">Nome do Negócio</label>
-            <input type="text" id="nomeNegocio" placeholder="" required>
+            <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
           </div>
-          <div class="form-group" id="empresa-selector-group" style="display:none;">
-            <label for="selectEmpresa"><i class="fa-solid fa-building"></i> Selecione sua empresa:</label>
-            <select id="selectEmpresa"></select>
-          </div>
+
           <div class="form-group" id="container-link-vitrine" style="display: none;">
             <label>Link da sua Vitrine Pública</label>
             <div class="vitrine-link-container">
               <div class="vitrine-url" id="url-vitrine-display"></div>
               <div class="vitrine-actions">
-                <button type="button" id="btn-copiar-link" class="btn btn-copy">
+                <button type="button" id="btn-copiar-link" class="btn-copy">
                   <i class="fa-regular fa-copy"></i> Copiar
                 </button>
-                <a href="#" target="_blank" class="btn btn-open" id="btn-abrir-vitrine-inline">
+                <a href="#" target="_blank" class="btn-open" id="btn-abrir-vitrine-inline">
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir
                 </a>
               </div>
             </div>
           </div>
-        </div>
-        <div class="form-section">
-          <div class="section-title">Logotipo</div>
-          <div class="logo-upload-container">
-            <label for="logoNegocio" class="logo-label" id="logo-dropzone">
-              <img id="logo-preview" src="https://placehold.co/74x74/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
-              <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
-            </label>
-            <button type="button" id="btn-remove-logo" class="btn-remove-logo" style="display:none;">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+
+          <div class="form-group">
+            <label for="logoNegocio">Logótipo do Negócio (Opcional)</label>
+            <div class="logo-upload-container">
+              <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logotipo">
+              <div class="logo-upload-actions">
+                <input type="file" id="logoNegocio" accept="image/png, image/jpeg" style="display: none;">
+                <button type="button" id="btn-upload-logo" class="btn-upload">
+                  <i class="fa-regular fa-image"></i> Escolher Arquivo
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="form-section">
-          <div class="section-title">Descrição</div>
+
           <div class="form-group">
             <label for="descricao">Descrição Curta</label>
-            <textarea id="descricao" rows="3" placeholder=""></textarea>
+            <textarea id="descricao" rows="3" placeholder="Uma breve descrição do seu negócio."></textarea>
           </div>
-        </div>
-        <div class="form-section">
-          <div class="section-title">Endereço & Funcionamento</div>
+
           <div class="form-group">
             <label for="localizacao">Localização (Endereço)</label>
-            <input type="text" id="localizacao" placeholder="">
+            <input type="text" id="localizacao" placeholder="Ex: Rua das Flores, 123, São Paulo">
           </div>
+
           <div class="form-group">
             <label for="horarioFuncionamento">Horário de Funcionamento</label>
-            <input type="text" id="horarioFuncionamento" placeholder="">
+            <input type="text" id="horarioFuncionamento" placeholder="Ex: Seg a Sex, 9h - 18h">
           </div>
-        </div>
-        <div class="form-section">
-          <div class="section-title">Financeiro</div>
+
           <div class="form-group">
             <label for="chavePix">Chave PIX (Opcional)</label>
-            <input type="text" id="chavePix" placeholder="">
+            <input type="text" id="chavePix" placeholder="Digite sua chave PIX">
           </div>
         </div>
-        <div style="height:10px;"></div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
+        </div>
       </form>
     </div>
   </main>
-  <!-- Botão fixo para salvar -->
-  <div class="fixed-bottom-bar">
-    <button type="submit" form="form-perfil" class="btn-submit">Salvar Todas as Configurações</button>
-  </div>
+
+  <div id="modal-add-profissional" class="modal-overlay" style="display: none;"></div>
+
   <script>
-    // Logo preview/remover
-    const logoInput = document.getElementById('logoNegocio');
-    const logoPreview = document.getElementById('logo-preview');
-    const btnRemoveLogo = document.getElementById('btn-remove-logo');
-    if (logoInput && logoPreview) {
-      logoInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-          const url = URL.createObjectURL(file);
-          logoPreview.src = url;
-          btnRemoveLogo.style.display = 'flex';
-        }
+    // Inclusão dinâmica do menu lateral e destaque do menu de perfil
+    document.addEventListener("DOMContentLoaded", function() {
+      fetch('menu-lateral.html')
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById('sidebar-placeholder').innerHTML = html;
+          setTimeout(() => {
+            const links = document.querySelectorAll('.sidebar-links a');
+            links.forEach(link => link.classList.remove('active'));
+            const perfilLink = document.querySelector('.sidebar-links a[href="perfil.html"]');
+            if (perfilLink) perfilLink.classList.add('active');
+          }, 10);
+        });
+
+      document.getElementById('btn-criar-nova-empresa').addEventListener('click', function() {
+        document.getElementById('main-title').textContent = "Crie o Perfil do seu Negócio";
+        document.getElementById('form-perfil').reset();
+        document.getElementById('logo-preview').src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
+        document.getElementById('container-link-vitrine').style.display = 'none';
+        document.getElementById('mensagem-cadastro-sucesso').style.display = 'none';
+        window.empresaId = null;
       });
-    }
-    if (btnRemoveLogo && logoPreview && logoInput) {
-      btnRemoveLogo.addEventListener('click', function() {
-        logoPreview.src = "https://placehold.co/74x74/eef2ff/4f46e5?text=Logo";
-        logoInput.value = '';
-        btnRemoveLogo.style.display = 'none';
-      });
-    }
+    });
   </script>
+  <script src="perfil.js" type="module"></script>
 </body>
 </html>
