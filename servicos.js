@@ -1,9 +1,9 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO CORRIGIDA - AGUARDA AUTENTICAÇÃO)
+// ARQUIVO: servicos.js (VERSÃO FINAL COM LISTENER EM TEMPO REAL)
 // ======================================================================
 
 import {
-  collection, doc, getDocs, getDoc, deleteDoc
+  collection, doc, getDocs, getDoc, deleteDoc, onSnapshot, query
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js"; 
@@ -138,22 +138,22 @@ function renderizarServicos(servicos) {
   }).join("");
 }
 
-// --- Firebase - Carregar Serviços ---
-async function carregarServicosDoFirebase() {
-  console.log("[DEBUG] carregarServicosDoFirebase: Iniciando carregamento de serviços do Firebase.");
-  if (isProcessing) return;
-  empresaId = getEmpresaIdAtiva();
-
+// --- ⭐ NOVO: Listener de Serviços em Tempo Real ---
+// Esta função substitui a antiga 'carregarServicosDoFirebase'.
+// Ela "escuta" as mudanças no banco de dados e atualiza a tela automaticamente.
+function iniciarListenerDeServicos() {
+  console.log("[DEBUG] Iniciando listener de serviços em tempo real.");
   if (!empresaId) {
     if (listaServicosDiv) listaServicosDiv.innerHTML = "<p style=\"color:red;\">Empresa não encontrada.</p>";
     return;
   }
-  isProcessing = true;
-  try {
-    if (listaServicosDiv) listaServicosDiv.innerHTML = "<p>Carregando serviços...</p>";
-    const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-    const snap = await getDocs(servicosCol);
-    const servicos = snap.docs.map(doc => {
+  
+  const servicosCol = collection(db, "empresarios", empresaId, "servicos");
+  const q = query(servicosCol);
+
+  onSnapshot(q, (snapshot) => {
+    console.log("[DEBUG] Listener de serviços recebeu uma atualização do Firebase.");
+    const servicos = snapshot.docs.map(doc => {
       const data = doc.data();
       return { 
         id: doc.id, 
@@ -166,21 +166,12 @@ async function carregarServicosDoFirebase() {
       };
     });
     renderizarServicos(servicos);
-  } catch (error) {
-    if (listaServicosDiv) {
-      listaServicosDiv.innerHTML = `
-        <div style="color:red; text-align: center; padding: 20px;">
-          <p>Erro ao carregar os serviços.</p>
-          <p style="font-size: 12px; margin-top: 8px;">${error.message || "Erro desconhecido"}</p>
-          <button onclick="window.location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #4facfe; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Tentar Novamente
-          </button>
-        </div>
-      `;
-    }
-  } finally {
-    isProcessing = false;
-  }
+  }, (error) => {
+    console.error("Erro no listener de serviços:", error);
+    if(listaServicosDiv) {
+        listaServicosDiv.innerHTML = `<p style="color:red;">Ocorreu um erro ao carregar os serviços em tempo real.</p>`;
+    }
+  });
 }
 
 // --- Excluir Serviço ---
@@ -200,11 +191,15 @@ async function excluirServico(servicoId) {
       "Confirmar Exclusão", 
       "Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita."
     );
-    if (!confirmado) return;
+    if (!confirmado) {
+      isProcessing = false;
+      return;
+    }
     const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
     await deleteDoc(servicoRef);
     await showAlert("Sucesso!", "Serviço excluído com sucesso!");
-    await carregarServicosDoFirebase();
+    // ⭐ REMOVIDO: A linha 'await carregarServicosDoFirebase()' não é mais necessária.
+    // O listener 'onSnapshot' detecta a exclusão e atualiza a tela sozinho.
   } catch (error) {
     await showAlert("Erro", `Ocorreu um erro ao excluir o serviço: ${error.message || "Erro desconhecido"}`);
   } finally {
@@ -358,8 +353,6 @@ function initializeApp() {
   initializeDOMElements();
   setupEventListeners();
   
-  // ⭐ INÍCIO DA CORREÇÃO ESTRUTURAL ⭐
-  // A tela começa com o loader visível, aguardando a resposta definitiva do Firebase.
   toggleLoader(true);
   if (appContent) appContent.style.display = 'none';
 
@@ -367,64 +360,46 @@ function initializeApp() {
     console.log("[DEBUG] onAuthStateChanged disparado. Usuário:", user ? user.uid : "NULO");
 
     if (user) {
-      // --- O USUÁRIO ESTÁ AUTENTICADO ---
-      // A lógica de negócios original e complexa é executada aqui,
-      // pois agora temos certeza de que há uma sessão ativa.
       console.log(`[DEBUG] Usuário AUTENTICADO: ${user.uid}. Iniciando lógica da aplicação.`);
-      
+      
       if (isInitialized) {
           console.log("[DEBUG] Aplicação já inicializada. Ignorando evento de auth.");
           return;
       }
-      isInitialized = true; // Trava para evitar re-inicialização
+      isInitialized = true;
       userUid = user.uid;
       const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
       isAdmin = (user.uid === ADMIN_UID);
-      
+      
       const empresaIdSalva = getEmpresaIdAtiva();
-      console.log("[DEBUG] Verificando empresa salva:", empresaIdSalva);
-
       if (empresaIdSalva) {
         const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
-        console.log("[DEBUG] Resultado da verificação de acesso:", verificacao);
-
         if (verificacao.hasAccess) {
-          console.log("[DEBUG] Acesso concedido à empresa salva. Carregando serviços...");
           isDono = verificacao.isDono;
           isProfissional = verificacao.isProfissional;
           empresaDataDebug = verificacao.empresaData;
           donoUid = verificacao.donoUid;
           empresaId = empresaIdSalva;
           configurarUI();
-          await carregarServicosDoFirebase();
+          iniciarListenerDeServicos(); // ⭐ ALTERADO
           toggleLoader(false);
           return;
         } else {
-          console.log("[DEBUG] Acesso NEGADO à empresa salva. Removendo do localStorage e buscando outras opções.");
           setEmpresaIdAtiva(null);
         }
       }
 
-      console.log("[DEBUG] Nenhuma empresa salva válida. Buscando empresas do usuário...");
       const empresasDisponiveis = await buscarEmpresasDoUsuario(user);
-      console.log(`[DEBUG] Encontradas ${empresasDisponiveis.length} empresas.`);
-
       if (empresasDisponiveis.length === 0) {
-        console.log("[DEBUG] Nenhuma empresa encontrada para este usuário.");
         if (loader) {
-          loader.innerHTML = `
-            <div style="color:red; text-align: center; padding: 20px;">
-              <p>Você não tem acesso a nenhuma empresa.</p>
-              <p>Entre em contato com o administrador.</p>
-            </div>`;
+          loader.innerHTML = `<div style="color:red; text-align: center; padding: 20px;"><p>Você não tem acesso a nenhuma empresa.</p></div>`;
         }
-        toggleLoader(true); // Manter o container do loader visível com a mensagem
-        if (appContent) appContent.style.display = 'none';
+        toggleLoader(true);
+        if (appContent) appContent.style.display = 'none';
         return;
-      } 
-       
-       if (empresasDisponiveis.length === 1) {
-        console.log("[DEBUG] Encontrada 1 empresa. Definindo como ativa e carregando serviços.");
+      } 
+       
+       if (empresasDisponiveis.length === 1) {
         const empresa = empresasDisponiveis[0];
         empresaId = empresa.id;
         isDono = empresa.isDono;
@@ -433,51 +408,27 @@ function initializeApp() {
         const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
         donoUid = empresaSnap.exists() ? (empresaSnap.data().donoId || null) : null;
         configurarUI();
-        await carregarServicosDoFirebase();
+        iniciarListenerDeServicos(); // ⭐ ALTERADO
         toggleLoader(false);
       } else {
-        console.log("[DEBUG] Encontrada mais de 1 empresa. Redirecionando para seleção.");
         window.location.href = "selecionar-empresa.html";
       }
-
     } else {
-      // --- O USUÁRIO NÃO ESTÁ AUTENTICADO ---
-      // Este é o estado final se o Firebase confirmar que não há sessão.
-      // Exibe uma mensagem clara em vez de travar ou redirecionar sem aviso.
-      console.log("[DEBUG] Usuário NÃO autenticado. Exibindo estado de logout.");
       if (loader) {
-        loader.innerHTML = `
-          <div style="color:red; text-align: center; padding: 20px;">
-            <p>Sessão não encontrada ou expirada.</p>
-            <p>Por favor, faça o login novamente.</p>
-            <button onclick="window.location.href='login.html'" style="margin-top: 10px; padding: 8px 16px; background: #4facfe; color: white; border: none; border-radius: 4px; cursor: pointer;">
-              Ir para Login
-            </button>
-          </div>`;
+        loader.innerHTML = `<div style="color:red; text-align: center; padding: 20px;"><p>Sessão não encontrada ou expirada.</p><button onclick="window.location.href='login.html'">Ir para Login</button></div>`;
       }
-      toggleLoader(true); // Garante que a mensagem no loader seja visível
-      if (appContent) appContent.style.display = 'none';
+      toggleLoader(true);
+      if (appContent) appContent.style.display = 'none';
     }
-
   }, (error) => {
-    // --- OCORREU UM ERRO NA AUTENTICAÇÃO ---
     console.error("[DEBUG] Erro no listener de autenticação:", error);
     if (loader) {
-      loader.innerHTML = `
-        <div style="color:red; text-align: center; padding: 20px;">
-          <p>Ocorreu um erro de autenticação.</p>
-          <button onclick="window.location.href='login.html'" style="margin-top: 10px; padding: 8px 16px; background: #4facfe; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Ir para Login
-          </button>
-        </div>`;
+      loader.innerHTML = `<div style="color:red; text-align: center; padding: 20px;"><p>Ocorreu um erro de autenticação.</p><button onclick="window.location.href='login.html'">Ir para Login</button></div>`;
     }
-    toggleLoader(true); // Garante que a mensagem de erro seja visível
-    if (appContent) appContent.style.display = 'none';
+    toggleLoader(true);
+    if (appContent) appContent.style.display = 'none';
   });
-  // ⭐ FIM DA CORREÇÃO ESTRUTURAL ⭐
-
   console.log("[DEBUG] initializeApp: Função initializeApp concluída. Aguardando resposta do onAuthStateChanged.");
 }
 
-// Inicia a aplicação quando o script é carregado
 initializeApp();
