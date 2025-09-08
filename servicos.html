@@ -5,6 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Serviços</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <style>
+        .main-content { margin-left: 270px; padding: 32px; }
+        .servico-card { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .servico-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .servico-titulo { font-size: 1.3em; font-weight: bold; color: #333; margin: 0; }
+        .servico-descricao { color: #666; margin: 10px 0; line-height: 1.4; }
+        .servico-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0; }
+        .servico-preco { font-size: 1.2em; font-weight: bold; color: #28a745; }
+        .servico-duracao { color: #666; font-size: 0.9em; }
+        .servico-acoes { display: flex; gap: 10px; }
+        .btn-acao { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        .btn-editar { background-color: #ffc107; color: #333; }
+        .btn-excluir { background-color: #dc3545; color: white; }
+        .btn-new { background-color: #4f46e5; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 20px;}
+        @media (max-width: 900px) { .main-content { margin-left: 0; } }
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            left: 0; top: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.ativo {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+        }
+        .modal-botoes {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .modal-botoes button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        #modal-btn-confirmar { background-color: #d9534f; color: white; }
+        #modal-btn-cancelar { background-color: #f0f0f0; color: #333; }
+        /* Loader */
+        #loader {
+            position: fixed;
+            left: 0; top: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            font-size: 1.5em;
+            color: #4f46e5;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        /* Esconde o conteúdo enquanto carrega */
+        #app-content { display: none; }
+    </style>
 </head>
 <body>
 
@@ -17,7 +92,7 @@
             <h1>Nossos Serviços</h1>
             <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
             <div id="lista-servicos" style="margin-top:20px;">
-                </div>
+            </div>
         </main>
     </div>
 
@@ -40,7 +115,6 @@
                     document.getElementById('sidebar-placeholder').innerHTML = html;
                     const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
                     if (servicosLink) {
-                        // Remove a classe 'active' de todos os links e a adiciona no link correto.
                         document.querySelectorAll('.sidebar-links a').forEach(link => link.classList.remove('active'));
                         servicosLink.classList.add('active');
                     }
@@ -52,7 +126,9 @@
     
     <script src="./vitrini-utils.js" type="module"></script>
     
+    <script src="./vitrini-profissionais.js" type="module"></script>
+    
     <script src="./servicos.js" type="module"></script>
-
+    
 </body>
 </html>
