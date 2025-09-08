@@ -1,23 +1,25 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO FINAL MULTIEMPRESAS, CRASH-FREE, ACESSO ROBUSTO)
+// ARQUIVO: servicos.js (VERSÃO FINAL MULTIEMPRESAS, CRASH-FREE, E ACESSO ROBUSTO)
 // ======================================================================
 
-import { collection, doc, getDocs, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import {
+  collection, doc, getDocs, getDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js"; 
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
-// --- DOM Elements ---
+// --- Mapeamento de Elementos do DOM ---
 let listaServicosDiv, btnAddServico, loader, appContent;
 
-// --- State ---
+// --- Variáveis de Estado ---
 let empresaId = null;
 let isDono = false;
 let isAdmin = false;
 let isInitialized = false;
 let isProcessing = false;
 
-// --- DOM Initialization ---
+// --- Inicialização segura do DOM ---
 function initializeDOMElements() {
   listaServicosDiv = document.getElementById('lista-servicos');
   btnAddServico = document.querySelector('.btn-new');
@@ -25,228 +27,370 @@ function initializeDOMElements() {
   appContent = document.getElementById('app-content');
 }
 
-// --- LocalStorage Helpers ---
+// --- Funções Auxiliares ---
 function getEmpresaIdAtiva() {
-  try { return localStorage.getItem("empresaAtivaId"); } 
+  try { return localStorage.getItem("empresaAtivaId"); }
   catch { return null; }
 }
 
 function setEmpresaIdAtiva(id) {
-  try { if(id) localStorage.setItem("empresaAtivaId", id); else localStorage.removeItem("empresaAtivaId"); } 
-  catch {}
+  try {
+    if (id) localStorage.setItem("empresaAtivaId", id);
+    else localStorage.removeItem("empresaAtivaId");
+  } catch {}
 }
 
-// --- Utility Functions ---
 function formatarPreco(preco) {
-  if (!preco || isNaN(preco)) return 'R$ 0,00';
-  return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(preco));
+  if (preco === undefined || preco === null || isNaN(preco)) return 'R$ 0,00';
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(preco));
 }
 
 function sanitizeHTML(str) {
-  const div = document.createElement('div'); div.textContent = str||''; return div.innerHTML;
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
-function toggleLoader(show) {
-  if(loader) loader.style.display = show?'block':'none';
-  if(appContent) appContent.style.display = show?'none':'block';
-}
+// --- Funções de Renderização e Ações ---
+function renderizarServicos(servicos) {
+  if (!listaServicosDiv) return;
 
-// --- Renderização ---
-function renderizarServicos(servicos){
-  if(!listaServicosDiv) return;
-
-  if(!servicos || servicos.length===0){
-    listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. ${(isDono||isAdmin)?'Clique em "Adicionar Novo Serviço"':''}</p>`;
+  if (!servicos || servicos.length === 0) {
+    listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. ${(isDono || isAdmin) ? 'Clique em "Adicionar Novo Serviço" para começar.' : ''}</p>`;
     return;
   }
-
   const agrupados = {};
-  servicos.forEach(s=>{
-    const cat = s.categoria?.trim()||"Sem Categoria";
-    if(!agrupados[cat]) agrupados[cat]=[];
-    agrupados[cat].push(s);
+  servicos.forEach(servico => {
+    if (!servico || typeof servico !== 'object') return;
+    const cat = (servico.categoria && typeof servico.categoria === 'string' && servico.categoria.trim())
+      ? servico.categoria.trim()
+      : "Sem Categoria";
+    if (!agrupados[cat]) agrupados[cat] = [];
+    agrupados[cat].push(servico);
   });
 
-  const categoriasOrdenadas = Object.keys(agrupados).sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  listaServicosDiv.innerHTML = categoriasOrdenadas.map(cat=>{
-    const servicosCategoria = agrupados[cat].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+  const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  listaServicosDiv.innerHTML = categoriasOrdenadas.map(cat => {
+    const servicosCategoria = agrupados[cat].sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
     return `
       <div class="categoria-bloco">
-        <h2 class="categoria-titulo" style="color:#6366f1; margin-top:24px;">${sanitizeHTML(cat)}</h2>
-        ${servicosCategoria.map(s=>`
-          <div class="servico-card" data-servico-id="${sanitizeHTML(s.id||'')}">
-            <div class="servico-header"><h3>${sanitizeHTML(s.nome||'Sem nome')}</h3></div>
-            <p>${sanitizeHTML(s.descricao||'Sem descrição')}</p>
+        <h2 class="categoria-titulo" style="color: #6366f1; margin-top: 24px; margin-bottom: 12px;">
+          ${sanitizeHTML(cat)}
+        </h2>
+        ${servicosCategoria.map(servico => `
+          <div class="servico-card" data-servico-id="${sanitizeHTML(servico.id || '')}">
+            <div class="servico-header">
+              <h3 class="servico-titulo">${sanitizeHTML(servico.nome || 'Sem nome')}</h3>
+            </div>
+            <p class="servico-descricao">${sanitizeHTML(servico.descricao || 'Sem descrição.')}</p>
             <div class="servico-footer">
-              <div><span>${formatarPreco(s.preco)}</span> • <span>${s.duracao||0} min</span></div>
+              <div>
+                <span class="servico-preco">${formatarPreco(servico.preco)}</span>
+                <span class="servico-duracao"> • ${sanitizeHTML(String(servico.duracao || 0))} min</span>
+              </div>
               <div class="servico-acoes">
-                <button class="btn-acao btn-editar" data-id="${sanitizeHTML(s.id||'')}">Editar</button>
-                ${(isDono||isAdmin)?`<button class="btn-acao btn-excluir" data-id="${sanitizeHTML(s.id||'')}">Excluir</button>`:''}
+                <button class="btn-acao btn-editar" data-id="${sanitizeHTML(servico.id || '')}" type="button">
+                  Editar
+                </button>
+                ${(isDono || isAdmin) ? `
+                  <button class="btn-acao btn-excluir" data-id="${sanitizeHTML(servico.id || '')}" type="button">
+                    Excluir
+                  </button>
+                ` : ""}
               </div>
             </div>
-          </div>`).join('')}
-      </div>`;
+          </div>
+        `).join('')}
+      </div>
+    `;
   }).join('');
 }
 
-// --- Firebase CRUD ---
-async function carregarServicosDoFirebase(){
-  if(isProcessing) return;
+async function carregarServicosDoFirebase() {
+  if (isProcessing) return;
   empresaId = getEmpresaIdAtiva();
-  if(!empresaId) return;
+
+  if (!empresaId) {
+    if (listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">Empresa não encontrada.</p>';
+    return;
+  }
 
   isProcessing = true;
-  if(listaServicosDiv) listaServicosDiv.innerHTML='<p>Carregando serviços...</p>';
-
   try {
-    const snap = await getDocs(collection(db,"empresarios",empresaId,"servicos"));
-    const servicos = snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderizarServicos(servicos);
-  } catch(e){
-    console.error("Erro ao carregar serviços:",e);
-    listaServicosDiv.innerHTML=`<p style="color:red;">Erro ao carregar serviços</p>`;
-  } finally { isProcessing=false; }
-}
-
-async function excluirServico(servicoId){
-  if(isProcessing || !servicoId || !(isDono||isAdmin)) return;
-  isProcessing = true;
-  try{
-    const confirmado = await showCustomConfirm("Confirma exclusão?","Esta ação não pode ser desfeita.");
-    if(!confirmado) return;
-
-    await deleteDoc(doc(db,"empresarios",empresaId,"servicos",servicoId));
-    await showAlert("Sucesso!","Serviço excluído.");
-    await carregarServicosDoFirebase();
-  } catch(e){ console.error("Erro ao excluir serviço:",e); }
-  finally{ isProcessing=false; }
-}
-
-// --- Verificar Acesso ---
-async function verificarAcessoEmpresa(user,empresaId){
-  if(!user||!empresaId) return {hasAccess:false,isDono:false};
-  try{
-    const mapaSnap = await getDoc(doc(db,"mapaUsuarios",user.uid));
-    const empresas = mapaSnap.exists()? mapaSnap.data().empresas||[] : [];
-    if(!empresas.includes(empresaId)) return {hasAccess:false,isDono:false};
-
-    const empresaSnap = await getDoc(doc(db,"empresarios",empresaId));
-    if(!empresaSnap.exists()) return {hasAccess:false,isDono:false};
-    const empresaData = empresaSnap.data();
-    const isOwner = empresaData.donoId===user.uid;
-
-    let isProf=false, ehDonoProf=false;
-    try{
-      const profSnap = await getDoc(doc(db,"empresarios",empresaId,"profissionais",user.uid));
-      if(profSnap.exists()){ isProf=true; ehDonoProf=!!profSnap.data().ehDono; }
-    }catch{}
-
-    const isDonoFinal = isOwner||ehDonoProf;
-    return {hasAccess:true,isDono:isDonoFinal,isProfissional:isProf};
-  }catch(e){ console.error(e); return {hasAccess:false,isDono:false}; }
-}
-
-// --- Buscar Empresas do Usuário ---
-async function buscarEmpresasDoUsuario(user){
-  if(!user) return [];
-  try{
-    const mapaSnap = await getDoc(doc(db,"mapaUsuarios",user.uid));
-    const empresasIds = mapaSnap.exists()? mapaSnap.data().empresas||[]:[];
-    const promessas = empresasIds.map(async id=>{
-      const snap = await getDoc(doc(db,"empresarios",id));
-      if(!snap.exists()) return null;
-      const data = snap.data();
-      let isProf=false, ehDonoProf=false;
-      try{
-        const profSnap = await getDoc(doc(db,"empresarios",id,"profissionais",user.uid));
-        if(profSnap.exists()){ isProf=true; ehDonoProf=!!profSnap.data().ehDono; }
-      }catch{}
-      const isDonoFinal = data.donoId===user.uid||ehDonoProf;
-      return {id,nome:data.nome||'Sem nome',isDono:isDonoFinal,isProfissional:isProf};
+    if (listaServicosDiv) listaServicosDiv.innerHTML = '<p>Carregando serviços...</p>';
+    const servicosCol = collection(db, "empresarios", empresaId, "servicos");
+    const snap = await getDocs(servicosCol);
+    const servicos = snap.docs.map(doc => {
+      const data = doc.data();
+      return { 
+        id: doc.id, 
+        ...data,
+        nome: data.nome || '',
+        descricao: data.descricao || '',
+        preco: data.preco || 0,
+        duracao: data.duracao || 0,
+        categoria: data.categoria || ''
+      };
     });
-    return (await Promise.all(promessas)).filter(Boolean);
-  }catch(e){ console.error(e); return []; }
+    renderizarServicos(servicos);
+  } catch (error) {
+    if (listaServicosDiv) {
+      listaServicosDiv.innerHTML = `
+        <div style="color:red; text-align: center; padding: 20px;">
+          <p>Erro ao carregar os serviços.</p>
+          <p style="font-size: 12px; margin-top: 8px;">${error.message || 'Erro desconhecido'}</p>
+          <button onclick="window.location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #4facfe; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Tentar Novamente
+          </button>
+        </div>
+      `;
+    }
+  } finally {
+    isProcessing = false;
+  }
 }
 
-// --- UI Config ---
-function configurarUI(){ if(btnAddServico) btnAddServico.style.display=(isDono||isAdmin)?'inline-flex':'none'; }
+async function excluirServico(servicoId) {
+  if (isProcessing) return;
+  if (!servicoId) {
+    await showAlert("Erro", "ID do serviço não encontrado.");
+    return;
+  }
+  if (!(isDono || isAdmin)) {
+    await showAlert("Acesso Negado", "Apenas o dono ou admin pode excluir serviços.");
+    return;
+  }
+  isProcessing = true;
+  try {
+    const confirmado = await showCustomConfirm(
+      "Confirmar Exclusão", 
+      "Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita."
+    );
+    if (!confirmado) return;
+    const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
+    await deleteDoc(servicoRef);
+    await showAlert("Sucesso!", "Serviço excluído com sucesso!");
+    await carregarServicosDoFirebase();
+  } catch (error) {
+    await showAlert("Erro", `Ocorreu um erro ao excluir o serviço: ${error.message || 'Erro desconhecido'}`);
+  } finally {
+    isProcessing = false;
+  }
+}
+
+// Busca o array 'empresas' em mapaUsuarios, ou permissões diretas.
+async function verificarAcessoEmpresa(user, empresaId) {
+  try {
+    if (!user || !empresaId) return { hasAccess: false, isDono: false };
+    const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
+    let empresasPermitidas = [];
+    if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
+      empresasPermitidas = mapaSnap.data().empresas;
+    }
+    if (!empresasPermitidas.includes(empresaId)) return { hasAccess: false, isDono: false };
+    const empresaRef = doc(db, "empresarios", empresaId);
+    const empresaSnap = await getDoc(empresaRef);
+    if (!empresaSnap.exists()) return { hasAccess: false, isDono: false };
+    const empresaData = empresaSnap.data();
+    const isOwner = empresaData.donoId === user.uid;
+    let isProfissional = false;
+    let ehDonoProfissional = false;
+    try {
+      const profSnap = await getDoc(doc(db, "empresarios", empresaId, "profissionais", user.uid));
+      if (profSnap.exists()) {
+        isProfissional = true;
+        const profData = profSnap.data();
+        ehDonoProfissional = !!profData.ehDono;
+      }
+    } catch {}
+    const isDonoFinal = isOwner || ehDonoProfissional;
+    const hasAccess = isDonoFinal || isProfissional || isAdmin;
+    return {
+      hasAccess,
+      isDono: isDonoFinal || isAdmin,
+      isProfissional,
+      empresaNome: empresaData.nome || 'Empresa sem nome'
+    };
+  } catch {
+    return { hasAccess: false, isDono: false };
+  }
+}
+
+async function buscarEmpresasDoUsuario(user) {
+  try {
+    if (!user) return [];
+    const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
+    const empresas = mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas) 
+      ? mapaSnap.data().empresas 
+      : [];
+    const promessas = empresas.map(async id => {
+      const empresaSnap = await getDoc(doc(db, "empresarios", id));
+      if (empresaSnap.exists()) {
+        const empresaData = empresaSnap.data();
+        let isProfissional = false, ehDonoProfissional = false;
+        try {
+          const profSnap = await getDoc(doc(db, "empresarios", id, "profissionais", user.uid));
+          if (profSnap.exists()) {
+            isProfissional = true;
+            ehDonoProfissional = !!profSnap.data().ehDono;
+          }
+        } catch {}
+        const isDonoFinal = empresaData.donoId === user.uid || ehDonoProfissional;
+        return {
+          id,
+          nome: empresaData.nome || empresaData.nomeFantasia || 'Empresa sem nome',
+          isDono: isDonoFinal || isAdmin,
+          isProfissional
+        };
+      }
+      return null;
+    });
+    const empresasObjs = await Promise.all(promessas);
+    return empresasObjs.filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+// --- Função para mostrar/esconder loader ---
+function toggleLoader(show) {
+  if (loader) loader.style.display = show ? 'block' : 'none';
+  if (appContent) appContent.style.display = show ? 'none' : 'block';
+}
+
+// --- Função para configurar UI baseado nas permissões ---
+function configurarUI() {
+  if (btnAddServico) btnAddServico.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+}
 
 // --- Event Listeners ---
-function setupEventListeners(){
-  if(!listaServicosDiv || !btnAddServico) return;
-
-  listaServicosDiv.addEventListener('click',async e=>{
-    if(isProcessing) return;
-    const target = e.target.closest('.btn-acao');
-    if(!target) return;
-    const id = target.dataset.id;
-    if(!id) return;
-    e.preventDefault(); e.stopPropagation();
-    if(target.classList.contains('btn-editar')&&(isDono||isAdmin)){
-      window.location.href=`novo-servico.html?id=${encodeURIComponent(id)}`;
-    }else if(target.classList.contains('btn-excluir')){
-      await excluirServico(id);
-    }
-  });
-
-  btnAddServico.addEventListener('click',e=>{
-    e.preventDefault(); e.stopPropagation();
-    if(isDono||isAdmin) window.location.href='novo-servico.html';
-  });
+function setupEventListeners() {
+  if (listaServicosDiv) {
+    listaServicosDiv.addEventListener('click', async function(e) {
+      if (isProcessing) return;
+      const target = e.target.closest('.btn-acao');
+      if (!target) return;
+      const id = target.dataset.id;
+      if (!id) return;
+      e.preventDefault(); e.stopPropagation();
+      if (target.classList.contains('btn-editar')) {
+        if (isDono || isAdmin) {
+          window.location.href = `novo-servico.html?id=${encodeURIComponent(id)}`;
+        } else {
+          await showAlert("Acesso Negado", "Apenas o dono ou admin pode editar serviços.");
+        }
+      } else if (target.classList.contains('btn-excluir')) {
+        await excluirServico(id);
+      }
+    });
+  }
+  if (btnAddServico) {
+    btnAddServico.addEventListener('click', async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (isProcessing) return;
+      if (isDono || isAdmin) {
+        window.location.href = 'novo-servico.html';
+      } else {
+        await showAlert("Acesso Negado", "Apenas o dono ou admin pode adicionar serviços.");
+      }
+    });
+  }
 }
 
-// --- Inicialização ---
-function initializeApp(){
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',initializeApp); return; }
-
+// --- Ponto de Entrada Principal ---
+function initializeApp() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+    return;
+  }
   initializeDOMElements();
   setupEventListeners();
-
-  onAuthStateChanged(auth,async user=>{
-    while(!user){
-      console.log("⏳ Usuário ainda não restaurado, aguardando 1s...");
-      await new Promise(res=>setTimeout(res,1000));
-      user=auth.currentUser;
+  onAuthStateChanged(auth, async (user) => {
+    while(!user) {
+      await new Promise(res => setTimeout(res, 500));
+      user = auth.currentUser;
     }
-
-    isAdmin = user.uid==="BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+    if (isInitialized) return;
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+    isAdmin = (user.uid === ADMIN_UID);
     toggleLoader(true);
-
-    let empresaIdSalva = getEmpresaIdAtiva();
-    if(empresaIdSalva){
-      const ver = await verificarAcessoEmpresa(user,empresaIdSalva);
-      if(ver.hasAccess){
-        empresaId = empresaIdSalva; isDono=ver.isDono;
-        configurarUI(); await carregarServicosDoFirebase();
-        isInitialized=true; toggleLoader(false); return;
-      } else setEmpresaIdAtiva(null);
+    const empresaIdSalva = getEmpresaIdAtiva();
+    if (empresaIdSalva) {
+      const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
+      if (verificacao.hasAccess) {
+        empresaId = empresaIdSalva;
+        isDono = verificacao.isDono;
+        configurarUI();
+        await carregarServicosDoFirebase();
+        isInitialized = true;
+        toggleLoader(false);
+        return;
+      } else {
+        setEmpresaIdAtiva(null);
+      }
     }
-
-    const empresasDisp = await buscarEmpresasDoUsuario(user);
-    if(empresasDisp.length===0){
-      if(loader) loader.innerHTML='<p style="color:red;">Você não tem acesso a nenhuma empresa.</p>';
-      toggleLoader(false); return;
+    const empresasDisponiveis = await buscarEmpresasDoUsuario(user);
+    if (empresasDisponiveis.length === 0) {
+      if (loader) {
+        loader.innerHTML = `
+          <div style="color:red; text-align: center; padding: 20px;">
+            <p>Você não tem acesso a nenhuma empresa.</p>
+            <p>Entre em contato com o administrador.</p>
+          </div>
+        `;
+      }
+      toggleLoader(false);
+      isInitialized = true;
+      return;
+    } else if (empresasDisponiveis.length === 1) {
+      const empresa = empresasDisponiveis[0];
+      empresaId = empresa.id;
+      isDono = empresa.isDono;
+      setEmpresaIdAtiva(empresaId);
+      configurarUI();
+      await carregarServicosDoFirebase();
+      isInitialized = true;
+      toggleLoader(false);
+    } else {
+      window.location.href = 'selecionar-empresa.html';
+      isInitialized = true;
+      toggleLoader(false);
+      return;
     }
-
-    const empresa = empresasDisp[0]; // auto-seleciona se só 1
-    empresaId = empresa.id; isDono=empresa.isDono;
-    setEmpresaIdAtiva(empresaId);
-
-    configurarUI(); await carregarServicosDoFirebase();
-    isInitialized=true;
-    toggleLoader(false);
+  }, (error) => {
+    if (loader) {
+      loader.innerHTML = `
+        <div style="color:red; text-align: center; padding: 20px;">
+          <p>Erro de autenticação.</p>
+          <button onclick="window.location.href='login.html'" style="margin-top: 10px; padding: 8px 16px; background: #4facfe; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Ir para Login
+          </button>
+        </div>
+      `;
+    }
   });
 }
 
-// --- Debug ---
-window.debugServicos={
-  getEmpresaId:()=>empresaId,
-  getIsDono:()=>isDono,
-  getIsAdmin:()=>isAdmin,
-  getLocalStorage:()=>getEmpresaIdAtiva(),
-  recarregar:()=>window.location.reload()
+// --- Funções de Debug ---
+window.debugServicos = {
+  getEmpresaId: () => empresaId,
+  getIsDono: () => isDono,
+  getIsAdmin: () => isAdmin,
+  getLocalStorage: () => getEmpresaIdAtiva(),
+  getIsProcessing: () => isProcessing,
+  clearEmpresa: () => {
+    setEmpresaIdAtiva(null);
+    window.location.reload();
+  },
+  recarregar: () => window.location.reload(),
+  forceReload: () => {
+    isInitialized = false;
+    isProcessing = false;
+    window.location.reload();
+  }
 };
 
-// --- Start ---
+// --- Inicialização ---
 initializeApp();
-console.log("🔧 Funções de debug disponíveis em window.debugServicos");
