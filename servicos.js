@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: servicos.js (DEBUG COMPLETO REVISADO - IDENTIFICAÇÃO DE DONO, ADMIN, PROFISSIONAL, EMPRESA E SERVIÇOS)
+// ARQUIVO: servicos.js (DEBUG COMPLETO REVISADO - DONO, ADMIN, PROFISSIONAL, EMPRESA E SERVIÇOS)
 // ======================================================================
 
 import { collection, doc, getDocs, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
