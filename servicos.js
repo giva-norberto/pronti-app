@@ -15,7 +15,7 @@ let listaServicosDiv, btnAddServico, loader, appContent;
 // --- Variáveis de Estado ---
 let empresaId = null;
 let isDono = false;
-let donoUid = null; // <=== Adicionado para armazenar o UID do dono da empresa
+let donoUid = null; // UID do dono da empresa
 let isAdmin = false;
 let isProfissional = false;
 let isInitialized = false;
@@ -32,7 +32,6 @@ function initializeDOMElements() {
   console.log("[DEBUG] initializeDOMElements: Elementos DOM inicializados", {
     listaServicosDiv, btnAddServico, loader, appContent
   });
-  // Adicionar verificação para garantir que os elementos foram encontrados
   if (!listaServicosDiv) console.error("[DEBUG] initializeDOMElements: #lista-servicos não encontrado!");
   if (!btnAddServico) console.error("[DEBUG] initializeDOMElements: .btn-new não encontrado!");
   if (!loader) console.error("[DEBUG] initializeDOMElements: #loader não encontrado!");
@@ -79,13 +78,10 @@ function formatarPreco(preco) {
 }
 
 function sanitizeHTML(str) {
-  console.log("[DEBUG] sanitizeHTML: Sanitizando string:", str);
   if (!str) return "";
   const div = document.createElement("div");
   div.textContent = str;
-  const sanitized = div.innerHTML;
-  console.log("[DEBUG] sanitizeHTML: String sanitizada:", sanitized);
-  return sanitized;
+  return div.innerHTML;
 }
 
 // --- Funções de Renderização e Ações ---
@@ -99,41 +95,32 @@ function renderizarServicos(servicos) {
   if (!servicos || servicos.length === 0) {
     const msg = `<p>Nenhum serviço cadastrado. ${(isDono || isAdmin) ? "Clique em \"Adicionar Novo Serviço\" para começar." : ""}</p>`;
     listaServicosDiv.innerHTML = msg;
-    console.log("[DEBUG] renderizarServicos: Nenhum serviço para renderizar, exibindo mensagem padrão.");
     return;
   }
   const agrupados = {};
   servicos.forEach(servico => {
-    if (!servico || typeof servico !== "object") {
-      console.warn("[DEBUG] renderizarServicos: Serviço inválido encontrado, ignorando:", servico);
-      return;
-    }
+    if (!servico || typeof servico !== "object") return;
     const cat = (servico.categoria && typeof servico.categoria === "string" && servico.categoria.trim())
       ? servico.categoria.trim()
       : "Sem Categoria";
     if (!agrupados[cat]) agrupados[cat] = [];
     agrupados[cat].push(servico);
-    console.log("[DEBUG] renderizarServicos: Serviço agrupado na categoria \"" + cat + "\":", servico.nome);
   });
 
   const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  console.log("[DEBUG] renderizarServicos: Categorias ordenadas:", categoriasOrdenadas);
 
   listaServicosDiv.innerHTML = categoriasOrdenadas.map(cat => {
     const servicosCategoria = agrupados[cat].sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-    console.log("[DEBUG] renderizarServicos: Renderizando categoria \"" + cat + "\" com " + servicosCategoria.length + " serviços.");
     return `
       <div class="categoria-bloco">
         <h2 class="categoria-titulo" style="color: #6366f1; margin-top: 24px; margin-bottom: 12px;">
           ${sanitizeHTML(cat)}
         </h2>
-        ${servicosCategoria.map(servico => {
-          console.log("[DEBUG] renderizarServicos: Renderizando serviço \"" + servico.nome + "\" (ID: " + servico.id + ").");
-          return `
+        ${servicosCategoria.map(servico => `
           <div class="servico-card" data-servico-id="${sanitizeHTML(servico.id || "")}">
             <div class="servico-header">
               <h3 class="servico-titulo">${sanitizeHTML(servico.nome || "Sem nome")}</h3>
-              ${donoUid ? `<span class="dono-indicator" style="font-size:0.9em;color:#4f46e5;">Dono: ${sanitizeHTML(donoUid)}</span>` : ""}
+              ${donoUid ? `<span style="font-size:0.8em;color:#4f46e5;">Dono: ${sanitizeHTML(donoUid)}</span>` : ""}
             </div>
             <p class="servico-descricao">${sanitizeHTML(servico.descricao || "Sem descrição.")}</p>
             <div class="servico-footer">
@@ -149,39 +136,29 @@ function renderizarServicos(servicos) {
               </div>
             </div>
           </div>
-        `;
-        }).join("")}
+        `).join("")}
       </div>
     `;
   }).join("");
-  console.log("[DEBUG] renderizarServicos: Renderização de serviços concluída.");
 }
 
 // --- Firebase - Carregar Serviços ---
 async function carregarServicosDoFirebase() {
   console.log("[DEBUG] carregarServicosDoFirebase: Iniciando carregamento de serviços do Firebase.");
-  if (isProcessing) {
-    console.log("[DEBUG] carregarServicosDoFirebase: Já existe um processo em andamento, abortando.");
-    return;
-  }
+  if (isProcessing) return;
   empresaId = getEmpresaIdAtiva();
 
   if (!empresaId) {
-    console.warn("[DEBUG] carregarServicosDoFirebase: empresaId não encontrada, não é possível carregar serviços.");
     if (listaServicosDiv) listaServicosDiv.innerHTML = "<p style=\"color:red;\">Empresa não encontrada.</p>";
     return;
   }
-  console.log("[DEBUG] carregarServicosDoFirebase: Carregando serviços para empresaId:", empresaId);
   isProcessing = true;
   try {
     if (listaServicosDiv) listaServicosDiv.innerHTML = "<p>Carregando serviços...</p>";
     const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-    console.log("[DEBUG] carregarServicosDoFirebase: Buscando documentos da coleção 'servicos' para empresa:", empresaId);
     const snap = await getDocs(servicosCol);
-    console.log("[DEBUG] carregarServicosDoFirebase: Documentos de serviços recebidos. Quantidade:", snap.docs.length);
     const servicos = snap.docs.map(doc => {
       const data = doc.data();
-      console.log("[DEBUG] carregarServicosDoFirebase: Processando documento de serviço (ID: " + doc.id + "):", data);
       return { 
         id: doc.id, 
         ...data,
@@ -192,10 +169,8 @@ async function carregarServicosDoFirebase() {
         categoria: data.categoria || ""
       };
     });
-    console.log("[DEBUG] carregarServicosDoFirebase: Serviços mapeados para renderização:", servicos);
     renderizarServicos(servicos);
   } catch (error) {
-    console.error("[DEBUG] carregarServicosDoFirebase: Erro ao carregar serviços do Firebase:", error);
     if (listaServicosDiv) {
       listaServicosDiv.innerHTML = `
         <div style="color:red; text-align: center; padding: 20px;">
@@ -209,92 +184,62 @@ async function carregarServicosDoFirebase() {
     }
   } finally {
     isProcessing = false;
-    console.log("[DEBUG] carregarServicosDoFirebase: Carregamento de serviços finalizado.");
   }
 }
 
 // --- Excluir Serviço ---
 async function excluirServico(servicoId) {
-  console.log("[DEBUG] excluirServico: Tentando excluir serviço com ID:", servicoId);
-  if (isProcessing) {
-    console.log("[DEBUG] excluirServico: Já existe um processo em andamento, abortando exclusão.");
-    return;
-  }
+  if (isProcessing) return;
   if (!servicoId) {
-    console.error("[DEBUG] excluirServico: ID do serviço não fornecido.");
     await showAlert("Erro", "ID do serviço não encontrado.");
     return;
   }
   if (!(isDono || isAdmin)) {
-    console.warn("[DEBUG] excluirServico: Acesso negado. Usuário não é dono nem admin.");
     await showAlert("Acesso Negado", "Apenas o dono ou admin pode excluir serviços.");
     return;
   }
   isProcessing = true;
   try {
-    console.log("[DEBUG] excluirServico: Solicitando confirmação para exclusão do serviço.");
     const confirmado = await showCustomConfirm(
       "Confirmar Exclusão", 
       "Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita."
     );
-    if (!confirmado) {
-      console.log("[DEBUG] excluirServico: Exclusão cancelada pelo usuário.");
-      return;
-    }
+    if (!confirmado) return;
     const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
-    console.log("[DEBUG] excluirServico: Referência do documento a ser excluído:", servicoRef.path);
     await deleteDoc(servicoRef);
-    console.log("[DEBUG] excluirServico: Serviço excluído com sucesso do Firebase.");
     await showAlert("Sucesso!", "Serviço excluído com sucesso!");
     await carregarServicosDoFirebase();
   } catch (error) {
     await showAlert("Erro", `Ocorreu um erro ao excluir o serviço: ${error.message || "Erro desconhecido"}`);
   } finally {
     isProcessing = false;
-    console.log("[DEBUG] excluirServico: Processo de exclusão finalizado.");
   }
 }
 
 // --- Verificação de Permissão e Identificação (Dono/Admin/Profissional) ---
 async function verificarAcessoEmpresa(user, empresaId) {
-  console.log("[DEBUG] verificarAcessoEmpresa: Iniciando verificação de acesso para user:", user ? user.uid : "NULO", "e empresaId:", empresaId);
   try {
     if (!user || !empresaId) {
-      console.log("[DEBUG] verificarAcessoEmpresa: user ou empresaId nulo. Retornando acesso negado.", {user, empresaId});
       return { hasAccess: false, isDono: false, isProfissional: false, empresaData: null, profDataDebug: null, donoUid: null };
     }
     userUid = user.uid;
-    console.log("[DEBUG] verificarAcessoEmpresa: UID do usuário atual:", user.uid, "| Empresa ID a verificar:", empresaId);
-    
     const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
     let empresasPermitidas = [];
     if (mapaSnap.exists()) {
       empresasPermitidas = Array.isArray(mapaSnap.data().empresas) ? mapaSnap.data().empresas : [];
-      console.log("[DEBUG] verificarAcessoEmpresa: Documento mapaUsuarios existe. Empresas permitidas:", empresasPermitidas);
-    } else {
-      console.log("[DEBUG] verificarAcessoEmpresa: Documento mapaUsuarios NÃO existe para o usuário.");
     }
-    
     if (!empresasPermitidas.includes(empresaId)) {
-      console.log("[DEBUG] verificarAcessoEmpresa: Usuário NÃO possui permissão para esta empresa (não listada em mapaUsuarios).");
       return { hasAccess: false, isDono: false, isProfissional: false, empresaData: null, profDataDebug: null, donoUid: null };
     }
-    
     const empresaRef = doc(db, "empresarios", empresaId);
     const empresaSnap = await getDoc(empresaRef);
-    
     if (!empresaSnap.exists()) {
-      console.log("[DEBUG] verificarAcessoEmpresa: Documento da empresa (empresarios/" + empresaId + ") NÃO existe.");
       return { hasAccess: false, isDono: false, isProfissional: false, empresaData: null, profDataDebug: null, donoUid: null };
     }
-    
     const empresaData = empresaSnap.data();
     empresaDataDebug = empresaData;
     const isOwner = empresaData.donoId === user.uid;
-    donoUid = empresaData.donoId || null; // <=== Captura o UID do dono da empresa
-    console.log("[DEBUG] verificarAcessoEmpresa: Dados da empresa:", empresaData);
-    console.log("[DEBUG] verificarAcessoEmpresa: donoId da empresa:", empresaData.donoId, "| user.uid:", user.uid, "| isOwner (comparação direta):", isOwner);
-
+    donoUid = empresaData.donoId || null;
     let isProfissional_ = false;
     let ehDonoProfissional = false;
     let profDataDebug = null;
@@ -304,110 +249,138 @@ async function verificarAcessoEmpresa(user, empresaId) {
         isProfissional_ = true;
         profDataDebug = profSnap.data();
         ehDonoProfissional = !!profDataDebug.ehDono;
-        console.log("[DEBUG] verificarAcessoEmpresa: Profissional encontrado na subcoleção. Dados:", profDataDebug, "| ehDonoProfissional:", ehDonoProfissional);
-      } else {
-        console.log("[DEBUG] verificarAcessoEmpresa: Usuário NÃO é profissional nesta empresa (não encontrado na subcoleção 'profissionais').");
       }
-    } catch (e) {
-      console.error("[DEBUG] verificarAcessoEmpresa: Erro ao buscar profissional na subcoleção:", e);
-    }
-    
+    } catch (e) {}
     const isDonoFinal = isOwner || ehDonoProfissional;
-    // isAdmin é uma variável global definida no onAuthStateChanged
     const hasAccess = isDonoFinal || isProfissional_ || isAdmin;
-    
-    console.log("[DEBUG] verificarAcessoEmpresa: Resultados Finais de Acesso:", {
-      isDonoFinal: isDonoFinal,
-      isAdmin: isAdmin,
-      isProfissional: isProfissional_,
-      hasAccess: hasAccess,
-      empresaData: empresaData,
-      profDataDebug: profDataDebug,
-      donoUid: donoUid
-    });
-    
     return {
       hasAccess,
-      isDono: isDonoFinal || isAdmin, // isDono para UI/lógica de permissão de edição/exclusão
+      isDono: isDonoFinal || isAdmin,
       isProfissional: isProfissional_,
       empresaData,
       profDataDebug,
       donoUid: donoUid
     };
   } catch (e) {
-    console.error("[DEBUG] verificarAcessoEmpresa: ERRO GERAL na função verificarAcessoEmpresa:", e);
     return { hasAccess: false, isDono: false, isProfissional: false, empresaData: null, profDataDebug: null, donoUid: null };
   }
 }
 
 // --- Buscar Empresas do Usuário ---
-// (sem alteração, igual ao seu código original)
+async function buscarEmpresasDoUsuario(user) {
+  try {
+    if (!user) return [];
+    const mapaSnap = await getDoc(doc(db, "mapaUsuarios", user.uid));
+    const empresas = mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas) 
+      ? mapaSnap.data().empresas 
+      : [];
+    const promessas = empresas.map(async id => {
+      const empresaSnap = await getDoc(doc(db, "empresarios", id));
+      if (empresaSnap.exists()) {
+        const empresaData = empresaSnap.data();
+        let isProfissional = false, ehDonoProfissional = false;
+        try {
+          const profSnap = await getDoc(doc(db, "empresarios", id, "profissionais", user.uid));
+          if (profSnap.exists()) {
+            isProfissional = true;
+            ehDonoProfissional = !!profSnap.data().ehDono;
+          }
+        } catch (e) {}
+        const isDonoFinal = empresaData.donoId === user.uid || ehDonoProfissional;
+        return {
+          id,
+          nome: empresaData.nome || empresaData.nomeFantasia || "Empresa sem nome",
+          isDono: isDonoFinal || isAdmin,
+          isProfissional
+        };
+      }
+      return null;
+    });
+    const empresasObjs = await Promise.all(promessas);
+    return empresasObjs.filter(Boolean);
+  } catch (e) {
+    return [];
+  }
+}
 
 // --- Função para mostrar/esconder loader ---
-// (sem alteração, igual ao seu código original)
+function toggleLoader(show) {
+  if (loader) loader.style.display = show ? "flex" : "none";
+  if (appContent) appContent.style.display = show ? "none" : "block";
+}
 
 // --- Função para configurar UI baseado nas permissões ---
-// (sem alteração, igual ao seu código original)
+function configurarUI() {
+  if (btnAddServico) {
+    btnAddServico.style.display = (isDono || isAdmin) ? "inline-flex" : "none";
+  }
+}
 
 // --- Event Listeners ---
-// (sem alteração, igual ao seu código original)
+function setupEventListeners() {
+  if (listaServicosDiv) {
+    listaServicosDiv.addEventListener("click", async function(e) {
+      if (isProcessing) return;
+      const target = e.target.closest(".btn-acao");
+      if (!target) return;
+      const id = target.dataset.id;
+      if (!id) return;
+      e.preventDefault(); 
+      e.stopPropagation();
+      if (target.classList.contains("btn-editar")) {
+        if (isDono || isAdmin) {
+          window.location.href = `novo-servico.html?id=${encodeURIComponent(id)}`;
+        } else {
+          await showAlert("Acesso Negado", "Apenas o dono ou admin pode editar serviços.");
+        }
+      } else if (target.classList.contains("btn-excluir")) {
+        await excluirServico(id);
+      }
+    });
+  }
+  if (btnAddServico) {
+    btnAddServico.addEventListener("click", async (e) => {
+      e.preventDefault(); 
+      e.stopPropagation();
+      if (isProcessing) return;
+      if (isDono || isAdmin) {
+        window.location.href = "novo-servico.html";
+      } else {
+        await showAlert("Acesso Negado", "Apenas o dono ou admin pode adicionar serviços.");
+      }
+    });
+  }
+}
 
 // --- Ponto de Entrada Principal ---
 function initializeApp() {
   console.log("[DEBUG] initializeApp: Iniciando aplicação.");
   if (document.readyState === "loading") {
-    console.log("[DEBUG] initializeApp: DOM ainda não carregado, adicionando listener para DOMContentLoaded.");
     document.addEventListener("DOMContentLoaded", initializeApp);
     return;
   }
-  
   initializeDOMElements();
   setupEventListeners();
-  
   onAuthStateChanged(auth, async (user) => {
     console.log("[DEBUG] onAuthStateChanged: Estado de autenticação alterado. Usuário:", user ? user.uid : "NULO");
-    
     if (!user) {
-      console.log("[DEBUG] onAuthStateChanged: Usuário nulo. Mantendo loader visível e aguardando próximo evento de autenticação.");
       toggleLoader(true);
       isInitialized = false;
       return; 
     }
-
-    if (isInitialized) {
-      console.log("[DEBUG] onAuthStateChanged: Aplicação já inicializada para este usuário, ignorando.");
-      return;
-    }
-    
-    console.log("[DEBUG] onAuthStateChanged: Usuário autenticado. UID:", user.uid);
+    if (isInitialized) return;
     userUid = user.uid;
-    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // UID do administrador fixo
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
     isAdmin = (user.uid === ADMIN_UID);
-    console.log("[DEBUG] onAuthStateChanged: isAdmin (comparação com ADMIN_UID):", isAdmin);
-
     toggleLoader(true);
     const empresaIdSalva = getEmpresaIdAtiva();
-    console.log("[DEBUG] onAuthStateChanged: Empresa ID salva no localStorage:", empresaIdSalva);
-
     if (empresaIdSalva) {
-      console.log("[DEBUG] onAuthStateChanged: Empresa ID salva encontrada. Verificando acesso...");
       const verificacao = await verificarAcessoEmpresa(user, empresaIdSalva);
       isDono = verificacao.isDono;
       isProfissional = verificacao.isProfissional;
       empresaDataDebug = verificacao.empresaData;
-      donoUid = verificacao.donoUid; // <=== Captura o donoUid para uso global
-      console.log("[DEBUG] onAuthStateChanged: Resultado da verificação de acesso para empresa ativa:\n", 
-        "  Empresa ID:", empresaIdSalva, "\n",
-        "  isDono:", isDono, "\n", 
-        "  isAdmin:", isAdmin, "\n", 
-        "  isProfissional:", isProfissional, "\n", 
-        "  user.uid:", user.uid, "\n", 
-        "  empresaData (dados completos da empresa):", verificacao.empresaData, "\n", 
-        "  profDataDebug (dados do profissional, se aplicável):", verificacao.profDataDebug, "\n",
-        "  donoUid (UID do dono da empresa):", donoUid
-      );
+      donoUid = verificacao.donoUid;
       if (verificacao.hasAccess) {
-        console.log("[DEBUG] onAuthStateChanged: Usuário TEM acesso à empresa salva. Carregando serviços.");
         empresaId = empresaIdSalva;
         configurarUI();
         await carregarServicosDoFirebase();
@@ -415,17 +388,11 @@ function initializeApp() {
         toggleLoader(false);
         return;
       } else {
-        console.warn("[DEBUG] onAuthStateChanged: Usuário NÃO TEM acesso à empresa salva. Removendo empresa ativa do localStorage.");
         setEmpresaIdAtiva(null);
       }
     }
-    
-    console.log("[DEBUG] onAuthStateChanged: Buscando empresas disponíveis para o usuário.");
     const empresasDisponiveis = await buscarEmpresasDoUsuario(user);
-    console.log("[DEBUG] onAuthStateChanged: Empresas disponíveis encontradas:", empresasDisponiveis);
-
     if (empresasDisponiveis.length === 0) {
-      console.warn("[DEBUG] onAuthStateChanged: Nenhuma empresa disponível para o usuário.");
       if (loader) {
         loader.innerHTML = `
           <div style="color:red; text-align: center; padding: 20px;">
@@ -443,30 +410,19 @@ function initializeApp() {
       isDono = empresa.isDono;
       isProfissional = empresa.isProfissional;
       setEmpresaIdAtiva(empresaId);
-      // Pega o dono da empresa para exibir/global
       const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
       donoUid = empresaSnap.exists() ? (empresaSnap.data().donoId || null) : null;
-      console.log("[DEBUG] onAuthStateChanged: Apenas uma empresa disponível. Definindo como ativa.\n", 
-        "  Empresa ID:", empresaId, "\n", 
-        "  isDono:", isDono, "\n", 
-        "  isAdmin:", isAdmin, "\n", 
-        "  isProfissional:", isProfissional, "\n", 
-        "  user.uid:", user.uid, "\n",
-        "  donoUid (UID do dono da empresa):", donoUid
-      );
       configurarUI();
       await carregarServicosDoFirebase();
       isInitialized = true;
       toggleLoader(false);
     } else {
-      console.log("[DEBUG] onAuthStateChanged: Múltiplas empresas disponíveis. Redirecionando para seleção de empresa.");
       window.location.href = "selecionar-empresa.html";
       isInitialized = true;
       toggleLoader(false);
       return;
     }
   }, (error) => {
-    console.error("[DEBUG] onAuthStateChanged: Erro de autenticação do Firebase:", error);
     if (loader) {
       loader.innerHTML = `
         <div style="color:red; text-align: center; padding: 20px;">
