@@ -6,7 +6,7 @@
 import { db, auth, storage } from "./firebase-config.js";
 import { collection, onSnapshot, query, where, doc, getDoc, setDoc, updateDoc, serverTimestamp, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
-import { showCustomConfirm, showAlert } from "./vitrini-utils.js"; // Importando suas funções de UI
+import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
 // --- VARIÁVEIS DE ESTADO ---
 let isDono = false;
@@ -417,11 +417,17 @@ function adicionarEventListeners() {
         elementos.formAddProfissional.addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitButton = e.target.querySelector('button[type="submit"]');
-            if (submitButton) submitButton.disabled = true;
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = "Salvando...";
+            }
 
             await salvarEdicaoProfissional();
 
-            if (submitButton) submitButton.disabled = false;
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "💾 Salvar Profissional";
+            }
         });
     }
 }
@@ -437,7 +443,6 @@ async function gerarLinkDeConvite() {
         await showAlert("Sucesso!", "Link de convite copiado! Envie para o novo funcionário.");
     } catch (err) {
         console.error('Falha ao copiar: ', err);
-        // Fallback para caso o clipboard não funcione
         window.prompt("Copie o link abaixo:", conviteUrl);
     }
 }
@@ -488,7 +493,6 @@ async function salvarEdicaoProfissional() {
             };
             const snapshot = await uploadBytes(storageRef, fotoFile, metadata);
             updateData.fotoUrl = await getDownloadURL(snapshot.ref);
-            console.log("Upload da foto concluído com metadados. URL:", updateData.fotoUrl);
         }
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalId);
