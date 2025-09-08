@@ -62,73 +62,54 @@
         }
         #modal-btn-confirmar { background-color: #d9534f; color: white; }
         #modal-btn-cancelar { background-color: #f0f0f0; color: #333; }
-        /* Loader */
-        #loader {
-            position: fixed;
-            left: 0; top: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(255,255,255,0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9998;
-            font-size: 1.5em;
-            color: #4f46e5;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-        /* Esconde o conteúdo enquanto carrega */
-        #app-content { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="loader" style="display:flex;">Carregando...</div>
+<div id="sidebar-placeholder"></div>
 
-    <div id="sidebar-placeholder"></div>
+<main class="main-content">
+    <h1>Nossos Serviços</h1>
+    <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
+    <div id="lista-servicos" style="margin-top:20px;">
+        </div>
+</main>
 
-    <div id="app-content">
-        <main class="main-content">
-            <h1>Nossos Serviços</h1>
-            <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
-            <div id="lista-servicos" style="margin-top:20px;">
-            </div>
-        </main>
-    </div>
-
-    <div id="custom-confirm-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h2 id="modal-titulo"></h2>
-            <p id="modal-mensagem"></p>
-            <div class="modal-botoes">
-                <button id="modal-btn-cancelar">Cancelar</button>
-                <button id="modal-btn-confirmar">Confirmar</button>
-            </div>
+<div id="custom-confirm-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h2 id="modal-titulo"></h2>
+        <p id="modal-mensagem"></p>
+        <div class="modal-botoes">
+            <button id="modal-btn-cancelar">Cancelar</button>
+            <button id="modal-btn-confirmar">Confirmar</button>
         </div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            fetch('menu-lateral.html')
-                .then(res => res.text())
-                .then(html => {
-                    document.getElementById('sidebar-placeholder').innerHTML = html;
-                    const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
-                    if (servicosLink) {
-                        document.querySelectorAll('.sidebar-links a').forEach(link => link.classList.remove('active'));
-                        servicosLink.classList.add('active');
-                    }
-                });
-        });
-    </script>
+<script>
+    // Inclusão dinâmica do menu lateral e destaque do menu de serviços
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch('menu-lateral.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('sidebar-placeholder').innerHTML = html;
+                // Destaca o item de serviços após inclusão do menu
+                const links = document.querySelectorAll('.sidebar-links a');
+                links.forEach(link => link.classList.remove('active'));
+                const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
+                if (servicosLink) {
+                    servicosLink.classList.add('active');
+                }
+            });
+    });
+</script>
 
-    <script src="./firebase-config.js" type="module"></script>
-    
-    <script src="./vitrini-utils.js" type="module"></script>
-    
-    <script src="./vitrini-profissionais.js" type="module"></script>
-    
-    <script src="./servicos.js" type="module"></script>
-    
+<script src="./firebase-config.js" type="module"></script>
+
+<script src="./vitrini-utils.js" type="module"></script>
+<script src="./vitrini-profissionais.js" type="module"></script>
+
+<script src="./servicos.js" type="module"></script> 
+
 </body>
 </html>
