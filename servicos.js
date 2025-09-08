@@ -223,4 +223,52 @@ function initializeApp(){
   initializeDOMElements();
   setupEventListeners();
 
-  onAuthStateChanged(auth,
+  onAuthStateChanged(auth,async user=>{
+    while(!user){
+      console.log("⏳ Usuário ainda não restaurado, aguardando 1s...");
+      await new Promise(res=>setTimeout(res,1000));
+      user=auth.currentUser;
+    }
+
+    isAdmin = user.uid==="BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+
+    toggleLoader(true);
+
+    let empresaIdSalva = getEmpresaIdAtiva();
+    if(empresaIdSalva){
+      const ver = await verificarAcessoEmpresa(user,empresaIdSalva);
+      if(ver.hasAccess){
+        empresaId = empresaIdSalva; isDono=ver.isDono;
+        configurarUI(); await carregarServicosDoFirebase();
+        isInitialized=true; toggleLoader(false); return;
+      } else setEmpresaIdAtiva(null);
+    }
+
+    const empresasDisp = await buscarEmpresasDoUsuario(user);
+    if(empresasDisp.length===0){
+      if(loader) loader.innerHTML='<p style="color:red;">Você não tem acesso a nenhuma empresa.</p>';
+      toggleLoader(false); return;
+    }
+
+    const empresa = empresasDisp[0]; // auto-seleciona se só 1
+    empresaId = empresa.id; isDono=empresa.isDono;
+    setEmpresaIdAtiva(empresaId);
+
+    configurarUI(); await carregarServicosDoFirebase();
+    isInitialized=true;
+    toggleLoader(false);
+  });
+}
+
+// --- Debug ---
+window.debugServicos={
+  getEmpresaId:()=>empresaId,
+  getIsDono:()=>isDono,
+  getIsAdmin:()=>isAdmin,
+  getLocalStorage:()=>getEmpresaIdAtiva(),
+  recarregar:()=>window.location.reload()
+};
+
+// --- Start ---
+initializeApp();
+console.log("🔧 Funções de debug disponíveis em window.debugServicos");
