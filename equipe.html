@@ -18,7 +18,6 @@
         <div class="content">
             <div class="actions">
                 <h2>Minha Equipe</h2>
-                <!-- Botão Adicionar Profissional REMOVIDO -->
                 <button id="btn-convite" class="btn btn-info">
                     🔗 Enviar Link de Convite
                 </button>
@@ -186,107 +185,9 @@
                 });
         });
     </script>
-    <script type="module">
-    // Supondo que já importou firebase-config.js em equipe.js!
-    import { auth, storage } from './firebase-config.js';
-    import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
-
-    // DEBUG GLOBAL
-    window.debugUpload = {};
-
-    // Hooka o submit para debug detalhado
-    document.addEventListener("DOMContentLoaded", () => {
-        const form = document.getElementById('form-add-profissional');
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            // Dados do form
-            const nome = document.getElementById('nome-profissional').value.trim();
-            const fotoInput = document.getElementById('foto-profissional');
-            const file = fotoInput.files[0];
-
-            // Dados de contexto
-            const empresaId = localStorage.getItem("empresaAtivaId");
-            const profissionalId = window.editandoProfissionalId || "NOVO_PROFISSIONAL_ID"; // ajuste conforme contexto real
-
-            // UID logado
-            const user = auth.currentUser;
-            const uidLogado = user?.uid || "NÃO_LOGADO";
-
-            // Dados do arquivo
-            const nomeArquivo = file ? file.name : null;
-            const tamanhoArquivo = file ? file.size : null;
-            const tipoArquivo = file ? file.type : null;
-
-            // Caminho no Storage
-            const nomeUnico = file ? `${Date.now()}-${file.name}` : null;
-            const caminhoStorage = file ? `fotos-profissionais/${empresaId}/${profissionalId}/${nomeUnico}` : null;
-
-            // Log detalhado
-            window.debugUpload = {
-                uidLogado,
-                empresaId,
-                profissionalId,
-                nomeProfissional: nome,
-                nomeArquivo,
-                tamanhoArquivo,
-                tipoArquivo,
-                caminhoStorage,
-            };
-            console.group("DEBUG UPLOAD PROFISSIONAL");
-            console.log("UID logado:", uidLogado);
-            console.log("empresaId:", empresaId);
-            console.log("profissionalId:", profissionalId);
-            console.log("nome:", nome);
-            console.log("arquivo:", nomeArquivo, "| tamanho:", tamanhoArquivo, "| tipo:", tipoArquivo);
-            console.log("caminhoStorage:", caminhoStorage);
-
-            // Checagem de permissão antes do upload
-            if (!user) {
-                console.error("Usuário não autenticado!");
-                alert("Você precisa estar logado para salvar profissional.");
-                return;
-            }
-            if (!empresaId || !profissionalId) {
-                console.error("empresaId/profissionalId ausente!");
-                alert("Empresa não encontrada. Tente novamente.");
-                return;
-            }
-            if (file && (file.size > 5 * 1024 * 1024 || !tipoArquivo.startsWith('image/'))) {
-                console.error("Arquivo inválido! Só imagens até 5MB.");
-                alert("Imagem inválida ou muito grande.");
-                return;
-            }
-
-            // Upload com debug de erro
-            if (file) {
-                try {
-                    const storageRef = ref(storage, caminhoStorage);
-                    const snap = await uploadBytes(storageRef, file);
-                    const fotoUrl = await getDownloadURL(snap.ref);
-                    console.log("Upload OK. fotoUrl:", fotoUrl);
-
-                    // Aqui você pode salvar no Firestore, etc.
-                    alert("Upload concluído com sucesso!");
-                } catch (erro) {
-                    console.error("FALHA NO UPLOAD:", erro);
-                    window.debugUpload.erro = {
-                        code: erro.code,
-                        message: erro.message,
-                        full: erro,
-                    };
-                    alert("Erro ao fazer upload: " + erro?.message);
-                }
-            } else {
-                alert("Salvo sem foto.");
-            }
-            console.groupEnd();
-        });
-    });
-    </script>
+    <!-- Removido o hook DEBUG de upload aqui, pois o fluxo de upload e atualização já está no equipe.js -->
     <script type="module" src="equipe.js"></script>
     <style>
-    /* CSS mínimo para o modal vitrini-utils funcionar */
     .modal-overlay {
       display: none;
       position: fixed; z-index: 9999;
@@ -313,5 +214,16 @@
     }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
     </style>
+    <script>
+    // Atualização da tela após salvar profissional (foto ou não)
+    document.addEventListener("DOMContentLoaded", function() {
+        // O evento de submit do form já é tratado no equipe.js, então só precisamos garantir o reload após upload
+        // Vamos interceptar o evento customizado disparado após sucesso, ou sobrescrever a função para reload
+        // Você pode garantir isso assim (mas normalmente já está no equipe.js):
+        window.addEventListener("profissionalSalvo", function() {
+            window.location.reload();
+        });
+    });
+    </script>
 </body>
 </html>
