@@ -31,6 +31,11 @@ function initializeDOMElements() {
   console.log("[DEBUG] initializeDOMElements: Elementos DOM inicializados", {
     listaServicosDiv, btnAddServico, loader, appContent
   });
+  // Adicionar verificação para garantir que os elementos foram encontrados
+  if (!listaServicosDiv) console.error("[DEBUG] initializeDOMElements: #lista-servicos não encontrado!");
+  if (!btnAddServico) console.error("[DEBUG] initializeDOMElements: .btn-new não encontrado!");
+  if (!loader) console.error("[DEBUG] initializeDOMElements: #loader não encontrado!");
+  if (!appContent) console.error("[DEBUG] initializeDOMElements: #app-content não encontrado!");
 }
 
 // --- Funções Auxiliares ---
@@ -463,22 +468,24 @@ function setupEventListeners() {
 // --- Ponto de Entrada Principal ---
 function initializeApp() {
   console.log("[DEBUG] initializeApp: Iniciando aplicação.");
+  // Garante que o DOM esteja completamente carregado antes de inicializar elementos
   if (document.readyState === "loading") {
     console.log("[DEBUG] initializeApp: DOM ainda não carregado, adicionando listener para DOMContentLoaded.");
     document.addEventListener("DOMContentLoaded", initializeApp);
     return;
   }
+  
   initializeDOMElements();
   setupEventListeners();
   
   onAuthStateChanged(auth, async (user) => {
     console.log("[DEBUG] onAuthStateChanged: Estado de autenticação alterado. Usuário:", user ? user.uid : "NULO");
     
-    // Aguarda o usuário ser carregado se for nulo inicialmente (pode acontecer em carregamentos rápidos)
-    while(!user) {
-      console.log("[DEBUG] onAuthStateChanged: Usuário nulo, aguardando 500ms para tentar novamente.");
-      await new Promise(res => setTimeout(res, 500));
-      user = auth.currentUser;
+    // Remove o loop while(!user) para evitar bloqueio e confia no onAuthStateChanged para ser chamado novamente com o user
+    if (!user) {
+      console.log("[DEBUG] onAuthStateChanged: Usuário nulo. Aguardando próximo evento de autenticação.");
+      toggleLoader(true); // Mantém o loader visível enquanto espera o usuário
+      return; 
     }
 
     if (isInitialized) {
