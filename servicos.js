@@ -174,7 +174,7 @@ async function carregarServicosDoFirebase() {
   try {
     if (listaServicosDiv) listaServicosDiv.innerHTML = "<p>Carregando serviços...</p>";
     const servicosCol = collection(db, "empresarios", empresaId, "servicos");
-    console.log("[DEBUG] carregarServicosDoFirebase: Buscando documentos da coleção 'servicos' para empresa:", empresaId);
+    console.log("[DEBUG] carregarServicosDoFirebase: Buscando documentos da coleção \'servicos\' para empresa:", empresaId);
     const snap = await getDocs(servicosCol);
     console.log("[DEBUG] carregarServicosDoFirebase: Documentos de serviços recebidos. Quantidade:", snap.docs.length);
     const servicos = snap.docs.map(doc => {
@@ -246,7 +246,6 @@ async function excluirServico(servicoId) {
     await showAlert("Sucesso!", "Serviço excluído com sucesso!");
     await carregarServicosDoFirebase();
   } catch (error) {
-    console.error("[DEBUG] excluirServico: Erro ao excluir o serviço:", error);
     await showAlert("Erro", `Ocorreu um erro ao excluir o serviço: ${error.message || "Erro desconhecido"}`);
   } finally {
     isProcessing = false;
@@ -304,7 +303,7 @@ async function verificarAcessoEmpresa(user, empresaId) {
         ehDonoProfissional = !!profDataDebug.ehDono;
         console.log("[DEBUG] verificarAcessoEmpresa: Profissional encontrado na subcoleção. Dados:", profDataDebug, "| ehDonoProfissional:", ehDonoProfissional);
       } else {
-        console.log("[DEBUG] verificarAcessoEmpresa: Usuário NÃO é profissional nesta empresa (não encontrado na subcoleção 'profissionais').");
+        console.log("[DEBUG] verificarAcessoEmpresa: Usuário NÃO é profissional nesta empresa (não encontrado na subcoleção \'profissionais\').");
       }
     } catch (e) {
       console.error("[DEBUG] verificarAcessoEmpresa: Erro ao buscar profissional na subcoleção:", e);
@@ -376,7 +375,7 @@ async function buscarEmpresasDoUsuario(user) {
           isProfissional
         };
       }
-      console.log("[DEBUG] buscarEmpresasDoUsuario: Empresa com ID \"" + id + "\" não existe em 'empresarios'.");
+      console.log("[DEBUG] buscarEmpresasDoUsuario: Empresa com ID \"" + id + "\" não existe em \'empresarios\'.");
       return null;
     });
     const empresasObjs = await Promise.all(promessas);
@@ -392,7 +391,7 @@ async function buscarEmpresasDoUsuario(user) {
 // --- Função para mostrar/esconder loader ---
 function toggleLoader(show) {
   console.log("[DEBUG] toggleLoader: " + (show ? "Mostrando" : "Escondendo") + " loader.");
-  if (loader) loader.style.display = show ? "block" : "none";
+  if (loader) loader.style.display = show ? "flex" : "none"; // Alterado para flex para centralizar o conteúdo do loader
   if (appContent) appContent.style.display = show ? "none" : "block";
 }
 
@@ -401,7 +400,7 @@ function configurarUI() {
   console.log("[DEBUG] configurarUI: Configurando UI com base nas permissões. isDono:", isDono, "| isAdmin:", isAdmin, "| isProfissional:", isProfissional);
   if (btnAddServico) {
     btnAddServico.style.display = (isDono || isAdmin) ? "inline-flex" : "none";
-    console.log("[DEBUG] configurarUI: Botão 'Adicionar Serviço' display set to:", btnAddServico.style.display);
+    console.log("[DEBUG] configurarUI: Botão \'Adicionar Serviço\' display set to:", btnAddServico.style.display);
   }
 }
 
@@ -430,7 +429,7 @@ function setupEventListeners() {
       console.log("[DEBUG] EventListener: Botão de ação clicado. ID:", id, "Classes:", target.classList);
 
       if (target.classList.contains("btn-editar")) {
-        console.log("[DEBUG] EventListener: Botão 'Editar' clicado.");
+        console.log("[DEBUG] EventListener: Botão \'Editar\' clicado.");
         if (isDono || isAdmin) {
           console.log("[DEBUG] EventListener: Redirecionando para novo-servico.html para edição.");
           window.location.href = `novo-servico.html?id=${encodeURIComponent(id)}`;
@@ -439,7 +438,7 @@ function setupEventListeners() {
           await showAlert("Acesso Negado", "Apenas o dono ou admin pode editar serviços.");
         }
       } else if (target.classList.contains("btn-excluir")) {
-        console.log("[DEBUG] EventListener: Botão 'Excluir' clicado.");
+        console.log("[DEBUG] EventListener: Botão \'Excluir\' clicado.");
         await excluirServico(id);
       }
     });
@@ -481,15 +480,15 @@ function initializeApp() {
   onAuthStateChanged(auth, async (user) => {
     console.log("[DEBUG] onAuthStateChanged: Estado de autenticação alterado. Usuário:", user ? user.uid : "NULO");
     
-    // Remove o loop while(!user) para evitar bloqueio e confia no onAuthStateChanged para ser chamado novamente com o user
     if (!user) {
-      console.log("[DEBUG] onAuthStateChanged: Usuário nulo. Aguardando próximo evento de autenticação.");
-      toggleLoader(true); // Mantém o loader visível enquanto espera o usuário
+      console.log("[DEBUG] onAuthStateChanged: Usuário nulo. Mantendo loader visível e aguardando próximo evento de autenticação.");
+      toggleLoader(true); // Garante que o loader esteja visível enquanto não há usuário autenticado
+      isInitialized = false; // Permite que a inicialização ocorra quando o usuário autenticar
       return; 
     }
 
     if (isInitialized) {
-      console.log("[DEBUG] onAuthStateChanged: Aplicação já inicializada, ignorando.");
+      console.log("[DEBUG] onAuthStateChanged: Aplicação já inicializada para este usuário, ignorando.");
       return;
     }
     
@@ -499,7 +498,7 @@ function initializeApp() {
     isAdmin = (user.uid === ADMIN_UID);
     console.log("[DEBUG] onAuthStateChanged: isAdmin (comparação com ADMIN_UID):", isAdmin);
 
-    toggleLoader(true);
+    toggleLoader(true); // Mostra o loader enquanto carrega os dados da empresa
     const empresaIdSalva = getEmpresaIdAtiva();
     console.log("[DEBUG] onAuthStateChanged: Empresa ID salva no localStorage:", empresaIdSalva);
 
@@ -524,7 +523,7 @@ function initializeApp() {
         configurarUI();
         await carregarServicosDoFirebase();
         isInitialized = true;
-        toggleLoader(false);
+        toggleLoader(false); // Esconde o loader e mostra o conteúdo após carregar os serviços
         return;
       } else {
         console.warn("[DEBUG] onAuthStateChanged: Usuário NÃO TEM acesso à empresa salva. Removendo empresa ativa do localStorage.");
@@ -546,7 +545,7 @@ function initializeApp() {
           </div>
         `;
       }
-      toggleLoader(false);
+      toggleLoader(false); // Esconde o loader mesmo que não haja empresas, para mostrar a mensagem de erro
       isInitialized = true;
       return;
     } else if (empresasDisponiveis.length === 1) {
@@ -565,12 +564,12 @@ function initializeApp() {
       configurarUI();
       await carregarServicosDoFirebase();
       isInitialized = true;
-      toggleLoader(false);
+      toggleLoader(false); // Esconde o loader e mostra o conteúdo após carregar os serviços
     } else {
       console.log("[DEBUG] onAuthStateChanged: Múltiplas empresas disponíveis. Redirecionando para seleção de empresa.");
       window.location.href = "selecionar-empresa.html";
       isInitialized = true;
-      toggleLoader(false);
+      toggleLoader(false); // Esconde o loader antes de redirecionar
       return;
     }
   }, (error) => {
@@ -585,7 +584,7 @@ function initializeApp() {
         </div>
       `;
     }
-    toggleLoader(false);
+    toggleLoader(false); // Esconde o loader em caso de erro de autenticação
     isInitialized = true;
   });
   console.log("[DEBUG] initializeApp: Função initializeApp concluída.");
@@ -593,4 +592,3 @@ function initializeApp() {
 
 // Inicia a aplicação quando o script é carregado
 initializeApp();
-
