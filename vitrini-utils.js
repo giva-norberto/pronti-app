@@ -1,10 +1,5 @@
-// RESPONSABILIDADE: Funções de utilidade geral, como modais e alertas.
-// MULTIEMPRESA: Função utilitária para obter o empresaId ativo, sem alterar a lógica existente.
+// Funções de utilidade geral, como modais e alertas.
 
-/**
- * Recupera o ID da empresa ativa para contexto multiempresa.
- * @returns {string|null}
- */
 export function getEmpresaIdAtiva() {
     return localStorage.getItem('empresaAtivaId') || null;
 }
@@ -25,7 +20,7 @@ export function showModal(title, message, buttons) {
 
         if (!overlay || !titleEl || !messageEl || !buttonsContainer) {
             console.error("Elementos do modal não encontrados no DOM. Verifique seu HTML.");
-            return resolve(false); // Retorna 'false' para não travar a aplicação
+            return resolve(false);
         }
 
         // Limpa event listeners antigos (boa prática para evitar multiplicaçao de eventos)
@@ -34,10 +29,12 @@ export function showModal(title, message, buttons) {
         }
 
         titleEl.textContent = title;
-        messageEl.textContent = message;
+        // Permitir HTML na mensagem (para <br> e afins)
+        messageEl.innerHTML = message;
 
         const close = (value) => {
-            overlay.classList.remove('ativo'); // Garanta que seu CSS usa .ativo para mostrar/esconder
+            overlay.classList.remove('ativo');
+            overlay.style.display = "none";
             resolve(value);
         };
 
@@ -50,16 +47,11 @@ export function showModal(title, message, buttons) {
             buttonsContainer.appendChild(button);
         });
 
+        overlay.style.display = "flex"; // Garante exibição no padrão Pronti
         overlay.classList.add('ativo');
     });
 }
 
-/**
- * Exibe um "Card de Alerta" central com um único botão "OK".
- * @param {string} title - Título do alerta.
- * @param {string} message - Mensagem do alerta.
- * @returns {Promise<boolean>} - Resolve true ao clicar em OK.
- */
 export function showAlert(title, message) {
     const buttons = [
         { text: 'OK', id: 'modal-btn-confirmar', value: true }
@@ -67,12 +59,6 @@ export function showAlert(title, message) {
     return showModal(title, message, buttons);
 }
 
-/**
- * Exibe um "Card de Pergunta" central com botões de confirmação e cancelamento.
- * @param {string} title - Título da pergunta.
- * @param {string} message - Mensagem da pergunta.
- * @returns {Promise<boolean>} - Retorna true para confirmação, false para cancelamento.
- */
 export function showCustomConfirm(title, message) {
     const buttons = [
         { text: 'Cancelar', id: 'modal-btn-cancelar', value: false },
