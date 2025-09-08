@@ -62,34 +62,9 @@
         }
         #modal-btn-confirmar { background-color: #d9534f; color: white; }
         #modal-btn-cancelar { background-color: #f0f0f0; color: #333; }
-
-        /* Estilos para o loader e app-content */
-        #loader {
-            display: flex; /* Inicialmente visível */
-            justify-content: center;
-            align-items: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            z-index: 1000;
-        }
-        #app-content {
-            display: none; /* Inicialmente escondido */
-        }
     </style>
 </head>
 <body>
-
-<!-- Loader inicial -->
-<div id="loader">
-    <p>Carregando...</p>
-</div>
-
-<!-- Conteúdo principal da aplicação, inicialmente escondido -->
-<div id="app-content">
 
 <!-- Menu lateral incluso dinamicamente -->
 <div id="sidebar-placeholder"></div>
@@ -112,21 +87,19 @@
     </div>
 </div>
 
-</div> <!-- Fim de #app-content -->
-
 <script>
     // Inclusão dinâmica do menu lateral e destaque do menu de serviços
     document.addEventListener("DOMContentLoaded", function() {
-        fetch("menu-lateral.html")
+        fetch('menu-lateral.html')
             .then(res => res.text())
             .then(html => {
-                document.getElementById("sidebar-placeholder").innerHTML = html;
+                document.getElementById('sidebar-placeholder').innerHTML = html;
                 // Destaca o item de serviços após inclusão do menu
-                const links = document.querySelectorAll(".sidebar-links a");
-                links.forEach(link => link.classList.remove("active"));
-                const servicosLink = document.querySelector(".sidebar-links a[href=\"servicos.html\"]");
+                const links = document.querySelectorAll('.sidebar-links a');
+                links.forEach(link => link.classList.remove('active'));
+                const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
                 if (servicosLink) {
-                    servicosLink.classList.add("active");
+                    servicosLink.classList.add('active');
                 }
             });
     });
@@ -138,4 +111,3 @@
 <script src="./servicos.js" type="module"></script> 
 </body>
 </html>
-
