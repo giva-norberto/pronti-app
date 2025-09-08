@@ -532,3 +532,36 @@ window.ativarFuncionario = ativarFuncionario;
 window.recusarFuncionario = recusarFuncionario;
 
 window.addEventListener("DOMContentLoaded", inicializar);
+document.addEventListener("DOMContentLoaded", function() {
+    const btnConvite = document.getElementById('btn-convite');
+
+    btnConvite?.addEventListener('click', async function() {
+        // Troque aqui se precisar pegar o id em outro lugar
+        let empresaId = localStorage.getItem("empresaAtivaId");
+        // Troque para true para testar como dono (ou use sua lógica isDono)
+        let isDono = true;
+
+        if (!isDono) {
+            await showAlert("Acesso negado", "Apenas o dono da empresa pode gerar links de convite.");
+            return;
+        }
+        if (!empresaId) {
+            await showAlert("Erro", "Não foi possível identificar a sua empresa para gerar o convite.");
+            return;
+        }
+        const baseUrl = window.location.origin;
+        const conviteUrl = `${baseUrl}/convite.html?empresaId=${empresaId}`;
+        try {
+            await navigator.clipboard.writeText(conviteUrl);
+            await showAlert(
+                "Link de convite copiado!",
+                "O link de convite foi copiado para a área de transferência.<br>Compartilhe com o novo colaborador."
+            );
+        } catch (err) {
+            await showAlert(
+                "Atenção",
+                "Não foi possível copiar automaticamente. Copie o link abaixo:<br><input style='width:90%;margin-top:10px;' value='"+conviteUrl+"' readonly onclick='this.select()'/>"
+            );
+        }
+    });
+});
