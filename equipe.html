@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciamento de Equipe</title>
     <link rel="stylesheet" href="equipe.css">
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
-    <!-- Menu lateral dinâmico -->
     <div id="sidebar-placeholder"></div>
 
     <div class="container">
@@ -18,21 +18,21 @@
         <div class="content">
             <div class="actions">
                 <h2>Minha Equipe</h2>
-                <!-- Botão Adicionar Profissional REMOVIDO -->
+                <button id="btn-add-profissional" class="btn btn-success">
+                    ➕ Adicionar Profissional
+                </button>
                 <button id="btn-convite" class="btn btn-info">
                     🔗 Enviar Link de Convite
                 </button>
                 <button id="btn-cancelar-equipe" class="btn btn-secondary">
-                    ❌ Cancelar
+                    ❌ Voltar
                 </button>
             </div>
             <div id="lista-profissionais-painel" class="equipe-grid">
-                <!-- Profissionais renderizados pelo JS -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- Modal Adicionar/Editar Profissional -->
     <div id="modal-add-profissional" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -76,16 +76,16 @@
         </div>
     </div>
 
-    <!-- Modal Perfil do Profissional (com abas) -->
     <div id="modal-perfil-profissional" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="perfil-nome-profissional">👤 Perfil do Profissional</h2>
                 <p>Configure os serviços e horários de atendimento</p>
             </div>
+
             <div id="perfil-profissional-foto-container" style="text-align: center; margin-bottom: 20px;">
-                <!-- O componente de foto será renderizado aqui pelo JavaScript -->
-            </div>
+                </div>
+            
             <div class="tabs">
                 <button id="tab-servicos" class="tab-btn active">Serviços</button>
                 <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
@@ -94,7 +94,8 @@
             <div id="tab-content-servicos" class="tab-content active">
                 <h3>🛠️ Serviços Disponíveis</h3>
                 <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
-                <div id="servicos-lista" class="servicos-grid"></div>
+                <div id="servicos-lista" class="servicos-grid">
+                    </div>
             </div>
             <div id="tab-content-horarios" class="tab-content">
                 <h3>🕐 Horários de Atendimento</h3>
@@ -113,7 +114,8 @@
                         style="width:100px; margin-bottom:12px;"
                     >
                 </div>
-                <div id="horarios-lista" class="horarios-grid"></div>
+                <div id="horarios-lista" class="horarios-grid">
+                    </div>
                 <div class="form-group" style="margin-top: 25px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
                     <label for="permitir-agendamento-multiplo" style="display: flex; align-items: center; cursor: pointer;">
                         <input type="checkbox" id="permitir-agendamento-multiplo" name="permitir-agendamento-multiplo" style="width: 18px; height: 18px; margin-right: 10px;">
@@ -164,117 +166,29 @@
         </div>
     </div>
 
-    <script>
-        // Carregar menu lateral dinâmico
-        document.addEventListener("DOMContentLoaded", function() {
-            fetch('menu-lateral.html')
-                .then(res => res.ok ? res.text() : Promise.reject('Erro ao carregar menu.'))
-                .then(html => {
-                    document.getElementById('sidebar-placeholder').innerHTML = html;
-                })
-                .catch(error => {
-                    console.error('Erro ao carregar o menu lateral:', error);
-                });
-        });
-    </script>
-    <script type="module">
-    // Supondo que já importou firebase-config.js em equipe.js!
-    import { auth, storage } from './firebase-config.js';
-    import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 id="modal-titulo"></h2>
+            <p id="modal-mensagem"></p>
+            <div class="modal-botoes">
+                <button id="modal-btn-cancelar">Cancelar</button>
+                <button id="modal-btn-confirmar">Confirmar</button>
+            </div>
+        </div>
+    </div>
 
-    // DEBUG GLOBAL
-    window.debugUpload = {};
-
-    // Hooka o submit para debug detalhado
-    document.addEventListener("DOMContentLoaded", () => {
-        const form = document.getElementById('form-add-profissional');
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            // Dados do form
-            const nome = document.getElementById('nome-profissional').value.trim();
-            const fotoInput = document.getElementById('foto-profissional');
-            const file = fotoInput.files[0];
-
-            // Dados de contexto
-            const empresaId = localStorage.getItem("empresaAtivaId");
-            const profissionalId = window.editandoProfissionalId || "NOVO_PROFISSIONAL_ID"; // ajuste conforme contexto real
-
-            // UID logado
-            const user = auth.currentUser;
-            const uidLogado = user?.uid || "NÃO_LOGADO";
-
-            // Dados do arquivo
-            const nomeArquivo = file ? file.name : null;
-            const tamanhoArquivo = file ? file.size : null;
-            const tipoArquivo = file ? file.type : null;
-
-            // Caminho no Storage
-            const nomeUnico = file ? `${Date.now()}-${file.name}` : null;
-            const caminhoStorage = file ? `fotos-profissionais/${empresaId}/${profissionalId}/${nomeUnico}` : null;
-
-            // Log detalhado
-            window.debugUpload = {
-                uidLogado,
-                empresaId,
-                profissionalId,
-                nomeProfissional: nome,
-                nomeArquivo,
-                tamanhoArquivo,
-                tipoArquivo,
-                caminhoStorage,
-            };
-            console.group("DEBUG UPLOAD PROFISSIONAL");
-            console.log("UID logado:", uidLogado);
-            console.log("empresaId:", empresaId);
-            console.log("profissionalId:", profissionalId);
-            console.log("nome:", nome);
-            console.log("arquivo:", nomeArquivo, "| tamanho:", tamanhoArquivo, "| tipo:", tipoArquivo);
-            console.log("caminhoStorage:", caminhoStorage);
-
-            // Checagem de permissão antes do upload
-            if (!user) {
-                console.error("Usuário não autenticado!");
-                alert("Você precisa estar logado para salvar profissional.");
-                return;
-            }
-            if (!empresaId || !profissionalId) {
-                console.error("empresaId/profissionalId ausente!");
-                alert("Empresa não encontrada. Tente novamente.");
-                return;
-            }
-            if (file && (file.size > 5 * 1024 * 1024 || !tipoArquivo.startsWith('image/'))) {
-                console.error("Arquivo inválido! Só imagens até 5MB.");
-                alert("Imagem inválida ou muito grande.");
-                return;
-            }
-
-            // Upload com debug de erro
-            if (file) {
-                try {
-                    const storageRef = ref(storage, caminhoStorage);
-                    const snap = await uploadBytes(storageRef, file);
-                    const fotoUrl = await getDownloadURL(snap.ref);
-                    console.log("Upload OK. fotoUrl:", fotoUrl);
-
-                    // Aqui você pode salvar no Firestore, etc.
-                    alert("Upload concluído com sucesso!");
-                } catch (erro) {
-                    console.error("FALHA NO UPLOAD:", erro);
-                    window.debugUpload.erro = {
-                        code: erro.code,
-                        message: erro.message,
-                        full: erro,
-                    };
-                    alert("Erro ao fazer upload: " + erro?.message);
-                }
-            } else {
-                alert("Salvo sem foto.");
-            }
-            console.groupEnd();
-        });
-    });
-    </script>
+    <div id="custom-alert-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 id="alert-modal-titulo"></h2>
+            <p id="alert-modal-mensagem"></p>
+            <div class="modal-botoes">
+                <button id="alert-modal-btn-ok">OK</button>
+            </div>
+        </div>
+    </div>
+    <script src="menu-lateral.js"></script>
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="vitrini-utils.js"></script>
     <script type="module" src="equipe.js"></script>
 </body>
 </html>
