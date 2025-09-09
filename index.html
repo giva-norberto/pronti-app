@@ -11,11 +11,13 @@
     --cor-primaria: #4facfe;
     --cor-fundo-app: #f6f7fb;
 }
+/* CORRIGIDO: fundo em degradê igual ao print */
 body {
     font-family: 'Inter', Arial, sans-serif;
-    background-color: var(--cor-fundo-app, #f6f7fb);
     margin: 0;
     color: #22223b;
+    background: linear-gradient(135deg, #4facfe 0%, #6366f1 100%) !important;
+    min-height: 100vh;
 }
 .sidebar {
   width: 250px;
@@ -120,9 +122,7 @@ main, .content, .main-content { margin-left: 250px; }
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
-        <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
-        <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
-        <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+        <!-- O JS irá preencher os menus corretos para dono ou funcionário -->
     </nav>
 </aside>
 
@@ -173,7 +173,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardActions = document.getElementById('dashboard-actions');
     dashboardActions.innerHTML = ""; // Limpa antes de inserir
 
+    // Corrige a sidebar dinâmica
+    const sidebarLinks = document.getElementById('sidebar-links');
     if (tipoUsuario === "dono") {
+        // Dono vê TODOS os menus
+        sidebarLinks.innerHTML = `
+            <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
+            <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+            <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+            <a href="painel-inteligente.html" id="link-painel" class="menu-func"><span><i class="fa-solid fa-chart-line"></i></span> Painel Inteligente</a>
+            <a href="servicos.html" id="link-servicos" class="menu-func"><span><i class="fa-solid fa-bell-concierge"></i></span> Serviços</a>
+            <a href="clientes.html" id="link-clientes" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Clientes</a>
+            <a href="relatorios.html" id="link-relatorios" class="menu-func"><span><i class="fa-solid fa-file-alt"></i></span> Relatórios</a>
+            <a href="perfil.html" id="link-perfil" class="menu-func"><span><i class="fa-solid fa-user-cog"></i></span> Meu Perfil</a>
+        `;
         dashboardActions.innerHTML = `
           <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
           <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
@@ -184,6 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
         `;
     } else {
+        // Funcionário vê só 3 menus e 3 cards
+        sidebarLinks.innerHTML = `
+            <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
+            <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+            <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+        `;
         dashboardActions.innerHTML = `
           <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
           <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
