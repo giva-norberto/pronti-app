@@ -1,144 +1,100 @@
-alert("TESTE: O arquivo auth-guard.js CARREGOU!");
-import { auth, db } from "./firebase-config.js";
-import {
-  onAuthStateChanged,
-  signOut,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import {
-  doc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// auth-guard.js - VERSÃO FINAL E UNIFICADA
 
-// UID do super-administrador.
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+// 1. IMPORTAMOS A FUNÇÃO 'verificarAcesso' QUE JÁ ESTÁ FUNCIONANDO CORRETAMENTE
+import { verificarAcesso } from "./userService.js";
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// --> FUNÇÃO SEM ALTERAÇÕES: A lógica para determinar o papel do usuário está correta
-//     e é específica do seu banco de dados.
-async function getUserRole(user) {
-  if (!user) return "funcionario";
-  if (user.uid === ADMIN_UID) return "admin";
 
-  const empresaId = localStorage.getItem("empresaAtivaId");
-  if (!empresaId) return "funcionario";
+/**
+ * Altera a visibilidade dos elementos do menu com base no papel (role) do usuário.
+ * Esta função é chamada após a verificação de acesso.
+ */
+function updateMenuVisibility(role) {
+  console.log(`[auth-guard.js] Atualizando a visibilidade do MENU para o papel: ${role}`);
 
-  try {
-    const profRef = doc(db, "empresas", empresaId, "profissionais", user.uid);
-    const profSnap = await getDoc(profRef);
+  // Mostra os menus básicos que todos os usuários logados veem
+  document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
 
-    if (profSnap.exists() && profSnap.data().ehDono) {
-      return "dono";
-    }
-  } catch (err) {
-    console.error("Erro ao buscar perfil no Firestore:", err);
-  }
-
-  return "funcionario";
-}
-
-// --> FUNÇÃO UTILITÁRIA SEM ALTERAÇÕES
-function setVisibility(selector, displayStyle) {
-  document.querySelectorAll(selector).forEach(el => {
-    if (el) el.style.display = displayStyle;
-  });
-}
-
-// --> LÓGICA REVISADA: Apenas mostra os elementos permitidos. Não esconde mais nada.
-//     Isso evita o efeito de "piscada" na tela.
-function updateUIVisibility(role) {
-  console.log(`DEBUG: Atualizando a visibilidade para o perfil: ${role}`);
-
-  // Usamos 'switch' para deixar as regras de cada perfil mais claras.
-  switch (role) {
+  // Lógica para mostrar menus restritos com base no papel
+  switch (role?.toLowerCase()) {
     case 'admin':
-      // Mostra os elementos específicos do admin.
-      setVisibility(".menu-admin, .card-admin", "flex");
-      // ATENÇÃO: Não há 'break' aqui de propósito.
-      // A execução continua no 'case: dono' para que o admin também veja tudo que o dono vê.
+      // O admin vê os menus específicos de admin
+      document.querySelectorAll('.menu-admin').forEach(el => el.style.display = 'flex');
+      // A lógica continua para o case 'dono' para que o admin também veja tudo que o dono vê.
+      // (Não adicione 'break' aqui)
 
     case 'dono':
-      // Mostra os elementos de dono (que o admin também verá).
-      setVisibility(".menu-dono, .card-dono", "flex");
-      break; // O dono não tem mais permissões, então paramos aqui.
+      // O dono (e o admin) veem os menus de dono
+      document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
+      break;
 
     case 'funcionario':
     default:
-      // Não fazemos nada. Os elementos de funcionário já são visíveis por padrão no HTML,
-      // e os elementos restritos já estão escondidos.
+      // Nenhuma ação extra é necessária para o perfil de funcionário
       break;
   }
 }
 
-// --> NOVO: Função para configurar recursos que só precisam rodar uma vez por página.
-//     Isso organiza melhor o código.
+/**
+ * Configura funcionalidades da página que dependem de autenticação, como o botão de logout.
+ */
 function setupPageFeatures() {
-  // Configura o botão de logout
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout && !btnLogout.dataset.listenerAttached) {
-    btnLogout.dataset.listenerAttached = 'true'; // Evita adicionar o evento múltiplas vezes
-    btnLogout.addEventListener("click", () => {
-      signOut(auth).then(() => {
-        localStorage.clear();
-        window.location.replace("login.html");
-      });
+    const btnLogout = document.getElementById("btn-logout");
+    // Garante que o evento de clique só seja adicionado uma vez
+    if (btnLogout && !btnLogout.dataset.listenerAttached) {
+        btnLogout.dataset.listenerAttached = 'true';
+        btnLogout.addEventListener("click", () => {
+            signOut(auth).then(() => {
+                localStorage.clear();
+                window.location.href = "login.html";
+            });
+        });
+    }
+
+    // Lógica para destacar o link ativo no menu
+    const links = document.querySelectorAll(".sidebar-links a");
+    const currentPage = window.location.pathname.split("/").pop().split("?")[0] || "index.html";
+    links.forEach(link => {
+        if(link) {
+            const linkPage = link.getAttribute("href").split("/").pop().split("?")[0];
+            link.classList.toggle('active', linkPage === currentPage);
+        }
     });
-  }
-
-  // Destaca o link ativo no menu lateral
-  const links = document.querySelectorAll(".sidebar-links a");
-  const currentPage = window.location.pathname.split("/").pop().split("?")[0] || "index.html";
-  links.forEach(link => {
-    if (link) {
-      const linkPage = link.getAttribute("href").split("/").pop().split("?")[0];
-      link.classList.toggle('active', linkPage === currentPage);
-    }
-  });
 }
 
-// --> LÓGICA PRINCIPAL REVISADA: Orquestra a verificação de autenticação e
-//     a atualização da interface.
-function initializeAuthGuard() {
-  onAuthStateChanged(auth, async (user) => {
-    const isLoginPage = window.location.pathname.endsWith("login.html");
-    const needsCompany = !isLoginPage && !window.location.pathname.endsWith("selecionar-empresa.html");
-    const companyId = localStorage.getItem("empresaAtivaId");
 
-    if (user) {
-      // Usuário está logado.
-      if (needsCompany && !companyId) {
-        console.log("DEBUG: Logado, mas sem empresa. Redirecionando para seleção.");
-        window.location.replace("selecionar-empresa.html");
-        return; // Interrompe a execução aqui.
-      }
-      
-      console.log("DEBUG: Usuário autenticado e com contexto. Configurando a página.");
-      const userRole = await getUserRole(user);
-      
-      // Mostra todos os menus e cards básicos que todos veem.
-      setVisibility(".menu-func, .card-func", "flex");
-      
-      // Mostra os menus e cards adicionais com base na permissão.
-      updateUIVisibility(userRole);
-      
-      // Configura logout e link ativo.
-      setupPageFeatures();
+/**
+ * Ponto de entrada do guardião.
+ * Ele agora usa a mesma função 'verificarAcesso' da index.html para garantir consistência.
+ */
+async function initializeAuthGuard() {
+    try {
+        // 2. USAMOS A FONTE ÚNICA DA VERDADE PARA OBTER A SESSÃO E O PERFIL
+        const userSession = await verificarAcesso();
 
-    } else if (!isLoginPage) {
-      // Usuário não está logado e não está na página de login, redireciona.
-      console.log("DEBUG: Não logado. Redirecionando para login.");
-      window.location.replace("login.html");
+        // Se a verificação for bem-sucedida e tivermos um perfil
+        if (userSession && userSession.perfil) {
+            // 3. PEGAMOS O PAPEL (role) DO LUGAR CERTO E ATUALIZAMOS O MENU
+            const papel = userSession.perfil.papel; // 'dono', 'funcionario', etc.
+            updateMenuVisibility(papel);
+        } else {
+            // Se não houver sessão, mostra apenas o básico (caso de página de login, etc)
+            updateMenuVisibility(null);
+        }
+    } catch (error) {
+        // Se verificarAcesso() der um erro (ex: redirecionamento), ele será tratado lá.
+        // Apenas logamos o erro aqui se não for um erro de redirecionamento conhecido.
+        if (!error.message.includes("Redirecionando")) {
+            console.error("[auth-guard.js] Erro ao inicializar:", error);
+        }
+        // Garante que uma visão limitada seja mostrada em caso de erro.
+        updateMenuVisibility(null);
+    } finally {
+        // Funções como o botão de logout devem ser configuradas independentemente do papel do usuário.
+        setupPageFeatures();
     }
-  });
 }
 
-// Inicia o processo de verificação de autenticação.
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    console.log("DEBUG: Persistência configurada. Inicializando guardião.");
-    initializeAuthGuard();
-  })
-  .catch((error) => {
-    console.error("DEBUG: Falha na persistência! Iniciando guardião mesmo assim.", error);
-    initializeAuthGuard();
-  });
+// Inicia o processo de verificação assim que o script é carregado.
+initializeAuthGuard();
