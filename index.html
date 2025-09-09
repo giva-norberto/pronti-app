@@ -127,23 +127,23 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
     <div class="dashboard-grid-cards" id="dashboard-grid-cards">
-        <a href="dashboard.html" class="menu-card card-painel card-admin card-dono">
+        <a href="dashboard.html" class="menu-card card-painel card-dono">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
         </a>
-        <a href="agenda.html" class="menu-card card-agenda card-func card-admin card-dono">
+        <a href="agenda.html" class="menu-card card-agenda card-func card-dono">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Agenda</span>
         </a>
-        <a href="servicos.html" class="menu-card card-servicos card-admin card-dono">
+        <a href="servicos.html" class="menu-card card-servicos card-dono">
             <i class="fa-solid fa-concierge-bell"></i>
             <span>Serviços</span>
         </a>
-        <a href="clientes.html" class="menu-card card-clientes card-admin card-dono">
+        <a href="clientes.html" class="menu-card card-clientes card-dono">
             <i class="fa-solid fa-user-group"></i>
             <span>Clientes</span>
         </a>
-        <a href="equipe.html" class="menu-card card-equipe card-func card-admin card-dono">
+        <a href="equipe.html" class="menu-card card-equipe card-func card-dono">
             <i class="fa-solid fa-users"></i>
             <span>Equipe</span>
         </a>
@@ -151,7 +151,7 @@
             <i class="fa-solid fa-user-gear"></i>
             <span>Meu Perfil</span>
         </a>
-        <a href="relatorios.html" class="menu-card card-relatorios card-admin card-dono">
+        <a href="relatorios.html" class="menu-card card-relatorios card-dono">
             <i class="fa-solid fa-file-lines"></i>
             <span>Relatórios</span>
         </a>
@@ -183,7 +183,6 @@ fetch('menu-lateral.html')
       });
   })
   .catch((e) => {
-      // Exibe mensagem básica de erro de menu lateral
       document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
   });
 
@@ -195,6 +194,11 @@ const nomeUsuarioSpan = document.getElementById("nome-usuario");
 const saudacaoSpan = document.getElementById("saudacao");
 const mainContent = document.getElementById("main-content");
 const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
+
+function getTipoUsuario(perfil) {
+    // Dono => ehDono true | Funcionário = qualquer outro caso
+    return perfil.ehDono === true ? 'dono' : 'funcionario';
+}
 
 function definirSaudacao() {
     const hora = new Date().getHours();
@@ -223,18 +227,13 @@ function removerIsLoading() {
     document.body.classList.remove('is-loading');
 }
 
-// ==========================
-// CONTROLE DE CARDS POR PERFIL
-// ==========================
 function controlarCardsDashboard(perfil) {
-    // Use o campo correto do seu backend! Troque 'role' para 'tipo' se necessário!
-    // Exemplo: perfil.tipo === 'funcionario'
-    const tipo = perfil.role || perfil.tipo || perfil.papel;
+    const tipo = getTipoUsuario(perfil);
     if (tipo === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
-        document.querySelectorAll('.card-admin, .card-dono').forEach(e => e.style.display = 'none');
-    } else if (tipo === 'admin' || tipo === 'dono') {
-        document.querySelectorAll('.card-admin, .card-dono').forEach(e => e.style.display = '');
+        document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
+    } else if (tipo === 'dono') {
+        document.querySelectorAll('.card-dono').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
     }
 }
@@ -243,10 +242,7 @@ async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
         const { perfil } = userSession;
-        // DEBUG: Veja no console qual campo retorna o tipo/perfil do usuário
-        console.log("Perfil retornado:", perfil);
-
-        controlarCardsDashboard(perfil); // CHAMA o controle de exibição dos cards
+        controlarCardsDashboard(perfil);
 
         const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
@@ -259,7 +255,6 @@ async function inicializarDashboard() {
         if (error.message === "primeiro_acesso") {
             mostrarPrimeiroAcessoCard();
         } else if (!error.message.includes("Redirecionando")) {
-            // Exiba ou logue o erro, mas nunca deixe de remover o loading!
             console.error("[index.html] Erro não tratado na inicialização:", error);
         }
     } finally {
@@ -267,7 +262,6 @@ async function inicializarDashboard() {
     }
 }
 
-// Garante que o loading sempre será removido mesmo se algo travar
 Promise.resolve().then(inicializarDashboard);
 setTimeout(removerIsLoading, 3000);
 
