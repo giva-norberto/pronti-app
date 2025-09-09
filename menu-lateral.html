@@ -1,13 +1,13 @@
 <!-- ====================================================================== -->
 <!--      MENU-LATERAL.HTML (FUNCIONÁRIO SÓ AGENDA, EQUIPE E SAIR)         -->
-<!--      DONO VÊ TODOS OS MENUS, FUNCIONÁRIO SÓ 2 MENUS + SAIR             -->
+<!--      DONO VÊ TODOS, FUNCIONÁRIO VÊ SÓ 2 MENUS + SAIR                  -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
-        <!-- Menus são inseridos dinamicamente pelo JS abaixo -->
+        <!-- Menus serão inseridos via JS -->
     </nav>
     <div class="sidebar-footer">
         <button id="btn-logout" class="btn-logout">Sair</button>
@@ -127,65 +127,65 @@
 </style>
 
 <script type="module">
-    import { auth } from "./firebase-config.js";
-    import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    // Função para montar o menu lateral conforme o papel
-    function montarMenuLateral(papel) {
-        const sidebarLinks = document.getElementById('sidebar-links');
-        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-        let html = "";
+// Função para montar o menu lateral conforme o papel
+function montarMenuLateral(papel) {
+    const sidebarLinks = document.getElementById('sidebar-links');
+    const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+    let qEmpresa = empresaAtivaId ? "?empresa=" + empresaAtivaId : "";
+    let html = "";
 
-        if (papel && papel.toLowerCase() === "dono") {
-            html += `
-                <a href="dashboard.html" id="link-dashboard"><span><i class="fa-solid fa-chart-line"></i></span> Painel Inteligente</a>
-                <a href="agenda.html${empresaAtivaId ? '?empresa='+empresaAtivaId : ''}" id="link-agenda"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
-                <a href="servicos.html" id="link-servicos"><span><i class="fa-solid fa-concierge-bell"></i></span> Serviços</a>
-                <a href="clientes.html" id="link-clientes"><span><i class="fa-solid fa-user-group"></i></span> Clientes</a>
-                <a href="equipe.html${empresaAtivaId ? '?empresa='+empresaAtivaId : ''}" id="link-equipe"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
-                <a href="perfil.html" id="link-perfil"><span><i class="fa-solid fa-user-gear"></i></span> Meu Perfil</a>
-                <a href="relatorios.html" id="link-relatorios"><span><i class="fa-solid fa-file-lines"></i></span> Relatórios</a>
-            `;
-        } else {
-            html += `
-                <a href="agenda.html${empresaAtivaId ? '?empresa='+empresaAtivaId : ''}" id="link-agenda"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
-                <a href="equipe.html${empresaAtivaId ? '?empresa='+empresaAtivaId : ''}" id="link-equipe"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
-            `;
-        }
-        sidebarLinks.innerHTML = html;
+    if (papel && papel.toLowerCase() === "dono") {
+        html += `
+            <a href="dashboard.html" id="link-dashboard"><span><i class="fa-solid fa-chart-line"></i></span> Painel Inteligente</a>
+            <a href="agenda.html${qEmpresa}" id="link-agenda"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+            <a href="servicos.html" id="link-servicos"><span><i class="fa-solid fa-concierge-bell"></i></span> Serviços</a>
+            <a href="clientes.html" id="link-clientes"><span><i class="fa-solid fa-user-group"></i></span> Clientes</a>
+            <a href="equipe.html${qEmpresa}" id="link-equipe"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+            <a href="perfil.html" id="link-perfil"><span><i class="fa-solid fa-user-gear"></i></span> Meu Perfil</a>
+            <a href="relatorios.html" id="link-relatorios"><span><i class="fa-solid fa-file-lines"></i></span> Relatórios</a>
+        `;
+    } else {
+        html += `
+            <a href="agenda.html${qEmpresa}" id="link-agenda"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+            <a href="equipe.html${qEmpresa}" id="link-equipe"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+        `;
     }
+    sidebarLinks.innerHTML = html;
+}
 
-    document.addEventListener('DOMContentLoaded', () => {
-        // Recupera o papel salvo no localStorage (definido pelo backend ou login)
-        let papelUsuario = localStorage.getItem('papelUsuario');
-        // Fallback para compatibilidade: tenta pegar do objeto perfil salvo pelo seu fluxo
-        if (!papelUsuario && localStorage.getItem('perfil')) {
-            try {
-                papelUsuario = JSON.parse(localStorage.getItem('perfil')).papel;
-            } catch {}
-        }
-        montarMenuLateral(papelUsuario);
+document.addEventListener('DOMContentLoaded', () => {
+    // Recupere o papel do usuário salvo no localStorage
+    let papelUsuario = localStorage.getItem('papelUsuario');
+    // Compatibilidade: tenta pegar do objeto perfil salvo pelo seu fluxo
+    if (!papelUsuario && localStorage.getItem('perfil')) {
+        try {
+            papelUsuario = JSON.parse(localStorage.getItem('perfil')).papel;
+        } catch {}
+    }
+    montarMenuLateral(papelUsuario);
 
-        // Botão de logout
-        const btnLogout = document.getElementById('btn-logout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                signOut(auth).then(() => {
-                    localStorage.clear();
-                    window.location.href = 'login.html';
-                });
+    // Botão de logout
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                localStorage.clear();
+                window.location.href = 'login.html';
             });
-        }
-        
-        // Destaque do link da página atual
-        const links = document.querySelectorAll('.sidebar-links a');
-        // Corrige para ignorar querystring na comparação
-        const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
-        links.forEach(link => {
-            const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
-            if (linkPage === currentPage) {
-                link.classList.add('active');
-            }
         });
+    }
+    
+    // Destaque do link da página atual
+    const links = document.querySelectorAll('.sidebar-links a');
+    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
+    links.forEach(link => {
+        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+        if (linkPage === currentPage) {
+            link.classList.add('active');
+        }
     });
+});
 </script>
