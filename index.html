@@ -227,12 +227,13 @@ function removerIsLoading() {
 // CONTROLE DE CARDS POR PERFIL
 // ==========================
 function controlarCardsDashboard(perfil) {
-    // Ajuste para o campo de perfil real (role, tipo, etc)
-    // Exemplo: perfil.role === 'funcionario'
-    if (perfil.role === 'funcionario') {
+    // Use o campo correto do seu backend! Troque 'role' para 'tipo' se necessário!
+    // Exemplo: perfil.tipo === 'funcionario'
+    const tipo = perfil.role || perfil.tipo || perfil.papel;
+    if (tipo === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-admin, .card-dono').forEach(e => e.style.display = 'none');
-    } else if (perfil.role === 'admin' || perfil.role === 'dono') {
+    } else if (tipo === 'admin' || tipo === 'dono') {
         document.querySelectorAll('.card-admin, .card-dono').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
     }
@@ -242,12 +243,14 @@ async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
         const { perfil } = userSession;
-        const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
+        // DEBUG: Veja no console qual campo retorna o tipo/perfil do usuário
+        console.log("Perfil retornado:", perfil);
 
+        controlarCardsDashboard(perfil); // CHAMA o controle de exibição dos cards
+
+        const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
         if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
-
-        controlarCardsDashboard(perfil); // ATENÇÃO: chama o controle de exibição dos cards
 
         if (perfil.nomeFantasia && nomeEmpresaSpan) {
             nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
