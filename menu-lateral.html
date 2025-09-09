@@ -15,7 +15,7 @@
     </div>
 </aside>
 
-<!-- Botão sair discreto no topo direito para quando o menu lateral não está visível -->
+<!-- Botão sair discreto no topo direito para quando a sidebar não está visível -->
 <button id="btn-logout-top" class="btn-logout-top" style="display: none;">
     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
 </button>
@@ -130,7 +130,7 @@
   border: 2px solid #fff; 
 }
 
-/* Botão sair discreto (quando sidebar some, por exemplo em mobile ou index sem menu) */
+/* Botão sair discreto (quando sidebar some, ex: mobile ou index sem menu) */
 .btn-logout-top {
     position: absolute;
     top: 16px;
@@ -150,7 +150,7 @@
     color: #2b2172;
 }
 
-/* Exemplo para garantir que o conteúdo principal não fique atrás do menu */
+/* Conteúdo principal não fica atrás do menu */
 main, .content, .main-content {
   margin-left: 250px;
 }
@@ -172,7 +172,6 @@ function atualizarBotaoSair() {
     const sidebar = document.getElementById('sidebar');
     const btnLogoutTop = document.getElementById('btn-logout-top');
     if (!sidebar || !btnLogoutTop) return;
-    // Se sidebar está visível (pode ser display:none ou left:-260px em mobile)
     const sidebarStyle = window.getComputedStyle(sidebar);
     if (
         sidebarStyle.display === "none" ||
