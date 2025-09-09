@@ -1,40 +1,26 @@
-<!-- ================= MENU INDEX COM BOTÃO SAIR FIXO =================== -->
+<!-- ====================================================================== -->
+<!--      MENU-LATERAL.HTML (FUNCIONÁRIO SÓ AGENDA, EQUIPE E SAIR)         -->
+<!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
-        <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
         <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
         <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
     </nav>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
 </aside>
-
-<!-- Botão Sair fixo, APENAS no index.html -->
-<button id="btn-logout-index" class="btn-logout-index">
-    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
-</button>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-:root {
-    --cor-perigo: #ef4444;
-    --cor-perigo-dark: #b91c1c;
-    --cor-primaria: #4facfe;
-}
-
-body {
-    font-family: 'Inter', Arial, sans-serif;
-    background-color: var(--cor-fundo-app, #f6f7fb);
-    margin: 0;
-    color: #22223b;
-}
-
-/* Sidebar (menu fixo) */
+/* ... seu CSS original mantido igual ... */
 .sidebar {
   width: 250px;
-  background: linear-gradient(180deg, #4facfe 0%, #6366f1 100%);
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
   min-height: 100vh; 
   color: #fff; 
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
@@ -77,7 +63,7 @@ body {
   align-items: center; 
   gap: 12px;
   background: #fff;
-  color: var(--cor-primaria); 
+  color: #4f46e5; 
   font-weight: 600; 
   font-size: 1.08em; 
   border-radius: 10px;
@@ -99,7 +85,7 @@ body {
 }
 .sidebar-links a.active, 
 .sidebar-links a:focus {
-  background: var(--cor-primaria); 
+  background: #4f46e5; 
   color: #fff; 
   font-weight: 700;
   border: 2px solid #fff; 
@@ -111,76 +97,75 @@ body {
   color: #3b2fd6; 
   border-color: #d1d5fa; 
 }
-
-/* Botão Sair fixo, visível APENAS no index */
-.btn-logout-index {
-    position: fixed;
-    top: 18px;
-    right: 24px;
-    background: var(--cor-perigo, #ef4444);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 1.09em;
-    padding: 12px 24px;
-    box-shadow: 0 4px 18px rgba(239,68,68,0.15);
-    z-index: 2100;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s;
+.sidebar-footer { 
+  margin-top: auto; 
+  padding: 32px 32px 24px 32px; 
 }
-.btn-logout-index:hover,
-.btn-logout-index:focus {
-    background: var(--cor-perigo-dark, #b91c1c);
-    color: #fff;
-    outline: none;
+.btn-logout {
+  background: #fff; 
+  color: #4f46e5; 
+  border: none; 
+  padding: 14px 0;
+  width: 100%; 
+  border-radius: 10px; 
+  font-weight: bold; 
+  font-size: 1.05em;
+  cursor: pointer; 
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.07); 
+  border: 2px solid transparent; 
+  outline: none;
+  min-height: 44px;
+  box-sizing: border-box;
 }
-
-@media (max-width: 900px) {
-  .sidebar {
-    left: -260px;
-  }
-  main, .content, .main-content {
-    margin-left: 0 !important;
-  }
-  .btn-logout-index {
-    top: 12px;
-    right: 12px;
-    padding: 10px 18px;
-    font-size: 1em;
-  }
-}
-main, .content, .main-content {
-  margin-left: 250px;
+.btn-logout:hover, 
+.btn-logout:focus { 
+  background: #4f46e5; 
+  color: #fff; 
+  border: 2px solid #fff; 
 }
 </style>
 
 <script type="module">
-import { auth } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { auth } from "./firebase-config.js";
+    import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Botão de logout index (apenas no index)
-    const btnLogoutIndex = document.getElementById('btn-logout-index');
-    if (btnLogoutIndex) {
-        btnLogoutIndex.addEventListener('click', () => {
-            signOut(auth).then(() => {
-                localStorage.clear();
-                window.location.href = 'login.html';
+    document.addEventListener('DOMContentLoaded', () => {
+        // MULTIEMPRESAS: Adapta links para empresa ativa
+        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+        if (empresaAtivaId) {
+            const linksParaAdaptar = [
+                { id: "link-agenda", href: "agenda.html" },
+                { id: "link-equipe", href: "equipe.html" }
+            ];
+            linksParaAdaptar.forEach(cfg => {
+                const el = document.getElementById(cfg.id);
+                if (el) {
+                    el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
+                }
             });
-        });
-    }
-    // Destaque do link da página atual
-    const links = document.querySelectorAll('.sidebar-links a');
-    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
-    links.forEach(link => {
-        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
-        if (linkPage === currentPage) {
-            link.classList.add('active');
         }
+
+        // Botão de logout
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                });
+            });
+        }
+        
+        // Destaque do link da página atual
+        const links = document.querySelectorAll('.sidebar-links a');
+        // Corrige para ignorar querystring na comparação
+        const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
+        links.forEach(link => {
+            const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+            if (linkPage === currentPage) {
+                link.classList.add('active');
+            }
+        });
     });
-});
 </script>
