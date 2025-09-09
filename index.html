@@ -1,242 +1,218 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Início</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        html, body { height: 100%; margin: 0; padding: 0; }
-        body {
-            display: flex;
-            flex-direction: column;
-            opacity: 1;
-            transition: opacity 0.3s ease-in-out;
-            overflow: hidden;
-        }
-        body.is-loading { opacity: 0; }
-        a { color: inherit; text-decoration: none; }
-        main.main-content {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            flex-grow: 1;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .dashboard-welcome-center { text-align: center; margin-bottom: 4vh; }
-        .dashboard-welcome-center h1 { font-size: clamp(1.8rem, 5vw, 3rem ); }
-        .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; opacity: 0.9; }
-        .dashboard-grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 15px;
-            width: 100%;
-            max-width: 850px;
-            margin: 0 auto;
-        }
-        .menu-card {
-            color: #fff;
-            border-radius: 14px;
-            padding: 20px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            box-shadow: 0 5px 12px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
-            border: none;
-            aspect-ratio: 4 / 3.2;
-        }
-        .menu-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-            filter: brightness(1.05);
-            cursor: pointer;
-        }
-        .menu-card i { font-size: 1.6rem; color: #fff; }
-        .card-painel    { background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%); }
-        .card-agenda    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
-        .card-servicos  { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .card-clientes  { background: linear-gradient(135deg, #f59e42 0%, #ff5858 100%); }
-        .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
-        .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
-        .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
-
-        @media (max-width: 768px) {
-            body { overflow: auto; }
-            main.main-content { justify-content: flex-start; padding-top: 30px; }
-            .dashboard-welcome-center { margin-bottom: 20px; }
-            .dashboard-grid-cards { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-            .menu-card { padding: 15px 5px; font-size: 0.75rem; gap: 8px; border-radius: 12px; }
-            .menu-card i { font-size: 1.5rem; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Pronti - Menu Principal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+:root {
+    --cor-perigo: #ef4444;
+    --cor-perigo-dark: #b91c1c;
+    --cor-primaria: #4facfe;
+    --cor-fundo-app: #f6f7fb;
+}
+body {
+    font-family: 'Inter', Arial, sans-serif;
+    background-color: var(--cor-fundo-app, #f6f7fb);
+    margin: 0;
+    color: #22223b;
+}
+.sidebar {
+  width: 250px;
+  background: linear-gradient(180deg, #4facfe 0%, #6366f1 100%);
+  min-height: 100vh;
+  color: #fff;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+  position: fixed;
+  left: 0; top: 0; bottom: 0; z-index: 1000;
+  display: flex; flex-direction: column; padding-top: 24px;
+  transition: left 0.3s ease; box-sizing: border-box;
+}
+.sidebar-brand {
+  font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
+  letter-spacing: 2px; padding: 0 32px 12px 32px; display: block;
+  margin-bottom: 8px; text-align: left;
+}
+.sidebar hr {
+  margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55;
+}
+.sidebar-links {
+  display: flex; flex-direction: column; gap: 10px; padding: 0 24px; flex-grow: 1;
+}
+.sidebar-links a {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; color: var(--cor-primaria);
+  font-weight: 600; font-size: 1.08em; border-radius: 10px;
+  margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+  transition: all 0.2s ease; padding: 14px 18px; text-align: left;
+  text-decoration: none; letter-spacing: 0.01em; border: 2px solid transparent;
+  min-height: 44px; box-sizing: border-box;
+}
+.sidebar-links a span {
+    display: inline-block; width: 20px; text-align: center;
+}
+.sidebar-links a.active, .sidebar-links a:focus {
+  background: var(--cor-primaria); color: #fff; font-weight: 700;
+  border: 2px solid #fff; box-shadow: 0 4px 12px rgba(79,70,229,0.3); outline: none;
+}
+.sidebar-links a:hover:not(.active) {
+  background: #f0f1ff; color: #3b2fd6; border-color: #d1d5fa;
+}
+.btn-logout-index {
+    position: fixed;
+    top: 18px; right: 24px;
+    background: var(--cor-perigo, #ef4444);
+    color: #fff; border: none; border-radius: 10px;
+    font-weight: 700; font-size: 1.09em; padding: 12px 24px;
+    box-shadow: 0 4px 18px rgba(239,68,68,0.15); z-index: 2100;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+}
+.btn-logout-index:hover, .btn-logout-index:focus {
+    background: var(--cor-perigo-dark, #b91c1c);
+    color: #fff; outline: none;
+}
+@media (max-width: 900px) {
+  .sidebar { left: -260px; }
+  main, .content, .main-content { margin-left: 0 !important; }
+  .btn-logout-index { top: 12px; right: 12px; padding: 10px 18px; font-size: 1em; }
+}
+main, .content, .main-content { margin-left: 250px; }
+.dashboard-main-actions {
+  display: flex; flex-wrap: wrap; gap: 30px; margin: 80px auto 0 auto;
+  justify-content: center; max-width: 900px;
+}
+.action-card {
+  min-width: 160px; min-height: 140px; max-width: 210px;
+  padding: 32px 24px 24px 24px;
+  border-radius: 18px; background: #fff; color: #fff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  display: flex; flex-direction: column; align-items: center;
+  text-decoration: none; font-size: 1.07rem; font-weight: 500;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+  position: relative; border: none;
+}
+.action-card i { font-size: 2.1rem; margin-bottom: 16px; }
+.card-blue    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
+.card-cyan    { background: linear-gradient(135deg, #00f2fe 0%, #43e97b 100%); }
+.card-green   { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.card-purple  { background: linear-gradient(135deg, #a18cd1 0%, #6366f1 100%);}
+.card-orange  { background: linear-gradient(135deg, #f59e42 0%, #ff5858 100%);}
+.card-red     { background: linear-gradient(135deg, #ff5858 0%, #f59e42 100%);}
+.card-cyan2   { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);}
+.action-card:hover, .action-card:focus {
+  transform: translateY(-6px) scale(1.03); box-shadow: 0 16px 32px rgba(0,0,0,0.14);
+  filter: brightness(1.02); cursor: pointer;
+}
+.dashboard-title {
+  margin-top: 120px; text-align: center;
+}
+.dashboard-title h1 {
+  font-size: 2.5rem; color: #fff; font-weight: 700; margin-bottom: 0.3em;
+}
+.dashboard-title p {
+  font-size: 1.2rem; color: #f7fafc; margin-top: 0; margin-bottom: 2.5em;
+}
+  </style>
 </head>
-<body class="dashboard-body is-loading">
+<body>
+<aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <nav class="sidebar-links" id="sidebar-links">
+        <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
+        <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+        <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+    </nav>
+</aside>
 
-<div id="sidebar-placeholder"></div>
+<!-- Botão Sair fixo, APENAS no index.html -->
+<button id="btn-logout-index" class="btn-logout-index">
+    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+</button>
 
-<main class="main-content" id="main-content">
-    <div class="dashboard-welcome-center" id="dashboard-welcome-center">
-        <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
-        <p>Pronto para gerenciar seu dia?</p>
-    </div>
-    <div class="dashboard-grid-cards" id="dashboard-grid-cards">
-        <!-- FUNCIONÁRIO vê estes cards (e o dono também) -->
-        <a href="agenda.html" class="menu-card card-agenda card-func">
-            <i class="fa-solid fa-calendar-check"></i>
-            <span>Agenda</span>
-        </a>
-        <a href="equipe.html" class="menu-card card-equipe card-func">
-            <i class="fa-solid fa-users"></i>
-            <span>Equipe</span>
-        </a>
-        <!-- SÓ DONO vê estes abaixo -->
-        <a href="dashboard.html" class="menu-card card-painel card-dono">
-            <i class="fa-solid fa-chart-line"></i>
-            <span>Painel Inteligente</span>
-        </a>
-        <a href="servicos.html" class="menu-card card-servicos card-dono">
-            <i class="fa-solid fa-concierge-bell"></i>
-            <span>Serviços</span>
-        </a>
-        <a href="clientes.html" class="menu-card card-clientes card-dono">
-            <i class="fa-solid fa-user-group"></i>
-            <span>Clientes</span>
-        </a>
-        <a href="relatorios.html" class="menu-card card-relatorios card-dono">
-            <i class="fa-solid fa-file-lines"></i>
-            <span>Relatórios</span>
-        </a>
-        <!-- Card "Meu Perfil" só para DONO -->
-        <a href="perfil.html" class="menu-card card-perfil card-dono" style="display:none">
-            <i class="fa-solid fa-user-gear"></i>
-            <span>Meu Perfil</span>
-        </a>
-    </div>
+<main class="main-content">
+  <div class="dashboard-title">
+    <h1 id="saudacao">Bem-vindo!</h1>
+    <p>Pronto para gerenciar seu dia?</p>
+  </div>
+  <div class="dashboard-main-actions" id="dashboard-actions">
+    <!-- Os cards são inseridos dinamicamente pelo JS abaixo -->
+  </div>
 </main>
 
 <script type="module">
-import { verificarAcesso } from "./userService.js";
+// --------- TROQUE PELOS DADOS REAIS DO SEU FIREBASE --------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_AUTH_DOMAIN",
+  projectId: "SEU_PROJECT_ID",
+  storageBucket: "SEU_STORAGE_BUCKET",
+  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+  appId: "SEU_APP_ID"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-const nomeUsuarioSpan = document.getElementById("nome-usuario");
-const saudacaoSpan = document.getElementById("saudacao");
-const mainContent = document.getElementById("main-content");
-const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
-const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
+document.addEventListener('DOMContentLoaded', () => {
+    // Saudação personalizada
+    const nomeUsuario = localStorage.getItem('nomeUsuario') || "Usuário";
+    const saudacao = document.getElementById('saudacao');
+    if (saudacao) {
+      const hora = new Date().getHours();
+      let periodo = "Boa tarde";
+      if (hora < 12) periodo = "Bom dia";
+      if (hora >= 18) periodo = "Boa noite";
+      saudacao.innerHTML = `${periodo}, ${nomeUsuario.replace(/ .*/,'')}!`;
+    }
 
-// Função para definir role baseado no perfil retornado
-function getTipoUsuario(perfil) {
-    // Aceita tanto perfil.ehDono quanto perfil.role
-    if (perfil.ehDono === true) return "dono";
-    if (perfil.ehDono === false) return "funcionario";
-    // fallback para campo 'role' se existir
-    return perfil.role === 'dono' ? "dono" : "funcionario";
-}
+    // Menu/cards conforme tipo
+    const tipoUsuario = (localStorage.getItem('tipoUsuario') || "funcionario").toLowerCase();
+    const dashboardActions = document.getElementById('dashboard-actions');
+    dashboardActions.innerHTML = ""; // Limpa antes de inserir
 
-function definirSaudacao() {
-    const hora = new Date().getHours();
-    if (hora >= 5 && hora < 12) return "Bom dia";
-    if (hora >= 12 && hora < 18) return "Boa tarde";
-    return "Boa noite";
-}
-
-function mostrarPrimeiroAcessoCard() {
-    if (mainContent) {
-        mainContent.innerHTML = `
-            <div class="primeiro-acesso-card">
-                <h2>Seja bem-vindo ao Pronti!</h2>
-                <p>Inicie o cadastro da sua empresa.</p>
-                <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
-            </div>
+    if (tipoUsuario === "dono") {
+        dashboardActions.innerHTML = `
+          <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
+          <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
+          <a href="painel-inteligente.html" class="action-card card-green"><i class="fa-solid fa-chart-line"></i> Painel Inteligente</a>
+          <a href="servicos.html" class="action-card card-purple"><i class="fa-solid fa-bell-concierge"></i> Serviços</a>
+          <a href="clientes.html" class="action-card card-orange"><i class="fa-solid fa-users"></i> Clientes</a>
+          <a href="relatorios.html" class="action-card card-red"><i class="fa-solid fa-file-alt"></i> Relatórios</a>
+          <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
         `;
-        document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-            localStorage.removeItem('empresaAtivaId');
-            window.location.href = "perfil.html";
+    } else {
+        dashboardActions.innerHTML = `
+          <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
+          <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
+          <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
+        `;
+    }
+
+    // Botão logout funcional
+    const btnLogoutIndex = document.getElementById('btn-logout-index');
+    if (btnLogoutIndex) {
+        btnLogoutIndex.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }).catch((error) => {
+                alert('Erro ao sair: ' + (error.message || error));
+            });
         });
     }
-}
-
-function removerIsLoading() {
-    document.body.classList.remove('is-loading');
-}
-
-// Exibe os cards corretos conforme tipo de usuário
-function controlarCardsDashboard(perfil) {
-    const tipo = getTipoUsuario(perfil);
-    console.log("[DASHBOARD] perfil recebido:", perfil, "tipo:", tipo); // LOG ADICIONADO
-    if (tipo === 'funcionario') {
-        document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
-        document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
-        sidebarPlaceholder.innerHTML = '';
-    } else if (tipo === 'dono') {
-        document.querySelectorAll('.card-func, .card-dono').forEach(e => e.style.display = '');
-        // Exibe o card Meu Perfil apenas para dono
-        document.querySelectorAll('.card-perfil.card-dono').forEach(e => e.style.display = '');
-        carregarMenuLateral();
-    }
-}
-
-async function inicializarDashboard() {
-    try {
-        const userSession = await verificarAcesso();
-        const { perfil } = userSession;
-        controlarCardsDashboard(perfil);
-
-        const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
-        if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
-        if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
-
-        if (perfil.nomeFantasia && nomeEmpresaSpan) {
-            nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
+    // Destaque do link da página atual
+    const links = document.querySelectorAll('.sidebar-links a');
+    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
+    links.forEach(link => {
+        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+        if (linkPage === currentPage) {
+            link.classList.add('active');
         }
-    } catch (error) {
-        if (error.message === "primeiro_acesso") {
-            mostrarPrimeiroAcessoCard();
-        } else if (!error.message.includes("Redirecionando")) {
-            console.error("[index.html] Erro não tratado na inicialização:", error);
-        }
-    } finally {
-        removerIsLoading();
-    }
-}
-
-function carregarMenuLateral() {
-    fetch('menu-lateral.html')
-      .then(res => res.text())
-      .then(html => {
-          sidebarPlaceholder.innerHTML = html;
-          import("./firebase-config.js").then(({ auth }) => {
-              import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
-                  const btnLogout = document.getElementById("btn-logout");
-                  if (btnLogout) {
-                      btnLogout.addEventListener("click", async () => {
-                          try {
-                              await signOut(auth);
-                              localStorage.clear();
-                              window.location.href = "login.html";
-                          } catch(e) {
-                              alert("Erro ao sair: " + e.message);
-                          }
-                      });
-                  }
-              });
-          });
-      })
-      .catch(() => {
-          sidebarPlaceholder.innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
-      });
-}
-
-Promise.resolve().then(inicializarDashboard);
-setTimeout(removerIsLoading, 3000);
+    });
+});
 </script>
 </body>
 </html>
