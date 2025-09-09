@@ -1,11 +1,12 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (FUNCIONÁRIO SÓ AGENDA, EQUIPE E SAIR)         -->
+<!--      MENU-LATERAL.HTML (FUNCIONÁRIO SÓ INÍCIO, AGENDA, EQUIPE, SAIR)  -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
+        <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
         <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
         <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
     </nav>
@@ -17,7 +18,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* ... seu CSS original mantido igual ... */
+/* ... CSS original mantido igual ... */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -133,18 +134,15 @@
     document.addEventListener('DOMContentLoaded', () => {
         // MULTIEMPRESAS: Adapta links para empresa ativa
         const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-        if (empresaAtivaId) {
-            const linksParaAdaptar = [
-                { id: "link-agenda", href: "agenda.html" },
-                { id: "link-equipe", href: "equipe.html" }
-            ];
-            linksParaAdaptar.forEach(cfg => {
-                const el = document.getElementById(cfg.id);
-                if (el) {
-                    el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
-                }
-            });
-        }
+        const linksParaAdaptar = [
+            { id: "link-agenda", href: "agenda.html" },
+            { id: "link-equipe", href: "equipe.html" },
+            { id: "link-inicio", href: "index.html" }
+        ];
+        linksParaAdaptar.forEach(cfg => {
+            const el = document.getElementById(cfg.id);
+            if (el) el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
+        });
 
         // Botão de logout
         const btnLogout = document.getElementById('btn-logout');
@@ -159,13 +157,10 @@
         
         // Destaque do link da página atual
         const links = document.querySelectorAll('.sidebar-links a');
-        // Corrige para ignorar querystring na comparação
         const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
         links.forEach(link => {
             const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
-            if (linkPage === currentPage) {
-                link.classList.add('active');
-            }
+            if (linkPage === currentPage) link.classList.add('active');
         });
     });
 </script>
