@@ -133,6 +133,10 @@ const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 
 // Função para definir role baseado no perfil retornado
 function getTipoUsuario(perfil) {
+    // Aceita tanto perfil.ehDono quanto perfil.role
+    if (perfil.ehDono === true) return "dono";
+    if (perfil.ehDono === false) return "funcionario";
+    // fallback para campo 'role' se existir
     return perfil.role === 'dono' ? "dono" : "funcionario";
 }
 
@@ -180,7 +184,6 @@ async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
         const { perfil } = userSession;
-
         controlarCardsDashboard(perfil);
 
         const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
