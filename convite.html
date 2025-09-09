@@ -148,7 +148,7 @@
             await setDoc(profissionalRef, dadosNovoProfissional, { merge: true });
             // ======================= FIM DA ÚNICA ALTERAÇÃO =======================
 
-            await setDoc(mapaUsuarioRef, { empresaId: empresaId });
+            await setDoc(mapaUsuarioRef, { empresas: [empresaId] });
 
             inviteBox.innerHTML = `
                 <h1>⏳ Quase lá!</h1>
