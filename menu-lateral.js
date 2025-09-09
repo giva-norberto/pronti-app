@@ -17,8 +17,8 @@ import {
 // UID do administrador global
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-// Função para determinar o perfil do usuário (NÃO MUDA )
-async function getUserRole(user) {
+// Função para determinar o perfil do usuário
+async function getUserRole(user ) {
   if (!user) return "funcionario";
   if (user.uid === ADMIN_UID) return "admin";
 
@@ -43,7 +43,8 @@ async function getUserRole(user) {
 const setVisibility = (selector, shouldShow) => {
   document.querySelectorAll(selector).forEach(el => {
     if (el) {
-      el.style.display = shouldShow ? "" : "none"; // Usa "" para voltar ao padrão do CSS
+      // Usa "flex" para mostrar (conforme seu CSS) e "none" para esconder.
+      el.style.display = shouldShow ? "flex" : "none";
     }
   });
 };
@@ -56,23 +57,23 @@ async function setupAuthenticatedFeatures(user) {
     const userRole = await getUserRole(user);
 
     // ==================================================================
-    //          LÓGICA CORRIGIDA PARA DONO E FUNCIONÁRIO
+    //          LÓGICA CORRIGIDA E FINAL PARA OS PERFIS
     // ==================================================================
-    if (userRole === "dono") {
-      // SE FOR DONO: MOSTRA TUDO (MENUS E CARDS)
+    if (userRole === "dono" || userRole === "admin") {
+      // SE FOR DONO OU ADMIN: MOSTRA TUDO (MENUS E CARDS)
       setVisibility(".menu-func, .menu-dono, .menu-admin", true);
-      setVisibility(".card-func, .card-dono, .card-admin", true);
-    } else { // Para "funcionario" e qualquer outro caso
-      // SE FOR FUNCIONÁRIO: MOSTRA SÓ O BÁSICO
+      setVisibility(".card-func, .card-dono, .card-admin", true); // Assumindo que os cards têm essas classes
+    } else { 
+      // SE FOR FUNCIONÁRIO (OU QUALQUER OUTRO CASO): MOSTRA SÓ O BÁSICO
       setVisibility(".menu-func", true);
       setVisibility(".menu-dono, .menu-admin", false);
       
       setVisibility(".card-func", true);
-      setVisibility(".card-dono, .card-admin", false);
+      setVisibility(".card-dono, .card-admin", false); // Esconde cards de dono/admin
     }
     // ==================================================================
 
-    // Lógica do botão de logout (NÃO MUDA)
+    // Lógica do botão de logout (sem alterações)
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) {
       const newBtn = btnLogout.cloneNode(true);
@@ -87,7 +88,7 @@ async function setupAuthenticatedFeatures(user) {
       }
     }
 
-    // Lógica para destacar link ativo (NÃO MUDA)
+    // Lógica para destacar link ativo (sem alterações)
     const links = document.querySelectorAll(".sidebar-links a");
     const currentPage = window.location.pathname.split("/").pop().split("?")[0] || "index.html";
     links.forEach(link => {
@@ -108,7 +109,7 @@ async function setupAuthenticatedFeatures(user) {
   }
 }
 
-// Inicia a verificação de login do Firebase (NÃO MUDA)
+// Inicia a verificação de login do Firebase (sem alterações)
 function initializeAuthGuard() {
   onAuthStateChanged(auth, (user) => {
     const isLoginPage = window.location.pathname.endsWith("login.html");
@@ -127,7 +128,7 @@ function initializeAuthGuard() {
   });
 }
 
-// Garante persistência e inicia o guardião (NÃO MUDA)
+// Garante persistência e inicia o guardião (sem alterações)
 setPersistence(auth, browserLocalPersistence)
   .then(() => initializeAuthGuard())
   .catch((error) => {
