@@ -6,15 +6,16 @@
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
-        <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
-        <a href="dashboard.html" id="link-dashboard"><span><i class="fa-solid fa-chart-pie"></i></span> Dashboard</a>
-        <a href="servicos.html" id="link-servicos"><span><i class="fa-solid fa-scissors"></i></span> Serviços</a>
-        <a href="agenda.html" id="link-agenda"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
-        <a href="clientes.html" id="link-clientes"><span><i class="fa-solid fa-user-group"></i></span> Clientes</a>
-        <a href="equipe.html" id="link-equipe"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
-        <a href="perfil.html"><span><i class="fa-solid fa-user-gear"></i></span> Meu Perfil</a>
-        <a href="relatorios.html" id="link-relatorios"><span><i class="fa-solid fa-file-invoice"></i></span> Relatórios</a>
-        <a href="admin-clientes.html" id="admin-link">
+        <a href="index.html" class="menu-admin menu-dono"><span><i class="fa-solid fa-house"></i></span> Início</a>
+        <a href="dashboard.html" id="link-dashboard" class="menu-admin menu-dono"><span><i class="fa-solid fa-chart-pie"></i></span> Dashboard</a>
+        <a href="servicos.html" id="link-servicos" class="menu-admin menu-dono"><span><i class="fa-solid fa-scissors"></i></span> Serviços</a>
+        <a href="agenda.html" id="link-agenda" class="menu-func menu-admin menu-dono"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+        <a href="clientes.html" id="link-clientes" class="menu-admin menu-dono"><span><i class="fa-solid fa-user-group"></i></span> Clientes</a>
+        <a href="equipe.html" id="link-equipe" class="menu-func menu-admin menu-dono"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+        <a href="perfil.html" class="menu-admin menu-dono"><span><i class="fa-solid fa-user-gear"></i></span> Meu Perfil</a>
+        <a href="perfil-funcionario.html" class="menu-func"><span><i class="fa-solid fa-user"></i></span> Meu Perfil</a>
+        <a href="relatorios.html" id="link-relatorios" class="menu-admin menu-dono"><span><i class="fa-solid fa-file-invoice"></i></span> Relatórios</a>
+        <a href="admin-clientes.html" id="admin-link" class="menu-admin menu-dono">
             <span><i class="fa-solid fa-user-shield"></i></span>
             <span>Administração</span>
         </a>
@@ -207,5 +208,22 @@
                 link.classList.add('active');
             }
         });
+
+        // ------------- NOVO: Lógica de exibição por perfil -------------
+        // Defina window.USER_ROLE = 'funcionario' ou 'admin' ou 'dono' antes de carregar este menu!
+        // Exemplo: window.USER_ROLE = session.role; // no seu JS principal
+        // Se não definido, mostra tudo (por padrão)
+        if (typeof window.USER_ROLE !== 'undefined') {
+            if (window.USER_ROLE === 'funcionario') {
+                // Mostra apenas os menus do funcionário
+                document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
+                document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = 'none');
+            } else if (window.USER_ROLE === 'admin' || window.USER_ROLE === 'dono') {
+                // Mostra todos os menus
+                document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = '');
+                document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
+            }
+        }
+        // --------------------------------------------------------------
     });
 </script>
