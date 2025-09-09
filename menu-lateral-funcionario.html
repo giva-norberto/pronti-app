@@ -1,3 +1,15 @@
+<!-- ========================= -->
+<!--    MENU FUNCIONÁRIO       -->
+<!--   HAMBÚRGUER RESPONSIVO   -->
+<!-- ========================= -->
+
+<!-- Botão Hamburguer (aparece só no mobile) -->
+<button class="hamburger" id="hamburger" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -10,7 +22,41 @@
         <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
 </aside>
+
+<!-- Backdrop para fechar ao clicar fora e escurecer -->
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
 <style>
+/* HAMBURGUER BUTTON */
+.hamburger {
+  display: none;
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 2001;
+  background: #fff;
+  border: none;
+  border-radius: 7px;
+  width: 44px;
+  height: 44px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.13);
+  padding: 0;
+}
+.hamburger span {
+  display: block;
+  width: 26px;
+  height: 4px;
+  background: #4f46e5;
+  border-radius: 3px;
+  transition: 0.2s;
+}
+
+/* MENU LATERAL */
 .sidebar {
   width: 240px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -19,11 +65,16 @@
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
   position: fixed;
   left: 0; top: 0; bottom: 0;
-  z-index: 10;
+  z-index: 2000;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   padding-top: 20px;
+  transition: transform 0.25s cubic-bezier(.7,.2,.17,1);
+  box-sizing: border-box;
+  transform: translateX(0);
+}
+.sidebar.closed {
+  transform: translateX(-110%);
 }
 .sidebar-brand {
   font-size: 2rem;
@@ -35,19 +86,42 @@
   display: block;
   margin-bottom: 10px;
 }
+.sidebar hr {
+  margin: 0 32px 16px 32px;
+  border: none;
+  border-top: 1px solid #787cff55;
+}
+.sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 24px;
+  flex-grow: 1;
+}
 .sidebar-links a {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: #fff;
   color: #22223b;
   font-weight: 500;
   border-radius: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   box-shadow: none;
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   padding: 14px 0;
-  text-align: center;
+  text-align: left;
   text-decoration: none;
   letter-spacing: 0.01em;
+  border: 2px solid transparent;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.sidebar-links a span {
+  display: inline-block;
+  width: 25px;
+  text-align: center;
+  font-size: 1.2em;
 }
 .sidebar-links a.active {
   background: #6366f1;
@@ -55,10 +129,12 @@
   font-weight: bold;
   box-shadow: 2px 4px 0 0 #ff3e7f;
   border-radius: 12px;
+  border: 2px solid #fff;
 }
 .sidebar-links a:hover:not(.active) {
   background: #f6f8fa;
   color: #4f46e5;
+  border-color: #d1d5fa;
 }
 .sidebar-footer {
   margin-top: auto;
@@ -73,58 +149,54 @@
   font-weight: bold;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
+  width: 100%;
+  min-height: 44px;
+  font-size: 1.05em;
+  border: 2px solid transparent;
+  box-sizing: border-box;
 }
 .btn-logout:hover {
   background: #4f46e5;
   color: #fff;
-  border: 1px solid #fff;
+  border: 2px solid #fff;
 }
 
-/* CORREÇÃO PARA CELULAR */
+/* RESPONSIVO: MOBILE */
 @media (max-width: 900px) {
   .sidebar {
-    width: 100%;
-    min-height: auto;
-    position: static;
-    flex-direction: column;
-    padding: 10px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateX(-110%);
   }
-  .sidebar-brand {
-    font-size: 1.5rem;
-    padding: 10px 15px;
-    margin-bottom: 5px;
-    text-align: left;
+  .sidebar.open {
+    transform: translateX(0);
   }
-  .sidebar hr {
-    display: none;
-  }
-  .sidebar-links {
+  .hamburger {
     display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 0 15px 10px 15px;
-    justify-content: flex-start;
   }
-  .sidebar-links::-webkit-scrollbar {
+  body.sidebar-open {
+    overflow: hidden;
+  }
+}
+
+/* BACKDROP PARA ESCURECER FUNDO NO MOBILE */
+.sidebar-backdrop {
+  display: none;
+}
+@media (max-width: 900px) {
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1999;
+    background: rgba(0,0,0,0.35);
     display: none;
+    transition: opacity 0.2s;
   }
-  .sidebar-links {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .sidebar-links a {
-    flex: 0 0 auto;
-    margin-bottom: 0;
-    margin-right: 10px;
-    padding: 10px 15px;
-    white-space: nowrap;
-  }
-  .sidebar-footer {
-    display: none;
+  .sidebar.open + .sidebar-backdrop {
+    display: block;
+    opacity: 1;
   }
 }
 </style>
+
 <script>
 // Ativa o link correto no menu
 document.addEventListener("DOMContentLoaded", function() {
@@ -135,6 +207,48 @@ document.addEventListener("DOMContentLoaded", function() {
     // Condição especial para o index.html ser ativo na raiz do site
     if (href === current || (href === 'index.html' && (current === '' || current === 'index.html'))) {
       link.classList.add('active');
+    }
+  });
+
+  // HAMBURGUER + MENU MOBILE
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger');
+  const backdrop = document.getElementById('sidebar-backdrop');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    document.body.classList.add('sidebar-open');
+    hamburger.setAttribute('aria-expanded', 'true');
+    if (backdrop) backdrop.style.display = 'block';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    document.body.classList.remove('sidebar-open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    if (backdrop) backdrop.style.display = 'none';
+  }
+
+  if (hamburger) {
+    hamburger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+  // Fecha o menu ao clicar fora (no backdrop)
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      closeSidebar();
+    });
+  }
+
+  // FECHA MENU AO REDIMENSIONAR PARA DESKTOP
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 900) {
+      closeSidebar();
     }
   });
 });
