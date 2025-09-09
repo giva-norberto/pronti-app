@@ -1,3 +1,4 @@
+alert("TESTE: O arquivo auth-guard.js CARREGOU!");
 import { auth, db } from "./firebase-config.js";
 import {
   onAuthStateChanged,
