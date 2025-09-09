@@ -130,7 +130,7 @@ main, .content, .main-content { margin-left: 250px; }
 </main>
 
 <script type="module">
-// ------- TROQUE PELOS SEUS DADOS DO FIREBASE -----------
+// ------ TROQUE PELOS SEUS DADOS DO FIREBASE ------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 const firebaseConfig = {
@@ -145,16 +145,21 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // GARANTIR MULTIEMPRESA: não entra sem empresa ativa
-    const empresaAtiva = localStorage.getItem('empresaAtiva');
+    // Multiempresa: entra direto se só houver uma empresa
     const empresasUsuario = JSON.parse(localStorage.getItem('empresasUsuario') || "[]");
-    if (!empresaAtiva || !empresasUsuario.length) {
-      window.location.href = "selecionar-empresa.html";
+    let empresaAtiva = localStorage.getItem('empresaAtiva');
+    if ((!empresaAtiva || empresaAtiva === 'null') && empresasUsuario.length === 1) {
+      empresaAtiva = empresasUsuario[0].id || empresasUsuario[0]._id || empresasUsuario[0];
+      localStorage.setItem('empresaAtiva', empresaAtiva);
+    }
+    if (!empresaAtiva || empresaAtiva === 'null') {
+      window.location.href = 'selecionar-empresa.html';
       return;
     }
 
-    // Saudação personalizada com nome do usuário
-    const nomeUsuario = (localStorage.getItem('nomeUsuario') || "Usuário").split(" ")[0];
+    // Saudação com nome real do usuário
+    let nomeUsuario = localStorage.getItem('nomeUsuario') || "Usuário";
+    nomeUsuario = nomeUsuario.split(" ")[0]; // Só o primeiro nome
     const saudacao = document.getElementById('saudacao');
     if (saudacao) {
       const hora = new Date().getHours();
@@ -164,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saudacao.innerHTML = `${periodo}, ${nomeUsuario}!`;
     }
 
-    // Sidebar/menu/card conforme tipo usuario
+    // Sidebar/cards conforme tipo de usuário
     const tipoUsuario = (localStorage.getItem('tipoUsuario') || "funcionario").toLowerCase();
     const sidebarLinks = document.getElementById('sidebar-links');
     const dashboardActions = document.getElementById('dashboard-actions');
@@ -202,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }
 
-    // Botão sair funcional
+    // Botão sair
     const btnLogoutIndex = document.getElementById('btn-logout-index');
     if (btnLogoutIndex) {
       btnLogoutIndex.addEventListener('click', () => {
