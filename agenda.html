@@ -99,39 +99,18 @@
     </div>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script type="module" src="agenda.js"></script>
-    <script type="module">
-        import { verificarAcesso } from './user-service.js';
-        document.addEventListener("DOMContentLoaded", async function() {
-            try {
-                const session = await verificarAcesso();
-                if (session.role === 'funcionario') {
-                    // Menu restrito do funcionário
-                    fetch('menu-lateral-funcionario.html')
-                        .then(res => res.text())
-                        .then(html => {
-                            document.getElementById('sidebar-placeholder').innerHTML = html;
-                            const links = document.querySelectorAll('.sidebar-links a');
-                            links.forEach(link => link.classList.remove('active'));
-                            const agendaLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
-                            if (agendaLink) agendaLink.classList.add('active');
-                            if (window.ativarLogout) window.ativarLogout();
-                        });
-                } else {
-                    // Menu completo do dono/admin
-                    fetch('menu-lateral.html')
-                        .then(res => res.text())
-                        .then(html => {
-                            document.getElementById('sidebar-placeholder').innerHTML = html;
-                            const links = document.querySelectorAll('.sidebar-links a');
-                            links.forEach(link => link.classList.remove('active'));
-                            const agendaLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
-                            if (agendaLink) agendaLink.classList.add('active');
-                            if (window.ativarLogout) window.ativarLogout();
-                        });
-                }
-            } catch(e) {
-                // Redirecionamento já tratado por verificarAcesso
-            }
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('menu-lateral.html')
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById('sidebar-placeholder').innerHTML = html;
+                    const links = document.querySelectorAll('.sidebar-links a');
+                    links.forEach(link => link.classList.remove('active'));
+                    const agendaLink = document.querySelector('.sidebar-links a[href="agenda.html"]');
+                    if (agendaLink) agendaLink.classList.add('active');
+                    if (window.ativarLogout) window.ativarLogout();
+                });
         });
     </script>
 </body>
