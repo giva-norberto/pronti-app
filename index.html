@@ -213,7 +213,7 @@ function controlarDashboard(perfil) {
     } else if (tipo === 'dono') {
         // Dono: todos os cards
         document.querySelectorAll('.card-func, .card-dono').forEach(e => e.style.display = '');
-        // Sidebar aparece só em desktop (controlado pelo CSS do menu-lateral.html)
+        // Sempre carrega menu lateral
         carregarMenuLateral();
     }
 }
