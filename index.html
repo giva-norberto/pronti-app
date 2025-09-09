@@ -167,6 +167,7 @@ const nomeUsuarioSpan = document.getElementById("nome-usuario");
 const saudacaoSpan = document.getElementById("saudacao");
 const mainContent = document.getElementById("main-content");
 const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
+const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 
 function getTipoUsuario(perfil) {
     return perfil.ehDono === true ? "dono" : "funcionario";
@@ -199,14 +200,21 @@ function removerIsLoading() {
     document.body.classList.remove('is-loading');
 }
 
-// Exibe os cards corretos conforme tipo de usuário
-function controlarCardsDashboard(perfil) {
+// Exibe os cards e menu conforme tipo de usuário
+function controlarDashboard(perfil) {
     const tipo = getTipoUsuario(perfil);
+
     if (tipo === 'funcionario') {
+        // Funcionário: só 3 cards
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
+        // Remove menu lateral
+        sidebarPlaceholder.innerHTML = '';
     } else if (tipo === 'dono') {
+        // Dono: todos os cards
         document.querySelectorAll('.card-func, .card-dono').forEach(e => e.style.display = '');
+        // Sidebar aparece só em desktop (controlado pelo CSS do menu-lateral.html)
+        carregarMenuLateral();
     }
 }
 
@@ -214,7 +222,7 @@ async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
         const { perfil } = userSession;
-        controlarCardsDashboard(perfil);
+        controlarDashboard(perfil);
 
         const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
@@ -234,31 +242,33 @@ async function inicializarDashboard() {
     }
 }
 
-// Carregar menu lateral
-fetch('menu-lateral.html')
-  .then(res => res.text())
-  .then(html => {
-      document.getElementById('sidebar-placeholder').innerHTML = html;
-      import("./firebase-config.js").then(({ auth }) => {
-          import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
-              const btnLogout = document.getElementById("btn-logout");
-              if (btnLogout) {
-                  btnLogout.addEventListener("click", async () => {
-                      try {
-                          await signOut(auth);
-                          localStorage.clear();
-                          window.location.href = "login.html";
-                      } catch(e) {
-                          alert("Erro ao sair: " + e.message);
-                      }
-                  });
-              }
+// Carregar menu lateral (somente para dono)
+function carregarMenuLateral() {
+    fetch('menu-lateral.html')
+      .then(res => res.text())
+      .then(html => {
+          sidebarPlaceholder.innerHTML = html;
+          import("./firebase-config.js").then(({ auth }) => {
+              import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
+                  const btnLogout = document.getElementById("btn-logout");
+                  if (btnLogout) {
+                      btnLogout.addEventListener("click", async () => {
+                          try {
+                              await signOut(auth);
+                              localStorage.clear();
+                              window.location.href = "login.html";
+                          } catch(e) {
+                              alert("Erro ao sair: " + e.message);
+                          }
+                      });
+                  }
+              });
           });
+      })
+      .catch(() => {
+          sidebarPlaceholder.innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
       });
-  })
-  .catch((e) => {
-      document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
-  });
+}
 
 Promise.resolve().then(inicializarDashboard);
 setTimeout(removerIsLoading, 3000);
