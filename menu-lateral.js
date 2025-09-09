@@ -13,23 +13,42 @@ import {
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 async function getUserRole(user) {
-  if (!user) return "funcionario";
-  if (user.uid === ADMIN_UID) return "admin";
+  if (!user) {
+    console.log("DEBUG: Usuário não logado, retornando funcionario.");
+    return "funcionario";
+  }
+  if (user.uid === ADMIN_UID) {
+    console.log("DEBUG: Usuário é ADMIN_UID, retornando admin.");
+    return "admin";
+  }
 
   try {
     const empresaId = localStorage.getItem("empresaAtivaId");
-    if (!empresaId) return "funcionario";
+    console.log("DEBUG: empresaAtivaId do localStorage:", empresaId);
+    if (!empresaId) {
+      console.log("DEBUG: empresaAtivaId não encontrada, retornando funcionario.");
+      return "funcionario";
+    }
 
     const profRef = doc(db, "empresas", empresaId, "profissionais", user.uid);
+    console.log("DEBUG: Buscando documento do profissional em:", profRef.path);
     const profSnap = await getDoc(profRef);
 
-    if (profSnap.exists() && profSnap.data().ehDono) {
-      return "dono";
+    if (profSnap.exists()) {
+      const dados = profSnap.data();
+      console.log("DEBUG: Dados do profissional encontrados:", dados);
+      if (dados.ehDono) {
+        console.log("DEBUG: ehDono é true, retornando dono.");
+        return "dono";
+      }
+    } else {
+      console.log("DEBUG: Documento do profissional NÃO encontrado.");
     }
   } catch (err) {
-    console.error("[menu-guardiao] Erro ao buscar perfil:", err);
+    console.error("DEBUG: Erro ao buscar perfil no Firestore:", err);
   }
 
+  console.log("DEBUG: Nenhuma condição de dono/admin atendida, retornando funcionario.");
   return "funcionario";
 }
 
@@ -43,17 +62,18 @@ function setVisibility(selector, displayStyle) {
 
 async function setupAuthenticatedFeatures(user) {
   const userRole = await getUserRole(user);
+  console.log("DEBUG: userRole determinado em setupAuthenticatedFeatures:", userRole);
 
   // Esconde todos os menus e cards por padrão para garantir um estado limpo
   setVisibility(".menu-func, .menu-dono, .menu-admin", "none");
   setVisibility(".card-func, .card-dono, .card-admin", "none");
 
   if (userRole === "dono" || userRole === "admin") {
-    // Dono/Admin: Mostra todos os menus e cards
+    console.log("DEBUG: Perfil é dono ou admin. Mostrando tudo.");
     setVisibility(".menu-func, .menu-dono, .menu-admin", "flex");
     setVisibility(".card-func, .card-dono, .card-admin", "flex");
   } else { 
-    // Funcionário: Mostra apenas menus e cards de funcionário
+    console.log("DEBUG: Perfil é funcionario. Mostrando apenas o básico.");
     setVisibility(".menu-func", "flex");
     setVisibility(".card-func", "flex");
   }
@@ -91,13 +111,16 @@ function initializeAuthGuard() {
     const companyId = localStorage.getItem("empresaAtivaId");
 
     if (!user && !isLoginPage) {
+      console.log("DEBUG: Não logado e não na página de login, redirecionando.");
       window.location.replace("login.html");
     } else if (user && needsCompany && !companyId) {
+      console.log("DEBUG: Logado, precisa de empresa, mas empresaAtivaId não encontrada, redirecionando.");
       window.location.replace("selecionar-empresa.html");
     } else if (user) {
+      console.log("DEBUG: Usuário logado, configurando funcionalidades.");
       setupAuthenticatedFeatures(user);
     } else {
-      // Se não há usuário e estamos na página de login/seleção, garante que nada esteja visível por padrão
+      console.log("DEBUG: Na página de login ou sem usuário, garantindo que nada esteja visível.");
       setVisibility(".menu-func, .menu-dono, .menu-admin", "none");
       setVisibility(".card-func, .card-dono, .card-admin", "none");
     }
@@ -105,8 +128,15 @@ function initializeAuthGuard() {
 }
 
 setPersistence(auth, browserLocalPersistence)
-  .then(() => initializeAuthGuard())
+  .then(() => {
+    console.log("DEBUG: Persistência configurada, inicializando guardião.");
+    initializeAuthGuard();
+  })
   .catch((error) => {
-    console.error("Guardião: Falha na persistência!", error);
+    console.error("DEBUG: Guardião: Falha na persistência!", error);
     initializeAuthGuard();
   });
+
+
+
+
