@@ -14,10 +14,10 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// === UID do administrador global ===
+// UID do administrador global
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-// === Função para determinar o perfil do usuário (dinâmico do Firestore ) ===
+// Função para determinar o perfil do usuário (NÃO MUDA )
 async function getUserRole(user) {
   if (!user) return "funcionario";
   if (user.uid === ADMIN_UID) return "admin";
@@ -39,38 +39,40 @@ async function getUserRole(user) {
   return "funcionario";
 }
 
-// Função que configura funcionalidades que dependem do usuário estar logado.
+// Função que mostra/esconde elementos de forma segura
+const setVisibility = (selector, shouldShow) => {
+  document.querySelectorAll(selector).forEach(el => {
+    if (el) {
+      el.style.display = shouldShow ? "" : "none"; // Usa "" para voltar ao padrão do CSS
+    }
+  });
+};
+
+// Função principal que configura a página
 async function setupAuthenticatedFeatures(user) {
   const sidebar = document.getElementById('sidebar');
   
   try {
     const userRole = await getUserRole(user);
 
-    // -------- Lógica para mostrar/ocultar menus conforme o perfil -----------
-    // Função auxiliar para mostrar elementos de forma segura
-    const showElements = (selector) => {
-      document.querySelectorAll(selector).forEach(e => {
-        if (e) e.style.display = "flex";
-      });
-    };
-    
-    // Esconde todos os menus por padrão para evitar sobreposição
-    document.querySelectorAll('.menu-func, .menu-dono, .menu-admin').forEach(e => {
-        if(e) e.style.display = "none";
-    });
-
-    // Mostra os menus com base no perfil, mantendo sua lógica original
-    if (userRole === "funcionario") {
-      showElements(".menu-func");
-    } else if (userRole === "admin") {
-      showElements(".menu-func, .menu-admin");
-    } else if (userRole === "dono") {
-      // Sua lógica original para dono (mostra tudo)
-      showElements(".menu-func, .menu-dono, .menu-admin");
+    // ==================================================================
+    //          LÓGICA CORRIGIDA PARA DONO E FUNCIONÁRIO
+    // ==================================================================
+    if (userRole === "dono") {
+      // SE FOR DONO: MOSTRA TUDO (MENUS E CARDS)
+      setVisibility(".menu-func, .menu-dono, .menu-admin", true);
+      setVisibility(".card-func, .card-dono, .card-admin", true);
+    } else { // Para "funcionario" e qualquer outro caso
+      // SE FOR FUNCIONÁRIO: MOSTRA SÓ O BÁSICO
+      setVisibility(".menu-func", true);
+      setVisibility(".menu-dono, .menu-admin", false);
+      
+      setVisibility(".card-func", true);
+      setVisibility(".card-dono, .card-admin", false);
     }
-    // ------------------------------------------------------------------------------
+    // ==================================================================
 
-    // Lógica do botão de logout
+    // Lógica do botão de logout (NÃO MUDA)
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) {
       const newBtn = btnLogout.cloneNode(true);
@@ -78,42 +80,36 @@ async function setupAuthenticatedFeatures(user) {
         btnLogout.parentNode.replaceChild(newBtn, btnLogout);
         newBtn.addEventListener("click", () => {
           signOut(auth).then(() => {
-            localStorage.removeItem("empresaAtivaId");
+            localStorage.clear();
             window.location.replace("login.html");
           });
         });
       }
     }
 
-    // Lógica para destacar o link ativo na sidebar
+    // Lógica para destacar link ativo (NÃO MUDA)
     const links = document.querySelectorAll(".sidebar-links a");
     const currentPage = window.location.pathname.split("/").pop().split("?")[0] || "index.html";
-
-    links.forEach(link => link.classList.remove("active"));
     links.forEach(link => {
       if (link) {
         const linkPage = link.getAttribute("href").split("/").pop().split("?")[0];
-        if (linkPage === currentPage) {
-          link.classList.add("active");
-        }
+        if (linkPage === currentPage) link.classList.add("active");
+        else link.classList.remove("active");
       }
     });
 
   } catch (error) {
-    console.error("Erro ao configurar funcionalidades autenticadas:", error);
+    console.error("Erro ao configurar a página:", error);
   } finally {
-    // ESSA É A LINHA MAIS IMPORTANTE:
-    // Garante que o menu sempre será exibido, mesmo se ocorrer um erro.
+    // Garante que o menu sempre apareça, evitando a tela em branco
     if (sidebar) {
       sidebar.classList.remove('sidebar-loading');
     }
   }
 }
 
-// Inicia a verificação de login do Firebase
+// Inicia a verificação de login do Firebase (NÃO MUDA)
 function initializeAuthGuard() {
-  const sidebar = document.getElementById('sidebar');
-
   onAuthStateChanged(auth, (user) => {
     const isLoginPage = window.location.pathname.endsWith("login.html");
     const needsCompany = !isLoginPage && !window.location.pathname.endsWith("selecionar-empresa.html");
@@ -126,23 +122,15 @@ function initializeAuthGuard() {
     } else if (user) {
       setupAuthenticatedFeatures(user);
     } else {
-      // Se não há usuário e estamos na página de login/seleção, remove o loading
-      if (sidebar) {
-        sidebar.classList.remove('sidebar-loading');
-      }
+      document.getElementById('sidebar')?.classList.remove('sidebar-loading');
     }
   });
 }
 
-// Garante persistência e inicia o guardião
+// Garante persistência e inicia o guardião (NÃO MUDA)
 setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    initializeAuthGuard();
-  })
+  .then(() => initializeAuthGuard())
   .catch((error) => {
-    console.error("Guardião do Menu: Falha ao ativar persistência!", error);
-    // Inicia mesmo assim, mas remove o loading para a página não ficar em branco
-    const sidebar = document.getElementById('sidebar');
-    if(sidebar) sidebar.classList.remove('sidebar-loading');
+    console.error("Guardião: Falha na persistência!", error);
     initializeAuthGuard();
   });
