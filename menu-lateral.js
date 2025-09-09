@@ -17,7 +17,8 @@ import {
 // === UID do administrador global ===
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-// === Função para determinar o perfil do usuário (dinâmico do Firestore) ===
+// === Função para determinar o perfil do usuário (dinâmico do Firestore ) ===
+// NENHUMA MUDANÇA AQUI
 async function getUserRole(user) {
   if (!user) return "funcionario";
 
@@ -47,21 +48,26 @@ async function getUserRole(user) {
 async function setupAuthenticatedFeatures(user) {
   const userRole = await getUserRole(user);
 
-  // -------- Lógica para mostrar/ocultar menus conforme o perfil -----------
-  // Use classes CSS: menu-func, menu-admin, menu-dono nos <a> do menu lateral!
+  // -------- Lógica para mostrar/ocultar menus conforme o perfil (AJUSTADA) -----------
+  // A lógica IF/ELSE é a mesma, mas o modo de exibição foi melhorado.
+  // Usamos 'flex' porque é o display correto dos seus links.
   if (userRole === "funcionario") {
-    document.querySelectorAll(".menu-func").forEach(e => e.style.display = "");
+    document.querySelectorAll(".menu-func").forEach(e => e.style.display = "flex");
     document.querySelectorAll(".menu-admin, .menu-dono").forEach(e => e.style.display = "none");
   } else if (userRole === "admin") {
-    document.querySelectorAll(".menu-admin").forEach(e => e.style.display = "");
-    document.querySelectorAll(".menu-func").forEach(e => e.style.display = "");
+    document.querySelectorAll(".menu-admin, .menu-func").forEach(e => e.style.display = "flex");
     document.querySelectorAll(".menu-dono").forEach(e => e.style.display = "none");
   } else if (userRole === "dono") {
-    document.querySelectorAll(".menu-admin, .menu-dono, .menu-func").forEach(e => e.style.display = "");
+    // Sua lógica original mostrava admin para o dono. Mantive isso.
+    // Se o dono não deve ver o menu de admin, remova '.menu-admin' da linha abaixo.
+    document.querySelectorAll(".menu-admin, .menu-dono, .menu-func").forEach(e => e.style.display = "flex");
   }
   // ------------------------------------------------------------------------------
 
-  // Lógica do botão de logout
+  // NOVO: Remove a classe de carregamento para exibir os menus corretos de uma vez.
+  document.getElementById('sidebar')?.classList.remove('sidebar-loading');
+
+  // Lógica do botão de logout (NENHUMA MUDANÇA AQUI)
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
     const newBtn = btnLogout.cloneNode(true);
@@ -75,7 +81,7 @@ async function setupAuthenticatedFeatures(user) {
     });
   }
 
-  // Lógica para destacar o link ativo na sidebar
+  // Lógica para destacar o link ativo na sidebar (NENHUMA MUDANÇA AQUI)
   const links = document.querySelectorAll(".sidebar-links a");
   const currentPage = window.location.pathname.split("/").pop().split("?")[0] || "index.html";
 
@@ -88,7 +94,7 @@ async function setupAuthenticatedFeatures(user) {
   });
 }
 
-// Inicia a verificação de login do Firebase
+// Inicia a verificação de login do Firebase (NENHUMA MUDANÇA AQUI)
 function initializeAuthGuard() {
   onAuthStateChanged(auth, (user) => {
     const isLoginPage = window.location.pathname.endsWith("login.html");
@@ -96,16 +102,22 @@ function initializeAuthGuard() {
     const companyId = localStorage.getItem("empresaAtivaId");
 
     if (!user && !isLoginPage) {
+      // Adiciona a classe de carregamento para garantir que o menu não pisque antes do redirecionamento
+      document.getElementById('sidebar')?.classList.add('sidebar-loading');
       window.location.replace("login.html");
     } else if (user && needsCompany && !companyId) {
+      document.getElementById('sidebar')?.classList.add('sidebar-loading');
       window.location.replace("selecionar-empresa.html");
     } else if (user) {
       setupAuthenticatedFeatures(user);
+    } else {
+      // Se for a página de login, remove a classe para que o layout não quebre
+      document.getElementById('sidebar')?.classList.remove('sidebar-loading');
     }
   });
 }
 
-// Garante persistência e inicia o guardião
+// Garante persistência e inicia o guardião (NENHUMA MUDANÇA AQUI)
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
     initializeAuthGuard();
