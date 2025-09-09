@@ -170,7 +170,11 @@ const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 const sidebarPlaceholder = document.getElementById("sidebar-placeholder");
 
 function getTipoUsuario(perfil) {
-    return perfil.ehDono === true ? "dono" : "funcionario";
+    // Dono só se tiver ehDono === true (ou string "true")
+    if (perfil.ehDono === true || perfil.ehDono === "true") {
+        return "dono";
+    }
+    return "funcionario"; // se não tiver campo ehDono, é funcionário
 }
 
 function definirSaudacao() {
@@ -222,6 +226,8 @@ async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
         const { perfil } = userSession;
+        console.log("DEBUG PERFIL:", perfil);
+        console.log("TIPO DETECTADO:", getTipoUsuario(perfil));
         controlarDashboard(perfil);
 
         const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
