@@ -1,5 +1,5 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (FUNCIONÁRIO SÓ AGENDA, EQUIPE E SAIR)         -->
+<!--      MENU-LATERAL.HTML (FUNCIONÁRIO: INÍCIO, AGENDA, EQUIPE, SAIR)     -->
 <!-- ====================================================================== -->
 
 <aside class="sidebar" id="sidebar">
@@ -15,10 +15,14 @@
     </div>
 </aside>
 
+<!-- Botão sair discreto no topo direito para quando o menu lateral não está visível -->
+<button id="btn-logout-top" class="btn-logout-top" style="display: none;">
+    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+</button>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* ... seu CSS original mantido igual ... */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -125,48 +129,113 @@
   color: #fff; 
   border: 2px solid #fff; 
 }
+
+/* Botão sair discreto (quando sidebar some, por exemplo em mobile ou index sem menu) */
+.btn-logout-top {
+    position: absolute;
+    top: 16px;
+    right: 24px;
+    background: transparent;
+    color: #4f46e5;
+    border: none;
+    font-size: 1.2em;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 2001;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-logout-top:hover {
+    color: #2b2172;
+}
+
+/* Exemplo para garantir que o conteúdo principal não fique atrás do menu */
+main, .content, .main-content {
+  margin-left: 250px;
+}
+@media (max-width: 900px) {
+  .sidebar {
+    left: -260px;
+  }
+  main, .content, .main-content {
+    margin-left: 0 !important;
+  }
+}
 </style>
 
 <script type="module">
-    import { auth } from "./firebase-config.js";
-    import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    document.addEventListener('DOMContentLoaded', () => {
-        // MULTIEMPRESAS: Adapta links para empresa ativa
-        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-        if (empresaAtivaId) {
-            const linksParaAdaptar = [
-                { id: "link-agenda", href: "agenda.html" },
-                { id: "link-equipe", href: "equipe.html" }
-            ];
-            linksParaAdaptar.forEach(cfg => {
-                const el = document.getElementById(cfg.id);
-                if (el) {
-                    el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
-                }
-            });
-        }
+function atualizarBotaoSair() {
+    const sidebar = document.getElementById('sidebar');
+    const btnLogoutTop = document.getElementById('btn-logout-top');
+    if (!sidebar || !btnLogoutTop) return;
+    // Se sidebar está visível (pode ser display:none ou left:-260px em mobile)
+    const sidebarStyle = window.getComputedStyle(sidebar);
+    if (
+        sidebarStyle.display === "none" ||
+        sidebarStyle.left === "-260px"
+    ) {
+        btnLogoutTop.style.display = 'flex';
+    } else {
+        btnLogoutTop.style.display = 'none';
+    }
+}
 
-        // Botão de logout
-        const btnLogout = document.getElementById('btn-logout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                signOut(auth).then(() => {
-                    localStorage.clear();
-                    window.location.href = 'login.html';
-                });
-            });
-        }
-        
-        // Destaque do link da página atual
-        const links = document.querySelectorAll('.sidebar-links a');
-        // Corrige para ignorar querystring na comparação
-        const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
-        links.forEach(link => {
-            const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
-            if (linkPage === currentPage) {
-                link.classList.add('active');
+document.addEventListener('DOMContentLoaded', () => {
+    // MULTIEMPRESAS: Adapta links para empresa ativa
+    const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+    if (empresaAtivaId) {
+        const linksParaAdaptar = [
+            { id: "link-inicio", href: "index.html" },
+            { id: "link-agenda", href: "agenda.html" },
+            { id: "link-equipe", href: "equipe.html" }
+        ];
+        linksParaAdaptar.forEach(cfg => {
+            const el = document.getElementById(cfg.id);
+            if (el) {
+                el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
             }
         });
+    }
+
+    // Botão de logout (sidebar)
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            });
+        });
+    }
+
+    // Botão de logout discreto (topo)
+    const btnLogoutTop = document.getElementById('btn-logout-top');
+    if (btnLogoutTop) {
+        btnLogoutTop.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            });
+        });
+    }
+
+    // Destaque do link da página atual
+    const links = document.querySelectorAll('.sidebar-links a');
+    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
+    links.forEach(link => {
+        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+        if (linkPage === currentPage) {
+            link.classList.add('active');
+        }
     });
+
+    // Atualize o botão sair discreto conforme visibilidade do menu
+    atualizarBotaoSair();
+    window.addEventListener('resize', atualizarBotaoSair);
+    // Se você tem um botão/hamburger para abrir/fechar a sidebar, chame atualizarBotaoSair() nele também.
+});
 </script>
