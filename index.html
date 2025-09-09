@@ -169,11 +169,9 @@ function controlarCardsDashboard(perfil) {
     if (tipo === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
-        // Remove menu lateral para funcionário
         sidebarPlaceholder.innerHTML = '';
     } else if (tipo === 'dono') {
         document.querySelectorAll('.card-func, .card-dono').forEach(e => e.style.display = '');
-        // Carrega menu lateral para dono
         carregarMenuLateral();
     }
 }
@@ -203,7 +201,6 @@ async function inicializarDashboard() {
     }
 }
 
-// Carregar menu lateral
 function carregarMenuLateral() {
     fetch('menu-lateral.html')
       .then(res => res.text())
@@ -226,7 +223,7 @@ function carregarMenuLateral() {
               });
           });
       })
-      .catch((e) => {
+      .catch(() => {
           sidebarPlaceholder.innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
       });
 }
@@ -236,4 +233,3 @@ setTimeout(removerIsLoading, 3000);
 </script>
 </body>
 </html>
-``
