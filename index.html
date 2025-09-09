@@ -126,32 +126,32 @@
         <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
         <p>Pronto para gerenciar seu dia?</p>
     </div>
-    <div class="dashboard-grid-cards">
-        <a href="dashboard.html" class="menu-card card-painel">
+    <div class="dashboard-grid-cards" id="dashboard-grid-cards">
+        <a href="dashboard.html" class="menu-card card-painel card-admin card-dono">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
         </a>
-        <a href="agenda.html" class="menu-card card-agenda">
+        <a href="agenda.html" class="menu-card card-agenda card-func card-admin card-dono">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Agenda</span>
         </a>
-        <a href="servicos.html" class="menu-card card-servicos">
+        <a href="servicos.html" class="menu-card card-servicos card-admin card-dono">
             <i class="fa-solid fa-concierge-bell"></i>
             <span>Serviços</span>
         </a>
-        <a href="clientes.html" class="menu-card card-clientes">
+        <a href="clientes.html" class="menu-card card-clientes card-admin card-dono">
             <i class="fa-solid fa-user-group"></i>
             <span>Clientes</span>
         </a>
-        <a href="equipe.html" class="menu-card card-equipe">
+        <a href="equipe.html" class="menu-card card-equipe card-func card-admin card-dono">
             <i class="fa-solid fa-users"></i>
             <span>Equipe</span>
         </a>
-        <a href="perfil.html" class="menu-card card-perfil">
+        <a href="perfil.html" class="menu-card card-perfil card-func">
             <i class="fa-solid fa-user-gear"></i>
             <span>Meu Perfil</span>
         </a>
-        <a href="relatorios.html" class="menu-card card-relatorios">
+        <a href="relatorios.html" class="menu-card card-relatorios card-admin card-dono">
             <i class="fa-solid fa-file-lines"></i>
             <span>Relatórios</span>
         </a>
@@ -223,6 +223,19 @@ function removerIsLoading() {
     document.body.classList.remove('is-loading');
 }
 
+// NOVO: Controle de exibição dos cards por perfil
+function controlarCardsDashboard(perfil) {
+    // Ajuste o campo do perfil conforme o que está em userService.js
+    // Exemplo: perfil.role ou perfil.tipo, aqui uso "perfil.role" como padrão
+    if (perfil.role === 'funcionario') {
+        document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
+        document.querySelectorAll('.card-admin, .card-dono').forEach(e => e.style.display = 'none');
+    } else if (perfil.role === 'admin' || perfil.role === 'dono') {
+        document.querySelectorAll('.card-admin, .card-dono').forEach(e => e.style.display = '');
+        document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
+    }
+}
+
 async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
@@ -231,6 +244,8 @@ async function inicializarDashboard() {
 
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
         if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
+
+        controlarCardsDashboard(perfil); // Chama o controle de exibição dos cards
 
         if (perfil.nomeFantasia && nomeEmpresaSpan) {
             nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
