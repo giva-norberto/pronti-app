@@ -1,4 +1,7 @@
-<!-- MENU-LATERAL FUNCIONÁRIO - BOTÃO SAIR VISÍVEL E CONTRASTE -->
+<!-- ====================================================================== -->
+<!--      MENU-LATERAL.HTML ADAPTADO PARA INDEX (BOTÃO SAIR VISÍVEL)        -->
+<!-- ====================================================================== -->
+
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -7,80 +10,93 @@
         <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
         <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
     </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
 </aside>
 
-<!-- Botão sair no topo direito, sempre visível em mobile/sidebar fechada -->
-<button id="btn-logout-top" class="btn-logout-top" style="display: none;">
+<!-- Botão sair no topo direito, SEMPRE visível no index -->
+<button id="btn-logout-top" class="btn-logout-top">
     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
 </button>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-body {
-  background: #f4f6fb;
-  margin: 0;
+:root {
+    --cor-primaria: #4facfe;
+    --cor-secundaria: #00f2fe;
+    --cor-sucesso: #34d399;
+    --cor-aviso: #f59e42;
+    --cor-perigo: #ef4444;
+    --cor-cinza: #6b7280;
+    --cor-texto-escuro: #22223b;
+    --cor-texto-claro: #44446a;
+    --cor-fundo-app: #f6f7fb;
+    --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
-/* Sidebar */
+
+body {
+    font-family: 'Inter', Arial, sans-serif;
+    background-color: var(--cor-fundo-app);
+    margin: 0;
+    color: var(--cor-texto-escuro);
+}
+
+/* Sidebar (menu fixo) */
 .sidebar {
   width: 250px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-  min-height: 100vh;
-  color: #fff;
+  background: linear-gradient(180deg, #4facfe 0%, #6366f1 100%);
+  min-height: 100vh; 
+  color: #fff; 
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
+  position: fixed; 
+  left: 0; 
+  top: 0; 
+  bottom: 0; 
   z-index: 1000;
-  display: flex;
-  flex-direction: column;
+  display: flex; 
+  flex-direction: column; 
   padding-top: 24px;
   transition: left 0.3s ease;
   box-sizing: border-box;
 }
 .sidebar-brand {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #fff;
+  font-size: 2rem; 
+  font-weight: 900; 
+  color: #fff; 
   text-decoration: none;
-  letter-spacing: 2px;
-  padding: 0 32px 12px 32px;
+  letter-spacing: 2px; 
+  padding: 0 32px 12px 32px; 
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 8px; 
   text-align: left;
 }
-.sidebar hr {
-  margin: 0 32px 16px 32px;
-  border: none;
-  border-top: 1px solid #787cff55;
+.sidebar hr { 
+  margin: 0 32px 16px 32px; 
+  border: none; 
+  border-top: 1px solid #787cff55; 
 }
-.sidebar-links {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 24px;
+.sidebar-links { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+  padding: 0 24px; 
   flex-grow: 1;
 }
 .sidebar-links a {
-  display: flex;
-  align-items: center;
+  display: flex; 
+  align-items: center; 
   gap: 12px;
   background: #fff;
-  color: #4f46e5;
-  font-weight: 600;
-  font-size: 1.08em;
+  color: var(--cor-primaria); 
+  font-weight: 600; 
+  font-size: 1.08em; 
   border-radius: 10px;
-  margin-bottom: 0;
+  margin-bottom: 0; 
   box-shadow: 0 2px 6px rgba(79,70,229,0.07);
   transition: all 0.2s ease;
   padding: 14px 18px;
-  text-align: left;
+  text-align: left; 
   text-decoration: none;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.01em; 
   border: 2px solid transparent;
   min-height: 44px;
   box-sizing: border-box;
@@ -90,94 +106,64 @@ body {
     width: 20px;
     text-align: center;
 }
-.sidebar-links a.active,
+.sidebar-links a.active, 
 .sidebar-links a:focus {
-  background: #4f46e5;
-  color: #fff;
+  background: var(--cor-primaria); 
+  color: #fff; 
   font-weight: 700;
-  border: 2px solid #fff;
+  border: 2px solid #fff; 
   box-shadow: 0 4px 12px rgba(79,70,229,0.3);
   outline: none;
 }
-.sidebar-links a:hover:not(.active) {
-  background: #f0f1ff;
-  color: #3b2fd6;
-  border-color: #d1d5fa;
-}
-.sidebar-footer {
-  margin-top: auto;
-  padding: 32px 32px 24px 32px;
-}
-.btn-logout {
-  background: #fff;
-  color: #4f46e5;
-  border: none;
-  padding: 14px 0;
-  width: 100%;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 1.05em;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  border: 2px solid transparent;
-  outline: none;
-  min-height: 44px;
-  box-sizing: border-box;
-}
-.btn-logout:hover,
-.btn-logout:focus {
-  background: #4f46e5;
-  color: #fff;
-  border: 2px solid #fff;
+.sidebar-links a:hover:not(.active) { 
+  background: #f0f1ff; 
+  color: #3b2fd6; 
+  border-color: #d1d5fa; 
 }
 
-/* Botão sair discreto: fundo roxo, texto branco, sombra para contraste */
+/* Botão sair discreto topo direito */
 .btn-logout-top {
     position: fixed;
-    top: 18px;
-    right: 24px;
-    background: #4f46e5;
+    top: 20px;
+    right: 32px;
+    background: var(--cor-perigo, #ef4444);
     color: #fff;
     border: none;
-    font-size: 1.12em;
+    border-radius: 10px;
     font-weight: 700;
-    cursor: pointer;
+    font-size: 1.09em;
+    padding: 11px 22px;
+    box-shadow: 0 4px 18px rgba(239,68,68,0.15);
     z-index: 2100;
     display: flex;
     align-items: center;
-    gap: 8px;
-    border-radius: 9px;
-    padding: 10px 18px;
-    box-shadow: 0 4px 20px rgba(79,70,229,0.15);
-    transition: background 0.2s, color 0.2s;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
 }
 .btn-logout-top:hover {
-    background: #6366f1;
+    background: #b91c1c;
     color: #fff;
 }
 
-/* Cards exemplo (ajuste para seus cards) */
-.card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(79,70,229,0.08), 0 1.5px 3px rgba(0,0,0,0.05);
-  color: #262a40;
-  padding: 24px;
-  margin-bottom: 24px;
-  border: 1px solid #ececff;
-}
-
-/* Conteúdo principal ajustado */
+/* Conteúdo principal não fica atrás do menu */
 main, .content, .main-content {
   margin-left: 250px;
 }
+
+/* Responsivo: sidebar some, botão sair segue fixo */
 @media (max-width: 900px) {
   .sidebar {
     left: -260px;
   }
   main, .content, .main-content {
     margin-left: 0 !important;
+  }
+  .btn-logout-top {
+    top: 16px;
+    right: 16px;
+    padding: 10px 16px;
+    font-size: 1em;
   }
 }
 </style>
@@ -186,23 +172,8 @@ main, .content, .main-content {
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-function atualizarBotaoSair() {
-    const sidebar = document.getElementById('sidebar');
-    const btnLogoutTop = document.getElementById('btn-logout-top');
-    if (!sidebar || !btnLogoutTop) return;
-    const sidebarStyle = window.getComputedStyle(sidebar);
-    if (
-        sidebarStyle.display === "none" ||
-        sidebarStyle.left === "-260px"
-    ) {
-        btnLogoutTop.style.display = 'flex';
-    } else {
-        btnLogoutTop.style.display = 'none';
-    }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-    // MULTIEMPRESAS: Adapta links para empresa ativa
+    // Links multiempresa (ajuste se necessário)
     const empresaAtivaId = localStorage.getItem('empresaAtivaId');
     if (empresaAtivaId) {
         const linksParaAdaptar = [
@@ -218,18 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Botão de logout (sidebar)
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            signOut(auth).then(() => {
-                localStorage.clear();
-                window.location.href = 'login.html';
-            });
-        });
-    }
-
-    // Botão de logout discreto (topo)
+    // Botão de logout topo (sempre visível no index)
     const btnLogoutTop = document.getElementById('btn-logout-top');
     if (btnLogoutTop) {
         btnLogoutTop.addEventListener('click', () => {
@@ -249,10 +209,5 @@ document.addEventListener('DOMContentLoaded', () => {
             link.classList.add('active');
         }
     });
-
-    // Atualize o botão sair discreto conforme visibilidade do menu
-    atualizarBotaoSair();
-    window.addEventListener('resize', atualizarBotaoSair);
-    // Se você tem um botão/hamburger para abrir/fechar a sidebar, chame atualizarBotaoSair() nele também.
 });
 </script>
