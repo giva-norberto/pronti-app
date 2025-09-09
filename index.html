@@ -126,35 +126,8 @@
         <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
         <p>Pronto para gerenciar seu dia?</p>
     </div>
-    <div class="dashboard-grid-cards">
-        <a href="dashboard.html" class="menu-card card-painel">
-            <i class="fa-solid fa-chart-line"></i>
-            <span>Painel Inteligente</span>
-        </a>
-        <a href="agenda.html" class="menu-card card-agenda">
-            <i class="fa-solid fa-calendar-check"></i>
-            <span>Agenda</span>
-        </a>
-        <a href="servicos.html" class="menu-card card-servicos">
-            <i class="fa-solid fa-concierge-bell"></i>
-            <span>Serviços</span>
-        </a>
-        <a href="clientes.html" class="menu-card card-clientes">
-            <i class="fa-solid fa-user-group"></i>
-            <span>Clientes</span>
-        </a>
-        <a href="equipe.html" class="menu-card card-equipe">
-            <i class="fa-solid fa-users"></i>
-            <span>Equipe</span>
-        </a>
-        <a href="perfil.html" class="menu-card card-perfil">
-            <i class="fa-solid fa-user-gear"></i>
-            <span>Meu Perfil</span>
-        </a>
-        <a href="relatorios.html" class="menu-card card-relatorios">
-            <i class="fa-solid fa-file-lines"></i>
-            <span>Relatórios</span>
-        </a>
+    <div class="dashboard-grid-cards" id="dashboard-cards">
+        <!-- Os cards serão inseridos dinamicamente pelo JS -->
     </div>
 </main>
 
@@ -194,6 +167,7 @@ import { verificarAcesso } from "./userService.js";
 const nomeUsuarioSpan = document.getElementById("nome-usuario");
 const saudacaoSpan = document.getElementById("saudacao");
 const mainContent = document.getElementById("main-content");
+const dashboardCards = document.getElementById("dashboard-cards");
 const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
 function definirSaudacao() {
@@ -223,6 +197,58 @@ function removerIsLoading() {
     document.body.classList.remove('is-loading');
 }
 
+function renderizarCards(perfil) {
+    // Dono vê todos os cards
+    if (perfil && perfil.papel && perfil.papel.toLowerCase() === "dono") {
+        dashboardCards.innerHTML = `
+            <a href="dashboard.html" class="menu-card card-painel">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Painel Inteligente</span>
+            </a>
+            <a href="agenda.html" class="menu-card card-agenda">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Agenda</span>
+            </a>
+            <a href="servicos.html" class="menu-card card-servicos">
+                <i class="fa-solid fa-concierge-bell"></i>
+                <span>Serviços</span>
+            </a>
+            <a href="clientes.html" class="menu-card card-clientes">
+                <i class="fa-solid fa-user-group"></i>
+                <span>Clientes</span>
+            </a>
+            <a href="equipe.html" class="menu-card card-equipe">
+                <i class="fa-solid fa-users"></i>
+                <span>Equipe</span>
+            </a>
+            <a href="perfil.html" class="menu-card card-perfil">
+                <i class="fa-solid fa-user-gear"></i>
+                <span>Meu Perfil</span>
+            </a>
+            <a href="relatorios.html" class="menu-card card-relatorios">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Relatórios</span>
+            </a>
+        `;
+    } else {
+        // Funcionário vê só 3 cards
+        dashboardCards.innerHTML = `
+            <a href="agenda.html" class="menu-card card-agenda">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Agenda</span>
+            </a>
+            <a href="equipe.html" class="menu-card card-equipe">
+                <i class="fa-solid fa-users"></i>
+                <span>Equipe</span>
+            </a>
+            <a href="perfil.html" class="menu-card card-perfil">
+                <i class="fa-solid fa-user-gear"></i>
+                <span>Meu Perfil</span>
+            </a>
+        `;
+    }
+}
+
 async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
@@ -231,6 +257,8 @@ async function inicializarDashboard() {
 
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
         if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
+
+        renderizarCards(perfil);
 
         if (perfil.nomeFantasia && nomeEmpresaSpan) {
             nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
