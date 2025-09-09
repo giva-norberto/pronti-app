@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -7,83 +7,19 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* SEUS ESTILOS CSS CONTINUAM AQUI (sem alterações) */
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            display: flex;
-            flex-direction: column;
-            opacity: 1;
-            transition: opacity 0.3s ease-in-out;
-            overflow: hidden;
-        }
-        body.is-loading {
-            opacity: 0;
-        }
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-        main.main-content {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            flex-grow: 1;
-            padding: 20px;
-            box-sizing: border-box;
-            margin-left: 250px; /* Adicionado espaço para o menu lateral */
-        }
-        .dashboard-welcome-center {
-            text-align: center;
-            margin-bottom: 4vh;
-        }
-        .dashboard-welcome-center h1 {
-            font-size: clamp(1.8rem, 5vw, 3rem ); 
-        }
-        .dashboard-welcome-center p {
-            font-size: clamp(1rem, 2.5vw, 1.25rem);
-            font-weight: 400;
-            opacity: 0.9;
-        }
-        .dashboard-grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 15px;
-            width: 100%;
-            max-width: 850px;
-            margin: 0 auto;
-        }
-        .menu-card {
-            color: #fff;
-            border-radius: 14px;
-            padding: 20px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            box-shadow: 0 5px 12px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
-            border: none;
-            aspect-ratio: 4 / 3.2;
-        }
-        .menu-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-            filter: brightness(1.05);
-            cursor: pointer;
-        }
-        .menu-card i {
-            font-size: 1.6rem;
-            color: #fff;
-        }
+        /* SEUS ESTILOS CSS (sem alterações) */
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { display: flex; flex-direction: column; opacity: 1; transition: opacity 0.3s ease-in-out; overflow: hidden; }
+        body.is-loading { opacity: 0; }
+        a { color: inherit; text-decoration: none; }
+        main.main-content { display: flex; flex-direction: column; justify-content: center; align-items: center; flex-grow: 1; padding: 20px; box-sizing: border-box; margin-left: 250px; }
+        .dashboard-welcome-center { text-align: center; margin-bottom: 4vh; }
+        .dashboard-welcome-center h1 { font-size: clamp(1.8rem, 5vw, 3rem); }
+        .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; opacity: 0.9; }
+        .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; max-width: 850px; margin: 0 auto; }
+        .menu-card { color: #fff; border-radius: 14px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 5px 12px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s, filter 0.2s; border: none; aspect-ratio: 4 / 3.2; }
+        .menu-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.18); filter: brightness(1.05); cursor: pointer; }
+        .menu-card i { font-size: 1.6rem; color: #fff; }
         .card-painel    { background: linear-gradient(135deg, #4facfe 10%, #00f2fe 100%); }
         .card-agenda    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
         .card-servicos  { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
@@ -91,32 +27,13 @@
         .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
         .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
-
         @media (max-width: 768px) {
-            body {
-                overflow: auto;
-            }
-            main.main-content {
-                justify-content: flex-start;
-                padding-top: 30px;
-                margin-left: 0; /* Remove a margem em telas pequenas */
-            }
-            .dashboard-welcome-center {
-                margin-bottom: 20px;
-            }
-            .dashboard-grid-cards {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-            }
-            .menu-card {
-                padding: 15px 5px;
-                font-size: 0.75rem;
-                gap: 8px;
-                border-radius: 12px;
-            }
-            .menu-card i {
-                font-size: 1.5rem;
-            }
+            body { overflow: auto; }
+            main.main-content { justify-content: flex-start; padding-top: 30px; margin-left: 0; }
+            .dashboard-welcome-center { margin-bottom: 20px; }
+            .dashboard-grid-cards { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .menu-card { padding: 15px 5px; font-size: 0.75rem; gap: 8px; border-radius: 12px; }
+            .menu-card i { font-size: 1.5rem; }
         }
     </style>
 </head>
@@ -134,117 +51,73 @@
 </main>
 
 <script type="module">
-// Importações principais para esta página
-import { auth } from "./firebase-config.js";
-import { verificarAcesso } from "./userService.js";
+    // 1. IMPORTA TODAS AS FERRAMENTAS NECESSÁRIAS
+    import { verificarAcesso } from "./userService.js";
+    import { updateMenuVisibility, setupMenuFeatures } from "./auth-guard.js";
 
-// Carrega o menu lateral de forma assíncrona
-fetch('menu-lateral.html')
-  .then(res => res.text())
-  .then(html => {
-      document.getElementById('sidebar-placeholder').innerHTML = html;
-      // O script auth-guard.js, chamado DENTRO de menu-lateral.html,
-      // será responsável pela lógica de logout e visibilidade.
-  })
-  .catch((e) => {
-      console.error("Falha ao carregar o menu lateral:", e);
-      document.getElementById('sidebar-placeholder').innerHTML = "<p style='color:red;padding:1em;'>Erro ao carregar menu.</p>";
-  });
+    // Seleção de elementos do DOM
+    const nomeUsuarioSpan = document.getElementById("nome-usuario");
+    const saudacaoSpan = document.getElementById("saudacao");
+    const mainContent = document.getElementById("main-content");
+    const dashboardCards = document.getElementById("dashboard-cards");
 
-// Seleção de elementos do DOM
-const nomeUsuarioSpan = document.getElementById("nome-usuario");
-const saudacaoSpan = document.getElementById("saudacao");
-const mainContent = document.getElementById("main-content");
-const dashboardCards = document.getElementById("dashboard-cards");
+    // Funções de UI da Página
+    function definirSaudacao() { const hora = new Date().getHours(); if (hora >= 5 && hora < 12) return "Bom dia"; if (hora >= 12 && hora < 18) return "Boa tarde"; return "Boa noite"; }
+    function mostrarPrimeiroAcessoCard() { mainContent.innerHTML = `<div class="primeiro-acesso-card"><h2>Seja bem-vindo ao Pronti!</h2><p>Inicie o cadastro da sua empresa.</p><button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button></div>`; document.getElementById("btn-criar-empresa").addEventListener("click", () => { localStorage.removeItem('empresaAtivaId'); window.location.href = "perfil.html"; }); }
+    function renderizarCards(perfil) { let cardsHtml = ''; if (perfil?.papel?.toLowerCase() === "funcionario") { cardsHtml = `<a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>`; } else { cardsHtml = `<a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a><a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a><a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a><a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a><a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>`; } dashboardCards.innerHTML = cardsHtml; }
+    function removerIsLoading() { document.body.classList.remove('is-loading'); }
 
-function definirSaudacao() {
-    const hora = new Date().getHours();
-    if (hora >= 5 && hora < 12) return "Bom dia";
-    if (hora >= 12 && hora < 18) return "Boa tarde";
-    return "Boa noite";
-}
+    /**
+     * Função principal que orquestra a inicialização da página.
+     */
+    async function inicializarPagina() {
+        try {
+            // 2. BUSCA OS DADOS DO USUÁRIO E O HTML DO MENU AO MESMO TEMPO E ESPERA AMBOS TERMINAREM
+            const [userSession, menuResponse] = await Promise.all([
+                verificarAcesso(),
+                fetch('menu-lateral.html')
+            ]);
 
-function mostrarPrimeiroAcessoCard() {
-    mainContent.innerHTML = `
-        <div class="primeiro-acesso-card">
-            <h2>Seja bem-vindo ao Pronti!</h2>
-            <p>Inicie o cadastro da sua empresa.</p>
-            <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
-        </div>
-    `;
-    document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-        localStorage.removeItem('empresaAtivaId');
-        window.location.href = "perfil.html";
-    });
-}
+            if (!menuResponse.ok) throw new Error('Falha crítica ao carregar o componente do menu.');
+            const menuHtml = await menuResponse.text();
+            
+            // 3. AGORA, COM TUDO CARREGADO, ATUALIZA A PÁGINA NA ORDEM CORRETA
+            
+            // PRIMEIRO, injeta o HTML do menu no DOM.
+            document.getElementById('sidebar-placeholder').innerHTML = menuHtml;
 
-function renderizarCards(perfil) {
-    let cardsHtml = '';
-    // Funcionário vê apenas 2 cards
-    if (perfil?.papel?.toLowerCase() === "funcionario") {
-        cardsHtml = `
-            <a href="agenda.html" class="menu-card card-agenda">
-                <i class="fa-solid fa-calendar-check"></i><span>Agenda</span>
-            </a>
-            <a href="equipe.html" class="menu-card card-equipe">
-                <i class="fa-solid fa-users"></i><span>Equipe</span>
-            </a>
-        `;
-    } else { // Dono e Admin veem todos os cards
-        cardsHtml = `
-            <a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a>
-            <a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a>
-            <a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a>
-            <a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a>
-            <a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>
-            <a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a>
-            <a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>
-        `;
-    }
-    dashboardCards.innerHTML = cardsHtml;
-}
+            // SEGUNDO, verifica se a sessão do usuário é válida.
+            if (!userSession || !userSession.perfil) {
+                console.log("Sessão ou perfil inválidos. Aguardando redirecionamento...");
+                setupMenuFeatures(); // Tenta configurar o botão de logout mesmo sem sessão.
+                return;
+            }
 
-function removerIsLoading() {
-    document.body.classList.remove('is-loading');
-}
+            const { perfil, user } = userSession;
 
-async function inicializarDashboard() {
-    try {
-        // Ponto central da lógica: verifica o acesso do usuário
-        const userSession = await verificarAcesso();
+            // TERCEIRO, agora que o menu EXISTE na página, chama as funções que precisam dele.
+            updateMenuVisibility(perfil.papel); // <-- ATUALIZA O MENU
+            setupMenuFeatures();             // <-- ATIVA O BOTÃO SAIR
 
-        // ⭐ CORREÇÃO PRINCIPAL: Se não houver sessão, interrompe a execução aqui.
-        // Isso acontece antes da seleção da empresa, evitando o erro.
-        if (!userSession || !userSession.perfil) {
-            // A função verificarAcesso já deve ter redirecionado,
-            // mas esta é uma garantia extra.
-            console.log("Sessão ou perfil de usuário não encontrados. Aguardando redirecionamento...");
-            return; // Interrompe a função
+            // QUARTO, atualiza o resto da página.
+            const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
+            if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
+            if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
+            renderizarCards(perfil);
+
+        } catch (error) {
+            if (error.message === "primeiro_acesso") {
+                mostrarPrimeiroAcessoCard();
+            } else if (!error.message.includes("Redirecionando")) {
+                console.error("[index.html] Erro fatal na inicialização da página:", error);
+            }
+        } finally {
+            removerIsLoading();
         }
-
-        const { perfil, user } = userSession;
-        const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
-
-        if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
-        if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
-        
-        renderizarCards(perfil);
-
-    } catch (error) {
-        if (error.message === "primeiro_acesso") {
-            mostrarPrimeiroAcessoCard();
-        } else if (!error.message.includes("Redirecionando")) {
-            console.error("[index.html] Erro na inicialização:", error);
-        }
-    } finally {
-        // A maneira correta de remover o loading, garantindo que sempre aconteça.
-        removerIsLoading();
     }
-}
 
-// Inicia a execução do dashboard
-inicializarDashboard();
-
+    // Inicia a execução da página
+    inicializarPagina();
 </script>
 </body>
 </html>
