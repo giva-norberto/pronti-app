@@ -14,14 +14,14 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// === UID do administrador global ===
+// === UID do administrador global (fixo) ===
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-// === Função para determinar o perfil do usuário (dinâmico do Firestore) ===
+// === Função para determinar o perfil do usuário (dinâmico no Firestore) ===
 async function getUserRole(user) {
   if (!user) return "funcionario";
 
-  // Admin fixo
+  // Admin fixo global
   if (user.uid === ADMIN_UID) return "admin";
 
   try {
@@ -34,7 +34,7 @@ async function getUserRole(user) {
 
     if (profSnap.exists()) {
       const dados = profSnap.data();
-      if (dados.ehDono) return "dono";
+      if (dados.ehDono === true) return "dono"; // campo boolean no Firestore
     }
   } catch (err) {
     console.error("[menu-guardiao] Erro ao buscar perfil:", err);
@@ -43,12 +43,12 @@ async function getUserRole(user) {
   return "funcionario";
 }
 
-// Função que configura funcionalidades que dependem do usuário estar logado.
+// === Função para configurar menus e botões quando logado ===
 async function setupAuthenticatedFeatures(user) {
   const userRole = await getUserRole(user);
 
-  // -------- Lógica para mostrar/ocultar menus conforme o perfil -----------
-  // Use classes CSS: menu-func, menu-admin, menu-dono nos <a> do menu lateral!
+  // -------- Mostrar/ocultar menus conforme perfil --------
+  // Use classes CSS: menu-func, menu-admin, menu-dono nos <a> do menu lateral
   if (userRole === "funcionario") {
     document.querySelectorAll(".menu-func").forEach(e => e.style.display = "");
     document.querySelectorAll(".menu-admin, .menu-dono").forEach(e => e.style.display = "none");
@@ -59,9 +59,9 @@ async function setupAuthenticatedFeatures(user) {
   } else if (userRole === "dono") {
     document.querySelectorAll(".menu-admin, .menu-dono, .menu-func").forEach(e => e.style.display = "");
   }
-  // ------------------------------------------------------------------------------
+  // --------------------------------------------------------
 
-  // Lógica do botão de logout
+  // === Botão de logout ===
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
     const newBtn = btnLogout.cloneNode(true);
@@ -75,7 +75,7 @@ async function setupAuthenticatedFeatures(user) {
     });
   }
 
-  // Lógica para destacar o link ativo na sidebar
+  // === Destacar link ativo na sidebar ===
   const links = document.querySelectorAll(".sidebar-links a");
   const currentPage = window.location.pathname.split("/").pop().split("?")[0] || "index.html";
 
@@ -88,7 +88,7 @@ async function setupAuthenticatedFeatures(user) {
   });
 }
 
-// Inicia a verificação de login do Firebase
+// === Guardião de autenticação ===
 function initializeAuthGuard() {
   onAuthStateChanged(auth, (user) => {
     const isLoginPage = window.location.pathname.endsWith("login.html");
@@ -96,21 +96,24 @@ function initializeAuthGuard() {
     const companyId = localStorage.getItem("empresaAtivaId");
 
     if (!user && !isLoginPage) {
+      // Não logado → vai pro login
       window.location.replace("login.html");
     } else if (user && needsCompany && !companyId) {
+      // Logado mas sem empresa → selecionar empresa
       window.location.replace("selecionar-empresa.html");
     } else if (user) {
+      // Logado e com empresa → carrega menus
       setupAuthenticatedFeatures(user);
     }
   });
 }
 
-// Garante persistência e inicia o guardião
+// === Persistência de login + start ===
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
     initializeAuthGuard();
   })
   .catch((error) => {
     console.error("Guardião do Menu: Falha ao ativar persistência!", error);
-    initializeAuthGuard();
+    initializeAuthGuard(); // tenta iniciar mesmo assim
   });
