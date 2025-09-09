@@ -7,6 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* SEUS ESTILOS CSS CONTINUAM AQUI (sem alterações) */
         html, body {
             height: 100%;
             margin: 0;
@@ -34,6 +35,7 @@
             flex-grow: 1;
             padding: 20px;
             box-sizing: border-box;
+            margin-left: 250px; /* Adicionado espaço para o menu lateral */
         }
         .dashboard-welcome-center {
             text-align: center;
@@ -97,6 +99,7 @@
             main.main-content {
                 justify-content: flex-start;
                 padding-top: 30px;
+                margin-left: 0; /* Remove a margem em telas pequenas */
             }
             .dashboard-welcome-center {
                 margin-bottom: 20px;
@@ -127,48 +130,32 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
     <div class="dashboard-grid-cards" id="dashboard-cards">
-        <!-- Os cards serão inseridos dinamicamente pelo JS -->
-    </div>
+        </div>
 </main>
 
 <script type="module">
-// Carrega o menu lateral igual em todas as páginas
+// Importações principais para esta página
+import { auth } from "./firebase-config.js";
+import { verificarAcesso } from "./userService.js";
+
+// Carrega o menu lateral de forma assíncrona
 fetch('menu-lateral.html')
   .then(res => res.text())
   .then(html => {
       document.getElementById('sidebar-placeholder').innerHTML = html;
-      // Adiciona o evento do botão sair após o menu ser inserido no DOM
-      import("./firebase-config.js").then(({ auth }) => {
-          import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
-              const btnLogout = document.getElementById("btn-logout");
-              if (btnLogout) {
-                  btnLogout.addEventListener("click", async () => {
-                      try {
-                          await signOut(auth);
-                          localStorage.clear();
-                          window.location.href = "login.html";
-                      } catch(e) {
-                          alert("Erro ao sair: " + e.message);
-                      }
-                  });
-              }
-          });
-      });
+      // O script auth-guard.js, chamado DENTRO de menu-lateral.html,
+      // será responsável pela lógica de logout e visibilidade.
   })
   .catch((e) => {
-      // Exibe mensagem básica de erro de menu lateral
-      document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
+      console.error("Falha ao carregar o menu lateral:", e);
+      document.getElementById('sidebar-placeholder').innerHTML = "<p style='color:red;padding:1em;'>Erro ao carregar menu.</p>";
   });
 
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { auth } from "./firebase-config.js";
-import { verificarAcesso } from "./userService.js";
-
+// Seleção de elementos do DOM
 const nomeUsuarioSpan = document.getElementById("nome-usuario");
 const saudacaoSpan = document.getElementById("saudacao");
 const mainContent = document.getElementById("main-content");
 const dashboardCards = document.getElementById("dashboard-cards");
-const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
 function definirSaudacao() {
     const hora = new Date().getHours();
@@ -178,102 +165,85 @@ function definirSaudacao() {
 }
 
 function mostrarPrimeiroAcessoCard() {
-    if (mainContent) {
-        mainContent.innerHTML = `
-            <div class="primeiro-acesso-card">
-                <h2>Seja bem-vindo ao Pronti!</h2>
-                <p>Inicie o cadastro da sua empresa.</p>
-                <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
-            </div>
+    mainContent.innerHTML = `
+        <div class="primeiro-acesso-card">
+            <h2>Seja bem-vindo ao Pronti!</h2>
+            <p>Inicie o cadastro da sua empresa.</p>
+            <button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button>
+        </div>
+    `;
+    document.getElementById("btn-criar-empresa").addEventListener("click", () => {
+        localStorage.removeItem('empresaAtivaId');
+        window.location.href = "perfil.html";
+    });
+}
+
+function renderizarCards(perfil) {
+    let cardsHtml = '';
+    // Funcionário vê apenas 2 cards
+    if (perfil?.papel?.toLowerCase() === "funcionario") {
+        cardsHtml = `
+            <a href="agenda.html" class="menu-card card-agenda">
+                <i class="fa-solid fa-calendar-check"></i><span>Agenda</span>
+            </a>
+            <a href="equipe.html" class="menu-card card-equipe">
+                <i class="fa-solid fa-users"></i><span>Equipe</span>
+            </a>
         `;
-        document.getElementById("btn-criar-empresa").addEventListener("click", () => {
-            localStorage.removeItem('empresaAtivaId');
-            window.location.href = "perfil.html";
-        });
+    } else { // Dono e Admin veem todos os cards
+        cardsHtml = `
+            <a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a>
+            <a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a>
+            <a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a>
+            <a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a>
+            <a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>
+            <a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a>
+            <a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>
+        `;
     }
+    dashboardCards.innerHTML = cardsHtml;
 }
 
 function removerIsLoading() {
     document.body.classList.remove('is-loading');
 }
 
-function renderizarCards(perfil) {
-    // Dono vê todos os cards
-    if (perfil && perfil.papel && perfil.papel.toLowerCase() === "dono") {
-        dashboardCards.innerHTML = `
-            <a href="dashboard.html" class="menu-card card-painel">
-                <i class="fa-solid fa-chart-line"></i>
-                <span>Painel Inteligente</span>
-            </a>
-            <a href="agenda.html" class="menu-card card-agenda">
-                <i class="fa-solid fa-calendar-check"></i>
-                <span>Agenda</span>
-            </a>
-            <a href="servicos.html" class="menu-card card-servicos">
-                <i class="fa-solid fa-concierge-bell"></i>
-                <span>Serviços</span>
-            </a>
-            <a href="clientes.html" class="menu-card card-clientes">
-                <i class="fa-solid fa-user-group"></i>
-                <span>Clientes</span>
-            </a>
-            <a href="equipe.html" class="menu-card card-equipe">
-                <i class="fa-solid fa-users"></i>
-                <span>Equipe</span>
-            </a>
-            <a href="perfil.html" class="menu-card card-perfil">
-                <i class="fa-solid fa-user-gear"></i>
-                <span>Meu Perfil</span>
-            </a>
-            <a href="relatorios.html" class="menu-card card-relatorios">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Relatórios</span>
-            </a>
-        `;
-    } else {
-        // Funcionário vê só 2 cards: Agenda e Equipe
-        dashboardCards.innerHTML = `
-            <a href="agenda.html" class="menu-card card-agenda">
-                <i class="fa-solid fa-calendar-check"></i>
-                <span>Agenda</span>
-            </a>
-            <a href="equipe.html" class="menu-card card-equipe">
-                <i class="fa-solid fa-users"></i>
-                <span>Equipe</span>
-            </a>
-        `;
-    }
-}
-
 async function inicializarDashboard() {
     try {
+        // Ponto central da lógica: verifica o acesso do usuário
         const userSession = await verificarAcesso();
-        const { perfil } = userSession;
-        const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
+
+        // ⭐ CORREÇÃO PRINCIPAL: Se não houver sessão, interrompe a execução aqui.
+        // Isso acontece antes da seleção da empresa, evitando o erro.
+        if (!userSession || !userSession.perfil) {
+            // A função verificarAcesso já deve ter redirecionado,
+            // mas esta é uma garantia extra.
+            console.log("Sessão ou perfil de usuário não encontrados. Aguardando redirecionamento...");
+            return; // Interrompe a função
+        }
+
+        const { perfil, user } = userSession;
+        const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
 
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
         if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
-
+        
         renderizarCards(perfil);
 
-        if (perfil.nomeFantasia && nomeEmpresaSpan) {
-            nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
-        }
     } catch (error) {
         if (error.message === "primeiro_acesso") {
             mostrarPrimeiroAcessoCard();
         } else if (!error.message.includes("Redirecionando")) {
-            // Exiba ou logue o erro, mas nunca deixe de remover o loading!
-            console.error("[index.html] Erro não tratado na inicialização:", error);
+            console.error("[index.html] Erro na inicialização:", error);
         }
     } finally {
+        // A maneira correta de remover o loading, garantindo que sempre aconteça.
         removerIsLoading();
     }
 }
 
-// Garante que o loading sempre será removido mesmo se algo travar
-Promise.resolve().then(inicializarDashboard);
-setTimeout(removerIsLoading, 3000);
+// Inicia a execução do dashboard
+inicializarDashboard();
 
 </script>
 </body>
