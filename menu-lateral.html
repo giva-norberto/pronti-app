@@ -149,14 +149,49 @@
 </style>
 
 <script type="module">
-    import { auth } from "./firebase-config.js"; 
+    import { auth, db } from "./firebase-config.js"; 
     import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
     // UID do Administrador. Este é o ponto central da verificação.
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-    // LÓGICA DE AUTENTICAÇÃO E UI DO ADMIN
-    onAuthStateChanged(auth, (user) => {
+    // Função para determinar o perfil do usuário
+    async function definirPerfilUsuario(user) {
+        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+        if (!empresaAtivaId || !user) return;
+
+        const profRef = doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid);
+        const profSnap = await getDoc(profRef);
+
+        if (user.uid === ADMIN_UID) {
+            window.USER_ROLE = "admin";
+        } else if (profSnap.exists() && profSnap.data().ehDono === true) {
+            window.USER_ROLE = "dono";
+        } else if (profSnap.exists()) {
+            window.USER_ROLE = "funcionario";
+        }
+    }
+
+    // LÓGICA DE AUTENTICAÇÃO E UI DO ADMIN/FUNCIONÁRIO/DONO
+    onAuthStateChanged(auth, async (user) => {
+        await definirPerfilUsuario(user);
+
+        // Adapta exibição do menu conforme perfil
+        if (typeof window.USER_ROLE !== 'undefined') {
+            if (window.USER_ROLE === 'funcionario') {
+                // Funcionário: só agenda, equipe e sair (e perfil, se desejar)
+                document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
+                document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = 'none');
+                // Se quiser esconder "Meu Perfil", remova 'menu-func' da respectiva tag
+            } else if (window.USER_ROLE === 'admin' || window.USER_ROLE === 'dono') {
+                // Dono/admin: tudo
+                document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = '');
+                document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
+            }
+        }
+
+        // ADMIN: oculta link se não for admin
         const adminLink = document.getElementById('admin-link');
         if (adminLink) {
             if (!user || user.uid !== ADMIN_UID) {
@@ -208,22 +243,5 @@
                 link.classList.add('active');
             }
         });
-
-        // ------------- NOVO: Lógica de exibição por perfil -------------
-        // Defina window.USER_ROLE = 'funcionario' ou 'admin' ou 'dono' antes de carregar este menu!
-        // Exemplo: window.USER_ROLE = session.role; // no seu JS principal
-        // Se não definido, mostra tudo (por padrão)
-        if (typeof window.USER_ROLE !== 'undefined') {
-            if (window.USER_ROLE === 'funcionario') {
-                // Mostra apenas os menus do funcionário
-                document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
-                document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = 'none');
-            } else if (window.USER_ROLE === 'admin' || window.USER_ROLE === 'dono') {
-                // Mostra todos os menus
-                document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = '');
-                document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
-            }
-        }
-        // --------------------------------------------------------------
     });
 </script>
