@@ -1,7 +1,4 @@
-<!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (FUNCIONÁRIO: INÍCIO, AGENDA, EQUIPE, SAIR)     -->
-<!-- ====================================================================== -->
-
+<!-- MENU-LATERAL FUNCIONÁRIO - BOTÃO SAIR VISÍVEL E CONTRASTE -->
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -15,7 +12,7 @@
     </div>
 </aside>
 
-<!-- Botão sair discreto no topo direito para quando a sidebar não está visível -->
+<!-- Botão sair no topo direito, sempre visível em mobile/sidebar fechada -->
 <button id="btn-logout-top" class="btn-logout-top" style="display: none;">
     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
 </button>
@@ -23,62 +20,67 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+body {
+  background: #f4f6fb;
+  margin: 0;
+}
+/* Sidebar */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-  min-height: 100vh; 
-  color: #fff; 
+  min-height: 100vh;
+  color: #fff;
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed; 
-  left: 0; 
-  top: 0; 
-  bottom: 0; 
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
   z-index: 1000;
-  display: flex; 
-  flex-direction: column; 
+  display: flex;
+  flex-direction: column;
   padding-top: 24px;
   transition: left 0.3s ease;
   box-sizing: border-box;
 }
 .sidebar-brand {
-  font-size: 2rem; 
-  font-weight: 900; 
-  color: #fff; 
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
   text-decoration: none;
-  letter-spacing: 2px; 
-  padding: 0 32px 12px 32px; 
+  letter-spacing: 2px;
+  padding: 0 32px 12px 32px;
   display: block;
-  margin-bottom: 8px; 
+  margin-bottom: 8px;
   text-align: left;
 }
-.sidebar hr { 
-  margin: 0 32px 16px 32px; 
-  border: none; 
-  border-top: 1px solid #787cff55; 
+.sidebar hr {
+  margin: 0 32px 16px 32px;
+  border: none;
+  border-top: 1px solid #787cff55;
 }
-.sidebar-links { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 10px; 
-  padding: 0 24px; 
+.sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 24px;
   flex-grow: 1;
 }
 .sidebar-links a {
-  display: flex; 
-  align-items: center; 
+  display: flex;
+  align-items: center;
   gap: 12px;
   background: #fff;
-  color: #4f46e5; 
-  font-weight: 600; 
-  font-size: 1.08em; 
+  color: #4f46e5;
+  font-weight: 600;
+  font-size: 1.08em;
   border-radius: 10px;
-  margin-bottom: 0; 
+  margin-bottom: 0;
   box-shadow: 0 2px 6px rgba(79,70,229,0.07);
   transition: all 0.2s ease;
   padding: 14px 18px;
-  text-align: left; 
+  text-align: left;
   text-decoration: none;
-  letter-spacing: 0.01em; 
+  letter-spacing: 0.01em;
   border: 2px solid transparent;
   min-height: 44px;
   box-sizing: border-box;
@@ -88,75 +90,85 @@
     width: 20px;
     text-align: center;
 }
-.sidebar-links a.active, 
+.sidebar-links a.active,
 .sidebar-links a:focus {
-  background: #4f46e5; 
-  color: #fff; 
+  background: #4f46e5;
+  color: #fff;
   font-weight: 700;
-  border: 2px solid #fff; 
+  border: 2px solid #fff;
   box-shadow: 0 4px 12px rgba(79,70,229,0.3);
   outline: none;
 }
-.sidebar-links a:hover:not(.active) { 
-  background: #f0f1ff; 
-  color: #3b2fd6; 
-  border-color: #d1d5fa; 
+.sidebar-links a:hover:not(.active) {
+  background: #f0f1ff;
+  color: #3b2fd6;
+  border-color: #d1d5fa;
 }
-.sidebar-footer { 
-  margin-top: auto; 
-  padding: 32px 32px 24px 32px; 
+.sidebar-footer {
+  margin-top: auto;
+  padding: 32px 32px 24px 32px;
 }
 .btn-logout {
-  background: #fff; 
-  color: #4f46e5; 
-  border: none; 
+  background: #fff;
+  color: #4f46e5;
+  border: none;
   padding: 14px 0;
-  width: 100%; 
-  border-radius: 10px; 
-  font-weight: bold; 
+  width: 100%;
+  border-radius: 10px;
+  font-weight: bold;
   font-size: 1.05em;
-  cursor: pointer; 
+  cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07); 
-  border: 2px solid transparent; 
+  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+  border: 2px solid transparent;
   outline: none;
   min-height: 44px;
   box-sizing: border-box;
 }
-.btn-logout:hover, 
-.btn-logout:focus { 
-  background: #4f46e5; 
-  color: #fff; 
-  border: 2px solid #fff; 
+.btn-logout:hover,
+.btn-logout:focus {
+  background: #4f46e5;
+  color: #fff;
+  border: 2px solid #fff;
 }
 
-/* Botão sair discreto (quando sidebar some, ex: mobile ou index sem menu) */
+/* Botão sair discreto: fundo roxo, texto branco, sombra para contraste */
 .btn-logout-top {
-    position: absolute;
-    top: 16px;
+    position: fixed;
+    top: 18px;
     right: 24px;
-    background: #fafbff;
-    color: #4f46e5;
-    border: 2px solid #4f46e5;
-    font-size: 1.1em;
-    font-weight: 600;
+    background: #4f46e5;
+    color: #fff;
+    border: none;
+    font-size: 1.12em;
+    font-weight: 700;
     cursor: pointer;
-    z-index: 2001;
+    z-index: 2100;
     display: flex;
     align-items: center;
     gap: 8px;
-    border-radius: 10px;
+    border-radius: 9px;
     padding: 10px 18px;
-    box-shadow: 0 2px 6px rgba(79,70,229,0.10);
-    transition: background 0.2s, color 0.2s, border 0.2s;
+    box-shadow: 0 4px 20px rgba(79,70,229,0.15);
+    transition: background 0.2s, color 0.2s;
 }
 .btn-logout-top:hover {
-    background: #4f46e5;
+    background: #6366f1;
     color: #fff;
-    border: 2px solid #fff;
 }
 
-/* Conteúdo principal não fica atrás do menu */
+/* Cards exemplo (ajuste para seus cards) */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(79,70,229,0.08), 0 1.5px 3px rgba(0,0,0,0.05);
+  color: #262a40;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #ececff;
+}
+
+/* Conteúdo principal ajustado */
 main, .content, .main-content {
   margin-left: 250px;
 }
