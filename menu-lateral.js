@@ -13,19 +13,23 @@ import {
 // === UID do administrador ===
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
+// === UIDs para dono (adicione mais se precisar) ===
+// Se quiser controlar múltiplos donos, coloque os UIDs aqui:
+const DONO_UIDS = [
+  // Exemplo: "WjH6nkGMnoRu0E7ALBVsSqptA9H2"
+];
+
 // === Função para determinar o perfil do usuário ===
-// Sugestão: Você pode adaptar para buscar do seu backend ou custom claims, se quiser.
-// Aqui, exemplo simples usando localStorage (ajuste para seu caso real!)
 function getUserRole(user) {
     // Exemplo: supondo que no localStorage você salva em 'userRole' após login
     const storedRole = localStorage.getItem('userRole');
     if (storedRole) return storedRole;
 
-    // Ou, se o admin é único pelo UID:
-    if (user && user.uid === ADMIN_UID) return 'admin';
+    // Dono tem prioridade sobre admin
+    if (user && user.uid && DONO_UIDS.includes(user.uid)) return 'dono';
 
-    // Se quiser, coloque lógica para dono aqui.
-    // Exemplo: return 'dono' para UIDs específicos.
+    // Admin único pelo UID:
+    if (user && user.uid === ADMIN_UID) return 'admin';
 
     // Padrão: funcionário
     return 'funcionario';
@@ -35,14 +39,17 @@ function getUserRole(user) {
 function setupAuthenticatedFeatures(user) {
     const userRole = getUserRole(user);
 
-    // -------- NOVO: Lógica para mostrar/ocultar menus conforme o perfil -----------
-    // Adote classes CSS: menu-func, menu-admin, menu-dono nos <a> do menu lateral!
+    // -------- Lógica para mostrar/ocultar menus conforme o perfil -----------
+    // Use classes CSS: menu-func, menu-admin, menu-dono nos <a> do menu lateral!
     if (userRole === 'funcionario') {
         document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = 'none');
-    } else if (userRole === 'admin' || userRole === 'dono') {
-        document.querySelectorAll('.menu-admin, .menu-dono').forEach(e => e.style.display = '');
+    } else if (userRole === 'admin') {
+        document.querySelectorAll('.menu-admin').forEach(e => e.style.display = '');
         document.querySelectorAll('.menu-func').forEach(e => e.style.display = '');
+        document.querySelectorAll('.menu-dono').forEach(e => e.style.display = 'none');
+    } else if (userRole === 'dono') {
+        document.querySelectorAll('.menu-admin, .menu-dono, .menu-func').forEach(e => e.style.display = '');
     }
     // ------------------------------------------------------------------------------
 
