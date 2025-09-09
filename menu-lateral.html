@@ -1,6 +1,4 @@
-<!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML ADAPTADO PARA INDEX (BOTÃO SAIR VISÍVEL)        -->
-<!-- ====================================================================== -->
+<!-- ================= MENU INDEX COM BOTÃO SAIR FIXO =================== -->
 
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
@@ -12,8 +10,8 @@
     </nav>
 </aside>
 
-<!-- Botão sair no topo direito, SEMPRE visível no index -->
-<button id="btn-logout-top" class="btn-logout-top">
+<!-- Botão Sair fixo, APENAS no index.html -->
+<button id="btn-logout-index" class="btn-logout-index">
     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
 </button>
 
@@ -21,23 +19,16 @@
 
 <style>
 :root {
-    --cor-primaria: #4facfe;
-    --cor-secundaria: #00f2fe;
-    --cor-sucesso: #34d399;
-    --cor-aviso: #f59e42;
     --cor-perigo: #ef4444;
-    --cor-cinza: #6b7280;
-    --cor-texto-escuro: #22223b;
-    --cor-texto-claro: #44446a;
-    --cor-fundo-app: #f6f7fb;
-    --sombra-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --cor-perigo-dark: #b91c1c;
+    --cor-primaria: #4facfe;
 }
 
 body {
     font-family: 'Inter', Arial, sans-serif;
-    background-color: var(--cor-fundo-app);
+    background-color: var(--cor-fundo-app, #f6f7fb);
     margin: 0;
-    color: var(--cor-texto-escuro);
+    color: #22223b;
 }
 
 /* Sidebar (menu fixo) */
@@ -121,18 +112,18 @@ body {
   border-color: #d1d5fa; 
 }
 
-/* Botão sair discreto topo direito */
-.btn-logout-top {
+/* Botão Sair fixo, visível APENAS no index */
+.btn-logout-index {
     position: fixed;
-    top: 20px;
-    right: 32px;
+    top: 18px;
+    right: 24px;
     background: var(--cor-perigo, #ef4444);
     color: #fff;
     border: none;
     border-radius: 10px;
     font-weight: 700;
     font-size: 1.09em;
-    padding: 11px 22px;
+    padding: 12px 24px;
     box-shadow: 0 4px 18px rgba(239,68,68,0.15);
     z-index: 2100;
     display: flex;
@@ -141,17 +132,13 @@ body {
     cursor: pointer;
     transition: background 0.18s, color 0.18s;
 }
-.btn-logout-top:hover {
-    background: #b91c1c;
+.btn-logout-index:hover,
+.btn-logout-index:focus {
+    background: var(--cor-perigo-dark, #b91c1c);
     color: #fff;
+    outline: none;
 }
 
-/* Conteúdo principal não fica atrás do menu */
-main, .content, .main-content {
-  margin-left: 250px;
-}
-
-/* Responsivo: sidebar some, botão sair segue fixo */
 @media (max-width: 900px) {
   .sidebar {
     left: -260px;
@@ -159,12 +146,15 @@ main, .content, .main-content {
   main, .content, .main-content {
     margin-left: 0 !important;
   }
-  .btn-logout-top {
-    top: 16px;
-    right: 16px;
-    padding: 10px 16px;
+  .btn-logout-index {
+    top: 12px;
+    right: 12px;
+    padding: 10px 18px;
     font-size: 1em;
   }
+}
+main, .content, .main-content {
+  margin-left: 250px;
 }
 </style>
 
@@ -173,33 +163,16 @@ import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Links multiempresa (ajuste se necessário)
-    const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-    if (empresaAtivaId) {
-        const linksParaAdaptar = [
-            { id: "link-inicio", href: "index.html" },
-            { id: "link-agenda", href: "agenda.html" },
-            { id: "link-equipe", href: "equipe.html" }
-        ];
-        linksParaAdaptar.forEach(cfg => {
-            const el = document.getElementById(cfg.id);
-            if (el) {
-                el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
-            }
-        });
-    }
-
-    // Botão de logout topo (sempre visível no index)
-    const btnLogoutTop = document.getElementById('btn-logout-top');
-    if (btnLogoutTop) {
-        btnLogoutTop.addEventListener('click', () => {
+    // Botão de logout index (apenas no index)
+    const btnLogoutIndex = document.getElementById('btn-logout-index');
+    if (btnLogoutIndex) {
+        btnLogoutIndex.addEventListener('click', () => {
             signOut(auth).then(() => {
                 localStorage.clear();
                 window.location.href = 'login.html';
             });
         });
     }
-
     // Destaque do link da página atual
     const links = document.querySelectorAll('.sidebar-links a');
     const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
