@@ -1,5 +1,121 @@
-<!-- ================= MENU INDEX COM BOTÃO SAIR FIXO E VISÍVEL SOMENTE NO INDEX =================== -->
-
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Pronti - Menu Principal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+:root {
+    --cor-perigo: #ef4444;
+    --cor-perigo-dark: #b91c1c;
+    --cor-primaria: #4facfe;
+    --cor-fundo-app: #f6f7fb;
+}
+body {
+    font-family: 'Inter', Arial, sans-serif;
+    background-color: var(--cor-fundo-app, #f6f7fb);
+    margin: 0;
+    color: #22223b;
+}
+.sidebar {
+  width: 250px;
+  background: linear-gradient(180deg, #4facfe 0%, #6366f1 100%);
+  min-height: 100vh;
+  color: #fff;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+  position: fixed;
+  left: 0; top: 0; bottom: 0; z-index: 1000;
+  display: flex; flex-direction: column; padding-top: 24px;
+  transition: left 0.3s ease; box-sizing: border-box;
+}
+.sidebar-brand {
+  font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
+  letter-spacing: 2px; padding: 0 32px 12px 32px; display: block;
+  margin-bottom: 8px; text-align: left;
+}
+.sidebar hr {
+  margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55;
+}
+.sidebar-links {
+  display: flex; flex-direction: column; gap: 10px; padding: 0 24px; flex-grow: 1;
+}
+.sidebar-links a {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; color: var(--cor-primaria);
+  font-weight: 600; font-size: 1.08em; border-radius: 10px;
+  margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+  transition: all 0.2s ease; padding: 14px 18px; text-align: left;
+  text-decoration: none; letter-spacing: 0.01em; border: 2px solid transparent;
+  min-height: 44px; box-sizing: border-box;
+}
+.sidebar-links a span {
+    display: inline-block; width: 20px; text-align: center;
+}
+.sidebar-links a.active, .sidebar-links a:focus {
+  background: var(--cor-primaria); color: #fff; font-weight: 700;
+  border: 2px solid #fff; box-shadow: 0 4px 12px rgba(79,70,229,0.3); outline: none;
+}
+.sidebar-links a:hover:not(.active) {
+  background: #f0f1ff; color: #3b2fd6; border-color: #d1d5fa;
+}
+.btn-logout-index {
+    position: fixed;
+    top: 18px; right: 24px;
+    background: var(--cor-perigo, #ef4444);
+    color: #fff; border: none; border-radius: 10px;
+    font-weight: 700; font-size: 1.09em; padding: 12px 24px;
+    box-shadow: 0 4px 18px rgba(239,68,68,0.15); z-index: 2100;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+}
+.btn-logout-index:hover, .btn-logout-index:focus {
+    background: var(--cor-perigo-dark, #b91c1c);
+    color: #fff; outline: none;
+}
+@media (max-width: 900px) {
+  .sidebar { left: -260px; }
+  main, .content, .main-content { margin-left: 0 !important; }
+  .btn-logout-index { top: 12px; right: 12px; padding: 10px 18px; font-size: 1em; }
+}
+main, .content, .main-content { margin-left: 250px; }
+.dashboard-main-actions {
+  display: flex; flex-wrap: wrap; gap: 30px; margin: 80px auto 0 auto;
+  justify-content: center; max-width: 900px;
+}
+.action-card {
+  min-width: 160px; min-height: 140px; max-width: 210px;
+  padding: 32px 24px 24px 24px;
+  border-radius: 18px; background: #fff; color: #fff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  display: flex; flex-direction: column; align-items: center;
+  text-decoration: none; font-size: 1.07rem; font-weight: 500;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+  position: relative; border: none;
+}
+.action-card i { font-size: 2.1rem; margin-bottom: 16px; }
+.card-blue    { background: linear-gradient(135deg, #6366f1 10%, #4facfe 100%); }
+.card-cyan    { background: linear-gradient(135deg, #00f2fe 0%, #43e97b 100%); }
+.card-green   { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.card-purple  { background: linear-gradient(135deg, #a18cd1 0%, #6366f1 100%);}
+.card-orange  { background: linear-gradient(135deg, #f59e42 0%, #ff5858 100%);}
+.card-red     { background: linear-gradient(135deg, #ff5858 0%, #f59e42 100%);}
+.card-cyan2   { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);}
+.action-card:hover, .action-card:focus {
+  transform: translateY(-6px) scale(1.03); box-shadow: 0 16px 32px rgba(0,0,0,0.14);
+  filter: brightness(1.02); cursor: pointer;
+}
+.dashboard-title {
+  margin-top: 120px; text-align: center;
+}
+.dashboard-title h1 {
+  font-size: 2.5rem; color: #fff; font-weight: 700; margin-bottom: 0.3em;
+}
+.dashboard-title p {
+  font-size: 1.2rem; color: #f7fafc; margin-top: 0; margin-bottom: 2.5em;
+}
+  </style>
+</head>
+<body>
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
@@ -15,165 +131,86 @@
     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
 </button>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<style>
-:root {
-    --cor-perigo: #ef4444;
-    --cor-perigo-dark: #b91c1c;
-    --cor-primaria: #4facfe;
-}
-
-body {
-    font-family: 'Inter', Arial, sans-serif;
-    background-color: var(--cor-fundo-app, #f6f7fb);
-    margin: 0;
-    color: #22223b;
-}
-
-/* Sidebar (menu fixo) */
-.sidebar {
-  width: 250px;
-  background: linear-gradient(180deg, #4facfe 0%, #6366f1 100%);
-  min-height: 100vh; 
-  color: #fff; 
-  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed; 
-  left: 0; 
-  top: 0; 
-  bottom: 0; 
-  z-index: 1000;
-  display: flex; 
-  flex-direction: column; 
-  padding-top: 24px;
-  transition: left 0.3s ease;
-  box-sizing: border-box;
-}
-.sidebar-brand {
-  font-size: 2rem; 
-  font-weight: 900; 
-  color: #fff; 
-  text-decoration: none;
-  letter-spacing: 2px; 
-  padding: 0 32px 12px 32px; 
-  display: block;
-  margin-bottom: 8px; 
-  text-align: left;
-}
-.sidebar hr { 
-  margin: 0 32px 16px 32px; 
-  border: none; 
-  border-top: 1px solid #787cff55; 
-}
-.sidebar-links { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 10px; 
-  padding: 0 24px; 
-  flex-grow: 1;
-}
-.sidebar-links a {
-  display: flex; 
-  align-items: center; 
-  gap: 12px;
-  background: #fff;
-  color: var(--cor-primaria); 
-  font-weight: 600; 
-  font-size: 1.08em; 
-  border-radius: 10px;
-  margin-bottom: 0; 
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  transition: all 0.2s ease;
-  padding: 14px 18px;
-  text-align: left; 
-  text-decoration: none;
-  letter-spacing: 0.01em; 
-  border: 2px solid transparent;
-  min-height: 44px;
-  box-sizing: border-box;
-}
-.sidebar-links a span {
-    display: inline-block;
-    width: 20px;
-    text-align: center;
-}
-.sidebar-links a.active, 
-.sidebar-links a:focus {
-  background: var(--cor-primaria); 
-  color: #fff; 
-  font-weight: 700;
-  border: 2px solid #fff; 
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-  outline: none;
-}
-.sidebar-links a:hover:not(.active) { 
-  background: #f0f1ff; 
-  color: #3b2fd6; 
-  border-color: #d1d5fa; 
-}
-
-/* Botão Sair fixo, visível APENAS no index */
-.btn-logout-index {
-    position: fixed;
-    top: 18px;
-    right: 24px;
-    background: var(--cor-perigo, #ef4444);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 1.09em;
-    padding: 12px 24px;
-    box-shadow: 0 4px 18px rgba(239,68,68,0.15);
-    z-index: 2100;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s;
-}
-.btn-logout-index:hover,
-.btn-logout-index:focus {
-    background: var(--cor-perigo-dark, #b91c1c);
-    color: #fff;
-    outline: none;
-}
-
-@media (max-width: 900px) {
-  .sidebar {
-    left: -260px;
-  }
-  main, .content, .main-content {
-    margin-left: 0 !important;
-  }
-  .btn-logout-index {
-    top: 12px;
-    right: 12px;
-    padding: 10px 18px;
-    font-size: 1em;
-  }
-}
-main, .content, .main-content {
-  margin-left: 250px;
-}
-</style>
+<main class="main-content">
+  <div class="dashboard-title">
+    <h1 id="saudacao">Bem-vindo!</h1>
+    <p>Pronto para gerenciar seu dia?</p>
+  </div>
+  <div class="dashboard-main-actions" id="dashboard-actions">
+    <!-- Os cards são inseridos dinamicamente pelo JS abaixo -->
+  </div>
+</main>
 
 <script type="module">
-import { auth } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+// Substitua pelos SEUS dados reais do Firebase:
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_AUTH_DOMAIN",
+  projectId: "SEU_PROJECT_ID",
+  storageBucket: "SEU_STORAGE_BUCKET",
+  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+  appId: "SEU_APP_ID"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Botão de logout index (apenas no index)
+    // 1. Saudação personalizada (opcional)
+    const nomeUsuario = localStorage.getItem('nomeUsuario') || "Usuário";
+    const saudacao = document.getElementById('saudacao');
+    if (saudacao) {
+      const hora = new Date().getHours();
+      let periodo = "Boa tarde";
+      if (hora < 12) periodo = "Bom dia";
+      if (hora >= 18) periodo = "Boa noite";
+      saudacao.innerHTML = `${periodo}, ${nomeUsuario.replace(/ .*/,'')}!`;
+    }
+
+    // 2. Lógica de menus/cards conforme tipo de usuário
+    const tipoUsuario = (localStorage.getItem('tipoUsuario') || "funcionario").toLowerCase();
+    const dashboardActions = document.getElementById('dashboard-actions');
+    dashboardActions.innerHTML = ""; // Limpa antes de inserir
+
+    // ---- DONO ----
+    if (tipoUsuario === "dono") {
+        dashboardActions.innerHTML = `
+          <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
+          <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
+          <a href="painel-inteligente.html" class="action-card card-green"><i class="fa-solid fa-chart-line"></i> Painel Inteligente</a>
+          <a href="servicos.html" class="action-card card-purple"><i class="fa-solid fa-bell-concierge"></i> Serviços</a>
+          <a href="clientes.html" class="action-card card-orange"><i class="fa-solid fa-users"></i> Clientes</a>
+          <a href="relatorios.html" class="action-card card-red"><i class="fa-solid fa-file-alt"></i> Relatórios</a>
+          <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
+        `;
+    }
+    // ---- FUNCIONARIO ----
+    else {
+        dashboardActions.innerHTML = `
+          <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
+          <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
+          <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
+        `;
+    }
+
+    // 3. Sidebar: sempre 3 menus para funcionário, tudo para dono (ajuste aqui se quiser ocultar mais)
+    // (No seu print, todos veem Início, Agenda, Equipe – então não precisa mexer!)
+
+    // 4. Botão logout funcional
     const btnLogoutIndex = document.getElementById('btn-logout-index');
     if (btnLogoutIndex) {
         btnLogoutIndex.addEventListener('click', () => {
             signOut(auth).then(() => {
                 localStorage.clear();
                 window.location.href = 'login.html';
+            }).catch((error) => {
+                alert('Erro ao sair: ' + (error.message || error));
             });
         });
     }
-    // Destaque do link da página atual
+    // 5. Destaque do link da página atual
     const links = document.querySelectorAll('.sidebar-links a');
     const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
     links.forEach(link => {
@@ -184,3 +221,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+</body>
+</html>
