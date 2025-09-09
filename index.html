@@ -5,19 +5,12 @@
   <title>Pronti - Menu Principal</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-:root {
-    --cor-perigo: #ef4444;
-    --cor-perigo-dark: #b91c1c;
-    --cor-primaria: #4facfe;
-    --cor-fundo-app: #f6f7fb;
-}
-/* Fundo degradê igual ao print */
 body {
-    font-family: 'Inter', Arial, sans-serif;
-    margin: 0;
-    color: #22223b;
-    background: linear-gradient(135deg, #4facfe 0%, #6366f1 100%) !important;
-    min-height: 100vh;
+  font-family: 'Inter', Arial, sans-serif;
+  margin: 0;
+  color: #22223b;
+  background: linear-gradient(135deg, #4facfe 0%, #6366f1 100%) !important;
+  min-height: 100vh;
 }
 .sidebar {
   width: 250px;
@@ -43,7 +36,7 @@ body {
 }
 .sidebar-links a {
   display: flex; align-items: center; gap: 12px;
-  background: #fff; color: var(--cor-primaria);
+  background: #fff; color: #4facfe;
   font-weight: 600; font-size: 1.08em; border-radius: 10px;
   margin-bottom: 0; box-shadow: 0 2px 6px rgba(79,70,229,0.07);
   transition: all 0.2s ease; padding: 14px 18px; text-align: left;
@@ -51,28 +44,28 @@ body {
   min-height: 44px; box-sizing: border-box;
 }
 .sidebar-links a span {
-    display: inline-block; width: 20px; text-align: center;
+  display: inline-block; width: 20px; text-align: center;
 }
 .sidebar-links a.active, .sidebar-links a:focus {
-  background: var(--cor-primaria); color: #fff; font-weight: 700;
+  background: #4facfe; color: #fff; font-weight: 700;
   border: 2px solid #fff; box-shadow: 0 4px 12px rgba(79,70,229,0.3); outline: none;
 }
 .sidebar-links a:hover:not(.active) {
   background: #f0f1ff; color: #3b2fd6; border-color: #d1d5fa;
 }
 .btn-logout-index {
-    position: fixed;
-    top: 18px; right: 24px;
-    background: var(--cor-perigo, #ef4444);
-    color: #fff; border: none; border-radius: 10px;
-    font-weight: 700; font-size: 1.09em; padding: 12px 24px;
-    box-shadow: 0 4px 18px rgba(239,68,68,0.15); z-index: 2100;
-    display: flex; align-items: center; gap: 10px; cursor: pointer;
-    transition: background 0.18s, color 0.18s;
+  position: fixed;
+  top: 18px; right: 24px;
+  background: #ef4444;
+  color: #fff; border: none; border-radius: 10px;
+  font-weight: 700; font-size: 1.09em; padding: 12px 24px;
+  box-shadow: 0 4px 18px rgba(239,68,68,0.15); z-index: 2100;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  transition: background 0.18s, color 0.18s;
 }
 .btn-logout-index:hover, .btn-logout-index:focus {
-    background: var(--cor-perigo-dark, #b91c1c);
-    color: #fff; outline: none;
+  background: #b91c1c;
+  color: #fff; outline: none;
 }
 @media (max-width: 900px) {
   .sidebar { left: -260px; }
@@ -121,12 +114,9 @@ main, .content, .main-content { margin-left: 250px; }
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
-    <nav class="sidebar-links" id="sidebar-links">
-        <!-- O JS irá preencher os menus corretos para dono ou funcionário -->
-    </nav>
+    <nav class="sidebar-links" id="sidebar-links"></nav>
 </aside>
 
-<!-- Botão Sair fixo, APENAS no index.html -->
 <button id="btn-logout-index" class="btn-logout-index">
     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
 </button>
@@ -136,13 +126,11 @@ main, .content, .main-content { margin-left: 250px; }
     <h1 id="saudacao">Bem-vindo!</h1>
     <p>Pronto para gerenciar seu dia?</p>
   </div>
-  <div class="dashboard-main-actions" id="dashboard-actions">
-    <!-- Os cards são inseridos dinamicamente pelo JS abaixo -->
-  </div>
+  <div class="dashboard-main-actions" id="dashboard-actions"></div>
 </main>
 
 <script type="module">
-// --------- TROQUE PELOS DADOS REAIS DO SEU FIREBASE --------------
+// ------- TROQUE PELOS SEUS DADOS DO FIREBASE -----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 const firebaseConfig = {
@@ -157,79 +145,84 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Saudação personalizada
-    const nomeUsuario = localStorage.getItem('nomeUsuario') || "Usuário";
+    // GARANTIR MULTIEMPRESA: não entra sem empresa ativa
+    const empresaAtiva = localStorage.getItem('empresaAtiva');
+    const empresasUsuario = JSON.parse(localStorage.getItem('empresasUsuario') || "[]");
+    if (!empresaAtiva || !empresasUsuario.length) {
+      window.location.href = "selecionar-empresa.html";
+      return;
+    }
+
+    // Saudação personalizada com nome do usuário
+    const nomeUsuario = (localStorage.getItem('nomeUsuario') || "Usuário").split(" ")[0];
     const saudacao = document.getElementById('saudacao');
     if (saudacao) {
       const hora = new Date().getHours();
       let periodo = "Boa tarde";
       if (hora < 12) periodo = "Bom dia";
       if (hora >= 18) periodo = "Boa noite";
-      saudacao.innerHTML = `${periodo}, ${nomeUsuario.replace(/ .*/,'')}!`;
+      saudacao.innerHTML = `${periodo}, ${nomeUsuario}!`;
     }
 
-    // Menu/cards conforme tipo
+    // Sidebar/menu/card conforme tipo usuario
     const tipoUsuario = (localStorage.getItem('tipoUsuario') || "funcionario").toLowerCase();
-    const dashboardActions = document.getElementById('dashboard-actions');
-    dashboardActions.innerHTML = ""; // Limpa antes de inserir
-
-    // Sidebar dinâmica
     const sidebarLinks = document.getElementById('sidebar-links');
+    const dashboardActions = document.getElementById('dashboard-actions');
+
     if (tipoUsuario === "dono") {
-        // Dono vê TODOS os menus
-        sidebarLinks.innerHTML = `
-            <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
-            <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
-            <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
-            <a href="painel-inteligente.html" id="link-painel" class="menu-func"><span><i class="fa-solid fa-chart-line"></i></span> Painel Inteligente</a>
-            <a href="servicos.html" id="link-servicos" class="menu-func"><span><i class="fa-solid fa-bell-concierge"></i></span> Serviços</a>
-            <a href="clientes.html" id="link-clientes" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Clientes</a>
-            <a href="relatorios.html" id="link-relatorios" class="menu-func"><span><i class="fa-solid fa-file-alt"></i></span> Relatórios</a>
-            <a href="perfil.html" id="link-perfil" class="menu-func"><span><i class="fa-solid fa-user-cog"></i></span> Meu Perfil</a>
-        `;
-        dashboardActions.innerHTML = `
-          <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
-          <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
-          <a href="painel-inteligente.html" class="action-card card-green"><i class="fa-solid fa-chart-line"></i> Painel Inteligente</a>
-          <a href="servicos.html" class="action-card card-purple"><i class="fa-solid fa-bell-concierge"></i> Serviços</a>
-          <a href="clientes.html" class="action-card card-orange"><i class="fa-solid fa-users"></i> Clientes</a>
-          <a href="relatorios.html" class="action-card card-red"><i class="fa-solid fa-file-alt"></i> Relatórios</a>
-          <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
-        `;
+      sidebarLinks.innerHTML = `
+        <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
+        <a href="agenda.html"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+        <a href="equipe.html"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+        <a href="painel-inteligente.html"><span><i class="fa-solid fa-chart-line"></i></span> Painel Inteligente</a>
+        <a href="servicos.html"><span><i class="fa-solid fa-bell-concierge"></i></span> Serviços</a>
+        <a href="clientes.html"><span><i class="fa-solid fa-users"></i></span> Clientes</a>
+        <a href="relatorios.html"><span><i class="fa-solid fa-file-alt"></i></span> Relatórios</a>
+        <a href="perfil.html"><span><i class="fa-solid fa-user-cog"></i></span> Meu Perfil</a>
+      `;
+      dashboardActions.innerHTML = `
+        <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
+        <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
+        <a href="painel-inteligente.html" class="action-card card-green"><i class="fa-solid fa-chart-line"></i> Painel Inteligente</a>
+        <a href="servicos.html" class="action-card card-purple"><i class="fa-solid fa-bell-concierge"></i> Serviços</a>
+        <a href="clientes.html" class="action-card card-orange"><i class="fa-solid fa-users"></i> Clientes</a>
+        <a href="relatorios.html" class="action-card card-red"><i class="fa-solid fa-file-alt"></i> Relatórios</a>
+        <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
+      `;
     } else {
-        // Funcionário vê só 3 menus e 3 cards
-        sidebarLinks.innerHTML = `
-            <a href="index.html" id="link-inicio" class="menu-func"><span><i class="fa-solid fa-house"></i></span> Início</a>
-            <a href="agenda.html" id="link-agenda" class="menu-func"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
-            <a href="equipe.html" id="link-equipe" class="menu-func"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
-        `;
-        dashboardActions.innerHTML = `
-          <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
-          <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
-          <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
-        `;
+      sidebarLinks.innerHTML = `
+        <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
+        <a href="agenda.html"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+        <a href="equipe.html"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+      `;
+      dashboardActions.innerHTML = `
+        <a href="agenda.html" class="action-card card-blue"><i class="fa-solid fa-calendar-days"></i> Agenda</a>
+        <a href="equipe.html" class="action-card card-cyan"><i class="fa-solid fa-users"></i> Equipe</a>
+        <a href="perfil.html" class="action-card card-cyan2"><i class="fa-solid fa-user-cog"></i> Meu Perfil</a>
+      `;
     }
 
-    // Botão logout funcional
+    // Botão sair funcional
     const btnLogoutIndex = document.getElementById('btn-logout-index');
     if (btnLogoutIndex) {
-        btnLogoutIndex.addEventListener('click', () => {
-            signOut(auth).then(() => {
-                localStorage.clear();
-                window.location.href = 'login.html';
-            }).catch((error) => {
-                alert('Erro ao sair: ' + (error.message || error));
-            });
+      btnLogoutIndex.addEventListener('click', () => {
+        signOut(auth).then(() => {
+          localStorage.clear();
+          window.location.href = 'login.html';
+        }).catch((error) => {
+          alert('Erro ao sair: ' + (error.message || error));
         });
+      });
     }
-    // Destaque do link da página atual
+
+    // Destaque do menu ativo
     const links = document.querySelectorAll('.sidebar-links a');
     const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
     links.forEach(link => {
-        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
-        if (linkPage === currentPage) {
-            link.classList.add('active');
-        }
+      const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+      if (linkPage === currentPage) {
+        link.classList.add('active');
+      }
     });
 });
 </script>
