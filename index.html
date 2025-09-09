@@ -127,13 +127,23 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
     <div class="dashboard-grid-cards" id="dashboard-grid-cards">
+        <!-- FUNCIONÁRIO vê estes cards -->
+        <a href="agenda.html" class="menu-card card-agenda card-func">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span>Agenda</span>
+        </a>
+        <a href="equipe.html" class="menu-card card-equipe card-func">
+            <i class="fa-solid fa-users"></i>
+            <span>Equipe</span>
+        </a>
+        <a href="perfil.html" class="menu-card card-perfil card-func">
+            <i class="fa-solid fa-user-gear"></i>
+            <span>Meu Perfil</span>
+        </a>
+        <!-- DONO vê todos abaixo (e também os acima) -->
         <a href="dashboard.html" class="menu-card card-painel card-dono">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
-        </a>
-        <a href="agenda.html" class="menu-card card-agenda card-func card-dono">
-            <i class="fa-solid fa-calendar-check"></i>
-            <span>Agenda</span>
         </a>
         <a href="servicos.html" class="menu-card card-servicos card-dono">
             <i class="fa-solid fa-concierge-bell"></i>
@@ -142,14 +152,6 @@
         <a href="clientes.html" class="menu-card card-clientes card-dono">
             <i class="fa-solid fa-user-group"></i>
             <span>Clientes</span>
-        </a>
-        <a href="equipe.html" class="menu-card card-equipe card-func card-dono">
-            <i class="fa-solid fa-users"></i>
-            <span>Equipe</span>
-        </a>
-        <a href="perfil.html" class="menu-card card-perfil card-func">
-            <i class="fa-solid fa-user-gear"></i>
-            <span>Meu Perfil</span>
         </a>
         <a href="relatorios.html" class="menu-card card-relatorios card-dono">
             <i class="fa-solid fa-file-lines"></i>
@@ -164,7 +166,6 @@ fetch('menu-lateral.html')
   .then(res => res.text())
   .then(html => {
       document.getElementById('sidebar-placeholder').innerHTML = html;
-      // Adiciona o evento do botão sair após o menu ser inserido no DOM
       import("./firebase-config.js").then(({ auth }) => {
           import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
               const btnLogout = document.getElementById("btn-logout");
@@ -186,8 +187,6 @@ fetch('menu-lateral.html')
       document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
   });
 
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { auth } from "./firebase-config.js";
 import { verificarAcesso } from "./userService.js";
 
 const nomeUsuarioSpan = document.getElementById("nome-usuario");
@@ -196,7 +195,6 @@ const mainContent = document.getElementById("main-content");
 const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
 function getTipoUsuario(perfil) {
-    // Dono => ehDono true | Funcionário = qualquer outro caso
     return perfil.ehDono === true ? 'dono' : 'funcionario';
 }
 
@@ -233,8 +231,7 @@ function controlarCardsDashboard(perfil) {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
     } else if (tipo === 'dono') {
-        document.querySelectorAll('.card-dono').forEach(e => e.style.display = '');
-        document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
+        document.querySelectorAll('.card-func, .card-dono').forEach(e => e.style.display = '');
     }
 }
 
@@ -264,7 +261,6 @@ async function inicializarDashboard() {
 
 Promise.resolve().then(inicializarDashboard);
 setTimeout(removerIsLoading, 3000);
-
 </script>
 </body>
 </html>
