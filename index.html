@@ -170,6 +170,7 @@ function removerIsLoading() {
 // Exibe os cards corretos conforme tipo de usuário
 function controlarCardsDashboard(perfil) {
     const tipo = getTipoUsuario(perfil);
+    console.log("[DASHBOARD] perfil recebido:", perfil, "tipo:", tipo); // LOG ADICIONADO
     if (tipo === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
