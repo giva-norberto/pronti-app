@@ -194,19 +194,9 @@ const saudacaoSpan = document.getElementById("saudacao");
 const mainContent = document.getElementById("main-content");
 const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
-// UIDs dos donos do sistema
-const UID_DONOS = [
-    "gzKEgwZrftfiFpGb9k82PxU83Uv1", // Givanildo Silva
-    // Adicione outros UIDs se tiver mais donos
-];
-
-// Determina tipo: dono ou funcionário
-function getTipoUsuario(perfil, user) {
-    // Aceita boolean true ou string "true" para casos de backend serializado
-    if (perfil.ehDono === true || perfil.ehDono === "true") return "dono";
-    // Fallback: se UID está na lista de donos, também é dono
-    if (user && UID_DONOS.includes(user.uid)) return "dono";
-    return "funcionario";
+// AQUI: NÃO PRECISA MAIS DE UID_DONOS! Só o campo ehDono decide.
+function getTipoUsuario(perfil) {
+    return perfil.ehDono === true ? "dono" : "funcionario";
 }
 
 function definirSaudacao() {
@@ -237,10 +227,10 @@ function removerIsLoading() {
 }
 
 // Exibe os cards corretos conforme tipo de usuário
-function controlarCardsDashboard(perfil, user) {
-    const tipo = getTipoUsuario(perfil, user);
+function controlarCardsDashboard(perfil) {
+    const tipo = getTipoUsuario(perfil);
     // Debug: mostra no console o perfil e tipo detectado
-    console.log("perfil", perfil, "ehDono:", perfil.ehDono, "tipo:", tipo, "user.uid:", user && user.uid);
+    console.log("perfil", perfil, "ehDono:", perfil.ehDono, "tipo:", tipo);
     if (tipo === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
@@ -252,8 +242,8 @@ function controlarCardsDashboard(perfil, user) {
 async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
-        const { perfil, user } = userSession;
-        controlarCardsDashboard(perfil, user);
+        const { perfil } = userSession;
+        controlarCardsDashboard(perfil);
 
         const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
