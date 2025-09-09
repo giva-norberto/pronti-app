@@ -161,32 +161,6 @@
 </main>
 
 <script type="module">
-// Carrega o menu lateral igual em todas as páginas
-fetch('menu-lateral.html')
-  .then(res => res.text())
-  .then(html => {
-      document.getElementById('sidebar-placeholder').innerHTML = html;
-      import("./firebase-config.js").then(({ auth }) => {
-          import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
-              const btnLogout = document.getElementById("btn-logout");
-              if (btnLogout) {
-                  btnLogout.addEventListener("click", async () => {
-                      try {
-                          await signOut(auth);
-                          localStorage.clear();
-                          window.location.href = "login.html";
-                      } catch(e) {
-                          alert("Erro ao sair: " + e.message);
-                      }
-                  });
-              }
-          });
-      });
-  })
-  .catch((e) => {
-      document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
-  });
-
 import { verificarAcesso } from "./userService.js";
 
 const nomeUsuarioSpan = document.getElementById("nome-usuario");
@@ -194,7 +168,6 @@ const saudacaoSpan = document.getElementById("saudacao");
 const mainContent = document.getElementById("main-content");
 const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
-// AQUI: NÃO PRECISA MAIS DE UID_DONOS! Só o campo ehDono decide.
 function getTipoUsuario(perfil) {
     return perfil.ehDono === true ? "dono" : "funcionario";
 }
@@ -229,8 +202,6 @@ function removerIsLoading() {
 // Exibe os cards corretos conforme tipo de usuário
 function controlarCardsDashboard(perfil) {
     const tipo = getTipoUsuario(perfil);
-    // Debug: mostra no console o perfil e tipo detectado
-    console.log("perfil", perfil, "ehDono:", perfil.ehDono, "tipo:", tipo);
     if (tipo === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
@@ -262,6 +233,32 @@ async function inicializarDashboard() {
         removerIsLoading();
     }
 }
+
+// Carregar menu lateral
+fetch('menu-lateral.html')
+  .then(res => res.text())
+  .then(html => {
+      document.getElementById('sidebar-placeholder').innerHTML = html;
+      import("./firebase-config.js").then(({ auth }) => {
+          import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js").then(({ signOut }) => {
+              const btnLogout = document.getElementById("btn-logout");
+              if (btnLogout) {
+                  btnLogout.addEventListener("click", async () => {
+                      try {
+                          await signOut(auth);
+                          localStorage.clear();
+                          window.location.href = "login.html";
+                      } catch(e) {
+                          alert("Erro ao sair: " + e.message);
+                      }
+                  });
+              }
+          });
+      });
+  })
+  .catch((e) => {
+      document.getElementById('sidebar-placeholder').innerHTML = "<div style='color:red;text-align:center'>Erro ao carregar menu lateral.</div>";
+  });
 
 Promise.resolve().then(inicializarDashboard);
 setTimeout(removerIsLoading, 3000);
