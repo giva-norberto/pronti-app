@@ -1,116 +1,193 @@
-// =================================================================
-//          ARQUIVO CENTRAL DO GUARDIÃO (menu-guardiao.js)
-// =================================================================
+<!-- ====================================================================== -->
+<!--      MENU-LATERAL.HTML (FUNCIONÁRIO, DONO, ADMIN, LOGOUT)             -->
+<!-- ====================================================================== -->
 
-import { auth, db } from "./firebase-config.js";
-import {
-  onAuthStateChanged,
-  signOut,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import {
-  doc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+<aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <nav class="sidebar-links" id="sidebar-links">
+        <!-- Funcionário -->
+        <a href="index.html" id="link-inicio" class="menu-func">
+            <span><i class="fa-solid fa-house"></i></span> Início
+        </a>
+        <a href="agenda.html" id="link-agenda" class="menu-func">
+            <span><i class="fa-solid fa-calendar-days"></i></span> Agenda
+        </a>
+        <a href="equipe.html" id="link-equipe" class="menu-func">
+            <span><i class="fa-solid fa-users"></i></span> Equipe
+        </a>
 
-// === UID do administrador global ===
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+        <!-- Dono -->
+        <a href="servicos.html" id="link-servicos" class="menu-dono" style="display:none">
+            <span><i class="fa-solid fa-scissors"></i></span> Serviços
+        </a>
+        <a href="financeiro.html" id="link-financeiro" class="menu-dono" style="display:none">
+            <span><i class="fa-solid fa-dollar-sign"></i></span> Financeiro
+        </a>
+        <a href="perfil.html" id="link-perfil" class="menu-dono" style="display:none">
+            <span><i class="fa-solid fa-id-card"></i></span> Perfil da Empresa
+        </a>
 
-// === Função para determinar o perfil do usuário (dinâmico do Firestore) ===
-async function getUserRole(user) {
-  if (!user) return "funcionario";
+        <!-- Admin -->
+        <a href="admin.html" id="admin-link" class="menu-admin" style="display:none">
+            <span><i class="fa-solid fa-shield"></i></span> Administração
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
+</aside>
 
-  // Admin fixo
-  if (user.uid === ADMIN_UID) return "admin";
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  try {
-    const empresaId = localStorage.getItem("empresaAtivaId");
-    if (!empresaId) return "funcionario";
-
-    // Documento do profissional dentro da empresa
-    const profRef = doc(db, "empresas", empresaId, "profissionais", user.uid);
-    const profSnap = await getDoc(profRef);
-
-    if (profSnap.exists()) {
-      const dados = profSnap.data();
-      if (dados.ehDono) return "dono";
-    }
-  } catch (err) {
-    console.error("[menu-guardiao] Erro ao buscar perfil:", err);
-  }
-
-  return "funcionario";
+<style>
+/* Estilo do sidebar mantido conforme padrão anterior */
+.sidebar {
+  width: 250px;
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  min-height: 100vh; 
+  color: #fff; 
+  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+  position: fixed; 
+  left: 0; 
+  top: 0; 
+  bottom: 0; 
+  z-index: 1000;
+  display: flex; 
+  flex-direction: column; 
+  padding-top: 24px;
+  transition: left 0.3s ease;
+  box-sizing: border-box;
 }
+.sidebar-brand {
+  font-size: 2rem; 
+  font-weight: 900; 
+  color: #fff; 
+  text-decoration: none;
+  letter-spacing: 2px; 
+  padding: 0 32px 12px 32px; 
+  display: block;
+  margin-bottom: 8px; 
+  text-align: left;
+}
+.sidebar hr { 
+  margin: 0 32px 16px 32px; 
+  border: none; 
+  border-top: 1px solid #787cff55; 
+}
+.sidebar-links { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+  padding: 0 24px; 
+  flex-grow: 1;
+}
+.sidebar-links a {
+  display: flex; 
+  align-items: center; 
+  gap: 12px;
+  background: #fff;
+  color: #4f46e5; 
+  font-weight: 600; 
+  font-size: 1.08em; 
+  border-radius: 10px;
+  margin-bottom: 0; 
+  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+  transition: all 0.2s ease;
+  padding: 14px 18px;
+  text-align: left; 
+  text-decoration: none;
+  letter-spacing: 0.01em; 
+  border: 2px solid transparent;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.sidebar-links a span {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+}
+.sidebar-links a.active, 
+.sidebar-links a:focus {
+  background: #4f46e5; 
+  color: #fff; 
+  font-weight: 700;
+  border: 2px solid #fff; 
+  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+  outline: none;
+}
+.sidebar-links a:hover:not(.active) { 
+  background: #f0f1ff; 
+  color: #3b2fd6; 
+  border-color: #d1d5fa; 
+}
+.sidebar-footer { 
+  margin-top: auto; 
+  padding: 32px 32px 24px 32px; 
+}
+.btn-logout {
+  background: #fff; 
+  color: #4f46e5; 
+  border: none; 
+  padding: 14px 0;
+  width: 100%; 
+  border-radius: 10px; 
+  font-weight: bold; 
+  font-size: 1.05em;
+  cursor: pointer; 
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.07); 
+  border: 2px solid transparent; 
+  outline: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+.btn-logout:hover, 
+.btn-logout:focus { 
+  background: #4f46e5; 
+  color: #fff; 
+  border: 2px solid #fff; 
+}
+</style>
 
-// Função que configura funcionalidades que dependem do usuário estar logado.
-async function setupAuthenticatedFeatures(user) {
-  const userRole = await getUserRole(user);
+<script type="module">
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-  // -------- Lógica para mostrar/ocultar menus conforme o perfil -----------
-  // Use classes CSS: menu-func, menu-admin, menu-dono nos <a> do menu lateral!
-  if (userRole === "funcionario") {
-    document.querySelectorAll(".menu-func").forEach(e => e.style.display = "");
-    document.querySelectorAll(".menu-admin, .menu-dono").forEach(e => e.style.display = "none");
-  } else if (userRole === "admin") {
-    document.querySelectorAll(".menu-admin").forEach(e => e.style.display = "");
-    document.querySelectorAll(".menu-func").forEach(e => e.style.display = "");
-    document.querySelectorAll(".menu-dono").forEach(e => e.style.display = "none");
-  } else if (userRole === "dono") {
-    document.querySelectorAll(".menu-admin, .menu-dono, .menu-func").forEach(e => e.style.display = "");
-  }
-  // ------------------------------------------------------------------------------
-
-  // Lógica do botão de logout
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout) {
-    const newBtn = btnLogout.cloneNode(true);
-    btnLogout.parentNode.replaceChild(newBtn, btnLogout);
-
-    newBtn.addEventListener("click", () => {
-      signOut(auth).then(() => {
-        localStorage.removeItem("empresaAtivaId");
-        window.location.replace("login.html");
-      });
+document.addEventListener('DOMContentLoaded', () => {
+    // MULTIEMPRESAS: Adapta links para empresa ativa
+    const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+    const linksParaAdaptar = [
+        { id: "link-agenda", href: "agenda.html" },
+        { id: "link-equipe", href: "equipe.html" },
+        { id: "link-inicio", href: "index.html" },
+        { id: "link-servicos", href: "servicos.html" },
+        { id: "link-financeiro", href: "financeiro.html" },
+        { id: "link-perfil", href: "perfil.html" },
+        { id: "admin-link", href: "admin.html" }
+    ];
+    linksParaAdaptar.forEach(cfg => {
+        const el = document.getElementById(cfg.id);
+        if (el && empresaAtivaId) el.href = `${cfg.href}?empresa=${empresaAtivaId}`;
     });
-  }
 
-  // Lógica para destacar o link ativo na sidebar
-  const links = document.querySelectorAll(".sidebar-links a");
-  const currentPage = window.location.pathname.split("/").pop().split("?")[0] || "index.html";
-
-  links.forEach(link => link.classList.remove("active"));
-  links.forEach(link => {
-    const linkPage = link.getAttribute("href").split("/").pop().split("?")[0];
-    if (linkPage === currentPage) {
-      link.classList.add("active");
+    // Botão de logout
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            signOut(auth).then(() => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            });
+        });
     }
-  });
-}
-
-// Inicia a verificação de login do Firebase
-function initializeAuthGuard() {
-  onAuthStateChanged(auth, (user) => {
-    const isLoginPage = window.location.pathname.endsWith("login.html");
-    const needsCompany = !isLoginPage && !window.location.pathname.endsWith("selecionar-empresa.html");
-    const companyId = localStorage.getItem("empresaAtivaId");
-
-    if (!user && !isLoginPage) {
-      window.location.replace("login.html");
-    } else if (user && needsCompany && !companyId) {
-      window.location.replace("selecionar-empresa.html");
-    } else if (user) {
-      setupAuthenticatedFeatures(user);
-    }
-  });
-}
-
-// Garante persistência e inicia o guardião
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    initializeAuthGuard();
-  })
-  .catch((error) => {
-    console.error("Guardião do Menu: Falha ao ativar persistência!", error);
-    initializeAuthGuard();
-  });
+    
+    // Destaque do link da página atual
+    const links = document.querySelectorAll('.sidebar-links a');
+    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
+    links.forEach(link => {
+        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+        if (linkPage === currentPage) link.classList.add('active');
+    });
+});
+</script>
