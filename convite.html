@@ -131,7 +131,7 @@
             const fotoDisplay = user.photoURL || `https://placehold.co/150x150/eef2ff/4f46e5?text=${nomeDisplay.charAt(0  ).toUpperCase()}`;
 
             // ======================= INÍCIO DA ÚNICA ALTERAÇÃO =======================
-            // O objeto de dados agora inclui o campo 'empresaId'.
+            // O objeto de dados agora inclui o campo 'empresaId' e ehDono: false.
             // Isso é ESSENCIAL para que a regra de segurança 'allow list' funcione
             // e o novo funcionário apareça na lista da equipe.
             const dadosNovoProfissional = {
@@ -141,7 +141,8 @@
                 uid: user.uid,
                 status: 'pendente',
                 criadoEm: serverTimestamp(),
-                empresaId: empresaId // <-- ESTA É A LINHA ADICIONADA
+                empresaId: empresaId, // <-- já existia
+                ehDono: false // <-- ADICIONADO CONFORME PEDIDO
             };
             
             await setDoc(profissionalRef, dadosNovoProfissional, { merge: true });
