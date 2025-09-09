@@ -223,10 +223,12 @@ function removerIsLoading() {
     document.body.classList.remove('is-loading');
 }
 
-// NOVO: Controle de exibição dos cards por perfil
+// ==========================
+// CONTROLE DE CARDS POR PERFIL
+// ==========================
 function controlarCardsDashboard(perfil) {
-    // Ajuste o campo do perfil conforme o que está em userService.js
-    // Exemplo: perfil.role ou perfil.tipo, aqui uso "perfil.role" como padrão
+    // Ajuste para o campo de perfil real (role, tipo, etc)
+    // Exemplo: perfil.role === 'funcionario'
     if (perfil.role === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-admin, .card-dono').forEach(e => e.style.display = 'none');
@@ -245,7 +247,7 @@ async function inicializarDashboard() {
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
         if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
 
-        controlarCardsDashboard(perfil); // Chama o controle de exibição dos cards
+        controlarCardsDashboard(perfil); // ATENÇÃO: chama o controle de exibição dos cards
 
         if (perfil.nomeFantasia && nomeEmpresaSpan) {
             nomeEmpresaSpan.textContent = `${perfil.nomeFantasia}`;
