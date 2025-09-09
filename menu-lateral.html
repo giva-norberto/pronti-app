@@ -2,7 +2,7 @@
 <!--      MENU-LATERAL.HTML (FUNCIONÁRIO, DONO, ADMIN, LOGOUT)             -->
 <!-- ====================================================================== -->
 
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar sidebar-loading" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
@@ -17,19 +17,19 @@
             <span><i class="fa-solid fa-users"></i></span> Equipe
         </a>
 
-        <!-- Dono -->
-        <a href="servicos.html" id="link-servicos" class="menu-dono" style="display:none">
+        <!-- Dono (sem style="display:none") -->
+        <a href="servicos.html" id="link-servicos" class="menu-dono">
             <span><i class="fa-solid fa-scissors"></i></span> Serviços
         </a>
-        <a href="financeiro.html" id="link-financeiro" class="menu-dono" style="display:none">
+        <a href="financeiro.html" id="link-financeiro" class="menu-dono">
             <span><i class="fa-solid fa-dollar-sign"></i></span> Financeiro
         </a>
-        <a href="perfil.html" id="link-perfil" class="menu-dono" style="display:none">
+        <a href="perfil.html" id="link-perfil" class="menu-dono">
             <span><i class="fa-solid fa-id-card"></i></span> Perfil da Empresa
         </a>
 
-        <!-- Admin -->
-        <a href="admin.html" id="admin-link" class="menu-admin" style="display:none">
+        <!-- Admin (sem style="display:none") -->
+        <a href="admin.html" id="admin-link" class="menu-admin">
             <span><i class="fa-solid fa-shield"></i></span> Administração
         </a>
     </nav>
@@ -41,10 +41,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+/* NOVO: Esconde os links apenas durante o carregamento inicial para evitar o "piscar" */
+.sidebar-loading .sidebar-links a {
+    display: none;
+}
+
 /* Estilo do sidebar mantido conforme padrão anterior */
 .sidebar {
   width: 250px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100% );
   min-height: 100vh; 
   color: #fff; 
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
@@ -151,10 +156,12 @@
 </style>
 
 <script type="module">
+// Este script não precisa de alterações, ele lida com o logout e URLs.
+// O guardião fará o trabalho de visibilidade.
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', ( ) => {
     // MULTIEMPRESAS: Adapta links para empresa ativa
     const empresaAtivaId = localStorage.getItem('empresaAtivaId');
     const linksParaAdaptar = [
