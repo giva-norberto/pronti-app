@@ -49,7 +49,7 @@
 /* Estilo do sidebar mantido conforme padrão anterior */
 .sidebar {
   width: 250px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100% );
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%  );
   min-height: 100vh; 
   color: #fff; 
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
@@ -161,7 +161,7 @@
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-document.addEventListener('DOMContentLoaded', ( ) => {
+document.addEventListener('DOMContentLoaded', (  ) => {
     // MULTIEMPRESAS: Adapta links para empresa ativa
     const empresaAtivaId = localStorage.getItem('empresaAtivaId');
     const linksParaAdaptar = [
