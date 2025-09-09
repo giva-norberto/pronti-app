@@ -53,7 +53,6 @@
 <script type="module">
     // 1. IMPORTA TODAS AS FERRAMENTAS NECESSÁRIAS
     import { verificarAcesso } from "./userService.js";
-    // ⭐ CORREÇÃO FINAL: O nome do arquivo foi corrigido de 'auth-guard.js' para 'menu-lateral.js'
     import { updateMenuVisibility, setupMenuFeatures } from "./menu-lateral.js";
 
     // Seleção de elementos do DOM
@@ -90,15 +89,26 @@
             // SEGUNDO, verifica se a sessão do usuário é válida.
             if (!userSession || !userSession.perfil) {
                 console.log("Sessão ou perfil inválidos. Aguardando redirecionamento...");
-                setupMenuFeatures(); // Tenta configurar o botão de logout mesmo sem sessão.
+                setupMenuFeatures();
                 return;
             }
 
             const { perfil, user } = userSession;
 
-            // TERCEIRO, agora que o menu EXISTE na página, chama as funções que precisam dele.
-            updateMenuVisibility(perfil.papel); // <-- ATUALIZA O MENU
-            setupMenuFeatures();             // <-- ATIVA O BOTÃO SAIR
+            // ======================================================================
+            // ⭐ LÓGICA DE TRADUÇÃO ADICIONADA AQUI
+            // ======================================================================
+            // Cria a propriedade 'papel' que estava faltando, baseando-se em 'ehDono'.
+            if (perfil.ehDono === true) {
+                perfil.papel = 'dono';
+            } else {
+                perfil.papel = 'funcionario';
+            }
+            // ======================================================================
+
+            // TERCEIRO, agora que 'perfil.papel' existe, chama as funções que precisam dele.
+            updateMenuVisibility(perfil.papel);
+            setupMenuFeatures();
 
             // QUARTO, atualiza o resto da página.
             const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
