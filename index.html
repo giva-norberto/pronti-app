@@ -127,7 +127,7 @@
         <p>Pronto para gerenciar seu dia?</p>
     </div>
     <div class="dashboard-grid-cards" id="dashboard-grid-cards">
-        <!-- FUNCIONÁRIO vê estes cards -->
+        <!-- FUNCIONÁRIO vê estes cards (e o dono também) -->
         <a href="agenda.html" class="menu-card card-agenda card-func">
             <i class="fa-solid fa-calendar-check"></i>
             <span>Agenda</span>
@@ -140,7 +140,7 @@
             <i class="fa-solid fa-user-gear"></i>
             <span>Meu Perfil</span>
         </a>
-        <!-- DONO vê todos abaixo (e também os acima) -->
+        <!-- SÓ DONO vê estes abaixo -->
         <a href="dashboard.html" class="menu-card card-painel card-dono">
             <i class="fa-solid fa-chart-line"></i>
             <span>Painel Inteligente</span>
@@ -194,9 +194,19 @@ const saudacaoSpan = document.getElementById("saudacao");
 const mainContent = document.getElementById("main-content");
 const nomeEmpresaSpan = document.getElementById("nome-empresa-ativa");
 
-function getTipoUsuario(perfil) {
-    // Garanta que está comparando booleano true
-    return perfil.ehDono === true ? 'dono' : 'funcionario';
+// UIDs dos donos do sistema (adicione aqui todos que devem ver os menus de dono)
+const UID_DONOS = [
+    "WjH6nkGMnoRu0E7ALBVsSqptA9H2", // exemplo, substitua pelo verdadeiro
+    // coloque outros UIDs de donos se precisar
+];
+
+// Determina tipo: dono ou funcionário
+function getTipoUsuario(perfil, user) {
+    // Aceita boolean true ou string "true" para casos de backend serializado
+    if (perfil.ehDono === true || perfil.ehDono === "true") return "dono";
+    // Fallback: se UID está na lista de donos, também é dono
+    if (user && UID_DONOS.includes(user.uid)) return "dono";
+    return "funcionario";
 }
 
 function definirSaudacao() {
@@ -226,24 +236,24 @@ function removerIsLoading() {
     document.body.classList.remove('is-loading');
 }
 
-function controlarCardsDashboard(perfil) {
-    // LOG PARA DEBUG
-    console.log("perfil", perfil, "ehDono:", perfil.ehDono, typeof perfil.ehDono);
-    if (perfil.ehDono === true) {
-        // DONO vê todos os cards
-        document.querySelectorAll('.card-func, .card-dono').forEach(e => e.style.display = '');
-    } else {
-        // FUNCIONÁRIO só vê func
+// Exibe os cards corretos conforme tipo de usuário
+function controlarCardsDashboard(perfil, user) {
+    const tipo = getTipoUsuario(perfil, user);
+    // Debug: mostra no console o perfil e tipo detectado
+    console.log("perfil", perfil, "ehDono:", perfil.ehDono, "tipo:", tipo, "user.uid:", user && user.uid);
+    if (tipo === 'funcionario') {
         document.querySelectorAll('.card-func').forEach(e => e.style.display = '');
         document.querySelectorAll('.card-dono').forEach(e => e.style.display = 'none');
+    } else if (tipo === 'dono') {
+        document.querySelectorAll('.card-func, .card-dono').forEach(e => e.style.display = '');
     }
 }
 
 async function inicializarDashboard() {
     try {
         const userSession = await verificarAcesso();
-        const { perfil } = userSession;
-        controlarCardsDashboard(perfil);
+        const { perfil, user } = userSession;
+        controlarCardsDashboard(perfil, user);
 
         const primeiroNome = perfil.nome ? perfil.nome.split(" ")[0] : (userSession.user.displayName ? userSession.user.displayName.split(" ")[0] : "Usuário");
         if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
