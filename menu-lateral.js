@@ -1,4 +1,6 @@
-import { auth, signOut } from "./firebase-config.js";
+// menu-lateral.js
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { verificarAcesso } from './userService.js';
 
 export async function ativarMenu() {
@@ -14,8 +16,9 @@ export async function ativarMenu() {
                 await signOut(auth);
                 localStorage.clear();
                 window.location.href = 'login.html';
-            } catch {
-                alert('Erro ao sair');
+            } catch (err) {
+                console.error('Erro ao sair:', err);
+                alert('Erro ao sair. Tente novamente.');
             }
         });
     }
@@ -37,12 +40,12 @@ export async function ativarMenu() {
             const menuId = link.dataset.menuId;
             if (!menuId) return;
 
-            // Funcionario: só vê menus gerais
+            // Funcionário: esconde menus restritos
             if (papel === 'funcionario' && ['servicos','clientes','perfil','relatorios','administracao','permissoes'].includes(menuId)) {
                 link.style.display = 'none';
             }
 
-            // Dono: não vê menus admin
+            // Dono: esconde menus admin
             if (papel === 'dono' && ['administracao','permissoes'].includes(menuId)) {
                 link.style.display = 'none';
             }
@@ -54,5 +57,15 @@ export async function ativarMenu() {
         });
     } catch(e) {
         console.error('Erro ao aplicar permissões do menu:', e);
+        // Se erro, esconde todos os menus menos o básico
+        links.forEach(link => {
+            const menuId = link.dataset.menuId;
+            if (['inicio','agenda','equipe'].includes(menuId)) {
+                link.style.display = '';
+            } else {
+                link.style.display = 'none';
+            }
+        });
     }
 }
+
