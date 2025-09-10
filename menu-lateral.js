@@ -1,4 +1,4 @@
-// menu-lateral.js - MÓDULO DE FERRAMENTAS (Versão Corrigida)
+// VERSÃO FINAL CORRIGIDA - 09 DE SETEMBRO, 22:16
 
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
