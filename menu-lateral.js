@@ -3,7 +3,7 @@
  * @description Módulo de ferramentas para controlar a visibilidade e as
  * funcionalidades do menu lateral da aplicação Pronti.
  * @author Giva-Norberto & Gemini Assistant
- * @version 1.0.0 - 09 de Setembro, 2025
+ * @version Final - 09 de Setembro, 2025
  */
 
 import { auth } from "./firebase-config.js";
