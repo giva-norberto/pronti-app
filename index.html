@@ -3,21 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pronti - Dashboard</title>
-    <link href="style.css" rel="stylesheet" type="text/css" /> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <title>Pronti - Início</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <style>
         :root {
             --sidebar-width: 240px;
         }
         
+        /* --- ALTERAÇÃO PRINCIPAL AQUI --- */
         body {
             display: flex;
             margin: 0;
             font-family: 'Poppins', sans-serif;
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
-            background-color: #fff; /* Fundo branco padrão, seu style.css pode sobrepor */
+            /* 1. FUNDO ROXO APLICADO DIRETAMENTE NO CORPO */
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
         }
 
         body.loaded {
@@ -30,15 +33,16 @@
 
         main.main-content {
             flex-grow: 1;
-            padding: 30px;
+            padding: 40px;
             box-sizing: border-box;
             height: 100vh;
             overflow-y: auto;
         }
         
-        .dashboard-welcome-center { text-align: center; margin-bottom: 4vh; }
-        .dashboard-welcome-center h1 { font-size: clamp(1.8rem, 5vw, 3rem); color: #1e293b; }
-        .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #475569; }
+        .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; }
+        /* 2. COR DO TEXTO AJUSTADA PARA O FUNDO ESCURO */
+        .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
 
         .dashboard-grid-cards {
             display: grid;
@@ -54,27 +58,26 @@
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; text-align: center; gap: 12px;
             font-weight: 600; font-size: 0.9rem; text-decoration: none;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
             transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
             border: none; aspect-ratio: 1 / 1;
         }
         .menu-card:hover {
-            transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            filter: brightness(1.05); cursor: pointer;
+            transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            filter: brightness(1.1); cursor: pointer;
         }
         .menu-card i { font-size: 2rem; }
 
         /* Cores dos cards */
-        [data-card-id="inicio"] { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        [data-card-id="dashboard"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
         [data-card-id="agenda"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
-        [data-card-id="servicos"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-        [data-card-id="clientes"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
-        [data-card-id="equipe"] { background: linear-gradient(135deg, #4facfe, #6366f1); }
-        [data-card-id="perfil"] { background: linear-gradient(135deg, #00f2fe, #6366f1); }
-        [data-card-id="relatorios"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
-        [data-card-id="administracao"],
-        [data-card-id="permissoes"] { background: linear-gradient(135deg, #374151, #111827); }
-
+        [data-card-id="servicos"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
+        [data-card-id="clientes"] { background: linear-gradient(135deg, #4facfe, #6366f1); }
+        [data-card-id="equipe"] { background: linear-gradient(135deg, #00f2fe, #6366f1); }
+        [data-card-id="perfil"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
+        [data-card-id="relatorios"] { background: linear-gradient(135deg, #374151, #111827); }
+        [data-card-id="administracao"], [data-card-id="permissoes"] { background: linear-gradient(135deg, #111827, #374151); }
+        
         @media (max-width: 900px) {
             body { flex-direction: column; }
             main.main-content { height: auto; }
@@ -92,8 +95,8 @@
         </div>
 
         <div class="dashboard-grid-cards" id="dashboard-grid-cards">
-            <a href="index.html" class="menu-card" data-card-id="inicio">
-                <i class="fa-solid fa-house"></i><span>Início</span>
+            <a href="dashboard.html" class="menu-card" data-card-id="dashboard">
+                <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
             </a>
             <a href="agenda.html" class="menu-card" data-card-id="agenda">
                 <i class="fa-solid fa-calendar-check"></i><span>Agenda</span>
@@ -123,19 +126,19 @@
     </main>
 
     <script type="module">
+        // O script não precisa de nenhuma alteração. Ele já é capaz de
+        // ler as permissões e vai funcionar perfeitamente com o visual ajustado.
         import { verificarAcesso } from './userService.js';
         import { auth, db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        // Função unificada para carregar o menu e configurar seus botões
         async function loadAndSetupMenu() {
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 
-                // AGORA que o menu existe no HTML, configuramos o botão de sair
                 const btnLogout = document.getElementById("btn-logout");
                 if (btnLogout) {
                     btnLogout.addEventListener("click", () => {
@@ -150,7 +153,6 @@
             }
         }
 
-        // Função principal da página
         async function inicializarPagina() {
             try {
                 await loadAndSetupMenu();
@@ -158,24 +160,18 @@
                 const papelUsuario = sessao.perfil.papel;
                 const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
                 
-                // Atualiza a saudação
                 const hora = new Date().getHours();
                 document.getElementById('saudacao').textContent = (hora >= 5 && hora < 12) ? "Bom dia" : (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
                 document.getElementById('nome-usuario').textContent = nomeUsuario;
 
-                // Lógica dos cards dinâmicos
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
-                console.log("Regras de permissão carregadas:", regrasGlobais); // Para depuração
 
                 const todosOsCards = document.querySelectorAll('[data-card-id]');
                 todosOsCards.forEach(card => {
                     const cardId = card.dataset.cardId;
                     const regraParaCard = regrasGlobais[cardId];
-                    
-                    // LÓGICA CORRIGIDA: Se não houver regra, o card não aparece (mais seguro).
-                    // Para um card aparecer, a permissão para aquele papel deve ser explicitamente 'true'.
                     if (regraParaCard && regraParaCard[papelUsuario] === true) {
                         card.style.display = 'flex';
                     } else {
