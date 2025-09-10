@@ -35,7 +35,6 @@
             border: none;
             border-top: 1px solid #787cff55;
         }
-        /* AJUSTE: O container '.sidebar-links' agora é uma lista <ul> */
         .sidebar-links {
             list-style-type: none;
             margin: 0;
@@ -45,9 +44,7 @@
             padding: 0 24px;
             flex-grow: 1; 
         }
-        .sidebar-links li {
-            /* Este elemento agora recebe o 'display: none' do JS */
-        }
+        .sidebar-links li {}
         .sidebar-links a {
             display: flex;
             align-items: center;
@@ -66,7 +63,6 @@
             letter-spacing: 0.01em;
             border: 2px solid transparent;
         }
-        /* AJUSTE: A classe '.active' agora é aplicada no <li> pai */
         .sidebar-links li.active a, .sidebar-links a:focus {
             background: #4f46e5;
             color: #fff;
@@ -105,7 +101,6 @@
             border: 2px solid #fff;
         }
         @media (max-width: 900px) {
-            /* As media queries funcionarão normalmente com a nova estrutura */
             .sidebar {
                 width: 100%; 
                 min-height: auto;
@@ -121,13 +116,13 @@
             .sidebar hr { display: none; }
             .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; flex-grow: 1; justify-content: flex-start; }
             .sidebar-links a { font-size: 1em; padding: 8px 12px; }
-            .sidebar-links a span:last-child { display: none; } /* Esconde o texto */
+            .sidebar-links a span:last-child { display: none; }
             .sidebar-footer { padding: 0 8px; margin: 0; margin-left: auto; }
             .btn-logout { padding: 8px 16px; font-size: 1em; }
         }
         @media (max-width: 768px) {
             .sidebar-links a { padding: 8px; font-size: 0; }
-            .sidebar-links a span:first-child { display: inline-block; font-size: 1.2rem; } /* Mostra só o ícone */
+            .sidebar-links a span:first-child { display: inline-block; font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -136,7 +131,6 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
-    
     <ul class="sidebar-links" id="sidebar-links">
         <li data-menu-id="dashboard"><a href="dashboard.html"><span>📊</span> <span>Dashboard</span></a></li>
         <li data-menu-id="agenda"><a href="agenda.html"><span>📅</span> <span>Agenda</span></a></li>
@@ -148,12 +142,10 @@
         <li data-menu-id="administracao"><a href="admin.html"><span>🔒</span> <span>Administração</span></a></li>
         <li data-menu-id="permissoes"><a href="permissoes.html"><span>⚙️</span> <span>Permissões</span></a></li>
     </ul>
-
     <div class="sidebar-footer">
         <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
 </aside>
-
 
 <script type="module">
     import { auth, db } from "./firebase-config.js";
@@ -183,18 +175,23 @@
 
     async function updateMenuWithPermissions() {
         try {
+            // 1. Obtém o papel do usuário (admin, dono, funcionario)
             const sessao = await verificarAcesso();
-            const papelUsuario = sessao.perfil.papel;
+            // Papel pode vir como 'dono', 'admin', 'funcionario'
+            // Ajuste para garantir compatibilidade:
+            let papelUsuario = sessao.perfil.papel || (sessao.isAdmin ? "admin" : (sessao.isOwner ? "dono" : "funcionario"));
+            // 2. Busca as permissões globais
             const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
             const permissoesSnap = await getDoc(permissoesRef);
             const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
+            // 3. Aplica visibilidade nos menus
             const menuItems = document.querySelectorAll('[data-menu-id]');
-            
             menuItems.forEach(item => {
                 const menuId = item.dataset.menuId;
                 const regraParaMenu = regrasGlobais[menuId];
-                if (regraParaMenu && regraParaMenu[papelUsuario] === true) {
-                    item.style.display = 'block';
+                // Aceita true/false e também casos onde o menu não existe nas permissões
+                if (!regraParaMenu || regraParaMenu[papelUsuario]) {
+                    item.style.display = 'flex'; // 'flex' para se manter na direção correta
                 } else {
                     item.style.display = 'none';
                 }
@@ -206,6 +203,7 @@
 
     (async () => {
         try {
+            // Esconde todos os menus inicialmente para evitar "piscar"
             document.querySelectorAll('[data-menu-id]').forEach(el => el.style.display = 'none');
             await updateMenuWithPermissions();
             setupMenuFeatures();
