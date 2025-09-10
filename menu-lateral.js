@@ -1,100 +1,139 @@
-/**
- * @file menu-lateral.js
- * @description Gerencia o menu lateral, incluindo logout, link ativo e visibilidade dinâmica dos itens com base nas permissões globais do usuário.
- * @author Giva-Norberto & Gemini Assistant
- * @version Final Corrigido
- */
-
-import { auth, db } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { verificarAcesso } from "./userService.js";
-
-// --- Configura o botão de logout e destaca o link da página ativa ---
-function setupMenuFeatures() {
-    const btnLogout = document.getElementById("btn-logout");
-    if (btnLogout && !btnLogout.dataset.listenerAttached) {
-        btnLogout.dataset.listenerAttached = 'true';
-        btnLogout.addEventListener("click", () => {
-            signOut(auth).then(() => {
-                localStorage.clear();
-                window.location.href = "login.html";
-            }).catch(err => console.error("❌ Erro ao deslogar:", err));
-        });
+<aside class="sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <ul class="sidebar-links" id="sidebar-links">
+        <li data-menu-id="inicio"><a href="index.html"><span>🏠</span> <span>Início</span></a></li>
+        <li data-menu-id="dashboard"><a href="dashboard.html"><span>📊</span> <span>Dashboard</span></a></li>
+        <li data-menu-id="agenda"><a href="agenda.html"><span>📅</span> <span>Agenda</span></a></li>
+        <li data-menu-id="equipe"><a href="equipe.html"><span>👥</span> <span>Equipe</span></a></li>
+        <li data-menu-id="servicos"><a href="servicos.html"><span>🛠️</span> <span>Serviços</span></a></li>
+        <li data-menu-id="clientes"><a href="clientes.html"><span>👤</span> <span>Clientes</span></a></li>
+        <li data-menu-id="relatorios"><a href="relatorios.html"><span>📈</span> <span>Relatórios</span></a></li>
+        <li data-menu-id="perfil"><a href="perfil.html"><span>🙍‍♂️</span> <span>Meu Perfil</span></a></li>
+        <li data-menu-id="administracao"><a href="admin-clientes.html"><span>🔒</span> <span>Administração</span></a></li>
+        <li data-menu-id="permissoes"><a href="permissoes.html"><span>⚙️</span> <span>Permissões</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
+</aside>
+<style>
+    .sidebar {
+        width: 240px;
+        background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+        min-height: 100vh;
+        color: #fff;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+        position: fixed;
+        left: 0; top: 0; bottom: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        padding-top: 24px;
+        box-sizing: border-box;
     }
-
-    // Destaca o link ativo do menu lateral
-    const currentPage = window.location.pathname;
-    document.querySelectorAll('#sidebar-links a').forEach(link => {
-        const linkPath = new URL(link.href, window.location.origin).pathname;
-        if (linkPath === currentPage) {
-            link.closest('li')?.classList.add('active');
-        }
-    });
-}
-
-// --- Atualiza a visibilidade dos menus com base nas permissões ---
-async function updateMenuWithPermissions() {
-    try {
-        // 1. Pega os dados da sessão (usuário e seu papel)
-        const sessao = await verificarAcesso();
-
-        // Robustez: define papelUsuario corretamente mesmo que venha vazio
-        let papelUsuario = sessao.perfil?.papel;
-        if (!papelUsuario) {
-            if (sessao.isAdmin) {
-                papelUsuario = "admin";
-            } else if (sessao.isOwner) {
-                papelUsuario = "dono";
-            } else {
-                papelUsuario = "funcionario";
-            }
-        }
-
-        // 2. Busca as regras de permissão globais do Firestore
-        const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
-        const permissoesSnap = await getDoc(permissoesRef);
-        const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
-
-        // 3. Pega todos os itens de menu que devem ser controlados
-        const menuItems = document.querySelectorAll('[data-menu-id]');
-        
-        // 4. Lógica: mostra menu se não há regra OU se permitido
-        menuItems.forEach(item => {
-            const menuId = item.dataset.menuId; // Ex: 'agenda', 'clientes'
-            const regraParaMenu = regrasGlobais[menuId];
-
-            // Mostra se não há regra ou se papel tem permissão explícita
-            if (!regraParaMenu || regraParaMenu[papelUsuario] === true) {
-                item.style.display = 'flex'; // ou 'block', dependendo do seu CSS
-            } else {
-                item.style.display = 'none'; // Esconde o item se não houver permissão
-            }
-        });
-
-    } catch (error) {
-        // SE O ERRO FOR DE REDIRECIONAMENTO, NÃO EXIBE MENU (usuário não está autenticado)
-        if (error?.message && error.message.includes("Redirecionando")) {
-            // não faz nada, sistema já fará o redirect
-            return;
-        }
-        // Caso erro inesperado, mostra todos os menus para não travar o usuário logado
-        document.querySelectorAll('[data-menu-id]').forEach(item => item.style.display = 'flex');
-        console.error("❌ Erro ao aplicar permissões no menu, exibindo todos os itens:", error);
+    .sidebar-brand {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #fff;
+        text-decoration: none;
+        letter-spacing: 2px;
+        padding: 0 32px 12px 32px;
+        display: block;
+        margin-bottom: 8px;
+        text-align: left;
     }
-}
-
-// --- Inicialização do Menu ---
-(async () => {
-    try {
-        // Esconde todos os menus inicialmente para evitar "piscar" na tela
-        document.querySelectorAll('[data-menu-id]').forEach(el => el.style.display = 'none');
-        
-        await updateMenuWithPermissions(); // Aplica as permissões corretas
-        setupMenuFeatures(); // Configura logout e link ativo
-    } catch (err) {
-        // Caso erro fatal, mostra todos os menus para não travar navegação do usuário logado
-        document.querySelectorAll('[data-menu-id]').forEach(item => item.style.display = 'flex');
-        console.error("❌ Erro fatal inicializando menu lateral, exibindo todos os itens:", err);
+    .sidebar hr {
+        margin: 0 32px 16px 32px;
+        border: none;
+        border-top: 1px solid #787cff55;
     }
-})();
+    .sidebar-links {
+        list-style-type: none;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 0 24px;
+        flex-grow: 1; 
+    }
+    .sidebar-links a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fff;
+        color: #4f46e5;
+        font-weight: 600;
+        font-size: 1.08em;
+        border-radius: 10px;
+        margin-bottom: 0;
+        box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+        transition: background 0.17s, color 0.18s, box-shadow 0.18s;
+        padding: 12px 18px;
+        text-align: left;
+        text-decoration: none;
+        letter-spacing: 0.01em;
+        border: 2px solid transparent;
+    }
+    .sidebar-links li.active a, .sidebar-links a:focus {
+        background: #4f46e5;
+        color: #fff;
+        font-weight: 700;
+        border: 2px solid #fff;
+        box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+        outline: none;
+    }
+    .sidebar-links a:hover:not(.active) {
+        background: #f0f1ff;
+        color: #3b2fd6;
+        border-color: #d1d5fa;
+    }
+    .sidebar-footer {
+        margin-top: auto; 
+        padding: 32px 32px 24px 32px;
+    }
+    .btn-logout {
+        background: #fff;
+        color: #4f46e5;
+        border: none;
+        padding: 12px 0;
+        width: 100%;
+        border-radius: 10px;
+        font-weight: bold;
+        font-size: 1.05em;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+        border: 2px solid transparent;
+        outline: none;
+    }
+    .btn-logout:hover, .btn-logout:focus {
+        background: #4f46e5;
+        color: #fff;
+        border: 2px solid #fff;
+    }
+    @media (max-width: 900px) {
+        .sidebar {
+            width: 100%; 
+            min-height: auto;
+            position: static;
+            flex-direction: row;
+            align-items: center; 
+            padding: 10px 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 0.95em;
+            flex-wrap: wrap; 
+        }
+        .sidebar-brand { font-size: 1.4rem; padding: 0 10px; margin: 0; }
+        .sidebar hr { display: none; }
+        .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; flex-grow: 1; justify-content: flex-start; }
+        .sidebar-links a { font-size: 1em; padding: 8px 12px; }
+        .sidebar-links a span:last-child { display: none; }
+        .sidebar-footer { padding: 0 8px; margin: 0; margin-left: auto; }
+        .btn-logout { padding: 8px 16px; font-size: 1em; }
+    }
+    @media (max-width: 768px) {
+        .sidebar-links a { padding: 8px; font-size: 0; }
+        .sidebar-links a span:first-child { display: inline-block; font-size: 1.2rem; }
+    }
+</style>
