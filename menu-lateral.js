@@ -2,7 +2,7 @@
  * @file menu-lateral.js
  * @description Gerencia o menu lateral, incluindo logout, link ativo e visibilidade dinâmica dos itens com base nas permissões globais do usuário.
  * @author Giva-Norberto & Gemini Assistant
- * @version Final
+ * @version Final Corrigido
  */
 
 import { auth, db } from "./firebase-config.js";
@@ -23,6 +23,7 @@ function setupMenuFeatures() {
         });
     }
 
+    // Destaca o link ativo do menu lateral
     const currentPage = window.location.pathname;
     document.querySelectorAll('#sidebar-links a').forEach(link => {
         const linkPath = new URL(link.href, window.location.origin).pathname;
@@ -72,7 +73,14 @@ async function updateMenuWithPermissions() {
         });
 
     } catch (error) {
-        console.error("❌ Erro ao aplicar permissões no menu:", error);
+        // SE O ERRO FOR DE REDIRECIONAMENTO, NÃO EXIBE MENU (usuário não está autenticado)
+        if (error?.message && error.message.includes("Redirecionando")) {
+            // não faz nada, sistema já fará o redirect
+            return;
+        }
+        // Caso erro inesperado, mostra todos os menus para não travar o usuário logado
+        document.querySelectorAll('[data-menu-id]').forEach(item => item.style.display = 'flex');
+        console.error("❌ Erro ao aplicar permissões no menu, exibindo todos os itens:", error);
     }
 }
 
@@ -85,6 +93,8 @@ async function updateMenuWithPermissions() {
         await updateMenuWithPermissions(); // Aplica as permissões corretas
         setupMenuFeatures(); // Configura logout e link ativo
     } catch (err) {
-        console.error("❌ Erro fatal inicializando menu lateral:", err);
+        // Caso erro fatal, mostra todos os menus para não travar navegação do usuário logado
+        document.querySelectorAll('[data-menu-id]').forEach(item => item.style.display = 'flex');
+        console.error("❌ Erro fatal inicializando menu lateral, exibindo todos os itens:", err);
     }
 })();
