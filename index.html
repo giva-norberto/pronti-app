@@ -7,9 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        :root {
-            --sidebar-width: 240px;
-        }
+        :root { --sidebar-width: 240px; }
         body {
             display: flex;
             margin: 0;
@@ -18,12 +16,8 @@
             transition: opacity 0.5s ease-in-out;
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
         }
-        body.loaded {
-            opacity: 1;
-        }
-        #menu-container {
-            flex-shrink: 0;
-        }
+        body.loaded { opacity: 1; }
+        #menu-container { flex-shrink: 0; }
         main.main-content {
             flex-grow: 1;
             padding: 40px;
@@ -71,9 +65,7 @@
     </style>
 </head>
 <body>
-
     <div id="menu-container"></div>
-
     <main class="main-content">
         <div class="dashboard-welcome-center">
             <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
@@ -109,7 +101,6 @@
             </a>
         </div>
     </main>
-
     <script type="module">
         import { verificarAcesso } from './userService.js';
         import { auth, db } from './firebase-config.js';
@@ -121,11 +112,13 @@
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
-
-                // Só agora carrega o JS do menu lateral
+                // Remove script anterior se existir (SPA, navegação interna)
+                document.querySelectorAll('script[data-menu-lateral]').forEach(s => s.remove());
+                // Carrega JS do menu lateral
                 const script = document.createElement('script');
                 script.type = 'module';
                 script.src = 'menu-lateral.js';
+                script.setAttribute('data-menu-lateral', 'true');
                 document.body.appendChild(script);
             } catch (error) {
                 document.getElementById('menu-container').innerHTML =
@@ -140,17 +133,14 @@
                 const sessao = await verificarAcesso();
                 const papelUsuario = sessao.perfil?.papel || (sessao.isAdmin ? "admin" : (sessao.isOwner ? "dono" : "funcionario"));
                 const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
-
                 const hora = new Date().getHours();
                 document.getElementById('saudacao').textContent =
                     (hora >= 5 && hora < 12) ? "Bom dia" :
                     (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
                 document.getElementById('nome-usuario').textContent = nomeUsuario;
-
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
-
                 const todosOsCards = document.querySelectorAll('[data-card-id]');
                 todosOsCards.forEach(card => {
                     const cardId = card.dataset.cardId;
@@ -161,7 +151,6 @@
                         card.style.display = 'none';
                     }
                 });
-
             } catch (error) {
                 if (!error.message.includes("Redirecionando")) {
                     console.error("Erro ao inicializar o dashboard:", error);
@@ -170,7 +159,6 @@
                 document.body.classList.add('loaded');
             }
         }
-
         inicializarPagina();
     </script>
 </body>
