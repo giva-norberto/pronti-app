@@ -1,8 +1,7 @@
 /**
  * @file menu-lateral.js
- * @description Componente autônomo para o menu lateral da aplicação Pronti.
- * Injeta o menu na página, aplica permissões e destaca o link ativo automaticamente.
- * @version 5.0.0 - Versão final
+ * @description Menu lateral autônomo e inteligente para Pronti.
+ * @version 5.0 - Funcional e sem reload
  */
 
 import { auth } from "./firebase-config.js";
@@ -12,12 +11,10 @@ import { verificarAcesso } from "./userService.js";
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 /**
- * Atualiza visibilidade dos links do menu
+ * Atualiza visibilidade dos links do menu conforme o papel do usuário
  */
 function updateMenuVisibility(role) {
-    // Esconde todos os links privados primeiro
     document.querySelectorAll('.menu-dono, .menu-admin').forEach(el => el.style.display = 'none');
-    // Mostra sempre links de funcionário
     document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
 
     switch (role?.toLowerCase()) {
@@ -30,7 +27,7 @@ function updateMenuVisibility(role) {
 }
 
 /**
- * Configura logout e destaca o link ativo
+ * Destaca link ativo e configura botão de logout
  */
 function setupMenuFeatures() {
     const btnLogout = document.getElementById("btn-logout");
@@ -44,13 +41,11 @@ function setupMenuFeatures() {
         });
     }
 
-    const currentURL = window.location.href;
+    const currentHref = window.location.pathname.split("/").pop(); // pega apenas o arquivo atual
     document.querySelectorAll('#sidebar-links a').forEach(link => {
         link.classList.remove('active');
-        // Compara href completo para garantir que o link correto fique ativo
-        if (link.href === currentURL || currentURL.endsWith(link.getAttribute('href'))) {
-            link.classList.add('active');
-        }
+        const linkHref = link.getAttribute('href').split("/").pop();
+        if (linkHref === currentHref) link.classList.add('active');
     });
 }
 
@@ -66,49 +61,35 @@ async function aplicarLogicaAoMenu() {
             const { perfil, user } = userSession;
             if (user.uid === ADMIN_UID) {
                 papel = 'admin';
-            } else if (perfil.ehDono === true) {
+            } else if (perfil.ehDono) {
                 papel = 'dono';
             }
         }
 
         updateMenuVisibility(papel);
         setupMenuFeatures();
+
     } catch (err) {
-        if (!err.message.includes("Redirecionando")) {
-            console.error("[menu-lateral.js] Erro ao aplicar lógica:", err);
-        }
+        console.error("[menu-lateral.js] Erro ao aplicar lógica:", err);
     }
 }
 
 /**
- * Inicializa o menu
+ * Inicializa o menu: injeta HTML e aplica lógica
  */
 (async function inicializarMenu() {
     const placeholder = document.getElementById('sidebar-placeholder');
-    if (!placeholder) {
-        console.warn("[menu-lateral.js] Nenhum placeholder '#sidebar-placeholder' encontrado.");
-        return;
-    }
+    if (!placeholder) return console.warn("[menu-lateral.js] Nenhum placeholder encontrado.");
 
     try {
         const response = await fetch('menu-lateral.html');
-        if (!response.ok) throw new Error("Falha ao carregar o template menu-lateral.html");
+        if (!response.ok) throw new Error("Falha ao carregar menu-lateral.html");
 
         placeholder.innerHTML = await response.text();
-
-        // Observa quando o menu foi totalmente injetado no DOM
-        const observer = new MutationObserver(async (mutationsList, obs) => {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                await aplicarLogicaAoMenu();
-                obs.disconnect(); // Para de observar após configurar
-            }
-        });
-
-        observer.observe(placeholder, { childList: true, subtree: true });
+        await aplicarLogicaAoMenu();
 
     } catch (err) {
-        console.error("[menu-lateral.js] Erro fatal ao inicializar menu:", err);
-        placeholder.innerHTML = `<p style="color:red; padding:1em;">Erro ao carregar menu.</p>`;
+        console.error("[menu-lateral.js] Erro ao inicializar menu:", err);
+        placeholder.innerHTML = `<p style="color:red;padding:1em;">Erro ao carregar menu.</p>`;
     }
 })();
