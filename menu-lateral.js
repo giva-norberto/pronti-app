@@ -1,61 +1,66 @@
 import { auth } from "./firebase-config.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { verificarAcesso } from "./userService.js";
 
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-
-// Configuração direta de permissões
-const PERMISSOES = {
-  inicio:      { funcionario: true, dono: true, admin: true },
-  dashboard:   { funcionario: false, dono: true, admin: true },
-  agenda:      { funcionario: true, dono: true, admin: true },
-  equipe:      { funcionario: true, dono: true, admin: true },
-  servicos:    { funcionario: false, dono: true, admin: true },
-  clientes:    { funcionario: false, dono: true, admin: true },
-  perfil:      { funcionario: false, dono: true, admin: true },
-  relatorios:  { funcionario: false, dono: true, admin: true },
-  administracao:{ funcionario: false, dono: false, admin: true },
-  permissoes:  { funcionario: false, dono: false, admin: true }
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  // --- BOTÃO SAIR ---
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout) {
-    btnLogout.addEventListener("click", async () => {
-      try {
-        await signOut(auth);
-        localStorage.clear();
-        window.location.href = "login.html";
-      } catch (err) {
-        console.error("Erro ao sair:", err);
-        alert("Erro ao sair, tente novamente.");
-      }
+document.addEventListener("DOMContentLoaded", async () => {
+    // ⬇ Aguarda o menu ser carregado pelo fetch
+    const waitForSidebar = () => new Promise(resolve => {
+        const interval = setInterval(() => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                clearInterval(interval);
+                resolve(sidebar);
+            }
+        }, 50);
     });
-  }
 
-  // --- CONTROLE DE MENUS E CARDS ---
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
-      return;
+    const sidebar = await waitForSidebar();
+
+    // --- BOTÃO SAIR ---
+    const btnLogout = sidebar.querySelector('#btn-logout');
+    if (btnLogout && !btnLogout.dataset.listenerAttached) {
+        btnLogout.dataset.listenerAttached = 'true';
+        btnLogout.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                localStorage.clear();
+                window.location.href = 'login.html';
+            } catch (err) {
+                console.error("Erro ao sair:", err);
+                alert("Erro ao sair, tente novamente.");
+            }
+        });
     }
 
-    let userRole = "funcionario";
-    if (user.uid === ADMIN_UID) userRole = "admin";
-    // Aqui você pode adicionar lógica para dono se quiser
-
-    // Menus
-    document.querySelectorAll("[data-menu-id]").forEach(menu => {
-      const menuId = menu.dataset.menuId;
-      const acesso = PERMISSOES[menuId]?.[userRole] ?? true;
-      menu.style.display = acesso ? "" : "none";
+    // --- DESTAQUE DO LINK ATIVO ---
+    const links = sidebar.querySelectorAll('.sidebar-links a');
+    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
+    links.forEach(link => {
+        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+        if (linkPage === currentPage) link.classList.add('active');
     });
 
-    // Cards
-    document.querySelectorAll(".card-acesso").forEach(card => {
-      const cardMenu = card.dataset.menu;
-      const acesso = PERMISSOES[cardMenu]?.[userRole] ?? true;
-      card.style.display = acesso ? "" : "none";
-    });
-  });
+    // --- APLICA PERMISSÕES DO USUÁRIO ---
+    try {
+        const sessao = await verificarAcesso();
+        const papelUsuario = sessao.perfil.papel;
+
+        links.forEach(link => {
+            const menuId = link.dataset.menuId;
+            // Aqui você controla quem vê o menu
+            // Dono/admin/funcionario
+            if (!menuId) return;
+            if (menuId === 'servicos' || menuId === 'financeiro' || menuId === 'perfil') {
+                link.style.display = papelUsuario === 'dono' || papelUsuario === 'admin' ? '' : 'none';
+            } else if (menuId === 'administracao' || menuId === 'permissoes') {
+                link.style.display = papelUsuario === 'admin' ? '' : 'none';
+            } else {
+                // todos os outros menus (inicio, agenda, equipe, clientes) são visíveis para todos
+                link.style.display = '';
+            }
+        });
+
+    } catch (err) {
+        console.error("Erro ao aplicar permissões no menu:", err);
+    }
 });
