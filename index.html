@@ -56,24 +56,32 @@
 </main>
 
 <script type="module">
+    // 1. IMPORTA TODAS AS FERRAMENTAS NECESSÁRIAS
     import { verificarAcesso } from "./userService.js";
     import { updateMenuVisibility, setupMenuFeatures } from "./menu-lateral.js";
 
-    // ⭐ ADICIONADO: A constante para identificar o Admin
+    // A constante para identificar o Admin
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
 
+    // Seleção de elementos do DOM (sua lógica, mantida)
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const dashboardCards = document.getElementById("dashboard-cards");
 
+    // Funções de UI da Página (sua lógica, mantida)
     function definirSaudacao() { const hora = new Date().getHours(); if (hora >= 5 && hora < 12) return "Bom dia"; if (hora >= 12 && hora < 18) return "Boa tarde"; return "Boa noite"; }
     function mostrarPrimeiroAcessoCard() { mainContent.innerHTML = `<div class="primeiro-acesso-card"><h2>Seja bem-vindo ao Pronti!</h2><p>Inicie o cadastro da sua empresa.</p><button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button></div>`; document.getElementById("btn-criar-empresa").addEventListener("click", () => { localStorage.removeItem('empresaAtivaId'); window.location.href = "perfil.html"; }); }
     function renderizarCards(perfil) { let cardsHtml = ''; if (perfil?.papel?.toLowerCase() === "funcionario") { cardsHtml = `<a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>`; } else { cardsHtml = `<a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a><a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a><a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a><a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a><a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>`; } dashboardCards.innerHTML = cardsHtml; }
     function removerIsLoading() { document.body.classList.remove('is-loading'); }
 
+    /**
+     * Função principal que orquestra a inicialização da página
+     */
     async function inicializarPagina() {
         try {
+            // AQUI ESTÁ A GARANTIA DE QUE TUDO RODA NA HORA CERTA:
+            // Ele espera o menu e os dados do usuário chegarem ANTES de continuar.
             const [userSession, menuResponse] = await Promise.all([
                 verificarAcesso(),
                 fetch('menu-lateral.html')
@@ -82,18 +90,19 @@
             if (!menuResponse.ok) throw new Error('Falha crítica ao carregar o componente do menu.');
             const menuHtml = await menuResponse.text();
             
+            // Ordem de execução correta:
+            // 1. O menu é inserido na página.
             document.getElementById('sidebar-placeholder').innerHTML = menuHtml;
 
+            // 2. A sessão do usuário é verificada.
             if (!userSession || !userSession.perfil) {
-                setupMenuFeatures();
+                setupMenuFeatures(); // Ativa o botão de logout mesmo se não houver sessão
                 return;
             }
 
             const { perfil, user } = userSession;
 
-            // ======================================================================
-            // ⭐ LÓGICA DE "TRADUÇÃO" ATUALIZADA PARA INCLUIR O ADMIN
-            // ======================================================================
+            // 3. A LÓGICA DE PAPÉIS (ADMIN > DONO > FUNCIONÁRIO) É APLICADA.
             if (user.uid === ADMIN_UID) {
                 perfil.papel = 'admin';
             } else if (perfil.ehDono === true) {
@@ -101,27 +110,31 @@
             } else {
                 perfil.papel = 'funcionario';
             }
-            // ======================================================================
 
-            updateMenuVisibility(perfil.papel);
-            setupMenuFeatures();
+            // 4. AS FUNÇÕES DE UI SÃO CHAMADAS COM OS DADOS E O MENU JÁ PRESENTES NA TELA.
+            updateMenuVisibility(perfil.papel); // <-- Atualiza a visibilidade do menu
+            setupMenuFeatures();             // <-- Ativa o botão Sair e os links
+            renderizarCards(perfil);         // <-- Renderiza os cards corretos
 
+            // 5. O restante da sua lógica de UI é executada.
             const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
             if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
             if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
-            renderizarCards(perfil);
 
         } catch (error) {
+            // Seu tratamento de erros, mantido.
             if (error.message === "primeiro_acesso") {
                 mostrarPrimeiroAcessoCard();
             } else if (!error.message.includes("Redirecionando")) {
                 console.error("[index.html] Erro fatal na inicialização da página:", error);
             }
         } finally {
+            // Garante que a tela de loading sempre suma.
             removerIsLoading();
         }
     }
 
+    // Inicia a execução da página
     inicializarPagina();
 </script>
 </body>
