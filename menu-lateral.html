@@ -1,30 +1,156 @@
 <!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (Versão Final - Template Puro)                -->
+<!--      MENU-LATERAL-UNIFICADO (HTML + CSS + JS em 1 arquivo)             -->
 <!-- ====================================================================== -->
 <aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <nav class="sidebar-links" id="sidebar-links">
-        <!-- Links de Funcionário -->
-        <a href="index.html" class="menu-func"><span>🏠</span> Início</a>
-        <a href="agenda.html" class="menu-func"><span>📅</span> Agenda</a>
-        <a href="equipe.html" class="menu-func"><span>👥</span> Equipe</a>
-        <!-- Links do Dono (começam escondidos) -->
-        <a href="dashboard.html" class="menu-dono" style="display:none;"><span>📊</span> Dashboard</a>
-        <a href="servicos.html" class="menu-dono" style="display:none;"><span>🛠️</span> Serviços</a>
-        <a href="clientes.html" class="menu-dono" style="display:none;"><span>👤</span> Clientes</a>
-        <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
-        <a href="relatorios.html" class="menu-dono" style="display:none;"><span>📈</span> Relatórios</a>
-        <!-- Links do Admin (começam escondidos) -->
-        <a href="admin-clientes.html" class="menu-admin" style="display:none;"><span>🔒</span> Administração</a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
+  <a href="index.html" class="sidebar-brand">Pronti</a>
+  <hr />
+  <nav class="sidebar-links" id="sidebar-links">
+    <!-- Funcionário -->
+    <a href="index.html" class="menu-func"><span>🏠</span> Início</a>
+    <a href="agenda.html" class="menu-func"><span>📅</span> Agenda</a>
+    <a href="equipe.html" class="menu-func"><span>👥</span> Equipe</a>
+
+    <!-- Dono -->
+    <a href="dashboard.html" class="menu-dono" style="display:none;"><span>📊</span> Dashboard</a>
+    <a href="servicos.html" class="menu-dono" style="display:none;"><span>🛠️</span> Serviços</a>
+    <a href="clientes.html" class="menu-dono" style="display:none;"><span>👤</span> Clientes</a>
+    <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
+    <a href="relatorios.html" class="menu-dono" style="display:none;"><span>📈</span> Relatórios</a>
+
+    <!-- Admin -->
+    <a href="admin-clientes.html" class="menu-admin" style="display:none;"><span>🔒</span> Administração</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button id="btn-logout" class="btn-logout">Sair</button>
+  </div>
 </aside>
 
-<!-- Estilos do menu. Este CSS é carregado junto com o HTML. -->
+<!-- ====================== CSS embutido ====================== -->
 <style>
-    /* Seu CSS completo do menu aqui... */
-    .sidebar { width: 240px; /* ...etc */ }
+.sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  min-height: 100vh;
+  color: #fff;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+}
+.sidebar-brand {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #fff;
+  text-decoration: none;
+  padding: 0 24px 12px;
+  display: block;
+}
+.sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px;
+  flex-grow: 1;
+}
+.sidebar-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  color: #4f46e5;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.sidebar-links a.active {
+  background: #4f46e5;
+  color: #fff;
+}
+.sidebar-links a:hover {
+  background: #eef;
+}
+.sidebar-footer {
+  padding: 16px;
+}
+.btn-logout {
+  width: 100%;
+  background: #fff;
+  color: #4f46e5;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-logout:hover {
+  background: #4f46e5;
+  color: #fff;
+}
 </style>
+
+<!-- ====================== JS embutido ====================== -->
+<script type="module">
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { verificarAcesso } from "./userService.js";
+
+const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+
+// Controla visibilidade por perfil
+function updateMenuVisibility(role) {
+  document.querySelectorAll(".menu-dono, .menu-admin").forEach(el => el.style.display = "none");
+  document.querySelectorAll(".menu-func").forEach(el => el.style.display = "flex");
+  switch (role?.toLowerCase()) {
+    case "admin":
+      document.querySelectorAll(".menu-admin").forEach(el => el.style.display = "flex");
+    case "dono":
+      document.querySelectorAll(".menu-dono").forEach(el => el.style.display = "flex");
+      break;
+  }
+}
+
+// Ajusta logout e active link
+function setupMenuFeatures() {
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout && !btnLogout.dataset.listenerAttached) {
+    btnLogout.dataset.listenerAttached = "true";
+    btnLogout.addEventListener("click", () => signOut(auth).then(() => {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }));
+  }
+  const currentPage = window.location.pathname;
+  document.querySelectorAll("#sidebar-links a").forEach(link => {
+    const linkPage = new URL(link.href, window.location.origin).pathname;
+    link.classList.toggle("active", linkPage === currentPage);
+  });
+}
+
+// Inicialização
+(async function inicializarMenu() {
+  try {
+    const userSession = await verificarAcesso();
+
+    const sessionEvent = new CustomEvent("pronti:session-loaded", { detail: { userSession } });
+    document.dispatchEvent(sessionEvent);
+
+    let papel = "funcionario";
+    if (userSession?.perfil && userSession?.user) {
+      const { perfil, user } = userSession;
+      if (user.uid === ADMIN_UID) {
+        papel = "admin";
+      } else if (perfil.ehDono === true) {
+        papel = "dono";
+      }
+    }
+    updateMenuVisibility(papel);
+    setupMenuFeatures();
+  } catch (err) {
+    console.error("[menu-lateral-unificado] Erro:", err);
+  }
+})();
+</script>
