@@ -65,6 +65,14 @@ function setupMenuFeatures() {
 async function aplicarLogicaAoMenu() {
     try {
         const userSession = await verificarAcesso();
+
+        // ==========================================================
+        //      ⭐ ALTERAÇÃO: LINHAS DE DIAGNÓSTICO ADICIONADAS
+        // ==========================================================
+        console.log("--- DIAGNÓSTICO FINAL ---");
+        console.log("DADOS RECEBIDOS DO userService:", userSession);
+        // ==========================================================
+
         let papel = 'funcionario'; // Assume o papel mais baixo por padrão
 
         if (userSession?.perfil && userSession?.user) {
