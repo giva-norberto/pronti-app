@@ -1,28 +1,34 @@
-/**
- * @file menu-lateral.js
- * @description Menu lateral autônomo e funcional para todos os perfis.
- */
-
 import { auth, db } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-// --- Atualiza visibilidade do menu por perfil ---
-export function updateMenuVisibility(role = "funcionario") {
-    document.querySelectorAll('.menu-func, .menu-dono, .menu-admin, .menu-permissoes')
-            .forEach(el => el.style.display = 'none');
+// --- Atualiza menu considerando papel + permissões globais ---
+export async function updateMenuVisibility(role = "funcionario") {
+    // Esconde tudo
+    document.querySelectorAll('.menu-func, .menu-dono, .menu-admin, .menu-permissoes').forEach(el => el.style.display = 'none');
 
-    // Funcionário sempre visível
-    document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
+    // Mostra menus básicos por papel
+    if (role === 'funcionario') document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
+    if (role === 'dono') document.querySelectorAll('.menu-func, .menu-dono').forEach(el => el.style.display = 'flex');
+    if (role === 'admin') document.querySelectorAll('.menu-func, .menu-dono, .menu-admin, .menu-permissoes').forEach(el => el.style.display = 'flex');
 
-    if (role === 'dono') {
-        document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
-    }
-
-    if (role === 'admin') {
-        document.querySelectorAll('.menu-dono, .menu-admin, .menu-permissoes').forEach(el => el.style.display = 'flex');
+    // Busca permissões globais
+    try {
+        const ref = doc(db, "configuracoesGlobais", "permissoes");
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+            const permissoesGlobais = snap.data();
+            Object.entries(permissoesGlobais).forEach(([menu, roles]) => {
+                if (roles[role] === true) {
+                    const el = document.querySelector(`[data-menu="${menu}"]`);
+                    if (el) el.style.display = 'flex';
+                }
+            });
+        }
+    } catch(e) {
+        console.error("[menu-lateral] erro ao buscar permissões globais:", e);
     }
 }
 
@@ -39,14 +45,11 @@ export function setupMenuFeatures() {
         });
     }
 
-    // Destaca link ativo
-    try {
-        const currentPage = window.location.pathname;
-        document.querySelectorAll('#sidebar-links a').forEach(link => {
-            const linkPath = new URL(link.href, window.location.origin).pathname;
-            link.classList.toggle('active', linkPath === currentPage);
-        });
-    } catch (e) { console.warn("[menu-lateral] erro ao marcar link ativo:", e); }
+    const currentPage = window.location.pathname;
+    document.querySelectorAll('#sidebar-links a').forEach(link => {
+        const linkPath = new URL(link.href, window.location.origin).pathname;
+        link.classList.toggle('active', linkPath === currentPage);
+    });
 }
 
 // --- Inicialização principal ---
@@ -59,27 +62,22 @@ export function setupMenuFeatures() {
     if (!placeholder) return;
 
     try {
-        // Carrega menu via fetch se houver HTML externo
+        // Carrega menu externo
         const response = await fetch('menu-lateral.html');
         if (!response.ok) throw new Error("Falha ao carregar menu-lateral.html");
         placeholder.innerHTML = await response.text();
 
-        // Espera o menu estar no DOM antes de manipular
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        // Pega usuário atual
+        // Usuário atual
         const user = auth.currentUser;
         let perfil = {};
         if (user) {
             const empresaId = localStorage.getItem("empresaAtivaId");
             if (empresaId) {
-                try {
-                    const profRef = doc(db, "empresas", empresaId, "profissionais", user.uid);
-                    const profSnap = await getDoc(profRef);
-                    perfil = profSnap.exists() ? profSnap.data() : {};
-                } catch(e) {
-                    console.error("[menu-lateral] erro ao buscar perfil:", e);
-                }
+                const profRef = doc(db, "empresas", empresaId, "profissionais", user.uid);
+                const profSnap = await getDoc(profRef);
+                perfil = profSnap.exists() ? profSnap.data() : {};
             }
         }
 
@@ -88,13 +86,12 @@ export function setupMenuFeatures() {
         if (user?.uid === ADMIN_UID) papel = 'admin';
         else if (perfil?.ehDono === true) papel = 'dono';
 
-        // Atualiza visibilidade e configurações
-        updateMenuVisibility(papel);
+        // Atualiza menu com permissões globais
+        await updateMenuVisibility(papel);
         setupMenuFeatures();
 
-        // Dispara evento global para páginas que dependem da sessão
-        const sessionEvent = new CustomEvent('pronti:session-loaded', { detail: { userSession: { user, perfil } } });
-        document.dispatchEvent(sessionEvent);
+        // Dispara evento global
+        document.dispatchEvent(new CustomEvent('pronti:session-loaded', { detail: { userSession: { user, perfil } } }));
 
     } catch (err) {
         console.error("[menu-lateral] erro na inicialização:", err);
