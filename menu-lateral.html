@@ -1,91 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronti - Sistema</title>
+    <style>
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+            min-height: 100vh;
+            color: #fff;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding-top: 24px;
+            box-sizing: border-box;
+        }
+        .sidebar-brand {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #fff;
+            text-decoration: none;
+            letter-spacing: 2px;
+            padding: 0 32px 12px 32px;
+            display: block;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .sidebar hr {
+            margin: 0 32px 16px 32px;
+            border: none;
+            border-top: 1px solid #787cff55;
+        }
+        /* AJUSTE: O container '.sidebar-links' agora é uma lista <ul> */
+        .sidebar-links {
+            list-style-type: none;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 0 24px;
+            flex-grow: 1; 
+        }
+        .sidebar-links li {
+            /* Este elemento agora recebe o 'display: none' do JS */
+        }
+        .sidebar-links a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            color: #4f46e5;
+            font-weight: 600;
+            font-size: 1.08em;
+            border-radius: 10px;
+            margin-bottom: 0;
+            box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+            transition: background 0.17s, color 0.18s, box-shadow 0.18s;
+            padding: 12px 18px;
+            text-align: left;
+            text-decoration: none;
+            letter-spacing: 0.01em;
+            border: 2px solid transparent;
+        }
+        /* AJUSTE: A classe '.active' agora é aplicada no <li> pai */
+        .sidebar-links li.active a, .sidebar-links a:focus {
+            background: #4f46e5;
+            color: #fff;
+            font-weight: 700;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+            outline: none;
+        }
+        .sidebar-links a:hover:not(.active) {
+            background: #f0f1ff;
+            color: #3b2fd6;
+            border-color: #d1d5fa;
+        }
+        .sidebar-footer {
+            margin-top: auto; 
+            padding: 32px 32px 24px 32px;
+        }
+        .btn-logout {
+            background: #fff;
+            color: #4f46e5;
+            border: none;
+            padding: 12px 0;
+            width: 100%;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.05em;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+            border: 2px solid transparent;
+            outline: none;
+        }
+        .btn-logout:hover, .btn-logout:focus {
+            background: #4f46e5;
+            color: #fff;
+            border: 2px solid #fff;
+        }
+        @media (max-width: 900px) {
+            /* As media queries funcionarão normalmente com a nova estrutura */
+            .sidebar {
+                width: 100%; 
+                min-height: auto;
+                position: static;
+                flex-direction: row;
+                align-items: center; 
+                padding: 10px 8px; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                font-size: 0.95em;
+                flex-wrap: wrap; 
+            }
+            .sidebar-brand { font-size: 1.4rem; padding: 0 10px; margin: 0; }
+            .sidebar hr { display: none; }
+            .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; flex-grow: 1; justify-content: flex-start; }
+            .sidebar-links a { font-size: 1em; padding: 8px 12px; }
+            .sidebar-links a span:last-child { display: none; } /* Esconde o texto */
+            .sidebar-footer { padding: 0 8px; margin: 0; margin-left: auto; }
+            .btn-logout { padding: 8px 16px; font-size: 1em; }
+        }
+        @media (max-width: 768px) {
+            .sidebar-links a { padding: 8px; font-size: 0; }
+            .sidebar-links a span:first-child { display: inline-block; font-size: 1.2rem; } /* Mostra só o ícone */
+        }
+    </style>
+</head>
+<body>
+
 <aside class="sidebar" id="sidebar">
-  <a href="index.html" class="sidebar-brand">Pronti</a>
-  <hr />
-  <nav class="sidebar-links" id="sidebar-links">
-    <!-- Funcionário -->
-    <a href="index.html" class="menu-func" data-menu="inicio"><span>🏠</span> Início</a>
-    <a href="agenda.html" class="menu-func" data-menu="agenda"><span>📅</span> Agenda</a>
-    <a href="equipe.html" class="menu-func" data-menu="equipe"><span>👥</span> Equipe</a>
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    
+    <ul class="sidebar-links" id="sidebar-links">
+        <li data-menu-id="dashboard"><a href="dashboard.html"><span>📊</span> <span>Dashboard</span></a></li>
+        <li data-menu-id="agenda"><a href="agenda.html"><span>📅</span> <span>Agenda</span></a></li>
+        <li data-menu-id="equipe"><a href="equipe.html"><span>👥</span> <span>Equipe</span></a></li>
+        <li data-menu-id="servicos"><a href="servicos.html"><span>🛠️</span> <span>Serviços</span></a></li>
+        <li data-menu-id="clientes"><a href="clientes.html"><span>👤</span> <span>Clientes</span></a></li>
+        <li data-menu-id="relatorios"><a href="relatorios.html"><span>📈</span> <span>Relatórios</span></a></li>
+        <li data-menu-id="perfil"><a href="perfil.html"><span>🙍‍♂️</span> <span>Meu Perfil</span></a></li>
+        <li data-menu-id="administracao"><a href="admin.html"><span>🔒</span> <span>Administração</span></a></li>
+        <li data-menu-id="permissoes"><a href="permissoes.html"><span>⚙️</span> <span>Permissões</span></a></li>
+    </ul>
 
-    <!-- Dono -->
-    <a href="dashboard.html" class="menu-dono" data-menu="dashboard"><span>📊</span> Dashboard</a>
-    <a href="servicos.html" class="menu-dono" data-menu="servicos"><span>🛠️</span> Serviços</a>
-    <a href="clientes.html" class="menu-dono" data-menu="clientes"><span>👤</span> Clientes</a>
-    <a href="perfil.html" class="menu-dono" data-menu="perfil"><span>🙍‍♂️</span> Meu Perfil</a>
-    <a href="relatorios.html" class="menu-dono" data-menu="relatorios"><span>📈</span> Relatórios</a>
-
-    <!-- Admin (somente visível para Admin) -->
-    <a href="admin-clientes.html" class="menu-admin" data-menu="admin-clientes" style="display:none;"><span>🔒</span> Administração</a>
-    <a href="permissoes.html" class="menu-permissoes" data-menu="permissoes" style="display:none;"><span>⚙️</span> Permissões</a>
-  </nav>
-
-  <div class="sidebar-footer">
-    <button id="btn-logout" class="btn-logout">Sair</button>
-  </div>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
 </aside>
 
-<style>
-.sidebar { width: 240px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%); min-height: 100vh; color: #fff; position: fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; padding-top:20px; }
-.sidebar-brand { font-size:1.8rem; font-weight:900; color:#fff; text-decoration:none; padding:0 24px 12px; display:block; }
-.sidebar-links { display:flex; flex-direction:column; gap:8px; padding:0 16px; flex-grow:1; }
-.sidebar-links a { display:flex; align-items:center; gap:10px; background:#fff; color:#4f46e5; font-weight:600; padding:12px 14px; border-radius:8px; text-decoration:none; transition:all 0.2s ease; }
-.sidebar-links a.active { background:#4f46e5; color:#fff; }
-.sidebar-links a:hover { background:#eef; }
-.sidebar-footer { padding:16px; }
-.btn-logout { width:100%; background:#fff; color:#4f46e5; padding:12px; border:none; border-radius:8px; font-weight:bold; cursor:pointer; }
-.btn-logout:hover { background:#4f46e5; color:#fff; }
-</style>
 
 <script type="module">
-import { auth } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { verificarAcesso } from "./userService.js";
+    import { auth, db } from "./firebase-config.js";
+    import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { verificarAcesso } from "./userService.js";
 
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+    function setupMenuFeatures() {
+        const btnLogout = document.getElementById("btn-logout");
+        if (btnLogout && !btnLogout.dataset.listenerAttached) {
+            btnLogout.dataset.listenerAttached = 'true';
+            btnLogout.addEventListener("click", () => {
+                signOut(auth).then(() => {
+                    localStorage.clear();
+                    window.location.href = "login.html";
+                }).catch(err => console.error("❌ Erro ao deslogar:", err));
+            });
+        }
+        const currentPage = window.location.pathname;
+        document.querySelectorAll('#sidebar-links a').forEach(link => {
+            const linkPath = new URL(link.href, window.location.origin).pathname;
+            if (linkPath === currentPage) {
+                link.closest('li')?.classList.add('active');
+            }
+        });
+    }
 
-// --- Configura botão logout ---
-function setupLogout() {
-  const btn = document.getElementById("btn-logout");
-  if (!btn) return;
-  if (!btn.dataset.listenerAttached) {
-    btn.dataset.listenerAttached = "true";
-    btn.addEventListener("click", () => {
-      signOut(auth).then(() => {
-        localStorage.clear();
-        window.location.href = "login.html";
-      }).catch(err => console.error("Erro ao deslogar:", err));
-    });
-  }
-}
+    async function updateMenuWithPermissions() {
+        try {
+            const sessao = await verificarAcesso();
+            const papelUsuario = sessao.perfil.papel;
+            const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
+            const permissoesSnap = await getDoc(permissoesRef);
+            const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
+            const menuItems = document.querySelectorAll('[data-menu-id]');
+            
+            menuItems.forEach(item => {
+                const menuId = item.dataset.menuId;
+                const regraParaMenu = regrasGlobais[menuId];
+                if (regraParaMenu && regraParaMenu[papelUsuario] === true) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        } catch (error) {
+            console.error("❌ Erro ao aplicar permissões no menu:", error);
+        }
+    }
 
-// --- Atualiza menu ---
-async function updateMenu(userSession) {
-  const isAdmin = userSession?.user?.uid === ADMIN_UID;
-
-  // Todos menus visíveis
-  document.querySelectorAll(".menu-func, .menu-dono").forEach(el => el.style.display = "flex");
-
-  // Menus exclusivos de Admin
-  document.querySelectorAll(".menu-admin, .menu-permissoes")
-          .forEach(el => el.style.display = isAdmin ? "flex" : "none");
-
-  // Destaca link ativo
-  const currentPage = window.location.pathname;
-  document.querySelectorAll("#sidebar-links a").forEach(link => {
-    const linkPage = new URL(link.href, window.location.origin).pathname;
-    link.classList.toggle("active", linkPage === currentPage);
-  });
-}
-
-// --- Inicialização ---
-(async function inicializarMenu() {
-  setupLogout();
-  try {
-    const userSession = await verificarAcesso();
-    await updateMenu(userSession);
-  } catch (err) {
-    console.error("Erro inicializando menu lateral:", err);
-    window.location.href = "login.html";
-  }
-})();
+    (async () => {
+        try {
+            document.querySelectorAll('[data-menu-id]').forEach(el => el.style.display = 'none');
+            await updateMenuWithPermissions();
+            setupMenuFeatures();
+        } catch (err) {
+            console.error("❌ Erro fatal inicializando menu lateral:", err);
+        }
+    })();
 </script>
+
+</body>
+</html>
