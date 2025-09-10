@@ -3,22 +3,20 @@
   <hr />
   <nav class="sidebar-links" id="sidebar-links">
     <!-- Funcionário -->
-    <a href="index.html" class="menu-func"><span>🏠</span> Início</a>
-    <a href="agenda.html" class="menu-func"><span>📅</span> Agenda</a>
-    <a href="equipe.html" class="menu-func"><span>👥</span> Equipe</a>
+    <a href="index.html" class="menu-func" data-menu="inicio"><span>🏠</span> Início</a>
+    <a href="agenda.html" class="menu-func" data-menu="agenda"><span>📅</span> Agenda</a>
+    <a href="equipe.html" class="menu-func" data-menu="equipe"><span>👥</span> Equipe</a>
 
     <!-- Dono -->
-    <a href="dashboard.html" class="menu-dono" style="display:none;"><span>📊</span> Dashboard</a>
-    <a href="servicos.html" class="menu-dono" style="display:none;"><span>🛠️</span> Serviços</a>
-    <a href="clientes.html" class="menu-dono" style="display:none;"><span>👤</span> Clientes</a>
-    <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
-    <a href="relatorios.html" class="menu-dono" style="display:none;"><span>📈</span> Relatórios</a>
+    <a href="dashboard.html" class="menu-dono" data-menu="dashboard"><span>📊</span> Dashboard</a>
+    <a href="servicos.html" class="menu-dono" data-menu="servicos"><span>🛠️</span> Serviços</a>
+    <a href="clientes.html" class="menu-dono" data-menu="clientes"><span>👤</span> Clientes</a>
+    <a href="perfil.html" class="menu-dono" data-menu="perfil"><span>🙍‍♂️</span> Meu Perfil</a>
+    <a href="relatorios.html" class="menu-dono" data-menu="relatorios"><span>📈</span> Relatórios</a>
 
-    <!-- Admin -->
-    <a href="admin-clientes.html" class="menu-admin" style="display:none;"><span>🔒</span> Administração</a>
-
-    <!-- Novo Menu Permissões (apenas Admin) -->
-    <a href="permissoes.html" class="menu-permissoes" style="display:none;"><span>⚙️</span> Permissões</a>
+    <!-- Admin (somente visível para Admin) -->
+    <a href="admin-clientes.html" class="menu-admin" data-menu="admin-clientes" style="display:none;"><span>🔒</span> Administração</a>
+    <a href="permissoes.html" class="menu-permissoes" data-menu="permissoes" style="display:none;"><span>⚙️</span> Permissões</a>
   </nav>
 
   <div class="sidebar-footer">
@@ -39,58 +37,11 @@
 </style>
 
 <script type="module">
-import { auth, db } from "./firebase-config.js";
+import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { verificarAcesso } from "./userService.js";
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-
-// --- Atualiza visibilidade do menu com permissões do Firestore ---
-async function updateMenuComPermissoes(userSession) {
-  let papel = "funcionario";
-  if (userSession?.perfil && userSession?.user) {
-    const { perfil, user } = userSession;
-    if (user.uid === ADMIN_UID) papel = "admin";
-    else if (perfil.ehDono === true) papel = "dono";
-  }
-
-  // Esconde todos
-  document.querySelectorAll(".menu-func, .menu-dono, .menu-admin, .menu-permissoes").forEach(el => el.style.display="none");
-
-  // Mostra menus básicos por papel
-  if (papel === "funcionario") {
-    document.querySelectorAll(".menu-func").forEach(el => el.style.display="flex");
-  } else if (papel === "dono") {
-    document.querySelectorAll(".menu-func, .menu-dono").forEach(el => el.style.display="flex");
-  } else if (papel === "admin") {
-    document.querySelectorAll(".menu-func, .menu-dono, .menu-admin, .menu-permissoes").forEach(el => el.style.display="flex");
-  }
-
-  // Busca permissões globais opcionais
-  try {
-    const cfgRef = doc(db, "configuracoesGlobais", "permissoes");
-    const snap = await getDoc(cfgRef);
-    if (snap.exists()) {
-      const permissoesGlobais = snap.data();
-      Object.entries(permissoesGlobais).forEach(([menu, roles]) => {
-        if (roles[papel] === true) {
-          const el = document.querySelector(`[data-menu="${menu}"]`);
-          if (el) el.style.display = "flex";
-        }
-      });
-    }
-  } catch(e) {
-    console.error("Erro ao buscar permissões globais:", e);
-  }
-
-  // Destaca link ativo
-  const currentPage = window.location.pathname;
-  document.querySelectorAll("#sidebar-links a").forEach(link => {
-    const linkPage = new URL(link.href, window.location.origin).pathname;
-    link.classList.toggle("active", linkPage === currentPage);
-  });
-}
 
 // --- Configura botão logout ---
 function setupLogout() {
@@ -107,16 +58,34 @@ function setupLogout() {
   }
 }
 
+// --- Atualiza menu ---
+async function updateMenu(userSession) {
+  const isAdmin = userSession?.user?.uid === ADMIN_UID;
+
+  // Todos menus visíveis
+  document.querySelectorAll(".menu-func, .menu-dono").forEach(el => el.style.display = "flex");
+
+  // Menus exclusivos de Admin
+  document.querySelectorAll(".menu-admin, .menu-permissoes")
+          .forEach(el => el.style.display = isAdmin ? "flex" : "none");
+
+  // Destaca link ativo
+  const currentPage = window.location.pathname;
+  document.querySelectorAll("#sidebar-links a").forEach(link => {
+    const linkPage = new URL(link.href, window.location.origin).pathname;
+    link.classList.toggle("active", linkPage === currentPage);
+  });
+}
+
 // --- Inicialização ---
 (async function inicializarMenu() {
   setupLogout();
   try {
     const userSession = await verificarAcesso();
-    const event = new CustomEvent("pronti:session-loaded", { detail:{ userSession } });
-    document.dispatchEvent(event);
-    await updateMenuComPermissoes(userSession);
-  } catch(err) {
-    console.error("Erro inicializando menu:", err);
+    await updateMenu(userSession);
+  } catch (err) {
+    console.error("Erro inicializando menu lateral:", err);
+    window.location.href = "login.html";
   }
 })();
 </script>
