@@ -1,6 +1,3 @@
-<!-- ====================================================================== -->
-<!--   PERMISSOES.HTML  (Apenas Admin)                                     -->
-<!-- ====================================================================== -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -24,7 +21,8 @@
       "clientes",
       "perfil",
       "relatorios",
-      "dashboard"
+      "dashboard",
+      "permissoes" // incluído para o Admin
     ];
 
     let permissoesAtuais = {};
@@ -33,6 +31,18 @@
       const ref = doc(db, "configuracoesGlobais", "permissoes");
       const snap = await getDoc(ref);
       permissoesAtuais = snap.exists() ? snap.data() : {};
+
+      // Preenche todas as permissões marcadas por padrão se não existir no Firestore
+      menus.forEach(menu => {
+        if (!permissoesAtuais[menu]) {
+          permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
+        } else {
+          permissoesAtuais[menu].funcionario = permissoesAtuais[menu].funcionario ?? true;
+          permissoesAtuais[menu].dono = permissoesAtuais[menu].dono ?? true;
+          permissoesAtuais[menu].admin = permissoesAtuais[menu].admin ?? true;
+        }
+      });
+
       renderTabela();
     }
 
@@ -40,8 +50,9 @@
       permissoesTabela.innerHTML = menus.map(menu => `
         <tr>
           <td>${menu}</td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu]?.funcionario ? "checked" : ""}></td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu]?.dono ? "checked" : ""}></td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
         </tr>
       `).join("");
     }
@@ -76,18 +87,20 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background: #f4f4f4; }
-    button { margin-top: 20px; padding: 10px 20px; }
+    button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
+    input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
   </style>
 </head>
 <body>
   <h2>Permissões Globais de Menu</h2>
-  <p>Defina quais menus cada papel (Funcionário / Dono) pode acessar em TODAS as empresas.</p>
+  <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
   <table>
     <thead>
       <tr>
         <th>Menu</th>
         <th>Funcionário</th>
         <th>Dono</th>
+        <th>Admin</th>
       </tr>
     </thead>
     <tbody id="permissoes-tabela"></tbody>
