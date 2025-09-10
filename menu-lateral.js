@@ -1,4 +1,8 @@
-// menu-lateral.js
+// ======================================================================
+// MENU-LATERAL.JS
+// Gerencia o menu lateral, logout e permissões
+// ======================================================================
+
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { verificarAcesso } from './userService.js';
@@ -16,9 +20,8 @@ export async function ativarMenu() {
                 await signOut(auth);
                 localStorage.clear();
                 window.location.href = 'login.html';
-            } catch (err) {
-                console.error('Erro ao sair:', err);
-                alert('Erro ao sair. Tente novamente.');
+            } catch {
+                alert('Erro ao sair');
             }
         });
     }
@@ -40,32 +43,22 @@ export async function ativarMenu() {
             const menuId = link.dataset.menuId;
             if (!menuId) return;
 
-            // Funcionário: esconde menus restritos
+            // Funcionario: só vê menus gerais
             if (papel === 'funcionario' && ['servicos','clientes','perfil','relatorios','administracao','permissoes'].includes(menuId)) {
                 link.style.display = 'none';
             }
 
-            // Dono: esconde menus admin
+            // Dono: não vê menus admin
             if (papel === 'dono' && ['administracao','permissoes'].includes(menuId)) {
                 link.style.display = 'none';
             }
 
-            // Admin: vê tudo
+            // Admin: vê todos os menus
             if (papel === 'admin') {
                 link.style.display = '';
             }
         });
     } catch(e) {
         console.error('Erro ao aplicar permissões do menu:', e);
-        // Se erro, esconde todos os menus menos o básico
-        links.forEach(link => {
-            const menuId = link.dataset.menuId;
-            if (['inicio','agenda','equipe'].includes(menuId)) {
-                link.style.display = '';
-            } else {
-                link.style.display = 'none';
-            }
-        });
     }
 }
-
