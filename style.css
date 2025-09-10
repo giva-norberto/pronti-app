@@ -579,3 +579,7 @@ textarea.form-input:focus {
 @media (max-width: 600px) {
   .card-empty-empresa { padding: 1.1rem 0.5rem; max-width: 96vw; }
 }
+/* Adicione esta classe ao seu CSS principal (ex: style.css) */
+.hidden {
+    display: none !important;
+}
