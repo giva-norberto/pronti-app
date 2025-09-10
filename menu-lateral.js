@@ -1,25 +1,40 @@
-// Exemplo: controle de permissões do menu lateral
-
-// 1. Pegue o perfil do usuário do localStorage
+// PEGUE O PERFIL DO USUÁRIO (ex: 'admin', 'funcionario', 'cliente', etc)
 const perfil = localStorage.getItem('perfil');
 
-// 2. Esconda/mostre itens conforme perfil
+// PERMISSÕES DOS MENUS
 if (perfil !== 'admin') {
-  // Esconde Administração e Permissões para quem NÃO é admin
-  const adminItem = document.querySelector('[data-menu-id="administracao"]');
-  const permissoesItem = document.querySelector('[data-menu-id="permissoes"]');
-  if (adminItem) adminItem.style.display = 'none';
-  if (permissoesItem) permissoesItem.style.display = 'none';
+  // Só admin vê Administração e Permissões
+  document.querySelector('[data-menu-id="administracao"]')?.classList.add('hidden');
+  document.querySelector('[data-menu-id="permissoes"]')?.classList.add('hidden');
+}
+if (perfil !== 'admin' && perfil !== 'funcionario') {
+  // Só admin e funcionario veem Relatórios
+  document.querySelector('[data-menu-id="relatorios"]')?.classList.add('hidden');
 }
 
-// Exemplo: funcionário não vê relatórios
-if (perfil === 'funcionario') {
-  const relatoriosItem = document.querySelector('[data-menu-id="relatorios"]');
-  if (relatoriosItem) relatoriosItem.style.display = 'none';
+// Você pode adicionar mais regras conforme quiser
+// Exemplo: se cliente, esconde serviços
+if (perfil === 'cliente') {
+  document.querySelector('[data-menu-id="servicos"]')?.classList.add('hidden');
 }
 
-// 3. Botão sair
-document.getElementById("btn-logout")?.addEventListener("click", () => {
-    localStorage.clear();
-    window.location.href = "login.html";
+// MARCA O MENU ATIVO (baseado na URL atual)
+const urlAtual = window.location.pathname.split('/').pop();
+document.querySelectorAll('.sidebar-links a').forEach(link => {
+  if (link.getAttribute('href') === urlAtual) {
+    link.classList.add('active');
+  }
 });
+
+// BOTÃO SAIR
+document.getElementById("btn-logout")?.addEventListener("click", () => {
+  localStorage.clear();
+  window.location.href = "login.html";
+});
+
+// CSS OPCIONAL para esconder menus (adicione ao menu-lateral.html, se ainda não tiver)
+const style = document.createElement('style');
+style.innerHTML = `
+  .hidden { display: none !important; }
+`;
+document.head.appendChild(style);
