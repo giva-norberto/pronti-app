@@ -1,24 +1,30 @@
-// PEGUE O PERFIL DO USUÁRIO (ex: 'admin', 'funcionario', 'cliente', etc)
-const perfil = localStorage.getItem('perfil');
+// Adiciona uma classe CSS para esconder, se não houver no seu CSS
+(function() {
+  if (!document.querySelector('style[data-permissao]')) {
+    const style = document.createElement('style');
+    style.setAttribute('data-permissao', 'true');
+    style.innerHTML = `.hidden { display: none !important; }`;
+    document.head.appendChild(style);
+  }
+})();
 
-// PERMISSÕES DOS MENUS
+// Pega o perfil do usuário do localStorage (ajuste conforme seu sistema)
+const perfil = localStorage.getItem('perfil'); // Exemplo: 'admin', 'funcionario', 'cliente'
+
+// Esconde/mostra itens do menu conforme o perfil
 if (perfil !== 'admin') {
-  // Só admin vê Administração e Permissões
   document.querySelector('[data-menu-id="administracao"]')?.classList.add('hidden');
   document.querySelector('[data-menu-id="permissoes"]')?.classList.add('hidden');
 }
 if (perfil !== 'admin' && perfil !== 'funcionario') {
-  // Só admin e funcionario veem Relatórios
   document.querySelector('[data-menu-id="relatorios"]')?.classList.add('hidden');
 }
-
-// Você pode adicionar mais regras conforme quiser
-// Exemplo: se cliente, esconde serviços
+// Exemplo extra: cliente não pode ver serviços
 if (perfil === 'cliente') {
   document.querySelector('[data-menu-id="servicos"]')?.classList.add('hidden');
 }
 
-// MARCA O MENU ATIVO (baseado na URL atual)
+// Marca como ativo o menu da página atual (baseado na URL)
 const urlAtual = window.location.pathname.split('/').pop();
 document.querySelectorAll('.sidebar-links a').forEach(link => {
   if (link.getAttribute('href') === urlAtual) {
@@ -26,15 +32,8 @@ document.querySelectorAll('.sidebar-links a').forEach(link => {
   }
 });
 
-// BOTÃO SAIR
+// Botão sair: limpa localStorage e redireciona para login
 document.getElementById("btn-logout")?.addEventListener("click", () => {
   localStorage.clear();
   window.location.href = "login.html";
 });
-
-// CSS OPCIONAL para esconder menus (adicione ao menu-lateral.html, se ainda não tiver)
-const style = document.createElement('style');
-style.innerHTML = `
-  .hidden { display: none !important; }
-`;
-document.head.appendChild(style);
