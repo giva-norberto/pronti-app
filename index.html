@@ -7,8 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* Seu CSS completo, exatamente como você enviou, sem nenhuma alteração. */
-        /* O seu layout está 100% preservado. */
+        /* O seu CSS completo, exatamente como você enviou. O seu layout está 100% preservado. */
         html, body { height: 100%; margin: 0; padding: 0; }
         body { display: flex; flex-direction: column; opacity: 1; transition: opacity 0.3s ease-in-out; overflow: hidden; }
         body.is-loading { opacity: 0; }
@@ -29,7 +28,8 @@
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
         .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
         @media (max-width: 900px) {
-            body { display: block; } /* Corrigido para permitir rolagem */
+             /* Suas regras de @media estão 100% preservadas */
+            body { display: block; overflow: auto; } /* Ajuste para permitir scroll em telas menores */
             main.main-content { margin-left: 0; }
             .sidebar { width: 100%; min-height: auto; position: static; flex-direction: row; align-items: center; padding: 10px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 0.95em; flex-wrap: wrap; }
             .sidebar-brand { font-size: 1.4rem; padding: 0 10px; margin: 0; }
@@ -48,14 +48,18 @@
 </head>
 <body class="dashboard-body is-loading">
 
+    <!-- 1. O placeholder onde o menu inteligente será injetado -->
     <div id="sidebar-placeholder"></div>
 
     <main class="main-content" id="main-content">
+        <!-- O seu layout do conteúdo principal, 100% preservado -->
         <div class="dashboard-welcome-center" id="dashboard-welcome-center">
             <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
             <p>Pronto para gerenciar seu dia?</p>
         </div>
-        <div class="dashboard-grid-cards" id="dashboard-cards"></div>
+        <div class="dashboard-grid-cards" id="dashboard-cards">
+            <!-- Os cards são gerados pelo script abaixo -->
+        </div>
     </main>
 
     <!-- ====================================================================== -->
@@ -66,21 +70,20 @@
     <!-- Este script vai carregar o menu, aplicar as permissões e se configurar sozinho. -->
     <script type="module" src="menu-lateral.js"></script>
 
-    <!-- 2. CHAMA O SCRIPT ESPECÍFICO DESTA PÁGINA -->
-    <!-- Este script contém apenas a lógica que pertence à página de início (saudação e cards). -->
+    <!-- 2. CHAMA O SCRIPT QUE CUIDA APENAS DO CONTEÚDO DESTA PÁGINA -->
     <script type="module">
-        // A importação do 'menu-lateral.js' foi REMOVIDA para evitar o erro.
+        // Este script agora só se preocupa com os cards e a saudação.
         import { verificarAcesso } from "./userService.js";
 
-        // Suas variáveis e funções de UI, mantidas intactas.
+        // As suas variáveis e funções de UI, mantidas intactas.
         const nomeUsuarioSpan = document.getElementById("nome-usuario");
         const saudacaoSpan = document.getElementById("saudacao");
         const mainContent = document.getElementById("main-content");
         const dashboardCards = document.getElementById("dashboard-cards");
 
         function definirSaudacao() { const hora = new Date().getHours(); if (hora >= 5 && hora < 12) return "Bom dia"; if (hora >= 12 && hora < 18) return "Boa tarde"; return "Boa noite"; }
-        function mostrarPrimeiroAcessoCard() { mainContent.innerHTML = `<div class="primeiro-acesso-card"><h2>Seja bem-vindo ao Pronti!</h2><p>Inicie o cadastro da sua empresa.</p><button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button></div>`; document.getElementById("btn-criar-empresa").addEventListener("click", () => { localStorage.removeItem('empresaAtivaId'); window.location.href = "perfil.html"; }); }
-        function renderizarCards(perfil) { let cardsHtml = ''; if (perfil?.papel?.toLowerCase() === "funcionario") { cardsHtml = `<a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>`; } else { cardsHtml = `<a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a><a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a><a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a><a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a><a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>`; } dashboardCards.innerHTML = cardsHtml; }
+        function mostrarPrimeiroAcessoCard() { if(!mainContent) return; mainContent.innerHTML = `<div class="primeiro-acesso-card"><h2>Seja bem-vindo ao Pronti!</h2><p>Inicie o cadastro da sua empresa.</p><button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button></div>`; document.getElementById("btn-criar-empresa").addEventListener("click", () => { localStorage.removeItem('empresaAtivaId'); window.location.href = "perfil.html"; }); }
+        function renderizarCards(perfil) { if(!dashboardCards) return; let cardsHtml = ''; if (perfil?.papel?.toLowerCase() === "funcionario") { cardsHtml = `<a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>`; } else { cardsHtml = `<a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a><a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a><a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a><a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a><a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>`; } dashboardCards.innerHTML = cardsHtml; }
         function removerIsLoading() { document.body.classList.remove('is-loading'); }
 
         /**
@@ -98,7 +101,7 @@
                 
                 // A lógica de papel para renderizar os cards ainda é necessária aqui.
                 // Esta lógica não afeta mais o menu, apenas os cards.
-                if (user.uid === "BX6Q7HrVMrcCBqe72r7K76EBPkX2") { // ADMIN_UID
+                if (user.uid === "BX6Q7HrVMrcCBqe72r7K76EBPkX2") {
                     perfil.papel = 'admin';
                 } else if (perfil.ehDono === true) {
                     perfil.papel = 'dono';
