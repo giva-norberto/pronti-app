@@ -1,4 +1,3 @@
-// Inclua no HTML assim:
 // <script type="module" src="./menu-lateral.js"></script>
 
 import { auth, db } from "./firebase-config.js";
@@ -7,7 +6,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-// --- LOGOUT ---
+// --- BOTÃO SAIR ---
 const btnLogout = document.getElementById("btn-logout");
 if (btnLogout) {
   btnLogout.addEventListener("click", async () => {
@@ -39,14 +38,16 @@ onAuthStateChanged(auth, async (user) => {
   const snap = await getDoc(doc(db, "configuracoesGlobais", "permissoes"));
   const permissoesGlobais = snap.exists() ? snap.data() : {};
 
+  // --- MENUS ---
   menus.forEach(menu => {
-    const menuId = menu.dataset.menuId;
+    const menuId = menu.dataset.menuId; // << pega do HTML
     const acesso = permissoesGlobais[menuId]?.[userRole] ?? true;
-    menu.style.display = acesso ? "block" : "none";
+    menu.style.display = acesso ? "list-item" : "none"; // "list-item" porque é <li>
   });
 
+  // --- CARDS ---
   cards.forEach(card => {
-    const cardMenu = card.dataset.menu;
+    const cardMenu = card.dataset.menu; // << pega do HTML dos cards
     const acesso = permissoesGlobais[cardMenu]?.[userRole] ?? true;
     card.style.display = acesso ? "block" : "none";
   });
