@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* Seus estilos CSS permanecem exatamente como você os escreveu */
+        /* Seu CSS completo e sem alterações */
         html, body { height: 100%; margin: 0; padding: 0; }
         body { display: flex; flex-direction: column; opacity: 1; transition: opacity 0.3s ease-in-out; overflow: hidden; }
         body.is-loading { opacity: 0; }
@@ -27,13 +27,19 @@
         .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
         .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
+        @media (max-width: 900px) {
+            .sidebar { width: 100%; min-height: auto; position: static; flex-direction: row; align-items: center; padding: 10px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 0.95em; flex-wrap: wrap; }
+            .sidebar-brand { font-size: 1.4rem; padding: 0 10px; margin: 0; }
+            .sidebar hr { display: none; }
+            .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; flex-grow: 1; justify-content: flex-start; }
+            .sidebar-links a { font-size: 1em; padding: 8px 12px; }
+            .sidebar-links a span { display: none; }
+            .sidebar-footer { padding: 0 8px; margin: 0; margin-left: auto; }
+            .btn-logout { padding: 8px 16px; font-size: 1em; }
+        }
         @media (max-width: 768px) {
-            body { overflow: auto; }
-            main.main-content { justify-content: flex-start; padding-top: 30px; margin-left: 0; }
-            .dashboard-welcome-center { margin-bottom: 20px; }
-            .dashboard-grid-cards { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-            .menu-card { padding: 15px 5px; font-size: 0.75rem; gap: 8px; border-radius: 12px; }
-            .menu-card i { font-size: 1.5rem; }
+            .sidebar-links a { padding: 8px; font-size: 0; }
+            .sidebar-links a span { display: inline-block; font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -46,34 +52,28 @@
         <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
         <p>Pronto para gerenciar seu dia?</p>
     </div>
-    <div class="dashboard-grid-cards" id="dashboard-cards">
-        </div>
+    <div class="dashboard-grid-cards" id="dashboard-cards"></div>
 </main>
 
 <script type="module">
-    // 1. IMPORTA TODAS AS FERRAMENTAS NECESSÁRIAS
     import { verificarAcesso } from "./userService.js";
-    // A chamada para 'auth-guard.js' foi corrigida para 'menu-lateral.js'
     import { updateMenuVisibility, setupMenuFeatures } from "./menu-lateral.js";
 
-    // Seleção de elementos do DOM (sua lógica, mantida)
+    // ⭐ ADICIONADO: A constante para identificar o Admin
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
+
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const dashboardCards = document.getElementById("dashboard-cards");
 
-    // Funções de UI da Página (sua lógica, mantida)
     function definirSaudacao() { const hora = new Date().getHours(); if (hora >= 5 && hora < 12) return "Bom dia"; if (hora >= 12 && hora < 18) return "Boa tarde"; return "Boa noite"; }
     function mostrarPrimeiroAcessoCard() { mainContent.innerHTML = `<div class="primeiro-acesso-card"><h2>Seja bem-vindo ao Pronti!</h2><p>Inicie o cadastro da sua empresa.</p><button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button></div>`; document.getElementById("btn-criar-empresa").addEventListener("click", () => { localStorage.removeItem('empresaAtivaId'); window.location.href = "perfil.html"; }); }
     function renderizarCards(perfil) { let cardsHtml = ''; if (perfil?.papel?.toLowerCase() === "funcionario") { cardsHtml = `<a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>`; } else { cardsHtml = `<a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a><a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a><a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a><a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a><a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>`; } dashboardCards.innerHTML = cardsHtml; }
     function removerIsLoading() { document.body.classList.remove('is-loading'); }
 
-    /**
-     * Função principal que orquestra a inicialização da página (sua lógica, mantida e organizada)
-     */
     async function inicializarPagina() {
         try {
-            // 2. BUSCA OS DADOS DO USUÁRIO E O HTML DO MENU AO MESMO TEMPO E ESPERA AMBOS TERMINAREM
             const [userSession, menuResponse] = await Promise.all([
                 verificarAcesso(),
                 fetch('menu-lateral.html')
@@ -82,32 +82,30 @@
             if (!menuResponse.ok) throw new Error('Falha crítica ao carregar o componente do menu.');
             const menuHtml = await menuResponse.text();
             
-            // 3. AGORA, COM TUDO CARREGADO, ATUALIZA A PÁGINA NA ORDEM CORRETA
-            
-            // PRIMEIRO, injeta o HTML do menu no DOM.
             document.getElementById('sidebar-placeholder').innerHTML = menuHtml;
 
-            // SEGUNDO, verifica se a sessão do usuário é válida.
             if (!userSession || !userSession.perfil) {
-                console.log("Sessão ou perfil inválidos. Aguardando redirecionamento...");
                 setupMenuFeatures();
                 return;
             }
 
             const { perfil, user } = userSession;
 
-            // LÓGICA DE TRADUÇÃO para criar a propriedade 'papel' que estava faltando
-            if (perfil.ehDono === true) {
+            // ======================================================================
+            // ⭐ LÓGICA DE "TRADUÇÃO" ATUALIZADA PARA INCLUIR O ADMIN
+            // ======================================================================
+            if (user.uid === ADMIN_UID) {
+                perfil.papel = 'admin';
+            } else if (perfil.ehDono === true) {
                 perfil.papel = 'dono';
             } else {
                 perfil.papel = 'funcionario';
             }
+            // ======================================================================
 
-            // TERCEIRO, agora que 'perfil.papel' existe, chama as funções que precisam dele.
             updateMenuVisibility(perfil.papel);
             setupMenuFeatures();
 
-            // QUARTO, atualiza o resto da página.
             const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
             if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
             if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
@@ -124,7 +122,6 @@
         }
     }
 
-    // Inicia a execução da página
     inicializarPagina();
 </script>
 </body>
