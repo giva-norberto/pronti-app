@@ -1,6 +1,3 @@
-<!-- ====================================================================== -->
-<!--      MENU-LATERAL-UNIFICADO (HTML + CSS + JS em 1 arquivo)             -->
-<!-- ====================================================================== -->
 <aside class="sidebar" id="sidebar">
   <a href="index.html" class="sidebar-brand">Pronti</a>
   <hr />
@@ -19,6 +16,9 @@
 
     <!-- Admin -->
     <a href="admin-clientes.html" class="menu-admin" style="display:none;"><span>🔒</span> Administração</a>
+
+    <!-- Novo Menu Permissões (apenas Admin) -->
+    <a href="permissoes.html" class="menu-permissoes" style="display:none;"><span>⚙️</span> Permissões</a>
   </nav>
 
   <div class="sidebar-footer">
@@ -26,7 +26,6 @@
   </div>
 </aside>
 
-<!-- ====================== CSS embutido ====================== -->
 <style>
 .sidebar {
   width: 240px;
@@ -39,60 +38,16 @@
   flex-direction: column;
   padding-top: 20px;
 }
-.sidebar-brand {
-  font-size: 1.8rem;
-  font-weight: 900;
-  color: #fff;
-  text-decoration: none;
-  padding: 0 24px 12px;
-  display: block;
-}
-.sidebar-links {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0 16px;
-  flex-grow: 1;
-}
-.sidebar-links a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #fff;
-  color: #4f46e5;
-  font-weight: 600;
-  padding: 12px 14px;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-.sidebar-links a.active {
-  background: #4f46e5;
-  color: #fff;
-}
-.sidebar-links a:hover {
-  background: #eef;
-}
-.sidebar-footer {
-  padding: 16px;
-}
-.btn-logout {
-  width: 100%;
-  background: #fff;
-  color: #4f46e5;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.btn-logout:hover {
-  background: #4f46e5;
-  color: #fff;
-}
+.sidebar-brand { font-size: 1.8rem; font-weight: 900; color: #fff; text-decoration: none; padding: 0 24px 12px; display: block; }
+.sidebar-links { display: flex; flex-direction: column; gap: 8px; padding: 0 16px; flex-grow: 1; }
+.sidebar-links a { display: flex; align-items: center; gap: 10px; background: #fff; color: #4f46e5; font-weight: 600; padding: 12px 14px; border-radius: 8px; text-decoration: none; transition: all 0.2s ease; }
+.sidebar-links a.active { background: #4f46e5; color: #fff; }
+.sidebar-links a:hover { background: #eef; }
+.sidebar-footer { padding: 16px; }
+.btn-logout { width: 100%; background: #fff; color: #4f46e5; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+.btn-logout:hover { background: #4f46e5; color: #fff; }
 </style>
 
-<!-- ====================== JS embutido ====================== -->
 <script type="module">
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -102,11 +57,13 @@ const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 // Controla visibilidade por perfil
 function updateMenuVisibility(role) {
-  document.querySelectorAll(".menu-dono, .menu-admin").forEach(el => el.style.display = "none");
+  document.querySelectorAll(".menu-dono, .menu-admin, .menu-permissoes").forEach(el => el.style.display = "none");
   document.querySelectorAll(".menu-func").forEach(el => el.style.display = "flex");
+
   switch (role?.toLowerCase()) {
     case "admin":
-      document.querySelectorAll(".menu-admin").forEach(el => el.style.display = "flex");
+      document.querySelectorAll(".menu-admin, .menu-dono, .menu-permissoes").forEach(el => el.style.display = "flex");
+      break;
     case "dono":
       document.querySelectorAll(".menu-dono").forEach(el => el.style.display = "flex");
       break;
@@ -123,6 +80,7 @@ function setupMenuFeatures() {
       window.location.href = "login.html";
     }));
   }
+
   const currentPage = window.location.pathname;
   document.querySelectorAll("#sidebar-links a").forEach(link => {
     const linkPage = new URL(link.href, window.location.origin).pathname;
@@ -141,12 +99,10 @@ function setupMenuFeatures() {
     let papel = "funcionario";
     if (userSession?.perfil && userSession?.user) {
       const { perfil, user } = userSession;
-      if (user.uid === ADMIN_UID) {
-        papel = "admin";
-      } else if (perfil.ehDono === true) {
-        papel = "dono";
-      }
+      if (user.uid === ADMIN_UID) papel = "admin";
+      else if (perfil.ehDono === true) papel = "dono";
     }
+
     updateMenuVisibility(papel);
     setupMenuFeatures();
   } catch (err) {
