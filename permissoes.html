@@ -28,86 +28,83 @@
   </table>
   <button id="salvar">Salvar</button>
 
+  <!-- 🔥 Script só roda depois do HTML existir -->
   <script type="module">
     import { auth, db } from "./firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-      const permissoesTabela = document.getElementById("permissoes-tabela");
-      const salvarBtn = document.getElementById("salvar");
+    const permissoesTabela = document.getElementById("permissoes-tabela");
+    const salvarBtn = document.getElementById("salvar");
 
-      // Lista de menus controlados
-      const menus = [
-        "inicio",
-        "dashboard",
-        "agenda",
-        "equipe",
-        "servicos",
-        "clientes",
-        "perfil",
-        "relatorios",
-        "administracao",
-        "permissoes"
-      ];
+    const menus = [
+      "inicio",
+      "dashboard",
+      "agenda",
+      "equipe",
+      "servicos",
+      "clientes",
+      "perfil",
+      "relatorios",
+      "administracao",
+      "permissoes"
+    ];
 
-      let permissoesAtuais = {};
+    let permissoesAtuais = {};
 
-      async function carregarPermissoesGlobais() {
-        const ref = doc(db, "configuracoesGlobais", "permissoes");
-        const snap = await getDoc(ref);
-        permissoesAtuais = snap.exists() ? snap.data() : {};
+    async function carregarPermissoesGlobais() {
+      const ref = doc(db, "configuracoesGlobais", "permissoes");
+      const snap = await getDoc(ref);
+      permissoesAtuais = snap.exists() ? snap.data() : {};
 
-        // Garantir que todos os menus existam
-        menus.forEach(menu => {
-          if (!permissoesAtuais[menu]) {
-            permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
-          } else {
-            permissoesAtuais[menu].funcionario ??= true;
-            permissoesAtuais[menu].dono ??= true;
-            permissoesAtuais[menu].admin ??= true;
-          }
-        });
-
-        renderTabela();
-      }
-
-      function renderTabela() {
-        permissoesTabela.innerHTML = menus.map(menu => `
-          <tr>
-            <td>${menu}</td>
-            <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
-            <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
-            <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
-          </tr>
-        `).join("");
-      }
-
-      salvarBtn.addEventListener("click", async () => {
-        const checkboxes = document.querySelectorAll("input[type=checkbox]");
-        const novasPermissoes = {};
-        checkboxes.forEach(chk => {
-          const menu = chk.dataset.menu;
-          const role = chk.dataset.role;
-          if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
-          novasPermissoes[menu][role] = chk.checked;
-        });
-        await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
-        alert("Permissões globais salvas!");
-      });
-
-      onAuthStateChanged(auth, (user) => {
-        if (!user) {
-          window.location.href = "login.html";
-        } else if (user.uid !== ADMIN_UID) {
-          alert("Acesso negado. Apenas Administrador.");
-          window.location.href = "index.html";
+      menus.forEach(menu => {
+        if (!permissoesAtuais[menu]) {
+          permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
         } else {
-          carregarPermissoesGlobais();
+          permissoesAtuais[menu].funcionario ??= true;
+          permissoesAtuais[menu].dono ??= true;
+          permissoesAtuais[menu].admin ??= true;
         }
       });
+
+      renderTabela();
+    }
+
+    function renderTabela() {
+      permissoesTabela.innerHTML = menus.map(menu => `
+        <tr>
+          <td>${menu}</td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
+        </tr>
+      `).join("");
+    }
+
+    salvarBtn.addEventListener("click", async () => {
+      const checkboxes = document.querySelectorAll("input[type=checkbox]");
+      const novasPermissoes = {};
+      checkboxes.forEach(chk => {
+        const menu = chk.dataset.menu;
+        const role = chk.dataset.role;
+        if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
+        novasPermissoes[menu][role] = chk.checked;
+      });
+      await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
+      alert("Permissões globais salvas!");
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else if (user.uid !== ADMIN_UID) {
+        alert("Acesso negado. Apenas Administrador.");
+        window.location.href = "index.html";
+      } else {
+        carregarPermissoesGlobais();
+      }
     });
   </script>
 </body>
