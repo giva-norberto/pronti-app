@@ -1,11 +1,11 @@
+import { auth, signOut } from "./firebase-config.js";
 import { verificarAcesso } from './userService.js';
-import { auth, signOut } from './firebase-config.js';
 
 export async function ativarMenu() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
 
-    // Logout
+    // --- BOTÃO SAIR ---
     const btnLogout = sidebar.querySelector('#btn-logout');
     if (btnLogout && !btnLogout.dataset.listenerAttached) {
         btnLogout.dataset.listenerAttached = 'true';
@@ -20,7 +20,7 @@ export async function ativarMenu() {
         });
     }
 
-    // Destaque do link da página atual
+    // --- DESTAQUE DA PÁGINA ATUAL ---
     const links = sidebar.querySelectorAll('.sidebar-links a');
     const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
     links.forEach(link => {
@@ -28,7 +28,7 @@ export async function ativarMenu() {
         if (linkPage === currentPage) link.classList.add('active');
     });
 
-    // Permissões
+    // --- PERMISSÕES ---
     try {
         const sessao = await verificarAcesso();
         const papel = sessao.perfil.papel; // 'admin', 'dono', 'funcionario'
@@ -37,7 +37,7 @@ export async function ativarMenu() {
             const menuId = link.dataset.menuId;
             if (!menuId) return;
 
-            // Funcionário: só vê menus gerais
+            // Funcionario: só vê menus gerais
             if (papel === 'funcionario' && ['servicos','clientes','perfil','relatorios','administracao','permissoes'].includes(menuId)) {
                 link.style.display = 'none';
             }
@@ -47,7 +47,7 @@ export async function ativarMenu() {
                 link.style.display = 'none';
             }
 
-            // Admin vê tudo
+            // Admin: vê tudo
             if (papel === 'admin') {
                 link.style.display = '';
             }
