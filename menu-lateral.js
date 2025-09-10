@@ -11,23 +11,18 @@ const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 // --- Atualiza visibilidade do menu ---
 function updateMenuVisibility(role, permissoesGlobais = {}) {
-    // Esconde todos inicialmente
     document.querySelectorAll('.menu-func, .menu-dono, .menu-admin, .menu-permissoes').forEach(el => el.style.display = 'none');
     
-    // Funcionário básico
     if (role === 'funcionario') {
         document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
     }
-    // Dono
     if (role === 'dono') {
         document.querySelectorAll('.menu-dono, .menu-func').forEach(el => el.style.display = 'flex');
     }
-    // Admin
     if (role === 'admin') {
-        document.querySelectorAll('.menu-admin, .menu-func, .menu-dono, .menu-permissoes').forEach(el => el.style.display = 'flex');
+        document.querySelectorAll('.menu-admin, .menu-dono, .menu-func, .menu-permissoes').forEach(el => el.style.display = 'flex');
     }
 
-    // Aplica regras do Firestore (opcional por menu específico)
     Object.entries(permissoesGlobais).forEach(([menu, roles]) => {
         if (roles[role] === true) {
             const link = document.querySelector(`[data-menu="${menu}"]`);
@@ -41,21 +36,23 @@ function setupMenuFeatures() {
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout && !btnLogout.dataset.listenerAttached) {
         btnLogout.dataset.listenerAttached = 'true';
-        btnLogout.addEventListener("click", () => signOut(auth).then(() => {
-            localStorage.clear();
-            window.location.href = "login.html";
-        }));
+        btnLogout.addEventListener("click", () => {
+            signOut(auth).then(() => {
+                localStorage.clear();
+                window.location.href = "login.html";
+            }).catch(err => console.error("[menu-lateral] erro ao deslogar:", err));
+        });
     }
 
-    // Destaca link ativo
     try {
         const currentPagePath = window.location.pathname;
         document.querySelectorAll('#sidebar-links a').forEach(link => {
-            const linkPath = new URL(link.href).pathname;
-            link.classList.remove('active');
-            if (currentPagePath === linkPath) link.classList.add('active');
+            const linkPath = new URL(link.href, window.location.origin).pathname;
+            link.classList.toggle('active', linkPath === currentPagePath);
         });
-    } catch (e) {}
+    } catch (e) {
+        console.warn("[menu-lateral] erro ao destacar link ativo:", e);
+    }
 }
 
 // --- Função principal ---
@@ -106,6 +103,8 @@ function setupMenuFeatures() {
         }
 
         updateMenuVisibility(papel, permissoesGlobais);
+
+        // ⚡ Garantir que logout funcione após menu injetado
         setupMenuFeatures();
 
         // Dispara evento global para páginas que dependem da sessão
