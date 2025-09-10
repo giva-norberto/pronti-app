@@ -11,7 +11,7 @@ import { verificarAcesso } from "./userService.js";
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 /**
- * Atualiza visibilidade dos links do menu conforme o papel do usuário
+ * Atualiza visibilidade dos links do menu conforme o papel do usuário.
  */
 function updateMenuVisibility(role) {
     document.querySelectorAll('.menu-dono, .menu-admin').forEach(el => el.style.display = 'none');
