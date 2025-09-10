@@ -1,213 +1,182 @@
-<aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <nav class="sidebar-links" id="sidebar-links">
-        <a href="index.html"><span>🏠</span> Início</a>
-        <a href="dashboard.html"><span>📊</span> Dashboard</a>
-        <a href="servicos.html"><span>🛠️</span> Serviços</a>
-        <a href="agenda.html"><span>📅</span> Agenda</a>
-        <a href="clientes.html"><span>👤</span> Clientes</a>
-        <a href="equipe.html"><span>👥</span> Equipe</a>
-        <a href="perfil.html"><span>🙍‍♂️</span> Meu Perfil</a>
-        <a href="relatorios.html"><span>📈</span> Relatórios</a>
-        <a href="admin-clientes.html"><span>🔒</span> Administração</a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
-
-<style>
-.sidebar {
-    width: 240px;
-    background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-    min-height: 100vh;
-    color: #fff;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-    position: fixed;
-    left: 0; top: 0; bottom: 0;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    padding-top: 24px;
-}
-.sidebar-brand {
-    font-size: 2rem;
-    font-weight: 900;
-    color: #fff;
-    text-decoration: none;
-    letter-spacing: 2px;
-    padding: 0 32px 12px 32px;
-    display: block;
-    margin-bottom: 8px;
-    text-align: left;
-}
-.sidebar hr {
-    margin: 0 32px 16px 32px;
-    border: none;
-    border-top: 1px solid #787cff55;
-}
-.sidebar-links {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 0 24px;
-    flex-grow: 1; /* Faz esta área crescer para empurrar o rodapé para baixo */
-}
-.sidebar-links a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #fff;
-    color: #4f46e5;
-    font-weight: 600;
-    font-size: 1.08em;
-    border-radius: 10px;
-    margin-bottom: 0;
-    box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-    transition: background 0.17s, color 0.18s, box-shadow 0.18s;
-    padding: 12px 18px;
-    text-align: left;
-    text-decoration: none;
-    letter-spacing: 0.01em;
-    border: 2px solid transparent;
-}
-.sidebar-links a.active, .sidebar-links a:focus {
-    background: #4f46e5;
-    color: #fff;
-    font-weight: 700;
-    border: 2px solid #fff;
-    box-shadow: 0 4px 12px rgba(79,70,229,0.3); /* Sombra mais pronunciada para destaque */
-    outline: none;
-}
-.sidebar-links a:hover:not(.active) {
-    background: #f0f1ff; /* Fundo mais suave no hover */
-    color: #3b2fd6;
-    border-color: #d1d5fa; /* Borda sutil no hover */
-}
-.sidebar-footer {
-    margin-top: auto; /* Garante que o rodapé fique sempre no final */
-    padding: 32px 32px 24px 32px;
-}
-.btn-logout {
-    background: #fff;
-    color: #4f46e5;
-    border: none;
-    padding: 12px 0;
-    width: 100%;
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 1.05em;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-    border: 2px solid transparent;
-    outline: none;
-}
-.btn-logout:hover, .btn-logout:focus {
-    background: #4f46e5;
-    color: #fff;
-    border: 2px solid #fff;
-}
-@media (max-width: 900px) {
-    .sidebar {
-        width: 100%; /* Ocupa 100% da largura ao invés de 100vw para evitar barras de rolagem */
-        min-height: auto;
-        position: static;
-        flex-direction: row;
-        align-items: center; /* <-- PEQUENO AJUSTE: Alinha melhor os itens na vertical */
-        padding: 10px 8px; /* Ajuste no padding geral */
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        font-size: 0.95em;
-        flex-wrap: wrap; /* Permite que os itens quebrem a linha se não couberem */
-    }
-    .sidebar-brand {
-        font-size: 1.4rem;
-        padding: 0 10px;
-        margin: 0;
-    }
-    .sidebar hr {
-        display: none;
-    }
-    .sidebar-links {
-        flex-direction: row;
-        gap: 6px;
-        padding: 0 8px;
-        flex-grow: 1; /* Faz os links ocuparem o espaço disponível */
-        justify-content: flex-start; /* Alinha os links à esquerda */
-    }
-    .sidebar-links a {
-        font-size: 1em;
-        padding: 8px 12px; /* Padding ajustado para telas menores */
-    }
-    .sidebar-links a span {
-        display: none; /* Esconde os emojis em telas muito pequenas para economizar espaço */
-    }
-    .sidebar-footer {
-        padding: 0 8px;
-        margin: 0;
-        margin-left: auto; /* Empurra o botão Sair para a direita */
-    }
-    .btn-logout {
-        padding: 8px 16px;
-        font-size: 1em;
-    }
-    
-    @media (max-width: 768px) {
-        .sidebar-links a {
-            padding: 8px;
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Componente Menu Lateral</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* Seu CSS revisado e completo */
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+            min-height: 100vh;
+            color: #fff;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding-top: 24px;
+            box-sizing: border-box; /* Garante que padding não afete a largura total */
         }
-        .sidebar-links a span {
-            display: inline-block; /* Re-exibe os ícones */
+        .sidebar-brand {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #fff;
+            text-decoration: none;
+            letter-spacing: 2px;
+            padding: 0 32px 12px 32px;
+            display: block;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .sidebar hr {
+            margin: 0 32px 16px 32px;
+            border: none;
+            border-top: 1px solid #787cff55;
+        }
+        .sidebar-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 0 24px;
+            flex-grow: 1; 
         }
         .sidebar-links a {
-            /* Esconde o texto e mostra apenas o ícone */
-            font-size: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px; /* Aumentado um pouco o espaçamento */
+            background: #fff;
+            color: #4f46e5;
+            font-weight: 600;
+            font-size: 1.08em;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+            transition: all 0.2s ease; /* Transição para todas as propriedades */
+            padding: 12px 18px;
+            text-align: left;
+            text-decoration: none;
+            letter-spacing: 0.01em;
+            border: 2px solid transparent;
         }
-        .sidebar-links a span {
-            font-size: 1.2rem; /* Tamanho original do texto para o ícone */
+        .sidebar-links a.active, .sidebar-links a:focus {
+            background: #4f46e5;
+            color: #fff;
+            font-weight: 700;
+            border: 2px solid #fff;
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+            outline: none;
         }
-    }
-}
-</style>
-
-<script>
-// Usamos uma função anônima para proteger o escopo das variáveis (boa prática)
-(function() {
-    // --- LÓGICA DO BOTÃO SAIR (sua lógica original, mantida) ---
-    var btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        btnLogout.addEventListener('click', function() {
-            // Limpa os dados de sessão e autenticação
-            localStorage.removeItem("empresaAtivaId");
-            localStorage.removeItem("authToken");
-            localStorage.removeItem("user");
-            sessionStorage.clear();
-            // Redireciona para a página de login
-            window.location.href = "login.html";
-        });
-    }
-
-    // --- NOVA LÓGICA PARA DESTACAR O LINK ATIVO ---
-    try {
-        // Pega o caminho da URL atual (ex: "/agenda.html")
-        var currentPagePath = window.location.pathname;
-
-        // Pega todos os links dentro da navegação
-        var links = document.querySelectorAll('#sidebar-links a');
-
-        // Percorre cada link para verificar se ele corresponde à página atual
-        links.forEach(function(link) {
-            // Pega o caminho do link (ex: "/agenda.html")
-            var linkPath = new URL(link.href).pathname;
-
-            // Se o caminho do link for o mesmo da página atual, adiciona a classe "active"
-            if (currentPagePath === linkPath) {
-                link.classList.add('active');
+        .sidebar-links a:hover:not(.active) {
+            background: #f0f1ff;
+            color: #3b2fd6;
+            border-color: #d1d5fa; /* Usando a cor de borda que você definiu */
+        }
+        .sidebar-footer {
+            margin-top: auto; 
+            padding: 32px 32px 24px 32px;
+        }
+        .btn-logout {
+            background: #fff;
+            color: #4f46e5;
+            border: none;
+            padding: 12px 0;
+            width: 100%;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.05em;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+            border: 2px solid transparent;
+            outline: none;
+        }
+        .btn-logout:hover, .btn-logout:focus {
+            background: #4f46e5;
+            color: #fff;
+            border: 2px solid #fff;
+        }
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 100%; 
+                min-height: auto;
+                position: static;
+                flex-direction: row;
+                align-items: center; 
+                padding: 10px 8px; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                font-size: 0.95em;
+                flex-wrap: wrap; 
             }
-        });
-    } catch (e) {
-        console.error("Erro ao tentar destacar o link ativo:", e);
-    }
-})();
-</script>
+            .sidebar-brand {
+                font-size: 1.4rem;
+                padding: 0 10px;
+                margin: 0;
+            }
+            .sidebar hr {
+                display: none;
+            }
+            .sidebar-links {
+                flex-direction: row;
+                gap: 6px;
+                padding: 0 8px;
+                flex-grow: 1; 
+                justify-content: flex-start; 
+            }
+            .sidebar-links a {
+                font-size: 1em;
+                padding: 8px 12px; 
+            }
+            .sidebar-links a span {
+                 /* Esconde os ícones/emojis por padrão em telas médias */
+                display: none;
+            }
+            .sidebar-footer {
+                padding: 0 8px;
+                margin: 0;
+                margin-left: auto; /* Empurra o botão Sair para a direita */
+            }
+            .btn-logout {
+                padding: 8px 16px;
+                font-size: 1em;
+            }
+        }
+        @media (max-width: 768px) {
+            .sidebar-links a {
+                padding: 8px;
+                 /* Esconde o texto e mostra apenas o ícone */
+                font-size: 0;
+            }
+            .sidebar-links a span {
+                display: inline-block; /* Re-exibe os ícones */
+                font-size: 1.2rem; /* Tamanho do ícone */
+            }
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar" id="sidebar">
+        <a href="index.html" class="sidebar-brand">Pronti</a>
+        <hr />
+        <nav class="sidebar-links" id="sidebar-links">
+            <a href="index.html" class="menu-func"><span>🏠</span> Início</a>
+            <a href="agenda.html" class="menu-func"><span>📅</span> Agenda</a>
+            <a href="equipe.html" class="menu-func"><span>👥</span> Equipe</a>
+            <a href="clientes.html" class="menu-func"><span>👤</span> Clientes</a>
+
+            <a href="dashboard.html" class="menu-dono" style="display:none;"><span>📊</span> Dashboard</a>
+            <a href="servicos.html" class="menu-dono" style="display:none;"><span>🛠️</span> Serviços</a>
+            <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
+            <a href="relatorios.html" class="menu-dono" style="display:none;"><span>📈</span> Relatórios</a>
+            
+            <a href="admin-clientes.html" class="menu-admin" style="display:none;"><span>🔒</span> Administração</a>
+        </nav>
+        <div class="sidebar-footer">
+            <button id="btn-logout" class="btn-logout">Sair</button>
+        </div>
+    </aside>
+
+    </body>
+</html>
