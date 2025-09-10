@@ -6,7 +6,6 @@
     <title>Componente Menu Lateral</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* Seu CSS revisado e completo */
         .sidebar {
             width: 240px;
             background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -19,7 +18,7 @@
             display: flex;
             flex-direction: column;
             padding-top: 24px;
-            box-sizing: border-box; /* Garante que padding não afete a largura total */
+            box-sizing: border-box;
         }
         .sidebar-brand {
             font-size: 2rem;
@@ -47,14 +46,14 @@
         .sidebar-links a {
             display: flex;
             align-items: center;
-            gap: 12px; /* Aumentado um pouco o espaçamento */
+            gap: 12px;
             background: #fff;
             color: #4f46e5;
             font-weight: 600;
             font-size: 1.08em;
             border-radius: 10px;
             box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-            transition: all 0.2s ease; /* Transição para todas as propriedades */
+            transition: all 0.2s ease;
             padding: 12px 18px;
             text-align: left;
             text-decoration: none;
@@ -72,7 +71,7 @@
         .sidebar-links a:hover:not(.active) {
             background: #f0f1ff;
             color: #3b2fd6;
-            border-color: #d1d5fa; /* Usando a cor de borda que você definiu */
+            border-color: #d1d5fa;
         }
         .sidebar-footer {
             margin-top: auto; 
@@ -130,13 +129,12 @@
                 padding: 8px 12px; 
             }
             .sidebar-links a span {
-                 /* Esconde os ícones/emojis por padrão em telas médias */
                 display: none;
             }
             .sidebar-footer {
                 padding: 0 8px;
                 margin: 0;
-                margin-left: auto; /* Empurra o botão Sair para a direita */
+                margin-left: auto;
             }
             .btn-logout {
                 padding: 8px 16px;
@@ -146,12 +144,11 @@
         @media (max-width: 768px) {
             .sidebar-links a {
                 padding: 8px;
-                 /* Esconde o texto e mostra apenas o ícone */
                 font-size: 0;
             }
             .sidebar-links a span {
-                display: inline-block; /* Re-exibe os ícones */
-                font-size: 1.2rem; /* Tamanho do ícone */
+                display: inline-block;
+                font-size: 1.2rem;
             }
         }
     </style>
@@ -164,11 +161,10 @@
             <a href="index.html" class="menu-func"><span>🏠</span> Início</a>
             <a href="agenda.html" class="menu-func"><span>📅</span> Agenda</a>
             <a href="equipe.html" class="menu-func"><span>👥</span> Equipe</a>
-            <a href="clientes.html" class="menu-func"><span>👤</span> Clientes</a>
 
             <a href="dashboard.html" class="menu-dono" style="display:none;"><span>📊</span> Dashboard</a>
             <a href="servicos.html" class="menu-dono" style="display:none;"><span>🛠️</span> Serviços</a>
-            <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
+            <a href="clientes.html" class="menu-dono" style="display:none;"><span>👤</span> Clientes</a> <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
             <a href="relatorios.html" class="menu-dono" style="display:none;"><span>📈</span> Relatórios</a>
             
             <a href="admin-clientes.html" class="menu-admin" style="display:none;"><span>🔒</span> Administração</a>
