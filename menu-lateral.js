@@ -1,8 +1,8 @@
 /**
  * @file menu-lateral.js
- * @description Componente autônomo e inteligente para o menu lateral da aplicação Pronti.
- * Ele injeta o menu na página, aplica permissões, configura logout e destaca o link ativo automaticamente.
- * Versão 5.0.0 - Final com observador de DOM
+ * @description Componente autônomo para o menu lateral da aplicação Pronti.
+ * Injeta o menu na página, aplica permissões e destaca o link ativo automaticamente.
+ * @version 5.0.0 - Versão final
  */
 
 import { auth } from "./firebase-config.js";
@@ -12,11 +12,12 @@ import { verificarAcesso } from "./userService.js";
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 /**
- * Atualiza a visibilidade dos links do menu conforme o papel do usuário.
+ * Atualiza visibilidade dos links do menu
  */
 function updateMenuVisibility(role) {
-    console.log(`[menu-lateral.js] Aplicando visibilidade para o papel: ${role}`);
+    // Esconde todos os links privados primeiro
     document.querySelectorAll('.menu-dono, .menu-admin').forEach(el => el.style.display = 'none');
+    // Mostra sempre links de funcionário
     document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
 
     switch (role?.toLowerCase()) {
@@ -29,7 +30,7 @@ function updateMenuVisibility(role) {
 }
 
 /**
- * Configura o botão logout e destaca o link ativo.
+ * Configura logout e destaca o link ativo
  */
 function setupMenuFeatures() {
     const btnLogout = document.getElementById("btn-logout");
@@ -43,33 +44,35 @@ function setupMenuFeatures() {
         });
     }
 
-    try {
-        const currentPath = window.location.pathname;
-        document.querySelectorAll('#sidebar-links a').forEach(link => {
-            const linkPath = new URL(link.href).pathname;
-            link.classList.remove('active');
-            if (linkPath === currentPath) link.classList.add('active');
-        });
-    } catch(e) { /* ignora erros de URL inválida */ }
+    const currentURL = window.location.href;
+    document.querySelectorAll('#sidebar-links a').forEach(link => {
+        link.classList.remove('active');
+        // Compara href completo para garantir que o link correto fique ativo
+        if (link.href === currentURL || currentURL.endsWith(link.getAttribute('href'))) {
+            link.classList.add('active');
+        }
+    });
 }
 
 /**
- * Aplica a lógica de permissões ao menu.
+ * Aplica lógica de permissões
  */
 async function aplicarLogicaAoMenu() {
     try {
         const userSession = await verificarAcesso();
-        let papel = 'funcionario'; // padrão
+        let papel = 'funcionario';
 
         if (userSession?.perfil && userSession?.user) {
             const { perfil, user } = userSession;
-            if (user.uid === ADMIN_UID) papel = 'admin';
-            else if (perfil.ehDono === true) papel = 'dono';
+            if (user.uid === ADMIN_UID) {
+                papel = 'admin';
+            } else if (perfil.ehDono === true) {
+                papel = 'dono';
+            }
         }
 
         updateMenuVisibility(papel);
         setupMenuFeatures();
-
     } catch (err) {
         if (!err.message.includes("Redirecionando")) {
             console.error("[menu-lateral.js] Erro ao aplicar lógica:", err);
@@ -78,35 +81,34 @@ async function aplicarLogicaAoMenu() {
 }
 
 /**
- * Função para carregar o menu dentro do placeholder.
+ * Inicializa o menu
  */
-async function carregarMenu(placeholder) {
+(async function inicializarMenu() {
+    const placeholder = document.getElementById('sidebar-placeholder');
+    if (!placeholder) {
+        console.warn("[menu-lateral.js] Nenhum placeholder '#sidebar-placeholder' encontrado.");
+        return;
+    }
+
     try {
         const response = await fetch('menu-lateral.html');
-        if (!response.ok) throw new Error("Falha ao carregar menu-lateral.html");
-        placeholder.innerHTML = await response.text();
-        await aplicarLogicaAoMenu();
-    } catch (err) {
-        console.error("[menu-lateral.js] Erro ao carregar menu:", err);
-        placeholder.innerHTML = `<p style="color:red; padding:1em;">Erro ao carregar menu.</p>`;
-    }
-}
+        if (!response.ok) throw new Error("Falha ao carregar o template menu-lateral.html");
 
-/**
- * Inicializa o menu. Se o placeholder não existir ainda, observa o DOM até ele aparecer.
- */
-(function inicializarMenu() {
-    const placeholder = document.getElementById('sidebar-placeholder');
-    if (placeholder) {
-        carregarMenu(placeholder);
-    } else {
-        const observer = new MutationObserver(async (mutations, obs) => {
-            const pl = document.getElementById('sidebar-placeholder');
-            if (pl) {
-                await carregarMenu(pl);
-                obs.disconnect();
+        placeholder.innerHTML = await response.text();
+
+        // Observa quando o menu foi totalmente injetado no DOM
+        const observer = new MutationObserver(async (mutationsList, obs) => {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                await aplicarLogicaAoMenu();
+                obs.disconnect(); // Para de observar após configurar
             }
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+
+        observer.observe(placeholder, { childList: true, subtree: true });
+
+    } catch (err) {
+        console.error("[menu-lateral.js] Erro fatal ao inicializar menu:", err);
+        placeholder.innerHTML = `<p style="color:red; padding:1em;">Erro ao carregar menu.</p>`;
     }
 })();
