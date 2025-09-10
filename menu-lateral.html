@@ -1,22 +1,99 @@
 <aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <ul class="sidebar-links" id="sidebar-links">
-        <li data-menu-id="inicio"><a href="index.html"><span>🏠</span> <span>Início</span></a></li>
-        <li data-menu-id="dashboard"><a href="dashboard.html"><span>📊</span> <span>Dashboard</span></a></li>
-        <li data-menu-id="agenda"><a href="agenda.html"><span>📅</span> <span>Agenda</span></a></li>
-        <li data-menu-id="equipe"><a href="equipe.html"><span>👥</span> <span>Equipe</span></a></li>
-        <li data-menu-id="servicos"><a href="servicos.html"><span>🛠️</span> <span>Serviços</span></a></li>
-        <li data-menu-id="clientes"><a href="clientes.html"><span>👤</span> <span>Clientes</span></a></li>
-        <li data-menu-id="relatorios"><a href="relatorios.html"><span>📈</span> <span>Relatórios</span></a></li>
-        <li data-menu-id="perfil"><a href="perfil.html"><span>🙍‍♂️</span> <span>Meu Perfil</span></a></li>
-        <li data-menu-id="administracao"><a href="admin-clientes.html"><span>🔒</span> <span>Administração</span></a></li>
-        <li data-menu-id="permissoes"><a href="permissoes.html"><span>⚙️</span> <span>Permissões</span></a></li>
-    </ul>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
+  <a href="index.html" class="sidebar-brand">Pronti</a>
+  <hr />
+  <ul class="sidebar-links" id="sidebar-links">
+    <li data-menu-id="inicio"><a href="index.html"><i class="fa fa-home"></i> Início</a></li>
+    <li data-menu-id="dashboard"><a href="dashboard.html"><i class="fa fa-chart-bar"></i> Dashboard</a></li>
+    <li data-menu-id="agenda"><a href="agenda.html"><i class="fa fa-calendar"></i> Agenda</a></li>
+    <li data-menu-id="equipe"><a href="equipe.html"><i class="fa fa-users"></i> Equipe</a></li>
+    <li data-menu-id="servicos"><a href="servicos.html"><i class="fa fa-wrench"></i> Serviços</a></li>
+    <li data-menu-id="clientes"><a href="clientes.html"><i class="fa fa-user"></i> Clientes</a></li>
+    <li data-menu-id="relatorios"><a href="relatorios.html"><i class="fa fa-file-alt"></i> Relatórios</a></li>
+    <li data-menu-id="perfil"><a href="perfil.html"><i class="fa fa-user-circle"></i> Meu Perfil</a></li>
+    <li data-menu-id="administracao"><a href="admin-clientes.html"><i class="fa fa-lock"></i> Administração</a></li>
+    <li data-menu-id="permissoes"><a href="permissoes.html"><i class="fa fa-key"></i> Permissões</a></li>
+  </ul>
+  <div class="sidebar-footer">
+    <button id="btn-logout" class="btn-logout"><i class="fa fa-sign-out-alt"></i> Sair</button>
+  </div>
 </aside>
 <style>
-/* ... seu CSS ... (igual já fornecido) ... */
+.sidebar {
+  width: 220px;
+  background: #1e2532;
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px;
+  box-sizing: border-box;
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 100;
+}
+.sidebar-brand {
+  font-size: 1.7em;
+  padding: 0 0.8em;
+  font-weight: bold;
+  text-decoration: none;
+  color: #fff;
+  margin-bottom: 0.7em;
+  display: block;
+  letter-spacing: 1px;
+}
+.sidebar-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+.sidebar-links li {
+  margin: 0.2em 0;
+}
+.sidebar-links a {
+  display: flex;
+  align-items: center;
+  padding: 0.6em 1em;
+  color: #b0bed9;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background 0.2s, border-left 0.2s, color 0.2s;
+  font-size: 1.07em;
+  gap: 0.6em;
+}
+.sidebar-links a.active,
+.sidebar-links a:hover {
+  background: #222b3c;
+  color: #fff;
+  border-left: 3px solid #3e7afe;
+}
+.sidebar-footer {
+  padding: 1.2em 1em 1em 1em;
+  border-top: 1px solid #25304a;
+}
+.btn-logout {
+  width: 100%;
+  padding: 0.7em;
+  border: none;
+  background: #2e374b;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  justify-content: center;
+}
+.btn-logout:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+@media (max-width: 800px) {
+  .sidebar { width: 60px; }
+  .sidebar-links a span:not(:first-child), .sidebar-brand { display: none; }
+  .sidebar { min-width: 60px; }
+  .sidebar-links a { justify-content: center; }
+}
 </style>
