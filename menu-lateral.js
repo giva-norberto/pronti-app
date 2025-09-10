@@ -1,139 +1,47 @@
-<aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <ul class="sidebar-links" id="sidebar-links">
-        <li data-menu-id="inicio"><a href="index.html"><span>🏠</span> <span>Início</span></a></li>
-        <li data-menu-id="dashboard"><a href="dashboard.html"><span>📊</span> <span>Dashboard</span></a></li>
-        <li data-menu-id="agenda"><a href="agenda.html"><span>📅</span> <span>Agenda</span></a></li>
-        <li data-menu-id="equipe"><a href="equipe.html"><span>👥</span> <span>Equipe</span></a></li>
-        <li data-menu-id="servicos"><a href="servicos.html"><span>🛠️</span> <span>Serviços</span></a></li>
-        <li data-menu-id="clientes"><a href="clientes.html"><span>👤</span> <span>Clientes</span></a></li>
-        <li data-menu-id="relatorios"><a href="relatorios.html"><span>📈</span> <span>Relatórios</span></a></li>
-        <li data-menu-id="perfil"><a href="perfil.html"><span>🙍‍♂️</span> <span>Meu Perfil</span></a></li>
-        <li data-menu-id="administracao"><a href="admin-clientes.html"><span>🔒</span> <span>Administração</span></a></li>
-        <li data-menu-id="permissoes"><a href="permissoes.html"><span>⚙️</span> <span>Permissões</span></a></li>
-    </ul>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
-<style>
-    .sidebar {
-        width: 240px;
-        background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-        min-height: 100vh;
-        color: #fff;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-        position: fixed;
-        left: 0; top: 0; bottom: 0;
-        z-index: 10;
-        display: flex;
-        flex-direction: column;
-        padding-top: 24px;
-        box-sizing: border-box;
-    }
-    .sidebar-brand {
-        font-size: 2rem;
-        font-weight: 900;
-        color: #fff;
-        text-decoration: none;
-        letter-spacing: 2px;
-        padding: 0 32px 12px 32px;
-        display: block;
-        margin-bottom: 8px;
-        text-align: left;
-    }
-    .sidebar hr {
-        margin: 0 32px 16px 32px;
-        border: none;
-        border-top: 1px solid #787cff55;
-    }
-    .sidebar-links {
-        list-style-type: none;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 0 24px;
-        flex-grow: 1; 
-    }
-    .sidebar-links a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: #fff;
-        color: #4f46e5;
-        font-weight: 600;
-        font-size: 1.08em;
-        border-radius: 10px;
-        margin-bottom: 0;
-        box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-        transition: background 0.17s, color 0.18s, box-shadow 0.18s;
-        padding: 12px 18px;
-        text-align: left;
-        text-decoration: none;
-        letter-spacing: 0.01em;
-        border: 2px solid transparent;
-    }
-    .sidebar-links li.active a, .sidebar-links a:focus {
-        background: #4f46e5;
-        color: #fff;
-        font-weight: 700;
-        border: 2px solid #fff;
-        box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-        outline: none;
-    }
-    .sidebar-links a:hover:not(.active) {
-        background: #f0f1ff;
-        color: #3b2fd6;
-        border-color: #d1d5fa;
-    }
-    .sidebar-footer {
-        margin-top: auto; 
-        padding: 32px 32px 24px 32px;
-    }
-    .btn-logout {
-        background: #fff;
-        color: #4f46e5;
-        border: none;
-        padding: 12px 0;
-        width: 100%;
-        border-radius: 10px;
-        font-weight: bold;
-        font-size: 1.05em;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s;
-        box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-        border: 2px solid transparent;
-        outline: none;
-    }
-    .btn-logout:hover, .btn-logout:focus {
-        background: #4f46e5;
-        color: #fff;
-        border: 2px solid #fff;
-    }
-    @media (max-width: 900px) {
-        .sidebar {
-            width: 100%; 
-            min-height: auto;
-            position: static;
-            flex-direction: row;
-            align-items: center; 
-            padding: 10px 8px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            font-size: 0.95em;
-            flex-wrap: wrap; 
-        }
-        .sidebar-brand { font-size: 1.4rem; padding: 0 10px; margin: 0; }
-        .sidebar hr { display: none; }
-        .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; flex-grow: 1; justify-content: flex-start; }
-        .sidebar-links a { font-size: 1em; padding: 8px 12px; }
-        .sidebar-links a span:last-child { display: none; }
-        .sidebar-footer { padding: 0 8px; margin: 0; margin-left: auto; }
-        .btn-logout { padding: 8px 16px; font-size: 1em; }
-    }
-    @media (max-width: 768px) {
-        .sidebar-links a { padding: 8px; font-size: 0; }
-        .sidebar-links a span:first-child { display: inline-block; font-size: 1.2rem; }
-    }
-</style>
+// Certifique-se de incluir no HTML assim:
+// <script type="module" src="./menu-lateral.js"></script>
+
+import { auth, db } from "./firebase-config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  // Defina o papel do usuário; ajuste conforme sua lógica real
+  const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+  let userRole = "funcionario";
+  if (user.uid === ADMIN_UID) userRole = "admin";
+  // Aqui você pode adicionar lógica para "dono" se tiver
+
+  // Pega todos os itens do menu
+  const menus = document.querySelectorAll("[data-menu-id]");
+  const cards = document.querySelectorAll(".card-acesso");
+
+  // Carrega permissões globais do Firestore
+  const snap = await getDoc(doc(db, "configuracoesGlobais", "permissoes"));
+  const permissoesGlobais = snap.exists() ? snap.data() : {};
+
+  // Função para mostrar/ocultar menus
+  menus.forEach(menu => {
+    const menuId = menu.dataset.menuId;
+    const acesso = permissoesGlobais[menuId]?.[userRole] ?? true;
+    menu.style.display = acesso ? "block" : "none";
+  });
+
+  // Função para mostrar/ocultar cards
+  cards.forEach(card => {
+    const cardMenu = card.dataset.menu;
+    const acesso = permissoesGlobais[cardMenu]?.[userRole] ?? true;
+    card.style.display = acesso ? "block" : "none";
+  });
+
+  // Logout
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", () => auth.signOut().then(() => window.location.href = "login.html"));
+  }
+});
