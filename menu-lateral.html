@@ -1,100 +1,53 @@
-<aside class="sidebar" id="sidebar">
-  <a href="index.html" class="sidebar-brand">Pronti</a>
-  <hr />
-  <ul class="sidebar-links" id="sidebar-links">
-    <li data-menu-id="inicio"><a href="index.html"><i class="fa fa-home"></i> <span>Início</span></a></li>
-    <li data-menu-id="dashboard"><a href="dashboard.html"><i class="fa fa-chart-bar"></i> <span>Dashboard</span></a></li>
-    <li data-menu-id="agenda"><a href="agenda.html"><i class="fa fa-calendar"></i> <span>Agenda</span></a></li>
-    <li data-menu-id="equipe"><a href="equipe.html"><i class="fa fa-users"></i> <span>Equipe</span></a></li>
-    <li data-menu-id="servicos"><a href="servicos.html"><i class="fa fa-wrench"></i> <span>Serviços</span></a></li>
-    <li data-menu-id="clientes"><a href="clientes.html"><i class="fa fa-user"></i> <span>Clientes</span></a></li>
-    <li data-menu-id="relatorios"><a href="relatorios.html"><i class="fa fa-file-alt"></i> <span>Relatórios</span></a></li>
-    <li data-menu-id="perfil"><a href="perfil.html"><i class="fa fa-user-circle"></i> <span>Meu Perfil</span></a></li>
-    <li data-menu-id="administracao"><a href="admin-clientes.html"><i class="fa fa-lock"></i> <span>Administração</span></a></li>
-    <li data-menu-id="permissoes"><a href="permissoes.html"><i class="fa fa-key"></i> <span>Permissões</span></a></li>
-  </ul>
-  <div class="sidebar-footer">
-    <button id="btn-logout" class="btn-logout"><i class="fa fa-sign-out-alt"></i> Sair</button>
-  </div>
-</aside>
-<style>
-.sidebar {
-  width: 220px;
-  background: #1e2532;
-  color: #fff;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-top: 12px;
-  box-sizing: border-box;
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  z-index: 100;
+// Firebase imports (v9 modular)
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+const db = getFirestore();
+
+// Pegue o perfil do usuário (ex: "admin", "dono", "funcionario")
+const perfil = localStorage.getItem('perfil'); // Certifique-se de salvar isso ao logar!
+
+// Esconde/exibe os menus conforme as permissões globais do Firestore
+async function aplicarPermissoesGlobaisMenu() {
+  const docRef = doc(db, "configuracoesGlobais", "permissoes");
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) {
+    alert("Permissões globais de menu não configuradas!");
+    return;
+  }
+  const permissoes = docSnap.data();
+
+  // Para cada item do menu, verifica se o papel tem permissão
+  Object.keys(permissoes).forEach(menuId => {
+    const podeVer = permissoes[menuId]?.[perfil];
+    if (!podeVer) {
+      document.querySelector(`[data-menu-id="${menuId}"]`)?.classList.add("hidden");
+    }
+  });
 }
-.sidebar-brand {
-  font-size: 1.7em;
-  padding: 0 0.8em;
-  font-weight: bold;
-  text-decoration: none;
-  color: #fff;
-  margin-bottom: 0.7em;
-  display: block;
-  letter-spacing: 1px;
-}
-.sidebar-links {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex: 1;
-}
-.sidebar-links li {
-  margin: 0.2em 0;
-}
-.sidebar-links a {
-  display: flex;
-  align-items: center;
-  padding: 0.6em 1em;
-  color: #b0bed9;
-  text-decoration: none;
-  border-left: 3px solid transparent;
-  transition: background 0.2s, border-left 0.2s, color 0.2s;
-  font-size: 1.07em;
-  gap: 0.6em;
-}
-.sidebar-links a.active,
-.sidebar-links a:hover {
-  background: #222b3c;
-  color: #fff;
-  border-left: 3px solid #3e7afe;
-}
-.sidebar-footer {
-  padding: 1.2em 1em 1em 1em;
-  border-top: 1px solid #25304a;
-}
-.btn-logout {
-  width: 100%;
-  padding: 0.7em;
-  border: none;
-  background: #2e374b;
-  color: #fff;
-  border-radius: 4px;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.6em;
-  justify-content: center;
-}
-.btn-logout:hover {
-  background: #e74c3c;
-  color: #fff;
-}
-@media (max-width: 800px) {
-  .sidebar { width: 60px; }
-  .sidebar-links a span:not(:first-child), .sidebar-brand { display: none; }
-  .sidebar { min-width: 60px; }
-  .sidebar-links a { justify-content: center; }
-}
-.hidden { display: none !important; }
-</style>
+
+// Esconde pelo CSS
+(function() {
+  if (!document.querySelector('style[data-permissao]')) {
+    const style = document.createElement('style');
+    style.setAttribute('data-permissao', 'true');
+    style.innerHTML = `.hidden { display: none !important; }`;
+    document.head.appendChild(style);
+  }
+})();
+
+// Marca o menu ativo baseado na URL
+const urlAtual = window.location.pathname.split('/').pop();
+document.querySelectorAll('.sidebar-links a').forEach(link => {
+  if (link.getAttribute('href') === urlAtual) {
+    link.classList.add('active');
+  }
+});
+
+// Botão sair
+document.getElementById("btn-logout")?.addEventListener("click", () => {
+  localStorage.clear();
+  window.location.href = "login.html";
+});
+
+// Execute isso DEPOIS do menu estar no DOM (após o fetch do menu-lateral.html)
+aplicarPermissoesGlobaisMenu();
