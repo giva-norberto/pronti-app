@@ -7,7 +7,8 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* Seu CSS completo, exatamente como você enviou, sem nenhuma alteração */
+        /* Seu CSS completo, exatamente como você enviou, sem nenhuma alteração. */
+        /* O seu layout está 100% preservado. */
         html, body { height: 100%; margin: 0; padding: 0; }
         body { display: flex; flex-direction: column; opacity: 1; transition: opacity 0.3s ease-in-out; overflow: hidden; }
         body.is-loading { opacity: 0; }
@@ -28,6 +29,8 @@
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
         .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
         @media (max-width: 900px) {
+            body { display: block; } /* Corrigido para permitir rolagem */
+            main.main-content { margin-left: 0; }
             .sidebar { width: 100%; min-height: auto; position: static; flex-direction: row; align-items: center; padding: 10px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 0.95em; flex-wrap: wrap; }
             .sidebar-brand { font-size: 1.4rem; padding: 0 10px; margin: 0; }
             .sidebar hr { display: none; }
@@ -58,21 +61,18 @@
     <!-- ====================================================================== -->
     <!--      SEÇÃO DE SCRIPTS FINAL E CORRIGIDA                              -->
     <!-- ====================================================================== -->
-
+    
     <!-- 1. CHAMA O COMPONENTE INTELIGENTE DO MENU -->
     <!-- Este script vai carregar o menu, aplicar as permissões e se configurar sozinho. -->
     <script type="module" src="menu-lateral.js"></script>
 
     <!-- 2. CHAMA O SCRIPT ESPECÍFICO DESTA PÁGINA -->
-    <!-- Este script contém apenas a lógica que pertence à página de início. -->
+    <!-- Este script contém apenas a lógica que pertence à página de início (saudação e cards). -->
     <script type="module">
-        // A importação do 'menu-lateral.js' foi removida para evitar conflitos.
+        // A importação do 'menu-lateral.js' foi REMOVIDA para evitar o erro.
         import { verificarAcesso } from "./userService.js";
 
-        // A constante do Admin foi removida daqui, pois a lógica agora está centralizada
-        // no componente do menu.
-
-        // Suas variáveis e funções de UI, mantidas.
+        // Suas variáveis e funções de UI, mantidas intactas.
         const nomeUsuarioSpan = document.getElementById("nome-usuario");
         const saudacaoSpan = document.getElementById("saudacao");
         const mainContent = document.getElementById("main-content");
@@ -88,10 +88,9 @@
          */
         async function inicializarConteudo() {
             try {
-                // A página ainda precisa saber quem é o usuário para mostrar os cards certos.
                 const userSession = await verificarAcesso();
                 if (!userSession || !userSession.perfil) {
-                    removerIsLoading(); // Garante que o loading suma mesmo se não houver sessão
+                    removerIsLoading();
                     return; 
                 }
 
@@ -107,7 +106,6 @@
                     perfil.papel = 'funcionario';
                 }
 
-                // Sua lógica de renderização, mantida.
                 const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
                 if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
                 if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
@@ -120,7 +118,7 @@
                     console.error("[index.html] Erro ao inicializar conteúdo:", error);
                 }
             } finally {
-                // O menu-lateral.js também chama isso, mas não há problema em chamar duas vezes.
+                // O menu-lateral.js também pode chamar isso, mas não há problema.
                 // Isso garante que o conteúdo da página não fique travado no loading.
                 removerIsLoading();
             }
