@@ -1,42 +1,9 @@
 // menu-lateral.js
 import { auth, db } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { verificarAcesso } from "./userService.js";
 
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-
-// Atualiza visibilidade dos menus
-async function updateMenuWithPermissions(papel) {
-    // esconde tudo
-    document.querySelectorAll('.menu-func, .menu-dono, .menu-admin, .menu-permissoes')
-        .forEach(el => el.style.display = 'none');
-
-    // menus básicos por papel
-    if (papel === 'funcionario') document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
-    if (papel === 'dono') document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
-    if (papel === 'admin') document.querySelectorAll('.menu-dono, .menu-admin, .menu-permissoes').forEach(el => el.style.display = 'flex');
-
-    // pega permissões externas do Firestore
-    try {
-        const ref = doc(db, "configuracoesGlobais", "permissoes");
-        const snap = await getDoc(ref);
-        if (!snap.exists()) return;
-
-        const permissoes = snap.data(); // { agenda: { dono: true, funcionario: false, admin: true }, ... }
-
-        Object.entries(permissoes).forEach(([menu, roles]) => {
-            if (roles[papel] === true) {
-                const el = document.querySelector(`[data-menu="${menu}"]`);
-                if (el) el.style.display = 'flex';
-            }
-        });
-    } catch(e) {
-        console.error("Erro ao buscar permissões:", e);
-    }
-}
-
-// Configura logout e link ativo
+// --- Configura logout e link ativo ---
 function setupMenuFeatures() {
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout && !btnLogout.dataset.listenerAttached) {
@@ -56,13 +23,18 @@ function setupMenuFeatures() {
     });
 }
 
-// Inicialização
+// --- Atualiza visibilidade dos menus (todos visíveis por padrão) ---
+async function updateMenuWithPermissions() {
+    // Todos os menus visíveis
+    document.querySelectorAll('.menu-func, .menu-dono, .menu-admin, .menu-permissoes')
+        .forEach(el => el.style.display = 'flex');
+}
+
+// --- Inicialização ---
 (async () => {
     try {
-        const session = await verificarAcesso(); // pega papel e perfil
-        const papel = session.perfil.papel;
-
-        await updateMenuWithPermissions(papel);
+        await verificarAcesso(); // garante que o usuário está logado e pega perfil/papel
+        await updateMenuWithPermissions(); // todos menus visíveis
         setupMenuFeatures();
     } catch (err) {
         console.error("Erro inicializando menu lateral:", err);
