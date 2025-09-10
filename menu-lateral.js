@@ -1,74 +1,75 @@
 /**
  * @file menu-lateral.js
- * @description Componente "Vigia" autônomo. Ele observa o DOM esperando o HTML do menu 
- * ser injetado por qualquer script e, então, aplica a lógica de permissões e funcionalidades.
- * @author Giva-Norberto & Gemini Assistant
- * @version 3.0.0 - Arquitetura de Observador
+ * @description Componente autônomo que gerencia o menu lateral.
+ * @version Final
  */
-
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { verificarAcesso } from "./userService.js";
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-// ======================================================================
-//      AS FERRAMENTAS (Lógica de UI, sem alterações)
-// ======================================================================
+// --- Funções Internas do Componente (SEM A PALAVRA 'export') ---
 
 function updateMenuVisibility(role) {
-  console.log(`[menu-lateral.js] Visibilidade ativada para o papel: ${role}`);
-  // Lógica "esconde primeiro, mostra depois" para garantir o estado correto
-  document.querySelectorAll('.menu-dono, .menu-admin').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
-  
-  switch (role?.toLowerCase()) {
-    case 'admin':
-      document.querySelectorAll('.menu-admin').forEach(el => el.style.display = 'flex');
-    case 'dono':
-      document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
-      break;
-  }
+    console.log(`[menu-lateral.js] Aplicando visibilidade para o papel: ${role}`);
+    document.querySelectorAll('.menu-dono, .menu-admin').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
+    switch (role?.toLowerCase()) {
+        case 'admin':
+            document.querySelectorAll('.menu-admin').forEach(el => el.style.display = 'flex');
+        case 'dono':
+            document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
+            break;
+    }
 }
 
 function setupMenuFeatures() {
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout && !btnLogout.dataset.listenerAttached) {
-    btnLogout.dataset.listenerAttached = 'true';
-    btnLogout.addEventListener("click", () => signOut(auth).then(() => {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }));
-  }
-  
-  try {
-    const currentPagePath = window.location.pathname;
-    const links = document.querySelectorAll('#sidebar-links a');
-    links.forEach(function(link) {
-      const linkPath = new URL(link.href).pathname;
-      link.classList.remove('active');
-      if (currentPagePath === linkPath) {
-        link.classList.add('active');
-      }
-    });
-  } catch (e) {
-    console.error("Erro ao destacar link ativo:", e);
-  }
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout && !btnLogout.dataset.listenerAttached) {
+        btnLogout.dataset.listenerAttached = 'true';
+        btnLogout.addEventListener("click", () => signOut(auth).then(() => {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }));
+    }
+    try {
+        const currentPagePath = window.location.pathname;
+        document.querySelectorAll('#sidebar-links a').forEach(link => {
+            const linkPath = new URL(link.href).pathname;
+            link.classList.remove('active');
+            if (currentPagePath === linkPath) link.classList.add('active');
+        });
+    } catch (e) { /* Ignora erros de URL */ }
 }
 
-// ======================================================================
-//      O "VIGIA" (Lógica principal que executa tudo)
-// ======================================================================
-
 /**
- * A função principal que executa a lógica de permissões.
- * Ela será chamada pelo observador quando o menu for detectado.
+ * Ponto de entrada: A função principal que se auto-executa.
  */
-async function aplicarLogicaAoMenu() {
-    try {
-        const userSession = await verificarAcesso();
-        let papel = 'funcionario'; // Assume o papel mais baixo por padrão
+(async function inicializarMenu() {
+    // Garante que o script só rode depois que o HTML básico da página estiver pronto
+    if (document.readyState === 'loading') {
+        await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
+    }
 
+    const placeholder = document.getElementById('sidebar-placeholder');
+    if (!placeholder) {
+        console.error("Erro Crítico: O placeholder '#sidebar-placeholder' não foi encontrado.");
+        return;
+    }
+
+    try {
+        // 1. Ele mesmo busca seu próprio HTML
+        const response = await fetch('menu-lateral.html');
+        if (!response.ok) throw new Error("Falha ao carregar menu-lateral.html");
+        
+        placeholder.innerHTML = await response.text();
+
+        // 2. Ele mesmo busca os dados do usuário
+        const userSession = await verificarAcesso();
+        let papel = 'funcionario';
+
+        // 3. Ele mesmo determina o papel do usuário
         if (userSession?.perfil && userSession?.user) {
             const { perfil, user } = userSession;
             if (user.uid === ADMIN_UID) {
@@ -78,32 +79,15 @@ async function aplicarLogicaAoMenu() {
             }
         }
 
+        // 4. Ele mesmo se configura
         updateMenuVisibility(papel);
         setupMenuFeatures();
 
-    } catch (error) {
-        if (!error.message.includes("Redirecionando")) {
-            console.error("[menu-lateral.js] Erro ao aplicar lógica:", error);
+    } catch (err) {
+        if (!err.message.includes("Redirecionando")) {
+            console.error("[menu-lateral.js] Erro na inicialização:", err);
         }
+    } finally {
+        document.body.classList.remove('is-loading');
     }
-}
-
-/**
- * Observador que fica "vigiando" a página por mudanças.
- */
-const observer = new MutationObserver((mutationsList, obs) => {
-    // Procura pelo menu (#sidebar)
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        console.log('[menu-lateral.js] Menu detectado na página. Aplicando lógica...');
-        aplicarLogicaAoMenu();
-        // Uma vez que o menu foi encontrado e configurado, o vigia pode parar de trabalhar.
-        obs.disconnect(); 
-    }
-});
-
-// Inicia o "Vigia" para observar o corpo da página e seus filhos.
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
+})();
