@@ -72,15 +72,21 @@ function updateMenuVisibility(role) {
 
 // Ajusta logout e active link
 function setupMenuFeatures() {
+  // ⚡ Garantia de que o botão existe antes de adicionar listener
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout && !btnLogout.dataset.listenerAttached) {
     btnLogout.dataset.listenerAttached = "true";
-    btnLogout.addEventListener("click", () => signOut(auth).then(() => {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }));
+    btnLogout.addEventListener("click", () => {
+      signOut(auth)
+        .then(() => {
+          localStorage.clear();
+          window.location.href = "login.html";
+        })
+        .catch(err => console.error("Erro ao deslogar:", err));
+    });
   }
 
+  // Destaca link ativo
   const currentPage = window.location.pathname;
   document.querySelectorAll("#sidebar-links a").forEach(link => {
     const linkPage = new URL(link.href, window.location.origin).pathname;
