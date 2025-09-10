@@ -55,6 +55,24 @@ import { verificarAcesso } from "./userService.js";
 
 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
+// ⚡ Configura botão de logout de forma segura
+function setupLogoutButton() {
+  document.addEventListener("DOMContentLoaded", () => {
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout && !btnLogout.dataset.listenerAttached) {
+      btnLogout.dataset.listenerAttached = "true";
+      btnLogout.addEventListener("click", () => {
+        signOut(auth)
+          .then(() => {
+            localStorage.clear();
+            window.location.href = "login.html";
+          })
+          .catch(err => console.error("Erro ao deslogar:", err));
+      });
+    }
+  });
+}
+
 // Controla visibilidade por perfil
 function updateMenuVisibility(role) {
   document.querySelectorAll(".menu-dono, .menu-admin, .menu-permissoes").forEach(el => el.style.display = "none");
@@ -70,23 +88,8 @@ function updateMenuVisibility(role) {
   }
 }
 
-// Ajusta logout e active link
-function setupMenuFeatures() {
-  // ⚡ Garantia de que o botão existe antes de adicionar listener
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout && !btnLogout.dataset.listenerAttached) {
-    btnLogout.dataset.listenerAttached = "true";
-    btnLogout.addEventListener("click", () => {
-      signOut(auth)
-        .then(() => {
-          localStorage.clear();
-          window.location.href = "login.html";
-        })
-        .catch(err => console.error("Erro ao deslogar:", err));
-    });
-  }
-
-  // Destaca link ativo
+// Destaca link ativo
+function highlightActiveLink() {
   const currentPage = window.location.pathname;
   document.querySelectorAll("#sidebar-links a").forEach(link => {
     const linkPage = new URL(link.href, window.location.origin).pathname;
@@ -96,9 +99,10 @@ function setupMenuFeatures() {
 
 // Inicialização
 (async function inicializarMenu() {
+  setupLogoutButton(); // Garante que logout está funcional
+
   try {
     const userSession = await verificarAcesso();
-
     const sessionEvent = new CustomEvent("pronti:session-loaded", { detail: { userSession } });
     document.dispatchEvent(sessionEvent);
 
@@ -110,9 +114,9 @@ function setupMenuFeatures() {
     }
 
     updateMenuVisibility(papel);
-    setupMenuFeatures();
+    highlightActiveLink();
   } catch (err) {
-    console.error("[menu-lateral-unificado] Erro:", err);
+    console.error("[menu-lateral] Erro:", err);
   }
 })();
 </script>
