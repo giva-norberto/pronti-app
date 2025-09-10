@@ -1,22 +1,11 @@
-import { auth } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { verificarAcesso } from "./userService.js";
+import { verificarAcesso } from './userService.js';
+import { auth, signOut } from './firebase-config.js';
 
-document.addEventListener("DOMContentLoaded", async () => {
-    // ⬇ Aguarda o menu ser carregado pelo fetch
-    const waitForSidebar = () => new Promise(resolve => {
-        const interval = setInterval(() => {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                clearInterval(interval);
-                resolve(sidebar);
-            }
-        }, 50);
-    });
+export async function ativarMenu() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
 
-    const sidebar = await waitForSidebar();
-
-    // --- BOTÃO SAIR ---
+    // Logout
     const btnLogout = sidebar.querySelector('#btn-logout');
     if (btnLogout && !btnLogout.dataset.listenerAttached) {
         btnLogout.dataset.listenerAttached = 'true';
@@ -25,14 +14,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                 await signOut(auth);
                 localStorage.clear();
                 window.location.href = 'login.html';
-            } catch (err) {
-                console.error("Erro ao sair:", err);
-                alert("Erro ao sair, tente novamente.");
+            } catch {
+                alert('Erro ao sair');
             }
         });
     }
 
-    // --- DESTAQUE DO LINK ATIVO ---
+    // Destaque do link da página atual
     const links = sidebar.querySelectorAll('.sidebar-links a');
     const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
     links.forEach(link => {
@@ -40,27 +28,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (linkPage === currentPage) link.classList.add('active');
     });
 
-    // --- APLICA PERMISSÕES DO USUÁRIO ---
+    // Permissões
     try {
         const sessao = await verificarAcesso();
-        const papelUsuario = sessao.perfil.papel;
+        const papel = sessao.perfil.papel; // 'admin', 'dono', 'funcionario'
 
         links.forEach(link => {
             const menuId = link.dataset.menuId;
-            // Aqui você controla quem vê o menu
-            // Dono/admin/funcionario
             if (!menuId) return;
-            if (menuId === 'servicos' || menuId === 'financeiro' || menuId === 'perfil') {
-                link.style.display = papelUsuario === 'dono' || papelUsuario === 'admin' ? '' : 'none';
-            } else if (menuId === 'administracao' || menuId === 'permissoes') {
-                link.style.display = papelUsuario === 'admin' ? '' : 'none';
-            } else {
-                // todos os outros menus (inicio, agenda, equipe, clientes) são visíveis para todos
+
+            // Funcionário: só vê menus gerais
+            if (papel === 'funcionario' && ['servicos','clientes','perfil','relatorios','administracao','permissoes'].includes(menuId)) {
+                link.style.display = 'none';
+            }
+
+            // Dono: não vê menus admin
+            if (papel === 'dono' && ['administracao','permissoes'].includes(menuId)) {
+                link.style.display = 'none';
+            }
+
+            // Admin vê tudo
+            if (papel === 'admin') {
                 link.style.display = '';
             }
         });
-
-    } catch (err) {
-        console.error("Erro ao aplicar permissões no menu:", err);
+    } catch(e) {
+        console.error('Erro ao aplicar permissões do menu:', e);
     }
-});
+}
