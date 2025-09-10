@@ -32,12 +32,23 @@ function setupMenuFeatures() {
     });
 }
 
-// --- ATUALIZADO: Atualiza a visibilidade dos menus com base nas permissões ---
+// --- Atualiza a visibilidade dos menus com base nas permissões ---
 async function updateMenuWithPermissions() {
     try {
         // 1. Pega os dados da sessão (usuário e seu papel)
         const sessao = await verificarAcesso();
-        const papelUsuario = sessao.perfil.papel; // 'admin', 'dono', ou 'funcionario'
+
+        // Robustez: define papelUsuario corretamente mesmo que venha vazio
+        let papelUsuario = sessao.perfil?.papel;
+        if (!papelUsuario) {
+            if (sessao.isAdmin) {
+                papelUsuario = "admin";
+            } else if (sessao.isOwner) {
+                papelUsuario = "dono";
+            } else {
+                papelUsuario = "funcionario";
+            }
+        }
 
         // 2. Busca as regras de permissão globais do Firestore
         const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
@@ -47,13 +58,13 @@ async function updateMenuWithPermissions() {
         // 3. Pega todos os itens de menu que devem ser controlados
         const menuItems = document.querySelectorAll('[data-menu-id]');
         
-        // 4. Lógica principal: Itera sobre cada item e decide se deve exibi-lo
+        // 4. Lógica: mostra menu se não há regra OU se permitido
         menuItems.forEach(item => {
             const menuId = item.dataset.menuId; // Ex: 'agenda', 'clientes'
             const regraParaMenu = regrasGlobais[menuId];
 
-            // Verifica se existe uma regra e se o papel do usuário tem permissão
-            if (regraParaMenu && regraParaMenu[papelUsuario] === true) {
+            // Mostra se não há regra ou se papel tem permissão explícita
+            if (!regraParaMenu || regraParaMenu[papelUsuario] === true) {
                 item.style.display = 'flex'; // ou 'block', dependendo do seu CSS
             } else {
                 item.style.display = 'none'; // Esconde o item se não houver permissão
@@ -68,13 +79,12 @@ async function updateMenuWithPermissions() {
 // --- Inicialização do Menu ---
 (async () => {
     try {
-        // Primeiro, esconde todos os menus controláveis para evitar "piscar" na tela
+        // Esconde todos os menus inicialmente para evitar "piscar" na tela
         document.querySelectorAll('[data-menu-id]').forEach(el => el.style.display = 'none');
         
         await updateMenuWithPermissions(); // Aplica as permissões corretas
         setupMenuFeatures(); // Configura logout e link ativo
     } catch (err) {
         console.error("❌ Erro fatal inicializando menu lateral:", err);
-        // A função verificarAcesso() dentro de updateMenu já redireciona se necessário
     }
 })();
