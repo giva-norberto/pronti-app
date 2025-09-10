@@ -1,20 +1,23 @@
-// VERSÃO FINAL CORRIGIDA - 09 DE SETEMBRO, 22:16
+/**
+ * @file menu-lateral.js
+ * @description Módulo de ferramentas para controlar a visibilidade e as
+ * funcionalidades do menu lateral da aplicação Pronti.
+ * @author Giva-Norberto & Gemini Assistant
+ * @version 1.0.0 - 09 de Setembro, 2025
+ */
 
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 /**
- * EXPORTADA: Altera a visibilidade dos elementos do menu com base no papel.
- * @param {string} role - O papel do usuário (ex: 'dono', 'funcionario').
+ * Altera a visibilidade dos links do menu com base no papel (role) do usuário.
+ * A função primeiro esconde todos os links e depois exibe apenas os permitidos.
+ * @param {string} role O papel do usuário (ex: 'admin', 'dono', 'funcionario').
  */
 export function updateMenuVisibility(role) {
   console.log(`[menu-lateral.js] Atualizando visibilidade do MENU para o papel: ${role}`);
 
-  // ======================================================================
-  // ⭐ LÓGICA DE VISIBILIDADE CORRIGIDA E MAIS SEGURA
-  // ======================================================================
-
-  // 1. Primeiro, esconde TODOS os links para garantir um estado inicial limpo.
+  // 1. Esconde todos os links para garantir um estado inicial limpo.
   const allLinks = document.querySelectorAll('#sidebar-links a');
   allLinks.forEach(link => link.style.display = 'none');
   
@@ -41,33 +44,38 @@ export function updateMenuVisibility(role) {
 }
 
 /**
- * EXPORTADA: Configura funcionalidades do menu, como o botão de logout e links ativos.
+ * Configura as funcionalidades interativas do menu, como o botão de logout
+ * e o destaque do link da página ativa.
  */
 export function setupMenuFeatures() {
-  // Configura o botão de logout.
+  // --- Configuração do Botão de Logout ---
   const btnLogout = document.getElementById("btn-logout");
+  // Garante que o evento de clique só seja adicionado uma vez
   if (btnLogout && !btnLogout.dataset.listenerAttached) {
     btnLogout.dataset.listenerAttached = 'true';
     btnLogout.addEventListener("click", () => {
       signOut(auth).then(() => {
         localStorage.clear();
         window.location.href = "login.html";
+      }).catch(error => {
+        console.error("Erro ao fazer logout:", error);
       });
     });
   }
 
-  // Lógica para destacar o link ativo.
+  // --- Lógica para Destacar o Link Ativo ---
   try {
     const currentPagePath = window.location.pathname;
     const links = document.querySelectorAll('#sidebar-links a');
 
     links.forEach(function(link) {
+      // new URL(link.href) garante que estamos comparando caminhos de forma segura
       const linkPath = new URL(link.href).pathname;
       if (currentPagePath === linkPath) {
         link.classList.add('active');
       }
     });
   } catch (e) {
-    console.error("Erro ao destacar link ativo:", e);
+    console.error("Erro ao tentar destacar o link ativo:", e);
   }
 }
