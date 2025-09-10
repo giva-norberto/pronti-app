@@ -1,4 +1,4 @@
-// menu-lateral.js - MÓDULO DE FERRAMENTAS
+// menu-lateral.js - MÓDULO DE FERRAMENTAS (Versão Corrigida)
 
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -10,19 +10,32 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-aut
 export function updateMenuVisibility(role) {
   console.log(`[menu-lateral.js] Atualizando visibilidade do MENU para o papel: ${role}`);
 
-  // Mostra os menus básicos que todos os usuários logados veem
+  // ======================================================================
+  // ⭐ LÓGICA DE VISIBILIDADE CORRIGIDA E MAIS SEGURA
+  // ======================================================================
+
+  // 1. Primeiro, esconde TODOS os links para garantir um estado inicial limpo.
+  const allLinks = document.querySelectorAll('#sidebar-links a');
+  allLinks.forEach(link => link.style.display = 'none');
+  
+  // 2. Mostra os links básicos que TODOS os usuários logados devem ver.
   document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
 
-  // Mostra os menus restritos com base no papel
+  // 3. Verifica o papel e mostra os links extras, se o usuário tiver permissão.
   switch (role?.toLowerCase()) {
     case 'admin':
+      // Se for admin, mostra os links de admin.
       document.querySelectorAll('.menu-admin').forEach(el => el.style.display = 'flex');
       // A lógica continua para o case 'dono' para que o admin também veja tudo que o dono vê.
+    
     case 'dono':
+      // Se for dono (ou admin), mostra os links de dono.
       document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
       break;
+
+    case 'funcionario':
     default:
-      // Nenhuma ação extra é necessária para o perfil de funcionário.
+      // Se for funcionário, não faz mais nada. Ele verá apenas os links '.menu-func'.
       break;
   }
 }
@@ -44,14 +57,17 @@ export function setupMenuFeatures() {
   }
 
   // Lógica para destacar o link ativo.
-  const links = document.querySelectorAll(".sidebar-links a");
-  const currentPage = window.location.pathname.split("/").pop() || "index.html";
-  links.forEach(link => {
-    if(link) {
-      const linkPage = link.getAttribute("href").split("/").pop();
-      if (linkPage === currentPage) {
+  try {
+    const currentPagePath = window.location.pathname;
+    const links = document.querySelectorAll('#sidebar-links a');
+
+    links.forEach(function(link) {
+      const linkPath = new URL(link.href).pathname;
+      if (currentPagePath === linkPath) {
         link.classList.add('active');
       }
-    }
-  });
+    });
+  } catch (e) {
+    console.error("Erro ao destacar link ativo:", e);
+  }
 }
