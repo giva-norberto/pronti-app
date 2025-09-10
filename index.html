@@ -7,7 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* SEUS ESTILOS CSS (sem alterações) */
+        /* Seus estilos CSS permanecem exatamente como você os escreveu */
         html, body { height: 100%; margin: 0; padding: 0; }
         body { display: flex; flex-direction: column; opacity: 1; transition: opacity 0.3s ease-in-out; overflow: hidden; }
         body.is-loading { opacity: 0; }
@@ -53,22 +53,23 @@
 <script type="module">
     // 1. IMPORTA TODAS AS FERRAMENTAS NECESSÁRIAS
     import { verificarAcesso } from "./userService.js";
+    // A chamada para 'auth-guard.js' foi corrigida para 'menu-lateral.js'
     import { updateMenuVisibility, setupMenuFeatures } from "./menu-lateral.js";
 
-    // Seleção de elementos do DOM
+    // Seleção de elementos do DOM (sua lógica, mantida)
     const nomeUsuarioSpan = document.getElementById("nome-usuario");
     const saudacaoSpan = document.getElementById("saudacao");
     const mainContent = document.getElementById("main-content");
     const dashboardCards = document.getElementById("dashboard-cards");
 
-    // Funções de UI da Página
+    // Funções de UI da Página (sua lógica, mantida)
     function definirSaudacao() { const hora = new Date().getHours(); if (hora >= 5 && hora < 12) return "Bom dia"; if (hora >= 12 && hora < 18) return "Boa tarde"; return "Boa noite"; }
     function mostrarPrimeiroAcessoCard() { mainContent.innerHTML = `<div class="primeiro-acesso-card"><h2>Seja bem-vindo ao Pronti!</h2><p>Inicie o cadastro da sua empresa.</p><button id="btn-criar-empresa" class="primeiro-btn"><i class="fa fa-building"></i> Criar minha empresa</button></div>`; document.getElementById("btn-criar-empresa").addEventListener("click", () => { localStorage.removeItem('empresaAtivaId'); window.location.href = "perfil.html"; }); }
     function renderizarCards(perfil) { let cardsHtml = ''; if (perfil?.papel?.toLowerCase() === "funcionario") { cardsHtml = `<a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>`; } else { cardsHtml = `<a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a><a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a><a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a><a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a><a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>`; } dashboardCards.innerHTML = cardsHtml; }
     function removerIsLoading() { document.body.classList.remove('is-loading'); }
 
     /**
-     * Função principal que orquestra a inicialização da página.
+     * Função principal que orquestra a inicialização da página (sua lógica, mantida e organizada)
      */
     async function inicializarPagina() {
         try {
@@ -95,16 +96,12 @@
 
             const { perfil, user } = userSession;
 
-            // ======================================================================
-            // ⭐ LÓGICA DE TRADUÇÃO ADICIONADA AQUI
-            // ======================================================================
-            // Cria a propriedade 'papel' que estava faltando, baseando-se em 'ehDono'.
+            // LÓGICA DE TRADUÇÃO para criar a propriedade 'papel' que estava faltando
             if (perfil.ehDono === true) {
                 perfil.papel = 'dono';
             } else {
                 perfil.papel = 'funcionario';
             }
-            // ======================================================================
 
             // TERCEIRO, agora que 'perfil.papel' existe, chama as funções que precisam dele.
             updateMenuVisibility(perfil.papel);
