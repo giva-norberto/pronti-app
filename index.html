@@ -6,31 +6,24 @@
     <title>Pronti - Início</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
     <style>
         :root {
             --sidebar-width: 240px;
         }
-        
-        /* --- ALTERAÇÃO PRINCIPAL AQUI --- */
         body {
             display: flex;
             margin: 0;
             font-family: 'Poppins', sans-serif;
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
-            /* 1. FUNDO ROXO APLICADO DIRETAMENTE NO CORPO */
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
         }
-
         body.loaded {
             opacity: 1;
         }
-
         #menu-container {
             flex-shrink: 0;
         }
-
         main.main-content {
             flex-grow: 1;
             padding: 40px;
@@ -38,12 +31,9 @@
             height: 100vh;
             overflow-y: auto;
         }
-        
         .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; }
-        /* 2. COR DO TEXTO AJUSTADA PARA O FUNDO ESCURO */
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
-
         .dashboard-grid-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -52,7 +42,6 @@
             max-width: 900px;
             margin: 0 auto;
         }
-
         .menu-card {
             color: #fff; border-radius: 16px; padding: 20px 10px;
             display: flex; flex-direction: column; align-items: center;
@@ -67,8 +56,6 @@
             filter: brightness(1.1); cursor: pointer;
         }
         .menu-card i { font-size: 2rem; }
-
-        /* Cores dos cards */
         [data-card-id="dashboard"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
         [data-card-id="agenda"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
         [data-card-id="servicos"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
@@ -77,7 +64,6 @@
         [data-card-id="perfil"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
         [data-card-id="relatorios"] { background: linear-gradient(135deg, #374151, #111827); }
         [data-card-id="administracao"], [data-card-id="permissoes"] { background: linear-gradient(135deg, #111827, #374151); }
-        
         @media (max-width: 900px) {
             body { flex-direction: column; }
             main.main-content { height: auto; }
@@ -93,7 +79,6 @@
             <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
             <p>Pronto para gerenciar seu dia?</p>
         </div>
-
         <div class="dashboard-grid-cards" id="dashboard-grid-cards">
             <a href="dashboard.html" class="menu-card" data-card-id="dashboard">
                 <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
@@ -126,8 +111,6 @@
     </main>
 
     <script type="module">
-        // O script não precisa de nenhuma alteração. Ele já é capaz de
-        // ler as permissões e vai funcionar perfeitamente com o visual ajustado.
         import { verificarAcesso } from './userService.js';
         import { auth, db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -138,16 +121,14 @@
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
-                
-                const btnLogout = document.getElementById("btn-logout");
-                if (btnLogout) {
-                    btnLogout.addEventListener("click", () => {
-                        signOut(auth).then(() => {
-                            localStorage.clear();
-                            window.location.href = "login.html";
-                        }).catch(err => console.error("Erro ao deslogar:", err));
-                    });
-                }
+
+                // Carrega JS do menu lateral para aplicar permissões e destacar menu ativo
+                const script = document.createElement('script');
+                script.type = 'module';
+                script.src = 'menu-lateral.js';
+                document.body.appendChild(script);
+
+                // O logout também funciona dentro do menu-lateral.js
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
             }
@@ -157,11 +138,13 @@
             try {
                 await loadAndSetupMenu();
                 const sessao = await verificarAcesso();
-                const papelUsuario = sessao.perfil.papel;
+                const papelUsuario = sessao.perfil?.papel || (sessao.isAdmin ? "admin" : (sessao.isOwner ? "dono" : "funcionario"));
                 const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
-                
+
                 const hora = new Date().getHours();
-                document.getElementById('saudacao').textContent = (hora >= 5 && hora < 12) ? "Bom dia" : (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
+                document.getElementById('saudacao').textContent =
+                    (hora >= 5 && hora < 12) ? "Bom dia" :
+                    (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
                 document.getElementById('nome-usuario').textContent = nomeUsuario;
 
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
@@ -172,7 +155,7 @@
                 todosOsCards.forEach(card => {
                     const cardId = card.dataset.cardId;
                     const regraParaCard = regrasGlobais[cardId];
-                    if (regraParaCard && regraParaCard[papelUsuario] === true) {
+                    if (!regraParaCard || regraParaCard[papelUsuario] === true) {
                         card.style.display = 'flex';
                     } else {
                         card.style.display = 'none';
