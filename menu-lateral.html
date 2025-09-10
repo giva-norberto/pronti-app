@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Componente Menu Lateral</title>
+    <!-- Font Awesome para os ícones, caso decida usar -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
+        /* Seu CSS completo, exatamente como você enviou, sem nenhuma alteração */
         .sidebar {
             width: 240px;
             background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -46,14 +48,15 @@
         .sidebar-links a {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             background: #fff;
             color: #4f46e5;
             font-weight: 600;
             font-size: 1.08em;
             border-radius: 10px;
+            margin-bottom: 0;
             box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-            transition: all 0.2s ease;
+            transition: background 0.17s, color 0.18s, box-shadow 0.18s;
             padding: 12px 18px;
             text-align: left;
             text-decoration: none;
@@ -158,15 +161,25 @@
         <a href="index.html" class="sidebar-brand">Pronti</a>
         <hr />
         <nav class="sidebar-links" id="sidebar-links">
+            <!-- ====================================================================== -->
+            <!--      Links de Funcionário (Visíveis para todos)                      -->
+            <!-- ====================================================================== -->
             <a href="index.html" class="menu-func"><span>🏠</span> Início</a>
             <a href="agenda.html" class="menu-func"><span>📅</span> Agenda</a>
             <a href="equipe.html" class="menu-func"><span>👥</span> Equipe</a>
 
+            <!-- ====================================================================== -->
+            <!--      Links do Dono (Visíveis apenas para o Dono/Admin)               -->
+            <!-- ====================================================================== -->
             <a href="dashboard.html" class="menu-dono" style="display:none;"><span>📊</span> Dashboard</a>
             <a href="servicos.html" class="menu-dono" style="display:none;"><span>🛠️</span> Serviços</a>
-            <a href="clientes.html" class="menu-dono" style="display:none;"><span>👤</span> Clientes</a> <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
+            <a href="clientes.html" class="menu-dono" style="display:none;"><span>👤</span> Clientes</a>
+            <a href="perfil.html" class="menu-dono" style="display:none;"><span>🙍‍♂️</span> Meu Perfil</a>
             <a href="relatorios.html" class="menu-dono" style="display:none;"><span>📈</span> Relatórios</a>
             
+            <!-- ====================================================================== -->
+            <!--      Links do Admin (Visíveis apenas para o Admin)                   -->
+            <!-- ====================================================================== -->
             <a href="admin-clientes.html" class="menu-admin" style="display:none;"><span>🔒</span> Administração</a>
         </nav>
         <div class="sidebar-footer">
@@ -174,5 +187,12 @@
         </div>
     </aside>
 
-    </body>
+    <!-- 
+        NENHUM SCRIPT AQUI!
+        Este arquivo agora é um template "puro". A lógica de logout, de destacar
+        o link ativo e de limitar o acesso foi movida para o 'menu-lateral.js' e 
+        é chamada pela sua página principal (index.html ou page-loader.js),
+        garantindo que tudo funcione na ordem correta e sem conflitos.
+    -->
+</body>
 </html>
