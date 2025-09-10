@@ -1,95 +1,61 @@
 /**
  * @file menu-lateral.js
- * @description Menu lateral autônomo e inteligente para Pronti
- * @version 5.0 - Funcional e sem reload
+ * @description Módulo de ferramentas ("toolbox") para controlar a visibilidade e as
+ * funcionalidades do menu lateral da aplicação Pronti.
+ * @author Giva-Norberto & Gemini Assistant
+ * @version Final
  */
 
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { verificarAcesso } from "./userService.js";
-
-const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 /**
- * Atualiza visibilidade dos links do menu conforme o papel do usuário.
+ * Altera a visibilidade dos links do menu com base no papel (role) do usuário.
+ * Esta função PRECISA ser exportada para que o page-loader.js possa usá-la.
+ * @param {string} role O papel do usuário (ex: 'admin', 'dono', 'funcionario').
  */
-function updateMenuVisibility(role) {
-    document.querySelectorAll('.menu-dono, .menu-admin').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
+export function updateMenuVisibility(role) {
+  console.log(`[menu-lateral.js] Aplicando visibilidade para o papel: ${role}`);
 
-    switch (role?.toLowerCase()) {
-        case 'admin':
-            document.querySelectorAll('.menu-admin').forEach(el => el.style.display = 'flex');
-        case 'dono':
-            document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
-            break;
-    }
+  // Lógica "esconde primeiro, mostra depois" para garantir o estado correto
+  document.querySelectorAll('.menu-dono, .menu-admin').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.menu-func').forEach(el => el.style.display = 'flex');
+  
+  switch (role?.toLowerCase()) {
+    case 'admin':
+      document.querySelectorAll('.menu-admin').forEach(el => el.style.display = 'flex');
+    case 'dono':
+      document.querySelectorAll('.menu-dono').forEach(el => el.style.display = 'flex');
+      break;
+  }
 }
 
 /**
- * Destaca link ativo e configura botão de logout
+ * Configura as funcionalidades interativas do menu, como o botão de logout
+ * e o destaque do link da página ativa.
+ * Esta função PRECISA ser exportada para que o page-loader.js possa usá-la.
  */
-function setupMenuFeatures() {
-    const btnLogout = document.getElementById("btn-logout");
-    if (btnLogout && !btnLogout.dataset.listenerAttached) {
-        btnLogout.dataset.listenerAttached = 'true';
-        btnLogout.addEventListener("click", () => {
-            signOut(auth).then(() => {
-                localStorage.clear();
-                window.location.href = "login.html";
-            });
-        });
-    }
-
-    const currentHref = window.location.pathname.split("/").pop(); // pega apenas o arquivo atual
-    document.querySelectorAll('#sidebar-links a').forEach(link => {
-        link.classList.remove('active');
-        const linkHref = link.getAttribute('href').split("/").pop();
-        if (linkHref === currentHref) link.classList.add('active');
+export function setupMenuFeatures() {
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout && !btnLogout.dataset.listenerAttached) {
+    btnLogout.dataset.listenerAttached = 'true';
+    btnLogout.addEventListener("click", () => signOut(auth).then(() => {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }));
+  }
+  
+  try {
+    const currentPagePath = window.location.pathname;
+    const links = document.querySelectorAll('#sidebar-links a');
+    links.forEach(function(link) {
+      const linkPath = new URL(link.href).pathname;
+      link.classList.remove('active');
+      if (currentPagePath === linkPath) {
+        link.classList.add('active');
+      }
     });
+  } catch (e) {
+    console.error("Erro ao destacar link ativo:", e);
+  }
 }
-
-/**
- * Aplica lógica de permissões
- */
-async function aplicarLogicaAoMenu() {
-    try {
-        const userSession = await verificarAcesso();
-        let papel = 'funcionario';
-
-        if (userSession?.perfil && userSession?.user) {
-            const { perfil, user } = userSession;
-            if (user.uid === ADMIN_UID) {
-                papel = 'admin';
-            } else if (perfil.ehDono) {
-                papel = 'dono';
-            }
-        }
-
-        updateMenuVisibility(papel);
-        setupMenuFeatures();
-
-    } catch (err) {
-        console.error("[menu-lateral.js] Erro ao aplicar lógica:", err);
-    }
-}
-
-/**
- * Inicializa o menu: injeta HTML e aplica lógica
- */
-(async function inicializarMenu() {
-    const placeholder = document.getElementById('sidebar-placeholder');
-    if (!placeholder) return console.warn("[menu-lateral.js] Nenhum placeholder encontrado.");
-
-    try {
-        const response = await fetch('menu-lateral.html');
-        if (!response.ok) throw new Error("Falha ao carregar menu-lateral.html");
-
-        placeholder.innerHTML = await response.text();
-        await aplicarLogicaAoMenu();
-
-    } catch (err) {
-        console.error("[menu-lateral.js] Erro ao inicializar menu:", err);
-        placeholder.innerHTML = `<p style="color:red;padding:1em;">Erro ao carregar menu.</p>`;
-    }
-})();
