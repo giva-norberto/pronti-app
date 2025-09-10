@@ -1,6 +1,6 @@
 /**
  * @file menu-lateral.js
- * @description Menu lateral autônomo e inteligente para Pronti.
+ * @description Menu lateral autônomo e inteligente para Pronti
  * @version 5.0 - Funcional e sem reload
  */
 
