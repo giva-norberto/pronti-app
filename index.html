@@ -7,7 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* Seu CSS completo com a parte responsiva problemática removida */
+        /* Seu CSS completo, exatamente como você enviou, sem nenhuma alteração */
         html, body { height: 100%; margin: 0; padding: 0; }
         body { display: flex; flex-direction: column; opacity: 1; transition: opacity 0.3s ease-in-out; overflow: hidden; }
         body.is-loading { opacity: 0; }
@@ -27,14 +27,24 @@
         .card-equipe    { background: linear-gradient(135deg, #4facfe 10%, #6366f1 100%); }
         .card-perfil    { background: linear-gradient(135deg, #00f2fe 0%, #6366f1 100%); }
         .card-relatorios{ background: linear-gradient(135deg, #ff5858 0%, #a18cd1 100%); }
-        
-        /* O CÓDIGO @media (max-width: 900px) FOI REMOVIDO PARA RESTAURAR SEU LAYOUT ORIGINAL */
-
+        @media (max-width: 900px) {
+            .sidebar { width: 100%; min-height: auto; position: static; flex-direction: row; align-items: center; padding: 10px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size: 0.95em; flex-wrap: wrap; }
+            .sidebar-brand { font-size: 1.4rem; padding: 0 10px; margin: 0; }
+            .sidebar hr { display: none; }
+            .sidebar-links { flex-direction: row; gap: 6px; padding: 0 8px; flex-grow: 1; justify-content: flex-start; }
+            .sidebar-links a { font-size: 1em; padding: 8px 12px; }
+            .sidebar-links a span { display: none; }
+            .sidebar-footer { padding: 0 8px; margin: 0; margin-left: auto; }
+            .btn-logout { padding: 8px 16px; font-size: 1em; }
+        }
+        @media (max-width: 768px) {
+            .sidebar-links a { padding: 8px; font-size: 0; }
+            .sidebar-links a span { display: inline-block; font-size: 1.2rem; }
+        }
     </style>
 </head>
 <body class="dashboard-body is-loading">
 
-    <!-- 1. O placeholder onde o menu autônomo será injetado -->
     <div id="sidebar-placeholder"></div>
 
     <main class="main-content" id="main-content">
@@ -48,7 +58,7 @@
     <!-- ====================================================================== -->
     <!--      SEÇÃO DE SCRIPTS FINAL E CORRIGIDA                              -->
     <!-- ====================================================================== -->
-    
+
     <!-- 1. CHAMA O COMPONENTE INTELIGENTE DO MENU -->
     <!-- Este script vai carregar o menu, aplicar as permissões e se configurar sozinho. -->
     <script type="module" src="menu-lateral.js"></script>
@@ -56,8 +66,13 @@
     <!-- 2. CHAMA O SCRIPT ESPECÍFICO DESTA PÁGINA -->
     <!-- Este script contém apenas a lógica que pertence à página de início. -->
     <script type="module">
+        // A importação do 'menu-lateral.js' foi removida para evitar conflitos.
         import { verificarAcesso } from "./userService.js";
 
+        // A constante do Admin foi removida daqui, pois a lógica agora está centralizada
+        // no componente do menu.
+
+        // Suas variáveis e funções de UI, mantidas.
         const nomeUsuarioSpan = document.getElementById("nome-usuario");
         const saudacaoSpan = document.getElementById("saudacao");
         const mainContent = document.getElementById("main-content");
@@ -68,17 +83,22 @@
         function renderizarCards(perfil) { let cardsHtml = ''; if (perfil?.papel?.toLowerCase() === "funcionario") { cardsHtml = `<a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>`; } else { cardsHtml = `<a href="dashboard.html" class="menu-card card-painel"><i class="fa-solid fa-chart-line"></i><span>Painel</span></a><a href="agenda.html" class="menu-card card-agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a><a href="servicos.html" class="menu-card card-servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a><a href="clientes.html" class="menu-card card-clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a><a href="equipe.html" class="menu-card card-equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a><a href="perfil.html" class="menu-card card-perfil"><i class="fa-solid fa-user-gear"></i><span>Meu Perfil</span></a><a href="relatorios.html" class="menu-card card-relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>`; } dashboardCards.innerHTML = cardsHtml; }
         function removerIsLoading() { document.body.classList.remove('is-loading'); }
 
+        /**
+         * Função que inicializa apenas o CONTEÚDO desta página.
+         */
         async function inicializarConteudo() {
             try {
+                // A página ainda precisa saber quem é o usuário para mostrar os cards certos.
                 const userSession = await verificarAcesso();
                 if (!userSession || !userSession.perfil) {
-                    return; // O menu-lateral.js já lidou com o redirecionamento
+                    removerIsLoading(); // Garante que o loading suma mesmo se não houver sessão
+                    return; 
                 }
 
                 const { perfil, user } = userSession;
                 
-                // A lógica de papel agora está centralizada no menu-lateral.js, mas
-                // a renderização dos cards ainda precisa dela.
+                // A lógica de papel para renderizar os cards ainda é necessária aqui.
+                // Esta lógica não afeta mais o menu, apenas os cards.
                 if (user.uid === "BX6Q7HrVMrcCBqe72r7K76EBPkX2") { // ADMIN_UID
                     perfil.papel = 'admin';
                 } else if (perfil.ehDono === true) {
@@ -87,6 +107,7 @@
                     perfil.papel = 'funcionario';
                 }
 
+                // Sua lógica de renderização, mantida.
                 const primeiroNome = perfil.nome?.split(" ")[0] || user.displayName?.split(" ")[0] || "Usuário";
                 if (nomeUsuarioSpan) nomeUsuarioSpan.textContent = primeiroNome;
                 if (saudacaoSpan) saudacaoSpan.textContent = definirSaudacao();
@@ -99,6 +120,8 @@
                     console.error("[index.html] Erro ao inicializar conteúdo:", error);
                 }
             } finally {
+                // O menu-lateral.js também chama isso, mas não há problema em chamar duas vezes.
+                // Isso garante que o conteúdo da página não fique travado no loading.
                 removerIsLoading();
             }
         }
