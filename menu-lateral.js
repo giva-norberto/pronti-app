@@ -1,4 +1,4 @@
-// Adiciona uma classe CSS para esconder, se não houver no seu CSS
+// Adiciona a classe .hidden ao head se não existir (para esconder itens por permissão)
 (function() {
   if (!document.querySelector('style[data-permissao]')) {
     const style = document.createElement('style');
