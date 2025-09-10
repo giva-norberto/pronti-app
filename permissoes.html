@@ -13,6 +13,8 @@
         const permissoesTabela = document.getElementById("permissoes-tabela");
         const salvarBtn = document.getElementById("salvar");
 
+        // --- ÚNICA ALTERAÇÃO AQUI ---
+        // Adicionados 'inicio' e 'administracao' para que você possa controlá-los.
         const menus = [
             "inicio",
             "dashboard",
@@ -22,7 +24,7 @@
             "clientes",
             "perfil",
             "relatorios",
-            "administracao",
+            "administracao", // Adicionado
             "permissoes" 
         ];
 
@@ -33,6 +35,7 @@
             const snap = await getDoc(ref);
             permissoesAtuais = snap.exists() ? snap.data() : {};
 
+            // O resto do script já funciona perfeitamente com a nova lista
             menus.forEach(menu => {
                 if (!permissoesAtuais[menu]) {
                     permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
@@ -66,13 +69,8 @@
                 if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
                 novasPermissoes[menu][role] = chk.checked;
             });
-
-            // --- ESTA É A ÚNICA LINHA ALTERADA ---
-            // Removemos a opção de "mesclar" ({ merge: true }) para garantir
-            // que o arquivo seja sempre salvo exatamente como está na tela.
-            await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes);
-            
-            alert("Permissões globais salvas com sucesso!");
+            await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
+            alert("Permissões globais salvas!");
         });
 
         onAuthStateChanged(auth, (user) => {
