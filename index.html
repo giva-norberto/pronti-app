@@ -122,14 +122,14 @@
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
 
-                // Carrega JS do menu lateral para aplicar permissões e destacar menu ativo
+                // Só agora carrega o JS do menu lateral
                 const script = document.createElement('script');
                 script.type = 'module';
                 script.src = 'menu-lateral.js';
                 document.body.appendChild(script);
-
-                // O logout também funciona dentro do menu-lateral.js
             } catch (error) {
+                document.getElementById('menu-container').innerHTML =
+                    "<div style='color:white;background:#4f46e5;padding:1em;border-radius:8px;'>Menu lateral não carregado</div>";
                 console.error("Falha ao carregar o menu lateral:", error);
             }
         }
