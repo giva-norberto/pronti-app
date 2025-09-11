@@ -2,7 +2,7 @@
 <!--      MENU-LATERAL.HTML (FUNCIONÁRIO, DONO, ADMIN, LOGOUT)             -->
 <!-- ====================================================================== -->
 
-<aside class="sidebar sidebar-loading" id="sidebar">
+<aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
@@ -52,8 +52,6 @@
 /* ===================== */
 /*    MENU LATERAL CSS    */
 /* ===================== */
-.sidebar-loading .sidebar-links a { display: none; }
-
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -165,9 +163,9 @@
 
 <script>
 // ========================
-// Configura logout funcional
+// Marca link ativo e configura logout funcional
 // ========================
-document.addEventListener("DOMContentLoaded", function() {
+function ativarMenuLateral() {
   // Marca link ativo
   const urlAtual = window.location.pathname.split('/').pop();
   document.querySelectorAll('.sidebar-links a').forEach(link => {
@@ -176,12 +174,15 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // Configura botão sair
-  var btn = document.getElementById("btn-logout");
+  const btn = document.getElementById("btn-logout");
   if (btn) {
-    btn.addEventListener("click", function() {
+    btn.onclick = function() {
       localStorage.clear();
       window.location.href = "login.html";
-    });
+    }
   }
-});
+}
+
+// Se o menu for carregado via fetch/innerHTML, chame ativarMenuLateral() após inserir no DOM
+document.addEventListener("DOMContentLoaded", ativarMenuLateral);
 </script>
