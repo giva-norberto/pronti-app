@@ -1,244 +1,187 @@
-<!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (FUNCIONÁRIO, DONO, ADMIN, LOGOUT)             -->
-<!-- ====================================================================== -->
-
-<aside class="sidebar sidebar-loading" id="sidebar">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Menu Lateral Dinâmico</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .sidebar {
+      width: 250px;
+      background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+      min-height: 100vh;
+      color: #fff;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      padding-top: 24px;
+      transition: left 0.3s ease;
+      box-sizing: border-box;
+    }
+    .sidebar-brand {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      text-decoration: none;
+      letter-spacing: 2px;
+      padding: 0 32px 12px 32px;
+      display: block;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+    .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; }
+    .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; flex-grow: 1; }
+    .sidebar-links a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      color: #4f46e5;
+      font-weight: 600;
+      font-size: 1.08em;
+      border-radius: 10px;
+      margin-bottom: 0;
+      box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+      transition: all 0.2s ease;
+      padding: 14px 18px;
+      text-align: left;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      border: 2px solid transparent;
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    .sidebar-links a span { display: inline-block; width: 20px; text-align: center; }
+    .sidebar-links a.active, .sidebar-links a:focus {
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 700;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+      outline: none;
+    }
+    .sidebar-links a:hover:not(.active) {
+      background: #f0f1ff;
+      color: #3b2fd6;
+      border-color: #d1d5fa;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 32px 32px 24px 32px;
+    }
+    .btn-logout {
+      background: #fff;
+      color: #4f46e5;
+      border: none;
+      padding: 14px 0;
+      width: 100%;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 1.05em;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+      border: 2px solid transparent;
+      outline: none;
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    .btn-logout:hover, .btn-logout:focus {
+      background: #4f46e5;
+      color: #fff;
+      border: 2px solid #fff;
+    }
+    .hidden { display: none !important; }
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-110%); }
+      .sidebar.open { transform: translateX(0); }
+      body.sidebar-open { overflow: hidden; }
+    }
+  </style>
+</head>
+<body>
+  <!-- SIDEBAR DINÂMICO (todos os menus, só um aparece) -->
+  <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
-    <nav class="sidebar-links" id="sidebar-links">
-        <!-- Funcionário / Geral -->
-        <a href="index.html" data-menu-id="inicio">
-            <span><i class="fa-solid fa-house"></i></span> Início
-        </a>
-        <a href="agenda.html" data-menu-id="agenda">
-            <span><i class="fa-solid fa-calendar-days"></i></span> Agenda
-        </a>
-        <a href="equipe.html" data-menu-id="equipe">
-            <span><i class="fa-solid fa-users"></i></span> Equipe
-        </a>
-
-        <!-- Dono -->
-        <a href="servicos.html" data-menu-id="servicos">
-            <span><i class="fa-solid fa-scissors"></i></span> Serviços
-        </a>
-        <a href="clientes.html" data-menu-id="clientes">
-            <span><i class="fa-solid fa-user"></i></span> Clientes
-        </a>
-        <a href="perfil.html" data-menu-id="perfil">
-            <span><i class="fa-solid fa-id-card"></i></span> Empresa
-        </a>
-
-        <!-- Relatórios (dono + admin) -->
-        <a href="relatorios.html" data-menu-id="relatorios">
-            <span><i class="fa-solid fa-chart-line"></i></span> Relatórios
-        </a>
-
-        <!-- Admin -->
-        <a href="admin.html" data-menu-id="administracao">
-            <span><i class="fa-solid fa-shield"></i></span> Administração
-        </a>
-        <a href="permissoes.html" data-menu-id="permissoes">
-            <span><i class="fa-solid fa-sliders"></i></span> Permissões
-        </a>
+    <!-- Menu Dono -->
+    <nav class="sidebar-links sidebar-dono hidden" id="menu-dono">
+      <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
+      <a href="agenda.html"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+      <a href="equipe.html"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+      <a href="servicos.html"><span><i class="fa-solid fa-scissors"></i></span> Serviços</a>
+      <a href="clientes.html"><span><i class="fa-solid fa-user"></i></span> Clientes</a>
+      <a href="perfil.html"><span><i class="fa-solid fa-id-card"></i></span> Empresa</a>
+      <a href="relatorios.html"><span><i class="fa-solid fa-chart-line"></i></span> Relatórios</a>
+    </nav>
+    <!-- Menu Funcionário -->
+    <nav class="sidebar-links sidebar-funcionario hidden" id="menu-funcionario">
+      <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
+      <a href="agenda.html"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+      <a href="equipe.html"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+    </nav>
+    <!-- Menu Admin -->
+    <nav class="sidebar-links sidebar-admin hidden" id="menu-admin">
+      <a href="index.html"><span><i class="fa-solid fa-house"></i></span> Início</a>
+      <a href="agenda.html"><span><i class="fa-solid fa-calendar-days"></i></span> Agenda</a>
+      <a href="equipe.html"><span><i class="fa-solid fa-users"></i></span> Equipe</a>
+      <a href="servicos.html"><span><i class="fa-solid fa-scissors"></i></span> Serviços</a>
+      <a href="clientes.html"><span><i class="fa-solid fa-user"></i></span> Clientes</a>
+      <a href="perfil.html"><span><i class="fa-solid fa-id-card"></i></span> Empresa</a>
+      <a href="relatorios.html"><span><i class="fa-solid fa-chart-line"></i></span> Relatórios</a>
+      <a href="admin.html"><span><i class="fa-solid fa-shield"></i></span> Administração</a>
+      <a href="permissoes.html"><span><i class="fa-solid fa-sliders"></i></span> Permissões</a>
     </nav>
     <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
+      <button id="btn-logout" class="btn-logout">Sair</button>
     </div>
-</aside>
+  </aside>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    // Troque aqui para testar: "dono", "funcionario" ou "admin"
+    // localStorage.setItem('perfil', 'dono');
+    // localStorage.setItem('perfil', 'funcionario');
+    // localStorage.setItem('perfil', 'admin');
 
-<style>
-/* ===================== */
-/*    MENU LATERAL CSS    */
-/* ===================== */
-.sidebar-loading .sidebar-links a { display: none; }
+    function mostrarMenuPorPerfil() {
+      const perfil = localStorage.getItem('perfil') || 'funcionario';
 
-.sidebar {
-  width: 250px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-  min-height: 100vh;
-  color: #fff;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  padding-top: 24px;
-  transition: left 0.3s ease;
-  box-sizing: border-box;
-}
+      // Esconde todos
+      document.getElementById('menu-dono').classList.add('hidden');
+      document.getElementById('menu-funcionario').classList.add('hidden');
+      document.getElementById('menu-admin').classList.add('hidden');
 
-.sidebar-brand {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #fff;
-  text-decoration: none;
-  letter-spacing: 2px;
-  padding: 0 32px 12px 32px;
-  display: block;
-  margin-bottom: 8px;
-  text-align: left;
-}
-
-.sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; }
-
-.sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; flex-grow: 1; }
-
-.sidebar-links a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #fff;
-  color: #4f46e5;
-  font-weight: 600;
-  font-size: 1.08em;
-  border-radius: 10px;
-  margin-bottom: 0;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  transition: all 0.2s ease;
-  padding: 14px 18px;
-  text-align: left;
-  text-decoration: none;
-  letter-spacing: 0.01em;
-  border: 2px solid transparent;
-  min-height: 44px;
-  box-sizing: border-box;
-}
-
-.sidebar-links a span { display: inline-block; width: 20px; text-align: center; }
-
-.sidebar-links a.active, .sidebar-links a:focus {
-  background: #4f46e5;
-  color: #fff;
-  font-weight: 700;
-  border: 2px solid #fff;
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-  outline: none;
-}
-
-.sidebar-links a:hover:not(.active) {
-  background: #f0f1ff;
-  color: #3b2fd6;
-  border-color: #d1d5fa;
-}
-
-.sidebar-footer {
-  margin-top: auto;
-  padding: 32px 32px 24px 32px;
-}
-
-.btn-logout {
-  background: #fff;
-  color: #4f46e5;
-  border: none;
-  padding: 14px 0;
-  width: 100%;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 1.05em;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  border: 2px solid transparent;
-  outline: none;
-  min-height: 44px;
-  box-sizing: border-box;
-}
-
-.btn-logout:hover, .btn-logout:focus {
-  background: #4f46e5;
-  color: #fff;
-  border: 2px solid #fff;
-}
-
-.hidden { display: none !important; }
-
-/* Responsivo: sidebar desliza no celular */
-@media (max-width: 900px) {
-  .sidebar { transform: translateX(-110%); }
-  .sidebar.open { transform: translateX(0); }
-  body.sidebar-open { overflow: hidden; }
-}
-</style>
-
-<script type="module">
-import { auth, db } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
-const perfil = localStorage.getItem('perfil'); // "funcionario", "dono", "admin"
-
-// ========================
-// Aplica permissões globais
-// ========================
-async function aplicarPermissoesGlobaisMenu() {
-  try {
-    const docSnap = await db.collection("configuracoesGlobais").doc("permissoes").get();
-    if (!docSnap.exists) return;
-    const permissoes = docSnap.data();
-
-    document.querySelectorAll('.sidebar-links a').forEach(a => {
-      const menuId = a.dataset.menuId;
-      const podeVer = permissoes[menuId]?.[perfil] ?? true;
-      if (!podeVer) a.classList.add('hidden');
+      // Mostra só o menu do perfil atual
+      if (perfil === 'dono') {
+        document.getElementById('menu-dono').classList.remove('hidden');
+      } else if (perfil === 'admin') {
+        document.getElementById('menu-admin').classList.remove('hidden');
+      } else {
+        document.getElementById('menu-funcionario').classList.remove('hidden');
+      }
+    }
+    // Marca o link ativo
+    function marcarLinkAtivo() {
+      const urlAtual = window.location.pathname.split('/').pop();
+      document.querySelectorAll('.sidebar-links:not(.hidden) a').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === urlAtual) link.classList.add('active');
+      });
+    }
+    // Logout
+    function configurarLogout() {
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        localStorage.clear();
+        window.location.href = "login.html";
+      });
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      mostrarMenuPorPerfil();
+      marcarLinkAtivo();
+      configurarLogout();
     });
-
-    // Administração e Permissões só admin
-    if (perfil !== 'admin') {
-      ['administracao','permissoes'].forEach(id => {
-        document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden');
-      });
-    }
-
-    // Funcionário só vê itens básicos
-    if (perfil === 'funcionario') {
-      ['servicos','clientes','perfil','relatorios'].forEach(id => {
-        document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden');
-      });
-    }
-
-  } catch(e) {
-    console.error("Erro ao aplicar permissões do menu:", e);
-  }
-}
-
-// ========================
-// Marca link ativo
-// ========================
-function marcarAtivo() {
-  const urlAtual = window.location.pathname.split('/').pop();
-  document.querySelectorAll('.sidebar-links a').forEach(link => {
-    link.classList.remove('active');
-    if (link.getAttribute('href') === urlAtual) link.classList.add('active');
-  });
-}
-
-// ========================
-// Configura logout funcional
-// ========================
-function configurarLogout() {
-  const btn = document.getElementById("btn-logout");
-  if (!btn) return;
-
-  btn.addEventListener("click", async () => {
-    try {
-      await signOut(auth);
-      localStorage.clear();
-      window.location.href = "login.html";
-    } catch(e) {
-      console.error("Erro ao sair:", e);
-      alert("Erro ao sair: " + e.message);
-    }
-  });
-}
-
-// ========================
-// Inicializa menu
-// ========================
-document.addEventListener("DOMContentLoaded", async () => {
-  await aplicarPermissoesGlobaisMenu();
-  marcarAtivo();
-  configurarLogout();
-});
-</script>
+  </script>
+</body>
+</html>
