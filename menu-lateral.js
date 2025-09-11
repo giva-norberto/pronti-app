@@ -1,10 +1,9 @@
 // menu-lateral.js
 import { db, auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { verificarAcesso } from "./userService.js"; // <-- Importa o serviço de usuários
 
-const perfil = localStorage.getItem("perfil") || "funcionario";
-
-function aplicarPermissoes() {
+function aplicarPermissoes(perfil) {
     const docRef = db.collection("configuracoesGlobais").doc("permissoes");
     docRef.get().then(doc => {
         if (!doc.exists) return;
@@ -28,7 +27,6 @@ function configurarLogout() {
     const btn = document.getElementById("btn-logout");
     if (!btn) return;
     btn.addEventListener("click", () => {
-        localStorage.clear();
         signOut(auth).then(() => window.location.href = "login.html");
     });
 }
@@ -47,14 +45,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!placeholder) return;
 
     try {
-        const res = await fetch("menu-lateral.html");
+        const sessao = await verificarAcesso(); // Consulta Firebase
+        const papel = sessao.perfil.papel; // 'dono' ou 'funcionario'
+
+        // Escolhe o menu correto
+        const menuFile = papel === "dono" ? "menu-dono.html" : "menu-funcionario.html";
+        const res = await fetch(menuFile);
         const html = await res.text();
         placeholder.innerHTML = html;
 
-        // **Somente depois de injetar o menu**
-        aplicarPermissoes();
+        // Inicializa funções depois de injetar o menu
+        aplicarPermissoes(papel);
         ativarLinkAtivo();
         configurarLogout();
+
     } catch (err) {
         console.error("Erro ao carregar menu:", err);
         placeholder.innerHTML = `<p style="color:red; padding:1em;">Erro ao carregar menu.</p>`;
