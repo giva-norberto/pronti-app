@@ -6,9 +6,13 @@
  * @version Final (Revisado e Corrigido)
  */
 
+// ======================= INÍCIO DA CORREÇÃO CIRÚRGICA (IMPORTS) =======================
+// Adicionamos 'documentId' para a nova consulta, garantindo que tudo funcione.
 import {
-    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where
+    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// ======================== FIM DA CORREÇÃO CIRÚRGICA (IMPORTS ) =========================
+
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
@@ -20,7 +24,7 @@ let isProcessing = false;
  * Garante que um documento para o usuário exista na coleção 'usuarios' e que
  * ele tenha uma data de início de trial.
  */
-export async function ensureUserAndTrialDoc( ) {
+export async function ensureUserAndTrialDoc(  ) {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -78,7 +82,7 @@ export async function getEmpresasDoUsuario(user) {
     
     const empresasEncontradas = new Map();
 
-    // 1. Busca por empresas onde o usuário é o dono
+    // 1. Busca por empresas onde o usuário é o dono (Esta parte já usa 'list' e funciona)
     try {
         const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
         const snapshotDono = await getDocs(qDono);
@@ -89,23 +93,34 @@ export async function getEmpresasDoUsuario(user) {
         });
     } catch (e) { console.error("❌ [getEmpresasDoUsuario] Erro ao buscar como dono:", e); }
 
+    // ======================= INÍCIO DA CORREÇÃO CIRÚRGICA (LÓGICA) =======================
     // 2. Busca por empresas onde o usuário é profissional (via mapa)
     try {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
-        if (mapaSnap.exists() && mapaSnap.data().empresas) {
+        
+        // Verifica se o mapa existe e se a lista de empresas não está vazia
+        if (mapaSnap.exists() && mapaSnap.data().empresas && mapaSnap.data().empresas.length > 0) {
             const idsDeEmpresas = mapaSnap.data().empresas;
-            if (idsDeEmpresas.length > 0) { // Garante que não faz busca com array vazio
-                const promessas = idsDeEmpresas.map(id => getDoc(doc(db, "empresarios", id)));
-                const resultados = await Promise.all(promessas);
-                resultados.forEach(doc => {
-                    if (doc.exists() && !empresasEncontradas.has(doc.id)) {
-                        empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
-                    }
-                });
-            }
+
+            // ALTERAÇÃO: Em vez de múltiplos 'getDoc' (que falham), usamos uma única consulta 'in'.
+            // Esta operação é uma 'list', que as suas regras de segurança JÁ PERMITEM.
+            const empresasRef = collection(db, "empresarios");
+            const q = query(empresasRef, where(documentId(), "in", idsDeEmpresas));
+            
+            const querySnapshot = await getDocs(q); // Executa a consulta de LISTA
+
+            querySnapshot.forEach(doc => {
+                if (!empresasEncontradas.has(doc.id)) {
+                    empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
+                }
+            });
         }
-    } catch(e) { console.error("❌ [getEmpresasDoUsuario] Erro ao buscar pelo mapa:", e); }
+    } catch(e) { 
+        // Adiciona um log mais detalhado para o erro de permissão
+        console.error("❌ [getEmpresasDoUsuario] Erro ao buscar pelo mapa. Verifique as regras do Firestore para a coleção 'empresarios'. Detalhe:", e); 
+    }
+    // ======================== FIM DA CORREÇÃO CIRÚRGICA (LÓGICA) =========================
     
     return Array.from(empresasEncontradas.values());
 }
@@ -142,6 +157,7 @@ export async function verificarAcesso() {
                 let empresaDocSnap = null;
 
                 if (empresaAtivaId) {
+                    // Esta chamada 'getDoc' funciona porque a regra 'allow get: if true' permite
                     const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     if (empresaDoc.exists()) {
                         empresaDocSnap = empresaDoc;
@@ -151,32 +167,24 @@ export async function verificarAcesso() {
                     }
                 }
 
-                // ======================= INÍCIO DA CORREÇÃO =======================
-                // Se, após a verificação inicial, nenhuma empresa estiver ativa na sessão...
                 if (!empresaDocSnap) {
                     const empresas = await getEmpresasDoUsuario(user);
 
-                    // Cenário 1: Nenhuma empresa encontrada. Redireciona para criar uma.
                     if (empresas.length === 0) {
                         if (!paginasDeConfig.includes(currentPage)) window.location.replace('nova-empresa.html');
                         return reject(new Error("Nenhuma empresa associada. Redirecionando..."));
                     } 
-                    // Cenário 2: Múltiplas empresas. Redireciona para a tela de seleção.
                     else if (empresas.length > 1) {
                         if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
                         return reject(new Error("Múltiplas empresas, seleção necessária. Redirecionando..."));
                     }
                     
-                    // Cenário 3 (CORRIGIDO): Exatamente uma empresa.
-                    // Define a empresa como ativa e DEIXA O CÓDIGO CONTINUAR para finalizar a sessão.
                     empresaAtivaId = empresas[0].id;
                     localStorage.setItem('empresaAtivaId', empresaAtivaId);
                     empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                 }
-                // ======================== FIM DA CORREÇÃO =========================
 
                 if (!empresaDocSnap || !empresaDocSnap.exists()) {
-                    // Se mesmo após a lógica acima a empresa não for encontrada, há um problema.
                     localStorage.removeItem('empresaAtivaId');
                     if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
                     return reject(new Error("Empresa não encontrada ou inválida. Redirecionando..."));
@@ -184,7 +192,7 @@ export async function verificarAcesso() {
 
                 const empresaData = empresaDocSnap.data();
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
-                if (!hasActivePlan && !isTrialActive && !isAdmin) { // Admin bypassa verificação de assinatura
+                if (!hasActivePlan && !isTrialActive && !isAdmin) {
                     if (currentPage !== 'assinatura.html') window.location.replace('assinatura.html');
                     return reject(new Error("Assinatura expirada. Redirecionando..."));
                 }
@@ -209,7 +217,7 @@ export async function verificarAcesso() {
                         return reject(new Error("Acesso de profissional revogado ou pendente."));
                     }
                     perfilDetalhado = { ...profSnap.data(), ehDono: false };
-                } else { // Para Dono e Admin
+                } else {
                     perfilDetalhado = { ...empresaData, nome: user.displayName || user.email, ehDono: true, status: 'ativo', email: user.email };
                 }
                 
