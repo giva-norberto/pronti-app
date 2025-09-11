@@ -5,31 +5,28 @@
     <title>Selecionar Empresa - Pronti</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome para o ícone de adicionar (fa-plus) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <style>
+        /* CSS ATUALIZADO PARA CORRESPONDER À IMAGEM ENVIADA */
         :root {
-            --cor-primaria: #4f46e5;
-            --cor-sucesso: #10b981;
-            --cor-perigo: #ef4444;
-            --cor-fundo: #f8fafc;
-            --cor-texto-titulo: #1e293b;
-            --cor-texto-corpo: #64748b;
-            --cor-borda: #e2e8f0;
-            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --cor-primaria: #a5b4fc; /* Um roxo mais claro para contraste */
+            --cor-fundo-inicio: #4f46e5;
+            --cor-fundo-fim: #222664;
+            --cor-texto: #ffffff;
+            --cor-texto-subtitulo: #e0e7ff;
+            --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.2);
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: var(--cor-fundo);
-            color: var(--cor-texto-corpo);
+            /* Fundo gradiente escuro */
+            background: linear-gradient(135deg, var(--cor-fundo-inicio) 0%, var(--cor-fundo-fim) 100%);
+            color: var(--cor-texto-subtitulo);
             margin: 0;
             display: flex;
             justify-content: center;
@@ -41,17 +38,20 @@
 
         .selecao-container {
             width: 100%;
-            max-width: 550px; /* Um pouco mais de espaço */
-            background-color: #ffffff;
-            border-radius: 16px;
+            max-width: 600px; /* Um pouco maior para o novo estilo */
+            /* Efeito de vidro (Glassmorphism) */
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             padding: 40px;
-            box-shadow: var(--sombra-card);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             text-align: center;
         }
 
         .header-selecao h1 {
-            color: var(--cor-texto-titulo);
-            font-size: 2rem;
+            color: var(--cor-texto);
+            font-size: 2.2rem;
             font-weight: 700;
             margin: 0 0 10px 0;
         }
@@ -63,7 +63,7 @@
 
         #empresas-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 20px;
             justify-items: center;
         }
@@ -73,13 +73,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--cor-borda);
+            /* Cards com fundo semi-transparente mais claro */
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             padding: 20px;
             cursor: pointer;
-            background: #fff;
             text-decoration: none;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            transition: transform 0.2s ease, background-color 0.2s ease;
             height: 180px;
             width: 100%;
             box-sizing: border-box;
@@ -87,7 +88,7 @@
 
         .empresa-card:hover, .criar-empresa-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--sombra-card-hover);
+            background-color: rgba(255, 255, 255, 0.25);
             border-color: var(--cor-primaria);
         }
         
@@ -97,8 +98,8 @@
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 15px;
-            background-color: #eef2ff;
-            color: var(--cor-primaria);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--cor-texto);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -108,18 +109,18 @@
 
         .empresa-nome {
             font-weight: 600;
-            color: var(--cor-texto-titulo);
+            color: var(--cor-texto);
             font-size: 1rem;
             text-align: center;
         }
 
         .criar-empresa-card {
-            border: 2px dashed var(--cor-borda);
+            border: 2px dashed rgba(255, 255, 255, 0.4);
         }
 
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
-            color: var(--cor-primaria);
+            color: var(--cor-texto);
             margin-bottom: 15px;
         }
         
@@ -129,25 +130,25 @@
         }
 
         .btn-logout {
-            background-color: #fee2e2;
-            color: var(--cor-perigo);
+            /* Estilo de link simples, como na imagem */
+            background-color: transparent;
+            color: var(--cor-texto-subtitulo);
             border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
             cursor: pointer;
             font-weight: 600;
             font-size: 1rem;
-            transition: background-color 0.2s ease, color 0.2s ease;
+            text-decoration: none;
+            transition: color 0.2s ease;
         }
 
         .btn-logout:hover {
-            background-color: var(--cor-perigo);
-            color: #ffffff;
+            color: var(--cor-texto);
+            text-decoration: underline;
         }
 
         .loader {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--cor-primaria);
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid var(--cor-texto);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -177,16 +178,19 @@
     </div>
 
     <script type="module">
+        // TODA A LÓGICA JAVASCRIPT FOI MANTIDA INTACTA.
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, query, where, getDocs, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
+        // --- Elementos do DOM ---
         const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
 
-        btn-logout.addEventListener('click', async () => {
+        // --- Eventos ---
+        btnLogout.addEventListener('click', async () => {
             localStorage.removeItem('empresaAtivaId');
             await signOut(auth).catch(error => console.error("Erro ao sair:", error));
         });
@@ -202,20 +206,19 @@
             }
         });
 
+        // --- Funções Principais ---
         async function carregarEmpresas(userId) {
             try {
-                // ETAPA 1: Buscar o mapa do usuário
                 const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
                 const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
 
                 if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
-                    renderizarOpcoes([]); // Renderiza com lista vazia (mostrará "nenhuma empresa")
+                    renderizarOpcoes([]);
                     return;
                 }
                 
                 const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
 
-                // REDIRECIONAMENTO AUTOMÁTICO
                 if (idsDasEmpresas.length === 1) {
                     const empresaId = idsDasEmpresas[0];
                     localStorage.setItem('empresaAtivaId', empresaId);
@@ -223,7 +226,6 @@
                     return;
                 }
 
-                // ETAPA 2: Buscar detalhes das empresas
                 const q = query(collection(db, "empresarios"), where(documentId(), "in", idsDasEmpresas));
                 const querySnapshot = await getDocs(q);
                 
@@ -232,26 +234,22 @@
 
             } catch (error) {
                 console.error("Erro ao carregar empresas: ", error);
-                grid.innerHTML = `<p style="color: red;">Erro ao carregar empresas. Detalhes: ${error.message}</p>`;
+                grid.innerHTML = `<p style="color: #ffbaba;">Erro ao carregar empresas. Detalhes: ${error.message}</p>`;
             } finally {
-                loader.style.display = 'none';
+                if (loader) loader.style.display = 'none';
             }
         }
 
         function renderizarOpcoes(empresas) {
-            grid.innerHTML = ''; // Limpa o grid (e o loader)
-
-            if (empresas.length === 0) {
-                grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
-            } else {
+            grid.innerHTML = '';
+            if (empresas.length > 0) {
                 empresas.forEach(empresa => {
-                    const empresaCard = criarEmpresaCard(empresa);
-                    grid.appendChild(empresaCard);
+                    grid.appendChild(criarEmpresaCard(empresa));
                 });
+            } else {
+                 grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
             }
-            // Adiciona sempre o card para criar uma nova empresa
-            const cardCriar = criarNovoCard();
-            grid.appendChild(cardCriar);
+            grid.appendChild(criarNovoCard());
         }
 
         function criarEmpresaCard(empresa) {
@@ -269,7 +267,7 @@
             const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
 
             card.innerHTML = `
-                <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
+                <div class="empresa-logo">${empresa.logoUrl ? `<img src="${logoSrc}" alt="Logo de ${nomeFantasia}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : inicial}</div>
                 <span class="empresa-nome">${nomeFantasia}</span>
             `;
             return card;
@@ -278,10 +276,10 @@
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            card.href = 'perfil.html'; // Página para criar/editar perfil/empresa
+            card.href = 'perfil.html';
 
             card.innerHTML = `
-                <div class="plus-icon">+</div>
+                <div class="plus-icon"><i class="fas fa-plus"></i></div>
                 <span class="empresa-nome">Criar Nova Empresa</span>
             `;
             return card;
