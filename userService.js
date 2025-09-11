@@ -3,11 +3,11 @@
  * @description Módulo central para gerenciamento de usuários, empresas e sessões.
  * Contém a lógica principal de verificação de acesso da aplicação.
  * @author Giva-Norberto & Gemini Assistant
- * @version Final
+ * @version Final-Revisado
  */
 
 import {
-    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where
+    collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
@@ -69,43 +69,41 @@ async function checkUserStatus(user, empresaData) {
 }
 
 /**
- * Busca todas as empresas associadas a um usuário, seja como dono ou profissional.
+ * ✅ CORREÇÃO: Busca as empresas associadas a um usuário USANDO APENAS o 'mapaUsuarios'.
+ * Esta é a única fonte da verdade, garantindo consistência e conformidade com as regras de segurança.
  * @param {object} user - O objeto de usuário do Firebase Auth.
  * @returns {Array} Uma lista de objetos de empresa.
  */
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
     
-    const empresasEncontradas = new Map();
-
-    // 1. Busca por empresas onde o usuário é o dono
-    try {
-        const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
-        const snapshotDono = await getDocs(qDono);
-        snapshotDono.forEach(doc => {
-            if (!empresasEncontradas.has(doc.id)) {
-                empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
-            }
-        });
-    } catch (e) { console.error("❌ [getEmpresasDoUsuario] Erro ao buscar como dono:", e); }
-
-    // 2. Busca por empresas onde o usuário é profissional (via mapa)
     try {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
-        if (mapaSnap.exists() && mapaSnap.data().empresas) {
-            const idsDeEmpresas = mapaSnap.data().empresas;
-            const promessas = idsDeEmpresas.map(id => getDoc(doc(db, "empresarios", id)));
-            const resultados = await Promise.all(promessas);
-            resultados.forEach(doc => {
-                if (doc.exists() && !empresasEncontradas.has(doc.id)) {
-                    empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
-                }
-            });
+
+        if (!mapaSnap.exists() || !mapaSnap.data().empresas || mapaSnap.data().empresas.length === 0) {
+            return []; // Retorna lista vazia se não houver mapa ou empresas no mapa
         }
-    } catch(e) { console.error("❌ [getEmpresasDoUsuario] Erro ao buscar pelo mapa:", e); }
-    
-    return Array.from(empresasEncontradas.values());
+
+        const idsDeEmpresas = mapaSnap.data().empresas;
+
+        // Se não houver IDs, não há o que buscar.
+        if (idsDeEmpresas.length === 0) {
+            return [];
+        }
+
+        // Busca todos os documentos da coleção 'empresarios' cujos IDs estão na lista.
+        const q = query(collection(db, "empresarios"), where(documentId(), "in", idsDeEmpresas));
+        const snapshot = await getDocs(q);
+        
+        // Mapeia os documentos para o formato desejado (id + dados).
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    } catch (e) {
+        console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas pelo mapa:", e);
+        // Em caso de erro, retorna um array vazio para não quebrar a aplicação.
+        return []; 
+    }
 }
 
 
@@ -150,6 +148,7 @@ export async function verificarAcesso() {
                 }
 
                 if (!empresaDocSnap) {
+                    // Agora usa a função corrigida e confiável
                     const empresas = await getEmpresasDoUsuario(user);
                     if (empresas.length === 0) {
                         if (!paginasDeConfig.includes(currentPage)) window.location.replace('nova-empresa.html');
