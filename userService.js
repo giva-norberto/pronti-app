@@ -3,7 +3,7 @@
  * @description Módulo central para gerenciamento de usuários, empresas e sessões.
  * Contém a lógica principal de verificação de acesso da aplicação.
  * @author Giva-Norberto & Gemini Assistant
- * @version Final
+ * @version Final (Revisado e Corrigido)
  */
 
 import {
@@ -20,7 +20,7 @@ let isProcessing = false;
  * Garante que um documento para o usuário exista na coleção 'usuarios' e que
  * ele tenha uma data de início de trial.
  */
-export async function ensureUserAndTrialDoc() {
+export async function ensureUserAndTrialDoc( ) {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -95,13 +95,15 @@ export async function getEmpresasDoUsuario(user) {
         const mapaSnap = await getDoc(mapaRef);
         if (mapaSnap.exists() && mapaSnap.data().empresas) {
             const idsDeEmpresas = mapaSnap.data().empresas;
-            const promessas = idsDeEmpresas.map(id => getDoc(doc(db, "empresarios", id)));
-            const resultados = await Promise.all(promessas);
-            resultados.forEach(doc => {
-                if (doc.exists() && !empresasEncontradas.has(doc.id)) {
-                    empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
-                }
-            });
+            if (idsDeEmpresas.length > 0) { // Garante que não faz busca com array vazio
+                const promessas = idsDeEmpresas.map(id => getDoc(doc(db, "empresarios", id)));
+                const resultados = await Promise.all(promessas);
+                resultados.forEach(doc => {
+                    if (doc.exists() && !empresasEncontradas.has(doc.id)) {
+                        empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
+                    }
+                });
+            }
         }
     } catch(e) { console.error("❌ [getEmpresasDoUsuario] Erro ao buscar pelo mapa:", e); }
     
@@ -116,7 +118,7 @@ export async function getEmpresasDoUsuario(user) {
  */
 export async function verificarAcesso() {
     if (cachedSessionProfile) return Promise.resolve(cachedSessionProfile);
-    if (isProcessing) return Promise.reject(new Error("Redirecionando..."));
+    if (isProcessing) return new Promise((_, reject) => reject(new Error("Processamento em andamento...")));
     isProcessing = true;
 
     return new Promise((resolve, reject) => {
@@ -149,26 +151,40 @@ export async function verificarAcesso() {
                     }
                 }
 
+                // ======================= INÍCIO DA CORREÇÃO =======================
+                // Se, após a verificação inicial, nenhuma empresa estiver ativa na sessão...
                 if (!empresaDocSnap) {
                     const empresas = await getEmpresasDoUsuario(user);
+
+                    // Cenário 1: Nenhuma empresa encontrada. Redireciona para criar uma.
                     if (empresas.length === 0) {
                         if (!paginasDeConfig.includes(currentPage)) window.location.replace('nova-empresa.html');
                         return reject(new Error("Nenhuma empresa associada. Redirecionando..."));
-                    } else if (empresas.length === 1) {
-                        empresaAtivaId = empresas[0].id;
-                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                        empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                    } else {
+                    } 
+                    // Cenário 2: Múltiplas empresas. Redireciona para a tela de seleção.
+                    else if (empresas.length > 1) {
                         if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
                         return reject(new Error("Múltiplas empresas, seleção necessária. Redirecionando..."));
                     }
+                    
+                    // Cenário 3 (CORRIGIDO): Exatamente uma empresa.
+                    // Define a empresa como ativa e DEIXA O CÓDIGO CONTINUAR para finalizar a sessão.
+                    empresaAtivaId = empresas[0].id;
+                    localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                    empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                 }
+                // ======================== FIM DA CORREÇÃO =========================
 
-                if (!empresaDocSnap || !empresaDocSnap.exists()) return reject(new Error("Empresa não encontrada."));
+                if (!empresaDocSnap || !empresaDocSnap.exists()) {
+                    // Se mesmo após a lógica acima a empresa não for encontrada, há um problema.
+                    localStorage.removeItem('empresaAtivaId');
+                    if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
+                    return reject(new Error("Empresa não encontrada ou inválida. Redirecionando..."));
+                }
 
                 const empresaData = empresaDocSnap.data();
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
-                if (!hasActivePlan && !isTrialActive) {
+                if (!hasActivePlan && !isTrialActive && !isAdmin) { // Admin bypassa verificação de assinatura
                     if (currentPage !== 'assinatura.html') window.location.replace('assinatura.html');
                     return reject(new Error("Assinatura expirada. Redirecionando..."));
                 }
@@ -177,7 +193,6 @@ export async function verificarAcesso() {
                 let perfilDetalhado;
                 let papel;
 
-                // Define o papel (a "fonte da verdade")
                 if (isAdmin) {
                     papel = 'admin';
                 } else if (isOwner) {
@@ -186,7 +201,6 @@ export async function verificarAcesso() {
                     papel = 'funcionario';
                 }
 
-                // Busca o perfil detalhado com base no papel
                 if (papel === 'funcionario') {
                     const profSnap = await getDoc(doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid));
                     if (!profSnap.exists() || profSnap.data().status !== 'ativo') {
@@ -199,7 +213,6 @@ export async function verificarAcesso() {
                     perfilDetalhado = { ...empresaData, nome: user.displayName || user.email, ehDono: true, status: 'ativo', email: user.email };
                 }
                 
-                // ⭐ REVISÃO: Adicionamos o 'papel' diretamente ao perfil para uso fácil na UI
                 perfilDetalhado.papel = papel;
 
                 cachedSessionProfile = {
@@ -212,6 +225,7 @@ export async function verificarAcesso() {
                 resolve(cachedSessionProfile);
 
             } catch (error) {
+                console.error("❌ Erro fatal em verificarAcesso:", error);
                 reject(error);
             } finally {
                 isProcessing = false;
