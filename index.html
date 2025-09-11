@@ -20,25 +20,17 @@
         body.loaded { opacity: 1; }
         #menu-container { flex-shrink: 0; }
 
-        /* ======================= INÍCIO DA CORREÇÃO DE ALINHAMENTO ======================= */
         main.main-content {
             flex-grow: 1;
             padding: 40px;
             box-sizing: border-box;
             height: 100vh;
             overflow-y: auto;
-            
-            /* ✅ CORREÇÃO: Transforma o 'main' em uma coluna flexível... */
             display: flex;
             flex-direction: column;
-            
-            /* ...e diz para ele alinhar seu conteúdo no TOPO. */
-            justify-content: flex-start; 
-            
-            /* Mantém o conteúdo centralizado horizontalmente. */
-            align-items: center; 
+            justify-content: flex-start;
+            align-items: center;
         }
-        /* ======================== FIM DA CORREÇÃO DE ALINHAMENTO ========================= */
 
         .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; width: 100%; }
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -50,17 +42,15 @@
             gap: 20px;
             width: 100%;
             max-width: 900px;
-            /* A margem 'margin: 0 auto' não é mais necessária, pois o 'align-items: center' do pai já faz isso. */
         }
         
-        /* O restante do seu CSS está 100% preservado */
         .menu-card {
             color: #fff; border-radius: 16px; padding: 20px 10px;
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; text-align: center; gap: 12px;
             font-weight: 600; font-size: 0.9rem; text-decoration: none;
             box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s, visibility 0s;
+            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s; /* Removido 'visibility' da transição */
             border: none; aspect-ratio: 1 / 1;
         }
         .menu-card:hover {
@@ -76,6 +66,7 @@
         [data-card-id="perfil"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
         [data-card-id="relatorios"] { background: linear-gradient(135deg, #374151, #111827); }
         [data-card-id="administracao"], [data-card-id="permissoes"] { background: linear-gradient(135deg, #111827, #374151); }
+        
         @media (max-width: 900px) {
             body { flex-direction: column; }
             main.main-content { height: auto; }
@@ -103,7 +94,6 @@
         </div>
     </main>
     
-    <!-- Seu script JavaScript, 100% preservado e na versão que funciona -->
     <script type="module">
         import { verificarAcesso } from './userService.js';
         import { auth, db } from './firebase-config.js';
@@ -116,15 +106,21 @@
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
+                /* ======================= INÍCIO DA CORREÇÃO DE AGRUPAMENTO ======================= */
                 const aplicarVisibilidade = (elemento, podeVer) => {
                     if (podeVer) {
-                        elemento.style.visibility = 'visible';
-                        elemento.style.pointerEvents = 'auto';
+                        // ✅ CORREÇÃO: Usar 'display' para mostrar o elemento.
+                        // Isso reverte para o valor padrão do CSS (que para os cards é 'flex').
+                        elemento.style.display = '';
                     } else {
-                        elemento.style.visibility = 'hidden';
-                        elemento.style.pointerEvents = 'none';
+                        // ✅ CORREÇÃO: Usar 'display = 'none'' em vez de 'visibility = 'hidden''.
+                        // 'display: none' remove o elemento do layout, permitindo que os outros
+                        // cards e menus se reorganizem e preencham o espaço vazio.
+                        // É isso que cria o agrupamento proporcional que você precisa.
+                        elemento.style.display = 'none';
                     }
                 };
+                /* ======================== FIM DA CORREÇÃO DE AGRUPAMENTO ========================= */
 
                 document.querySelectorAll('[data-menu-id]').forEach(item => {
                     const menuId = item.dataset.menuId;
@@ -140,9 +136,9 @@
                     aplicarVisibilidade(card, podeVer);
                 });
             } catch (error) {
+                // Em caso de erro, garante que todos os itens fiquem visíveis
                 document.querySelectorAll('[data-menu-id], [data-card-id]').forEach(item => {
-                    item.style.visibility = 'visible';
-                    item.style.pointerEvents = 'auto';
+                    item.style.display = ''; // Mostra o item
                 });
                 console.error("Erro ao aplicar permissões nos menus e cards:", error);
             }
@@ -163,9 +159,10 @@
             } catch (error) {
                 document.getElementById('menu-container').innerHTML =
                     "<div style='color:white;background:#4f46e5;padding:1em;border-radius:8px;'>Menu lateral não carregado</div>";
+                
+                // Em caso de erro, garante que todos os itens fiquem visíveis
                 document.querySelectorAll('[data-card-id], [data-menu-id]').forEach(item => {
-                    item.style.visibility = 'visible';
-                    item.style.pointerEvents = 'auto';
+                    item.style.display = ''; // Mostra o item
                 });
                 console.error("Falha ao carregar o menu lateral ou aplicar permissões:", error);
             }
@@ -186,9 +183,9 @@
 
             } catch (error) {
                 if (error.message && !error.message.includes("Redirecionando")) {
+                    // Em caso de erro, garante que todos os itens fiquem visíveis
                     document.querySelectorAll('[data-card-id], [data-menu-id]').forEach(item => {
-                        item.style.visibility = 'visible';
-                        item.style.pointerEvents = 'auto';
+                        item.style.display = ''; // Mostra o item
                     });
                     console.error("Erro ao inicializar o dashboard:", error);
                 }
