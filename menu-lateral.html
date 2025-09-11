@@ -28,10 +28,12 @@
             <span><i class="fa-solid fa-id-card"></i></span> Empresa
         </a>
 
-        <!-- Admin -->
+        <!-- Relatórios (dono + admin) -->
         <a href="relatorios.html" data-menu-id="relatorios">
             <span><i class="fa-solid fa-chart-line"></i></span> Relatórios
         </a>
+
+        <!-- Admin -->
         <a href="admin.html" data-menu-id="administracao">
             <span><i class="fa-solid fa-shield"></i></span> Administração
         </a>
@@ -78,57 +80,66 @@
 }
 .btn-logout:hover, .btn-logout:focus { background: #4f46e5; color: #fff; border: 2px solid #fff; }
 .hidden { display: none !important; }
+
+/* Responsivo: sidebar desliza no celular */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-110%); }
+  .sidebar.open { transform: translateX(0); }
+  body.sidebar-open { overflow: hidden; }
+}
 </style>
 
-<script>
-// ======================================================================
-//    MENU-LATERAL.JS EMBUTIDO (Permissões, Ativo, Logout)
-// ======================================================================
+<script type="module">
+import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { db } from "./firebase-config.js";
 
-// Pega perfil do usuário já salvo (ex: "admin", "dono", "funcionario")
-const perfil = localStorage.getItem('perfil');
+const perfil = localStorage.getItem('perfil'); // "funcionario", "dono", "admin"
 
-// Aplica permissões globais com base no Firestore
-function aplicarPermissoesGlobaisMenu() {
-  firebase.firestore().collection("configuracoesGlobais").doc("permissoes")
-    .get()
-    .then(doc => {
-      if (!doc.exists) {
-        console.warn("Permissões globais de menu não configuradas!");
-        return;
-      }
-      const permissoes = doc.data();
-      Object.keys(permissoes).forEach(menuId => {
-        const podeVer = permissoes[menuId]?.[perfil];
-        if (!podeVer) {
-          document.querySelector(`[data-menu-id="${menuId}"]`)?.classList.add("hidden");
-        }
+async function aplicarPermissoesGlobaisMenu() {
+  try {
+    const docSnap = await db.collection("configuracoesGlobais").doc("permissoes").get();
+    if (!docSnap.exists) return;
+    const permissoes = docSnap.data();
+    document.querySelectorAll('.sidebar-links a').forEach(a => {
+      const menuId = a.dataset.menuId;
+      const podeVer = permissoes[menuId]?.[perfil] ?? true; // default: true
+      if (!podeVer) a.classList.add('hidden');
+    });
+
+    // Administração e Permissões só para admin
+    if (perfil !== 'admin') {
+      ['administracao', 'permissoes'].forEach(id => {
+        document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden');
       });
-    })
-    .catch(err => console.error("Erro ao carregar permissões globais:", err));
+    }
+
+    // Funcionário só vê itens básicos
+    if (perfil === 'funcionario') {
+      ['servicos','clientes','perfil','relatorios'].forEach(id => {
+        document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden');
+      });
+    }
+
+  } catch(e) { console.error("Erro ao aplicar permissões do menu:", e); }
 }
 
-// Marca link ativo
 function marcarAtivo() {
   const urlAtual = window.location.pathname.split('/').pop();
   document.querySelectorAll('.sidebar-links a').forEach(link => {
-    if (link.getAttribute('href') === urlAtual) {
-      link.classList.add('active');
-    }
+    if (link.getAttribute('href') === urlAtual) link.classList.add('active');
   });
 }
 
-// Botão sair
 function configurarLogout() {
-  document.getElementById("btn-logout")?.addEventListener("click", () => {
+  document.getElementById("btn-logout")?.addEventListener("click", async () => {
     localStorage.clear();
+    await signOut(getAuth());
     window.location.href = "login.html";
   });
 }
 
-// Inicialização do menu
-document.addEventListener("DOMContentLoaded", () => {
-  aplicarPermissoesGlobaisMenu();
+document.addEventListener("DOMContentLoaded", async () => {
+  await aplicarPermissoesGlobaisMenu();
   marcarAtivo();
   configurarLogout();
 });
