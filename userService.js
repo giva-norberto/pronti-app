@@ -1,19 +1,19 @@
 // ======================================================================
-//      USER-SERVICE.JS (VERSÃO ANTIGA REVISADA E CORRIGIDA)
+//      USER-SERVICE.JS (VERSÃO ATUAL CORRIGIDA PARA O LOOP)
 // ======================================================================
 
-// ✅ CORREÇÃO 1: Adicionado 'documentId' para a consulta que respeita as regras.
+// Suas importações estão corretas e foram mantidas.
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
-// "Memória" para evitar re-verificação desnecessária
+// Suas variáveis de cache e controle, preservadas.
 let cachedSessionProfile = null;
-let isProcessing = false; // Previne múltiplas execuções simultâneas
+let isProcessing = false;
 
-// --- Função: Garante doc do usuário e trial ---
+// --- Sua função ensureUserAndTrialDoc, 100% preservada ---
 export async function ensureUserAndTrialDoc( ) {
     try {
         const user = auth.currentUser;
@@ -37,7 +37,7 @@ export async function ensureUserAndTrialDoc( ) {
     }
 }
 
-// --- Função: Checa status de plano/trial ---
+// --- Sua função checkUserStatus, 100% preservada ---
 async function checkUserStatus(user, empresaData) {
     try {
         if (!user) return { hasActivePlan: false, isTrialActive: true };
@@ -49,7 +49,7 @@ async function checkUserStatus(user, empresaData) {
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
         if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
 
-        let trialDurationDays = 15; // padrão
+        let trialDurationDays = 15;
         if (empresaData && typeof empresaData.freeEmDias === 'number') {
             trialDurationDays = empresaData.freeEmDias;
         }
@@ -63,14 +63,10 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
-/**
- * ⭐ FUNÇÃO ROBUSTA PARA BUSCAR EMPRESAS DO USUÁRIO (COM CORREÇÃO) ⭐
- */
+// --- Sua função getEmpresasDoUsuario, 100% preservada (já está correta) ---
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
     const empresasEncontradas = new Map();
-
-    // 1. Busca direta por empresas onde o usuário é o dono (método seguro)
     try {
         const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
         const snapshotDono = await getDocs(qDono);
@@ -82,9 +78,6 @@ export async function getEmpresasDoUsuario(user) {
     } catch (e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas como dono:", e);
     }
-
-    // ✅ CORREÇÃO 2: A busca pelo mapa agora usa uma consulta 'in' (operação de LISTA).
-    // Isso respeita suas regras de segurança e evita o erro de permissão.
     try {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
@@ -102,12 +95,11 @@ export async function getEmpresasDoUsuario(user) {
     } catch(e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas pelo mapa:", e);
     }
-    
     return Array.from(empresasEncontradas.values());
 }
 
 // ======================================================================
-// FUNÇÃO GUARDA PRINCIPAL (COM LÓGICA DE REDIRECIONAMENTO CORRIGIDA)
+// FUNÇÃO GUARDA PRINCIPAL (COM A ORDEM DA LÓGICA CORRIGIDA PARA QUEBRAR O LOOP)
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) return Promise.resolve(cachedSessionProfile);
@@ -119,47 +111,65 @@ export async function verificarAcesso() {
             unsubscribe();
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-                const paginasPublicas = ['login.html', 'cadastro.html'];
-                const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'nova-empresa.html'];
+                // Adicionado 'selecionar-empresa.html' às páginas públicas para evitar que o guarda atue nela.
+                const paginasPublicas = ['login.html', 'cadastro.html', 'selecionar-empresa.html'];
+                const paginasDeConfig = ['perfil.html', 'assinatura.html', 'nova-empresa.html'];
 
                 if (!user) {
                     if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
-                    isProcessing = false;
                     return reject(new Error("Utilizador não autenticado."));
                 }
 
                 await ensureUserAndTrialDoc();
-                
-                // ✅ CORREÇÃO 3: A lógica de verificação de empresas foi movida para o início
-                // para garantir que a seleção seja forçada ANTES de tentar usar o localStorage.
-                
-                // 1. PRIMEIRO, busca as empresas.
-                const empresas = await getEmpresasDoUsuario(user);
 
-                // 2. Se tiver mais de uma, FORÇA a seleção.
-                if (empresas.length > 1 && currentPage !== 'selecionar-empresa.html') {
-                    window.location.replace('selecionar-empresa.html');
-                    return reject(new Error("Múltiplas empresas, seleção necessária."));
+                // ✅ CORREÇÃO CIRÚRGICA: A ordem da verificação foi ajustada.
+                
+                // 1. PRIMEIRO, tentamos validar a empresa que já está no localStorage.
+                // Isso respeita a escolha feita na tela de seleção.
+                let empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                let empresaDocSnap = null;
+
+                if (empresaAtivaId) {
+                    const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
+                    if (empresaDoc.exists()) {
+                        empresaDocSnap = empresaDoc; // Empresa válida encontrada! O guarda pode liberar.
+                    } else {
+                        localStorage.removeItem('empresaAtivaId'); // Limpa ID inválido do localStorage.
+                        empresaAtivaId = null;
+                    }
                 }
 
-                // 3. Se tiver zero, vai para a criação.
-                if (empresas.length === 0) {
-                    if (currentPage !== 'nova-empresa.html') window.location.replace('nova-empresa.html');
-                    return reject(new Error("Nenhuma empresa associada."));
+                // 2. SÓ SE NÃO houver uma empresa válida no localStorage, o guarda age.
+                if (!empresaDocSnap) {
+                    const empresas = await getEmpresasDoUsuario(user);
+
+                    if (empresas.length === 0) {
+                        if (!paginasDeConfig.includes(currentPage)) window.location.replace('nova-empresa.html');
+                        return reject(new Error("Nenhuma empresa associada."));
+                    }
+                    
+                    if (empresas.length > 1) {
+                        // Manda para a seleção e pára a execução.
+                        if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
+                        return reject(new Error("Múltiplas empresas, seleção necessária."));
+                    }
+
+                    if (empresas.length === 1) {
+                        // Caso de usuário com 1 empresa, define e continua.
+                        empresaAtivaId = empresas[0].id;
+                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
+                        empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
+                    }
                 }
 
-                // 4. Se chegou aqui, tem exatamente UMA empresa. Define-a como ativa.
-                const empresaAtivaId = empresas[0].id;
-                localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                
-                // O resto da sua lógica original continua a partir daqui, agora com a certeza
-                // de que a empresa ativa está correta.
-                const empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
-
+                // 3. Verificação final de segurança.
                 if (!empresaDocSnap || !empresaDocSnap.exists()) {
-                    return reject(new Error("Empresa não encontrada."));
+                    // Se mesmo assim não houver empresa, algo está errado. Volta para a seleção.
+                    window.location.replace('selecionar-empresa.html');
+                    return reject(new Error("Falha ao determinar empresa ativa."));
                 }
 
+                // O resto da sua lógica original continua daqui, 100% preservada.
                 const empresaData = empresaDocSnap.data();
                 if (!empresaData) {
                     return reject(new Error("Dados da empresa inválidos."));
@@ -207,7 +217,7 @@ export async function verificarAcesso() {
     });
 }
 
-// Suas outras funções exportadas permanecem intactas
+// Suas outras funções exportadas, 100% preservadas.
 export function clearCache() {
     cachedSessionProfile = null;
     isProcessing = false;
