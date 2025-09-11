@@ -13,9 +13,9 @@
             display: flex;
             margin: 0;
             font-family: 'Poppins', sans-serif;
-            background-color: #f1f5f9; /* Um fundo mais suave */
+            background-color: #f1f5f9; 
             transition: opacity 0.5s ease-in-out;
-            opacity: 0; /* Começa invisível para uma transição suave */
+            opacity: 0; 
         }
         body.loaded { opacity: 1; }
         #menu-container { flex-shrink: 0; }
@@ -79,13 +79,10 @@
     </main>
 
     <script type="module">
-        // ESTE ARQUIVO AGORA DEPENDE 100% DO userService.js PARA VALIDAR O ACESSO.
-        // Se houver um problema, o userService irá intervir e mostrar o erro na tela.
         import { verificarAcesso } from './userService.js';
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // Mapeamento dos cards para fácil manutenção
         const cardMap = {
             dashboard: { href: 'dashboard.html', icon: 'fa-chart-pie', text: 'Dashboard' },
             agenda: { href: 'agenda.html', icon: 'fa-calendar-check', text: 'Agenda' },
@@ -100,11 +97,7 @@
 
         async function inicializarPagina() {
             try {
-                // PONTO CRÍTICO: Chama o guardião de acesso. 
-                // Se a verificação de horário falhar, ele lançará um erro e interromperá tudo aqui.
                 const sessao = await verificarAcesso();
-                
-                // Se o acesso for permitido, continua a carregar a página
                 const papelUsuario = sessao.perfil.papel;
                 const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
                 
@@ -116,8 +109,6 @@
                 await renderizarCardsPermitidos(papelUsuario);
 
             } catch (error) {
-                // Este 'catch' agora só pegará erros de redirecionamento ou falhas inesperadas,
-                // pois o erro de horário já foi tratado dentro do 'verificarAcesso'.
                 if (!error.message.includes("Redirecionando")) {
                     console.error("Erro ao inicializar o dashboard:", error);
                 }
@@ -128,7 +119,7 @@
 
         async function renderizarCardsPermitidos(papelUsuario) {
             const grid = document.getElementById('dashboard-grid-cards');
-            grid.innerHTML = ''; // Limpa o grid
+            grid.innerHTML = '';
 
             const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
             const permissoesSnap = await getDoc(permissoesRef);
@@ -136,7 +127,6 @@
 
             for (const cardId in cardMap) {
                 const regra = regras[cardId];
-                // Se não houver regra ou se a permissão para o papel for 'true', mostra o card.
                 if (!regra || regra[papelUsuario] === true) {
                     const cardData = cardMap[cardId];
                     const cardElement = document.createElement('a');
@@ -150,12 +140,11 @@
         }
         
         async function loadAndSetupMenu(papelUsuario) {
-             try {
+            try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 
-                // Importa e executa a lógica do menu dinamicamente
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
                     menuModule.ativarMenuLateral(papelUsuario);
