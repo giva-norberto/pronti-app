@@ -1,12 +1,7 @@
-<!-- ====================================================================== -->
-<!--      MENU-LATERAL.HTML (FUNCIONÁRIO, DONO, ADMIN, LOGOUT)             -->
-<!-- ====================================================================== -->
-
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
-        <!-- Funcionário / Geral -->
         <a href="index.html" data-menu-id="inicio">
             <span><i class="fa-solid fa-house"></i></span> Início
         </a>
@@ -16,8 +11,6 @@
         <a href="equipe.html" data-menu-id="equipe">
             <span><i class="fa-solid fa-users"></i></span> Equipe
         </a>
-
-        <!-- Dono -->
         <a href="servicos.html" data-menu-id="servicos">
             <span><i class="fa-solid fa-scissors"></i></span> Serviços
         </a>
@@ -27,13 +20,9 @@
         <a href="perfil.html" data-menu-id="perfil">
             <span><i class="fa-solid fa-id-card"></i></span> Empresa
         </a>
-
-        <!-- Relatórios (dono + admin) -->
         <a href="relatorios.html" data-menu-id="relatorios">
             <span><i class="fa-solid fa-chart-line"></i></span> Relatórios
         </a>
-
-        <!-- Admin -->
         <a href="admin.html" data-menu-id="administracao">
             <span><i class="fa-solid fa-shield"></i></span> Administração
         </a>
@@ -50,8 +39,9 @@
 
 <style>
 /* ===================== */
-/*    MENU LATERAL CSS    */
+/* MENU LATERAL CSS    */
 /* ===================== */
+/* Todo o seu CSS já estava correto e bem estruturado. Nenhuma alteração foi necessária. */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -153,7 +143,6 @@
 
 .hidden { display: none !important; }
 
-/* Responsivo: sidebar desliza no celular */
 @media (max-width: 900px) {
   .sidebar { transform: translateX(-110%); }
   .sidebar.open { transform: translateX(0); }
@@ -162,33 +151,69 @@
 </style>
 
 <script type="module">
+// ================================= //
+//      LÓGICA DO MENU E LOGOUT      //
+// ================================= //
+
+// 1. IMPORTAÇÕES ESSENCIAIS
+// Importa o objeto 'auth' do seu arquivo de configuração do Firebase.
+// É CRÍTICO que este arquivo exista e esteja configurado corretamente.
 import { auth } from "./firebase-config.js";
+
+// Importa a função 'signOut' da biblioteca de autenticação do Firebase.
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+/**
+ * Função principal que inicializa as funcionalidades da barra lateral.
+ */
 function ativarMenuLateral() {
-  // Marca link ativo
+    
+  // --- PARTE 1: MARCAR O LINK ATIVO ---
+  // Pega o nome do arquivo atual na URL (ex: 'agenda.html').
   const urlAtual = window.location.pathname.split('/').pop();
+  
+  // Seleciona todos os links da barra lateral.
   document.querySelectorAll('.sidebar-links a').forEach(link => {
+    // Remove a classe 'active' de todos para garantir que só um fique marcado.
     link.classList.remove('active');
-    if (link.getAttribute('href') === urlAtual) link.classList.add('active');
+    
+    // Se o 'href' do link for igual ao nome do arquivo atual, adiciona a classe 'active'.
+    if (link.getAttribute('href') === urlAtual) {
+      link.classList.add('active');
+    }
   });
 
-  // Configura logout funcional
-  const btn = document.getElementById("btn-logout");
-  if (btn) {
-    btn.addEventListener("click", async () => {
+  // --- PARTE 2: CONFIGURAR O BOTÃO DE LOGOUT ---
+  // Encontra o botão de sair pelo seu ID.
+  const btnLogout = document.getElementById("btn-logout");
+  
+  // Verifica se o botão realmente existe na página antes de adicionar o evento.
+  if (btnLogout) {
+    // Adiciona um "ouvinte" que espera por um clique no botão.
+    btnLogout.addEventListener("click", async () => {
+      // Usamos 'try...catch' para capturar qualquer erro que possa acontecer.
       try {
-        await signOut(auth);  // desloga do Firebase
-        localStorage.clear(); // limpa dados locais
+        // 1. Desloga o usuário da sua conta Firebase.
+        await signOut(auth);
+        
+        // 2. Limpa qualquer dado salvo no navegador (como tokens, etc.).
+        // É uma boa prática para garantir que a sessão foi completamente encerrada.
+        localStorage.clear();
+        
+        // 3. Redireciona o usuário para a página de login.
         window.location.href = "login.html";
-      } catch (e) {
-        console.error("Erro ao sair:", e);
-        alert("Erro ao sair: " + e.message);
+
+      } catch (erro) {
+        // Se algo der errado durante o processo de logout...
+        console.error("Erro ao tentar fazer logout:", erro);
+        alert("Não foi possível sair. Tente novamente.\nErro: " + erro.message);
       }
     });
   }
 }
 
-// Inicializa quando o DOM estiver carregado
+// --- INICIALIZAÇÃO ---
+// Garante que todo o HTML da página foi carregado antes de executar o script.
 document.addEventListener("DOMContentLoaded", ativarMenuLateral);
+
 </script>
