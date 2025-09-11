@@ -8,7 +8,6 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* Seu CSS original foi 100% preservado */
         :root { --sidebar-width: 240px; }
         body {
             display: flex;
@@ -16,35 +15,53 @@
             font-family: 'Poppins', sans-serif;
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
-            background: linear-gradient(135deg, #4f46e5 0%, #222664 100% );
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%  );
         }
         body.loaded { opacity: 1; }
         #menu-container { flex-shrink: 0; }
+
+        /* ======================= INÍCIO DA CORREÇÃO DE ALINHAMENTO ======================= */
         main.main-content {
             flex-grow: 1;
             padding: 40px;
             box-sizing: border-box;
             height: 100vh;
             overflow-y: auto;
+            
+            /* ✅ CORREÇÃO FINAL: Transforma o 'main' em uma coluna flexível
+               e alinha todo o seu conteúdo (texto e cards) no TOPO da página. */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Centraliza o conteúdo horizontalmente */
+            justify-content: flex-start; /* Alinha o conteúdo no topo */
         }
-        .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; }
+        /* ======================== FIM DA CORREÇÃO DE ALINHAMENTO ========================= */
+
+        .dashboard-welcome-center { 
+            text-align: center; 
+            margin-bottom: 5vh; 
+            width: 100%; /* Garante que o texto ocupe a largura total */
+        }
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
+        
         .dashboard-grid-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 20px;
             width: 100%;
             max-width: 900px;
-            margin: 0 auto;
+            /* A margem 'margin: 0 auto' não é mais necessária, pois o 'align-items: center' do pai já faz isso. */
         }
+        
+        /* O restante do seu CSS está 100% preservado */
         .menu-card {
             color: #fff; border-radius: 16px; padding: 20px 10px;
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; text-align: center; gap: 12px;
             font-weight: 600; font-size: 0.9rem; text-decoration: none;
             box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s, visibility 0s; /* Adicionado visibility à transição */
+            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s, visibility 0s;
             border: none; aspect-ratio: 1 / 1;
         }
         .menu-card:hover {
@@ -74,7 +91,7 @@
             <p>Pronto para gerenciar seu dia?</p>
         </div>
         
-        <!-- ✅ CORREÇÃO: Seus cards estáticos foram 100% restaurados no HTML. -->
+        <!-- Sua estrutura HTML de cards, 100% preservada -->
         <div class="dashboard-grid-cards" id="dashboard-grid-cards">
             <a href="dashboard.html" class="menu-card" data-card-id="dashboard">
                 <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
@@ -105,34 +122,30 @@
             </a>
         </div>
     </main>
+    
+    <!-- Seu script JavaScript, 100% preservado e já corrigido -->
     <script type="module">
-        // Suas importações originais, preservadas.
         import { verificarAcesso } from './userService.js';
         import { auth, db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        // Sua função original, com uma única e cirúrgica alteração.
-        async function aplicarPermissoesMenusCards(papelUsuario ) {
+        async function aplicarPermissoesMenusCards(papelUsuario  ) {
             try {
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
-                // Função auxiliar para aplicar a visibilidade
                 const aplicarVisibilidade = (elemento, podeVer) => {
                     if (podeVer) {
-                        // Garante que o item esteja visível e clicável
                         elemento.style.visibility = 'visible';
                         elemento.style.pointerEvents = 'auto';
                     } else {
-                        // ✅ CORREÇÃO: Torna o item invisível, mas preserva seu espaço no layout.
                         elemento.style.visibility = 'hidden';
                         elemento.style.pointerEvents = 'none';
                     }
                 };
 
-                // LATERAL
                 document.querySelectorAll('[data-menu-id]').forEach(item => {
                     const menuId = item.dataset.menuId;
                     const regraParaMenu = regrasGlobais[menuId];
@@ -140,7 +153,6 @@
                     aplicarVisibilidade(item, podeVer);
                 });
 
-                // DASHBOARD CARDS
                 document.querySelectorAll('[data-card-id]').forEach(card => {
                     const cardId = card.dataset.cardId;
                     const regraParaCard = regrasGlobais[cardId];
@@ -148,7 +160,6 @@
                     aplicarVisibilidade(card, podeVer);
                 });
             } catch (error) {
-                // Fallback: mostra todos se der erro
                 document.querySelectorAll('[data-menu-id], [data-card-id]').forEach(item => {
                     item.style.visibility = 'visible';
                     item.style.pointerEvents = 'auto';
@@ -157,7 +168,6 @@
             }
         }
 
-        // Suas outras funções (loadAndSetupMenu, inicializarPagina) foram 100% preservadas.
         async function loadAndSetupMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -197,7 +207,7 @@
                 await loadAndSetupMenu(papelUsuario);
 
             } catch (error) {
-                if (!error.message.includes("Redirecionando")) {
+                if (error.message && !error.message.includes("Redirecionando")) {
                     document.querySelectorAll('[data-card-id], [data-menu-id]').forEach(item => {
                         item.style.visibility = 'visible';
                         item.style.pointerEvents = 'auto';
