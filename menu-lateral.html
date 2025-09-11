@@ -163,36 +163,25 @@
 }
 </style>
 
-<script type="module">
+<script>
 // ========================
 // Configura logout funcional
 // ========================
-function configurarLogout() {
-  const btn = document.getElementById("btn-logout");
-  if (!btn) return;
-  btn.addEventListener("click", () => {
-    // Se não usa Firebase Auth, apenas limpa sessão local e redireciona:
-    localStorage.clear();
-    window.location.href = "login.html";
-  });
-}
-
-// ========================
-// Marca link ativo
-// ========================
-function marcarAtivo() {
+document.addEventListener("DOMContentLoaded", function() {
+  // Marca link ativo
   const urlAtual = window.location.pathname.split('/').pop();
   document.querySelectorAll('.sidebar-links a').forEach(link => {
     link.classList.remove('active');
     if (link.getAttribute('href') === urlAtual) link.classList.add('active');
   });
-}
 
-// ========================
-// Inicializa menu
-// ========================
-document.addEventListener("DOMContentLoaded", () => {
-  marcarAtivo();
-  configurarLogout();
+  // Configura botão sair
+  var btn = document.getElementById("btn-logout");
+  if (btn) {
+    btn.addEventListener("click", function() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+  }
 });
 </script>
