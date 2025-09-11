@@ -2,17 +2,23 @@
  * @file userService.js
  * @description Módulo central para gerenciamento de usuários, empresas e sessões.
  * @author Giva-Norberto & Gemini Assistant
- * @version Final (Corrigido para Seleção de Empresa e Permissões do Firestore)
+ * @version Final (Corrigido para Seleção, Permissões e ReferenceError)
  */
 
-// Importa 'documentId' para a consulta correta
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
-// Funções auxiliares (Mantenha as suas versões originais se as tiver )
+// ======================= INÍCIO DA CORREÇÃO DO ERRO =======================
+// ✅ RESTAURADO: As duas linhas que eu apaguei por engano. Elas definem o cache.
+let cachedSessionProfile = null;
+let isProcessing = false;
+// ======================== FIM DA CORREÇÃO DO ERRO =========================
+
+
+// Funções auxiliares (checkUserStatus, ensureUserAndTrialDoc )
 async function checkUserStatus(user, empresaData) {
     try {
         if (!user) return { hasActivePlan: false, isTrialActive: true };
@@ -50,7 +56,6 @@ async function ensureUserAndTrialDoc() {
 
 /**
  * Busca todas as empresas associadas a um usuário.
- * ✅ CORRIGIDO para usar uma consulta 'in', que respeita as regras de 'list' do Firestore.
  */
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
@@ -88,7 +93,6 @@ export async function getEmpresasDoUsuario(user) {
 
 /**
  * Função guarda principal: Valida a sessão, empresa ativa, plano e permissões.
- * ✅ CORRIGIDO para forçar o redirecionamento para a seleção de empresa.
  */
 export async function verificarAcesso() {
     if (cachedSessionProfile) return Promise.resolve(cachedSessionProfile);
