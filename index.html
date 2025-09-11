@@ -10,7 +10,7 @@
     <style>
         /* Seu CSS, 100% preservado e já corrigido */
         :root { --sidebar-width: 240px; }
-        body { display: flex; margin: 0; font-family: 'Poppins', sans-serif; opacity: 0; transition: opacity 0.5s ease-in-out; background: linear-gradient(135deg, #4f46e5 0%, #222664 100%  ); }
+        body { display: flex; margin: 0; font-family: 'Poppins', sans-serif; opacity: 0; transition: opacity 0.5s ease-in-out; background: linear-gradient(135deg, #4f46e5 0%, #222664 100% ); }
         body.loaded { opacity: 1; }
         #menu-container { flex-shrink: 0; }
         main.main-content { flex-grow: 1; padding: 40px; box-sizing: border-box; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
@@ -58,21 +58,34 @@
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         /**
-         * Função única e central para aplicar permissões.
-         * Ela é chamada apenas uma vez, depois que tudo está carregado.
+         * Função "Mestre" que renderiza todo o conteúdo permitido.
+         * Garante que o menu e os cards sejam carregados e só depois as permissões sejam aplicadas.
          */
-        async function aplicarPermissoes(papelUsuario ) {
+        async function renderizarConteudoPermitido(papelUsuario ) {
             try {
+                // 1. Carrega o HTML do menu e o insere na página.
+                const response = await fetch('menu-lateral.html');
+                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                document.getElementById('menu-container').innerHTML = await response.text();
+
+                // 2. Carrega o JS do menu para ativar o botão de logout e outras funcionalidades.
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) {
+                    menuModule.ativarMenuLateral();
+                }
+
+                // 3. Busca as regras de permissão do Firestore.
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
+                // 4. Função auxiliar para aplicar a visibilidade.
                 const aplicarVisibilidade = (elemento, podeVer) => {
                     elemento.style.visibility = podeVer ? 'visible' : 'hidden';
                     elemento.style.pointerEvents = podeVer ? 'auto' : 'none';
                 };
 
-                // Aplica aos CARDS do DASHBOARD
+                // 5. Aplica as regras aos CARDS do DASHBOARD.
                 document.querySelectorAll('[data-card-id]').forEach(card => {
                     const cardId = card.dataset.cardId;
                     const regra = regras[cardId];
@@ -80,7 +93,7 @@
                     aplicarVisibilidade(card, podeVer);
                 });
 
-                // Aplica ao MENU LATERAL (que já foi carregado)
+                // 6. Aplica as regras ao MENU LATERAL (que agora já existe no DOM).
                 document.querySelectorAll('[data-menu-id]').forEach(item => {
                     const menuId = item.dataset.menuId;
                     const regra = regras[menuId];
@@ -89,7 +102,7 @@
                 });
 
             } catch (error) {
-                console.error("Erro ao aplicar permissões:", error);
+                console.error("Erro ao renderizar conteúdo permitido:", error);
                 // Fallback seguro: mostra tudo se der erro.
                 document.querySelectorAll('[data-menu-id], [data-card-id]').forEach(item => {
                     item.style.visibility = 'visible';
@@ -113,27 +126,14 @@
                 document.getElementById('saudacao').textContent = (hora >= 5 && hora < 12) ? "Bom dia" : (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
                 document.getElementById('nome-usuario').textContent = nomeUsuario;
 
-                // 3. Carrega o HTML do menu.
-                const response = await fetch('menu-lateral.html');
-                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
-                document.getElementById('menu-container').innerHTML = await response.text();
-
-                // 4. Carrega o JS do menu para ativar o botão de logout.
-                const menuModule = await import('./menu-lateral.js');
-                if (menuModule.ativarMenuLateral) {
-                    menuModule.ativarMenuLateral();
-                }
-
-                // 5. ✅ PASSO FINAL E CRÍTICO: Agora que tudo está no DOM, aplica as permissões.
-                await aplicarPermissoes(papelUsuario);
+                // 3. Chama a função "mestre" para carregar menu, cards e aplicar permissões.
+                await renderizarConteudoPermitido(papelUsuario);
 
             } catch (error) {
-                // O catch lida com erros de verificação de acesso (redirecionamentos) e outros.
                 if (error.message && !error.message.includes("Redirecionando")) {
                     console.error("Erro fatal ao inicializar o dashboard:", error);
                 }
             } finally {
-                // Garante que a página apareça suavemente, mesmo se houver erros.
                 document.body.classList.add('loaded');
             }
         }
