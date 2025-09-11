@@ -81,6 +81,7 @@
             text-decoration: none;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             height: 180px;
+            width: 100%;
             box-sizing: border-box;
         }
 
@@ -167,7 +168,6 @@
         </div>
 
         <div id="empresas-grid">
-            <!-- Os cards das empresas serão inseridos aqui pelo JavaScript -->
             <div class="loader" id="loader"></div>
         </div>
 
@@ -176,7 +176,116 @@
         </div>
     </div>
 
-    <!-- O seu script original. Ele continuará a funcionar com a nova estrutura. -->
-    <script type="module" src="selecionar-empresa.js"></script>
+    <script type="module">
+        import { auth, db } from "./firebase-config.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { doc, getDoc, collection, query, where, getDocs, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        const grid = document.getElementById('empresas-grid');
+        const loader = document.getElementById('loader');
+        const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
+        const btnLogout = document.getElementById('btn-logout');
+
+        btn-logout.addEventListener('click', async () => {
+            localStorage.removeItem('empresaAtivaId');
+            await signOut(auth).catch(error => console.error("Erro ao sair:", error));
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                localStorage.removeItem('empresaAtivaId');
+                const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
+                tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+                carregarEmpresas(user.uid);
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function carregarEmpresas(userId) {
+            try {
+                // ETAPA 1: Buscar o mapa do usuário
+                const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
+                const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
+
+                if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
+                    renderizarOpcoes([]); // Renderiza com lista vazia (mostrará "nenhuma empresa")
+                    return;
+                }
+                
+                const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
+
+                // REDIRECIONAMENTO AUTOMÁTICO
+                if (idsDasEmpresas.length === 1) {
+                    const empresaId = idsDasEmpresas[0];
+                    localStorage.setItem('empresaAtivaId', empresaId);
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // ETAPA 2: Buscar detalhes das empresas
+                const q = query(collection(db, "empresarios"), where(documentId(), "in", idsDasEmpresas));
+                const querySnapshot = await getDocs(q);
+                
+                const empresas = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderizarOpcoes(empresas);
+
+            } catch (error) {
+                console.error("Erro ao carregar empresas: ", error);
+                grid.innerHTML = `<p style="color: red;">Erro ao carregar empresas. Detalhes: ${error.message}</p>`;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        function renderizarOpcoes(empresas) {
+            grid.innerHTML = ''; // Limpa o grid (e o loader)
+
+            if (empresas.length === 0) {
+                grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
+            } else {
+                empresas.forEach(empresa => {
+                    const empresaCard = criarEmpresaCard(empresa);
+                    grid.appendChild(empresaCard);
+                });
+            }
+            // Adiciona sempre o card para criar uma nova empresa
+            const cardCriar = criarNovoCard();
+            grid.appendChild(cardCriar);
+        }
+
+        function criarEmpresaCard(empresa) {
+            const card = document.createElement('a');
+            card.className = 'empresa-card';
+            card.href = '#';
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.setItem('empresaAtivaId', empresa.id);
+                window.location.href = 'index.html';
+            });
+
+            const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
+            const inicial = nomeFantasia.charAt(0).toUpperCase();
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
+
+            card.innerHTML = `
+                <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
+                <span class="empresa-nome">${nomeFantasia}</span>
+            `;
+            return card;
+        }
+
+        function criarNovoCard() {
+            const card = document.createElement('a');
+            card.className = 'criar-empresa-card';
+            card.href = 'perfil.html'; // Página para criar/editar perfil/empresa
+
+            card.innerHTML = `
+                <div class="plus-icon">+</div>
+                <span class="empresa-nome">Criar Nova Empresa</span>
+            `;
+            return card;
+        }
+    </script>
 </body>
 </html>
