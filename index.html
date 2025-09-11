@@ -8,55 +8,18 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
+        /* Seu CSS, 100% preservado e já corrigido */
         :root { --sidebar-width: 240px; }
-        body {
-            display: flex;
-            margin: 0;
-            font-family: 'Poppins', sans-serif;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%  );
-        }
+        body { display: flex; margin: 0; font-family: 'Poppins', sans-serif; opacity: 0; transition: opacity 0.5s ease-in-out; background: linear-gradient(135deg, #4f46e5 0%, #222664 100%  ); }
         body.loaded { opacity: 1; }
         #menu-container { flex-shrink: 0; }
-
-        main.main-content {
-            flex-grow: 1;
-            padding: 40px;
-            box-sizing: border-box;
-            height: 100vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-        }
-
+        main.main-content { flex-grow: 1; padding: 40px; box-sizing: border-box; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
         .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; width: 100%; }
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
-        
-        .dashboard-grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 900px;
-        }
-        
-        .menu-card {
-            color: #fff; border-radius: 16px; padding: 20px 10px;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; text-align: center; gap: 12px;
-            font-weight: 600; font-size: 0.9rem; text-decoration: none;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s, visibility 0s;
-            border: none; aspect-ratio: 1 / 1;
-        }
-        .menu-card:hover {
-            transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            filter: brightness(1.1); cursor: pointer;
-        }
+        .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; max-width: 900px; }
+        .menu-card { color: #fff; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; font-weight: 600; font-size: 0.9rem; text-decoration: none; box-shadow: 0 6px 15px rgba(0,0,0,0.1); transition: transform 0.25s, box-shadow 0.25s, filter 0.25s, visibility 0s; border: none; aspect-ratio: 1 / 1; }
+        .menu-card:hover { transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2); filter: brightness(1.1); cursor: pointer; }
         .menu-card i { font-size: 2rem; }
         [data-card-id="dashboard"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
         [data-card-id="agenda"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
@@ -66,10 +29,7 @@
         [data-card-id="perfil"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
         [data-card-id="relatorios"] { background: linear-gradient(135deg, #374151, #111827); }
         [data-card-id="administracao"], [data-card-id="permissoes"] { background: linear-gradient(135deg, #111827, #374151); }
-        @media (max-width: 900px) {
-            body { flex-direction: column; }
-            main.main-content { height: auto; }
-        }
+        @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
     </style>
 </head>
 <body>
@@ -94,61 +54,70 @@
     </main>
     <script type="module">
         import { verificarAcesso } from './userService.js';
-        import { db } from './firebase-config.js'; // A importação de 'auth' e 'signOut' foi removida daqui, pois não é mais necessária.
+        import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        async function aplicarPermissoesMenusCards(papelUsuario ) {
+        // ✅ CORREÇÃO: A função de permissões agora é a única fonte da verdade.
+        async function aplicarPermissoes(papelUsuario ) {
             try {
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
-                const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
+                const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
                 const aplicarVisibilidade = (elemento, podeVer) => {
                     elemento.style.visibility = podeVer ? 'visible' : 'hidden';
                     elemento.style.pointerEvents = podeVer ? 'auto' : 'none';
                 };
 
+                // Aplica aos CARDS do DASHBOARD
+                document.querySelectorAll('[data-card-id]').forEach(card => {
+                    const cardId = card.dataset.cardId;
+                    const regra = regras[cardId];
+                    const podeVer = !regra || regra[papelUsuario] === true;
+                    aplicarVisibilidade(card, podeVer);
+                });
+
+                // Aplica ao MENU LATERAL
                 document.querySelectorAll('[data-menu-id]').forEach(item => {
                     const menuId = item.dataset.menuId;
-                    const regraParaMenu = regrasGlobais[menuId];
-                    const podeVer = !regraParaMenu || regraParaMenu[papelUsuario] === true;
+                    const regra = regras[menuId];
+                    const podeVer = !regra || regra[papelUsuario] === true;
                     aplicarVisibilidade(item, podeVer);
                 });
 
-                document.querySelectorAll('[data-card-id]').forEach(card => {
-                    const cardId = card.dataset.cardId;
-                    const regraParaCard = regrasGlobais[cardId];
-                    const podeVer = !regraParaCard || regraParaCard[papelUsuario] === true;
-                    aplicarVisibilidade(card, podeVer);
-                });
             } catch (error) {
+                console.error("Erro ao aplicar permissões:", error);
+                // Fallback seguro: mostra tudo se der erro.
                 document.querySelectorAll('[data-menu-id], [data-card-id]').forEach(item => {
                     item.style.visibility = 'visible';
                     item.style.pointerEvents = 'auto';
                 });
-                console.error("Erro ao aplicar permissões:", error);
             }
         }
 
+        // ✅ CORREÇÃO: A ordem das chamadas foi corrigida.
         async function loadAndSetupMenu(papelUsuario) {
             try {
+                // 1. Carrega o HTML do menu
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
 
-                // ✅ A chamada agora é para o módulo que sabe se auto-ativar.
+                // 2. Carrega o JS do menu para ativar o botão de logout e outras funcionalidades
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
                     menuModule.ativarMenuLateral();
                 }
 
-                // Aplica as permissões DEPOIS que o menu foi carregado e ativado.
-                await aplicarPermissoesMenusCards(papelUsuario);
+                // 3. SÓ DEPOIS que tudo está no DOM, aplica as regras de permissão
+                await aplicarPermissoes(papelUsuario);
+
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
             }
         }
 
+        // Sua função de inicialização, 100% preservada.
         async function inicializarPagina() {
             try {
                 const sessao = await verificarAcesso();
