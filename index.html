@@ -57,53 +57,36 @@
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        /**
-         * Função "Mestre" que renderiza todo o conteúdo permitido.
-         * Garante que o menu e os cards sejam carregados e só depois as permissões sejam aplicadas.
-         */
-        async function renderizarConteudoPermitido(papelUsuario ) {
+        // ✅ SUA LÓGICA ORIGINAL DE PERMISSÕES, 100% RESTAURADA E PRESERVADA.
+        async function aplicarPermissoesMenusCards(papelUsuario ) {
             try {
-                // 1. Carrega o HTML do menu e o insere na página.
-                const response = await fetch('menu-lateral.html');
-                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
-                document.getElementById('menu-container').innerHTML = await response.text();
-
-                // 2. Carrega o JS do menu para ativar o botão de logout e outras funcionalidades.
-                const menuModule = await import('./menu-lateral.js');
-                if (menuModule.ativarMenuLateral) {
-                    menuModule.ativarMenuLateral();
-                }
-
-                // 3. Busca as regras de permissão do Firestore.
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
-                const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
+                const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
-                // 4. Função auxiliar para aplicar a visibilidade.
+                // Usando a técnica de 'visibility' que já funcionou para preservar o layout.
                 const aplicarVisibilidade = (elemento, podeVer) => {
                     elemento.style.visibility = podeVer ? 'visible' : 'hidden';
                     elemento.style.pointerEvents = podeVer ? 'auto' : 'none';
                 };
 
-                // 5. Aplica as regras aos CARDS do DASHBOARD.
-                document.querySelectorAll('[data-card-id]').forEach(card => {
-                    const cardId = card.dataset.cardId;
-                    const regra = regras[cardId];
-                    const podeVer = !regra || regra[papelUsuario] === true;
-                    aplicarVisibilidade(card, podeVer);
-                });
-
-                // 6. Aplica as regras ao MENU LATERAL (que agora já existe no DOM).
+                // Aplica ao MENU LATERAL
                 document.querySelectorAll('[data-menu-id]').forEach(item => {
                     const menuId = item.dataset.menuId;
-                    const regra = regras[menuId];
-                    const podeVer = !regra || regra[papelUsuario] === true;
+                    const regraParaMenu = regrasGlobais[menuId];
+                    const podeVer = !regraParaMenu || regraParaMenu[papelUsuario] === true;
                     aplicarVisibilidade(item, podeVer);
                 });
 
+                // Aplica aos CARDS do DASHBOARD
+                document.querySelectorAll('[data-card-id]').forEach(card => {
+                    const cardId = card.dataset.cardId;
+                    const regraParaCard = regrasGlobais[cardId];
+                    const podeVer = !regraParaCard || regraParaCard[papelUsuario] === true;
+                    aplicarVisibilidade(card, podeVer);
+                });
             } catch (error) {
-                console.error("Erro ao renderizar conteúdo permitido:", error);
-                // Fallback seguro: mostra tudo se der erro.
+                console.error("Erro ao aplicar permissões:", error);
                 document.querySelectorAll('[data-menu-id], [data-card-id]').forEach(item => {
                     item.style.visibility = 'visible';
                     item.style.pointerEvents = 'auto';
@@ -111,23 +94,37 @@
             }
         }
 
-        /**
-         * Ponto de entrada principal da página.
-         */
+        // ✅ SUA LÓGICA ORIGINAL DE CARREGAR O MENU, 100% RESTAURADA.
+        async function loadAndSetupMenu(papelUsuario) {
+            try {
+                const response = await fetch('menu-lateral.html');
+                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                document.getElementById('menu-container').innerHTML = await response.text();
+
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) {
+                    menuModule.ativarMenuLateral();
+                }
+
+                // ✅ A CHAMADA PARA APLICAR PERMISSÕES ESTÁ DE VOLTA AO LUGAR ORIGINAL.
+                await aplicarPermissoesMenusCards(papelUsuario);
+            } catch (error) {
+                console.error("Falha ao carregar o menu lateral ou aplicar permissões:", error);
+            }
+        }
+
+        // ✅ SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO, 100% RESTAURADA.
         async function inicializarPagina() {
             try {
-                // 1. Espera a verificação de acesso e obtém a sessão.
                 const sessao = await verificarAcesso();
                 const papelUsuario = sessao.perfil?.papel || 'funcionario';
                 const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
                 
-                // 2. Atualiza a UI com informações do usuário.
                 const hora = new Date().getHours();
                 document.getElementById('saudacao').textContent = (hora >= 5 && hora < 12) ? "Bom dia" : (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
                 document.getElementById('nome-usuario').textContent = nomeUsuario;
 
-                // 3. Chama a função "mestre" para carregar menu, cards e aplicar permissões.
-                await renderizarConteudoPermitido(papelUsuario);
+                await loadAndSetupMenu(papelUsuario);
 
             } catch (error) {
                 if (error.message && !error.message.includes("Redirecionando")) {
@@ -138,7 +135,6 @@
             }
         }
         
-        // Inicia todo o processo.
         inicializarPagina();
     </script>
 </body>
