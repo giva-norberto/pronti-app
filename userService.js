@@ -1,9 +1,8 @@
 /**
  * @file userService.js
  * @description Módulo central para gerenciamento de usuários, empresas e sessões.
- * Contém a lógica principal de verificação de acesso da aplicação.
  * @author Giva-Norberto & Gemini Assistant
- * @version Final-Revisado
+ * @version Final-Com-Verificacao-De-Horario
  */
 
 import {
@@ -12,13 +11,44 @@ import {
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
-// "Memória" da sessão para evitar buscas repetidas no banco de dados
 let cachedSessionProfile = null;
 let isProcessing = false;
 
 /**
- * Garante que um documento para o usuário exista na coleção 'usuarios' e que
- * ele tenha uma data de início de trial.
+ * ✅ NOVO: Sistema de Verificação de Horário.
+ * Verifica se o relógio do cliente está sincronizado com a hora mundial.
+ * Uma diferença significativa causa erros de permissão no Firebase.
+ * @throws {Error} Se o relógio do cliente estiver dessincronizado.
+ */
+async function verificarSincroniaDoRelogio() {
+    try {
+        // Usa uma API pública confiável para obter a hora UTC atual.
+        const response = await fetch('https://worldtimeapi.org/api/ip');
+        if (!response.ok) {
+            console.warn('Aviso: Não foi possível verificar a sincronia do relógio. A aplicação continuará, mas pode falhar se o horário estiver incorreto.');
+            return;
+        }
+
+        const data = await response.json();
+        const horaServidor = new Date(data.utc_datetime);
+        const horaCliente = new Date();
+        
+        // Calcula a diferença em minutos.
+        const diferencaEmMinutos = Math.abs(horaServidor.getTime() - horaCliente.getTime()) / 60000;
+
+        // Se a diferença for maior que 5 minutos, é um erro crítico que impede a comunicação com o Firebase.
+        if (diferencaEmMinutos > 5) {
+            throw new Error(`O relógio do seu sistema está incorreto e precisa ser ajustado. Detectamos uma diferença de aproximadamente ${Math.round(diferencaEmMinutos)} minutos. Por favor, corrija a data e a hora do seu sistema para continuar.`);
+        }
+    } catch (error) {
+        // Propaga o erro para que a função 'verificarAcesso' possa impedi-lo de continuar.
+        throw error;
+    }
+}
+
+
+/**
+ * Garante que um documento para o usuário exista na coleção 'usuarios'.
  */
 export async function ensureUserAndTrialDoc() {
     try {
@@ -35,14 +65,11 @@ export async function ensureUserAndTrialDoc() {
 }
 
 /**
- * Verifica se o usuário tem um plano ativo ou se o período de trial ainda é válido.
- * @param {object} user - O objeto de usuário do Firebase Auth.
- * @param {object} empresaData - Os dados da empresa ativa.
- * @returns {object} Um objeto com { hasActivePlan: boolean, isTrialActive: boolean }.
+ * Verifica o status do plano ou trial do usuário.
  */
 async function checkUserStatus(user, empresaData) {
     try {
-        if (!user) return { hasActivePlan: false, isTrialActive: true }; // Permite o acesso inicial
+        if (!user) return { hasActivePlan: false, isTrialActive: true };
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
@@ -52,7 +79,7 @@ async function checkUserStatus(user, empresaData) {
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
         if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
 
-        let trialDurationDays = 15; // Duração padrão do trial
+        let trialDurationDays = 15;
         if (empresaData && typeof empresaData.freeEmDias === 'number') {
             trialDurationDays = empresaData.freeEmDias;
         }
@@ -64,15 +91,12 @@ async function checkUserStatus(user, empresaData) {
         return { hasActivePlan: false, isTrialActive: endDate > new Date() };
     } catch (error) { 
         console.error("❌ [checkUserStatus] Erro:", error);
-        return { hasActivePlan: false, isTrialActive: true }; // Em caso de erro, permite o trial
+        return { hasActivePlan: false, isTrialActive: true };
     }
 }
 
 /**
- * ✅ CORREÇÃO: Busca as empresas associadas a um usuário USANDO APENAS o 'mapaUsuarios'.
- * Esta é a única fonte da verdade, garantindo consistência e conformidade com as regras de segurança.
- * @param {object} user - O objeto de usuário do Firebase Auth.
- * @returns {Array} Uma lista de objetos de empresa.
+ * Busca as empresas associadas a um usuário usando o 'mapaUsuarios'.
  */
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
@@ -82,44 +106,48 @@ export async function getEmpresasDoUsuario(user) {
         const mapaSnap = await getDoc(mapaRef);
 
         if (!mapaSnap.exists() || !mapaSnap.data().empresas || mapaSnap.data().empresas.length === 0) {
-            return []; // Retorna lista vazia se não houver mapa ou empresas no mapa
+            return [];
         }
 
         const idsDeEmpresas = mapaSnap.data().empresas;
 
-        // Se não houver IDs, não há o que buscar.
         if (idsDeEmpresas.length === 0) {
             return [];
         }
 
-        // Busca todos os documentos da coleção 'empresarios' cujos IDs estão na lista.
         const q = query(collection(db, "empresarios"), where(documentId(), "in", idsDeEmpresas));
         const snapshot = await getDocs(q);
         
-        // Mapeia os documentos para o formato desejado (id + dados).
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     } catch (e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas pelo mapa:", e);
-        // Em caso de erro, retorna um array vazio para não quebrar a aplicação.
         return []; 
     }
 }
 
-
 /**
  * Função guarda principal: Valida a sessão, empresa ativa, plano e permissões.
- * É o ponto de entrada para qualquer página protegida.
- * @returns {Promise<object>} Uma promessa que resolve com o objeto da sessão do usuário.
  */
 export async function verificarAcesso() {
+    // ETAPA 1: VERIFICAÇÃO DE HORÁRIO (NOVA)
+    try {
+        await verificarSincroniaDoRelogio();
+    } catch (error) {
+        // Se o relógio estiver errado, impede a continuação e informa o erro exato.
+        isProcessing = false;
+        // A página que chamou (ex: index.html) deve pegar este erro e mostrar ao usuário.
+        return Promise.reject(error);
+    }
+
+    // LÓGICA EXISTENTE (SÓ RODA SE O HORÁRIO ESTIVER CORRETO)
     if (cachedSessionProfile) return Promise.resolve(cachedSessionProfile);
     if (isProcessing) return Promise.reject(new Error("Redirecionando..."));
     isProcessing = true;
 
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe(); // Executa apenas uma vez
+            unsubscribe();
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html'];
@@ -148,7 +176,6 @@ export async function verificarAcesso() {
                 }
 
                 if (!empresaDocSnap) {
-                    // Agora usa a função corrigida e confiável
                     const empresas = await getEmpresasDoUsuario(user);
                     if (empresas.length === 0) {
                         if (!paginasDeConfig.includes(currentPage)) window.location.replace('nova-empresa.html');
@@ -176,7 +203,6 @@ export async function verificarAcesso() {
                 let perfilDetalhado;
                 let papel;
 
-                // Define o papel (a "fonte da verdade")
                 if (isAdmin) {
                     papel = 'admin';
                 } else if (isOwner) {
@@ -185,7 +211,6 @@ export async function verificarAcesso() {
                     papel = 'funcionario';
                 }
 
-                // Busca o perfil detalhado com base no papel
                 if (papel === 'funcionario') {
                     const profSnap = await getDoc(doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid));
                     if (!profSnap.exists() || profSnap.data().status !== 'ativo') {
@@ -194,11 +219,10 @@ export async function verificarAcesso() {
                         return reject(new Error("Acesso de profissional revogado ou pendente."));
                     }
                     perfilDetalhado = { ...profSnap.data(), ehDono: false };
-                } else { // Para Dono e Admin
+                } else {
                     perfilDetalhado = { ...empresaData, nome: user.displayName || user.email, ehDono: true, status: 'ativo', email: user.email };
                 }
                 
-                // ⭐ REVISÃO: Adicionamos o 'papel' diretamente ao perfil para uso fácil na UI
                 perfilDetalhado.papel = papel;
 
                 cachedSessionProfile = {
