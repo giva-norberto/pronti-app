@@ -20,28 +20,19 @@
         body.loaded { opacity: 1; }
         #menu-container { flex-shrink: 0; }
 
-        /* ======================= INÍCIO DA CORREÇÃO DE ALINHAMENTO ======================= */
         main.main-content {
             flex-grow: 1;
             padding: 40px;
             box-sizing: border-box;
             height: 100vh;
             overflow-y: auto;
-            
-            /* ✅ CORREÇÃO FINAL: Transforma o 'main' em uma coluna flexível
-               e alinha todo o seu conteúdo (texto e cards) no TOPO da página. */
             display: flex;
             flex-direction: column;
-            align-items: center; /* Centraliza o conteúdo horizontalmente */
-            justify-content: flex-start; /* Alinha o conteúdo no topo */
+            align-items: center;
+            justify-content: flex-start;
         }
-        /* ======================== FIM DA CORREÇÃO DE ALINHAMENTO ========================= */
 
-        .dashboard-welcome-center { 
-            text-align: center; 
-            margin-bottom: 5vh; 
-            width: 100%; /* Garante que o texto ocupe a largura total */
-        }
+        .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; width: 100%; }
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
         
@@ -51,10 +42,8 @@
             gap: 20px;
             width: 100%;
             max-width: 900px;
-            /* A margem 'margin: 0 auto' não é mais necessária, pois o 'align-items: center' do pai já faz isso. */
         }
         
-        /* O restante do seu CSS está 100% preservado */
         .menu-card {
             color: #fff; border-radius: 16px; padding: 20px 10px;
             display: flex; flex-direction: column; align-items: center;
@@ -91,59 +80,32 @@
             <p>Pronto para gerenciar seu dia?</p>
         </div>
         
-        <!-- Sua estrutura HTML de cards, 100% preservada -->
         <div class="dashboard-grid-cards" id="dashboard-grid-cards">
-            <a href="dashboard.html" class="menu-card" data-card-id="dashboard">
-                <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
-            </a>
-            <a href="agenda.html" class="menu-card" data-card-id="agenda">
-                <i class="fa-solid fa-calendar-check"></i><span>Agenda</span>
-            </a>
-            <a href="servicos.html" class="menu-card" data-card-id="servicos">
-                <i class="fa-solid fa-concierge-bell"></i><span>Serviços</span>
-            </a>
-            <a href="clientes.html" class="menu-card" data-card-id="clientes">
-                <i class="fa-solid fa-user-group"></i><span>Clientes</span>
-            </a>
-            <a href="equipe.html" class="menu-card" data-card-id="equipe">
-                <i class="fa-solid fa-users"></i><span>Equipe</span>
-            </a>
-            <a href="perfil.html" class="menu-card" data-card-id="perfil">
-                <i class="fa-solid fa-user-gear"></i><span>Empresa</span>
-            </a>
-            <a href="relatorios.html" class="menu-card" data-card-id="relatorios">
-                <i class="fa-solid fa-file-lines"></i><span>Relatórios</span>
-            </a>
-            <a href="admin-clientes.html" class="menu-card" data-card-id="administracao">
-                <i class="fa-solid fa-shield-halved"></i><span>Administração</span>
-            </a>
-            <a href="permissoes.html" class="menu-card" data-card-id="permissoes">
-                <i class="fa-solid fa-sliders"></i><span>Permissões</span>
-            </a>
+            <a href="dashboard.html" class="menu-card" data-card-id="dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+            <a href="agenda.html" class="menu-card" data-card-id="agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a>
+            <a href="servicos.html" class="menu-card" data-card-id="servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a>
+            <a href="clientes.html" class="menu-card" data-card-id="clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a>
+            <a href="equipe.html" class="menu-card" data-card-id="equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>
+            <a href="perfil.html" class="menu-card" data-card-id="perfil"><i class="fa-solid fa-user-gear"></i><span>Empresa</span></a>
+            <a href="relatorios.html" class="menu-card" data-card-id="relatorios"><i class="fa-solid fa-file-lines"></i><span>Relatórios</span></a>
+            <a href="admin-clientes.html" class="menu-card" data-card-id="administracao"><i class="fa-solid fa-shield-halved"></i><span>Administração</span></a>
+            <a href="permissoes.html" class="menu-card" data-card-id="permissoes"><i class="fa-solid fa-sliders"></i><span>Permissões</span></a>
         </div>
     </main>
-    
-    <!-- Seu script JavaScript, 100% preservado e já corrigido -->
     <script type="module">
         import { verificarAcesso } from './userService.js';
-        import { auth, db } from './firebase-config.js';
+        import { db } from './firebase-config.js'; // A importação de 'auth' e 'signOut' foi removida daqui, pois não é mais necessária.
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        async function aplicarPermissoesMenusCards(papelUsuario  ) {
+        async function aplicarPermissoesMenusCards(papelUsuario ) {
             try {
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
                 const aplicarVisibilidade = (elemento, podeVer) => {
-                    if (podeVer) {
-                        elemento.style.visibility = 'visible';
-                        elemento.style.pointerEvents = 'auto';
-                    } else {
-                        elemento.style.visibility = 'hidden';
-                        elemento.style.pointerEvents = 'none';
-                    }
+                    elemento.style.visibility = podeVer ? 'visible' : 'hidden';
+                    elemento.style.pointerEvents = podeVer ? 'auto' : 'none';
                 };
 
                 document.querySelectorAll('[data-menu-id]').forEach(item => {
@@ -164,7 +126,7 @@
                     item.style.visibility = 'visible';
                     item.style.pointerEvents = 'auto';
                 });
-                console.error("Erro ao aplicar permissões nos menus e cards:", error);
+                console.error("Erro ao aplicar permissões:", error);
             }
         }
 
@@ -174,50 +136,40 @@
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
 
-                document.querySelectorAll('script[data-menu-lateral]').forEach(s => s.remove());
-                const script = document.createElement('script');
-                script.type = 'module';
-                script.src = 'menu-lateral.js';
-                script.setAttribute('data-menu-lateral', 'true');
-                document.body.appendChild(script);
+                // ✅ A chamada agora é para o módulo que sabe se auto-ativar.
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) {
+                    menuModule.ativarMenuLateral();
+                }
 
+                // Aplica as permissões DEPOIS que o menu foi carregado e ativado.
                 await aplicarPermissoesMenusCards(papelUsuario);
             } catch (error) {
-                document.getElementById('menu-container').innerHTML =
-                    "<div style='color:white;background:#4f46e5;padding:1em;border-radius:8px;'>Menu lateral não carregado</div>";
-                document.querySelectorAll('[data-card-id], [data-menu-id]').forEach(item => {
-                    item.style.visibility = 'visible';
-                    item.style.pointerEvents = 'auto';
-                });
-                console.error("Falha ao carregar o menu lateral ou aplicar permissões:", error);
+                console.error("Falha ao carregar o menu lateral:", error);
             }
         }
 
         async function inicializarPagina() {
             try {
                 const sessao = await verificarAcesso();
-                const papelUsuario = sessao.perfil?.papel || (sessao.isAdmin ? "admin" : (sessao.isOwner ? "dono" : "funcionario"));
+                const papelUsuario = sessao.perfil?.papel || 'funcionario';
                 const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
+                
                 const hora = new Date().getHours();
-                document.getElementById('saudacao').textContent =
-                    (hora >= 5 && hora < 12) ? "Bom dia" :
-                    (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
+                document.getElementById('saudacao').textContent = (hora >= 5 && hora < 12) ? "Bom dia" : (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
                 document.getElementById('nome-usuario').textContent = nomeUsuario;
 
                 await loadAndSetupMenu(papelUsuario);
 
             } catch (error) {
                 if (error.message && !error.message.includes("Redirecionando")) {
-                    document.querySelectorAll('[data-card-id], [data-menu-id]').forEach(item => {
-                        item.style.visibility = 'visible';
-                        item.style.pointerEvents = 'auto';
-                    });
                     console.error("Erro ao inicializar o dashboard:", error);
                 }
             } finally {
                 document.body.classList.add('loaded');
             }
         }
+        
         inicializarPagina();
     </script>
 </body>
