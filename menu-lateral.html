@@ -161,10 +161,10 @@
 }
 </style>
 
-<script>
-// ========================
-// Marca link ativo e configura logout funcional
-// ========================
+<script type="module">
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
 function ativarMenuLateral() {
   // Marca link ativo
   const urlAtual = window.location.pathname.split('/').pop();
@@ -173,16 +173,22 @@ function ativarMenuLateral() {
     if (link.getAttribute('href') === urlAtual) link.classList.add('active');
   });
 
-  // Configura botão sair
+  // Configura logout funcional
   const btn = document.getElementById("btn-logout");
   if (btn) {
-    btn.onclick = function() {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
+    btn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);  // desloga do Firebase
+        localStorage.clear(); // limpa dados locais
+        window.location.href = "login.html";
+      } catch (e) {
+        console.error("Erro ao sair:", e);
+        alert("Erro ao sair: " + e.message);
+      }
+    });
   }
 }
 
-// Se o menu for carregado via fetch/innerHTML, chame ativarMenuLateral() após inserir no DOM
+// Inicializa quando o DOM estiver carregado
 document.addEventListener("DOMContentLoaded", ativarMenuLateral);
 </script>
