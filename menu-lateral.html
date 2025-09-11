@@ -2,7 +2,7 @@
 <!--      MENU-LATERAL.HTML (FUNCIONÁRIO, DONO, ADMIN, LOGOUT)             -->
 <!-- ====================================================================== -->
 
-<aside class="sidebar sidebar-loading" id="sidebar">
+<aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">Pronti</a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
@@ -49,31 +49,36 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-.sidebar-loading .sidebar-links a { display: none; }
-
-.sidebar { width: 250px; background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+.sidebar { 
+  width: 250px; 
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
   min-height: 100vh; color: #fff; box-shadow: 2px 0 8px rgba(0,0,0,0.05);
   position: fixed; left: 0; top: 0; bottom: 0; z-index: 1000;
   display: flex; flex-direction: column; padding-top: 24px; transition: left 0.3s ease;
   box-sizing: border-box;
 }
-.sidebar-brand { font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
+.sidebar-brand { 
+  font-size: 2rem; font-weight: 900; color: #fff; text-decoration: none;
   letter-spacing: 2px; padding: 0 32px 12px 32px; display: block; margin-bottom: 8px; text-align: left;
 }
 .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; }
 .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; flex-grow: 1; }
-.sidebar-links a { display: flex; align-items: center; gap: 12px; background: #fff; color: #4f46e5;
+.sidebar-links a { 
+  display: flex; align-items: center; gap: 12px; background: #fff; color: #4f46e5;
   font-weight: 600; font-size: 1.08em; border-radius: 10px; margin-bottom: 0;
   box-shadow: 0 2px 6px rgba(79,70,229,0.07); transition: all 0.2s ease;
   padding: 14px 18px; text-align: left; text-decoration: none; letter-spacing: 0.01em;
   border: 2px solid transparent; min-height: 44px; box-sizing: border-box;
 }
 .sidebar-links a span { display: inline-block; width: 20px; text-align: center; }
-.sidebar-links a.active, .sidebar-links a:focus { background: #4f46e5; color: #fff; font-weight: 700; border: 2px solid #fff;
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3); outline: none; }
+.sidebar-links a.active, .sidebar-links a:focus { 
+  background: #4f46e5; color: #fff; font-weight: 700; border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(79,70,229,0.3); outline: none; 
+}
 .sidebar-links a:hover:not(.active) { background: #f0f1ff; color: #3b2fd6; border-color: #d1d5fa; }
 .sidebar-footer { margin-top: auto; padding: 32px 32px 24px 32px; }
-.btn-logout { background: #fff; color: #4f46e5; border: none; padding: 14px 0; width: 100%;
+.btn-logout { 
+  background: #fff; color: #4f46e5; border: none; padding: 14px 0; width: 100%;
   border-radius: 10px; font-weight: bold; font-size: 1.05em; cursor: pointer;
   transition: background 0.2s, color 0.2s; box-shadow: 0 2px 6px rgba(79,70,229,0.07);
   border: 2px solid transparent; outline: none; min-height: 44px; box-sizing: border-box;
@@ -100,24 +105,21 @@ async function aplicarPermissoesGlobaisMenu() {
     const docSnap = await db.collection("configuracoesGlobais").doc("permissoes").get();
     if (!docSnap.exists) return;
     const permissoes = docSnap.data();
+
     document.querySelectorAll('.sidebar-links a').forEach(a => {
       const menuId = a.dataset.menuId;
-      const podeVer = permissoes[menuId]?.[perfil] ?? true; // default: true
+      const podeVer = permissoes[menuId]?.[perfil] ?? true; // default true
       if (!podeVer) a.classList.add('hidden');
     });
 
     // Administração e Permissões só para admin
     if (perfil !== 'admin') {
-      ['administracao', 'permissoes'].forEach(id => {
-        document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden');
-      });
+      ['administracao','permissoes'].forEach(id => document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden'));
     }
 
-    // Funcionário só vê itens básicos
+    // Funcionário vê só itens básicos
     if (perfil === 'funcionario') {
-      ['servicos','clientes','perfil','relatorios'].forEach(id => {
-        document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden');
-      });
+      ['servicos','clientes','perfil','relatorios'].forEach(id => document.querySelector(`[data-menu-id="${id}"]`)?.classList.add('hidden'));
     }
 
   } catch(e) { console.error("Erro ao aplicar permissões do menu:", e); }
@@ -131,7 +133,9 @@ function marcarAtivo() {
 }
 
 function configurarLogout() {
-  document.getElementById("btn-logout")?.addEventListener("click", async () => {
+  const btn = document.getElementById("btn-logout");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
     localStorage.clear();
     await signOut(getAuth());
     window.location.href = "login.html";
