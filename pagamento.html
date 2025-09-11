@@ -45,11 +45,13 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         // ======================================================================
-        // URL DO SEU SERVIDOR - AGORA APONTANDO PARA A NUVEM
+        // URLs FINAIS DE PRODUÇÃO
         // ======================================================================
-        const serverUrl = 'https://us-central1-pronti-app-37cae.cloudfunctions.net';
+        const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
+        const createPreferenceUrl = 'https://createpreference-uzuwj4imfa-uc.a.run.app';
         // ======================================================================
 
+        // Elementos da página
         const infoUsuarioDiv = document.getElementById('info-usuario');
         const listaPlanosContainer = document.querySelector('.lista-planos');
         const btnPagar = document.getElementById('btn-pagar');
@@ -58,6 +60,7 @@
         let planoSelecionado = null;
         let licencasNecessarias = 0;
 
+        // "Tabela de Preços" do Front-end (deve ser IGUAL à do servidor)
         const configuracaoPrecos = {
             precoBase: 59.90,
             funcionariosInclusos: 2,
@@ -66,8 +69,10 @@
                 { de: 11, ate: 50, valor: 24.90 },
             ]
         };
+        // Planos que serão mostrados como cards na tela
         const planosParaExibir = [2, 5, 10, 15, 20, 30, 50];
 
+        // Função para calcular o preço (deve ser IGUAL à do servidor)
         function calcularPreco(totalFuncionarios) {
             if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
             let total = configuracaoPrecos.precoBase;
@@ -85,8 +90,9 @@
             return total;
         }
 
+        // Função para gerar os cards de planos na tela
         function gerarCardsDePlano() {
-            listaPlanosContainer.innerHTML = '';
+            listaPlanosContainer.innerHTML = ''; // Limpa a lista
             planosParaExibir.forEach(numFuncionarios => {
                 const preco = calcularPreco(numFuncionarios);
                 const isDesabilitado = numFuncionarios < licencasNecessarias;
@@ -118,9 +124,11 @@
             });
         }
         
+        // Função principal que inicia ao carregar a página
         async function inicializarPagina(user) {
             try {
-                const response = await fetch(`${serverUrl}/getStatusEmpresa`, {
+                // PASSO 1: Perguntar ao servidor qual a situação da empresa
+                const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: user.uid })
@@ -131,16 +139,18 @@
                 const data = await response.json();
                 licencasNecessarias = data.licencasNecessarias;
 
+                // PASSO 2: Atualizar a tela com os dados e gerar os cards
                 infoUsuarioDiv.textContent = `Sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
                 gerarCardsDePlano();
 
             } catch (error) {
                 console.error("Erro ao inicializar página:", error);
                 infoUsuarioDiv.textContent = error.message;
-                infoUsuarioDiv.style.color = '#dc2626';
+                infoUsuarioDiv.style.color = '#dc2626'; // Vermelho para erro
             }
         }
 
+        // Ponto de entrada: Verifica se o usuário está logado
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 inicializarPagina(user);
@@ -150,6 +160,7 @@
             }
         });
 
+        // Evento de clique do botão de pagar
         btnPagar.addEventListener('click', async () => {
             if (!planoSelecionado) return;
             const user = auth.currentUser;
@@ -159,7 +170,7 @@
             btnPagar.textContent = 'Criando link de pagamento...';
 
             try {
-                const response = await fetch(`${serverUrl}/createPreference`, {
+                const response = await fetch(createPreferenceUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -168,7 +179,7 @@
                     })
                 });
                 
-                if (!response.ok) {
+                if (!response.ok) { // Adicionado para melhor tratamento de erro do servidor
                     const err = await response.json();
                     throw new Error(err.error || 'Erro do servidor');
                 }
@@ -190,4 +201,3 @@
     </script>
 </body>
 </html>
-
