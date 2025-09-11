@@ -1,20 +1,41 @@
-// menu-lateral.js
+// ======================================================================
+// MENU-LATERAL.JS - Revisado e Completo
+// ======================================================================
+
 import { db, auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { verificarAcesso } from "./userService.js"; // <-- Importa o serviço de usuários
+import { verificarAcesso } from "./userService.js"; // Serviço de usuário
 
+// Aplica permissões com base no perfil do usuário
 function aplicarPermissoes(perfil) {
     const docRef = db.collection("configuracoesGlobais").doc("permissoes");
     docRef.get().then(doc => {
         if (!doc.exists) return;
         const permissoes = doc.data();
-        Object.keys(permissoes).forEach(menuId => {
-            const podeVer = permissoes[menuId]?.[perfil];
-            if (!podeVer) document.querySelector(`[data-menu-id="${menuId}"]`)?.classList.add("hidden");
+
+        document.querySelectorAll('.sidebar-links a').forEach(a => {
+            const menuId = a.dataset.menuId;
+            const podeVer = permissoes[menuId]?.[perfil] ?? true; // Default: visível
+            if (!podeVer) a.classList.add("hidden");
         });
+
+        // Administração e Permissões só admin
+        if (perfil !== "admin") {
+            ["administracao","permissoes"].forEach(id => {
+                document.querySelector(`[data-menu-id="${id}"]`)?.classList.add("hidden");
+            });
+        }
+
+        // Funcionário só vê itens básicos
+        if (perfil === "funcionario") {
+            ["servicos","clientes","perfil","relatorios"].forEach(id => {
+                document.querySelector(`[data-menu-id="${id}"]`)?.classList.add("hidden");
+            });
+        }
     }).catch(console.error);
 }
 
+// Marca o link ativo baseado na URL
 function ativarLinkAtivo() {
     const url = window.location.pathname.split('/').pop();
     document.querySelectorAll('.sidebar-links a').forEach(link => {
@@ -23,11 +44,20 @@ function ativarLinkAtivo() {
     });
 }
 
+// Configura botão de logout
 function configurarLogout() {
     const btn = document.getElementById("btn-logout");
     if (!btn) return;
-    btn.addEventListener("click", () => {
-        signOut(auth).then(() => window.location.href = "login.html");
+
+    btn.addEventListener("click", async () => {
+        try {
+            await signOut(auth);       // Desloga do Firebase
+            localStorage.clear();      // Limpa sessão local
+            window.location.href = "login.html";
+        } catch (err) {
+            console.error("Erro ao sair:", err);
+            alert("Erro ao sair: " + err.message);
+        }
     });
 }
 
@@ -39,26 +69,25 @@ if (!document.querySelector('style[data-permissao]')) {
     document.head.appendChild(style);
 }
 
-// Carrega e inicializa o menu **sempre após o DOM carregado**
+// Inicializa menu após DOM carregado
 document.addEventListener("DOMContentLoaded", async () => {
     const placeholder = document.getElementById("sidebar-placeholder");
     if (!placeholder) return;
 
     try {
-        const sessao = await verificarAcesso(); // Consulta Firebase
-        const papel = sessao.perfil.papel; // 'dono' ou 'funcionario'
+        const sessao = await verificarAcesso();
+        const perfil = sessao?.perfil?.papel || "funcionario"; // Perfil padrão: funcionário
 
-        // Escolhe o menu correto
-        const menuFile = papel === "dono" ? "menu-dono.html" : "menu-funcionario.html";
+        // Seleciona menu correto
+        const menuFile = perfil === "dono" ? "menu-dono.html" : "menu-funcionario.html";
         const res = await fetch(menuFile);
         const html = await res.text();
         placeholder.innerHTML = html;
 
-        // Inicializa funções depois de injetar o menu
-        aplicarPermissoes(papel);
+        // Inicializa funcionalidades após injetar HTML
+        aplicarPermissoes(perfil);
         ativarLinkAtivo();
         configurarLogout();
-
     } catch (err) {
         console.error("Erro ao carregar menu:", err);
         placeholder.innerHTML = `<p style="color:red; padding:1em;">Erro ao carregar menu.</p>`;
