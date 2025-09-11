@@ -19,36 +19,39 @@
         }
         body.loaded { opacity: 1; }
         #menu-container { flex-shrink: 0; }
-        
-        /* O CSS do main foi restaurado para o original, pois a correção será no grid. */
+
+        /* ======================= INÍCIO DA CORREÇÃO DE ALINHAMENTO ======================= */
         main.main-content {
             flex-grow: 1;
             padding: 40px;
             box-sizing: border-box;
             height: 100vh;
             overflow-y: auto;
+            
+            /* ✅ CORREÇÃO: Transforma o 'main' em uma coluna flexível... */
+            display: flex;
+            flex-direction: column;
+            
+            /* ...e diz para ele alinhar seu conteúdo no TOPO. */
+            justify-content: flex-start; 
+            
+            /* Mantém o conteúdo centralizado horizontalmente. */
+            align-items: center; 
         }
-        
-        .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; }
+        /* ======================== FIM DA CORREÇÃO DE ALINHAMENTO ========================= */
+
+        .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; width: 100%; }
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
         
-        /* ======================= INÍCIO DA CORREÇÃO DE LAYOUT ======================= */
         .dashboard-grid-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 20px;
             width: 100%;
             max-width: 900px;
-            margin: 0 auto; /* Mantém o grid centralizado na página */
-
-            /* ✅ CORREÇÃO 1: Alinha os cards no TOPO do grid. */
-            align-content: flex-start; 
-            
-            /* ✅ CORREÇÃO 2: Agrupa os cards no centro quando há poucos. */
-            justify-content: center; 
+            /* A margem 'margin: 0 auto' não é mais necessária, pois o 'align-items: center' do pai já faz isso. */
         }
-        /* ======================== FIM DA CORREÇÃO DE LAYOUT ========================= */
         
         .menu-card {
             color: #fff; border-radius: 16px; padding: 20px 10px;
