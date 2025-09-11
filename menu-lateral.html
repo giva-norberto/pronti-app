@@ -38,10 +38,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-/* ===================== */
-/* MENU LATERAL CSS    */
-/* ===================== */
-/* Todo o seu CSS já estava correto e bem estruturado. Nenhuma alteração foi necessária. */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -57,7 +53,6 @@
   transition: left 0.3s ease;
   box-sizing: border-box;
 }
-
 .sidebar-brand {
   font-size: 2rem;
   font-weight: 900;
@@ -69,11 +64,8 @@
   margin-bottom: 8px;
   text-align: left;
 }
-
 .sidebar hr { margin: 0 32px 16px 32px; border: none; border-top: 1px solid #787cff55; }
-
 .sidebar-links { display: flex; flex-direction: column; gap: 10px; padding: 0 24px; flex-grow: 1; }
-
 .sidebar-links a {
   display: flex;
   align-items: center;
@@ -94,9 +86,7 @@
   min-height: 44px;
   box-sizing: border-box;
 }
-
 .sidebar-links a span { display: inline-block; width: 20px; text-align: center; }
-
 .sidebar-links a.active, .sidebar-links a:focus {
   background: #4f46e5;
   color: #fff;
@@ -105,18 +95,15 @@
   box-shadow: 0 4px 12px rgba(79,70,229,0.3);
   outline: none;
 }
-
 .sidebar-links a:hover:not(.active) {
   background: #f0f1ff;
   color: #3b2fd6;
   border-color: #d1d5fa;
 }
-
 .sidebar-footer {
   margin-top: auto;
   padding: 32px 32px 24px 32px;
 }
-
 .btn-logout {
   background: #fff;
   color: #4f46e5;
@@ -134,15 +121,12 @@
   min-height: 44px;
   box-sizing: border-box;
 }
-
 .btn-logout:hover, .btn-logout:focus {
   background: #4f46e5;
   color: #fff;
   border: 2px solid #fff;
 }
-
 .hidden { display: none !important; }
-
 @media (max-width: 900px) {
   .sidebar { transform: translateX(-110%); }
   .sidebar.open { transform: translateX(0); }
@@ -151,60 +135,33 @@
 </style>
 
 <script type="module">
-// ================================= //
-//      LÓGICA DO MENU E LOGOUT      //
-// ================================= //
-
 // 1. IMPORTAÇÕES ESSENCIAIS
-// Importa o objeto 'auth' do seu arquivo de configuração do Firebase.
-// É CRÍTICO que este arquivo exista e esteja configurado corretamente.
 import { auth } from "./firebase-config.js";
-
-// Importa a função 'signOut' da biblioteca de autenticação do Firebase.
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-/**
- * Função principal que inicializa as funcionalidades da barra lateral.
- */
+// Para garantir que o botão funcione mesmo quando o menu é carregado via AJAX/SPAs
 function ativarMenuLateral() {
-    
-  // --- PARTE 1: MARCAR O LINK ATIVO ---
-  // Pega o nome do arquivo atual na URL (ex: 'agenda.html').
+  // Marcar link ativo
   const urlAtual = window.location.pathname.split('/').pop();
-  
-  // Seleciona todos os links da barra lateral.
   document.querySelectorAll('.sidebar-links a').forEach(link => {
-    // Remove a classe 'active' de todos para garantir que só um fique marcado.
     link.classList.remove('active');
-    
-    // Se o 'href' do link for igual ao nome do arquivo atual, adiciona a classe 'active'.
-    if (link.getAttribute('href') === urlAtual) {
-      link.classList.add('active');
-    }
+    if (link.getAttribute('href') === urlAtual) link.classList.add('active');
   });
 
-  // --- PARTE 2: CONFIGURAR O BOTÃO DE LOGOUT ---
-  // Encontra o botão de sair pelo seu ID.
+  // LOGOUT FUNCIONAL
+  // Remove event listeners duplicados (se houver)
   const btnLogout = document.getElementById("btn-logout");
-  
-  // Verifica se o botão realmente existe na página antes de adicionar o evento.
   if (btnLogout) {
-    // Adiciona um "ouvinte" que espera por um clique no botão.
-    btnLogout.addEventListener("click", async () => {
-      // Usamos 'try...catch' para capturar qualquer erro que possa acontecer.
-      try {
-        // 1. Desloga o usuário da sua conta Firebase.
-        await signOut(auth);
-        
-        // 2. Limpa qualquer dado salvo no navegador (como tokens, etc.).
-        // É uma boa prática para garantir que a sessão foi completamente encerrada.
-        localStorage.clear();
-        
-        // 3. Redireciona o usuário para a página de login.
-        window.location.href = "login.html";
+    // Remove event listeners antigos (boa prática em SPA)
+    const btnClone = btnLogout.cloneNode(true);
+    btnLogout.parentNode.replaceChild(btnClone, btnLogout);
 
+    btnClone.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        localStorage.clear();
+        window.location.href = "login.html";
       } catch (erro) {
-        // Se algo der errado durante o processo de logout...
         console.error("Erro ao tentar fazer logout:", erro);
         alert("Não foi possível sair. Tente novamente.\nErro: " + erro.message);
       }
@@ -212,8 +169,10 @@ function ativarMenuLateral() {
   }
 }
 
-// --- INICIALIZAÇÃO ---
-// Garante que todo o HTML da página foi carregado antes de executar o script.
-document.addEventListener("DOMContentLoaded", ativarMenuLateral);
-
+// Chama sempre que o menu for carregado no DOM (incluindo via AJAX)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", ativarMenuLateral);
+} else {
+  ativarMenuLateral();
+}
 </script>
