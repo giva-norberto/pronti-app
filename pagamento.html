@@ -30,8 +30,8 @@
 </head>
 <body>
     <div class="container-pagamento">
-        <h1>Renove sua Assinatura</h1>
-        <h2 id="info-usuario">Carregando dados da sua empresa...</h2>
+        <h1>Renove a sua Assinatura</h1>
+        <h2 id="info-usuario">A carregar dados da sua empresa...</h2>
         
         <div class="lista-planos">
             </div>
@@ -44,12 +44,9 @@
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        // ======================================================================
-        // CORREÇÃO FINAL: URLs atualizadas para as Funções de 2ª Geração
-        // ======================================================================
+        // URLs atualizadas para as Funções de 2ª Geração
         const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
         const createPreferenceUrl = 'https://createpreference-uzuwj4imfa-uc.a.run.app';
-        // ======================================================================
 
         const infoUsuarioDiv = document.getElementById('info-usuario');
         const listaPlanosContainer = document.querySelector('.lista-planos');
@@ -99,7 +96,7 @@
                 card.innerHTML = `
                     <h3 class="titulo">Plano para até ${numFuncionarios} Funcionários</h3>
                     <p class="preco">${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span>/mês</span></p>
-                    <p class="descricao">${isDesabilitado ? 'Este plano não comporta sua equipe atual.' : 'Ideal para equipes em crescimento.'}</p>
+                    <p class="descricao">${isDesabilitado ? 'Este plano não comporta a sua equipa atual.' : 'Ideal para equipas em crescimento.'}</p>
                 `;
 
                 card.addEventListener('click', () => {
@@ -119,15 +116,12 @@
             });
         }
         
-        async function inicializarPagina(user) {
+        async function inicializarPagina(user, empresaId) {
             try {
-                // ALTERAÇÃO: Pega o ID da empresa que foi salvo na sessão do navegador
-                const empresaId = sessionStorage.getItem('empresaId');
-
                 const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // ALTERAÇÃO: Envia o ID da empresa selecionada, em vez do ID do usuário
+                    // Envia o ID da empresa selecionada
                     body: JSON.stringify({ userId: empresaId })
                 });
 
@@ -136,7 +130,7 @@
                 const data = await response.json();
                 licencasNecessarias = data.licencasNecessarias;
 
-                infoUsuarioDiv.textContent = `Sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
+                infoUsuarioDiv.textContent = `A sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
                 gerarCardsDePlano();
 
             } catch (error) {
@@ -148,7 +142,7 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // VERIFICAÇÃO CRÍTICA: Checa se uma empresa foi selecionada
+                // VERIFICAÇÃO CRÍTICA: Verifica se uma empresa foi selecionada
                 const empresaId = sessionStorage.getItem('empresaId');
                 if (!empresaId) {
                     infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
@@ -159,9 +153,9 @@
                 }
                 
                 // Se tudo estiver certo, carrega os dados da página
-                inicializarPagina(user);
+                inicializarPagina(user, empresaId);
             } else {
-                infoUsuarioDiv.textContent = 'Você não está logado. Redirecionando para o login...';
+                infoUsuarioDiv.textContent = 'Você não está logado. A redirecionar para o login...';
                 setTimeout(() => { window.location.href = 'login.html'; }, 2500);
             }
         });
@@ -172,17 +166,17 @@
             if (!user) return;
             
             btnPagar.disabled = true;
-            btnPagar.textContent = 'Criando link de pagamento...';
+            btnPagar.textContent = 'A criar link de pagamento...';
 
             try {
-                // ALTERAÇÃO: Pega o ID da empresa da sessão para o pagamento
+                // Pega o ID da empresa da sessão para o pagamento
                 const empresaId = sessionStorage.getItem('empresaId');
 
                 const response = await fetch(createPreferenceUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        // ALTERAÇÃO: Envia o ID da empresa correto para o servidor
+                        // Envia o ID da empresa correto para o servidor
                         userId: empresaId,
                         planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios }
                     })
