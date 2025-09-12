@@ -108,7 +108,7 @@ exports.createPreference = functions.https.onRequest((req, res) => {
             const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
             if (precoFinal <= 0) return res.status(400).json({ error: 'Plano inválido.' });
             
-            const notificationUrl = `https://us-central1-pronti-app-37cae.cloudfunctions.net/receberWebhookMercadoPago`;
+            const notificationUrl = `https://receberwebhookmercadopago-uzuwj4imfa-uc.a.run.app`;
             const subscriptionData = {
                 reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
                 auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: precoFinal, currency_id: "BRL" },
