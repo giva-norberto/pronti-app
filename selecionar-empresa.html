@@ -300,7 +300,11 @@
                     body: JSON.stringify({ userId: empresaId })
                 });
 
-                if (!response.ok) throw new Error('Empresa não encontrada ou erro de comunicação.');
+                if (!response.ok) {
+                    // Se a empresa está na lista, não diga que ela não existe!
+                    alert('Erro de comunicação com o servidor. Tente novamente.');
+                    return;
+                }
 
                 const data = await response.json();
                 // Supondo que backend retorna: {status: "ativa", ...} ou {status: "expirada", ...} etc.
@@ -319,7 +323,7 @@
                     alert('Status da empresa não permitido. Contate o suporte.');
                 }
             } catch (err) {
-                alert("Erro ao validar empresa: " + err.message);
+                alert("Erro de conexão ao validar empresa. Tente novamente.\nDetalhe: " + err.message);
             }
         }
     </script>
