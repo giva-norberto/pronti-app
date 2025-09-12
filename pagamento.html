@@ -32,13 +32,16 @@
     <div class="container-pagamento">
         <h1>Renove a sua Assinatura</h1>
         <h2 id="info-usuario">A carregar dados da sua empresa...</h2>
-        <div class="lista-planos"></div>
+        
+        <div class="lista-planos">
+            </div>
+
         <p id="erro-selecao"></p>
         <button id="btn-pagar" class="btn-pagar" disabled>Selecione um plano</button>
     </div>
 
     <script type="module">
-        import { auth } from "./firebase-config.js";
+        import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
@@ -48,7 +51,7 @@
         const listaPlanosContainer = document.querySelector('.lista-planos');
         const btnPagar = document.getElementById('btn-pagar');
         const erroSelecao = document.getElementById('erro-selecao');
-
+        
         let planoSelecionado = null;
         let licencasNecessarias = 0;
 
@@ -66,13 +69,13 @@
             if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
             let total = configuracaoPrecos.precoBase;
             for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
-                const inicio = faixa.de;
-                if (totalFuncionarios >= inicio) {
-                    const fim = faixa.ate;
-                    const qtd = Math.min(totalFuncionarios, fim) - Math.max(configuracaoPrecos.funcionariosInclusos, inicio) + 1;
-                    if (qtd > 0) {
-                        const jaCobrados = Math.max(0, inicio - configuracaoPrecos.funcionariosInclusos - 1);
-                        total += (qtd - jaCobrados) * faixa.valor;
+                const inicioDaFaixa = faixa.de;
+                if (totalFuncionarios >= inicioDaFaixa) {
+                    const fimDaFaixa = faixa.ate;
+                    const funcionariosNestaFaixa = Math.min(totalFuncionarios, fimDaFaixa) - Math.max(configuracaoPrecos.funcionariosInclusos, inicioDaFaixa) + 1;
+                    if(funcionariosNestaFaixa > 0) {
+                        const funcionariosJaCobrados = Math.max(0, inicioDaFaixa - configuracaoPrecos.funcionariosInclusos -1);
+                        total += (funcionariosNestaFaixa - funcionariosJaCobrados) * faixa.valor;
                     }
                 }
             }
@@ -81,25 +84,25 @@
 
         function gerarCardsDePlano() {
             listaPlanosContainer.innerHTML = '';
-            planosParaExibir.forEach(num => {
-                const preco = calcularPreco(num);
-                const desabilitado = num < licencasNecessarias;
+            planosParaExibir.forEach(numFuncionarios => {
+                const preco = calcularPreco(numFuncionarios);
+                const isDesabilitado = numFuncionarios < licencasNecessarias;
                 const card = document.createElement('div');
-                card.className = `card-plano ${desabilitado ? 'desabilitado' : ''}`;
-                card.dataset.funcionarios = num;
+                card.className = `card-plano ${isDesabilitado ? 'desabilitado' : ''}`;
+                card.dataset.funcionarios = numFuncionarios;
                 card.innerHTML = `
-                    <h3 class="titulo">Plano para até ${num} Funcionários</h3>
+                    <h3 class="titulo">Plano para até ${numFuncionarios} Funcionários</h3>
                     <p class="preco">${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span>/mês</span></p>
-                    <p class="descricao">${desabilitado ? 'Este plano não comporta a sua equipa atual.' : 'Ideal para equipas em crescimento.'}</p>
+                    <p class="descricao">${isDesabilitado ? 'Este plano não comporta a sua equipa atual.' : 'Ideal para equipas em crescimento.'}</p>
                 `;
                 card.addEventListener('click', () => {
-                    if (desabilitado) {
+                    if (isDesabilitado) {
                         erroSelecao.textContent = `Você precisa de um plano para no mínimo ${licencasNecessarias} funcionários.`;
                         return;
                     }
                     document.querySelectorAll('.card-plano').forEach(c => c.classList.remove('selecionado'));
                     card.classList.add('selecionado');
-                    planoSelecionado = { totalFuncionarios: num };
+                    planoSelecionado = { totalFuncionarios: numFuncionarios };
                     btnPagar.disabled = false;
                     btnPagar.textContent = `Pagar Assinatura (${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`;
                     erroSelecao.textContent = '';
@@ -107,38 +110,104 @@
                 listaPlanosContainer.appendChild(card);
             });
         }
-
+        
         async function inicializarPagina(user, empresaId) {
             try {
-                const resp = await fetch(getStatusUrl, {
+                const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: empresaId })
                 });
 
-                if (!resp.ok) {
-                    const errorData = await resp.json().catch(() => ({ message: 'Erro desconhecido.' }));
-                    if (resp.status === 403 || resp.status === 404) {
-                        infoUsuarioDiv.textContent = 'Empresa inválida ou assinatura expirada. Redirecionando...';
-                        infoUsuarioDiv.style.color = '#dc2626';
-                        sessionStorage.removeItem('empresaId');
-                        setTimeout(() => window.location.href = 'selecionar-empresa.html', 2500);
-                        return;
+                // **INÍCIO DA CORREÇÃO DO LOOP**
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido do servidor.' }));
+                    // Se o erro for de empresa não encontrada, expirada, etc. (403, 404), quebramos o loop.
+                    if (response.status === 403 || response.status === 404) {
+                         infoUsuarioDiv.textContent = 'Empresa inválida ou assinatura expirada. A redirecionar...';
+                         infoUsuarioDiv.style.color = '#dc2626';
+                         // 1. Limpa o ID inválido para que a próxima página não o use.
+                         sessionStorage.removeItem('empresaId'); 
+                         // 2. Redireciona o utilizador para a seleção de empresa.
+                         setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 3000);
+                         return; // Para a execução da função aqui.
                     }
-                    throw new Error(errorData.message || 'Erro ao buscar dados da empresa.');
+                    // Para outros erros, apenas mostra a mensagem.
+                    throw new Error(errorData.message || 'Não foi possível obter os dados da sua empresa.');
                 }
+                // **FIM DA CORREÇÃO DO LOOP**
 
-                const data = await resp.json();
+                const data = await response.json();
                 licencasNecessarias = data.licencasNecessarias;
-                infoUsuarioDiv.textContent = `Sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
+                infoUsuarioDiv.textContent = `A sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
                 gerarCardsDePlano();
-            } catch (err) {
-                console.error(err);
-                infoUsuarioDiv.textContent = err.message;
+
+            } catch (error) {
+                console.error("Erro ao inicializar página:", error);
+                infoUsuarioDiv.textContent = error.message;
                 infoUsuarioDiv.style.color = '#dc2626';
             }
         }
 
-        onAuthStateChanged(auth, user => {
-            if (!user) {
-                infoUsuarioDiv.textContent = 'Você não está logado.
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                let empresaId = sessionStorage.getItem('empresaId');
+                if (!empresaId) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    empresaId = urlParams.get('empresaId');
+                    if(empresaId) sessionStorage.setItem('empresaId', empresaId);
+                }
+                if (!empresaId) {
+                    infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
+                    infoUsuarioDiv.style.color = '#dc2626';
+                    setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 2500);
+                    return;
+                }
+                inicializarPagina(user, empresaId);
+            } else {
+                infoUsuarioDiv.textContent = 'Você não está logado. A redirecionar para o login...';
+                setTimeout(() => { window.location.href = 'login.html'; }, 2500);
+            }
+        });
+
+        btnPagar.addEventListener('click', async () => {
+            if (!planoSelecionado) return;
+            const user = auth.currentUser;
+            const empresaId = sessionStorage.getItem('empresaId');
+            if (!user || !empresaId) return;
+            
+            btnPagar.disabled = true;
+            btnPagar.textContent = 'A criar link de pagamento...';
+
+            try {
+                const response = await fetch(createPreferenceUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: empresaId,
+                        planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Erro do servidor');
+                }
+
+                const preference = await response.json();
+                if (preference.init_point) {
+                    window.location.href = preference.init_point;
+                } else {
+                    throw new Error('Não foi possível gerar o link de pagamento.');
+                }
+            } catch (error) {
+                console.error("Erro ao pagar:", error);
+                erroSelecao.textContent = error.message;
+                btnPagar.disabled = false;
+                btnPagar.textContent = 'Tentar Novamente';
+            }
+        });
+
+    </script>
+</body>
+</html>
