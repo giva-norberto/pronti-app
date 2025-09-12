@@ -17,6 +17,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # PASSO DE DIAGNÓSTICO: Lista todos os ficheiros para confirmar os caminhos
+      - name: List files in the repository
+        run: ls -R
+
       # 2. Instala as dependências (mercadopago, cors, etc.) para as suas Funções
       - name: Install dependencies for functions
         working-directory: ./functions
