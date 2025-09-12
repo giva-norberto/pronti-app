@@ -44,7 +44,6 @@
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        // URLs atualizadas para as Funções de 2ª Geração
         const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
         const createPreferenceUrl = 'https://createpreference-uzuwj4imfa-uc.a.run.app';
 
@@ -88,17 +87,14 @@
             planosParaExibir.forEach(numFuncionarios => {
                 const preco = calcularPreco(numFuncionarios);
                 const isDesabilitado = numFuncionarios < licencasNecessarias;
-
                 const card = document.createElement('div');
                 card.className = `card-plano ${isDesabilitado ? 'desabilitado' : ''}`;
                 card.dataset.funcionarios = numFuncionarios;
-
                 card.innerHTML = `
                     <h3 class="titulo">Plano para até ${numFuncionarios} Funcionários</h3>
                     <p class="preco">${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span>/mês</span></p>
                     <p class="descricao">${isDesabilitado ? 'Este plano não comporta a sua equipa atual.' : 'Ideal para equipas em crescimento.'}</p>
                 `;
-
                 card.addEventListener('click', () => {
                     if (isDesabilitado) {
                         erroSelecao.textContent = `Você precisa de um plano para no mínimo ${licencasNecessarias} funcionários.`;
@@ -106,7 +102,6 @@
                     }
                     document.querySelectorAll('.card-plano').forEach(c => c.classList.remove('selecionado'));
                     card.classList.add('selecionado');
-                    
                     planoSelecionado = { totalFuncionarios: numFuncionarios };
                     btnPagar.disabled = false;
                     btnPagar.textContent = `Pagar Assinatura (${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`;
@@ -121,15 +116,29 @@
                 const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // Envia o ID da empresa selecionada
                     body: JSON.stringify({ userId: empresaId })
                 });
 
-                if (!response.ok) throw new Error('Não foi possível obter os dados da sua empresa.');
-                
+                // **INÍCIO DA CORREÇÃO DO LOOP**
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido do servidor.' }));
+                    // Se o erro for de empresa não encontrada, expirada, etc. (403, 404), quebramos o loop.
+                    if (response.status === 403 || response.status === 404) {
+                         infoUsuarioDiv.textContent = 'Empresa inválida ou assinatura expirada. A redirecionar...';
+                         infoUsuarioDiv.style.color = '#dc2626';
+                         // 1. Limpa o ID inválido para que a próxima página não o use.
+                         sessionStorage.removeItem('empresaId'); 
+                         // 2. Redireciona o utilizador para a seleção de empresa.
+                         setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 3000);
+                         return; // Para a execução da função aqui.
+                    }
+                    // Para outros erros, apenas mostra a mensagem.
+                    throw new Error(errorData.message || 'Não foi possível obter os dados da sua empresa.');
+                }
+                // **FIM DA CORREÇÃO DO LOOP**
+
                 const data = await response.json();
                 licencasNecessarias = data.licencasNecessarias;
-
                 infoUsuarioDiv.textContent = `A sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
                 gerarCardsDePlano();
 
@@ -142,31 +151,18 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // VERIFICAÇÃO CRÍTICA E ROBUSTA:
-                // 1. Tenta obter o ID da empresa do sessionStorage.
                 let empresaId = sessionStorage.getItem('empresaId');
-
-                // 2. Se não encontrar, tenta obter de um parâmetro na URL (ex: ?empresaId=xyz).
                 if (!empresaId) {
                     const urlParams = new URLSearchParams(window.location.search);
-                    const empresaIdFromUrl = urlParams.get('empresaId');
-                    if (empresaIdFromUrl) {
-                        empresaId = empresaIdFromUrl;
-                        // Salva no sessionStorage para as próximas páginas não precisarem do parâmetro.
-                        sessionStorage.setItem('empresaId', empresaId);
-                    }
+                    empresaId = urlParams.get('empresaId');
+                    if(empresaId) sessionStorage.setItem('empresaId', empresaId);
                 }
-
-                // 3. Se AINDA ASSIM não encontrar, aí sim redireciona.
                 if (!empresaId) {
                     infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
                     infoUsuarioDiv.style.color = '#dc2626';
-                    // Redireciona para a página de seleção se nenhuma empresa estiver ativa na sessão
                     setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 2500);
-                    return; // Para a execução para evitar erros
+                    return;
                 }
-                
-                // Se tudo estiver certo, carrega os dados da página
                 inicializarPagina(user, empresaId);
             } else {
                 infoUsuarioDiv.textContent = 'Você não está logado. A redirecionar para o login...';
@@ -177,20 +173,17 @@
         btnPagar.addEventListener('click', async () => {
             if (!planoSelecionado) return;
             const user = auth.currentUser;
-            if (!user) return;
+            const empresaId = sessionStorage.getItem('empresaId');
+            if (!user || !empresaId) return;
             
             btnPagar.disabled = true;
             btnPagar.textContent = 'A criar link de pagamento...';
 
             try {
-                // Pega o ID da empresa da sessão para o pagamento
-                const empresaId = sessionStorage.getItem('empresaId');
-
                 const response = await fetch(createPreferenceUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        // Envia o ID da empresa correto para o servidor
                         userId: empresaId,
                         planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios }
                     })
