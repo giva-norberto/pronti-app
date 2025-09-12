@@ -41,17 +41,16 @@
     </div>
 
     <script type="module">
-        import { auth, db } from "./firebase-config.js"; // Certifique-se que o caminho está correto
+        import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         // ======================================================================
-        // URLs FINAIS DE PRODUÇÃO
+        // CORREÇÃO FINAL: URLs atualizadas para as Funções de 2ª Geração
         // ======================================================================
         const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
         const createPreferenceUrl = 'https://createpreference-uzuwj4imfa-uc.a.run.app';
         // ======================================================================
 
-        // Elementos da página
         const infoUsuarioDiv = document.getElementById('info-usuario');
         const listaPlanosContainer = document.querySelector('.lista-planos');
         const btnPagar = document.getElementById('btn-pagar');
@@ -60,7 +59,6 @@
         let planoSelecionado = null;
         let licencasNecessarias = 0;
 
-        // "Tabela de Preços" do Front-end (deve ser IGUAL à do servidor)
         const configuracaoPrecos = {
             precoBase: 59.90,
             funcionariosInclusos: 2,
@@ -69,10 +67,8 @@
                 { de: 11, ate: 50, valor: 24.90 },
             ]
         };
-        // Planos que serão mostrados como cards na tela
         const planosParaExibir = [2, 5, 10, 15, 20, 30, 50];
 
-        // Função para calcular o preço (deve ser IGUAL à do servidor)
         function calcularPreco(totalFuncionarios) {
             if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
             let total = configuracaoPrecos.precoBase;
@@ -90,9 +86,8 @@
             return total;
         }
 
-        // Função para gerar os cards de planos na tela
         function gerarCardsDePlano() {
-            listaPlanosContainer.innerHTML = ''; // Limpa a lista
+            listaPlanosContainer.innerHTML = '';
             planosParaExibir.forEach(numFuncionarios => {
                 const preco = calcularPreco(numFuncionarios);
                 const isDesabilitado = numFuncionarios < licencasNecessarias;
@@ -124,14 +119,16 @@
             });
         }
         
-        // Função principal que inicia ao carregar a página
         async function inicializarPagina(user) {
             try {
-                // PASSO 1: Perguntar ao servidor qual a situação da empresa
+                // ALTERAÇÃO: Pega o ID da empresa que foi salvo na sessão do navegador
+                const empresaId = sessionStorage.getItem('empresaId');
+
                 const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.uid })
+                    // ALTERAÇÃO: Envia o ID da empresa selecionada, em vez do ID do usuário
+                    body: JSON.stringify({ userId: empresaId })
                 });
 
                 if (!response.ok) throw new Error('Não foi possível obter os dados da sua empresa.');
@@ -139,20 +136,29 @@
                 const data = await response.json();
                 licencasNecessarias = data.licencasNecessarias;
 
-                // PASSO 2: Atualizar a tela com os dados e gerar os cards
                 infoUsuarioDiv.textContent = `Sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
                 gerarCardsDePlano();
 
             } catch (error) {
                 console.error("Erro ao inicializar página:", error);
                 infoUsuarioDiv.textContent = error.message;
-                infoUsuarioDiv.style.color = '#dc2626'; // Vermelho para erro
+                infoUsuarioDiv.style.color = '#dc2626';
             }
         }
 
-        // Ponto de entrada: Verifica se o usuário está logado
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                // VERIFICAÇÃO CRÍTICA: Checa se uma empresa foi selecionada
+                const empresaId = sessionStorage.getItem('empresaId');
+                if (!empresaId) {
+                    infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
+                    infoUsuarioDiv.style.color = '#dc2626';
+                    // Redireciona para a página de seleção se nenhuma empresa estiver ativa na sessão
+                    setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 2500);
+                    return; // Para a execução para evitar erros
+                }
+                
+                // Se tudo estiver certo, carrega os dados da página
                 inicializarPagina(user);
             } else {
                 infoUsuarioDiv.textContent = 'Você não está logado. Redirecionando para o login...';
@@ -160,7 +166,6 @@
             }
         });
 
-        // Evento de clique do botão de pagar
         btnPagar.addEventListener('click', async () => {
             if (!planoSelecionado) return;
             const user = auth.currentUser;
@@ -170,16 +175,20 @@
             btnPagar.textContent = 'Criando link de pagamento...';
 
             try {
+                // ALTERAÇÃO: Pega o ID da empresa da sessão para o pagamento
+                const empresaId = sessionStorage.getItem('empresaId');
+
                 const response = await fetch(createPreferenceUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userId: user.uid,
+                        // ALTERAÇÃO: Envia o ID da empresa correto para o servidor
+                        userId: empresaId,
                         planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios }
                     })
                 });
                 
-                if (!response.ok) { // Adicionado para melhor tratamento de erro do servidor
+                if (!response.ok) {
                     const err = await response.json();
                     throw new Error(err.error || 'Erro do servidor');
                 }
