@@ -142,8 +142,22 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // VERIFICAÇÃO CRÍTICA: Verifica se uma empresa foi selecionada
-                const empresaId = sessionStorage.getItem('empresaId');
+                // VERIFICAÇÃO CRÍTICA E ROBUSTA:
+                // 1. Tenta obter o ID da empresa do sessionStorage.
+                let empresaId = sessionStorage.getItem('empresaId');
+
+                // 2. Se não encontrar, tenta obter de um parâmetro na URL (ex: ?empresaId=xyz).
+                if (!empresaId) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const empresaIdFromUrl = urlParams.get('empresaId');
+                    if (empresaIdFromUrl) {
+                        empresaId = empresaIdFromUrl;
+                        // Salva no sessionStorage para as próximas páginas não precisarem do parâmetro.
+                        sessionStorage.setItem('empresaId', empresaId);
+                    }
+                }
+
+                // 3. Se AINDA ASSIM não encontrar, aí sim redireciona.
                 if (!empresaId) {
                     infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
                     infoUsuarioDiv.style.color = '#dc2626';
