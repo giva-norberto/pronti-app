@@ -19,7 +19,8 @@ jobs:
 
       # 2. Instala as dependências (mercadopago, cors, etc.) para as suas Funções
       - name: Install dependencies for functions
-        run: npm --prefix functions install
+        working-directory: ./functions
+        run: npm install
 
       # 3. Executa a publicação no Firebase Hosting e Functions
       - name: Deploy to Firebase
