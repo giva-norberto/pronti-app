@@ -119,23 +119,21 @@
                     body: JSON.stringify({ userId: empresaId })
                 });
 
-                // **INÍCIO DA CORREÇÃO DO LOOP**
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido do servidor.' }));
-                    // Se o erro for de empresa não encontrada, expirada, etc. (403, 404), quebramos o loop.
-                    if (response.status === 403 || response.status === 404) {
-                         infoUsuarioDiv.textContent = 'Empresa inválida ou assinatura expirada. A redirecionar...';
-                         infoUsuarioDiv.style.color = '#dc2626';
-                         // 1. Limpa o ID inválido para que a próxima página não o use.
-                         sessionStorage.removeItem('empresaId'); 
-                         // 2. Redireciona o utilizador para a seleção de empresa.
-                         setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 3000);
-                         return; // Para a execução da função aqui.
-                    }
-                    // Para outros erros, apenas mostra a mensagem.
-                    throw new Error(errorData.message || 'Não foi possível obter os dados da sua empresa.');
+                    // Se a resposta do servidor for um erro (ex: 403, 404)
+                    const errorData = await response.json().catch(() => ({}));
+                    infoUsuarioDiv.textContent = errorData.message || 'Empresa inválida ou assinatura expirada. A redirecionar...';
+                    infoUsuarioDiv.style.color = '#dc2626';
+
+                    // **INÍCIO DA CORREÇÃO DO LOOP**
+                    // Limpa o ID inválido de TODOS os locais possíveis
+                    sessionStorage.removeItem('empresaId');
+                    localStorage.removeItem('empresaAtivaId'); // Limpa também o localStorage, como sugerido por si
+
+                    // Redireciona o utilizador para a seleção de empresa para quebrar o loop
+                    setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 3000);
+                    return; // Para a execução da função aqui.
                 }
-                // **FIM DA CORREÇÃO DO LOOP**
 
                 const data = await response.json();
                 licencasNecessarias = data.licencasNecessarias;
@@ -151,18 +149,29 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                let empresaId = sessionStorage.getItem('empresaId');
+                // Lógica centralizada para obter o ID da empresa
+                let empresaId = sessionStorage.getItem('empresaId') || localStorage.getItem('empresaAtivaId');
+                
+                // Se não encontrar, tenta obter de um parâmetro na URL
                 if (!empresaId) {
                     const urlParams = new URLSearchParams(window.location.search);
                     empresaId = urlParams.get('empresaId');
-                    if(empresaId) sessionStorage.setItem('empresaId', empresaId);
+                    // Se encontrar na URL, guarda para futuras visitas
+                    if(empresaId) {
+                        sessionStorage.setItem('empresaId', empresaId);
+                        localStorage.setItem('empresaAtivaId', empresaId);
+                    }
                 }
+
+                // Se, depois de todas as verificações, não houver ID, redireciona
                 if (!empresaId) {
                     infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
                     infoUsuarioDiv.style.color = '#dc2626';
                     setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 2500);
                     return;
                 }
+
+                // Se houver um ID, prossegue para a inicialização
                 inicializarPagina(user, empresaId);
             } else {
                 infoUsuarioDiv.textContent = 'Você não está logado. A redirecionar para o login...';
@@ -173,8 +182,12 @@
         btnPagar.addEventListener('click', async () => {
             if (!planoSelecionado) return;
             const user = auth.currentUser;
-            const empresaId = sessionStorage.getItem('empresaId');
-            if (!user || !empresaId) return;
+            // Usa o mesmo método centralizado para obter o ID da empresa para o pagamento
+            const empresaId = sessionStorage.getItem('empresaId') || localStorage.getItem('empresaAtivaId');
+            if (!user || !empresaId) {
+                erroSelecao.textContent = 'Erro: Utilizador ou empresa não identificados. Por favor, selecione a empresa novamente.';
+                return;
+            }
             
             btnPagar.disabled = true;
             btnPagar.textContent = 'A criar link de pagamento...';
