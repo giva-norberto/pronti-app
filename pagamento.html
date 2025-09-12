@@ -32,13 +32,16 @@
     <div class="container-pagamento">
         <h1>Renove a sua Assinatura</h1>
         <h2 id="info-usuario">A carregar dados da sua empresa...</h2>
-        <div class="lista-planos"></div>
+        
+        <div class="lista-planos">
+            </div>
+
         <p id="erro-selecao"></p>
         <button id="btn-pagar" class="btn-pagar" disabled>Selecione um plano</button>
     </div>
 
     <script type="module">
-        import { auth } from "./firebase-config.js";
+        import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
@@ -48,7 +51,7 @@
         const listaPlanosContainer = document.querySelector('.lista-planos');
         const btnPagar = document.getElementById('btn-pagar');
         const erroSelecao = document.getElementById('erro-selecao');
-
+        
         let planoSelecionado = null;
         let licencasNecessarias = 0;
 
@@ -70,8 +73,8 @@
                 if (totalFuncionarios >= inicioDaFaixa) {
                     const fimDaFaixa = faixa.ate;
                     const funcionariosNestaFaixa = Math.min(totalFuncionarios, fimDaFaixa) - Math.max(configuracaoPrecos.funcionariosInclusos, inicioDaFaixa) + 1;
-                    if (funcionariosNestaFaixa > 0) {
-                        const funcionariosJaCobrados = Math.max(0, inicioDaFaixa - configuracaoPrecos.funcionariosInclusos - 1);
+                    if(funcionariosNestaFaixa > 0) {
+                        const funcionariosJaCobrados = Math.max(0, inicioDaFaixa - configuracaoPrecos.funcionariosInclusos -1);
                         total += (funcionariosNestaFaixa - funcionariosJaCobrados) * faixa.valor;
                     }
                 }
@@ -107,7 +110,7 @@
                 listaPlanosContainer.appendChild(card);
             });
         }
-
+        
         async function inicializarPagina(user, empresaId) {
             try {
                 const response = await fetch(getStatusUrl, {
@@ -116,17 +119,23 @@
                     body: JSON.stringify({ userId: empresaId })
                 });
 
+                // **INÍCIO DA CORREÇÃO DO LOOP**
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido do servidor.' }));
+                    // Se o erro for de empresa não encontrada, expirada, etc. (403, 404), quebramos o loop.
                     if (response.status === 403 || response.status === 404) {
-                        infoUsuarioDiv.textContent = 'Empresa inválida ou assinatura expirada. A redirecionar...';
-                        infoUsuarioDiv.style.color = '#dc2626';
-                        sessionStorage.removeItem('empresaId');
-                        setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 3000);
-                        return;
+                         infoUsuarioDiv.textContent = 'Empresa inválida ou assinatura expirada. A redirecionar...';
+                         infoUsuarioDiv.style.color = '#dc2626';
+                         // 1. Limpa o ID inválido para que a próxima página não o use.
+                         sessionStorage.removeItem('empresaId'); 
+                         // 2. Redireciona o utilizador para a seleção de empresa.
+                         setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 3000);
+                         return; // Para a execução da função aqui.
                     }
+                    // Para outros erros, apenas mostra a mensagem.
                     throw new Error(errorData.message || 'Não foi possível obter os dados da sua empresa.');
                 }
+                // **FIM DA CORREÇÃO DO LOOP**
 
                 const data = await response.json();
                 licencasNecessarias = data.licencasNecessarias;
@@ -141,27 +150,24 @@
         }
 
         onAuthStateChanged(auth, (user) => {
-            if (!user) {
+            if (user) {
+                let empresaId = sessionStorage.getItem('empresaId');
+                if (!empresaId) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    empresaId = urlParams.get('empresaId');
+                    if(empresaId) sessionStorage.setItem('empresaId', empresaId);
+                }
+                if (!empresaId) {
+                    infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
+                    infoUsuarioDiv.style.color = '#dc2626';
+                    setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 2500);
+                    return;
+                }
+                inicializarPagina(user, empresaId);
+            } else {
                 infoUsuarioDiv.textContent = 'Você não está logado. A redirecionar para o login...';
                 setTimeout(() => { window.location.href = 'login.html'; }, 2500);
-                return;
             }
-
-            let empresaId = sessionStorage.getItem('empresaId');
-            if (!empresaId) {
-                const urlParams = new URLSearchParams(window.location.search);
-                empresaId = urlParams.get('empresaId');
-                if (empresaId) sessionStorage.setItem('empresaId', empresaId);
-            }
-
-            if (!empresaId) {
-                infoUsuarioDiv.textContent = 'Nenhuma empresa selecionada. A redirecionar...';
-                infoUsuarioDiv.style.color = '#dc2626';
-                setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 2500);
-                return;
-            }
-
-            inicializarPagina(user, empresaId);
         });
 
         btnPagar.addEventListener('click', async () => {
@@ -169,7 +175,7 @@
             const user = auth.currentUser;
             const empresaId = sessionStorage.getItem('empresaId');
             if (!user || !empresaId) return;
-
+            
             btnPagar.disabled = true;
             btnPagar.textContent = 'A criar link de pagamento...';
 
@@ -182,7 +188,7 @@
                         planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios }
                     })
                 });
-
+                
                 if (!response.ok) {
                     const err = await response.json();
                     throw new Error(err.error || 'Erro do servidor');
