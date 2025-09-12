@@ -1,0 +1,33 @@
+# Nome do fluxo de trabalho
+name: Deploy to Firebase
+
+# O que aciona este fluxo: um 'push' (envio de código) para o branch 'main'
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # O trabalho que vamos executar chama-se 'deploy'
+  deploy:
+    # Ele será executado num ambiente virtual Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Baixa o seu código do GitHub para o ambiente virtual
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Instala as dependências (mercadopago, cors, etc.) para as suas Funções
+      - name: Install dependencies for functions
+        run: npm --prefix functions ci
+
+      # 3. Executa a publicação no Firebase Hosting e Functions
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          # Usa um token automático do GitHub para se identificar
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          # Usa a chave segura que criámos para se autenticar no Firebase
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRONTI_APP_37C6E }}'
+          # ID do seu projeto Firebase
+          projectId: pronti-app-37c6e
