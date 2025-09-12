@@ -177,33 +177,32 @@
     </div>
 
     <script type="module">
-        // ======================= INÍCIO DA CORREÇÃO CIRÚRGICA =======================
+        // ======================= INÍCIO DA CORREÇÃO =======================
         // Força uma nova seleção sempre que esta página é acessada, limpando qualquer
         // empresa que possa ter ficado salva em sessões anteriores.
         localStorage.removeItem('empresaAtivaId');
-        // ======================== FIM DA CORREÇÃO CIRÚRGICA =========================
+        // ======================== FIM DA CORREÇÃO =========================
 
-        // O restante do seu script permanece 100% intacto.
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // --- Elementos do DOM ---
-        const grid = document.getElementById('empresas-grid' );
+        const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
 
-        // --- Eventos ---
+        // Endpoint do backend que retorna status da empresa
+        const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
+
         btnLogout.addEventListener('click', async () => {
             localStorage.removeItem('empresaAtivaId');
             await signOut(auth).catch(error => console.error("Erro ao sair:", error));
+            window.location.href = 'login.html';
         });
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // A sua lógica original de limpar o localStorage aqui também é boa e foi mantida.
-                // A linha extra no topo serve como uma garantia adicional.
                 localStorage.removeItem('empresaAtivaId');
                 const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
                 tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
@@ -213,10 +212,8 @@
             }
         });
 
-        // --- Funções Principais ---
         async function carregarEmpresas(userId) {
             try {
-                // ETAPA 1: Buscar o mapa do usuário para obter a lista de IDs de empresas.
                 const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
                 const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
 
@@ -227,15 +224,13 @@
                 
                 const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
 
-                // LÓGICA DE REDIRECIONAMENTO AUTOMÁTICO
                 if (idsDasEmpresas.length === 1) {
-                    const empresaId = idsDasEmpresas[0];
-                    localStorage.setItem('empresaAtivaId', empresaId);
-                    window.location.href = 'index.html';
-                    return; // Encerra a função para evitar renderização
+                    // Validação do status antes do redirecionamento automático!
+                    await validarESelecionarEmpresa(idsDasEmpresas[0]);
+                    return;
                 }
 
-                // ETAPA 2: Com a lista de IDs, buscar os dados de cada empresa.
+                // Buscar os dados das empresas
                 const promessasDeEmpresas = idsDasEmpresas.map(id => getDoc(doc(db, "empresarios", id)));
                 const snapshotsDasEmpresas = await Promise.all(promessasDeEmpresas);
                 const empresas = snapshotsDasEmpresas
@@ -253,7 +248,7 @@
         }
 
         function renderizarOpcoes(empresas) {
-            grid.innerHTML = ''; // Limpa o grid (e o loader)
+            grid.innerHTML = '';
             if (empresas.length > 0) {
                 empresas.forEach(empresa => {
                     grid.appendChild(criarEmpresaCard(empresa));
@@ -261,7 +256,6 @@
             } else {
                  grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
             }
-            // Adiciona sempre o card para criar uma nova empresa
             grid.appendChild(criarNovoCard());
         }
 
@@ -269,10 +263,9 @@
             const card = document.createElement('a');
             card.className = 'empresa-card';
             card.href = '#';
-            card.addEventListener('click', (e) => {
+            card.addEventListener('click', async (e) => {
                 e.preventDefault();
-                localStorage.setItem('empresaAtivaId', empresa.id);
-                window.location.href = 'index.html';
+                await validarESelecionarEmpresa(empresa.id);
             });
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
@@ -289,13 +282,45 @@
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            card.href = 'perfil.html'; // Página para criar/editar perfil/empresa
+            card.href = 'perfil.html';
 
             card.innerHTML = `
                 <div class="plus-icon"><i class="fas fa-plus"></i></div>
                 <span class="empresa-nome">Criar Nova Empresa</span>
             `;
             return card;
+        }
+
+        // Função que valida o status da empresa e redireciona corretamente
+        async function validarESelecionarEmpresa(empresaId) {
+            try {
+                const response = await fetch(getStatusUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: empresaId })
+                });
+
+                if (!response.ok) throw new Error('Empresa não encontrada ou erro de comunicação.');
+
+                const data = await response.json();
+                // Supondo que backend retorna: {status: "ativa", ...} ou {status: "expirada", ...} etc.
+                if (data.status === "ativa") {
+                    localStorage.setItem('empresaAtivaId', empresaId);
+                    window.location.href = 'index.html';
+                } else if (
+                    data.status === "expirada" ||
+                    data.status === "freezero" ||
+                    data.status === "trial_expirado"
+                ) {
+                    // Salva o ID e vai para pagamento
+                    localStorage.setItem('empresaAtivaId', empresaId);
+                    window.location.href = 'pagamento.html';
+                } else {
+                    alert('Status da empresa não permitido. Contate o suporte.');
+                }
+            } catch (err) {
+                alert("Erro ao validar empresa: " + err.message);
+            }
         }
     </script>
 </body>
