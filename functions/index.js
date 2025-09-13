@@ -1,9 +1,6 @@
 /**
  * Arquivo de Cloud Functions para o backend do sistema de pagamentos Pronti.
- * CORREÇÃO FINAL: A inicialização do Mercado Pago foi movida para dentro das funções
- * para evitar erros de inicialização do contêiner.
- * CORREÇÃO CORS: Permite corretamente OPTIONS e retorna headers CORS para chamadas frontend.
- * OTIMIZAÇÃO: Funções reescritas para lidar corretamente com a natureza assíncrona do middleware CORS.
+ * VERSÃO DE DEPURAÇÃO AVANÇADA para identificar a causa raiz do erro 400.
  */
 
 const functions = require("firebase-functions");
@@ -11,36 +8,108 @@ const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-admin.initializeApp();
+// Inicialização segura do Firebase Admin
+try {
+  admin.initializeApp();
+} catch (e) {
+  // Isso evita que a função quebre em ambientes de emulação onde ela pode ser recarregada.
+  console.warn("Firebase Admin já inicializado.");
+}
 const db = admin.firestore();
 
 // --- CONFIGURAÇÃO DE CORS ---
-// A lista de origens permitidas.
 const whitelist = [
   "https://prontiapp.com.br",
   "https://prontiapp.vercel.app",
-  "http://localhost:3000", // Mantenha para desenvolvimento local
+  "http://localhost:3000",
 ];
-
 const corsOptions = {
   origin: function (origin, callback ) {
-    // Permite requisições sem 'origin' (ex: Postman, apps mobile) e as da whitelist.
     if (!origin || whitelist.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Não permitido por CORS'));
+      callback(new Error('Origem não permitida por CORS'));
     }
   },
-  methods: ['GET', 'POST', 'OPTIONS'], // Garante que POST e OPTIONS são permitidos
-  allowedHeaders: ['Content-Type', 'Authorization'], // Adicione outros cabeçalhos que seu frontend envia
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
-
-// Cria um manipulador CORS que usaremos em todas as funções.
 const corsHandler = cors(corsOptions);
 
-// --- FUNÇÃO AUXILIAR PARA INICIALIZAR O MERCADO PAGO ---
+// =================================================================================
+// ENDPOINT 1: getStatusEmpresa (VERSÃO DE DEPURAÇÃO AVANÇADA)
+// =================================================================================
+exports.getStatusEmpresa = functions.https.onRequest((req, res ) => {
+  corsHandler(req, res, async () => {
+    // LOG 1: Confirma que a função foi acionada.
+    functions.logger.info("getStatusEmpresa: Função iniciada.", { method: req.method });
+
+    if (req.method !== 'POST') {
+      functions.logger.warn("getStatusEmpresa: Método não permitido.", { method: req.method });
+      return res.status(405).json({ error: 'Método não permitido. Use POST.' });
+    }
+
+    try {
+      // LOG 2: Mostra o corpo exato da requisição recebida. Essencial para depuração.
+      functions.logger.info("getStatusEmpresa: Corpo da requisição recebido:", req.body);
+
+      // A desestruturação pode falhar se req.body não for um objeto.
+      const empresaId = req.body ? req.body.empresaId : undefined;
+
+      // LOG 3: Mostra o valor de 'empresaId' após a extração.
+      functions.logger.info(`getStatusEmpresa: Valor extraído para empresaId: '${empresaId}' (Tipo: ${typeof empresaId})`);
+
+      // Verificação explícita e detalhada do 'empresaId'.
+      if (!empresaId || typeof empresaId !== 'string' || empresaId.trim() === '') {
+        // LOG 4 (ERRO): Registra por que a validação falhou.
+        functions.logger.error("getStatusEmpresa: Erro 400 - 'empresaId' inválido ou não fornecido.", {
+          corpo_completo_recebido: req.body,
+          empresaId_extraido: empresaId,
+          tipo_de_empresaId: typeof empresaId,
+        });
+        // Retorna uma resposta de erro detalhada para o cliente.
+        return res.status(400).json({ 
+            error: 'ID da empresa inválido ou não fornecido.',
+            debug_info: {
+                received_body: req.body,
+                extracted_id: empresaId,
+                type: typeof empresaId
+            }
+        });
+      }
+
+      // LOG 5: Confirma que a validação passou e qual ID será usado.
+      functions.logger.info(`getStatusEmpresa: Validação OK. Consultando Firestore para empresaId: ${empresaId}`);
+
+      const funcionariosSnapshot = await db.collection('empresas').doc(empresaId).collection('funcionarios').get();
+      const licencasNecessarias = funcionariosSnapshot.size;
+
+      // LOG 6 (SUCESSO): Confirma que a consulta ao Firestore funcionou.
+      functions.logger.info(`getStatusEmpresa: Sucesso! Empresa ${empresaId} possui ${licencasNecessarias} licenças.`);
+      
+      return res.status(200).json({ licencasNecessarias: licencasNecessarias });
+
+    } catch (error) {
+      // LOG 7 (ERRO CRÍTICO): Captura qualquer outro erro inesperado.
+      functions.logger.error("getStatusEmpresa: Erro 500 - Falha crítica na execução.", {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        empresaId_processado: req.body ? req.body.empresaId : 'N/A'
+      });
+      return res.status(500).json({ 
+          error: 'Erro interno do servidor ao processar a requisição.',
+          debug_error_message: error.message
+      });
+    }
+  });
+});
+
+
+// =================================================================================
+// DEMAIS FUNÇÕES (sem alteração para manter o foco)
+// =================================================================================
+
 function getMercadoPagoClient() {
-  // Use secrets do Firebase para mais segurança: functions.config() está sendo descontinuado.
   const mpToken = functions.config().mercadopago?.token;
   if (!mpToken) {
     functions.logger.error("FATAL: O token de acesso do Mercado Pago não está configurado!");
@@ -49,65 +118,25 @@ function getMercadoPagoClient() {
   return new MercadoPagoConfig({ accessToken: mpToken });
 }
 
-// =================================================================================
-// ENDPOINT 1: getStatusEmpresa (COM A CORREÇÃO PRINCIPAL)
-// =================================================================================
-exports.getStatusEmpresa = functions.https.onRequest((req, res ) => {
-  // Envolve a lógica da função com o corsHandler.
-  // Isso garante que a função espere o CORS ser processado antes de continuar.
-  corsHandler(req, res, async () => {
-    // O corsHandler já lida com a requisição OPTIONS (preflight).
-    // Se o método não for POST, encerra a execução.
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Método não permitido. Use POST.' });
-    }
-
-    try {
-      const { empresaId } = req.body; // Corrigido para 'empresaId' conforme seu log de erro
-      if (!empresaId) {
-        return res.status(400).json({ error: 'ID da empresa (empresaId) não fornecido.' });
-      }
-
-      // Acessando a coleção de funcionários dentro do documento da empresa
-      const funcionariosSnapshot = await db.collection('empresas').doc(empresaId).collection('funcionarios').get();
-      const licencasNecessarias = funcionariosSnapshot.size;
-
-      return res.status(200).json({ licencasNecessarias });
-
-    } catch (error) {
-      console.error("Erro em getStatusEmpresa:", error);
-      return res.status(500).json({ error: 'Erro interno ao buscar dados da empresa.' });
-    }
-  });
-});
-
-
-// =================================================================================
-// ENDPOINT 2: createPreference (COM A MESMA CORREÇÃO)
-// =================================================================================
 exports.createPreference = functions.https.onRequest((req, res ) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido' });
     }
-
     try {
       const client = getMercadoPagoClient();
       if (!client) {
         return res.status(500).json({ error: 'Erro de configuração do servidor.' });
       }
-
       const { userId, planoEscolhido } = req.body;
       if (!userId || !planoEscolhido || !planoEscolhido.totalFuncionarios) {
         return res.status(400).json({ error: 'Dados inválidos.' });
       }
-
       const userRecord = await admin.auth().getUser(userId);
       const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
       if (precoFinal <= 0) {
         return res.status(400).json({ error: 'Plano inválido.' });
       }
-
       const notificationUrl = `https://receberwebhookmercadopago-uzuwj4imfa-uc.a.run.app`;
       const subscriptionData = {
         reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
@@ -116,10 +145,8 @@ exports.createPreference = functions.https.onRequest((req, res ) => {
         payer_email: userRecord.email,
         notification_url: notificationUrl
       };
-
       const preapproval = new Preapproval(client );
       const response = await preapproval.create({ body: subscriptionData });
-
       await db.collection("empresas").doc(userId).collection("assinatura").doc("dados").set({
         mercadoPagoAssinaturaId: response.id,
         status: "pendente",
@@ -127,9 +154,7 @@ exports.createPreference = functions.https.onRequest((req, res ) => {
         valorPago: precoFinal,
         dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-
       return res.status(200).json({ init_point: response.init_point });
-
     } catch (error) {
       console.error("Erro em createPreference:", error);
       return res.status(500).json({ error: 'Erro ao criar preferência de pagamento.' });
@@ -137,39 +162,28 @@ exports.createPreference = functions.https.onRequest((req, res ) => {
   });
 });
 
-// =================================================================================
-// ENDPOINT 3: receberWebhookMercadoPago (NÃO PRECISA DE CORS)
-// =================================================================================
 exports.receberWebhookMercadoPago = functions.https.onRequest(async (req, res ) => {
-  // Webhooks são chamados de servidor para servidor, então CORS não é necessário.
   console.log("Webhook recebido:", req.body);
   const { id, type } = req.body;
-
   if (type === "preapproval") {
     try {
       const client = getMercadoPagoClient();
       if (!client) {
         return res.status(500).send("Erro de configuração interna.");
       }
-
       const preapproval = new Preapproval(client);
       const subscription = await preapproval.get({ id: id });
-
       const assinaturaId = subscription.id;
       const statusMP = subscription.status;
-
       const query = db.collectionGroup("assinatura").where("mercadoPagoAssinaturaId", "==", assinaturaId);
       const snapshot = await query.get();
-
       if (snapshot.empty) {
         console.warn(`Webhook: Assinatura com ID ${assinaturaId} não encontrada.`);
         return res.status(200).send("OK");
       }
-
       let novoStatus = statusMP === "authorized" ? "ativa" :
         (statusMP === "cancelled" ? "cancelada" :
           (statusMP === "paused" ? "pausada" : "desconhecido"));
-
       for (const doc of snapshot.docs) {
         await doc.ref.update({
           status: novoStatus,
@@ -177,7 +191,6 @@ exports.receberWebhookMercadoPago = functions.https.onRequest(async (req, res ) 
           ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp()
         });
       }
-
       console.log(`Assinatura ${assinaturaId} atualizada para ${novoStatus}.`);
     } catch (error) {
       console.error("Erro ao processar webhook:", error);
@@ -187,7 +200,6 @@ exports.receberWebhookMercadoPago = functions.https.onRequest(async (req, res ) 
   return res.status(200).send("OK");
 });
 
-// A função de cálculo de preço não precisa ser exportada ou alterada.
 function calcularPreco(totalFuncionarios) {
   const configuracaoPrecos = {
     precoBase: 59.90,
