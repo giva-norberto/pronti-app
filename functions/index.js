@@ -1,10 +1,10 @@
 /**
  * Arquivo de Cloud Functions para o backend do sistema de pagamentos Pronti.
- * VERSÃO FINALÍSSIMA: Migrado para V2 e usando parâmetros secretos em vez do obsoleto functions.config().
+ * VERSÃO FINALÍSSIMA 3.0: Corrigido o nome da subcoleção para 'profissionais', conforme descoberto pelo usuário.
  */
 
 const { onRequest } = require("firebase-functions/v2/https" );
-const { defineString } = require('firebase-functions/v2/params'); // Importa o defineString
+const { defineString } = require('firebase-functions/v2/params');
 const functions = require("firebase-functions");
 
 const admin = require("firebase-admin");
@@ -18,9 +18,6 @@ try {
 }
 const db = admin.firestore();
 
-// =================================================================================
-// NOVO: Define o parâmetro secreto que será lido do ambiente.
-// =================================================================================
 const mercadopagoToken = defineString('MERCADOPAGO_TOKEN');
 
 const whitelist = ["https://prontiapp.com.br", "https://prontiapp.vercel.app", "http://localhost:3000"];
@@ -36,7 +33,7 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // =================================================================================
-// ENDPOINT 1: verificarEmpresa (Não precisa de alteração aqui)
+// ENDPOINT 1: verificarEmpresa (COM A CORREÇÃO FINAL DO NOME DA COLEÇÃO)
 // =================================================================================
 exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, (req, res) => {
   corsHandler(req, res, async () => {
@@ -48,9 +45,16 @@ exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadop
       if (!empresaId) {
         return res.status(400).json({ error: 'ID da empresa inválido ou não fornecido.' });
       }
-      const funcionariosSnapshot = await db.collection('empresarios').doc(empresaId).collection('funcionarios').get();
-      const licencasNecessarias = funcionariosSnapshot.size;
+
+      // =======================================================================
+      // APLICAÇÃO DA SUA CORREÇÃO GENIAL: 'profissionais' no lugar de 'funcionarios'
+      // =======================================================================
+      const profissionaisSnapshot = await db.collection('empresarios').doc(empresaId).collection('profissionais').get();
+      const licencasNecessarias = profissionaisSnapshot.size;
+      
+      functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
       return res.status(200).json({ licencasNecessarias });
+
     } catch (error) {
       functions.logger.error("Erro em verificarEmpresa:", error);
       return res.status(500).json({ error: 'Erro interno do servidor.' });
@@ -59,8 +63,9 @@ exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadop
 });
 
 // =================================================================================
-// ENDPOINT 2: createPreference (AJUSTADO para usar o novo parâmetro)
+// Demais funções (sem alteração, pois já estavam corretas)
 // =================================================================================
+
 exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
@@ -102,9 +107,6 @@ exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadop
   });
 });
 
-// =================================================================================
-// ENDPOINT 3: receberWebhookMercadoPago (AJUSTADO para usar o novo parâmetro)
-// =================================================================================
 exports.receberWebhookMercadoPago = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
   console.log("Webhook recebido:", req.body);
   const { id, type } = req.body;
@@ -133,11 +135,8 @@ exports.receberWebhookMercadoPago = onRequest({ region: "us-central1", secrets: 
   return res.status(200).send("OK");
 });
 
-
-// Funções auxiliares
-// MUDANÇA: A função agora lê o valor do parâmetro secreto.
 function getMercadoPagoClient() {
-  const mpToken = mercadopagoToken.value(); // Lê o valor do parâmetro
+  const mpToken = mercadopagoToken.value();
   if (!mpToken) {
     functions.logger.error("FATAL: O token de acesso do Mercado Pago não está configurado nos parâmetros!");
     return null;
