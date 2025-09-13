@@ -1,10 +1,10 @@
 /**
  * Arquivo de Cloud Functions para o backend do sistema de pagamentos Pronti.
- * VERSÃO FINAL: Migrado para Cloud Functions v2.
- * SOLUÇÃO NUCLEAR: Função 'getStatusEmpresa' renomeada para 'verificarEmpresa' para forçar uma criação limpa.
+ * VERSÃO FINALÍSSIMA: Migrado para V2 e usando parâmetros secretos em vez do obsoleto functions.config().
  */
 
 const { onRequest } = require("firebase-functions/v2/https" );
+const { defineString } = require('firebase-functions/v2/params'); // Importa o defineString
 const functions = require("firebase-functions");
 
 const admin = require("firebase-admin");
@@ -18,11 +18,12 @@ try {
 }
 const db = admin.firestore();
 
-const whitelist = [
-  "https://prontiapp.com.br",
-  "https://prontiapp.vercel.app",
-  "http://localhost:3000",
-];
+// =================================================================================
+// NOVO: Define o parâmetro secreto que será lido do ambiente.
+// =================================================================================
+const mercadopagoToken = defineString('MERCADOPAGO_TOKEN');
+
+const whitelist = ["https://prontiapp.com.br", "https://prontiapp.vercel.app", "http://localhost:3000"];
 const corsOptions = {
   origin: function (origin, callback ) {
     if (!origin || whitelist.indexOf(origin) !== -1) {
@@ -35,9 +36,9 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // =================================================================================
-// ENDPOINT 1: RENOMEADO PARA 'verificarEmpresa'
+// ENDPOINT 1: verificarEmpresa (Não precisa de alteração aqui)
 // =================================================================================
-exports.verificarEmpresa = onRequest({ region: "us-central1" }, (req, res) => {
+exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido. Use POST.' });
@@ -51,16 +52,16 @@ exports.verificarEmpresa = onRequest({ region: "us-central1" }, (req, res) => {
       const licencasNecessarias = funcionariosSnapshot.size;
       return res.status(200).json({ licencasNecessarias });
     } catch (error) {
-      functions.logger.error("Erro em verificarEmpresa:", error); // Log atualizado com o novo nome
+      functions.logger.error("Erro em verificarEmpresa:", error);
       return res.status(500).json({ error: 'Erro interno do servidor.' });
     }
   });
 });
 
 // =================================================================================
-// ENDPOINT 2: createPreference (Sintaxe V2)
+// ENDPOINT 2: createPreference (AJUSTADO para usar o novo parâmetro)
 // =================================================================================
-exports.createPreference = onRequest({ region: "us-central1" }, (req, res) => {
+exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido' });
@@ -102,9 +103,9 @@ exports.createPreference = onRequest({ region: "us-central1" }, (req, res) => {
 });
 
 // =================================================================================
-// ENDPOINT 3: receberWebhookMercadoPago (Sintaxe V2)
+// ENDPOINT 3: receberWebhookMercadoPago (AJUSTADO para usar o novo parâmetro)
 // =================================================================================
-exports.receberWebhookMercadoPago = onRequest({ region: "us-central1" }, async (req, res) => {
+exports.receberWebhookMercadoPago = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
   console.log("Webhook recebido:", req.body);
   const { id, type } = req.body;
   if (type === "preapproval") {
@@ -133,11 +134,12 @@ exports.receberWebhookMercadoPago = onRequest({ region: "us-central1" }, async (
 });
 
 
-// Funções auxiliares não mudam
+// Funções auxiliares
+// MUDANÇA: A função agora lê o valor do parâmetro secreto.
 function getMercadoPagoClient() {
-  const mpToken = functions.config().mercadopago?.token;
+  const mpToken = mercadopagoToken.value(); // Lê o valor do parâmetro
   if (!mpToken) {
-    functions.logger.error("FATAL: O token de acesso do Mercado Pago não está configurado!");
+    functions.logger.error("FATAL: O token de acesso do Mercado Pago não está configurado nos parâmetros!");
     return null;
   }
   return new MercadoPagoConfig({ accessToken: mpToken });
