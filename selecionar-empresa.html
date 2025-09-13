@@ -177,7 +177,6 @@
     </div>
 
     <script type="module">
-        // Força nova seleção sempre que entra na tela
         localStorage.removeItem('empresaAtivaId');
 
         import { auth, db } from "./firebase-config.js";
@@ -193,9 +192,7 @@
 
         btnLogout.addEventListener('click', async (  ) => {
             localStorage.removeItem('empresaAtivaId');
-            await signOut(auth).catch(error => {
-                console.error("Erro ao sair:", error);
-            });
+            await signOut(auth).catch(error => console.error("Erro ao sair:", error));
             window.location.href = 'login.html';
         });
 
@@ -246,9 +243,7 @@
         function renderizarOpcoes(empresas) {
             grid.innerHTML = '';
             if (empresas.length > 0) {
-                empresas.forEach(empresa => {
-                    grid.appendChild(criarEmpresaCard(empresa));
-                });
+                empresas.forEach(empresa => grid.appendChild(criarEmpresaCard(empresa)));
             } else {
                 grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
             }
@@ -266,7 +261,7 @@
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial   )}`;
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial )}`;
 
             card.innerHTML = `
                 <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
@@ -295,7 +290,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     // =================================================================
-                    // CORREÇÃO: Enviando a chave 'empresaId' que o backend espera.
+                    // CORREÇÃO FINAL: Removido o par de chaves extra.
                     // =================================================================
                     body: JSON.stringify({ empresaId: empresaId }) 
                 });
@@ -313,9 +308,6 @@
                 console.debug('DEBUG: Dados retornados pelo backend:', data);
 
                 if (data && typeof data.licencasNecessarias !== 'undefined') {
-                    // Lógica de exemplo: se a empresa tem funcionários (licenças necessárias > 0),
-                    // consideramos ativa. Caso contrário, vai para a tela de pagamento.
-                    // Ajuste esta lógica conforme as regras do seu negócio.
                     if (data.licencasNecessarias > 0) {
                         localStorage.setItem('empresaAtivaId', empresaId);
                         window.location.href = 'index.html';
@@ -335,4 +327,3 @@
     </script>
 </body>
 </html>
-
