@@ -8,9 +8,7 @@
     ]
   },
   "functions": {
-    "source": "functions"
-  },
-  "gcp": {
-    "v2": false
+    "source": "functions",
+    "runtime": "nodejs20"
   }
 }
