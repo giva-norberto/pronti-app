@@ -1,19 +1,16 @@
 /**
  * Arquivo de Cloud Functions para o backend do sistema de pagamentos Pronti.
- * VERSÃO FINAL: Migrado para Cloud Functions v2 para compatibilidade com o ambiente de deploy.
- * A correção do nome da coleção para 'empresarios' também está aplicada.
+ * VERSÃO FINAL: Migrado para Cloud Functions v2.
+ * SOLUÇÃO NUCLEAR: Função 'getStatusEmpresa' renomeada para 'verificarEmpresa' para forçar uma criação limpa.
  */
 
-// Importa o 'onRequest' da V2 para funções HTTP.
 const { onRequest } = require("firebase-functions/v2/https" );
-// Importa o 'functions' da V1 para usar o logger e config, que ainda são úteis.
 const functions = require("firebase-functions");
 
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-// Inicialização segura do Firebase Admin. Não muda.
 try {
   admin.initializeApp();
 } catch (e) {
@@ -21,8 +18,6 @@ try {
 }
 const db = admin.firestore();
 
-// --- CONFIGURAÇÃO DE CORS ---
-// Não muda.
 const whitelist = [
   "https://prontiapp.com.br",
   "https://prontiapp.vercel.app",
@@ -40,11 +35,9 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // =================================================================================
-// ENDPOINT 1: getStatusEmpresa (Sintaxe V2)
+// ENDPOINT 1: RENOMEADO PARA 'verificarEmpresa'
 // =================================================================================
-// MUDANÇA: A função agora é exportada usando 'onRequest' da V2.
-// A lógica interna permanece a mesma.
-exports.getStatusEmpresa = onRequest({ region: "us-central1" }, (req, res) => {
+exports.verificarEmpresa = onRequest({ region: "us-central1" }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido. Use POST.' });
@@ -54,12 +47,11 @@ exports.getStatusEmpresa = onRequest({ region: "us-central1" }, (req, res) => {
       if (!empresaId) {
         return res.status(400).json({ error: 'ID da empresa inválido ou não fornecido.' });
       }
-      // CORREÇÃO JÁ APLICADA: 'empresarios'
       const funcionariosSnapshot = await db.collection('empresarios').doc(empresaId).collection('funcionarios').get();
       const licencasNecessarias = funcionariosSnapshot.size;
       return res.status(200).json({ licencasNecessarias });
     } catch (error) {
-      functions.logger.error("Erro em getStatusEmpresa:", error);
+      functions.logger.error("Erro em verificarEmpresa:", error); // Log atualizado com o novo nome
       return res.status(500).json({ error: 'Erro interno do servidor.' });
     }
   });
@@ -68,7 +60,6 @@ exports.getStatusEmpresa = onRequest({ region: "us-central1" }, (req, res) => {
 // =================================================================================
 // ENDPOINT 2: createPreference (Sintaxe V2)
 // =================================================================================
-// MUDANÇA: A função agora é exportada usando 'onRequest' da V2.
 exports.createPreference = onRequest({ region: "us-central1" }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
@@ -95,7 +86,6 @@ exports.createPreference = onRequest({ region: "us-central1" }, (req, res) => {
       };
       const preapproval = new Preapproval(client );
       const response = await preapproval.create({ body: subscriptionData });
-      // CORREÇÃO JÁ APLICADA: 'empresarios'
       await db.collection("empresarios").doc(userId).collection("assinatura").doc("dados").set({
         mercadoPagoAssinaturaId: response.id,
         status: "pendente",
@@ -114,8 +104,6 @@ exports.createPreference = onRequest({ region: "us-central1" }, (req, res) => {
 // =================================================================================
 // ENDPOINT 3: receberWebhookMercadoPago (Sintaxe V2)
 // =================================================================================
-// MUDANÇA: A função agora é exportada usando 'onRequest' da V2.
-// O webhook não precisa de CORS, então o corsHandler não é usado aqui.
 exports.receberWebhookMercadoPago = onRequest({ region: "us-central1" }, async (req, res) => {
   console.log("Webhook recebido:", req.body);
   const { id, type } = req.body;
