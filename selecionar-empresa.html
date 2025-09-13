@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome para o ícone de adicionar (fa-plus  ) -->
+    <!-- Font Awesome para o ícone de adicionar (fa-plus   ) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <style>
@@ -22,7 +22,7 @@
             --cor-texto-titulo: #1e293b;
             --cor-texto-corpo: #64748b;
             --cor-borda: #e2e8f0;
-            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1  ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1   ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
 
@@ -184,17 +184,14 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        const grid = document.getElementById('empresas-grid' );
+        const grid = document.getElementById('empresas-grid'  );
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
 
-        // =================================================================================
-        // CORREÇÃO: URL da Cloud Function atualizada para o endpoint correto.
-        // =================================================================================
         const getStatusUrl = 'https://us-central1-pronti-app-37c6e.cloudfunctions.net/getStatusEmpresa';
 
-        btnLogout.addEventListener('click', async ( ) => {
+        btnLogout.addEventListener('click', async (  ) => {
             localStorage.removeItem('empresaAtivaId');
             await signOut(auth).catch(error => {
                 console.error("Erro ao sair:", error);
@@ -269,7 +266,7 @@
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial  )}`;
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial   )}`;
 
             card.innerHTML = `
                 <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
@@ -290,48 +287,39 @@
             return card;
         }
 
-        // Função que valida o status da empresa e redireciona corretamente
         async function validarESelecionarEmpresa(empresaId) {
-            // DEBUG: Mostra ID da empresa sendo validada
             console.debug('DEBUG: Validando empresaId:', empresaId);
 
             try {
                 const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // CORREÇÃO: Enviando 'empresaId' para corresponder ao backend.
+                    // =================================================================
+                    // CORREÇÃO: Enviando a chave 'empresaId' que o backend espera.
+                    // =================================================================
                     body: JSON.stringify({ empresaId: empresaId }) 
                 });
 
-                // DEBUG: Mostra status da resposta
                 console.debug('DEBUG: Status da resposta do fetch:', response.status);
 
                 if (!response.ok) {
-                    // DEBUG: Mostra response completa se fetch não for ok
                     console.debug('DEBUG: Response não OK:', response);
-                    const errorText = await response.text(); // Tenta ler o corpo do erro
+                    const errorText = await response.text();
                     alert(`Erro de comunicação com o servidor. Tente novamente.\n[DEBUG] Status: ${response.status}, Resposta: ${errorText}`);
                     return;
                 }
 
                 const data = await response.json();
-
-                // DEBUG: Mostra dados retornados pelo backend
                 console.debug('DEBUG: Dados retornados pelo backend:', data);
 
-                // Assumindo que o backend agora retorna 'licencasNecessarias'
-                // e que a lógica de status ('ativa', 'expirada') será feita no frontend ou já foi feita
-                // Para este exemplo, vamos simular uma lógica simples.
-                // **ATENÇÃO**: Ajuste esta lógica para corresponder ao que seu backend realmente retorna!
                 if (data && typeof data.licencasNecessarias !== 'undefined') {
-                    // Exemplo: Se a empresa tem licenças, consideramos 'ativa'.
-                    // Se não, vai para pagamento. Esta lógica pode precisar de ajuste.
-                    const status = data.licencasNecessarias >= 0 ? "ativa" : "expirada"; // Lógica de exemplo
-
-                    if (status === "ativa") {
+                    // Lógica de exemplo: se a empresa tem funcionários (licenças necessárias > 0),
+                    // consideramos ativa. Caso contrário, vai para a tela de pagamento.
+                    // Ajuste esta lógica conforme as regras do seu negócio.
+                    if (data.licencasNecessarias > 0) {
                         localStorage.setItem('empresaAtivaId', empresaId);
                         window.location.href = 'index.html';
-                    } else { // Inclui 'expirada' e outros casos
+                    } else { 
                         localStorage.setItem('empresaAtivaId', empresaId);
                         window.location.href = 'pagamento.html';
                     }
@@ -340,7 +328,6 @@
                 }
 
             } catch (err) {
-                // DEBUG: Mostra erro completo do catch
                 console.debug('DEBUG: Erro no fetch:', err);
                 alert("Erro de conexão ao validar empresa. Tente novamente.\n[DEBUG] Detalhe: " + err.message);
             }
@@ -348,3 +335,4 @@
     </script>
 </body>
 </html>
+
