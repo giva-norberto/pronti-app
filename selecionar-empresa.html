@@ -189,7 +189,7 @@
         const btnLogout = document.getElementById('btn-logout');
 
         // =================================================================================
-        // CORREÇÃO FINAL E DEFINITIVA: Apontando para a URL correta revelada no log de deploy.
+        // CORREÇÃO 1: Apontando para a URL correta revelada no log de deploy.
         // =================================================================================
         const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
 
@@ -292,6 +292,9 @@
                 const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    // =================================================================
+                    // CORREÇÃO 2: Removido o par de chaves extra.
+                    // =================================================================
                     body: JSON.stringify({ empresaId: empresaId }) 
                 });
 
@@ -327,5 +330,3 @@
     </script>
 </body>
 </html>
-
-
