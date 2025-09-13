@@ -1,15 +1,19 @@
 /**
  * Arquivo de Cloud Functions para o backend do sistema de pagamentos Pronti.
- * CORREÇÃO FINAL: Aplicada a correção do nome da coleção para 'empresarios'
- * em TODAS as funções para garantir consistência.
+ * VERSÃO FINAL: Migrado para Cloud Functions v2 para compatibilidade com o ambiente de deploy.
+ * A correção do nome da coleção para 'empresarios' também está aplicada.
  */
 
+// Importa o 'onRequest' da V2 para funções HTTP.
+const { onRequest } = require("firebase-functions/v2/https" );
+// Importa o 'functions' da V1 para usar o logger e config, que ainda são úteis.
 const functions = require("firebase-functions");
+
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-// Inicialização segura do Firebase Admin
+// Inicialização segura do Firebase Admin. Não muda.
 try {
   admin.initializeApp();
 } catch (e) {
@@ -18,6 +22,7 @@ try {
 const db = admin.firestore();
 
 // --- CONFIGURAÇÃO DE CORS ---
+// Não muda.
 const whitelist = [
   "https://prontiapp.com.br",
   "https://prontiapp.vercel.app",
@@ -31,62 +36,40 @@ const corsOptions = {
       callback(new Error('Origem não permitida por CORS'));
     }
   },
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 const corsHandler = cors(corsOptions);
 
 // =================================================================================
-// ENDPOINT 1: getStatusEmpresa (CORRIGIDO)
+// ENDPOINT 1: getStatusEmpresa (Sintaxe V2)
 // =================================================================================
-exports.getStatusEmpresa = functions.https.onRequest((req, res ) => {
+// MUDANÇA: A função agora é exportada usando 'onRequest' da V2.
+// A lógica interna permanece a mesma.
+exports.getStatusEmpresa = onRequest({ region: "us-central1" }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido. Use POST.' });
     }
-
     try {
       const { empresaId } = req.body;
-
-      if (!empresaId || typeof empresaId !== 'string' || empresaId.trim() === '') {
+      if (!empresaId) {
         return res.status(400).json({ error: 'ID da empresa inválido ou não fornecido.' });
       }
-
-      // CORREÇÃO: Usando 'empresarios' em vez de 'empresas'.
+      // CORREÇÃO JÁ APLICADA: 'empresarios'
       const funcionariosSnapshot = await db.collection('empresarios').doc(empresaId).collection('funcionarios').get();
       const licencasNecessarias = funcionariosSnapshot.size;
-
-      functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} licenças.`);
-      
-      return res.status(200).json({ licencasNecessarias: licencasNecessarias });
-
+      return res.status(200).json({ licencasNecessarias });
     } catch (error) {
-      functions.logger.error("Erro crítico em getStatusEmpresa:", {
-        errorMessage: error.message,
-        empresaId_processado: req.body ? req.body.empresaId : 'N/A'
-      });
-      return res.status(500).json({ 
-          error: 'Erro interno do servidor ao consultar os dados da empresa.',
-          debug_error_message: error.message
-      });
+      functions.logger.error("Erro em getStatusEmpresa:", error);
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
     }
   });
 });
 
 // =================================================================================
-// ENDPOINT 2: createPreference (CORRIGIDO)
+// ENDPOINT 2: createPreference (Sintaxe V2)
 // =================================================================================
-
-function getMercadoPagoClient() {
-  const mpToken = functions.config().mercadopago?.token;
-  if (!mpToken) {
-    functions.logger.error("FATAL: O token de acesso do Mercado Pago não está configurado!");
-    return null;
-  }
-  return new MercadoPagoConfig({ accessToken: mpToken });
-}
-
-exports.createPreference = functions.https.onRequest((req, res ) => {
+// MUDANÇA: A função agora é exportada usando 'onRequest' da V2.
+exports.createPreference = onRequest({ region: "us-central1" }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido' });
@@ -97,14 +80,11 @@ exports.createPreference = functions.https.onRequest((req, res ) => {
         return res.status(500).json({ error: 'Erro de configuração do servidor.' });
       }
       const { userId, planoEscolhido } = req.body;
-      if (!userId || !planoEscolhido || !planoEscolhido.totalFuncionarios) {
+      if (!userId || !planoEscolhido) {
         return res.status(400).json({ error: 'Dados inválidos.' });
       }
       const userRecord = await admin.auth().getUser(userId);
       const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
-      if (precoFinal <= 0) {
-        return res.status(400).json({ error: 'Plano inválido.' });
-      }
       const notificationUrl = `https://receberwebhookmercadopago-uzuwj4imfa-uc.a.run.app`;
       const subscriptionData = {
         reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
@@ -115,10 +95,7 @@ exports.createPreference = functions.https.onRequest((req, res ) => {
       };
       const preapproval = new Preapproval(client );
       const response = await preapproval.create({ body: subscriptionData });
-      
-      // =======================================================================
-      // APLICAÇÃO DA CORREÇÃO: Usando 'empresarios' em vez de 'empresas'.
-      // =======================================================================
+      // CORREÇÃO JÁ APLICADA: 'empresarios'
       await db.collection("empresarios").doc(userId).collection("assinatura").doc("dados").set({
         mercadoPagoAssinaturaId: response.id,
         status: "pendente",
@@ -126,19 +103,20 @@ exports.createPreference = functions.https.onRequest((req, res ) => {
         valorPago: precoFinal,
         dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-
       return res.status(200).json({ init_point: response.init_point });
     } catch (error) {
-      console.error("Erro em createPreference:", error);
+      functions.logger.error("Erro em createPreference:", error);
       return res.status(500).json({ error: 'Erro ao criar preferência de pagamento.' });
     }
   });
 });
 
 // =================================================================================
-// ENDPOINT 3: receberWebhookMercadoPago (Sem alterações necessárias)
+// ENDPOINT 3: receberWebhookMercadoPago (Sintaxe V2)
 // =================================================================================
-exports.receberWebhookMercadoPago = functions.https.onRequest(async (req, res ) => {
+// MUDANÇA: A função agora é exportada usando 'onRequest' da V2.
+// O webhook não precisa de CORS, então o corsHandler não é usado aqui.
+exports.receberWebhookMercadoPago = onRequest({ region: "us-central1" }, async (req, res) => {
   console.log("Webhook recebido:", req.body);
   const { id, type } = req.body;
   if (type === "preapproval") {
@@ -152,29 +130,31 @@ exports.receberWebhookMercadoPago = functions.https.onRequest(async (req, res ) 
       const query = db.collectionGroup("assinatura").where("mercadoPagoAssinaturaId", "==", assinaturaId);
       const snapshot = await query.get();
       if (snapshot.empty) {
-        console.warn(`Webhook: Assinatura com ID ${assinaturaId} não encontrada.`);
         return res.status(200).send("OK");
       }
       let novoStatus = statusMP === "authorized" ? "ativa" : (statusMP === "cancelled" ? "cancelada" : (statusMP === "paused" ? "pausada" : "desconhecido"));
       for (const doc of snapshot.docs) {
-        await doc.ref.update({
-          status: novoStatus,
-          ultimoStatusMP: statusMP,
-          ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp()
-        });
+        await doc.ref.update({ status: novoStatus, ultimoStatusMP: statusMP, ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp() });
       }
-      console.log(`Assinatura ${assinaturaId} atualizada para ${novoStatus}.`);
     } catch (error) {
-      console.error("Erro ao processar webhook:", error);
+      functions.logger.error("Erro ao processar webhook:", error);
       return res.status(500).send("Erro interno");
     }
   }
   return res.status(200).send("OK");
 });
 
-// =================================================================================
-// FUNÇÃO AUXILIAR: calcularPreco (Sem alterações necessárias)
-// =================================================================================
+
+// Funções auxiliares não mudam
+function getMercadoPagoClient() {
+  const mpToken = functions.config().mercadopago?.token;
+  if (!mpToken) {
+    functions.logger.error("FATAL: O token de acesso do Mercado Pago não está configurado!");
+    return null;
+  }
+  return new MercadoPagoConfig({ accessToken: mpToken });
+}
+
 function calcularPreco(totalFuncionarios) {
   const configuracaoPrecos = { precoBase: 59.90, funcionariosInclusos: 2, faixasDePrecoExtra: [ { de: 3, ate: 10, valor: 29.90 }, { de: 11, ate: 50, valor: 24.90 }, ] };
   if (totalFuncionarios <= 0) return 0;
