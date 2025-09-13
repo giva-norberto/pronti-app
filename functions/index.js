@@ -26,7 +26,6 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // --- FUNÇÃO AUXILIAR PARA INICIALIZAR O MERCADO PAGO ---
-// Esta função garante que a configuração só é lida quando a função é executada.
 function getMercadoPagoClient() {
     const mpToken = functions.config().mercadopago?.token;
     if (!mpToken) {
@@ -70,6 +69,10 @@ function calcularPreco(totalFuncionarios) {
 // =================================================================================
 exports.getStatusEmpresa = functions.https.onRequest((req, res) => {
     corsHandler(req, res, async () => {
+        // >>>>>>>> CUIDADO AQUI: Permita OPTIONS (preflight) sem erro!
+        if (req.method === 'OPTIONS') {
+            return res.status(204).end();
+        }
         if (req.method !== 'POST') {
             return res.status(405).json({ error: 'Método não permitido' });
         }
@@ -91,6 +94,9 @@ exports.getStatusEmpresa = functions.https.onRequest((req, res) => {
 // =================================================================================
 exports.createPreference = functions.https.onRequest((req, res) => {
     corsHandler(req, res, async () => {
+        if (req.method === 'OPTIONS') {
+            return res.status(204).end();
+        }
         if (req.method !== 'POST') {
             return res.status(405).json({ error: 'Método não permitido' });
         }
@@ -137,6 +143,7 @@ exports.createPreference = functions.https.onRequest((req, res) => {
 // ENDPOINT 3: receberWebhookMercadoPago
 // =================================================================================
 exports.receberWebhookMercadoPago = functions.https.onRequest(async (req, res) => {
+    // Webhooks normalmente não precisam de CORS, mas se algum frontend for chamar, aplique o mesmo padrão.
     console.log("Webhook recebido:", req.body);
     const { id, type } = req.body;
     if (type === "preapproval") {
