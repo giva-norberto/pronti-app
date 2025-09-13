@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome para o ícone de adicionar (fa-plus   ) -->
+    <!-- Font Awesome para o ícone de adicionar (fa-plus    ) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <style>
@@ -22,7 +22,7 @@
             --cor-texto-titulo: #1e293b;
             --cor-texto-corpo: #64748b;
             --cor-borda: #e2e8f0;
-            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1   ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1    ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
 
@@ -183,14 +183,17 @@
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        const grid = document.getElementById('empresas-grid'  );
+        const grid = document.getElementById('empresas-grid'   );
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
 
-        const getStatusUrl = 'https://us-central1-pronti-app-37c6e.cloudfunctions.net/getStatusEmpresa';
+        // =================================================================================
+        // CORREÇÃO FINAL E DEFINITIVA: Apontando para a URL correta revelada no log de deploy.
+        // =================================================================================
+        const getStatusUrl = 'https://getstatusempresa-uzuwj4imfa-uc.a.run.app';
 
-        btnLogout.addEventListener('click', async (  ) => {
+        btnLogout.addEventListener('click', async (   ) => {
             localStorage.removeItem('empresaAtivaId');
             await signOut(auth).catch(error => console.error("Erro ao sair:", error));
             window.location.href = 'login.html';
@@ -261,7 +264,7 @@
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial )}`;
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial  )}`;
 
             card.innerHTML = `
                 <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
@@ -289,9 +292,6 @@
                 const response = await fetch(getStatusUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // =================================================================
-                    // CORREÇÃO FINAL: Removido o par de chaves extra.
-                    // =================================================================
                     body: JSON.stringify({ empresaId: empresaId }) 
                 });
 
@@ -327,3 +327,5 @@
     </script>
 </body>
 </html>
+
+
