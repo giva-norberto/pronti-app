@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Bem-vindo ao Pronti!</title>
+    <title>Selecionar Empresa - Pronti</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,7 +31,7 @@
             min-height: 100vh;
             box-sizing: border-box;
         }
-        .menu-dashboard {
+        .menu-lateral {
             position: fixed;
             left: 0;
             top: 0;
@@ -45,18 +45,18 @@
             padding-top: 32px;
             padding-bottom: 32px;
         }
-        .menu-dashboard ul {
+        .menu-lateral ul {
             list-style: none;
-            padding: 0 0 0 0;
+            padding: 0;
             margin: 0;
             display: flex;
             flex-direction: column;
             gap: 18px;
         }
-        .menu-dashboard li {
+        .menu-lateral li {
             width: 100%;
         }
-        .menu-dashboard a {
+        .menu-lateral a {
             display: flex;
             align-items: center;
             gap: 14px;
@@ -68,12 +68,12 @@
             border-radius: 9px;
             transition: background 0.14s, color 0.14s;
         }
-        .menu-dashboard a.active,
-        .menu-dashboard a:hover {
+        .menu-lateral a.active,
+        .menu-lateral a:hover {
             background: var(--gradient);
             color: #fff;
         }
-        .menu-dashboard .logo-menu {
+        .menu-lateral .logo-menu {
             font-size: 1.8rem;
             font-weight: 800;
             letter-spacing: -1px;
@@ -99,18 +99,15 @@
             text-align: center;
             border: 1.5px solid var(--border);
         }
-        .header-selecao {
-            display: none;
-        }
-        .header-selecao.visivel {
-            display: block;
-        }
         .header-selecao h1 {
             font-size: 2.2rem;
             font-weight: 800;
+            letter-spacing: -0.5px;
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
             margin: 0 0 10px 0;
         }
         .header-selecao p {
@@ -125,6 +122,7 @@
             justify-items: center;
         }
         .empresa-card, .criar-empresa-card {
+            background: var(--card-bg);
             border-radius: 18px;
             box-shadow: var(--shadow);
             border: 1.5px solid var(--border);
@@ -162,12 +160,13 @@
             font-weight: 700;
             color: var(--text-main);
             font-size: 1.05rem;
+            text-align: center;
         }
         .criar-empresa-card {
             border: 2px dashed var(--border);
         }
         .criar-empresa-card:hover {
-            border-color: var(--primary);
+             border-color: var(--primary);
         }
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
@@ -176,6 +175,7 @@
         }
         .logout-container {
             margin-top: 40px;
+            text-align: center;
         }
         .btn-logout {
             background-color: var(--danger-bg);
@@ -186,6 +186,7 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 1rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
         }
         .btn-logout:hover {
             background-color: var(--danger);
@@ -203,49 +204,26 @@
         @keyframes spin {
             100% { transform: rotate(360deg); }
         }
-        /* CARD DE PRIMEIRO ACESSO */
-        .welcome-card-primeiro-acesso h2 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin: 0 0 15px 0;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .welcome-card-primeiro-acesso p {
+        .mensagem-primeiro-acesso {
+            text-align: center;
             color: var(--text-secondary);
-            font-size: 1.15rem;
-            line-height: 1.6;
-            margin: 0 0 30px 0;
-            max-width: 450px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .welcome-card-primeiro-acesso .btn-comecar {
-            background: var(--gradient);
-            color: white;
-            border: none;
-            padding: 14px 30px;
             font-size: 1.1rem;
-            font-weight: 700;
-            border-radius: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
+            line-height: 1.6;
+            margin-bottom: 10px;
         }
         @media (max-width: 900px) {
             .main-content {
                 margin-left: 0;
             }
-            .menu-dashboard {
+            .menu-lateral {
                 display: none;
             }
         }
     </style>
 </head>
 <body>
-    <!-- INÍCIO MENU DASHBOARD -->
-    <nav class="menu-dashboard">
+    <!-- MENU LATERAL COM DASHBOARD (MENU) -->
+    <nav class="menu-lateral">
         <div class="logo-menu">
             <i class="fas fa-bolt"></i> Pronti
         </div>
@@ -253,6 +231,12 @@
             <li>
                 <a href="index.html">
                     <i class="fas fa-home"></i>
+                    Início
+                </a>
+            </li>
+            <li>
+                <a href="dashboard.html">
+                    <i class="fas fa-chart-line"></i>
                     Dashboard
                 </a>
             </li>
@@ -282,108 +266,124 @@
             </li>
         </ul>
     </nav>
-    <!-- FIM MENU DASHBOARD -->
+    <!-- FIM DO MENU -->
 
     <div class="main-content">
         <div class="selecao-container">
-            <div class="header-selecao" id="header-selecao">
+            <div class="header-selecao">
                 <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
                 <p>Selecione uma empresa para gerir ou crie uma nova.</p>
             </div>
             <div id="empresas-grid">
                 <div class="loader" id="loader"></div>
             </div>
-            <div class="logout-container" id="logout-container">
+            <div class="logout-container">
                 <button id="btn-logout" class="btn-logout">Sair da conta</button>
             </div>
         </div>
     </div>
-    <script type="module">
-        import { auth } from "./firebase-config.js";
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { getEmpresasDoUsuario } from "./user-service.js";
 
-        // Seleção de elementos da interface
+    <script type="module">
+        import { auth, db } from "./firebase-config.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
         const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
-        const headerSelecao = document.getElementById('header-selecao');
-        const logoutContainer = document.getElementById('logout-container');
 
-        // Logout do usuário
-        btnLogout.addEventListener('click', async () => {
-            localStorage.removeItem('empresaAtivaId');
-            await signOut(auth);
-            window.location.href = 'login.html';
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async () => {
+                localStorage.removeItem('empresaAtivaId');
+                await signOut(auth).catch(error => console.error("Erro ao sair:", error));
+                window.location.href = 'login.html';
+            });
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                localStorage.removeItem('empresaAtivaId');
+                const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
+                if (tituloBoasVindas) {
+                    tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+                }
+                carregarEmpresas(user.uid);
+            } else {
+                window.location.href = 'login.html';
+            }
         });
 
-        // Controle de autenticação e fluxo de empresas
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
-            localStorage.removeItem('empresaAtivaId');
-            const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-            tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-
+        async function carregarEmpresas(userId) {
             try {
-                const empresas = await getEmpresasDoUsuario(user);
+                const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
+                const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
 
-                // Fluxo 1: Nenhuma empresa -> card boas-vindas + redireciona para perfil.html
-                if (empresas.length === 0) {
-                    renderizarBoasVindas();
-                    setTimeout(() => {
-                        window.location.href = 'perfil.html';
-                    }, 2000);
+                if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
+                    renderizarOpcoes([]); 
                     return;
                 }
+                
+                const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
 
-                // Fluxo 2: Só 1 empresa -> vai direto para index.html com empresaAtivaId
-                if (empresas.length === 1) {
-                    localStorage.setItem('empresaAtivaId', empresas[0].id);
+                if (idsDasEmpresas.length === 1) {
+                    const empresaId = idsDasEmpresas[0];
+                    localStorage.setItem('empresaAtivaId', empresaId);
                     window.location.href = 'index.html';
-                    return;
+                    return; 
                 }
 
-                // Fluxo 3: Mais de 1 empresa -> tela de seleção normalmente
+                const empresasRef = collection(db, "empresarios");
+                const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
+                const snapshotsDasEmpresas = await getDocs(q);
+                
+                const empresas = snapshotsDasEmpresas.docs
+                    .filter(snapshot => snapshot.exists())
+                    .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
+
                 renderizarOpcoes(empresas);
 
             } catch (error) {
-                console.error("Erro ao carregar empresas:", error);
-                grid.innerHTML = `<p>Ocorreu um erro ao buscar suas empresas.</p>`;
+                console.error("Erro ao carregar empresas: ", error);
+                if (grid) {
+                    grid.innerHTML = `<p style="color: red;">Erro ao carregar empresas. Detalhes: ${error.message}</p>`;
+                }
             } finally {
-                loader.style.display = 'none';
+                if (loader) loader.style.display = 'none';
             }
-        });
+        }
 
-        // Renderiza opções de empresas e botão de criar nova
         function renderizarOpcoes(empresas) {
-            grid.innerHTML = '';
-            headerSelecao.classList.add('visivel');
-            logoutContainer.style.display = 'block';
-            empresas.forEach(empresa => {
-                grid.appendChild(criarEmpresaCard(empresa));
-            });
-            grid.appendChild(criarNovoCard());
+            if (!grid) return;
+            grid.innerHTML = ''; 
+            
+            if (empresas.length > 0) {
+                grid.style.display = 'grid';
+                grid.style.flexDirection = '';
+                grid.style.alignItems = '';
+
+                empresas.forEach(empresa => {
+                    grid.appendChild(criarEmpresaCard(empresa));
+                });
+                grid.appendChild(criarNovoCard());
+
+            } else {
+                grid.style.display = 'flex';
+                grid.style.flexDirection = 'column';
+                grid.style.alignItems = 'center';
+                grid.style.gap = '25px';
+
+                const mensagem = document.createElement('p');
+                mensagem.className = 'mensagem-primeiro-acesso';
+                mensagem.textContent = 'Parece que esta é a sua primeira vez aqui! Crie sua empresa para começar a gerenciar.';
+                grid.appendChild(mensagem);
+
+                const novoCard = criarNovoCard();
+                novoCard.style.width = '200px';
+                grid.appendChild(novoCard);
+            }
         }
 
-        // Renderiza card de boas-vindas
-        function renderizarBoasVindas() {
-            headerSelecao.style.display = 'none';
-            logoutContainer.style.display = 'block';
-            grid.style.display = 'block';
-            grid.innerHTML = `
-                <div class="welcome-card-primeiro-acesso">
-                    <h2>Bem-vindo(a) ao Pronti!</h2>
-                    <p>Você está pronto(a) para organizar sua primeira empresa.<br>Redirecionando para o seu perfil para começar...</p>
-                    <a href="perfil.html" class="btn-comecar">Ir agora</a>
-                </div>
-            `;
-        }
-
-        // Cria o card de empresa
         function criarEmpresaCard(empresa) {
             const card = document.createElement('a');
             card.className = 'empresa-card';
@@ -393,20 +393,23 @@
                 localStorage.setItem('empresaAtivaId', empresa.id);
                 window.location.href = 'index.html';
             });
-            const nomeFantasia = empresa.nomeFantasia || "Empresa";
+
+            const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoContent = empresa.logoUrl
-                ? `<img src="${empresa.logoUrl}" alt="Logo" class="empresa-logo">`
-                : `<div class="empresa-logo">${inicial}</div>`;
-            card.innerHTML = `${logoContent}<span class="empresa-nome">${nomeFantasia}</span>`;
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
+
+            card.innerHTML = `
+                <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
+                <span class="empresa-nome">${nomeFantasia}</span>
+            `;
             return card;
         }
 
-        // Cria o card para criar nova empresa
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            card.href = 'perfil.html';
+            card.href = 'perfil.html'; 
+
             card.innerHTML = `
                 <div class="plus-icon"><i class="fas fa-plus"></i></div>
                 <span class="empresa-nome">Criar Nova Empresa</span>
