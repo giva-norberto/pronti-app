@@ -11,13 +11,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-        /* ======================================================= */
-        /* CSS REVISADO: FUNDO AZUL COM CARDS MELHORADOS       */
-        /* ======================================================= */
+        /* CSS com fundo azul e cards melhorados (mantido) */
         :root {
             --cor-primaria: #4f46e5;
             --gradiente-texto: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-            --cor-fundo-card-interno: #f7f8ff; /* Tom suave para cards internos */
+            --cor-fundo-card-interno: #f7f8ff;
             --cor-texto-titulo: #1e293b;
             --cor-texto-corpo: #64748b;
             --cor-borda: #e2e8f0;
@@ -27,7 +25,6 @@
         }
         body {
             font-family: 'Poppins', sans-serif;
-            /* ✅ CORREÇÃO: Fundo da página azul, como solicitado */
             background-image: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
             background-attachment: fixed;
             color: var(--cor-texto-corpo);
@@ -39,7 +36,6 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        /* ✅ MELHORIA: Card principal branco e "flutuante" */
         .selecao-container {
             width: 100%;
             max-width: 600px;
@@ -54,7 +50,6 @@
             font-size: 2rem;
             font-weight: 700;
             margin: 0 0 10px 0;
-            /* Título com gradiente para destaque */
             background: var(--gradiente-texto);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -72,7 +67,6 @@
             gap: 24px;
             justify-items: center;
         }
-        /* ✅ MELHORIA: Cards internos com fundo e borda suaves */
         .empresa-card, .criar-empresa-card {
             display: flex;
             flex-direction: column;
@@ -84,7 +78,7 @@
             padding: 20px;
             cursor: pointer;
             text-decoration: none;
-            box-shadow: none; /* Sombra mais sutil ou nenhuma para começar */
+            box-shadow: none;
             transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
             height: 180px;
             width: 100%;
@@ -166,7 +160,7 @@
     </style>
 </head>
 <body>
-    
+
     <div class="selecao-container">
         <div class="header-selecao">
             <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
@@ -181,19 +175,16 @@
     </div>
 
     <script type="module">
-        // Importações do Firebase
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // --- Elementos do DOM ---
         const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const subtituloSelecao = document.getElementById('subtitulo-selecao');
         const btnLogout = document.getElementById('btn-logout');
 
-        // --- Eventos ---
         btnLogout.addEventListener('click', async () => {
             try {
                 await signOut(auth);
@@ -204,7 +195,6 @@
             }
         });
 
-        // Ponto de entrada: verifica se o usuário está autenticado
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 localStorage.removeItem('empresaAtivaId');
@@ -216,7 +206,6 @@
             }
         });
 
-        // --- Funções Principais ---
         async function carregarEmpresas(userId) {
             try {
                 const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
@@ -264,21 +253,24 @@
             grid.appendChild(criarNovoCard());
         }
 
+        // ✅ LÓGICA DE PRIMEIRO ACESSO RESTAURADA PARA A SUA VERSÃO ORIGINAL
         function renderizarPrimeiroAcesso() {
             grid.innerHTML = '';
             subtituloSelecao.textContent = '';
             const mensagem = document.createElement('p');
             mensagem.className = 'mensagem-primeiro-acesso';
-            mensagem.textContent = 'Você ainda não possui empresas cadastradas.';
+            // Texto original restaurado
+            mensagem.textContent = 'Você ainda não possui empresas cadastradas.'; 
             
             grid.appendChild(mensagem);
             grid.appendChild(criarNovoCard());
+            
+            // Estilos originais do grid restaurados para o layout que você queria
             grid.style.gridTemplateColumns = '1fr';
             grid.style.maxWidth = '200px';
             grid.style.margin = '0 auto';
         }
 
-        // --- Funções Auxiliares (Criação dos Cards) ---
         function criarEmpresaCard(empresa) {
             const card = document.createElement('a');
             card.className = 'empresa-card';
