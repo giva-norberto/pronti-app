@@ -2,320 +2,219 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Selecionar Empresa - Pronti</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Fonte atualizada para o padrão Pronti -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>Painel Inteligente - Pronti</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
     <style>
-        /* ================================================= */
-        /* NOVO ESTILO PADRÃO PRONTI APLICADO         */
-        /* ================================================= */
         :root {
-            --primary: #6366f1;
-            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100% );
-            --background: #f6f7fb;
-            --card-bg: #fff;
-            --text-main: #21243d;
-            --text-secondary: #71717a;
-            --border: #e0e7ff;
-            --danger: #f87171;
-            --danger-bg: #fee2e2;
+            --primary: #6366f1; --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); --background: #f6f7fb;
+            --card-bg: #fff; --text-main: #21243d; --text-secondary: #71717a; --border: #e0e7ff;
+            --success: #34d399; --warning: #fde68a; --danger: #f87171;
             --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
-            --shadow-hover: 0 10px 36px #6366f123, 0 2px 14px #6366f10a;
         }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background);
-            color: var(--text-secondary);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--background);
+            color: var(--text-main); display: flex; /* Adicionado para layout com menu lateral */
+        }
+        /* Ajuste para o conteúdo principal não ficar embaixo do menu */
+        .dashboard-main {
+            flex-grow: 1; /* Faz o conteúdo principal ocupar o espaço restante */
+            max-width: 1200px; margin: 0 auto; padding: 32px 18px;
             box-sizing: border-box;
         }
-        .selecao-container {
-            width: 100%;
-            max-width: 600px;
-            background-color: var(--card-bg);
-            border-radius: 18px;
-            padding: 40px;
-            box-shadow: var(--shadow);
-            text-align: center;
-            border: 1.5px solid var(--border);
+        .dashboard-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            flex-wrap: wrap; margin-bottom: 32px;
         }
-        .header-selecao h1 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-fill-color: transparent;
-            margin: 0 0 10px 0;
+        .dashboard-header h1 {
+            font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; background: var(--gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;
         }
-        .header-selecao p {
-            font-size: 1.1rem;
-            margin-bottom: 40px;
-            color: var(--text-secondary);
+        .date-filter input[type="date"] {
+            padding: 10px 14px; border-radius: 9px; border: 1.5px solid var(--border);
+            font-size: 1rem; background: var(--card-bg); color: var(--text-main);
         }
-        #empresas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 24px;
-            justify-items: center;
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .main-cards, .side-cards { display: flex; flex-direction: column; gap: 24px; }
+        .kpi-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+        .card {
+            background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow);
+            padding: 28px 22px 23px 22px; border: 1.5px solid var(--border);
         }
-        .empresa-card, .criar-empresa-card {
-            background: var(--card-bg);
-            border-radius: 18px;
-            box-shadow: var(--shadow);
-            border: 1.5px solid var(--border);
-            padding: 20px;
-            cursor: pointer;
-            text-decoration: none;
-            transition: box-shadow 0.18s, transform 0.16s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 190px;
-            width: 100%;
-            box-sizing: border-box;
+        .card-title {
+            margin: 0 0 13px 0; font-size: 1.13rem; color: var(--text-secondary);
+            font-weight: 700; display: flex; align-items: center; gap: 10px;
         }
-        .empresa-card:hover, .criar-empresa-card:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: var(--shadow-hover);
+        .card-main-value { font-size: 2.45rem; font-weight: 800; color: var(--primary); margin: 0; }
+        .card-sub-value { font-size: 1.03rem; color: var(--text-secondary); margin-top: 8px; }
+        .ia-card { background: linear-gradient(120deg, #6366f1 60%, #8b5cf6 100%); color: #fff; }
+        .ia-card .card-title { color: #e0e7ff; }
+        .ia-card p { font-size: 1.12rem; line-height: 1.7; }
+        .ia-actions { margin-top: 15px; display: flex; gap: 12px; }
+        .ia-btn {
+            background: #fff2; color: #fff; border: 1.5px solid #e0e7ff55;
+            border-radius: 9px; padding: 8px 16px; cursor: pointer; font-weight: 600;
         }
-        .empresa-logo {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 15px;
-            background-color: #eef2ff;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            font-weight: 700;
+        .resumo-card { border-left: 6px solid var(--primary); }
+        .resumo-card .card-title { color: var(--primary); }
+
+        @media (max-width: 1000px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
-        .empresa-nome {
-            font-weight: 700;
-            color: var(--text-main);
-            font-size: 1.05rem;
-            text-align: center;
-        }
-        .criar-empresa-card {
-            border: 2px dashed var(--border);
-        }
-        .criar-empresa-card:hover {
-             border-color: var(--primary);
-        }
-        .criar-empresa-card .plus-icon {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 15px;
-        }
-        .logout-container {
-            margin-top: 40px;
-            text-align: center;
-        }
-        .btn-logout {
-            background-color: var(--danger-bg);
-            color: var(--danger);
-            border: 1.5px solid var(--danger);
-            border-radius: 9px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-        .btn-logout:hover {
-            background-color: var(--danger);
-            color: #ffffff;
-        }
-        .loader {
-            border: 4px solid var(--border);
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            margin: 40px auto;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
-        
-        .mensagem-primeiro-acesso {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 10px;
+        @media (max-width: 700px) {
+            .kpi-row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="selecao-container">
-        <div class="header-selecao">
-            <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
-            <p>Selecione uma empresa para gerir ou crie uma nova.</p>
-        </div>
+    
+    <div id="menu-container"></div>
 
-        <div id="empresas-grid">
-            <div class="loader" id="loader"></div>
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <h1>Painel Inteligente</h1>
+            <div class="dashboard-actions">
+                <div class="date-filter">
+                    <input type="date" id="filtro-data">
+                </div>
+            </div>
         </div>
+        <div class="dashboard-grid">
+            <div class="main-cards">
+                <div class="kpi-row">
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-dollar-sign"></i> Faturamento</div>
+                        <div class="card-main-value" id="faturamento-realizado">R$ 0,00</div>
+                        <div class="card-sub-value">Previsto: <span id="faturamento-previsto">R$ 0,00</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Agendamentos</div>
+                        <div class="card-main-value" id="total-agendamentos-dia">0</div>
+                        <div class="card-sub-value"><span id="agendamentos-pendentes">0</span> pendentes no dia</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos</div>
+                    <canvas id="servicos-mais-vendidos" style="width:100%; max-height:320px;"></canvas>
+                </div>
+            </div>
+            <div class="side-cards">
+                <div class="card ia-card">
+                    <div class="card-title"><i class="fa-solid fa-brain"></i> Sugestão Inteligente</div>
+                    <div id="ia-sugestao"><p>Analisando tendências, aguarde...</p></div>
+                </div>
+                <div class="card resumo-card">
+                    <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Resumo Inteligente</div>
+                    <div id="resumo-inteligente">
+                        <ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">
+                            <li>Carregando resumo do dia...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
-        <div class="logout-container">
-            <button id="btn-logout" class="btn-logout">Sair da conta</button>
-        </div>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
-        // A lógica do seu script foi mantida, pois já está correta e funcional.
-        import { auth, db } from "./firebase-config.js";
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        // Importe outras funções do Firestore que você precisar, como 'doc', 'getDoc', 'collection', etc.
 
-        const grid = document.getElementById('empresas-grid');
-        const loader = document.getElementById('loader');
-        const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
-        const btnLogout = document.getElementById('btn-logout');
+        let servicosChart; // Variável para guardar a instância do gráfico
 
-        if (btnLogout) {
-            btnLogout.addEventListener('click', async () => {
-                localStorage.removeItem('empresaAtivaId');
-                await signOut(auth).catch(error => console.error("Erro ao sair:", error));
-                window.location.href = 'login.html';
+        // FUNÇÃO "CÉREBRO" DA PÁGINA
+        async function buscarEAtualizarDados(empresaId, dataFiltro) {
+            console.log(`Buscando dados para a empresa ${empresaId} na data ${dataFiltro}`);
+            
+            // TODO: SEUS PRÓXIMOS PASSOS ACONTECEM AQUI!
+            // Esta é a função que você vai preencher com a busca de dados no Firebase.
+
+            // Exemplo de como você vai atualizar os cards:
+            // 1. Busque os dados no Firestore usando o empresaId e a dataFiltro.
+            // 2. Pegue os resultados e atualize os elementos na tela.
+
+            // Exemplo Fictício:
+            document.getElementById('faturamento-realizado').textContent = "R$ 1.250,75";
+            document.getElementById('faturamento-previsto').textContent = "R$ 1.800,00";
+            document.getElementById('total-agendamentos-dia').textContent = "15";
+            document.getElementById('agendamentos-pendentes').textContent = "3";
+            document.getElementById('ia-sugestao').innerHTML = "<p>O horário das 14h está com baixa procura. Considere criar uma promoção!</p>";
+            document.getElementById('resumo-inteligente').innerHTML = `
+                <ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">
+                    <li>Seu serviço mais procurado hoje é <strong>Corte Masculino</strong>.</li>
+                    <li>O faturamento está <strong>30% acima</strong> da média para este dia.</li>
+                </ul>`;
+
+            // Atualizar o gráfico
+            const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
+            const dadosDoGrafico = {
+                labels: ['Corte', 'Manicure', 'Penteado', 'Coloração'], // Substituir por dados reais
+                data: [20, 15, 8, 5] // Substituir por dados reais
+            };
+
+            if (servicosChart) {
+                servicosChart.destroy(); // Destroi o gráfico antigo antes de criar um novo
+            }
+            servicosChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dadosDoGrafico.labels,
+                    datasets: [{
+                        label: 'Vendas', data: dadosDoGrafico.data,
+                        backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
             });
         }
 
+        // FUNÇÃO QUE INICIA A PÁGINA
+        async function inicializarPagina() {
+            try {
+                const response = await fetch('menu-lateral.html');
+                document.getElementById('menu-container').innerHTML = await response.text();
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
+            } catch (error) {
+                console.error("Erro ao carregar o menu lateral.", error);
+            }
+
+            const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+            if (!empresaAtivaId) {
+                alert("Nenhuma empresa selecionada. Redirecionando...");
+                window.location.href = 'selecionar-empresa.html';
+                return;
+            }
+
+            const filtroDataEl = document.getElementById('filtro-data');
+            // Define a data de hoje como padrão no filtro
+            filtroDataEl.value = new Date().toISOString().split('T')[0];
+
+            // Busca os dados assim que a página carrega
+            buscarEAtualizarDados(empresaAtivaId, filtroDataEl.value);
+
+            // Adiciona um listener para buscar novos dados sempre que a data mudar
+            filtroDataEl.addEventListener('change', () => {
+                buscarEAtualizarDados(empresaAtivaId, filtroDataEl.value);
+            });
+        }
+
+        // CONTROLE DE ACESSO
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                localStorage.removeItem('empresaAtivaId');
-                const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-                if (tituloBoasVindas) {
-                    tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-                }
-                carregarEmpresas(user.uid);
+                inicializarPagina();
             } else {
                 window.location.href = 'login.html';
             }
         });
-
-        async function carregarEmpresas(userId) {
-            try {
-                const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
-                const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
-
-                if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
-                    renderizarOpcoes([]); 
-                    return;
-                }
-                
-                const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
-
-                if (idsDasEmpresas.length === 1) {
-                    const empresaId = idsDasEmpresas[0];
-                    localStorage.setItem('empresaAtivaId', empresaId);
-                    window.location.href = 'index.html';
-                    return; 
-                }
-
-                const empresasRef = collection(db, "empresarios");
-                const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
-                const snapshotsDasEmpresas = await getDocs(q);
-                
-                const empresas = snapshotsDasEmpresas.docs
-                    .filter(snapshot => snapshot.exists())
-                    .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
-
-                renderizarOpcoes(empresas);
-
-            } catch (error) {
-                console.error("Erro ao carregar empresas: ", error);
-                if (grid) {
-                    grid.innerHTML = `<p style="color: red;">Erro ao carregar empresas. Detalhes: ${error.message}</p>`;
-                }
-            } finally {
-                if (loader) loader.style.display = 'none';
-            }
-        }
-
-        function renderizarOpcoes(empresas) {
-            if (!grid) return;
-            grid.innerHTML = ''; 
-            
-            if (empresas.length > 0) {
-                grid.style.display = 'grid';
-                grid.style.flexDirection = '';
-                grid.style.alignItems = '';
-
-                empresas.forEach(empresa => {
-                    grid.appendChild(criarEmpresaCard(empresa));
-                });
-                grid.appendChild(criarNovoCard());
-
-            } else {
-                grid.style.display = 'flex';
-                grid.style.flexDirection = 'column';
-                grid.style.alignItems = 'center';
-                grid.style.gap = '25px';
-
-                const mensagem = document.createElement('p');
-                mensagem.className = 'mensagem-primeiro-acesso';
-                mensagem.textContent = 'Parece que esta é a sua primeira vez aqui! Crie sua empresa para começar a gerenciar.';
-                grid.appendChild(mensagem);
-
-                const novoCard = criarNovoCard();
-                novoCard.style.width = '200px';
-                grid.appendChild(novoCard);
-            }
-        }
-
-        function criarEmpresaCard(empresa) {
-            const card = document.createElement('a');
-            card.className = 'empresa-card';
-            card.href = '#';
-            card.addEventListener('click', (e) => {
-                e.preventDefault();
-                localStorage.setItem('empresaAtivaId', empresa.id);
-                window.location.href = 'index.html';
-            });
-
-            const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
-            const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
-
-            card.innerHTML = `
-                <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
-                <span class="empresa-nome">${nomeFantasia}</span>
-            `;
-            return card;
-        }
-
-        function criarNovoCard() {
-            const card = document.createElement('a');
-            card.className = 'criar-empresa-card';
-            card.href = 'perfil.html'; 
-
-            card.innerHTML = `
-                <div class="plus-icon"><i class="fas fa-plus"></i></div>
-                <span class="empresa-nome">Criar Nova Empresa</span>
-            `;
-            return card;
-        }
     </script>
 </body>
 </html>
