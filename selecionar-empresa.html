@@ -14,19 +14,17 @@
         :root {
             --cor-primaria: #4f46e5;
             --gradiente-texto: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-            --cor-fundo: #f8fafc;
+            --cor-fundo-card-interno: #f7f8ff;
             --cor-texto-titulo: #1e293b;
             --cor-texto-corpo: #64748b;
             --cor-borda: #e2e8f0;
             --cor-perigo: #ef4444;
-            --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.05);
-            --sombra-card-hover: 0 8px 25px rgba(79, 70, 229, 0.12);
+            --sombra-card-hover: 0 8px 25px rgba(79, 70, 229, 0.15);
         }
         body {
             font-family: 'Poppins', sans-serif;
-            /* ✅ CORREÇÃO: Fundo azul padrão Pronti */
             background-image: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
-            color: var(--cor-texto-corpo);
+            background-attachment: fixed;
             margin: 0;
             display: flex;
             justify-content: center;
@@ -41,24 +39,22 @@
             background-color: #ffffff;
             border-radius: 24px;
             padding: 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1); /* Sombra mais forte para destacar */
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
             text-align: center;
-            border: 1px solid #f0f0f5;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .header-selecao h1 {
             font-size: 2rem;
             font-weight: 700;
             margin: 0 0 10px 0;
-            /* ✅ MELHORIA: Título com gradiente da marca */
             background: var(--gradiente-texto);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-fill-color: transparent;
         }
         .header-selecao p {
             font-size: 1.1rem;
             margin-bottom: 40px;
+            color: var(--cor-texto-corpo);
         }
         #empresas-grid {
             display: grid;
@@ -71,20 +67,19 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 1px solid #f0f0f5; /* Borda sutil */
+            background: var(--cor-fundo-card-interno);
+            border: 1px solid var(--cor-borda);
             border-radius: 16px;
             padding: 20px;
             cursor: pointer;
-            background: #fff;
             text-decoration: none;
-            box-shadow: var(--sombra-card);
             transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
             height: 180px;
             width: 100%;
             box-sizing: border-box;
         }
         .empresa-card:hover, .criar-empresa-card:hover {
-            transform: translateY(-8px) scale(1.03);
+            transform: translateY(-8px);
             box-shadow: var(--sombra-card-hover);
             border-color: var(--cor-primaria);
         }
@@ -92,17 +87,14 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            object-fit: cover;
             margin-bottom: 15px;
-            background-image: linear-gradient(to top, #eef2ff 0%, #f4f6ff 100%);
+            background-color: #eef2ff;
             color: var(--cor-primaria);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
             font-weight: 600;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .empresa-nome {
             font-weight: 600;
@@ -111,8 +103,8 @@
             text-align: center;
         }
         .criar-empresa-card {
-            background: #fdfdff;
-            border: 2px dashed var(--cor-borda);
+            border-style: dashed;
+            background: transparent;
         }
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
@@ -121,16 +113,12 @@
             transition: transform 0.3s ease;
         }
         .criar-empresa-card:hover .plus-icon {
-            transform: rotate(90deg);
+            transform: rotate(90deg) scale(1.1);
         }
-        .logout-container {
-            margin-top: 40px;
-            text-align: center;
-        }
+        .logout-container { margin-top: 40px; text-align: center; }
         .btn-logout {
-            /* ✅ MELHORIA: Botão com estilo mais limpo e sutil */
-            background-color: transparent;
-            color: var(--cor-texto-corpo);
+            background-color: #fee2e2;
+            color: var(--cor-perigo);
             border: none;
             border-radius: 8px;
             padding: 10px 20px;
@@ -139,12 +127,9 @@
             font-size: 1rem;
             transition: all 0.2s ease;
         }
-        .btn-logout:hover {
-            background-color: #fee2e2;
-            color: var(--cor-perigo);
-        }
+        .btn-logout:hover { background-color: var(--cor-perigo); color: #ffffff; }
         .loader {
-            border: 4px solid #e2e8f0;
+            border: 4px solid var(--cor-borda);
             border-top: 4px solid var(--cor-primaria);
             border-radius: 50%;
             width: 40px;
@@ -152,62 +137,52 @@
             margin: 40px auto;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         .mensagem-primeiro-acesso {
             font-size: 1.1rem;
             line-height: 1.6;
             margin-bottom: 30px;
+            color: var(--cor-texto-corpo);
         }
     </style>
 </head>
 <body>
-
+    
     <div class="selecao-container">
         <div class="header-selecao">
             <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
             <p id="subtitulo-selecao">Selecione uma empresa para gerir ou crie uma nova.</p>
         </div>
-
         <div id="empresas-grid">
             <div class="loader" id="loader"></div>
         </div>
-
         <div class="logout-container">
             <button id="btn-logout" class="btn-logout">Sair da conta</button>
         </div>
     </div>
 
     <script type="module">
-        // Importações do Firebase
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // --- Elementos do DOM ---
         const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const subtituloSelecao = document.getElementById('subtitulo-selecao');
         const btnLogout = document.getElementById('btn-logout');
 
-        // --- Eventos ---
         btnLogout.addEventListener('click', async () => {
             try {
                 await signOut(auth);
                 localStorage.clear();
                 window.location.href = 'login.html';
-            } catch (error) {
-                console.error("Erro ao sair:", error);
-            }
+            } catch (error) { console.error("Erro ao sair:", error); }
         });
 
-        // Ponto de entrada: verifica se o usuário está autenticado
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 localStorage.removeItem('empresaAtivaId');
-                
                 const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
                 tituloBoasVindas.textContent = `Olá, ${primeiroNome}!`;
                 carregarEmpresas(user.uid);
@@ -216,7 +191,6 @@
             }
         });
 
-        // --- Funções Principais ---
         async function carregarEmpresas(userId) {
             try {
                 const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
@@ -229,11 +203,17 @@
                 
                 const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
 
+                // =================================================================================
+                // ✅ SUA LÓGICA ORIGINAL ESTÁ AQUI E NÃO FOI ALTERADA.
+                // Este bloco é o responsável por pular a tela de seleção se o usuário
+                // tiver apenas UMA empresa. Se quiser ver a tela de seleção para testar,
+                // seu usuário de teste precisa ter 0 ou 2+ empresas.
                 if (idsDasEmpresas.length === 1) {
                     localStorage.setItem('empresaAtivaId', idsDasEmpresas[0]);
                     window.location.href = 'index.html';
                     return;
                 }
+                // =================================================================================
 
                 const empresasRef = collection(db, "empresarios");
                 const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
@@ -267,20 +247,18 @@
         function renderizarPrimeiroAcesso() {
             grid.innerHTML = '';
             subtituloSelecao.textContent = '';
-
             const mensagem = document.createElement('p');
             mensagem.className = 'mensagem-primeiro-acesso';
             mensagem.textContent = 'Você ainda não possui empresas cadastradas.';
             
             grid.appendChild(mensagem);
             grid.appendChild(criarNovoCard());
+            
             grid.style.gridTemplateColumns = '1fr';
             grid.style.maxWidth = '200px';
             grid.style.margin = '0 auto';
         }
 
-
-        // --- Funções Auxiliares (Criação dos Cards) ---
         function criarEmpresaCard(empresa) {
             const card = document.createElement('a');
             card.className = 'empresa-card';
@@ -290,10 +268,8 @@
                 localStorage.setItem('empresaAtivaId', empresa.id);
                 window.location.href = 'index.html';
             });
-
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-
             card.innerHTML = `
                 <div class="empresa-logo">${inicial}</div>
                 <span class="empresa-nome">${nomeFantasia}</span>
@@ -308,7 +284,6 @@
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
             card.href = 'perfil.html';
-
             card.innerHTML = `
                 <div class="plus-icon"><i class="fas fa-plus"></i></div>
                 <span class="empresa-nome">Criar Nova Empresa</span>
