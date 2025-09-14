@@ -1,131 +1,314 @@
-/**
- * @file selecionar-empresa.js
- * @description Script autônomo para a página de seleção de empresa.
- *              Gerencia a exibição de empresas e o redirecionamento.
- *              Não chama o 'verificarAcesso' para evitar loops.
- */
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Selecionar Empresa - Pronti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-// Importações diretas, tornando o script independente.
-import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-// --- Elementos do DOM ---
-const grid = document.getElementById('empresas-grid' );
-const loader = document.getElementById('loader');
-const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
-const btnLogout = document.getElementById('btn-logout');
-
-// --- Eventos ---
-if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-        localStorage.removeItem('empresaAtivaId');
-        await signOut(auth).catch(error => console.error("Erro ao sair:", error));
-        window.location.href = 'login.html';
-    });
-}
-
-// Ponto de entrada principal do script
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        // ✅ GARANTIA: Limpa qualquer empresa ativa salva anteriormente para forçar uma nova escolha.
-        localStorage.removeItem('empresaAtivaId');
-        
-        const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-        if (tituloBoasVindas) {
-            tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+    <style>
+        :root {
+            --cor-primaria: #4f46e5;
+            --cor-fundo: #f8fafc;
+            --cor-texto-titulo: #1e293b;
+            --cor-texto-corpo: #64748b;
+            --cor-borda: #e2e8f0;
+            --cor-perigo: #ef4444;
+            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
-        carregarEmpresas(user.uid);
-    } else {
-        window.location.href = 'login.html';
-    }
-});
-
-// --- Funções Principais ---
-async function carregarEmpresas(userId) {
-    try {
-        const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
-        const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
-
-        if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
-            renderizarOpcoes([]);
-            return;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto-corpo);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        
-        const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
-
-        // ✅ SUA LÓGICA ORIGINAL PRESERVADA: Se houver apenas uma empresa, redireciona direto.
-        // Isso é essencial para o fluxo de novos usuários.
-        if (idsDasEmpresas.length === 1) {
-            const empresaId = idsDasEmpresas[0];
-            localStorage.setItem('empresaAtivaId', empresaId);
-            window.location.href = 'index.html';
-            return; 
+        .selecao-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: var(--sombra-card);
+            text-align: center;
         }
-
-        // ✅ MELHORIA: A busca usa 'in' para respeitar suas regras de segurança e evitar erros.
-        const empresasRef = collection(db, "empresarios");
-        const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
-        const snapshotsDasEmpresas = await getDocs(q);
-        
-        const empresas = snapshotsDasEmpresas.docs
-            .filter(snapshot => snapshot.exists())
-            .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
-
-        renderizarOpcoes(empresas);
-
-    } catch (error) {
-        console.error("Erro ao carregar empresas: ", error);
-        if (grid) {
-            grid.innerHTML = `<p style="color: red;">Erro ao carregar empresas. Detalhes: ${error.message}</p>`;
+        .header-selecao h1 {
+            color: var(--cor-texto-titulo);
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
         }
-    } finally {
-        if (loader) loader.style.display = 'none';
-    }
-}
+        .header-selecao p {
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+        #empresas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            justify-items: center;
+        }
+        .empresa-card, .criar-empresa-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--cor-borda);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            background: #fff;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            height: 180px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .empresa-card:hover, .criar-empresa-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--sombra-card-hover);
+            border-color: var(--cor-primaria);
+        }
+        .empresa-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            background-color: #eef2ff;
+            color: var(--cor-primaria);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+        .empresa-nome {
+            font-weight: 600;
+            color: var(--cor-texto-titulo);
+            font-size: 1rem;
+            text-align: center;
+        }
+        .criar-empresa-card {
+            border: 2px dashed var(--cor-borda);
+        }
+        .criar-empresa-card .plus-icon {
+            font-size: 2.5rem;
+            color: var(--cor-primaria);
+            margin-bottom: 15px;
+        }
+        .logout-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+        .btn-logout {
+            background-color: #fee2e2;
+            color: var(--cor-perigo);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .btn-logout:hover {
+            background-color: var(--cor-perigo);
+            color: #ffffff;
+        }
+        .loader {
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--cor-primaria);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin: 40px auto;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        .mensagem-primeiro-acesso {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
 
-function renderizarOpcoes(empresas) {
-    if (!grid) return;
-    grid.innerHTML = ''; 
-    if (empresas.length > 0) {
-        empresas.forEach(empresa => {
-            grid.appendChild(criarEmpresaCard(empresa));
+    <div class="selecao-container">
+        <div class="header-selecao">
+            <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
+            <p id="subtitulo-selecao">Selecione uma empresa para gerir ou crie uma nova.</p>
+        </div>
+
+        <div id="empresas-grid">
+            <div class="loader" id="loader"></div>
+        </div>
+
+        <div class="logout-container">
+            <button id="btn-logout" class="btn-logout">Sair da conta</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importações do Firebase
+        import { auth, db } from "./firebase-config.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        // --- Elementos do DOM ---
+        const grid = document.getElementById('empresas-grid');
+        const loader = document.getElementById('loader');
+        const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
+        const subtituloSelecao = document.getElementById('subtitulo-selecao');
+        const btnLogout = document.getElementById('btn-logout');
+
+        // --- Eventos ---
+        btnLogout.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                localStorage.clear(); // Limpa tudo para garantir
+                // ✅ BUG CORRIGIDO: Adicionado redirecionamento para a página de login.
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error("Erro ao sair:", error);
+            }
         });
-    } else {
-         grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
-    }
-    grid.appendChild(criarNovoCard());
-}
 
-function criarEmpresaCard(empresa) {
-    const card = document.createElement('a');
-    card.className = 'empresa-card';
-    card.href = '#';
-    card.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.setItem('empresaAtivaId', empresa.id);
-        window.location.href = 'index.html';
-    });
+        // Ponto de entrada: verifica se o usuário está autenticado
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Garante que nenhuma empresa fique salva de sessões anteriores
+                localStorage.removeItem('empresaAtivaId');
+                
+                const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
+                tituloBoasVindas.textContent = `Olá, ${primeiroNome}!`;
+                carregarEmpresas(user.uid);
+            } else {
+                // Se não estiver logado, volta para a tela de login
+                window.location.href = 'login.html';
+            }
+        });
 
-    const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
-    const inicial = nomeFantasia.charAt(0).toUpperCase();
-    const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial )}`;
+        // --- Funções Principais ---
 
-    card.innerHTML = `
-        <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
-        <span class="empresa-nome">${nomeFantasia}</span>
-    `;
-    return card;
-}
+        /** Carrega as empresas associadas ao usuário */
+        async function carregarEmpresas(userId) {
+            try {
+                const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
+                const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
 
-function criarNovoCard() {
-    const card = document.createElement('a');
-    card.className = 'criar-empresa-card';
-    card.href = 'perfil.html'; 
+                if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
+                    renderizarPrimeiroAcesso(); // Exibe a tela de boas-vindas para criar a 1ª empresa
+                    return;
+                }
+                
+                const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
 
-    card.innerHTML = `
-        <div class="plus-icon"><i class="fas fa-plus"></i></div>
-        <span class="empresa-nome">Criar Nova Empresa</span>
-    `;
-    return card;
-}
+                // Redireciona automaticamente se o usuário tiver apenas uma empresa
+                if (idsDasEmpresas.length === 1) {
+                    localStorage.setItem('empresaAtivaId', idsDasEmpresas[0]);
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // ✅ MELHORIA DE PERFORMANCE: Trocado múltiplos 'getDoc' por uma única consulta 'in'.
+                // É mais rápido e eficiente.
+                const empresasRef = collection(db, "empresarios");
+                const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
+                const snapshotsDasEmpresas = await getDocs(q);
+                
+                const empresas = snapshotsDasEmpresas.docs
+                    .filter(snapshot => snapshot.exists())
+                    .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
+
+                renderizarOpcoes(empresas);
+
+            } catch (error) {
+                console.error("Erro ao carregar empresas: ", error);
+                grid.innerHTML = `<p style="color: red;">Ocorreu um erro ao buscar suas empresas.</p>`;
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        }
+
+        /** Renderiza a lista de empresas para o usuário escolher */
+        function renderizarOpcoes(empresas) {
+            grid.innerHTML = ''; // Limpa o grid
+            subtituloSelecao.textContent = 'Selecione uma de suas empresas para continuar.';
+            
+            empresas.forEach(empresa => {
+                grid.appendChild(criarEmpresaCard(empresa));
+            });
+            
+            grid.appendChild(criarNovoCard()); // Adiciona o card de "Criar Nova"
+        }
+
+        /** ✅ LÓGICA MELHORADA: Exibe uma mensagem clara se nenhuma empresa for encontrada. */
+        function renderizarPrimeiroAcesso() {
+            grid.innerHTML = ''; // Limpa o grid
+            subtituloSelecao.textContent = ''; // Esconde o subtítulo padrão
+
+            const mensagem = document.createElement('p');
+            mensagem.className = 'mensagem-primeiro-acesso';
+            mensagem.textContent = 'Parece que esta é a sua primeira vez aqui! Crie sua empresa para começar a gerenciar.';
+            
+            grid.appendChild(mensagem);
+            grid.appendChild(criarNovoCard());
+            grid.style.gridTemplateColumns = '1fr'; // Ajusta o grid para um item só
+        }
+
+
+        // --- Funções Auxiliares (Criação dos Cards) ---
+
+        function criarEmpresaCard(empresa) {
+            const card = document.createElement('a');
+            card.className = 'empresa-card';
+            card.href = '#';
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.setItem('empresaAtivaId', empresa.id);
+                window.location.href = 'index.html';
+            });
+
+            const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
+            const inicial = nomeFantasia.charAt(0).toUpperCase();
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
+
+            card.innerHTML = `
+                <div class="empresa-logo">${inicial}</div>
+                <span class="empresa-nome">${nomeFantasia}</span>
+            `;
+            // Se tiver logoUrl, substitui o div pela imagem
+            if (empresa.logoUrl) {
+                card.querySelector('.empresa-logo').innerHTML = `<img src="${empresa.logoUrl}" alt="Logo de ${nomeFantasia}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            }
+            return card;
+        }
+
+        function criarNovoCard() {
+            const card = document.createElement('a');
+            card.className = 'criar-empresa-card';
+            card.href = 'perfil.html';
+
+            card.innerHTML = `
+                <div class="plus-icon"><i class="fas fa-plus"></i></div>
+                <span class="empresa-nome">Criar Nova Empresa</span>
+            `;
+            return card;
+        }
+    </script>
+</body>
+</html>
