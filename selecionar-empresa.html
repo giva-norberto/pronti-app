@@ -26,7 +26,6 @@
         }
         body {
             font-family: 'Poppins', sans-serif;
-            /* ✅ FUNDO DA PÁGINA AZUL, COMO SOLICITADO */
             background-image: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
             background-attachment: fixed;
             color: var(--cor-texto-corpo);
@@ -38,7 +37,6 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        /* ✅ CARD PRINCIPAL BRANCO E "FLUTUANTE" */
         .selecao-container {
             width: 100%;
             max-width: 600px;
@@ -53,7 +51,6 @@
             font-size: 2rem;
             font-weight: 700;
             margin: 0 0 10px 0;
-            /* Título com gradiente para destaque */
             background: var(--gradiente-texto);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -69,7 +66,6 @@
             gap: 24px;
             justify-items: center;
         }
-        /* ✅ CARDS INTERNOS COM FUNDO E BORDA SUAVES */
         .empresa-card, .criar-empresa-card {
             display: flex;
             flex-direction: column;
@@ -171,7 +167,6 @@
     </div>
 
     <script type="module">
-        // Importações do Firebase
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -189,9 +184,7 @@
                 await signOut(auth);
                 localStorage.clear();
                 window.location.href = 'login.html';
-            } catch (error) {
-                console.error("Erro ao sair:", error);
-            }
+            } catch (error) { console.error("Erro ao sair:", error); }
         });
 
         // Ponto de entrada: verifica se o usuário está autenticado
@@ -211,20 +204,40 @@
             try {
                 const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
                 const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
+                
+                let idsDasEmpresas = []; // Inicia a lista de IDs vazia
 
-                if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
+                // =================================================================================
+                // ✅ CIRURGIA REALIZADA AQUI
+                // O código agora verifica os dois casos: 'empresas' (novo) e 'empresaId' (antigo).
+                // =================================================================================
+                if (mapaUsuarioSnap.exists()) {
+                    const dadosMapa = mapaUsuarioSnap.data();
+                    // 1. Tenta pegar a lista 'empresas' (padrão correto)
+                    if (dadosMapa.empresas && Array.isArray(dadosMapa.empresas) && dadosMapa.empresas.length > 0) {
+                        idsDasEmpresas = dadosMapa.empresas;
+                    } 
+                    // 2. Se não achar, tenta pegar o campo 'empresaId' (padrão antigo)
+                    else if (dadosMapa.empresaId && typeof dadosMapa.empresaId === 'string') {
+                        // Transforma o texto em uma lista com um item só
+                        idsDasEmpresas = [dadosMapa.empresaId];
+                    }
+                }
+
+                // Se, depois de tudo, a lista de IDs continuar vazia, mostra o primeiro acesso.
+                if (idsDasEmpresas.length === 0) {
                     renderizarPrimeiroAcesso();
                     return;
                 }
                 
-                const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
-
+                // Se a lista tiver apenas um ID, redireciona (sua lógica original).
                 if (idsDasEmpresas.length === 1) {
                     localStorage.setItem('empresaAtivaId', idsDasEmpresas[0]);
                     window.location.href = 'index.html';
                     return;
                 }
 
+                // Se tiver mais de um, busca os dados completos das empresas.
                 const empresasRef = collection(db, "empresarios");
                 const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
                 const snapshotsDasEmpresas = await getDocs(q);
@@ -246,11 +259,7 @@
         function renderizarOpcoes(empresas) {
             grid.innerHTML = '';
             subtituloSelecao.textContent = 'Selecione uma de suas empresas para continuar.';
-            
-            empresas.forEach(empresa => {
-                grid.appendChild(criarEmpresaCard(empresa));
-            });
-            
+            empresas.forEach(empresa => grid.appendChild(criarEmpresaCard(empresa)));
             grid.appendChild(criarNovoCard());
         }
 
@@ -260,16 +269,13 @@
             const mensagem = document.createElement('p');
             mensagem.className = 'mensagem-primeiro-acesso';
             mensagem.textContent = 'Você ainda não possui empresas cadastradas.';
-            
             grid.appendChild(mensagem);
             grid.appendChild(criarNovoCard());
-            
             grid.style.gridTemplateColumns = '1fr';
             grid.style.maxWidth = '200px';
             grid.style.margin = '0 auto';
         }
 
-        // --- Funções Auxiliares (Criação dos Cards) ---
         function criarEmpresaCard(empresa) {
             const card = document.createElement('a');
             card.className = 'empresa-card';
@@ -281,10 +287,7 @@
             });
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            card.innerHTML = `
-                <div class="empresa-logo">${inicial}</div>
-                <span class="empresa-nome">${nomeFantasia}</span>
-            `;
+            card.innerHTML = `<div class="empresa-logo">${inicial}</div><span class="empresa-nome">${nomeFantasia}</span>`;
             if (empresa.logoUrl) {
                 card.querySelector('.empresa-logo').innerHTML = `<img src="${empresa.logoUrl}" alt="Logo de ${nomeFantasia}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             }
@@ -295,10 +298,7 @@
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
             card.href = 'perfil.html';
-            card.innerHTML = `
-                <div class="plus-icon"><i class="fas fa-plus"></i></div>
-                <span class="empresa-nome">Criar Nova Empresa</span>
-            `;
+            card.innerHTML = `<div class="plus-icon"><i class="fas fa-plus"></i></div><span class="empresa-nome">Criar Nova Empresa</span>`;
             return card;
         }
     </script>
