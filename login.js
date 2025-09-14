@@ -1,22 +1,16 @@
 // ======================================================================
-//                          LOGIN.JS (VERSÃO FINAL, SEM LOOP, PERMANECE LOGADO)
+//             LOGIN.JS (VERSÃO FINAL E CORRIGIDA)
 // ======================================================================
 
-// Imports (atualizados para 10.13.2 e firebase-config.js)
+// Imports (mantidos como estavam)
 import { signInWithPopup, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { auth, provider } from "./firebase-config.js"; 
 
 window.addEventListener('DOMContentLoaded', () => {
+    // Captura dos elementos do DOM (mantida)
     const btnLoginGoogle = document.getElementById('btn-login-google');
     const loginForm = document.getElementById('login-form');
     const loginStatusDiv = document.getElementById('login-status');
-
-    // ======================================================================
-    //      onAuthStateChanged NÃO está presente nesta página.
-    //      O gerenciamento de sessão/logado ocorre em userService.js e/ou
-    //      nas páginas protegidas (index, perfil, etc).
-    //      O Firebase Auth mantém o usuário autenticado por padrão (local).
-    // ======================================================================
 
     // Lógica do Login com Google
     if (btnLoginGoogle) {
@@ -26,8 +20,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
             try {
                 await signInWithPopup(auth, provider);
-                // SUCESSO! Redireciona para a página principal, que fará a verificação.
-                window.location.href = 'index.html';
+                
+                // =================================================================================
+                // ✅ CORREÇÃO PRINCIPAL 1: FIM DO PISCA-PISCA
+                // Agora, TODOS os usuários são enviados para a "recepção" do seu aplicativo.
+                // A página 'selecionar-empresa.html' vai decidir para onde o usuário deve ir.
+                window.location.href = 'selecionar-empresa.html';
+                // =================================================================================
+
             } catch (error) {
                 console.error("Erro no login com Google:", error);
                 if (loginStatusDiv && error.code !== 'auth/popup-closed-by-user') {
@@ -52,8 +52,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // SUCESSO! Redireciona para a página principal, que fará a verificação.
-                window.location.href = 'index.html';
+
+                // =================================================================================
+                // ✅ CORREÇÃO PRINCIPAL 2: FIM DO PISCA-PISCA
+                // O mesmo destino é aplicado aqui para consistência no fluxo do aplicativo.
+                window.location.href = 'selecionar-empresa.html';
+                // =================================================================================
+
             } catch (error) {
                 console.error("Erro no login manual:", error.code);
                 if (loginStatusDiv) {
