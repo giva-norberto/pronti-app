@@ -170,7 +170,7 @@ export function ativarMenuLateral() {
   document.querySelectorAll('.sidebar-links a').forEach(link => {
     link.classList.remove('active');
     const linkPagina = link.getAttribute('href').split('/').pop();
-    if (linkPagina === nomePaginaAtual) {
+    if (linkPagina === nomePaginaAtual || (nomePaginaAtual === '' && linkPagina === 'index.html')) {
       link.classList.add('active');
     }
   });
