@@ -28,6 +28,60 @@
             background-color: var(--background);
             color: var(--text-secondary);
             margin: 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .menu-dashboard {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 220px;
+            background: #fff;
+            box-shadow: 2px 0 16px #e0e7ff44;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            padding-top: 32px;
+            padding-bottom: 32px;
+        }
+        .menu-dashboard ul {
+            list-style: none;
+            padding: 0 0 0 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .menu-dashboard li {
+            width: 100%;
+        }
+        .menu-dashboard a {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 28px;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 1.05rem;
+            border-radius: 9px;
+            transition: background 0.14s, color 0.14s;
+        }
+        .menu-dashboard a.active,
+        .menu-dashboard a:hover {
+            background: var(--gradient);
+            color: #fff;
+        }
+        .menu-dashboard .logo-menu {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: var(--primary);
+            margin: 0 0 30px 28px;
+        }
+        .main-content {
+            margin-left: 220px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -179,19 +233,69 @@
             text-decoration: none;
             display: inline-block;
         }
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0;
+            }
+            .menu-dashboard {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="selecao-container">
-        <div class="header-selecao" id="header-selecao">
-            <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
-            <p>Selecione uma empresa para gerir ou crie uma nova.</p>
+    <!-- INÍCIO MENU DASHBOARD -->
+    <nav class="menu-dashboard">
+        <div class="logo-menu">
+            <i class="fas fa-bolt"></i> Pronti
         </div>
-        <div id="empresas-grid">
-            <div class="loader" id="loader"></div>
-        </div>
-        <div class="logout-container" id="logout-container">
-            <button id="btn-logout" class="btn-logout">Sair da conta</button>
+        <ul>
+            <li>
+                <a href="index.html">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="agenda.html">
+                    <i class="fas fa-calendar-alt"></i>
+                    Agenda
+                </a>
+            </li>
+            <li>
+                <a href="clientes.html">
+                    <i class="fas fa-users"></i>
+                    Clientes
+                </a>
+            </li>
+            <li>
+                <a href="perfil.html">
+                    <i class="fas fa-user-cog"></i>
+                    Meu Perfil
+                </a>
+            </li>
+            <li>
+                <a href="selecionar-empresa.html" class="active">
+                    <i class="fas fa-building"></i>
+                    Empresas
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <!-- FIM MENU DASHBOARD -->
+
+    <div class="main-content">
+        <div class="selecao-container">
+            <div class="header-selecao" id="header-selecao">
+                <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
+                <p>Selecione uma empresa para gerir ou crie uma nova.</p>
+            </div>
+            <div id="empresas-grid">
+                <div class="loader" id="loader"></div>
+            </div>
+            <div class="logout-container" id="logout-container">
+                <button id="btn-logout" class="btn-logout">Sair da conta</button>
+            </div>
         </div>
     </div>
     <script type="module">
