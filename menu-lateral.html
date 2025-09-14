@@ -1,158 +1,158 @@
 <aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
-    <hr />
-    <nav class="sidebar-links" id="sidebar-links">
-        <a href="index.html" data-menu-id="inicio">
-            <span><i class="fa-solid fa-house"></i></span> Início
-        </a>
-        <a href="dashboard.html" data-menu-id="dashboard">
-            <span><i class="fa-solid fa-chart-pie"></i></span> Dashboard
-        </a>
-        <a href="agenda.html" data-menu-id="agenda">
-            <span><i class="fa-solid fa-calendar-days"></i></span> Agenda
-        </a>
-        <a href="equipe.html" data-menu-id="equipe">
-            <span><i class="fa-solid fa-users"></i></span> Equipe
-        </a>
-        <a href="servicos.html" data-menu-id="servicos">
-            <span><i class="fa-solid fa-scissors"></i></span> Serviços
-        </a>
-        <a href="clientes.html" data-menu-id="clientes">
-            <span><i class="fa-solid fa-user"></i></span> Clientes
-        </a>
-        <a href="perfil.html" data-menu-id="perfil">
-            <span><i class="fa-solid fa-id-card"></i></span> Empresa
-        </a>
-        <a href="relatorios.html" data-menu-id="relatorios">
-            <span><i class="fa-solid fa-chart-line"></i></span> Relatórios
-        </a>
-        <a href="admin-clientes.html" data-menu-id="administracao">
-            <span><i class="fa-solid fa-shield"></i></span> Administração
-        </a>
-        <a href="permissoes.html" data-menu-id="permissoes">
-            <span><i class="fa-solid fa-sliders"></i></span> Permissões
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
+    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <hr />
+    <nav class="sidebar-links" id="sidebar-links">
+        <a href="index.html" data-menu-id="inicio">
+            <span><i class="fa-solid fa-house"></i></span> Início
+        </a>
+        <a href="dashboard.html" data-menu-id="dashboard">
+            <span><i class="fa-solid fa-chart-pie"></i></span> Dashboard
+        </a>
+        <a href="agenda.html" data-menu-id="agenda">
+            <span><i class="fa-solid fa-calendar-days"></i></span> Agenda
+        </a>
+        <a href="equipe.html" data-menu-id="equipe">
+            <span><i class="fa-solid fa-users"></i></span> Equipe
+        </a>
+        <a href="servicos.html" data-menu-id="servicos">
+            <span><i class="fa-solid fa-scissors"></i></span> Serviços
+        </a>
+        <a href="clientes.html" data-menu-id="clientes">
+            <span><i class="fa-solid fa-user"></i></span> Clientes
+        </a>
+        <a href="perfil.html" data-menu-id="perfil">
+            <span><i class="fa-solid fa-id-card"></i></span> Empresa
+        </a>
+        <a href="relatorios.html" data-menu-id="relatorios">
+            <span><i class="fa-solid fa-chart-line"></i></span> Relatórios
+        </a>
+        <a href="admin-clientes.html" data-menu-id="administracao">
+            <span><i class="fa-solid fa-shield"></i></span> Administração
+        </a>
+        <a href="permissoes.html" data-menu-id="permissoes">
+            <span><i class="fa-solid fa-sliders"></i></span> Permissões
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn-logout">Sair</button>
+    </div>
 </aside>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
 .sidebar {
-  width: 250px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
-  min-height: 100vh;
-  color: #fff;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  padding-top: 24px;
-  transition: transform 0.3s ease; /* Usar transform para melhor performance */
-  box-sizing: border-box;
+  width: 250px;
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  min-height: 100vh;
+  color: #fff;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding-top: 24px;
+  transition: transform 0.3s ease; /* Usar transform para melhor performance */
+  box-sizing: border-box;
 }
 .sidebar-brand {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #fff;
-  text-decoration: none;
-  letter-spacing: 2px;
-  padding: 0 32px 12px 32px;
-  display: block;
-  margin-bottom: 8px;
-  text-align: left;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: 2px;
+  padding: 0 32px 12px 32px;
+  display: block;
+  margin-bottom: 8px;
+  text-align: left;
 }
 .sidebar hr {
-  margin: 0 32px 16px 32px;
-  border: none;
-  border-top: 1px solid #787cff55;
+  margin: 0 32px 16px 32px;
+  border: none;
+  border-top: 1px solid #787cff55;
 }
 .sidebar-links {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 24px;
-  flex-grow: 1;
-  overflow-y: auto; /* Adicionado para caso o menu cresça */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 24px;
+  flex-grow: 1;
+  overflow-y: auto; /* Adicionado para caso o menu cresça */
 }
 .sidebar-links a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #fff;
-  color: #4f46e5;
-  font-weight: 600;
-  font-size: 1.08em;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  transition: all 0.2s ease;
-  padding: 14px 18px;
-  text-decoration: none;
-  border: 2px solid transparent;
-  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  color: #4f46e5;
+  font-weight: 600;
+  font-size: 1.08em;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+  transition: all 0.2s ease;
+  padding: 14px 18px;
+  text-decoration: none;
+  border: 2px solid transparent;
+  box-sizing: border-box;
 }
 .sidebar-links a span {
-  display: inline-flex; /* Alterado para melhor alinhamento */
-  align-items: center;
-  justify-content: center;
-  width: 20px;
+  display: inline-flex; /* Alterado para melhor alinhamento */
+  align-items: center;
+  justify-content: center;
+  width: 20px;
 }
 .sidebar-links a.active,
 .sidebar-links a:focus {
-  background: #4f46e5;
-  color: #fff;
-  font-weight: 700;
-  border: 2px solid #fff;
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-  outline: none;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 700;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+  outline: none;
 }
 .sidebar-links a:hover:not(.active) {
-  background: #f0f1ff;
-  color: #3b2fd6;
-  border-color: #d1d5fa;
+  background: #f0f1ff;
+  color: #3b2fd6;
+  border-color: #d1d5fa;
 }
 .sidebar-footer {
-  margin-top: auto;
-  padding: 32px;
-  flex-shrink: 0; /* Impede que o rodapé encolha */
+  margin-top: auto;
+  padding: 32px;
+  flex-shrink: 0; /* Impede que o rodapé encolha */
 }
 .btn-logout {
-  background: #fff;
-  color: #4f46e5;
-  border: none;
-  padding: 14px 0;
-  width: 100%;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 1.05em;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  border: 2px solid transparent;
-  outline: none;
+  background: #fff;
+  color: #4f46e5;
+  border: none;
+  padding: 14px 0;
+  width: 100%;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 1.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
+  border: 2px solid transparent;
+  outline: none;
 }
 .btn-logout:hover,
 .btn-logout:focus {
-  background: #4f46e5;
-  color: #fff;
-  border: 2px solid #fff;
+  background: #4f46e5;
+  color: #fff;
+  border: 2px solid #fff;
 }
 @media (max-width: 900px) {
-  .sidebar {
-    transform: translateX(-100%);
-    z-index: 2000; /* Garante que fique sobre o conteúdo */
-  }
-  .sidebar.open {
-    transform: translateX(0);
-  }
-  body.sidebar-open {
-    overflow: hidden;
-  }
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 2000; /* Garante que fique sobre o conteúdo */
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  body.sidebar-open {
+    overflow: hidden;
+  }
 }
 </style>
 
@@ -165,36 +165,36 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-aut
 // Exportada para ser chamada por outras páginas (index.html, dashboard.html, etc.)
 export function ativarMenuLateral() {
 
-  // --- MARCAR LINK ATIVO ---
-  const nomePaginaAtual = window.location.pathname.split('/').pop();
-  document.querySelectorAll('.sidebar-links a').forEach(link => {
-    link.classList.remove('active');
-    const linkPagina = link.getAttribute('href').split('/').pop();
-    if (linkPagina === nomePaginaAtual) {
-      link.classList.add('active');
-    }
-  });
+  // --- MARCAR LINK ATIVO ---
+  const nomePaginaAtual = window.location.pathname.split('/').pop();
+  document.querySelectorAll('.sidebar-links a').forEach(link => {
+    link.classList.remove('active');
+    const linkPagina = link.getAttribute('href').split('/').pop();
+    if (linkPagina === nomePaginaAtual) {
+      link.classList.add('active');
+    }
+  });
 
-  // --- FUNCIONALIDADE DE LOGOUT ---
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout) {
-    // Limpa ouvintes antigos para evitar múltiplos cliques, uma boa prática
-    const newBtnLogout = btnLogout.cloneNode(true);
-    btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
+  // --- FUNCIONALIDADE DE LOGOUT ---
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    // Limpa ouvintes antigos para evitar múltiplos cliques, uma boa prática
+    const newBtnLogout = btnLogout.cloneNode(true);
+    btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
 
-    newBtnLogout.addEventListener("click", async () => {
-      try {
-        await signOut(auth);
-        // Limpa o armazenamento local para garantir uma saída completa
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = "login.html";
-      } catch (erro) {
-        console.error("Erro ao tentar fazer logout:", erro);
-        alert("Não foi possível sair. Tente novamente.\nErro: " + erro.message);
-      }
-    });
-  }
+    newBtnLogout.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        // Limpa o armazenamento local para garantir uma saída completa
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = "login.html";
+      } catch (erro) {
+        console.error("Erro ao tentar fazer logout:", erro);
+        alert("Não foi possível sair. Tente novamente.\nErro: " + erro.message);
+      }
+    });
+  }
 }
 
 // Executa a função de ativação assim que este script for carregado
