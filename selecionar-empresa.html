@@ -11,22 +11,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
+        /* ======================================================= */
+        /* CSS REVISADO COM FUNDO AZUL E CARDS DE VIDRO        */
+        /* ======================================================= */
         :root {
             --cor-primaria: #4f46e5;
-            --gradiente-texto: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-            --cor-fundo: #f8fafc;
-            --cor-texto-titulo: #1e293b;
-            --cor-texto-corpo: #64748b;
-            --cor-borda: #e2e8f0;
-            --cor-perigo: #ef4444;
-            --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.05);
-            --sombra-card-hover: 0 8px 25px rgba(79, 70, 229, 0.12);
+            --cor-texto-claro: #ffffff;
+            --cor-texto-claro-secundario: #e0e7ff;
+            --sombra-card-hover: 0 8px 30px rgba(0, 0, 0, 0.2);
         }
         body {
             font-family: 'Poppins', sans-serif;
-            /* ✅ CORREÇÃO: Fundo azul padrão Pronti */
+            /* ✅ FUNDO DA PÁGINA AZUL, COMO SOLICITADO */
             background-image: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
-            color: var(--cor-texto-corpo);
+            background-attachment: fixed;
+            color: var(--cor-texto-claro-secundario);
             margin: 0;
             display: flex;
             justify-content: center;
@@ -35,26 +34,24 @@
             padding: 20px;
             box-sizing: border-box;
         }
+        /* ✅ ESTILO DO "CARD GRANDE" COM EFEITO DE VIDRO */
         .selecao-container {
             width: 100%;
             max-width: 600px;
-            background-color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px); /* Suporte para Safari */
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 24px;
             padding: 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1); /* Sombra mais forte para destacar */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
             text-align: center;
-            border: 1px solid #f0f0f5;
         }
         .header-selecao h1 {
+            color: var(--cor-texto-claro);
             font-size: 2rem;
             font-weight: 700;
             margin: 0 0 10px 0;
-            /* ✅ MELHORIA: Título com gradiente da marca */
-            background: var(--gradiente-texto);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-fill-color: transparent;
         }
         .header-selecao p {
             font-size: 1.1rem;
@@ -66,27 +63,27 @@
             gap: 24px;
             justify-items: center;
         }
+        /* ✅ ESTILO DOS "CARDS PEQUENOS" TAMBÉM COM EFEITO DE VIDRO */
         .empresa-card, .criar-empresa-card {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 1px solid #f0f0f5; /* Borda sutil */
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 16px;
             padding: 20px;
             cursor: pointer;
-            background: #fff;
             text-decoration: none;
-            box-shadow: var(--sombra-card);
-            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            transition: background 0.25s ease, transform 0.25s ease;
             height: 180px;
             width: 100%;
             box-sizing: border-box;
+            color: var(--cor-texto-claro);
         }
         .empresa-card:hover, .criar-empresa-card:hover {
-            transform: translateY(-8px) scale(1.03);
-            box-shadow: var(--sombra-card-hover);
-            border-color: var(--cor-primaria);
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.25);
         }
         .empresa-logo {
             width: 80px;
@@ -94,29 +91,26 @@
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 15px;
-            background-image: linear-gradient(to top, #eef2ff 0%, #f4f6ff 100%);
-            color: var(--cor-primaria);
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--cor-texto-claro);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
             font-weight: 600;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .empresa-nome {
             font-weight: 600;
-            color: var(--cor-texto-titulo);
+            color: var(--cor-texto-claro);
             font-size: 1rem;
             text-align: center;
         }
         .criar-empresa-card {
-            background: #fdfdff;
-            border: 2px dashed var(--cor-borda);
+            border-style: dashed;
         }
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
-            color: var(--cor-primaria);
+            color: var(--cor-texto-claro);
             margin-bottom: 15px;
             transition: transform 0.3s ease;
         }
@@ -128,10 +122,9 @@
             text-align: center;
         }
         .btn-logout {
-            /* ✅ MELHORIA: Botão com estilo mais limpo e sutil */
             background-color: transparent;
-            color: var(--cor-texto-corpo);
-            border: none;
+            color: var(--cor-texto-claro-secundario);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 8px;
             padding: 10px 20px;
             cursor: pointer;
@@ -140,21 +133,20 @@
             transition: all 0.2s ease;
         }
         .btn-logout:hover {
-            background-color: #fee2e2;
-            color: var(--cor-perigo);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--cor-texto-claro);
+            border-color: rgba(255, 255, 255, 0.5);
         }
         .loader {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--cor-primaria);
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top: 4px solid var(--cor-texto-claro);
             border-radius: 50%;
             width: 40px;
             height: 40px;
             margin: 40px auto;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
         .mensagem-primeiro-acesso {
             font-size: 1.1rem;
             line-height: 1.6;
