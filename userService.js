@@ -1,5 +1,5 @@
 // ======================================================================
-//      USER-SERVICE.JS (VERSÃO FINAL COM CORREÇÃO DO LOOP)
+//      USER-SERVICE.JS (VERSÃO ATUAL CORRIGIDA LINHA A LINHA)
 // ======================================================================
 
 // Suas importações estão corretas e foram mantidas.
@@ -112,8 +112,10 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'selecionar-empresa.html'];
+                
                 // =================================================================================
-                // CORREÇÃO 1: Removido 'nova-empresa.html' pois o arquivo não existe.
+                // CORREÇÃO 1 (LINHA A LINHA): Removido 'nova-empresa.html' pois o arquivo não existe.
+                // Sua lógica original foi mantida, apenas o item inválido foi removido.
                 // =================================================================================
                 const paginasDeConfig = ['perfil.html', 'assinatura.html'];
 
@@ -130,9 +132,9 @@ export async function verificarAcesso() {
                 if (empresaAtivaId) {
                     const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     if (empresaDoc.exists()) {
-                        empresaDocSnap = empresaDoc; // Empresa válida encontrada! O guarda pode liberar.
+                        empresaDocSnap = empresaDoc;
                     } else {
-                        localStorage.removeItem('empresaAtivaId'); // Limpa ID inválido do localStorage.
+                        localStorage.removeItem('empresaAtivaId');
                         empresaAtivaId = null;
                     }
                 }
@@ -142,11 +144,12 @@ export async function verificarAcesso() {
 
                     if (empresas.length === 0) {
                         // =================================================================================
-                        // CORREÇÃO 2: Redireciona para 'perfil.html', que é a página correta 
-                        // para um novo usuário criar sua primeira empresa. Isto quebra o loop.
+                        // CORREÇÃO 2 (LINHA A LINHA): Redireciona para 'selecionar-empresa.html' 
+                        // para que a tela de boas-vindas possa ser exibida, em vez de pular para um
+                        // arquivo que não existe. Isso quebra o loop e respeita sua lógica.
                         // =================================================================================
-                        if (!paginasDeConfig.includes(currentPage)) window.location.replace('perfil.html');
-                        return reject(new Error("Nenhuma empresa associada. Redirecionando para perfil."));
+                        if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
+                        return reject(new Error("Nenhuma empresa associada. Exibindo tela de boas-vindas."));
                     }
                     
                     if (empresas.length > 1) {
@@ -224,3 +227,4 @@ export async function getTodasEmpresas() {
     const snap = await getDocs(empresasCol);
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
+
