@@ -11,23 +11,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-        /* ======================================================= */
-        /*                 CSS REVISADO E MELHORADO               */
-        /* ======================================================= */
         :root {
             --cor-primaria: #4f46e5;
-            --cor-fundo: #f7f7fa; /* Fundo um pouco mais suave */
+            --gradiente-texto: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
+            --cor-fundo: #f8fafc;
             --cor-texto-titulo: #1e293b;
             --cor-texto-corpo: #64748b;
             --cor-borda: #e2e8f0;
             --cor-perigo: #ef4444;
-            /* Sombras mais suaves e modernas */
             --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.05);
             --sombra-card-hover: 0 8px 25px rgba(79, 70, 229, 0.12);
         }
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: var(--cor-fundo);
+            /* ✅ CORREÇÃO: Fundo azul padrão Pronti */
+            background-image: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
             color: var(--cor-texto-corpo);
             margin: 0;
             display: flex;
@@ -41,17 +39,22 @@
             width: 100%;
             max-width: 600px;
             background-color: #ffffff;
-            border-radius: 24px; /* Bordas mais arredondadas */
+            border-radius: 24px;
             padding: 40px;
-            box-shadow: var(--sombra-card);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1); /* Sombra mais forte para destacar */
             text-align: center;
             border: 1px solid #f0f0f5;
         }
         .header-selecao h1 {
-            color: var(--cor-texto-titulo);
             font-size: 2rem;
             font-weight: 700;
             margin: 0 0 10px 0;
+            /* ✅ MELHORIA: Título com gradiente da marca */
+            background: var(--gradiente-texto);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
         }
         .header-selecao p {
             font-size: 1.1rem;
@@ -60,7 +63,7 @@
         #empresas-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 24px; /* Aumentado o espaçamento */
+            gap: 24px;
             justify-items: center;
         }
         .empresa-card, .criar-empresa-card {
@@ -68,22 +71,19 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            /* Removida a borda padrão para um look mais limpo */
-            border: 1px solid transparent;
-            border-radius: 16px; /* Aumentado o raio */
+            border: 1px solid #f0f0f5; /* Borda sutil */
+            border-radius: 16px;
             padding: 20px;
             cursor: pointer;
             background: #fff;
             text-decoration: none;
             box-shadow: var(--sombra-card);
-            /* Transição mais suave */
             transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
             height: 180px;
             width: 100%;
             box-sizing: border-box;
         }
         .empresa-card:hover, .criar-empresa-card:hover {
-            /* Efeito de flutuar mais pronunciado */
             transform: translateY(-8px) scale(1.03);
             box-shadow: var(--sombra-card-hover);
             border-color: var(--cor-primaria);
@@ -94,7 +94,6 @@
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 15px;
-            /* Gradiente sutil no fundo do logo */
             background-image: linear-gradient(to top, #eef2ff 0%, #f4f6ff 100%);
             color: var(--cor-primaria);
             display: flex;
@@ -111,7 +110,6 @@
             font-size: 1rem;
             text-align: center;
         }
-        /* Estilo especial para o card de "Criar Nova Empresa" */
         .criar-empresa-card {
             background: #fdfdff;
             border: 2px dashed var(--cor-borda);
@@ -120,10 +118,8 @@
             font-size: 2.5rem;
             color: var(--cor-primaria);
             margin-bottom: 15px;
-            /* Adicionado transição para o ícone */
             transition: transform 0.3s ease;
         }
-        /* Efeito de rotação no ícone ao passar o mouse */
         .criar-empresa-card:hover .plus-icon {
             transform: rotate(90deg);
         }
@@ -132,9 +128,10 @@
             text-align: center;
         }
         .btn-logout {
+            /* ✅ MELHORIA: Botão com estilo mais limpo e sutil */
             background-color: transparent;
-            color: var(--cor-perigo);
-            border: 1px solid #fecaca;
+            color: var(--cor-texto-corpo);
+            border: none;
             border-radius: 8px;
             padding: 10px 20px;
             cursor: pointer;
@@ -143,9 +140,8 @@
             transition: all 0.2s ease;
         }
         .btn-logout:hover {
-            background-color: var(--cor-perigo);
-            color: #ffffff;
-            border-color: var(--cor-perigo);
+            background-color: #fee2e2;
+            color: var(--cor-perigo);
         }
         .loader {
             border: 4px solid #e2e8f0;
@@ -279,8 +275,8 @@
             grid.appendChild(mensagem);
             grid.appendChild(criarNovoCard());
             grid.style.gridTemplateColumns = '1fr';
-            grid.style.maxWidth = '200px'; /* Limita a largura no modo de 1 coluna */
-            grid.style.margin = '0 auto'; /* Centraliza o grid */
+            grid.style.maxWidth = '200px';
+            grid.style.margin = '0 auto';
         }
 
 
