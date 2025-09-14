@@ -201,7 +201,8 @@
     <script type="module">
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { getEmpresasDoUsuario } from "./user-service.js"; // Importando a função do service
+        // A importação agora vai funcionar porque você adicionou 'export' no user-service.js
+        import { getEmpresasDoUsuario } from "./user-service.js"; 
 
         const grid = document.getElementById('empresas-grid' );
         const loader = document.getElementById('loader');
@@ -218,7 +219,7 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                localStorage.removeItem('empresaAtivaId'); // Limpa a empresa ativa ao chegar aqui
+                localStorage.removeItem('empresaAtivaId');
                 const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
                 tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
                 
@@ -241,7 +242,6 @@
             grid.innerHTML = ''; 
             
             if (empresas && empresas.length > 0) {
-                // Cenário 1: Usuário tem uma ou mais empresas
                 headerSelecao.classList.add('visivel');
                 logoutContainer.style.display = 'block';
 
@@ -251,10 +251,9 @@
                 grid.appendChild(criarNovoCard());
 
             } else {
-                // Cenário 2: Primeiro acesso, nenhuma empresa
-                headerSelecao.style.display = 'none'; // Esconde o header de seleção
-                logoutContainer.style.display = 'none'; // Esconde o botão de logout aqui
-                grid.style.display = 'block'; // Garante que o grid não seja mais um grid
+                headerSelecao.style.display = 'none';
+                logoutContainer.style.display = 'block'; // Mantém o botão de sair visível
+                grid.style.display = 'block';
                 
                 const welcomeCardHTML = `
                     <div class="welcome-card-primeiro-acesso">
@@ -300,7 +299,3 @@
     </script>
 </body>
 </html>
-
-
-
-
