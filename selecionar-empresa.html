@@ -265,8 +265,10 @@
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            // Aponta para a página correta para criar uma nova empresa.
-            card.href = 'nova-empresa.html'; 
+            // =================================================================================
+            // CORREÇÃO: Apontando para 'perfil.html' conforme o fluxo correto.
+            // =================================================================================
+            card.href = 'perfil.html'; 
 
             card.innerHTML = `
                 <div class="plus-icon"><i class="fas fa-plus"></i></div>
