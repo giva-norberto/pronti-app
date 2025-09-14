@@ -1,5 +1,5 @@
 // ======================================================================
-//      USER-SERVICE.JS (VERSÃO ATUAL CORRIGIDA PARA O LOOP)
+//      USER-SERVICE.JS (VERSÃO FINAL COM CORREÇÃO DO LOOP)
 // ======================================================================
 
 // Suas importações estão corretas e foram mantidas.
@@ -111,9 +111,11 @@ export async function verificarAcesso() {
             unsubscribe();
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-                // Adicionado 'selecionar-empresa.html' às páginas públicas para evitar que o guarda atue nela.
                 const paginasPublicas = ['login.html', 'cadastro.html', 'selecionar-empresa.html'];
-                const paginasDeConfig = ['perfil.html', 'assinatura.html', 'nova-empresa.html'];
+                // =================================================================================
+                // CORREÇÃO 1: Removido 'nova-empresa.html' pois o arquivo não existe.
+                // =================================================================================
+                const paginasDeConfig = ['perfil.html', 'assinatura.html'];
 
                 if (!user) {
                     if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
@@ -121,11 +123,7 @@ export async function verificarAcesso() {
                 }
 
                 await ensureUserAndTrialDoc();
-
-                // ✅ CORREÇÃO CIRÚRGICA: A ordem da verificação foi ajustada.
                 
-                // 1. PRIMEIRO, tentamos validar a empresa que já está no localStorage.
-                // Isso respeita a escolha feita na tela de seleção.
                 let empresaAtivaId = localStorage.getItem('empresaAtivaId');
                 let empresaDocSnap = null;
 
@@ -139,37 +137,35 @@ export async function verificarAcesso() {
                     }
                 }
 
-                // 2. SÓ SE NÃO houver uma empresa válida no localStorage, o guarda age.
                 if (!empresaDocSnap) {
                     const empresas = await getEmpresasDoUsuario(user);
 
                     if (empresas.length === 0) {
-                        if (!paginasDeConfig.includes(currentPage)) window.location.replace('nova-empresa.html');
-                        return reject(new Error("Nenhuma empresa associada."));
+                        // =================================================================================
+                        // CORREÇÃO 2: Redireciona para 'perfil.html', que é a página correta 
+                        // para um novo usuário criar sua primeira empresa. Isto quebra o loop.
+                        // =================================================================================
+                        if (!paginasDeConfig.includes(currentPage)) window.location.replace('perfil.html');
+                        return reject(new Error("Nenhuma empresa associada. Redirecionando para perfil."));
                     }
                     
                     if (empresas.length > 1) {
-                        // Manda para a seleção e pára a execução.
                         if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
                         return reject(new Error("Múltiplas empresas, seleção necessária."));
                     }
 
                     if (empresas.length === 1) {
-                        // Caso de usuário com 1 empresa, define e continua.
                         empresaAtivaId = empresas[0].id;
                         localStorage.setItem('empresaAtivaId', empresaAtivaId);
                         empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     }
                 }
 
-                // 3. Verificação final de segurança.
                 if (!empresaDocSnap || !empresaDocSnap.exists()) {
-                    // Se mesmo assim não houver empresa, algo está errado. Volta para a seleção.
                     window.location.replace('selecionar-empresa.html');
                     return reject(new Error("Falha ao determinar empresa ativa."));
                 }
-
-                // O resto da sua lógica original continua daqui, 100% preservada.
+                
                 const empresaData = empresaDocSnap.data();
                 if (!empresaData) {
                     return reject(new Error("Dados da empresa inválidos."));
