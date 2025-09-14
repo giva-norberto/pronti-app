@@ -14,7 +14,7 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Sua função ensureUserAndTrialDoc, 100% preservada ---
-export async function ensureUserAndTrialDoc( ) {
+export async function ensureUserAndTrialDoc(  ) {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -63,7 +63,7 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
-// --- Sua função getEmpresasDoUsuario, 100% preservada (já está correta) ---
+// --- Sua função getEmpresasDoUsuario, 100% preservada ---
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
     const empresasEncontradas = new Map();
@@ -99,11 +99,11 @@ export async function getEmpresasDoUsuario(user) {
 }
 
 // ======================================================================
-// FUNÇÃO GUARDA PRINCIPAL (COM A ORDEM DA LÓGICA CORRIGIDA PARA QUEBRAR O LOOP)
+// FUNÇÃO GUARDA PRINCIPAL (COM A ORDEM DA LÓGICA CORRIGIDA)
 // ======================================================================
 export async function verificarAcesso() {
     if (cachedSessionProfile) return Promise.resolve(cachedSessionProfile);
-    if (isProcessing) return Promise.reject(new Error("Race condition detectada."));
+    if (isProcessing) return Promise.reject(new Error("Processamento já em andamento."));
     isProcessing = true;
 
     return new Promise((resolve, reject) => {
@@ -111,75 +111,69 @@ export async function verificarAcesso() {
             unsubscribe();
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-                const paginasPublicas = ['login.html', 'cadastro.html', 'selecionar-empresa.html'];
-                
-                // =================================================================================
-                // CORREÇÃO 1 (LINHA A LINHA): Removido 'nova-empresa.html' pois o arquivo não existe.
-                // Sua lógica original foi mantida, apenas o item inválido foi removido.
-                // =================================================================================
-                const paginasDeConfig = ['perfil.html', 'assinatura.html'];
+                const paginasPublicas = ['login.html', 'cadastro.html']; // Removido 'selecionar-empresa.html' daqui
 
                 if (!user) {
-                    if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
+                    if (!paginasPublicas.includes(currentPage)) {
+                        window.location.replace('login.html');
+                    }
                     return reject(new Error("Utilizador não autenticado."));
                 }
 
                 await ensureUserAndTrialDoc();
                 
+                const empresas = await getEmpresasDoUsuario(user);
+
+                // =================================================================================
+                // CORREÇÃO PRINCIPAL: Lógica para novos usuários (sem empresa)
+                // =================================================================================
+                if (empresas.length === 0) {
+                    // Se o usuário não tem empresas, ele DEVE ir para a tela de seleção/boas-vindas.
+                    // Se ele JÁ ESTIVER LÁ, a função para e deixa a página carregar.
+                    if (currentPage !== 'selecionar-empresa.html') {
+                        window.location.replace('selecionar-empresa.html');
+                    }
+                    // Rejeita a promessa para parar a execução e permitir que a página de boas-vindas renderize.
+                    return reject(new Error("Nenhuma empresa associada. Exibindo tela de boas-vindas."));
+                }
+                
+                // Lógica para usuários com múltiplas empresas
+                if (empresas.length > 1) {
+                    if (currentPage !== 'selecionar-empresa.html') {
+                        window.location.replace('selecionar-empresa.html');
+                    }
+                    return reject(new Error("Múltiplas empresas, seleção necessária."));
+                }
+
+                // A partir daqui, o usuário tem exatamente uma empresa.
                 let empresaAtivaId = localStorage.getItem('empresaAtivaId');
-                let empresaDocSnap = null;
-
-                if (empresaAtivaId) {
-                    const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                    if (empresaDoc.exists()) {
-                        empresaDocSnap = empresaDoc;
-                    } else {
-                        localStorage.removeItem('empresaAtivaId');
-                        empresaAtivaId = null;
-                    }
+                
+                // Se não houver ID no localStorage, pega o da única empresa encontrada.
+                if (!empresaAtivaId) {
+                    empresaAtivaId = empresas[0].id;
+                    localStorage.setItem('empresaAtivaId', empresaAtivaId);
                 }
 
-                if (!empresaDocSnap) {
-                    const empresas = await getEmpresasDoUsuario(user);
+                const empresaDocRef = doc(db, "empresarios", empresaAtivaId);
+                const empresaDocSnap = await getDoc(empresaDocRef);
 
-                    if (empresas.length === 0) {
-                        // =================================================================================
-                        // CORREÇÃO 2 (LINHA A LINHA): Redireciona para 'selecionar-empresa.html' 
-                        // para que a tela de boas-vindas possa ser exibida, em vez de pular para um
-                        // arquivo que não existe. Isso quebra o loop e respeita sua lógica.
-                        // =================================================================================
-                        if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
-                        return reject(new Error("Nenhuma empresa associada. Exibindo tela de boas-vindas."));
-                    }
-                    
-                    if (empresas.length > 1) {
-                        if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
-                        return reject(new Error("Múltiplas empresas, seleção necessária."));
-                    }
-
-                    if (empresas.length === 1) {
-                        empresaAtivaId = empresas[0].id;
-                        localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                        empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
-                    }
-                }
-
-                if (!empresaDocSnap || !empresaDocSnap.exists()) {
+                if (!empresaDocSnap.exists()) {
+                    localStorage.removeItem('empresaAtivaId');
                     window.location.replace('selecionar-empresa.html');
-                    return reject(new Error("Falha ao determinar empresa ativa."));
+                    return reject(new Error("Empresa ativa não encontrada no DB."));
                 }
                 
                 const empresaData = empresaDocSnap.data();
-                if (!empresaData) {
-                    return reject(new Error("Dados da empresa inválidos."));
-                }
-
                 const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+
                 if (!hasActivePlan && !isTrialActive) {
-                    if (currentPage !== 'assinatura.html') window.location.replace('assinatura.html');
+                    if (currentPage !== 'assinatura.html') {
+                        window.location.replace('assinatura.html');
+                    }
                     return reject(new Error("Assinatura expirada."));
                 }
 
+                // Lógica de perfil (dono/funcionário)
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 const isAdmin = user.uid === ADMIN_UID;
                 const isOwner = empresaData.donoId === user.uid;
@@ -216,6 +210,7 @@ export async function verificarAcesso() {
     });
 }
 
+
 // Suas outras funções exportadas, 100% preservadas.
 export function clearCache() {
     cachedSessionProfile = null;
@@ -227,4 +222,5 @@ export async function getTodasEmpresas() {
     const snap = await getDocs(empresasCol);
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
+
 
