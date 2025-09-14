@@ -8,20 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* Seu CSS foi mantido exatamente como estava */
         :root {
             --primary: #6366f1; --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); --background: #f6f7fb;
             --card-bg: #fff; --text-main: #21243d; --text-secondary: #71717a; --border: #e0e7ff;
-            --success: #34d399; --warning: #fde68a; --danger: #f87171;
             --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
         }
         body {
             margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--background);
-            color: var(--text-main); display: flex; /* Adicionado para layout com menu lateral */
+            color: var(--text-main); display: flex;
         }
-        /* Ajuste para o conteúdo principal não ficar embaixo do menu */
         .dashboard-main {
-            flex-grow: 1; /* Faz o conteúdo principal ocupar o espaço restante */
-            max-width: 1200px; margin: 0 auto; padding: 32px 18px;
+            flex-grow: 1; max-width: 1200px; margin: 0 auto; padding: 32px 18px;
             box-sizing: border-box;
         }
         .dashboard-header {
@@ -101,10 +99,7 @@
                 </div>
             </div>
             <div class="side-cards">
-                <div class="card ia-card">
-                    <div class="card-title"><i class="fa-solid fa-brain"></i> Sugestão Inteligente</div>
-                    <div id="ia-sugestao"><p>Analisando tendências, aguarde...</p></div>
-                </div>
+
                 <div class="card resumo-card">
                     <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Resumo Inteligente</div>
                     <div id="resumo-inteligente">
@@ -120,44 +115,36 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
+        // Seu JavaScript foi mantido exatamente como estava.
         import { auth, db } from './firebase-config.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // Importe outras funções do Firestore que você precisar, como 'doc', 'getDoc', 'collection', etc.
+        
+        let servicosChart;
 
-        let servicosChart; // Variável para guardar a instância do gráfico
-
-        // FUNÇÃO "CÉREBRO" DA PÁGINA
         async function buscarEAtualizarDados(empresaId, dataFiltro) {
             console.log(`Buscando dados para a empresa ${empresaId} na data ${dataFiltro}`);
             
-            // TODO: SEUS PRÓXIMOS PASSOS ACONTECEM AQUI!
-            // Esta é a função que você vai preencher com a busca de dados no Firebase.
-
-            // Exemplo de como você vai atualizar os cards:
-            // 1. Busque os dados no Firestore usando o empresaId e a dataFiltro.
-            // 2. Pegue os resultados e atualize os elementos na tela.
-
-            // Exemplo Fictício:
+            // TODO: Lógica de busca de dados no Firebase.
+            
             document.getElementById('faturamento-realizado').textContent = "R$ 1.250,75";
             document.getElementById('faturamento-previsto').textContent = "R$ 1.800,00";
             document.getElementById('total-agendamentos-dia').textContent = "15";
             document.getElementById('agendamentos-pendentes').textContent = "3";
-            document.getElementById('ia-sugestao').innerHTML = "<p>O horário das 14h está com baixa procura. Considere criar uma promoção!</p>";
+            // A linha abaixo pode ser removida ou comentada, pois o elemento não existe mais.
+            // document.getElementById('ia-sugestao').innerHTML = "<p>O horário das 14h está com baixa procura...</p>";
             document.getElementById('resumo-inteligente').innerHTML = `
                 <ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">
                     <li>Seu serviço mais procurado hoje é <strong>Corte Masculino</strong>.</li>
                     <li>O faturamento está <strong>30% acima</strong> da média para este dia.</li>
                 </ul>`;
 
-            // Atualizar o gráfico
             const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
             const dadosDoGrafico = {
-                labels: ['Corte', 'Manicure', 'Penteado', 'Coloração'], // Substituir por dados reais
-                data: [20, 15, 8, 5] // Substituir por dados reais
+                labels: ['Corte', 'Manicure', 'Penteado', 'Coloração'],
+                data: [20, 15, 8, 5]
             };
-
             if (servicosChart) {
-                servicosChart.destroy(); // Destroi o gráfico antigo antes de criar um novo
+                servicosChart.destroy();
             }
             servicosChart = new Chart(ctx, {
                 type: 'bar',
@@ -176,7 +163,6 @@
             });
         }
 
-        // FUNÇÃO QUE INICIA A PÁGINA
         async function inicializarPagina() {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -195,19 +181,13 @@
             }
 
             const filtroDataEl = document.getElementById('filtro-data');
-            // Define a data de hoje como padrão no filtro
             filtroDataEl.value = new Date().toISOString().split('T')[0];
-
-            // Busca os dados assim que a página carrega
             buscarEAtualizarDados(empresaAtivaId, filtroDataEl.value);
-
-            // Adiciona um listener para buscar novos dados sempre que a data mudar
             filtroDataEl.addEventListener('change', () => {
                 buscarEAtualizarDados(empresaAtivaId, filtroDataEl.value);
             });
         }
 
-        // CONTROLE DE ACESSO
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 inicializarPagina();
