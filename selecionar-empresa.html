@@ -5,28 +5,34 @@
     <title>Selecionar Empresa - Pronti</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
+    <!-- Fontes atualizadas para o padrão Pronti -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <style>
+        /* ================================================= */
+        /* ESTILO ATUALIZADO PARA O PADRÃO PRONTI            */
+        /* ================================================= */
         :root {
-            --cor-primaria: #4f46e5;
-            --cor-sucesso: #10b981;
-            --cor-perigo: #ef4444;
-            --cor-fundo: #f8fafc;
-            --cor-texto-titulo: #1e293b;
-            --cor-texto-corpo: #64748b;
-            --cor-borda: #e2e8f0;
-            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1 ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --primary: #6366f1;
+            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100% );
+            --background: #f6f7fb;
+            --card-bg: #fff;
+            --text-main: #21243d;
+            --text-secondary: #71717a;
+            --border: #e0e7ff;
+            --danger: #f87171;
+            --danger-bg: #fee2e2;
+            --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
+            --shadow-hover: 0 10px 36px #6366f123, 0 2px 14px #6366f10a;
         }
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--cor-fundo);
-            color: var(--cor-texto-corpo);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-secondary);
             margin: 0;
             display: flex;
             justify-content: center;
@@ -37,76 +43,92 @@
         }
         .selecao-container {
             width: 100%;
-            max-width: 550px;
-            background-color: #ffffff;
-            border-radius: 16px;
+            max-width: 650px;
+            background-color: var(--card-bg);
+            border-radius: 18px;
             padding: 40px;
-            box-shadow: var(--sombra-card);
+            box-shadow: var(--shadow);
             text-align: center;
+            border: 1.5px solid var(--border);
+        }
+        .header-selecao {
+             display: none; /* Escondido por padrão, controlado pelo JS */
+        }
+        .header-selecao.visivel {
+            display: block;
         }
         .header-selecao h1 {
-            color: var(--cor-texto-titulo);
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
             margin: 0 0 10px 0;
         }
         .header-selecao p {
             font-size: 1.1rem;
             margin-bottom: 40px;
+            color: var(--text-secondary);
         }
         #empresas-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 24px;
             justify-items: center;
         }
         .empresa-card, .criar-empresa-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            border: 1.5px solid var(--border);
+            padding: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: box-shadow 0.18s, transform 0.16s;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--cor-borda);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            background: #fff;
-            text-decoration: none;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            height: 180px;
+            height: 190px;
             width: 100%;
             box-sizing: border-box;
         }
         .empresa-card:hover, .criar-empresa-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--sombra-card-hover);
-            border-color: var(--cor-primaria);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: var(--shadow-hover);
         }
         .empresa-logo {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 15px;
             background-color: #eef2ff;
-            color: var(--cor-primaria);
+            color: var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 600;
+            font-size: 2.2rem;
+            font-weight: 700;
         }
         .empresa-nome {
-            font-weight: 600;
-            color: var(--cor-texto-titulo);
-            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 1.05rem;
             text-align: center;
         }
         .criar-empresa-card {
-            border: 2px dashed var(--cor-borda);
+            border: 2px dashed var(--border);
+        }
+        .criar-empresa-card:hover {
+             border-color: var(--primary);
         }
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
-            color: var(--cor-primaria);
+            color: var(--primary);
             margin-bottom: 15px;
         }
         .logout-container {
@@ -114,10 +136,10 @@
             text-align: center;
         }
         .btn-logout {
-            background-color: #fee2e2;
-            color: var(--cor-perigo);
-            border: none;
-            border-radius: 8px;
+            background-color: var(--danger-bg);
+            color: var(--danger);
+            border: 1.5px solid var(--danger);
+            border-radius: 9px;
             padding: 10px 20px;
             cursor: pointer;
             font-weight: 600;
@@ -125,12 +147,12 @@
             transition: background-color 0.2s ease, color 0.2s ease;
         }
         .btn-logout:hover {
-            background-color: var(--cor-perigo);
+            background-color: var(--danger);
             color: #ffffff;
         }
         .loader {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--cor-primaria);
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -140,11 +162,53 @@
         @keyframes spin {
             100% { transform: rotate(360deg); }
         }
+
+        /* --- NOVO CARD DE PRIMEIRO ACESSO --- */
+        .welcome-card-primeiro-acesso {
+            padding: 20px;
+        }
+        .welcome-card-primeiro-acesso h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0 0 15px 0;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+        .welcome-card-primeiro-acesso p {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            line-height: 1.6;
+            margin: 0 0 30px 0;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .welcome-card-primeiro-acesso .btn-comecar {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            display: inline-block;
+        }
+        .welcome-card-primeiro-acesso .btn-comecar:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 25px rgba(99, 102, 241, 0.4);
+        }
     </style>
 </head>
 <body>
     <div class="selecao-container">
-        <div class="header-selecao">
+        <div class="header-selecao" id="header-selecao">
             <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
             <p>Selecione uma empresa para gerir ou crie uma nova.</p>
         </div>
@@ -167,6 +231,7 @@
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
+        const headerSelecao = document.getElementById('header-selecao');
 
         if (btnLogout) {
             btnLogout.addEventListener('click', async () => {
@@ -195,7 +260,7 @@
                 const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
 
                 if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
-                    renderizarOpcoes([]);
+                    renderizarOpcoes([]); 
                     return;
                 }
                 
@@ -231,14 +296,27 @@
         function renderizarOpcoes(empresas) {
             if (!grid) return;
             grid.innerHTML = ''; 
+            
             if (empresas.length > 0) {
+                headerSelecao.classList.add('visivel');
                 empresas.forEach(empresa => {
                     grid.appendChild(criarEmpresaCard(empresa));
                 });
+                grid.appendChild(criarNovoCard());
+
             } else {
-                grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
+                headerSelecao.classList.remove('visivel'); // Esconde o header padrão
+                grid.style.display = 'block'; // Muda o grid para bloco para conter o card
+                
+                const welcomeCardHTML = `
+                    <div class="welcome-card-primeiro-acesso">
+                        <h2>Bem-vindo(a) ao Pronti!</h2>
+                        <p>Você está pronto(a) para organizar sua primeira empresa. Clique em ‘Começar’ e descubra como gerenciar agendamentos, equipe e clientes de forma simples.</p>
+                        <a href="perfil.html" class="btn-comecar">Começar</a>
+                    </div>
+                `;
+                grid.innerHTML = welcomeCardHTML;
             }
-            grid.appendChild(criarNovoCard());
         }
 
         function criarEmpresaCard(empresa) {
@@ -265,9 +343,6 @@
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            // =================================================================================
-            // CORREÇÃO: Apontando para 'perfil.html' conforme o fluxo correto.
-            // =================================================================================
             card.href = 'perfil.html'; 
 
             card.innerHTML = `
@@ -279,3 +354,6 @@
     </script>
 </body>
 </html>
+
+
+
