@@ -50,7 +50,7 @@
             justify-content: center; text-align: center; gap: 12px;
             font-weight: 600; font-size: 0.9rem; text-decoration: none;
             box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s; /* Removido 'visibility' da transição */
+            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
             border: none; aspect-ratio: 1 / 1;
         }
         .menu-card:hover {
@@ -106,29 +106,23 @@
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
-                /* ======================= INÍCIO DA CORREÇÃO DE AGRUPAMENTO ======================= */
                 const aplicarVisibilidade = (elemento, podeVer) => {
                     if (podeVer) {
-                        // ✅ CORREÇÃO: Usar 'display' para mostrar o elemento.
-                        // Isso reverte para o valor padrão do CSS (que para os cards é 'flex').
                         elemento.style.display = '';
                     } else {
-                        // ✅ CORREÇÃO: Usar 'display = 'none'' em vez de 'visibility = 'hidden''.
-                        // 'display: none' remove o elemento do layout, permitindo que os outros
-                        // cards e menus se reorganizem e preencham o espaço vazio.
-                        // É isso que cria o agrupamento proporcional que você precisa.
                         elemento.style.display = 'none';
                     }
                 };
-                /* ======================== FIM DA CORREÇÃO DE AGRUPAMENTO ========================= */
 
-                document.querySelectorAll('[data-menu-id]').forEach(item => {
+                // Aplica permissões nos itens do menu lateral
+                document.querySelectorAll('#menu-container [data-menu-id]').forEach(item => {
                     const menuId = item.dataset.menuId;
                     const regraParaMenu = regrasGlobais[menuId];
                     const podeVer = !regraParaMenu || regraParaMenu[papelUsuario] === true;
                     aplicarVisibilidade(item, podeVer);
                 });
 
+                // Aplica permissões nos cards da tela principal
                 document.querySelectorAll('[data-card-id]').forEach(card => {
                     const cardId = card.dataset.cardId;
                     const regraParaCard = regrasGlobais[cardId];
@@ -136,10 +130,6 @@
                     aplicarVisibilidade(card, podeVer);
                 });
             } catch (error) {
-                // Em caso de erro, garante que todos os itens fiquem visíveis
-                document.querySelectorAll('[data-menu-id], [data-card-id]').forEach(item => {
-                    item.style.display = ''; // Mostra o item
-                });
                 console.error("Erro ao aplicar permissões nos menus e cards:", error);
             }
         }
@@ -159,11 +149,6 @@
             } catch (error) {
                 document.getElementById('menu-container').innerHTML =
                     "<div style='color:white;background:#4f46e5;padding:1em;border-radius:8px;'>Menu lateral não carregado</div>";
-                
-                // Em caso de erro, garante que todos os itens fiquem visíveis
-                document.querySelectorAll('[data-card-id], [data-menu-id]').forEach(item => {
-                    item.style.display = ''; // Mostra o item
-                });
                 console.error("Falha ao carregar o menu lateral ou aplicar permissões:", error);
             }
         }
@@ -174,6 +159,7 @@
                 const papelUsuario = sessao.perfil?.papel || (sessao.isAdmin ? "admin" : (sessao.isOwner ? "dono" : "funcionario"));
                 const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
                 const hora = new Date().getHours();
+                
                 document.getElementById('saudacao').textContent =
                     (hora >= 5 && hora < 12) ? "Bom dia" :
                     (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
@@ -183,11 +169,7 @@
 
             } catch (error) {
                 if (error.message && !error.message.includes("Redirecionando")) {
-                    // Em caso de erro, garante que todos os itens fiquem visíveis
-                    document.querySelectorAll('[data-card-id], [data-menu-id]').forEach(item => {
-                        item.style.display = ''; // Mostra o item
-                    });
-                    console.error("Erro ao inicializar o dashboard:", error);
+                    console.error("Erro ao inicializar a página:", error);
                 }
             } finally {
                 document.body.classList.add('loaded');
