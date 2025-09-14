@@ -159,12 +159,11 @@
     </div>
 
     <script type="module">
-        // Este é o seu script, que é o correto.
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        const grid = document.getElementById('empresas-grid' );
+        const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
@@ -254,7 +253,7 @@
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial )}`;
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
 
             card.innerHTML = `
                 <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
@@ -266,9 +265,7 @@
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            // =================================================================================
-            // CORREÇÃO FINAL: Apontando para 'nova-empresa.html' para corrigir o erro 404.
-            // =================================================================================
+            // Aponta para a página correta para criar uma nova empresa.
             card.href = 'nova-empresa.html'; 
 
             card.innerHTML = `
