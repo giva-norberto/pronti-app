@@ -12,7 +12,7 @@
     <style>
         :root {
             --primary: #6366f1;
-            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  );
+            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
             --background: #f6f7fb;
             --card-bg: #fff;
             --text-main: #21243d;
@@ -46,7 +46,7 @@
             border: 1.5px solid var(--border);
         }
         .header-selecao {
-             display: none;
+            display: none;
         }
         .header-selecao.visivel {
             display: block;
@@ -113,7 +113,7 @@
             border: 2px dashed var(--border);
         }
         .criar-empresa-card:hover {
-             border-color: var(--primary);
+            border-color: var(--primary);
         }
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
@@ -149,7 +149,6 @@
         @keyframes spin {
             100% { transform: rotate(360deg); }
         }
-
         /* CARD DE PRIMEIRO ACESSO */
         .welcome-card-primeiro-acesso h2 {
             font-size: 2.2rem;
@@ -188,84 +187,99 @@
             <h1 id="titulo-boas-vindas">Bem-vindo(a)!</h1>
             <p>Selecione uma empresa para gerir ou crie uma nova.</p>
         </div>
-
         <div id="empresas-grid">
             <div class="loader" id="loader"></div>
         </div>
-
         <div class="logout-container" id="logout-container">
             <button id="btn-logout" class="btn-logout">Sair da conta</button>
         </div>
     </div>
-
     <script type="module">
-        import { auth, db } from "./firebase-config.js";
+        import { auth } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // A importação agora vai funcionar porque você adicionou 'export' no user-service.js
-        import { getEmpresasDoUsuario } from "./user-service.js"; 
+        import { getEmpresasDoUsuario } from "./user-service.js";
 
-        const grid = document.getElementById('empresas-grid' );
+        // Seleção de elementos da interface
+        const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
         const headerSelecao = document.getElementById('header-selecao');
         const logoutContainer = document.getElementById('logout-container');
 
+        // Logout do usuário
         btnLogout.addEventListener('click', async () => {
             localStorage.removeItem('empresaAtivaId');
             await signOut(auth);
             window.location.href = 'login.html';
         });
 
+        // Controle de autenticação e fluxo de empresas
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                localStorage.removeItem('empresaAtivaId');
-                const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-                tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-                
-                try {
-                    const empresas = await getEmpresasDoUsuario(user);
-                    renderizarOpcoes(empresas);
-                } catch (error) {
-                    console.error("Erro ao carregar empresas:", error);
-                    grid.innerHTML = `<p>Ocorreu um erro ao buscar suas empresas.</p>`;
-                } finally {
-                    loader.style.display = 'none';
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            localStorage.removeItem('empresaAtivaId');
+            const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
+            tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+
+            try {
+                const empresas = await getEmpresasDoUsuario(user);
+
+                // Fluxo 1: Nenhuma empresa -> card boas-vindas + redireciona para perfil.html
+                if (empresas.length === 0) {
+                    renderizarBoasVindas();
+                    setTimeout(() => {
+                        window.location.href = 'perfil.html';
+                    }, 2000);
+                    return;
                 }
 
-            } else {
-                window.location.href = 'login.html';
+                // Fluxo 2: Só 1 empresa -> vai direto para index.html com empresaAtivaId
+                if (empresas.length === 1) {
+                    localStorage.setItem('empresaAtivaId', empresas[0].id);
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                // Fluxo 3: Mais de 1 empresa -> tela de seleção normalmente
+                renderizarOpcoes(empresas);
+
+            } catch (error) {
+                console.error("Erro ao carregar empresas:", error);
+                grid.innerHTML = `<p>Ocorreu um erro ao buscar suas empresas.</p>`;
+            } finally {
+                loader.style.display = 'none';
             }
         });
 
+        // Renderiza opções de empresas e botão de criar nova
         function renderizarOpcoes(empresas) {
-            grid.innerHTML = ''; 
-            
-            if (empresas && empresas.length > 0) {
-                headerSelecao.classList.add('visivel');
-                logoutContainer.style.display = 'block';
-
-                empresas.forEach(empresa => {
-                    grid.appendChild(criarEmpresaCard(empresa));
-                });
-                grid.appendChild(criarNovoCard());
-
-            } else {
-                headerSelecao.style.display = 'none';
-                logoutContainer.style.display = 'block'; // Mantém o botão de sair visível
-                grid.style.display = 'block';
-                
-                const welcomeCardHTML = `
-                    <div class="welcome-card-primeiro-acesso">
-                        <h2>Bem-vindo(a) ao Pronti!</h2>
-                        <p>Você está pronto(a) para organizar sua primeira empresa. Clique em ‘Começar’ e descubra como gerenciar agendamentos, equipe e clientes de forma simples.</p>
-                        <a href="perfil.html" class="btn-comecar">Começar</a>
-                    </div>
-                `;
-                grid.innerHTML = welcomeCardHTML;
-            }
+            grid.innerHTML = '';
+            headerSelecao.classList.add('visivel');
+            logoutContainer.style.display = 'block';
+            empresas.forEach(empresa => {
+                grid.appendChild(criarEmpresaCard(empresa));
+            });
+            grid.appendChild(criarNovoCard());
         }
 
+        // Renderiza card de boas-vindas
+        function renderizarBoasVindas() {
+            headerSelecao.style.display = 'none';
+            logoutContainer.style.display = 'block';
+            grid.style.display = 'block';
+            grid.innerHTML = `
+                <div class="welcome-card-primeiro-acesso">
+                    <h2>Bem-vindo(a) ao Pronti!</h2>
+                    <p>Você está pronto(a) para organizar sua primeira empresa.<br>Redirecionando para o seu perfil para começar...</p>
+                    <a href="perfil.html" class="btn-comecar">Ir agora</a>
+                </div>
+            `;
+        }
+
+        // Cria o card de empresa
         function criarEmpresaCard(empresa) {
             const card = document.createElement('a');
             card.className = 'empresa-card';
@@ -275,21 +289,20 @@
                 localStorage.setItem('empresaAtivaId', empresa.id);
                 window.location.href = 'index.html';
             });
-
             const nomeFantasia = empresa.nomeFantasia || "Empresa";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoContent = empresa.logoUrl 
+            const logoContent = empresa.logoUrl
                 ? `<img src="${empresa.logoUrl}" alt="Logo" class="empresa-logo">`
                 : `<div class="empresa-logo">${inicial}</div>`;
-
             card.innerHTML = `${logoContent}<span class="empresa-nome">${nomeFantasia}</span>`;
             return card;
         }
 
+        // Cria o card para criar nova empresa
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            card.href = 'perfil.html'; 
+            card.href = 'perfil.html';
             card.innerHTML = `
                 <div class="plus-icon"><i class="fas fa-plus"></i></div>
                 <span class="empresa-nome">Criar Nova Empresa</span>
