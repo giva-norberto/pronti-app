@@ -18,7 +18,7 @@
       margin: 0;
       padding: 0;
       font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #f7f8fa 80%, #e0e7ff 100%);
+      background: linear-gradient(135deg, #f7f8fa 80%, #e0e7ff 100% );
       min-height: 100vh;
     }
     .main-relatorios {
@@ -302,10 +302,34 @@
     const btnVoltar = document.getElementById("btn-voltar");
     if (btnVoltar) {
       btnVoltar.addEventListener("click", () => {
-        window.location.href = "dashboard.html";
+        // Modificado para usar history.back() para um comportamento mais natural,
+        // mas a lógica abaixo garante que o "back" do navegador vá para index.html
+        window.history.back();
       });
     }
   </script>
   <script src="relatorios.js" type="module"></script>
+
+  <!-- SCRIPT ADICIONADO CIRURGICAMENTE -->
+  <script>
+    // Este script garante que o botão "Voltar" do NAVEGADOR leve para a index.html
+    document.addEventListener('DOMContentLoaded', () => {
+      // Pega a URL atual da página de relatórios
+      const urlAtual = window.location.href;
+      // Define a URL de destino para o botão "Voltar"
+      const urlDestino = 'index.html';
+
+      // 1. Insere a 'index.html' no histórico de navegação.
+      //    Isso faz com que ela se torne a página "anterior" a esta.
+      window.history.pushState(null, '', urlDestino);
+
+      // 2. Imediatamente, reinsere a URL da página de relatórios no topo do histórico.
+      //    Isso é feito para que a URL na barra de endereço do navegador não mude para 'index.html'.
+      //    O resultado final é que o histórico fica: [..., página_anterior, index.html, relatorios.html]
+      window.history.pushState(null, '', urlAtual);
+    });
+  </script>
+  <!-- FIM DO SCRIPT ADICIONADO -->
+
 </body>
 </html>
