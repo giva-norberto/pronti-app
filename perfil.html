@@ -104,7 +104,6 @@
       background-color: #4338ca;
     }
     
-    /* ✅ CORREÇÃO: Estilos dos botões 'Copiar' e 'Abrir' restaurados */
     .btn-copy, .btn-open {
       background: #f9fafb;
       color: var(--primary-color);
@@ -116,7 +115,6 @@
       background: #eef2ff;
     }
 
-    /* ✅ CORREÇÃO: Estilo do botão 'Escolher Arquivo' restaurado */
     .btn-upload {
       background: #f9fafb;
       color: #374151;
@@ -150,7 +148,6 @@
       display: block;
     }
     
-    /* ✅ CORREÇÃO: Estilos dos campos de formulário restaurados */
     .form-group input[type="text"],
     .form-group textarea,
     #selectEmpresa {
@@ -247,7 +244,6 @@
         </div>
       </div>
 
-      <!-- O restante do seu HTML permanece exatamente igual -->
       <div class="form-group" id="empresa-selector-group" style="display:none;">
         <label for="selectEmpresa"><i class="fa-solid fa-building"></i> Selecione sua empresa:</label>
         <select id="selectEmpresa"></select>
@@ -256,6 +252,7 @@
       <div id="mensagem-free" style="display:none; margin:20px auto; max-width:560px; background:#e0e7ff; color:#3730a3; border-radius:10px; padding:12px 18px; text-align:center; font-weight:bold;">
         Plano atual: FREE
       </div>
+
       <form id="form-perfil">
         <div class="form-section">
           <h3>Informações do Negócio</h3>
@@ -263,6 +260,18 @@
             <label for="nomeNegocio">Nome do Negócio</label>
             <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
           </div>
+
+          <!-- ============================================================ -->
+          <!--           ✅ INÍCIO DA ALTERAÇÃO: CAMPO DO SLUG               -->
+          <!-- ============================================================ -->
+          <div class="form-group">
+            <label for="slug">Link Personalizado (Apelido)</label>
+            <input type="text" id="slug" placeholder="Ex: barbearia-do-joao">
+          </div>
+          <!-- ============================================================ -->
+          <!--           ✅ FIM DA ALTERAÇÃO                                 -->
+          <!-- ============================================================ -->
+
           <div class="form-group" id="container-link-vitrine" style="display: none;">
             <label>Link da sua Vitrine Pública</label>
             <div class="vitrine-link-container">
