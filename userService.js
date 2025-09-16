@@ -12,7 +12,7 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc() {
+export async function ensureUserAndTrialDoc( ) {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -171,8 +171,13 @@ export async function verificarAcesso() {
                 console.log("[DEBUG] Empresa ativaId localStorage:", empresaAtivaId);
                 console.log("[DEBUG] Empresas retornadas:", empresas.map(e => e.id));
 
+                // ======================= INÍCIO DA ALTERAÇÃO CIRÚRGICA =======================
+                // Se a empresa do localStorage não estiver na lista de empresas permitidas, invalida-a.
+                if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) { empresaAtivaId = null; }
+                // ======================== FIM DA ALTERAÇÃO CIRÚRGICA =========================
+
                 // Tenta usar empresa ativa salva, só se for ativa E está na lista correta do usuário
-                if (empresaAtivaId && empresas.find(e => e.id === empresaAtivaId)) {
+                if (empresaAtivaId) { // A verificação contra a lista 'empresas' já foi feita acima.
                     empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     if (!empresaDocSnap.exists() || empresaDocSnap.data().status !== "ativo") {
                         console.log("[DEBUG] Empresa ativa não existe ou não está ativa, limpando localStorage.");
