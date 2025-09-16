@@ -1,5 +1,5 @@
 // ======================================================================
-//          DASHBOARD.JS (VERSÃO FINAL COM DADOS MENSAIS)
+//          DASHBOARD.JS (VERSÃO FINAL COM DADOS MENSAIS )
 // ======================================================================
 
 import { verificarAcesso } from "./userService.js";
@@ -38,7 +38,6 @@ function resetDashboardUI() {
     document.getElementById('agendamentos-pendentes').textContent = '--';
     document.getElementById('resumo-inteligente').innerHTML = spinner;
     
-    // ✅ NOVO: Reseta o card de faturamento mensal
     const fatMensalEl = document.getElementById('faturamento-mensal');
     const agMesEl = document.getElementById('agendamentos-mes');
     if (fatMensalEl) fatMensalEl.innerHTML = spinner;
@@ -61,7 +60,7 @@ function preencherPainel(resumoDia, resumoMes, servicosSemana) {
     document.getElementById('total-agendamentos-dia').textContent = resumoDia.totalAgendamentosDia;
     document.getElementById('agendamentos-pendentes').textContent = resumoDia.agendamentosPendentes;
 
-    // ✅ NOVO: Preenche dados do mês
+    // Preenche dados do mês
     const fatMensalEl = document.getElementById('faturamento-mensal');
     const agMesEl = document.getElementById('agendamentos-mes');
     if (fatMensalEl) fatMensalEl.textContent = resumoMes.faturamentoMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -87,7 +86,7 @@ function preencherPainel(resumoDia, resumoMes, servicosSemana) {
         data: {
             labels: Object.keys(servicosSemana),
             datasets: [{
-                label: 'Vendas da Semana',
+                label: 'Vendas na Semana',
                 data: Object.values(servicosSemana),
                 backgroundColor: '#6366f1',
                 borderRadius: 5,
@@ -97,7 +96,7 @@ function preencherPainel(resumoDia, resumoMes, servicosSemana) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } // Força o eixo Y a contar de 1 em 1
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
 }
@@ -121,13 +120,18 @@ async function buscarDadosDoDia(empresaId, data) {
         if (ag.status === "realizado") faturamentoRealizado += Number(ag.servicoPreco) || 0;
         else if (ag.status === "ativo" && timeStringToMinutes(ag.horario) >= minutosAgora) agendamentosPendentes++;
         
-        agsParaIA.push({ /* ... */ });
+        agsParaIA.push({
+            inicio: `${ag.data}T${ag.horario}:00`,
+            cliente: ag.clienteNome,
+            servico: ag.servicoNome,
+            servicoPreco: Number(ag.servicoPreco) || 0,
+            status: ag.status
+        });
     });
 
     return { faturamentoRealizado, faturamentoPrevisto, totalAgendamentosDia, agendamentosPendentes, agsParaIA };
 }
 
-// ✅ NOVA FUNÇÃO PARA BUSCAR DADOS DO MÊS
 async function buscarDadosDoMes(empresaId) {
     const hoje = new Date();
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -147,7 +151,6 @@ async function buscarDadosDoMes(empresaId) {
 
     return { faturamentoMensal, agendamentosMes: snapshot.size };
 }
-
 
 async function buscarServicosDaSemana(empresaId) {
     const hoje = new Date();
@@ -174,7 +177,6 @@ async function carregarDashboard(empresaId, data) {
     console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
     resetDashboardUI();
     try {
-        // ✅ ATUALIZADO: Busca os dados do dia, do mês e da semana em paralelo
         const [resumoDoDia, resumoDoMes, servicosDaSemana] = await Promise.all([
             buscarDadosDoDia(empresaId, data),
             buscarDadosDoMes(empresaId),
