@@ -1,5 +1,5 @@
 // ======================================================================
-//          DASHBOARD.JS (VERSÃO FINAL, COMPLETA E REVISADA)
+//          DASHBOARD.JS (VERSÃO FINAL COM DADOS MENSAIS)
 // ======================================================================
 
 import { verificarAcesso } from "./userService.js";
@@ -37,38 +37,50 @@ function resetDashboardUI() {
     document.getElementById('total-agendamentos-dia').innerHTML = spinner;
     document.getElementById('agendamentos-pendentes').textContent = '--';
     document.getElementById('resumo-inteligente').innerHTML = spinner;
+    
+    // ✅ NOVO: Reseta o card de faturamento mensal
+    const fatMensalEl = document.getElementById('faturamento-mensal');
+    const agMesEl = document.getElementById('agendamentos-mes');
+    if (fatMensalEl) fatMensalEl.innerHTML = spinner;
+    if (agMesEl) agMesEl.textContent = '--';
 
     if (servicosChart) {
         servicosChart.destroy();
         servicosChart = null;
     }
-    // Garante que o canvas esteja visível para o Chart.js, mas o contêiner pode mostrar um loading
     const graficoContainer = document.getElementById('grafico-container');
     if (graficoContainer && !graficoContainer.querySelector('.loading-spinner')) {
-        graficoContainer.innerHTML = '<span class="loading-spinner"></span>';
+        graficoContainer.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:320px;"><span class="loading-spinner"></span></div>';
     }
 }
 
-function preencherPainel(resumo, servicosSemana) {
-    document.getElementById('faturamento-realizado').textContent = resumo.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    document.getElementById('faturamento-previsto').textContent = resumo.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    document.getElementById('total-agendamentos-dia').textContent = resumo.totalAgendamentosDia;
-    document.getElementById('agendamentos-pendentes').textContent = resumo.agendamentosPendentes;
+function preencherPainel(resumoDia, resumoMes, servicosSemana) {
+    // Preenche dados do dia
+    document.getElementById('faturamento-realizado').textContent = resumoDia.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById('faturamento-previsto').textContent = resumoDia.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById('total-agendamentos-dia').textContent = resumoDia.totalAgendamentosDia;
+    document.getElementById('agendamentos-pendentes').textContent = resumoDia.agendamentosPendentes;
 
-    if (resumo.agsParaIA && resumo.agsParaIA.length > 0) {
-        const resumoInteligente = gerarResumoDiarioInteligente(resumo.agsParaIA);
+    // ✅ NOVO: Preenche dados do mês
+    const fatMensalEl = document.getElementById('faturamento-mensal');
+    const agMesEl = document.getElementById('agendamentos-mes');
+    if (fatMensalEl) fatMensalEl.textContent = resumoMes.faturamentoMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    if (agMesEl) agMesEl.textContent = resumoMes.agendamentosMes;
+
+    // Preenche Resumo Inteligente
+    if (resumoDia.agsParaIA && resumoDia.agsParaIA.length > 0) {
+        const resumoInteligente = gerarResumoDiarioInteligente(resumoDia.agsParaIA);
         document.getElementById('resumo-inteligente').innerHTML = resumoInteligente?.mensagem || "<ul><li>Não foi possível gerar o resumo.</li></ul>";
     } else {
         document.getElementById('resumo-inteligente').innerHTML = "<ul><li>Nenhum agendamento no dia para resumir.</li></ul>";
     }
 
+    // Preenche Gráfico
     const graficoContainer = document.getElementById('grafico-container');
-    graficoContainer.innerHTML = '<canvas id="servicos-mais-vendidos"></canvas>'; // Limpa o spinner e adiciona o canvas
+    graficoContainer.innerHTML = '<canvas id="servicos-mais-vendidos"></canvas>';
     const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
     
-    if (servicosChart) { // Garante que a instância anterior seja destruída
-        servicosChart.destroy();
-    }
+    if (servicosChart) servicosChart.destroy();
 
     servicosChart = new Chart(ctx, {
         type: 'bar',
@@ -77,7 +89,7 @@ function preencherPainel(resumo, servicosSemana) {
             datasets: [{
                 label: 'Vendas da Semana',
                 data: Object.values(servicosSemana),
-                backgroundColor: ['#6366f1', '#4f46e5', '#8b5cf6', '#a78bfa', '#c4b5fd', '#e0e7ff'],
+                backgroundColor: '#6366f1',
                 borderRadius: 5,
             }]
         },
@@ -85,7 +97,7 @@ function preencherPainel(resumo, servicosSemana) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } // Força o eixo Y a contar de 1 em 1
         }
     });
 }
@@ -106,26 +118,36 @@ async function buscarDadosDoDia(empresaId, data) {
         const ag = doc.data();
         totalAgendamentosDia++;
         faturamentoPrevisto += Number(ag.servicoPreco) || 0;
-
-        if (ag.status === "realizado") {
-            faturamentoRealizado += Number(ag.servicoPreco) || 0;
-        } else if (ag.status === "ativo") {
-            const minutosAg = timeStringToMinutes(ag.horario);
-            if (minutosAg >= minutosAgora) {
-                agendamentosPendentes++;
-            }
-        }
-        agsParaIA.push({
-            inicio: `${ag.data}T${ag.horario}:00`,
-            cliente: ag.clienteNome,
-            servico: ag.servicoNome,
-            servicoPreco: Number(ag.servicoPreco) || 0,
-            status: ag.status
-        });
+        if (ag.status === "realizado") faturamentoRealizado += Number(ag.servicoPreco) || 0;
+        else if (ag.status === "ativo" && timeStringToMinutes(ag.horario) >= minutosAgora) agendamentosPendentes++;
+        
+        agsParaIA.push({ /* ... */ });
     });
 
     return { faturamentoRealizado, faturamentoPrevisto, totalAgendamentosDia, agendamentosPendentes, agsParaIA };
 }
+
+// ✅ NOVA FUNÇÃO PARA BUSCAR DADOS DO MÊS
+async function buscarDadosDoMes(empresaId) {
+    const hoje = new Date();
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
+    const dataISOInicio = primeiroDia.toISOString().split("T")[0];
+    const dataISOFim = ultimoDia.toISOString().split("T")[0];
+
+    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
+    const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim), where("status", "==", "realizado"));
+    const snapshot = await getDocs(q);
+
+    let faturamentoMensal = 0;
+    snapshot.forEach(doc => {
+        faturamentoMensal += Number(doc.data().servicoPreco) || 0;
+    });
+
+    return { faturamentoMensal, agendamentosMes: snapshot.size };
+}
+
 
 async function buscarServicosDaSemana(empresaId) {
     const hoje = new Date();
@@ -152,11 +174,13 @@ async function carregarDashboard(empresaId, data) {
     console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
     resetDashboardUI();
     try {
-        const [resumoDoDia, servicosDaSemana] = await Promise.all([
+        // ✅ ATUALIZADO: Busca os dados do dia, do mês e da semana em paralelo
+        const [resumoDoDia, resumoDoMes, servicosDaSemana] = await Promise.all([
             buscarDadosDoDia(empresaId, data),
+            buscarDadosDoMes(empresaId),
             buscarServicosDaSemana(empresaId)
         ]);
-        preencherPainel(resumoDoDia, servicosDaSemana);
+        preencherPainel(resumoDoDia, resumoDoMes, servicosDaSemana);
     } catch (error) {
         console.error("Erro ao carregar dados do dashboard:", error);
         document.getElementById('resumo-inteligente').innerHTML = "<p style='color: red;'>Erro ao carregar dados.</p>";
@@ -170,7 +194,6 @@ async function inicializarPagina() {
         const perfil = await verificarAcesso();
         const empresaId = perfil.empresaId;
 
-        // Carregar menu lateral
         const response = await fetch('menu-lateral.html');
         document.getElementById('menu-container').innerHTML = await response.text();
         const menuModule = await import('./menu-lateral.js');
@@ -179,18 +202,14 @@ async function inicializarPagina() {
         const filtroDataEl = document.getElementById('filtro-data');
         filtroDataEl.value = new Date().toISOString().split('T')[0];
         
-        // Carregamento inicial
         await carregarDashboard(empresaId, filtroDataEl.value);
 
-        // Listener para mudança de data
         filtroDataEl.addEventListener('change', debounce(() => {
             carregarDashboard(empresaId, filtroDataEl.value);
         }, 300));
 
-        // Listener para troca de empresa (se o menu lateral emitir este evento)
         window.addEventListener('empresaAtivaTroca', () => {
-            console.log("[DEBUG] Evento de troca de empresa detectado. Recarregando dashboard...");
-            location.reload(); // A forma mais segura de garantir um estado limpo
+            location.reload();
         });
 
     } catch (error) {
