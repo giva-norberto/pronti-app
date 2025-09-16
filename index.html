@@ -8,17 +8,16 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        /* Seu CSS original, com uma pequena adição para robustez */
         :root { --sidebar-width: 240px; }
         body {
             display: flex; margin: 0; font-family: 'Poppins', sans-serif;
-            /* ✅ CORREÇÃO CRÍTICA: A página começa invisível para evitar "flash" de conteúdo. */
+            /* ✅ CORREÇÃO ANTI-PISCA: A página começa invisível. */
             visibility: hidden; 
             opacity: 0; 
             transition: opacity 0.3s ease-in-out;
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100% );
         }
-        /* A classe 'loaded' agora controla tanto a visibilidade quanto a opacidade. */
+        /* ✅ Esta classe torna a página visível apenas quando tudo estiver pronto. */
         body.loaded { 
             visibility: visible;
             opacity: 1; 
@@ -29,6 +28,7 @@
             height: 100vh; overflow-y: auto; display: flex; flex-direction: column;
             justify-content: flex-start; align-items: center;
         }
+        /* (O restante do seu CSS foi mantido como estava) */
         .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; width: 100%; }
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
@@ -47,7 +47,6 @@
         }
         .menu-card:hover { transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2); filter: brightness(1.1); cursor: pointer; }
         .menu-card i { font-size: 2rem; }
-        /* ... Seus estilos de card coloridos continuam aqui, sem alterações ... */
         [data-card-id="dashboard"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
         [data-card-id="agenda"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
         [data-card-id="servicos"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
@@ -68,7 +67,6 @@
         </div>
         
         <div class="dashboard-grid-cards" id="dashboard-grid-cards">
-            <!-- Cards do menu -->
             <a href="dashboard.html" class="menu-card" data-card-id="dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
             <a href="agenda.html" class="menu-card" data-card-id="agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a>
             <a href="servicos.html" class="menu-card" data-card-id="servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a>
@@ -82,29 +80,28 @@
     </main>
     
     <script type="module">
-        import { verificarAcesso } from './user-service.js'; 
+        // Importa as funções necessárias. A função 'verificarAcesso' é a mais importante.
+        import { verificarAcesso } from './userService.js'; 
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         // --- FUNÇÕES DE LÓGICA DA PÁGINA ---
 
-        async function aplicarPermissoes(papelUsuario ) {
+        async function aplicarPermissoes(papelUsuario) {
             try {
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
+                // Aplica permissões nos cards da tela principal
                 document.querySelectorAll('[data-card-id]').forEach(el => {
                     const id = el.dataset.cardId;
                     const regra = regras[id];
-                    // A regra é: pode ver se não houver regra ou se a regra para o papel for 'true'.
                     const podeVer = !regra || regra[papelUsuario] === true;
-                    el.style.display = podeVer ? '' : 'none';
+                    el.style.display = podeVer ? 'flex' : 'none';
                 });
             } catch (error) {
-                console.error("Erro ao aplicar permissões:", error);
-                // Por segurança, esconde todos os cards se as regras não puderem ser carregadas.
-                document.querySelectorAll('[data-card-id]').forEach(el => el.style.display = 'none');
+                console.error("Erro ao aplicar permissões nos cards:", error);
             }
         }
 
@@ -116,9 +113,21 @@
 
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
-                    // Passa o papel do usuário para o menu lateral, para que ele também possa aplicar permissões.
-                    menuModule.ativarMenuLateral(papelUsuario);
+                    menuModule.ativarMenuLateral();
                 }
+
+                // Aplica permissões também nos itens do menu lateral
+                const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
+                const permissoesSnap = await getDoc(permissoesRef);
+                const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
+                
+                document.querySelectorAll('#menu-container [data-menu-id]').forEach(item => {
+                    const menuId = item.dataset.menuId;
+                    const regraParaMenu = regras[menuId];
+                    const podeVer = !regraParaMenu || regraParaMenu[papelUsuario] === true;
+                    if (!podeVer) item.style.display = 'none';
+                });
+
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
             }
@@ -138,29 +147,26 @@
 
         async function inicializarPagina() {
             try {
-                // 1. VERIFICAR ACESSO: Esta é a primeira e mais importante etapa.
-                // A função `verificarAcesso` vai redirecionar o usuário se ele não tiver permissão.
+                // 1. VERIFICA O ACESSO: Esta função é o "segurança" da página.
+                // Ela lida com todos os redirecionamentos necessários antes de a página carregar.
                 const sessao = await verificarAcesso();
 
-                // 2. ACESSO CONCEDIDO: Se o código chegou aqui, o usuário está autenticado e autorizado.
-                
-                // Pega o papel do usuário diretamente da sessão, que é a fonte da verdade.
+                // 2. ACESSO CONCEDIDO: O código só chega aqui se o usuário estiver 100% autorizado.
                 const papelUsuario = sessao.papel;
                 if (!papelUsuario) throw new Error("O papel do usuário não foi definido na sessão.");
 
-                // 3. RENDERIZAR A PÁGINA
+                // 3. RENDERIZA A PÁGINA
                 popularCabecalho(sessao);
-                await loadAndSetupMenu(papelUsuario); // Passa o papel para o menu
-                await aplicarPermissoes(papelUsuario); // Aplica permissões nos cards
-
-                // 4. TORNAR A PÁGINA VISÍVEL
-                // Só mostramos a página DEPOIS que tudo foi verificado e renderizado.
-                document.body.classList.add('loaded');
+                await loadAndSetupMenu(papelUsuario); // Carrega o menu e aplica suas permissões
+                await aplicarPermissoes(papelUsuario); // Aplica permissões nos cards da página
 
             } catch (error) {
-                // Se `verificarAcesso` lançar um erro, significa que um redirecionamento já ocorreu
-                // ou um erro fatal aconteceu. Não precisamos fazer nada, pois o usuário não verá esta página.
-                // O erro já é logado dentro do `user-service` se for inesperado.
+                // Se `verificarAcesso` rejeitar, o redirecionamento já ocorreu.
+                // O erro já é logado dentro do 'user-service' se for inesperado.
+            } finally {
+                // 4. TORNAR A PÁGINA VISÍVEL
+                // Acontece no final, garantindo que não haja "pisca-pisca".
+                document.body.classList.add('loaded');
             }
         }
         
