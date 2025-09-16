@@ -1,61 +1,197 @@
 // ======================================================================
-//        USER-SERVICE.JS (VERSÃO FINAL COM LÓGICA DE ACESSO REVISADA)
+//        USER-SERVICE.JS (VERSÃO FINAL COM LÓGICA DE ACESSO CENTRALIZADA)
 // ======================================================================
 
-// Suas importações estão corretas e foram mantidas.
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from './firebase-config.js';
 
-// Variáveis de controle de sessão (sua lógica original mantida ).
+// --- Variáveis de Controle ---
 let cachedSessionProfile = null;
-let isProcessing = false;
+let activeAccessCheckPromise = null; // Evita múltiplas verificações simultâneas
+const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 // ======================================================================
-// SUAS FUNÇÕES ORIGINAIS (PRESERVADAS 100%)
-// Não há necessidade de alterar estas funções, elas já fazem o trabalho certo.
+// FUNÇÃO PRINCIPAL: O GUARDA DE ACESSO ÚNICO
+// Esta função é a única fonte da verdade sobre o acesso do usuário.
 // ======================================================================
 
-export async function ensureUserAndTrialDoc() {
+export async function verificarAcesso() {
+    // Se já temos um perfil na sessão, retorna imediatamente.
+    if (cachedSessionProfile) return cachedSessionProfile;
+    // Se uma verificação já está em andamento, aguarda por ela.
+    if (activeAccessCheckPromise) return activeAccessCheckPromise;
+
+    // ✅ CORREÇÃO ANTI-PISCA: Toda a lógica é encapsulada em uma única promessa.
+    // Nenhuma página continuará a carregar até que esta promessa seja resolvida ou rejeitada.
+    activeAccessCheckPromise = new Promise(async (resolve, reject) => {
+        try {
+            // 1. VERIFICA O USUÁRIO ATUAL
+            const user = await getCurrentUser();
+            const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+            const publicPages = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
+
+            if (!user) {
+                if (!publicPages.includes(currentPage)) {
+                    window.location.replace('login.html');
+                }
+                return reject(new Error("Usuário não autenticado."));
+            }
+
+            // 2. VERIFICA SE É O ADMIN (REGRA DE EXCEÇÃO)
+            // Esta regra é checada primeiro para dar passe livre ao admin nas verificações de assinatura.
+            const isAdmin = user.uid === ADMIN_UID;
+
+            // 3. FLUXO PARA TODOS OS USUÁRIOS (INCLUINDO ADMIN)
+            await ensureUserAndTrialDoc(user);
+            const empresas = await getEmpresasDoUsuario(user);
+
+            // Se o usuário (que não seja admin) não tem empresa, o lugar dele é na tela de seleção.
+            if (empresas.length === 0 && !isAdmin) {
+                if (currentPage !== 'selecionar-empresa.html') {
+                    window.location.replace('selecionar-empresa.html');
+                }
+                return reject(new Error("Novo usuário. Exibindo tela de boas-vindas."));
+            }
+            
+            // Pega a empresa ativa do localStorage.
+            let empresaAtivaId = localStorage.getItem('empresaAtivaId');
+
+            // Se o usuário tem mais de uma empresa e nenhuma está ativa, força a seleção.
+            if (empresas.length > 1 && !empresaAtivaId) {
+                if (currentPage !== 'selecionar-empresa.html') {
+                    window.location.replace('selecionar-empresa.html');
+                }
+                return reject(new Error("Múltiplas empresas. Seleção necessária."));
+            }
+            
+            // Se tem exatamente uma empresa, define ela como a ativa.
+            if (empresas.length === 1) {
+                empresaAtivaId = empresas[0].id;
+                localStorage.setItem('empresaAtivaId', empresaAtivaId);
+            }
+
+            // Se, mesmo com 1 empresa, o usuário estiver na tela de seleção, redireciona para o início.
+            if (empresaAtivaId && currentPage === 'selecionar-empresa.html') {
+                window.location.replace('index.html');
+                return reject(new Error("Redirecionando para o painel principal."));
+            }
+
+            // Se for admin e não tiver empresa selecionada (ex: na tela de admin), pode prosseguir
+            if (!empresaAtivaId && isAdmin) {
+                 const adminProfile = { user, empresaId: null, perfil: { nome: "Administrador", papel: "admin" }, isOwner: true, isAdmin: true, papel: 'admin' };
+                 cachedSessionProfile = adminProfile;
+                 return resolve(adminProfile);
+            }
+
+            // Se não tem ID de empresa e não é admin, volta para a seleção
+            if (!empresaAtivaId) {
+                window.location.replace('selecionar-empresa.html');
+                return reject(new Error("Nenhuma empresa ativa encontrada."));
+            }
+
+            // 4. VALIDA A EMPRESA ATIVA E A ASSINATURA
+            const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
+            if (!empresaDoc.exists()) {
+                localStorage.removeItem('empresaAtivaId');
+                window.location.replace('selecionar-empresa.html');
+                return reject(new Error("Empresa ativa não encontrada no DB."));
+            }
+
+            const empresaData = empresaDoc.data();
+            const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+
+            // A verificação de assinatura só acontece se o usuário NÃO for admin.
+            if (!isAdmin && !hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
+                window.location.replace('assinatura.html');
+                return reject(new Error("Assinatura expirada."));
+            }
+
+            // 5. CONSTRÓI E RETORNA O PERFIL FINAL DA SESSÃO
+            const sessionProfile = await buildSessionProfile(user, empresaAtivaId, empresaData);
+            cachedSessionProfile = sessionProfile;
+            resolve(sessionProfile);
+
+        } catch (error) {
+            reject(error);
+        } finally {
+            isProcessing = false;
+            activeAccessCheckPromise = null;
+        }
+    });
+
+    return activeAccessCheckPromise;
+}
+
+// ======================================================================
+// FUNÇÕES AUXILIARES (REVISADAS E COMPLETAS)
+// ======================================================================
+
+/** Transforma o onAuthStateChanged em uma promessa para ser usada com await. */
+function getCurrentUser() {
+    return new Promise((resolve, reject) => {
+        const unsubscribe = onAuthStateChanged(auth, user => {
+            unsubscribe();
+            resolve(user);
+        }, reject);
+    });
+}
+
+/** Constrói o objeto de sessão detalhado. */
+async function buildSessionProfile(user, empresaId, empresaData) {
+    const isAdmin = user.uid === ADMIN_UID;
+    const isOwner = empresaData.donoId === user.uid;
+    let perfilDetalhado = empresaData;
+    let papel = 'dono';
+
+    if (!isOwner && !isAdmin) {
+        const profSnap = await getDoc(doc(db, "empresarios", empresaId, "profissionais", user.uid));
+        if (!profSnap.exists() || profSnap.data().status !== 'ativo') {
+            localStorage.removeItem('empresaAtivaId');
+            throw new Error("Acesso de profissional revogado ou inativo.");
+        }
+        perfilDetalhado = profSnap.data();
+        papel = 'funcionario';
+    }
+    
+    return { user, empresaId, perfil: perfilDetalhado, isOwner: isOwner || isAdmin, isAdmin, papel };
+}
+
+/** Limpa o cache ao fazer logout. */
+export function clearCache() {
+    cachedSessionProfile = null;
+}
+
+/** Garante que o documento do usuário exista. */
+export async function ensureUserAndTrialDoc(user) {
+    if (!user) return;
     try {
-        const user = auth.currentUser;
-        if (!user) return;
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
             await setDoc(userRef, {
-                nome: user.displayName || user.email || 'Usuário',
-                email: user.email || '',
-                trialStart: serverTimestamp(),
-                isPremium: false,
+                nome: user.displayName || user.email || 'Usuário', email: user.email || '',
+                trialStart: serverTimestamp(), isPremium: false,
             });
         } else if (!userSnap.data().trialStart) {
-            await updateDoc(userRef, {
-                trialStart: serverTimestamp(),
-            });
+            await updateDoc(userRef, { trialStart: serverTimestamp() });
         }
-    } catch (error) {
-        console.error("❌ Erro em ensureUserAndTrialDoc:", error);
-    }
+    } catch (error) { console.error("❌ Erro em ensureUserAndTrialDoc:", error); }
 }
 
+/** Verifica o status da assinatura/trial. */
 async function checkUserStatus(user, empresaData) {
-    // ... (Seu código original aqui, sem alterações)
     try {
-        if (!user) return { hasActivePlan: false, isTrialActive: true };
+        if (user.uid === ADMIN_UID) return { hasActivePlan: true, isTrialActive: false };
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
         const userData = userSnap.data();
-        if (!userData) return { hasActivePlan: false, isTrialActive: true };
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
         if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
-        let trialDurationDays = 15;
-        if (empresaData && typeof empresaData.freeEmDias === 'number') {
-            trialDurationDays = empresaData.freeEmDias;
-        }
+        let trialDurationDays = empresaData?.freeEmDias ?? 15;
         const startDate = new Date(userData.trialStart.seconds * 1000);
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + trialDurationDays);
@@ -66,6 +202,7 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
+/** Busca as empresas associadas ao usuário. */
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
     const empresasEncontradas = new Map();
@@ -81,9 +218,8 @@ export async function getEmpresasDoUsuario(user) {
     try {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
-        if (mapaSnap.exists() && mapaSnap.data().empresas && mapaSnap.data().empresas.length > 0) {
+        if (mapaSnap.exists() && mapaSnap.data().empresas?.length > 0) {
             const idsDeEmpresas = mapaSnap.data().empresas;
-            if (idsDeEmpresas.length === 0) return Array.from(empresasEncontradas.values());
             const empresasRef = collection(db, "empresarios");
             const q = query(empresasRef, where(documentId(), "in", idsDeEmpresas));
             const querySnapshot = await getDocs(q);
@@ -95,136 +231,4 @@ export async function getEmpresasDoUsuario(user) {
         }
     } catch(e) { console.error("❌ Erro ao buscar empresas (mapa):", e); }
     return Array.from(empresasEncontradas.values());
-}
-
-// ======================================================================
-// ✅ FUNÇÃO PRINCIPAL 'verificarAcesso' (REVISADA E ORGANIZADA)
-// Esta função agora segue uma ordem lógica rigorosa para evitar conflitos.
-// ======================================================================
-export async function verificarAcesso() {
-    if (cachedSessionProfile) return cachedSessionProfile;
-    if (isProcessing) return Promise.reject(new Error("Processamento de acesso já em andamento."));
-    isProcessing = true;
-
-    return new Promise((resolve, reject) => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe(); // Executa apenas uma vez para evitar loops
-            
-            try {
-                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-                const paginasPublicas = ['login.html', 'cadastro.html'];
-
-                // ORDEM LÓGICA CORRETA:
-                
-                // 1. O usuário está logado? Se não, mande para o login.
-                if (!user) {
-                    if (!paginasPublicas.includes(currentPage)) {
-                        window.location.replace('login.html');
-                    }
-                    return reject(new Error("Usuário não autenticado. Redirecionando..."));
-                }
-
-                // A partir daqui, TEMOS um usuário logado.
-                await ensureUserAndTrialDoc(user);
-                
-                // 2. Quantas empresas este usuário possui?
-                const empresas = await getEmpresasDoUsuario(user);
-
-                // 3. Se ele não tem NENHUMA empresa, o lugar dele é na tela de seleção.
-                if (empresas.length === 0) {
-                    if (currentPage !== 'selecionar-empresa.html') {
-                        window.location.replace('selecionar-empresa.html');
-                    }
-                    // Para o script aqui para deixar a tela de seleção carregar.
-                    return reject(new Error("Novo usuário. Exibindo tela de boas-vindas."));
-                }
-
-                // 4. Se ele tem MAIS DE UMA empresa, ele também precisa ir para a tela de seleção.
-                if (empresas.length > 1) {
-                    if (currentPage !== 'selecionar-empresa.html') {
-                        window.location.replace('selecionar-empresa.html');
-                    }
-                    return reject(new Error("Múltiplas empresas. Seleção necessária."));
-                }
-
-                // 5. Se chegamos aqui, ele tem EXATAMENTE UMA empresa.
-                const empresaAtivaId = empresas[0].id;
-                localStorage.setItem('empresaAtivaId', empresaAtivaId);
-                
-                // Se por acaso ele estava na tela de seleção, agora mandamos para o início.
-                if (currentPage === 'selecionar-empresa.html') {
-                    window.location.replace('index.html');
-                    return reject(new Error("Usuário com uma empresa. Redirecionando..."));
-                }
-
-                const empresaDocRef = doc(db, "empresarios", empresaAtivaId);
-                const empresaDocSnap = await getDoc(empresaDocRef);
-
-                if (!empresaDocSnap.exists()) {
-                    localStorage.removeItem('empresaAtivaId');
-                    window.location.replace('selecionar-empresa.html');
-                    return reject(new Error("Empresa ativa não encontrada."));
-                }
-                
-                const empresaData = empresaDocSnap.data();
-                const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
-
-                // 6. Verificação de assinatura (sua lógica mantida).
-                if (!hasActivePlan && !isTrialActive) {
-                    if (currentPage !== 'assinatura.html') {
-                        window.location.replace('assinatura.html');
-                    }
-                    return reject(new Error("Assinatura expirada."));
-                }
-
-                // 7. Finalmente, monta o perfil da sessão e libera o acesso.
-                const isAdmin = user.uid === "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                const isOwner = empresaData.donoId === user.uid;
-                let perfilDetalhado = empresaData;
-                let papel = 'dono';
-
-                if (!isOwner && !isAdmin) {
-                    const profSnap = await getDoc(doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid));
-                    if (!profSnap.exists() || profSnap.data().status !== 'ativo') {
-                        localStorage.removeItem('empresaAtivaId');
-                        window.location.replace('login.html');
-                        return reject(new Error("Acesso de profissional revogado."));
-                    }
-                    perfilDetalhado = profSnap.data();
-                    papel = 'funcionario';
-                }
-                
-                cachedSessionProfile = { 
-                    user, 
-                    empresaId: empresaAtivaId, 
-                    perfil: perfilDetalhado, 
-                    isOwner: isOwner || isAdmin,
-                    isAdmin: isAdmin, 
-                    papel
-                };
-                resolve(cachedSessionProfile);
-
-            } catch (error) {
-                // Não redireciona se o erro for um dos esperados (ex: "Novo usuário")
-                if (!error.message.includes("Redirecionando") && !error.message.includes("boas-vindas") && !error.message.includes("Seleção necessária")) {
-                    console.error("❌ Erro final em verificarAcesso:", error);
-                }
-                reject(error);
-            } finally {
-                isProcessing = false;
-            }
-        });
-    });
-}
-
-// Suas outras funções exportadas, 100% preservadas.
-export function clearCache() {
-    cachedSessionProfile = null;
-    isProcessing = false;
-}
-
-export async function getTodasEmpresas() {
-    const empresasCol = collection(db, "empresarios");
-    const snap = await getDocs(empresasCol);
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
