@@ -7,7 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <style>
         /* ======================================================================
-                    CSS FINAL, REVISADO E COM AJUSTES FINOS
+                    CSS FINAL, REVISADO E COM TODOS OS AJUSTES
            ====================================================================== */
 
         :root {
@@ -62,7 +62,7 @@
             background-color: #4338ca;
         }
 
-        /* ✅ OBJETIVO 3: Categoria com branco sólido e mais destaque */
+        /* ✅ OBJETIVO 2: Categoria com branco sólido e mais destaque */
         .categoria-titulo {
             font-size: 1.6rem;
             font-weight: 800;
@@ -79,10 +79,10 @@
             padding: 20px; 
             margin-bottom: 15px; 
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            /* ✅ OBJETIVO 2: Efeito de transição adicionado */
+            /* ✅ OBJETIVO 3: Efeito de transição adicionado */
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
-        /* ✅ OBJETIVO 2: Efeito de "levantar" no hover */
+        /* ✅ OBJETIVO 3: Efeito de "levantar" no hover */
         .servico-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.12);
@@ -101,9 +101,8 @@
         .btn-editar { background-color: #ffc107; color: #333; }
         .btn-editar:hover { background-color: #e0a800; }
         
-        /* ✅ OBJETIVO 1: Efeito de hover no botão Excluir corrigido */
         .btn-excluir { background-color: #dc3545; color: white; }
-        .btn-excluir:hover { background-color: #c82333; opacity: 1; } /* Garante opacidade e muda a cor */
+        .btn-excluir:hover { background-color: #c82333; }
         
         @media (max-width: 900px) { 
             body { flex-direction: column; }
@@ -140,7 +139,14 @@
 </main>
 
 <div id="custom-confirm-modal" class="modal-overlay">
-    <!-- ...código do modal... -->
+    <div class="modal-box">
+        <h2 id="modal-titulo"></h2>
+        <p id="modal-mensagem"></p>
+        <div class="modal-botoes">
+            <button id="modal-btn-cancelar">Cancelar</button>
+            <button id="modal-btn-confirmar">Confirmar</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -160,6 +166,7 @@
     });
 </script>
 
+<!-- ✅ OBJETIVO 1: O arquivo 'servicos.js' é o responsável pela função do botão. -->
 <script src="./firebase-config.js" type="module"></script>
 <script src="./vitrini-utils.js" type="module"></script>
 <script src="./servicos.js" type="module"></script> 
