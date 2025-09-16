@@ -266,7 +266,7 @@ export async function verificarAcesso() {
                         localStorage.removeItem('empresaAtivaId');
                         window.location.replace('login.html');
                         isProcessing = false;
-                        return reject(new Error("Acesso de profissional revogado ou pendente.");
+                        return reject(new Error("Acesso de profissional revogado ou pendente."));
                     }
                     perfilDetalhado = { ...profSnap.data(), ehDono: false };
                     papel = 'funcionario';
