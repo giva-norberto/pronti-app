@@ -1,5 +1,5 @@
 // ======================================================================
-//          DASHBOARD.JS (SUA VERSÃO ANTIGA E FUNCIONAL)
+//          DASHBOARD.JS (CORRIGIDO PARA MULTIEMPRESA)
 // ======================================================================
 
 import { verificarAcesso, checkUserStatus } from "./userService.js";
@@ -259,6 +259,9 @@ function calcularSugestaoIA(resumo) {
 // --------------------------------------------------
 
 async function iniciarDashboard(user, empresaId) {
+  // Log para debug da empresa ativa
+  console.log("[DEBUG] Dashboard carregando para empresa:", empresaId);
+
   const filtroData = document.getElementById("filtro-data");
   const hojeString = new Date().toISOString().split("T")[0];
   const dataInicial = await encontrarProximaDataDisponivel(empresaId, hojeString);
@@ -280,6 +283,16 @@ async function iniciarDashboard(user, empresaId) {
   const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
   preencherPainel(resumoInicial, servicosSemana);
 }
+
+// ---- ESCUTA TROCA DE EMPRESA ATIVA E RECARREGA ----
+// Se você tiver um menu de troca de empresa, adicione:
+window.addEventListener("empresaAtivaTroca", () => {
+  location.reload(); // Garante que dashboard vai recarregar com a empresa correta
+});
+
+// --------------------------------------------------
+// LOAD
+// --------------------------------------------------
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
