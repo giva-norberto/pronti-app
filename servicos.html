@@ -7,7 +7,7 @@
     <link href="style.css" rel="stylesheet" type="text/css" />
     <style>
         /* ======================================================================
-                    CSS FINAL, REVISADO E COM CONTRASTE CORRIGIDO
+                    CSS FINAL, REVISADO E COM LAYOUT CORRIGIDO
            ====================================================================== */
 
         :root {
@@ -18,18 +18,22 @@
 
         body {
             font-family: 'Inter', Arial, sans-serif;
+            /* ✅ PASSO 1: Fundo azul aplicado ao corpo da página. */
             background: var(--gradient-primary);
             color: #333;
+            display: flex; /* Garante o layout com menu lateral */
         }
 
         .main-content { 
             margin-left: 270px; 
             padding: 32px; 
             min-height: 100vh;
+            flex-grow: 1; /* Permite que o conteúdo principal cresça */
         }
 
+        /* ✅ PASSO 2: Título principal com fundo branco para contraste */
         .main-content h1 {
-            background-color: rgba(255, 255, 255, 0.95);
+            background-color: #fff;
             padding: 16px 24px;
             border-radius: 14px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.06);
@@ -39,31 +43,42 @@
             margin-bottom: 24px;
         }
 
-        /* ✅ NOVO CONTAINER PARA O CONTEÚDO DA LISTA */
-        .servicos-container {
-            background: #fff;
-            padding: 24px;
-            border-radius: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        /* ✅ PASSO 3: Botão "Adicionar" com estilo de alto contraste */
+        .btn-new { 
+            background-color: #fff; 
+            color: #4f46e5; 
+            padding: 12px 20px; 
+            border-radius: 8px; 
+            text-decoration: none; 
+            font-weight: bold; 
+            display: inline-block; 
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .btn-new:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        /* ✅ ESTILO DO TÍTULO DA CATEGORIA CORRIGIDO */
+        /* ✅ PASSO 4: Título da categoria com cor branca para contraste */
         .categoria-titulo {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #1e293b;
+            color: #fff; /* Cor branca para ler sobre o fundo azul */
+            margin-top: 24px;
             margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #f1f5f9;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2); /* Sombra para legibilidade */
         }
 
+        /* Cards de serviço mantêm o fundo branco */
         .servico-card { 
             background: white;
             border: 1px solid #e0e0e0; 
             border-radius: 12px;
             padding: 20px; 
             margin-bottom: 15px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
         }
         .servico-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .servico-titulo { font-size: 1.3em; font-weight: bold; color: #333; margin: 0; }
@@ -76,23 +91,8 @@
         .btn-editar { background-color: #ffc107; color: #333; }
         .btn-excluir { background-color: #dc3545; color: white; }
         
-        /* ✅ ESTILO DO BOTÃO "ADICIONAR" CORRIGIDO */
-        .btn-new { 
-            background-color: #4f46e5; 
-            color: white; 
-            padding: 12px 20px; 
-            border-radius: 8px; 
-            text-decoration: none; 
-            font-weight: bold; 
-            display: inline-block; 
-            margin-bottom: 20px;
-            transition: background-color 0.2s;
-        }
-        .btn-new:hover {
-            background-color: #4338ca;
-        }
-        
         @media (max-width: 900px) { 
+            body { flex-direction: column; } /* Ajuste para o menu ficar em cima */
             .main-content { 
                 margin-left: 0; 
                 padding: 16px;
@@ -104,7 +104,6 @@
         .modal-overlay.ativo { display: flex; opacity: 1; }
         .modal-box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25); text-align: center; max-width: 420px; width: 90%; }
         .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-        .modal-botoes button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; }
         #modal-btn-confirmar { background-color: #d9534f; color: white; }
         #modal-btn-cancelar { background-color: #f0f0f0; color: #333; }
         #loader { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; font-size: 1.2em; backdrop-filter: blur(2px); }
@@ -115,18 +114,15 @@
 
 <div id="loader" style="display: none;">Carregando...</div>
 
+<!-- ✅ O MENU LATERAL ESTÁ AQUI, COMO DEVERIA ESTAR -->
 <div id="sidebar-placeholder"></div>
 
 <main class="main-content">
     <h1>Nossos Serviços</h1>
+    <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
     
-    <!-- ✅ NOVO CONTAINER PARA AGRUPAR O CONTEÚDO E DAR FUNDO BRANCO -->
-    <div class="servicos-container">
-        <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
-        <div id="lista-servicos" style="margin-top:20px;">
-            <!-- O conteúdo da lista de serviços será inserido aqui pelo JavaScript -->
-        </div>
-    </div>
+    <!-- A lista de serviços será renderizada aqui pelo JS, com os cards separados -->
+    <div id="lista-servicos" style="margin-top:20px;"></div>
 </main>
 
 <div id="custom-confirm-modal" class="modal-overlay">
@@ -134,7 +130,20 @@
 </div>
 
 <script>
-    // ...código do script...
+    // Este script carrega o menu lateral, ele está correto e foi mantido.
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch('menu-lateral.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('sidebar-placeholder').innerHTML = html;
+                const links = document.querySelectorAll('.sidebar-links a');
+                links.forEach(link => link.classList.remove('active'));
+                const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
+                if (servicosLink) {
+                    servicosLink.classList.add('active');
+                }
+            });
+    });
 </script>
 
 <script src="./firebase-config.js" type="module"></script>
