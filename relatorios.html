@@ -298,38 +298,33 @@
     </section>
   </main>
   <script>
-    // Botão voltar seguro
+    // O botão de voltar interno da página agora usa history.back()
+    // para se comportar exatamente como o botão do navegador.
     const btnVoltar = document.getElementById("btn-voltar");
     if (btnVoltar) {
       btnVoltar.addEventListener("click", () => {
-        // Modificado para usar history.back() para um comportamento mais natural,
-        // mas a lógica abaixo garante que o "back" do navegador vá para index.html
         window.history.back();
       });
     }
   </script>
   <script src="relatorios.js" type="module"></script>
 
-  <!-- SCRIPT ADICIONADO CIRURGICAMENTE -->
+  <!-- SCRIPT CORRIGIDO E DEFINITIVO -->
   <script>
-    // Este script garante que o botão "Voltar" do NAVEGADOR leve para a index.html
-    document.addEventListener('DOMContentLoaded', () => {
-      // Pega a URL atual da página de relatórios
-      const urlAtual = window.location.href;
-      // Define a URL de destino para o botão "Voltar"
-      const urlDestino = 'index.html';
+    // 1. Adiciona uma entrada "falsa" no topo do histórico.
+    //    Isso é necessário para que o evento 'popstate' seja disparado
+    //    quando o usuário clicar em "Voltar" pela primeira vez.
+    window.history.pushState({ "paginaRelatorio": true }, "");
 
-      // 1. Insere a 'index.html' no histórico de navegação.
-      //    Isso faz com que ela se torne a página "anterior" a esta.
-      window.history.pushState(null, '', urlDestino);
-
-      // 2. Imediatamente, reinsere a URL da página de relatórios no topo do histórico.
-      //    Isso é feito para que a URL na barra de endereço do navegador não mude para 'index.html'.
-      //    O resultado final é que o histórico fica: [..., página_anterior, index.html, relatorios.html]
-      window.history.pushState(null, '', urlAtual);
+    // 2. Adiciona um ouvinte para o evento 'popstate', que é acionado
+    //    pelo botão "Voltar" do navegador.
+    window.addEventListener('popstate', function(event) {
+      // 3. Intercepta a ação de "Voltar" e força o redirecionamento
+      //    para a 'index.html', ignorando o histórico real.
+      window.location.replace('index.html');
     });
   </script>
-  <!-- FIM DO SCRIPT ADICIONADO -->
+  <!-- FIM DO SCRIPT CORRIGIDO -->
 
 </body>
 </html>
