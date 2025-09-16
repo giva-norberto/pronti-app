@@ -1,5 +1,5 @@
 // ======================================================================
-//        USER-SERVICE.JS (VERSÃO FINAL COM LÓGICA DE ACESSO CENTRALIZADA)
+//        USER-SERVICE.JS (VERSÃO FINAL COM LÓGICA DE ACESSO CORRIGIDA)
 // ======================================================================
 
 import {
@@ -15,17 +15,15 @@ const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
 // ======================================================================
 // FUNÇÃO PRINCIPAL: O GUARDA DE ACESSO ÚNICO
-// Esta função é a única fonte da verdade sobre o acesso do usuário.
 // ======================================================================
 
-export async function verificarAcesso() {
+export async function verificarAcesso( ) {
     // Se já temos um perfil na sessão, retorna imediatamente.
     if (cachedSessionProfile) return cachedSessionProfile;
     // Se uma verificação já está em andamento, aguarda por ela.
     if (activeAccessCheckPromise) return activeAccessCheckPromise;
 
-    // ✅ CORREÇÃO ANTI-PISCA: Toda a lógica é encapsulada em uma única promessa.
-    // Nenhuma página continuará a carregar até que esta promessa seja resolvida ou rejeitada.
+    // CORREÇÃO ANTI-PISCA: Toda a lógica é encapsulada em uma única promessa.
     activeAccessCheckPromise = new Promise(async (resolve, reject) => {
         try {
             // 1. VERIFICA O USUÁRIO ATUAL
@@ -41,14 +39,12 @@ export async function verificarAcesso() {
             }
 
             // 2. VERIFICA SE É O ADMIN (REGRA DE EXCEÇÃO)
-            // Esta regra é checada primeiro para dar passe livre ao admin nas verificações de assinatura.
             const isAdmin = user.uid === ADMIN_UID;
 
             // 3. FLUXO PARA TODOS OS USUÁRIOS (INCLUINDO ADMIN)
             await ensureUserAndTrialDoc(user);
             const empresas = await getEmpresasDoUsuario(user);
 
-            // Se o usuário (que não seja admin) não tem empresa, o lugar dele é na tela de seleção.
             if (empresas.length === 0 && !isAdmin) {
                 if (currentPage !== 'selecionar-empresa.html') {
                     window.location.replace('selecionar-empresa.html');
@@ -56,10 +52,8 @@ export async function verificarAcesso() {
                 return reject(new Error("Novo usuário. Exibindo tela de boas-vindas."));
             }
             
-            // Pega a empresa ativa do localStorage.
             let empresaAtivaId = localStorage.getItem('empresaAtivaId');
 
-            // Se o usuário tem mais de uma empresa e nenhuma está ativa, força a seleção.
             if (empresas.length > 1 && !empresaAtivaId) {
                 if (currentPage !== 'selecionar-empresa.html') {
                     window.location.replace('selecionar-empresa.html');
@@ -67,26 +61,22 @@ export async function verificarAcesso() {
                 return reject(new Error("Múltiplas empresas. Seleção necessária."));
             }
             
-            // Se tem exatamente uma empresa, define ela como a ativa.
             if (empresas.length === 1) {
                 empresaAtivaId = empresas[0].id;
                 localStorage.setItem('empresaAtivaId', empresaAtivaId);
             }
 
-            // Se, mesmo com 1 empresa, o usuário estiver na tela de seleção, redireciona para o início.
             if (empresaAtivaId && currentPage === 'selecionar-empresa.html') {
                 window.location.replace('index.html');
                 return reject(new Error("Redirecionando para o painel principal."));
             }
 
-            // Se for admin e não tiver empresa selecionada (ex: na tela de admin), pode prosseguir
             if (!empresaAtivaId && isAdmin) {
                  const adminProfile = { user, empresaId: null, perfil: { nome: "Administrador", papel: "admin" }, isOwner: true, isAdmin: true, papel: 'admin' };
                  cachedSessionProfile = adminProfile;
                  return resolve(adminProfile);
             }
 
-            // Se não tem ID de empresa e não é admin, volta para a seleção
             if (!empresaAtivaId) {
                 window.location.replace('selecionar-empresa.html');
                 return reject(new Error("Nenhuma empresa ativa encontrada."));
@@ -101,10 +91,14 @@ export async function verificarAcesso() {
             }
 
             const empresaData = empresaDoc.data();
-            const { hasActivePlan, isTrialActive } = await checkUserStatus(user, empresaData);
+            // ✅ AQUI A MÁGICA ACONTECE: CHAMAMOS A FUNÇÃO CORRIGIDA
+            const statusAssinatura = await checkUserStatus(user, empresaData);
+
+            // ✅ E ANEXAMOS O RESULTADO COMPLETO AO PERFIL PARA USO POSTERIOR
+            empresaData.statusAssinatura = statusAssinatura;
 
             // A verificação de assinatura só acontece se o usuário NÃO for admin.
-            if (!isAdmin && !hasActivePlan && !isTrialActive && currentPage !== 'assinatura.html') {
+            if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html') {
                 window.location.replace('assinatura.html');
                 return reject(new Error("Assinatura expirada."));
             }
@@ -117,7 +111,7 @@ export async function verificarAcesso() {
         } catch (error) {
             reject(error);
         } finally {
-            isProcessing = false;
+            // A variável 'isProcessing' foi removida pois 'activeAccessCheckPromise' já faz esse controle.
             activeAccessCheckPromise = null;
         }
     });
@@ -162,6 +156,7 @@ async function buildSessionProfile(user, empresaId, empresaData) {
 /** Limpa o cache ao fazer logout. */
 export function clearCache() {
     cachedSessionProfile = null;
+    activeAccessCheckPromise = null; // Limpa a promessa também
 }
 
 /** Garante que o documento do usuário exista. */
@@ -181,24 +176,60 @@ export async function ensureUserAndTrialDoc(user) {
     } catch (error) { console.error("❌ Erro em ensureUserAndTrialDoc:", error); }
 }
 
-/** Verifica o status da assinatura/trial. */
+/** ✅ Verifica o status da assinatura/trial (VERSÃO COMPLETA E CORRIGIDA) */
 async function checkUserStatus(user, empresaData) {
+    const defaultReturn = { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
     try {
-        if (user.uid === ADMIN_UID) return { hasActivePlan: true, isTrialActive: false };
+        // REGRA 1: O Admin Global sempre tem acesso total.
+        if (user.uid === ADMIN_UID) {
+            return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
+        }
+
+        let hasActivePlan = false;
+        let isTrialActive = false;
+        let trialDaysRemaining = 0;
+
+        // REGRA 2: Verifica se a EMPRESA tem um plano pago.
+        if (empresaData && empresaData.plano && empresaData.plano !== 'free') {
+            hasActivePlan = true;
+        }
+
+        // REGRA 3: Verifica se o USUÁRIO individual tem a flag 'isPremium'.
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true };
-        const userData = userSnap.data();
-        if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
-        if (!userData.trialStart?.seconds) return { hasActivePlan: false, isTrialActive: true };
-        let trialDurationDays = empresaData?.freeEmDias ?? 15;
-        const startDate = new Date(userData.trialStart.seconds * 1000);
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + trialDurationDays);
-        return { hasActivePlan: false, isTrialActive: endDate > new Date() };
+        
+        if (userSnap.exists() && userSnap.data().isPremium === true) {
+            hasActivePlan = true;
+        }
+
+        // REGRA 4: Calcula os dias de trial, independentemente de ter um plano pago.
+        if (userSnap.exists() && userSnap.data().trialStart?.seconds) {
+            const trialDurationDays = empresaData?.freeEmDias ?? 15;
+            const startDate = new Date(userSnap.data().trialStart.seconds * 1000);
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + trialDurationDays);
+            
+            const hoje = new Date();
+            endDate.setHours(23, 59, 59, 999);
+            hoje.setHours(0, 0, 0, 0);
+
+            if (endDate >= hoje) {
+                isTrialActive = true;
+                const diffTime = endDate.getTime() - hoje.getTime();
+                trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+        } else if (!userSnap.exists()) {
+            // Se o documento do usuário ainda não existe, ele está no primeiro acesso.
+            isTrialActive = true;
+            trialDaysRemaining = empresaData?.freeEmDias ?? 15;
+        }
+
+        // Retorna o objeto completo com todas as informações.
+        return { hasActivePlan, isTrialActive, trialDaysRemaining };
+
     } catch (error) {
         console.error("❌ Erro em checkUserStatus:", error);
-        return { hasActivePlan: false, isTrialActive: true };
+        return defaultReturn;
     }
 }
 
