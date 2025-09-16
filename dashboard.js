@@ -1,8 +1,10 @@
 // ======================================================================
-//          DASHBOARD.JS (CORRIGIDO PARA MULTIEMPRESA)
+//          DASHBOARD.JS (CORRIGIDO E VALIDADO PARA MULTIEMPRESA)
 // ======================================================================
 
-import { verificarAcesso, checkUserStatus } from "./userService.js";
+// ✅ CORREÇÃO: Importa 'verificarAcesso' do userService. A função 'checkUserStatus' não é exportada,
+// mas seus dados já vêm dentro do objeto retornado por verificarAcesso.
+import { verificarAcesso } from "./userService.js";
 import { db } from "./firebase-config.js";
 import {
   doc,
@@ -21,7 +23,7 @@ const STATUS_VALIDOS = ["ativo", "realizado"];
 // UTILITÁRIOS
 // --------------------------------------------------
 
-function timeStringToMinutes(timeStr) {
+function timeStringToMinutes(timeStr ) {
   if (!timeStr) return 0;
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
@@ -38,9 +40,11 @@ function addMinutesToTimeString(timeStr, minutes) {
   return `${hh}:${mm}`;
 }
 
+// ✅ BOA PRÁTICA: Esta função é útil, mas será chamada dentro do fluxo principal para evitar erros.
 function getEmpresaIdAtiva() {
   const empresaId = localStorage.getItem("empresaAtivaId");
   if (!empresaId) {
+    // O verificarAcesso já deve ter redirecionado, mas é uma segurança extra.
     window.location.href = "selecionar-empresa.html";
     throw new Error("Empresa não selecionada.");
   }
@@ -201,7 +205,8 @@ async function obterServicosMaisVendidosSemana(empresaId) {
 // RENDERIZAÇÃO NA UI
 // --------------------------------------------------
 
-function preencherPainel(resumo, servicosSemana) {
+// ✅ CORREÇÃO: A função agora recebe o 'empresaId' para passar para a IA.
+function preencherPainel(resumo, servicosSemana, empresaId) {
   document.getElementById("faturamento-realizado").textContent =
     resumo.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   document.getElementById("faturamento-previsto").textContent =
@@ -209,9 +214,14 @@ function preencherPainel(resumo, servicosSemana) {
   document.getElementById("total-agendamentos-dia").textContent = resumo.totalAgendamentosDia;
   document.getElementById("agendamentos-pendentes").textContent = resumo.agendamentosPendentes;
 
-  const ctx = document.getElementById("grafico-servicos-semana");
-  if (ctx) {
-    new Chart(ctx, {
+  const canvas = document.getElementById("grafico-servicos-semana");
+  if (canvas) {
+    // Destrói o gráfico anterior para evitar sobreposição
+    const chartExistente = Chart.getChart(canvas);
+    if (chartExistente) {
+        chartExistente.destroy();
+    }
+    new Chart(canvas, {
       type: "pie",
       data: {
         labels: Object.keys(servicosSemana),
@@ -230,17 +240,20 @@ function preencherPainel(resumo, servicosSemana) {
     });
   }
 
-  const resumoInteligente = gerarResumoDiarioInteligente(resumo.agsParaIA);
   const elResumo = document.getElementById("resumo-inteligente");
   const elSugestaoIA = document.getElementById("ia-sugestao");
 
   if (elResumo) {
-    if (resumoInteligente?.mensagem) {
-      elResumo.innerHTML = resumoInteligente.mensagem;
+    // ✅ CORREÇÃO: Valida se há dados ANTES de chamar a IA.
+    if (resumo.agsParaIA && resumo.agsParaIA.length > 0) {
+      // Passa o empresaId para a função de IA, caso ela precise de mais contexto no futuro.
+      const resumoInteligente = gerarResumoDiarioInteligente(resumo.agsParaIA, empresaId);
+      elResumo.innerHTML = resumoInteligente?.mensagem || "<ul><li>Não foi possível gerar o resumo.</li></ul>";
     } else {
-      elResumo.innerHTML = "<ul><li>Nenhum dado disponível para o resumo.</li></ul>";
+      elResumo.innerHTML = "<ul><li>Nenhum agendamento no dia para resumir.</li></ul>";
     }
   }
+  
   if (elSugestaoIA) {
     elSugestaoIA.textContent = calcularSugestaoIA(resumo);
   }
@@ -258,8 +271,9 @@ function calcularSugestaoIA(resumo) {
 // INICIALIZAÇÃO
 // --------------------------------------------------
 
-async function iniciarDashboard(user, empresaId) {
-  // Log para debug da empresa ativa
+// ✅ CORREÇÃO: A função agora recebe o objeto de perfil completo.
+async function iniciarDashboard(perfil) {
+  const empresaId = perfil.empresaId;
   console.log("[DEBUG] Dashboard carregando para empresa:", empresaId);
 
   const filtroData = document.getElementById("filtro-data");
@@ -275,19 +289,19 @@ async function iniciarDashboard(user, empresaId) {
       }
       const resumo = await obterResumoDoDia(empresaId, novaData);
       const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
-      preencherPainel(resumo, servicosSemana);
+      preencherPainel(resumo, servicosSemana, empresaId);
     }, 300));
   }
 
   const resumoInicial = await obterResumoDoDia(empresaId, dataInicial);
   const servicosSemana = await obterServicosMaisVendidosSemana(empresaId);
-  preencherPainel(resumoInicial, servicosSemana);
+  preencherPainel(resumoInicial, servicosSemana, empresaId);
 }
 
 // ---- ESCUTA TROCA DE EMPRESA ATIVA E RECARREGA ----
-// Se você tiver um menu de troca de empresa, adicione:
 window.addEventListener("empresaAtivaTroca", () => {
-  location.reload(); // Garante que dashboard vai recarregar com a empresa correta
+  console.log("[DEBUG] Evento de troca de empresa detectado. Recarregando dashboard.");
+  location.reload();
 });
 
 // --------------------------------------------------
@@ -296,24 +310,28 @@ window.addEventListener("empresaAtivaTroca", () => {
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    const { user } = await verificarAcesso();
-    const empresaId = getEmpresaIdAtiva();
-    await iniciarDashboard(user, empresaId);
+    // ✅ CORREÇÃO: 'verificarAcesso' retorna o objeto de perfil completo.
+    const perfil = await verificarAcesso();
+    
+    // Se 'verificarAcesso' resolver, temos certeza que 'perfil.empresaId' existe.
+    await iniciarDashboard(perfil);
 
-    const status = await checkUserStatus();
-    if (status?.isTrialActive && status?.trialEndDate) {
+    // ✅ CORREÇÃO: Usa os dados de 'statusAssinatura' que já vieram no objeto de perfil.
+    const status = perfil.statusAssinatura;
+    if (status?.isTrialActive && status?.trialDaysRemaining > 0) {
       const banner = document.getElementById("trial-notification-banner");
       if (banner) {
-        const hoje = new Date();
-        const trialEnd = new Date(status.trialEndDate);
-        const diasRestantes = Math.max(0, Math.ceil((trialEnd - hoje)/(1000*60*60*24)));
-        banner.innerHTML = `🎉 O seu período de teste termina em ${diasRestantes} dia${diasRestantes!==1?"s":""}.`;
+        const diasRestantes = status.trialDaysRemaining;
+        banner.innerHTML = `🎉 O seu período de teste termina em ${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""}.`;
         banner.style.display = "block";
       }
     }
   } catch(error){
-    if (!error.message.includes("A redirecionar")) {
-      console.error("Erro no guardião de acesso:", error?.message || error);
+    // O 'verificarAcesso' rejeita a promessa em caso de redirecionamento.
+    // Apenas logamos o erro se não for uma mensagem de redirecionamento padrão.
+    if (error && !error.message.includes("Redirecionando") && !error.message.includes("Nenhuma empresa")) {
+      console.error("Erro crítico no carregamento do dashboard:", error);
+      // Como último recurso, redireciona para o login.
       window.location.href = "login.html";
     }
   }
