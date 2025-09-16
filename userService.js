@@ -1,5 +1,5 @@
 // ======================================================================
-//      USER-SERVICE.JS (DEBUG COMPLETO - LOG DE TUDO, SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
+//      USER-SERVICE.JS (DEBUG COMPLETO - CORRIGIDO, SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
 // ======================================================================
 
 import {
@@ -225,7 +225,7 @@ export async function verificarAcesso() {
                             user,
                             empresaId: null,
                             perfil: { nome: "Administrador", email: user.email || '', papel: "admin" },
-                            isOwner: true,
+                            isOwner: false,
                             isAdmin: true,
                             papel: 'admin',
                             empresas: []
@@ -248,13 +248,17 @@ export async function verificarAcesso() {
                 console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
 
                 // Monta perfil ANTES do bloqueio
-                let perfilDetalhado, papel, isOwner;
-                isOwner = empresaData.donoId === user.uid;
+                let perfilDetalhado, papel;
+                const isOwner = empresaData.donoId === user.uid;
 
-                if (isOwner || isAdmin) {
+                if (isOwner) {
                     perfilDetalhado = { ...empresaData, nome: user.displayName || user.email || 'Usuário', ehDono: true, status: 'ativo', email: user.email || '' };
                     papel = 'dono';
-                    console.log("[DEBUG] Perfil do usuário (dono/admin):", perfilDetalhado);
+                    console.log("[DEBUG] Perfil do usuário (dono):", perfilDetalhado);
+                } else if (isAdmin) {
+                    perfilDetalhado = { ...empresaData, nome: "Administrador", ehDono: false, status: 'ativo', email: user.email || '' };
+                    papel = 'admin';
+                    console.log("[DEBUG] Perfil do usuário (admin):", perfilDetalhado);
                 } else {
                     const profSnap = await getDoc(doc(db, "empresarios", empresaAtivaId, "profissionais", user.uid));
                     if (!profSnap.exists() || profSnap.data().status !== 'ativo') {
@@ -262,7 +266,7 @@ export async function verificarAcesso() {
                         localStorage.removeItem('empresaAtivaId');
                         window.location.replace('login.html');
                         isProcessing = false;
-                        return reject(new Error("Acesso de profissional revogado ou pendente."));
+                        return reject(new Error("Acesso de profissional revogado ou pendente.");
                     }
                     perfilDetalhado = { ...profSnap.data(), ehDono: false };
                     papel = 'funcionario';
@@ -273,8 +277,8 @@ export async function verificarAcesso() {
                     user,
                     empresaId: empresaAtivaId,
                     perfil: perfilDetalhado,
-                    isOwner: isOwner || isAdmin,
-                    isAdmin: isAdmin,
+                    isOwner,
+                    isAdmin,
                     papel,
                     empresas,
                     statusAssinatura
