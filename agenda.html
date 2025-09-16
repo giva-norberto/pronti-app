@@ -15,7 +15,7 @@
     
     <style>
         /* ======================================================================
-                    CSS FINAL, REVISADO E COM CORREÇÃO DEFINITIVA
+                    CSS FINAL, REVISADO E SEM CONFLITOS
            ====================================================================== */
         
         :root {
@@ -58,9 +58,10 @@
             font-weight: 800;
             color: var(--text-main);
         }
-        .btn-primary {
-            /* ✅ CORREÇÃO DEFINITIVA: Adicionado !important para garantir prioridade sobre style.css */
-            background-color: var(--primary-color) !important;
+
+        /* ✅ CORREÇÃO: Criada uma nova classe 'btn-pronti' que não conflita com 'btn-primary' */
+        .btn-pronti {
+            background-color: var(--primary-color);
             color: white;
             padding: 10px 18px;
             border-radius: 8px;
@@ -73,8 +74,8 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
-        .btn-primary:hover {
-            background-color: #4338ca !important;
+        .btn-pronti:hover {
+            background-color: #4338ca;
         }
 
         /* --- FILTROS --- */
@@ -105,7 +106,7 @@
             border-color: var(--primary-color);
         }
         .btn-outline.active {
-            background-color: var(--primary-color) !important; /* Adicionado para garantir */
+            background-color: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
         }
@@ -205,15 +206,15 @@
         <!-- Cabeçalho da página -->
         <div class="page-header">
             <h1>Minha Agenda</h1>
-            <a href="novo-agendamento.html" class="btn btn-primary" id="btn-novo-agendamento">
+            <!-- ✅ CORREÇÃO: A classe do botão foi trocada para 'btn-pronti' -->
+            <a href="novo-agendamento.html" class="btn btn-pronti" id="btn-novo-agendamento">
                 <i class="fa-solid fa-plus"></i>
                 Novo Agendamento
             </a>
         </div>
 
-        <!-- Filtros principais -->
+        <!-- O restante do seu HTML permanece exatamente igual -->
         <div class="filtros-agenda" id="filtros-agenda">
-            <!-- Botões de alternância de modo -->
             <button id="btn-agenda-dia" class="btn btn-outline active">
                 <i class="fa-solid fa-calendar-day"></i> Agenda do Dia
             </button>
@@ -223,7 +224,6 @@
             <button id="btn-historico" class="btn btn-outline">
                 <i class="fa-solid fa-clock-rotate-left"></i> Histórico
             </button>
-            <!-- Filtros de semana (container esperado pelo JS!) -->
             <div id="filtros-semana-container" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
                 <div class="filtro-item">
                     <label for="data-semana">Data</label>
@@ -240,15 +240,11 @@
                 </div>
             </div>
         </div>
-
-        <!-- Legenda da semana -->
         <div id="legenda-container" style="display: none;">
             <small id="legenda-semana">
                 Mostrando agendamentos de <span id="semana-inicio"></span> a <span id="semana-fim"></span>
             </small>
         </div>
-
-        <!-- Filtros de histórico -->
         <div id="filtros-historico">
             <div class="filtro-item">
                 <label for="data-inicial">De:</label>
@@ -265,14 +261,10 @@
                 <i class="fa-solid fa-calendar"></i> Mês Atual
             </button>
         </div>
-
-        <!-- Lista de agendamentos -->
         <div id="lista-agendamentos" class="dashboard-cards">
             <p id="agendamentos-placeholder">A carregar agendamentos...</p>
         </div>
     </main>
-
-    <!-- MODAL DE CONFIRMAÇÃO -->
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-card">
             <h3 id="modal-titulo">Confirmar Ação</h3>
