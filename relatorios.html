@@ -309,20 +309,21 @@
   </script>
   <script src="relatorios.js" type="module"></script>
 
-  <!-- ✅ INÍCIO DA MODIFICAÇÃO CIRÚRGICA -->
+  <!-- ✅ INÍCIO DA MODIFICAÇÃO FINAL E CORRETA -->
   <script>
-    // Este script garante que o botão "Voltar" do NAVEGADOR leve para a index.html
-    // Ele é a forma mais limpa de fazer isso sem criar novos arquivos ou alterar a lógica de outros scripts.
-    document.addEventListener('DOMContentLoaded', () => {
-        // 1. Insere a 'index.html' no histórico de navegação, logo "atrás" da página atual.
-        window.history.pushState(null, '', 'index.html');
-        // 2. Imediatamente, "empurra" a URL da página de relatórios de volta para o topo do histórico.
-        //    Isso faz com que a URL na barra de endereço não mude, mas o histórico interno do navegador
-        //    agora tem [..., página_anterior, index.html, relatorios.html].
-        window.history.pushState(null, '', 'relatorios.html');
+    // 1. Adiciona uma entrada "falsa" no histórico. Isso é necessário para
+    //    garantir que o evento 'popstate' sempre dispare na primeira vez que o usuário voltar.
+    window.history.pushState({ "page": "relatorios" }, "");
+
+    // 2. Ouve o evento 'popstate', que é o clique no botão "Voltar" do navegador.
+    window.addEventListener('popstate', function() {
+      // 3. Quando o evento é capturado, IGNORA o histórico e força o redirecionamento
+      //    para a 'index.html'. 'location.replace' é usado para não adicionar
+      //    a página anterior ao histórico, evitando qualquer tipo de loop.
+      window.location.replace('index.html');
     });
   </script>
-  <!-- ✅ FIM DA MODIFICAÇÃO CIRÚRGICA -->
+  <!-- ✅ FIM DA MODIFICAÇÃO FINAL E CORRETA -->
 
 </body>
 </html>
