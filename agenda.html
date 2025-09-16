@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Minha Agenda</title>
-    <!-- ... (links do head) ... -->
+    <!-- Google Fonts e Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS do Pronti -->
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
@@ -25,8 +28,6 @@
             --border-color: #e2e8f0;
             --shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
-
-        /* ... (todo o resto do seu CSS permanece igual) ... */
 
         body {
             font-family: 'Inter', sans-serif;
@@ -85,7 +86,7 @@
             background-color: #dc2626 !important; /* Um vermelho mais escuro no hover */
         }
 
-        /* --- FILTROS (sem alterações) --- */
+        /* --- FILTROS --- */
         .filtros-agenda {
             display: flex;
             gap: 10px;
@@ -142,7 +143,7 @@
             cursor: pointer;
         }
 
-        /* --- LEGENDA E HISTÓRICO (sem alterações) --- */
+        /* --- LEGENDA E HISTÓRICO --- */
         #legenda-container {
             margin: 16px 0;
             padding: 10px 16px;
@@ -164,7 +165,7 @@
             align-items: flex-end;
         }
 
-        /* --- LISTA DE AGENDAMENTOS (sem alterações) --- */
+        /* --- LISTA DE AGENDAMENTOS --- */
         #lista-agendamentos {
             display: flex;
             flex-direction: column;
@@ -183,7 +184,7 @@
             padding: 20px;
         }
 
-        /* --- MODAL (sem alterações) --- */
+        /* --- MODAL --- */
         .modal-overlay {
             position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.6); display: none; justify-content: center;
@@ -199,7 +200,7 @@
         .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
         .btn-remove { background-color: #ef4444; color: white; border: none; }
 
-        /* --- RESPONSIVIDADE (sem alterações) --- */
+        /* --- RESPONSIVIDADE --- */
         @media (max-width: 900px) {
             body { flex-direction: column; }
             .main-content { margin-left: 0; padding: 16px; }
@@ -208,7 +209,6 @@
     </style>
 </head>
 <body>
-    <!-- ... (o resto do seu HTML permanece igual) ... -->
     <div id="sidebar-placeholder"></div>
     <main class="main-content">
         <div class="page-header">
