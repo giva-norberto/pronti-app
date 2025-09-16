@@ -17,7 +17,7 @@ const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 // FUNÇÃO PRINCIPAL: O GUARDA DE ACESSO ÚNICO
 // ======================================================================
 
-export async function verificarAcesso( ) {
+export async function verificarAcesso() {
     // Se já temos um perfil na sessão, retorna imediatamente.
     if (cachedSessionProfile) return cachedSessionProfile;
     // Se uma verificação já está em andamento, aguarda por ela.
@@ -43,7 +43,7 @@ export async function verificarAcesso( ) {
 
             // 3. FLUXO PARA TODOS OS USUÁRIOS (INCLUINDO ADMIN)
             await ensureUserAndTrialDoc(user);
-            const empresas = await getEmpresasDoUsuario(user);
+            const empresas = await getEmpresasAtivasDoUsuario(user);
 
             if (empresas.length === 0 && !isAdmin) {
                 if (currentPage !== 'selecionar-empresa.html') {
@@ -51,32 +51,46 @@ export async function verificarAcesso( ) {
                 }
                 return reject(new Error("Novo usuário. Exibindo tela de boas-vindas."));
             }
-            
+
             let empresaAtivaId = localStorage.getItem('empresaAtivaId');
 
-            if (empresas.length > 1 && !empresaAtivaId) {
+            // Se tem múltiplas empresas ativas e empresa ativa não está entre elas, força seleção
+            if (empresas.length > 1 && (!empresaAtivaId || !empresas.find(e => e.id === empresaAtivaId))) {
+                localStorage.removeItem('empresaAtivaId');
                 if (currentPage !== 'selecionar-empresa.html') {
                     window.location.replace('selecionar-empresa.html');
                 }
                 return reject(new Error("Múltiplas empresas. Seleção necessária."));
             }
-            
+
+            // Se só tem uma empresa ativa, define como ativa
             if (empresas.length === 1) {
                 empresaAtivaId = empresas[0].id;
                 localStorage.setItem('empresaAtivaId', empresaAtivaId);
             }
 
+            // Se está na seleção e já tem empresa ativa, vai para o painel
             if (empresaAtivaId && currentPage === 'selecionar-empresa.html') {
                 window.location.replace('index.html');
                 return reject(new Error("Redirecionando para o painel principal."));
             }
 
+            // Admin sem empresa ativa: perfil especial
             if (!empresaAtivaId && isAdmin) {
-                 const adminProfile = { user, empresaId: null, perfil: { nome: "Administrador", papel: "admin" }, isOwner: true, isAdmin: true, papel: 'admin' };
-                 cachedSessionProfile = adminProfile;
-                 return resolve(adminProfile);
+                const adminProfile = {
+                    user,
+                    empresaId: null,
+                    perfil: { nome: "Administrador", papel: "admin" },
+                    isOwner: true,
+                    isAdmin: true,
+                    papel: 'admin',
+                    empresas: []
+                };
+                cachedSessionProfile = adminProfile;
+                return resolve(adminProfile);
             }
 
+            // Se não tem empresa ativa, obriga escolher
             if (!empresaAtivaId) {
                 window.location.replace('selecionar-empresa.html');
                 return reject(new Error("Nenhuma empresa ativa encontrada."));
@@ -84,10 +98,10 @@ export async function verificarAcesso( ) {
 
             // 4. VALIDA A EMPRESA ATIVA E A ASSINATURA
             const empresaDoc = await getDoc(doc(db, "empresarios", empresaAtivaId));
-            if (!empresaDoc.exists()) {
+            if (!empresaDoc.exists() || empresaDoc.data().ativa === false) {
                 localStorage.removeItem('empresaAtivaId');
                 window.location.replace('selecionar-empresa.html');
-                return reject(new Error("Empresa ativa não encontrada no DB."));
+                return reject(new Error("Empresa ativa não encontrada no DB ou está desativada."));
             }
 
             const empresaData = empresaDoc.data();
@@ -104,7 +118,7 @@ export async function verificarAcesso( ) {
             }
 
             // 5. CONSTRÓI E RETORNA O PERFIL FINAL DA SESSÃO
-            const sessionProfile = await buildSessionProfile(user, empresaAtivaId, empresaData);
+            const sessionProfile = await buildSessionProfile(user, empresaAtivaId, empresaData, empresas);
             cachedSessionProfile = sessionProfile;
             resolve(sessionProfile);
 
@@ -134,7 +148,7 @@ function getCurrentUser() {
 }
 
 /** Constrói o objeto de sessão detalhado. */
-async function buildSessionProfile(user, empresaId, empresaData) {
+async function buildSessionProfile(user, empresaId, empresaData, empresasAtivasDoUsuario) {
     const isAdmin = user.uid === ADMIN_UID;
     const isOwner = empresaData.donoId === user.uid;
     let perfilDetalhado = empresaData;
@@ -149,8 +163,16 @@ async function buildSessionProfile(user, empresaId, empresaData) {
         perfilDetalhado = profSnap.data();
         papel = 'funcionario';
     }
-    
-    return { user, empresaId, perfil: perfilDetalhado, isOwner: isOwner || isAdmin, isAdmin, papel };
+
+    return {
+        user,
+        empresaId,
+        perfil: perfilDetalhado,
+        isOwner: isOwner || isAdmin,
+        isAdmin,
+        papel,
+        empresas: empresasAtivasDoUsuario
+    };
 }
 
 /** Limpa o cache ao fazer logout. */
@@ -197,7 +219,7 @@ async function checkUserStatus(user, empresaData) {
         // REGRA 3: Verifica se o USUÁRIO individual tem a flag 'isPremium'.
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists() && userSnap.data().isPremium === true) {
             hasActivePlan = true;
         }
@@ -208,7 +230,7 @@ async function checkUserStatus(user, empresaData) {
             const startDate = new Date(userSnap.data().trialStart.seconds * 1000);
             const endDate = new Date(startDate);
             endDate.setDate(startDate.getDate() + trialDurationDays);
-            
+
             const hoje = new Date();
             endDate.setHours(23, 59, 59, 999);
             hoje.setHours(0, 0, 0, 0);
@@ -233,26 +255,34 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
-/** Busca as empresas associadas ao usuário. */
-export async function getEmpresasDoUsuario(user) {
+/** Busca SOMENTE empresas ATIVAS associadas ao usuário. */
+export async function getEmpresasAtivasDoUsuario(user) {
     if (!user) return [];
     const empresasEncontradas = new Map();
     try {
-        const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
+        // Busca empresas em que o usuário é DONO e estão ativas
+        const qDono = query(collection(db, "empresarios"),
+            where("donoId", "==", user.uid),
+            where("ativa", "==", true)
+        );
         const snapshotDono = await getDocs(qDono);
         snapshotDono.forEach(doc => {
             if (!empresasEncontradas.has(doc.id)) {
                 empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
             }
         });
-    } catch (e) { console.error("❌ Erro ao buscar empresas (dono):", e); }
+    } catch (e) { console.error("❌ Erro ao buscar empresas ativas (dono):", e); }
     try {
+        // Busca empresas em que o usuário é FUNCIONÁRIO e estão ativas
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
         if (mapaSnap.exists() && mapaSnap.data().empresas?.length > 0) {
             const idsDeEmpresas = mapaSnap.data().empresas;
             const empresasRef = collection(db, "empresarios");
-            const q = query(empresasRef, where(documentId(), "in", idsDeEmpresas));
+            const q = query(empresasRef,
+                where(documentId(), "in", idsDeEmpresas),
+                where("ativa", "==", true)
+            );
             const querySnapshot = await getDocs(q);
             querySnapshot.forEach(doc => {
                 if (!empresasEncontradas.has(doc.id)) {
@@ -260,6 +290,6 @@ export async function getEmpresasDoUsuario(user) {
                 }
             });
         }
-    } catch(e) { console.error("❌ Erro ao buscar empresas (mapa):", e); }
+    } catch (e) { console.error("❌ Erro ao buscar empresas ativas (mapa):", e); }
     return Array.from(empresasEncontradas.values());
 }
