@@ -17,7 +17,7 @@
 
     <style>
         /* ======================================================================
-                    CSS FINAL, REVISADO E COM PADRÃO PRONTI
+                    CSS FINAL, REVISADO E COM BOTÃO CORRIGIDO
            ====================================================================== */
         
         :root {
@@ -32,7 +32,6 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            /* ✅ FUNDO AZUL APLICADO */
             background: var(--gradient-primary);
             color: var(--text-main);
             display: flex;
@@ -61,9 +60,10 @@
             font-weight: 800;
             color: var(--text-main);
         }
-        /* ✅ BOTÃO AZUL PADRÃO PRONTI */
+        
+        /* ✅ CORREÇÃO DEFINITIVA: Regra mais específica para o botão */
         .page-header .btn-primary {
-            background-color: var(--primary-color) !important;
+            background: var(--primary-color) !important; /* Força o azul escuro */
             color: white !important;
             padding: 10px 18px;
             border-radius: 8px;
@@ -77,15 +77,13 @@
             transition: background-color 0.2s;
         }
         .page-header .btn-primary:hover {
-            background-color: #4338ca !important;
+            background: #4338ca !important; /* Força o hover também */
         }
 
         /* --- GRID DE CARDS --- */
-        /* O seu 'dashboard-cards' já funciona bem, não precisa de alterações */
         .dashboard-cards {
             margin-top: 24px;
         }
-        /* O estilo dos cards de cliente virá do seu style.css, mas garantimos um fallback */
         .card {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -123,7 +121,6 @@
     <!-- Conteúdo Principal da Página -->
     <main class="main-content">
         
-        <!-- CABEÇALHO PADRONIZADO: Título à esquerda, botão à direita -->
         <div class="page-header">
             <h1>Meus Clientes</h1>
             <a href="novo-cliente.html" class="btn btn-primary">
@@ -132,7 +129,6 @@
             </a>
         </div>
         
-        <!-- GRID DE CARDS: Aplica o layout de grade responsiva -->
         <div id="lista-clientes" class="dashboard-cards">
             <!-- O script 'clientes.js' irá carregar os cards do banco de dados aqui. -->
         </div>
@@ -152,7 +148,6 @@
 
     <!-- SCRIPTS -->
     <script>
-    // Carrega o menu lateral padronizado de um arquivo externo.
     document.addEventListener("DOMContentLoaded", function() {
       const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
       if (sidebarPlaceholder) {
@@ -165,7 +160,6 @@
           })
           .then(html => {
             sidebarPlaceholder.innerHTML = html;
-            // Marca o link 'Clientes' como ativo no menu
             const activeLink = document.querySelector('.sidebar-links a[href="clientes.html"]');
             if (activeLink) activeLink.classList.add('active');
           })
@@ -177,10 +171,7 @@
     });
     </script>
     
-    <!-- Scripts de bibliotecas externas -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    
-    <!-- Seu script principal para a lógica da página de clientes -->
     <script src="clientes.js" type="module"></script>
 </body>
 </html>
