@@ -1,224 +1,122 @@
-// ======================================================================
-//          DASHBOARD.JS (VERSÃO FINAL COM DADOS MENSAIS )
-// ======================================================================
-
-import { verificarAcesso } from "./userService.js";
-import { db } from "./firebase-config.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { gerarResumoDiarioInteligente } from "./inteligencia.js";
-
-// --- VARIÁVEIS GLOBAIS E CONSTANTES ---
-let servicosChart;
-const STATUS_VALIDOS = ["ativo", "realizado"];
-
-// --- FUNÇÕES DE UTILIDADE ---
-function timeStringToMinutes(timeStr ) {
-    if (!timeStr) return 0;
-    const [h, m] = timeStr.split(":").map(Number);
-    return h * 60 + m;
-}
-
-function debounce(fn, delay) {
-    let timer = null;
-    return function (...args) {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn.apply(this, args), delay);
-    };
-}
-
-// --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
-
-function resetDashboardUI() {
-    console.log("[DEBUG] Resetando a UI do Dashboard para estado de carregamento.");
-    const spinner = '<span class="loading-spinner"></span>';
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Inteligente - Pronti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    document.getElementById('faturamento-realizado').innerHTML = spinner;
-    document.getElementById('faturamento-previsto').textContent = '--';
-    document.getElementById('total-agendamentos-dia').innerHTML = spinner;
-    document.getElementById('agendamentos-pendentes').textContent = '--';
-    document.getElementById('resumo-inteligente').innerHTML = spinner;
-    
-    const fatMensalEl = document.getElementById('faturamento-mensal');
-    const agMesEl = document.getElementById('agendamentos-mes');
-    if (fatMensalEl) fatMensalEl.innerHTML = spinner;
-    if (agMesEl) agMesEl.textContent = '--';
-
-    if (servicosChart) {
-        servicosChart.destroy();
-        servicosChart = null;
-    }
-    const graficoContainer = document.getElementById('grafico-container');
-    if (graficoContainer && !graficoContainer.querySelector('.loading-spinner')) {
-        graficoContainer.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:320px;"><span class="loading-spinner"></span></div>';
-    }
-}
-
-function preencherPainel(resumoDia, resumoMes, servicosSemana) {
-    // Preenche dados do dia
-    document.getElementById('faturamento-realizado').textContent = resumoDia.faturamentoRealizado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    document.getElementById('faturamento-previsto').textContent = resumoDia.faturamentoPrevisto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    document.getElementById('total-agendamentos-dia').textContent = resumoDia.totalAgendamentosDia;
-    document.getElementById('agendamentos-pendentes').textContent = resumoDia.agendamentosPendentes;
-
-    // Preenche dados do mês
-    const fatMensalEl = document.getElementById('faturamento-mensal');
-    const agMesEl = document.getElementById('agendamentos-mes');
-    if (fatMensalEl) fatMensalEl.textContent = resumoMes.faturamentoMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    if (agMesEl) agMesEl.textContent = resumoMes.agendamentosMes;
-
-    // Preenche Resumo Inteligente
-    if (resumoDia.agsParaIA && resumoDia.agsParaIA.length > 0) {
-        const resumoInteligente = gerarResumoDiarioInteligente(resumoDia.agsParaIA);
-        document.getElementById('resumo-inteligente').innerHTML = resumoInteligente?.mensagem || "<ul><li>Não foi possível gerar o resumo.</li></ul>";
-    } else {
-        document.getElementById('resumo-inteligente').innerHTML = "<ul><li>Nenhum agendamento no dia para resumir.</li></ul>";
-    }
-
-    // Preenche Gráfico
-    const graficoContainer = document.getElementById('grafico-container');
-    graficoContainer.innerHTML = '<canvas id="servicos-mais-vendidos"></canvas>';
-    const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
-    
-    if (servicosChart) servicosChart.destroy();
-
-    servicosChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: Object.keys(servicosSemana),
-            datasets: [{
-                label: 'Vendas na Semana',
-                data: Object.values(servicosSemana),
-                backgroundColor: '#6366f1',
-                borderRadius: 5,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    <style>
+        /* SEU CSS ORIGINAL - COM AJUSTE PARA 3 COLUNAS */
+        :root {
+            --primary: #6366f1; --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  ); --background: #f6f7fb;
+            --card-bg: #fff; --text-main: #21243d; --text-secondary: #71717a; --border: #e0e7ff;
+            --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
         }
-    });
-}
-
-// --- FUNÇÕES DE BUSCA DE DADOS ---
-
-async function buscarDadosDoDia(empresaId, data) {
-    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-    const q = query(agRef, where("data", "==", data), where("status", "in", STATUS_VALIDOS));
-    const snapshot = await getDocs(q);
-
-    let faturamentoRealizado = 0, faturamentoPrevisto = 0, totalAgendamentosDia = 0, agendamentosPendentes = 0;
-    const agsParaIA = [];
-    const agora = new Date();
-    const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
-
-    snapshot.forEach(doc => {
-        const ag = doc.data();
-        totalAgendamentosDia++;
-        faturamentoPrevisto += Number(ag.servicoPreco) || 0;
-        if (ag.status === "realizado") faturamentoRealizado += Number(ag.servicoPreco) || 0;
-        else if (ag.status === "ativo" && timeStringToMinutes(ag.horario) >= minutosAgora) agendamentosPendentes++;
-        
-        agsParaIA.push({
-            inicio: `${ag.data}T${ag.horario}:00`,
-            cliente: ag.clienteNome,
-            servico: ag.servicoNome,
-            servicoPreco: Number(ag.servicoPreco) || 0,
-            status: ag.status
-        });
-    });
-
-    return { faturamentoRealizado, faturamentoPrevisto, totalAgendamentosDia, agendamentosPendentes, agsParaIA };
-}
-
-async function buscarDadosDoMes(empresaId) {
-    const hoje = new Date();
-    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-
-    const dataISOInicio = primeiroDia.toISOString().split("T")[0];
-    const dataISOFim = ultimoDia.toISOString().split("T")[0];
-
-    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-    const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim), where("status", "==", "realizado"));
-    const snapshot = await getDocs(q);
-
-    let faturamentoMensal = 0;
-    snapshot.forEach(doc => {
-        faturamentoMensal += Number(doc.data().servicoPreco) || 0;
-    });
-
-    return { faturamentoMensal, agendamentosMes: snapshot.size };
-}
-
-async function buscarServicosDaSemana(empresaId) {
-    const hoje = new Date();
-    const inicioSemana = new Date(hoje);
-    inicioSemana.setDate(hoje.getDate() - 6);
-    const dataISOInicio = inicioSemana.toISOString().split("T")[0];
-    const dataISOFim = hoje.toISOString().split("T")[0];
-
-    const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-    const q = query(agRef, where("data", ">=", dataISOInicio), where("data", "<=", dataISOFim), where("status", "in", STATUS_VALIDOS));
-    const snapshot = await getDocs(q);
-
-    const contagem = {};
-    snapshot.forEach(doc => {
-        const nome = doc.data().servicoNome || "Serviço";
-        contagem[nome] = (contagem[nome] || 0) + 1;
-    });
-    return contagem;
-}
-
-// --- FUNÇÃO PRINCIPAL DE ORQUESTRAÇÃO ---
-
-async function carregarDashboard(empresaId, data) {
-    console.log(`[DEBUG] Carregando dashboard para empresa ${empresaId} na data ${data}`);
-    resetDashboardUI();
-    try {
-        const [resumoDoDia, resumoDoMes, servicosDaSemana] = await Promise.all([
-            buscarDadosDoDia(empresaId, data),
-            buscarDadosDoMes(empresaId),
-            buscarServicosDaSemana(empresaId)
-        ]);
-        preencherPainel(resumoDoDia, resumoDoMes, servicosDaSemana);
-    } catch (error) {
-        console.error("Erro ao carregar dados do dashboard:", error);
-        document.getElementById('resumo-inteligente').innerHTML = "<p style='color: red;'>Erro ao carregar dados.</p>";
-    }
-}
-
-// --- INICIALIZAÇÃO DA PÁGINA ---
-
-async function inicializarPagina() {
-    try {
-        const perfil = await verificarAcesso();
-        const empresaId = perfil.empresaId;
-
-        const response = await fetch('menu-lateral.html');
-        document.getElementById('menu-container').innerHTML = await response.text();
-        const menuModule = await import('./menu-lateral.js');
-        if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
-
-        const filtroDataEl = document.getElementById('filtro-data');
-        filtroDataEl.value = new Date().toISOString().split('T')[0];
-        
-        await carregarDashboard(empresaId, filtroDataEl.value);
-
-        filtroDataEl.addEventListener('change', debounce(() => {
-            carregarDashboard(empresaId, filtroDataEl.value);
-        }, 300));
-
-        window.addEventListener('empresaAtivaTroca', () => {
-            location.reload();
-        });
-
-    } catch (error) {
-        if (error && !error.message.includes("Redirecionando")) {
-            console.error("Falha crítica na inicialização do dashboard:", error);
+        body {
+            margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--background);
+            color: var(--text-main); display: flex;
         }
-    }
-}
+        .dashboard-main {
+            flex-grow: 1; max-width: 1200px; margin: 0 auto; padding: 32px 18px;
+            box-sizing: border-box;
+        }
+        .dashboard-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            flex-wrap: wrap; margin-bottom: 32px;
+        }
+        .dashboard-header h1 {
+            font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; background: var(--gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;
+        }
+        .date-filter input[type="date"] {
+            padding: 10px 14px; border-radius: 9px; border: 1.5px solid var(--border);
+            font-size: 1rem; background: var(--card-bg); color: var(--text-main);
+        }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .main-cards, .side-cards { display: flex; flex-direction: column; gap: 24px; }
+        
+        /* ✅ ALTERAÇÃO: Ajustado para 3 colunas para acomodar o novo card */
+        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
 
-window.addEventListener('DOMContentLoaded', inicializarPagina);
+        .card {
+            background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow);
+            padding: 28px 22px 23px 22px; border: 1.5px solid var(--border);
+        }
+        .card-title {
+            margin: 0 0 13px 0; font-size: 1.13rem; color: var(--text-secondary);
+            font-weight: 700; display: flex; align-items: center; gap: 10px;
+        }
+        .card-main-value { font-size: 2.45rem; font-weight: 800; color: var(--primary); margin: 0; min-height: 44px; }
+        .card-sub-value { font-size: 1.03rem; color: var(--text-secondary); margin-top: 8px; }
+        .resumo-card { border-left: 6px solid var(--primary); }
+        .resumo-card .card-title { color: var(--primary); }
+
+        .loading-spinner {
+            display: inline-block; width: 28px; height: 28px;
+            border: 4px solid rgba(99, 102, 241, 0.2);
+            border-radius: 50%; border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 1000px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 800px) { .kpi-row { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    
+    <div id="menu-container"></div>
+
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <h1>Painel Inteligente</h1>
+            <div class="dashboard-actions">
+                <div class="date-filter">
+                    <input type="date" id="filtro-data">
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-grid">
+            <div class="main-cards">
+                <div class="kpi-row">
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-dollar-sign"></i> Faturamento (Dia)</div>
+                        <div class="card-main-value" id="faturamento-realizado"><span class="loading-spinner"></span></div>
+                        <div class="card-sub-value">Previsto: <span id="faturamento-previsto">--</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Agendamentos (Dia)</div>
+                        <div class="card-main-value" id="total-agendamentos-dia"><span class="loading-spinner"></span></div>
+                        <div class="card-sub-value"><span id="agendamentos-pendentes">--</span> pendentes</div>
+                    </div>
+                    <!-- ✅ NOVO CARD ADICIONADO AQUI -->
+                    <div class="card">
+                        <div class="card-title"><i class="fa-solid fa-chart-line"></i> Faturamento (Mês)</div>
+                        <div class="card-main-value" id="faturamento-mensal"><span class="loading-spinner"></span></div>
+                        <div class="card-sub-value"><span id="agendamentos-mes">--</span> agendamentos</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos (Semana)</div>
+                    <div id="grafico-container" style="position: relative; min-height: 320px;">
+                        <canvas id="servicos-mais-vendidos"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="side-cards">
+                <div class="card resumo-card">
+                    <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Resumo Inteligente</div>
+                    <div id="resumo-inteligente">
+                        <span class="loading-spinner"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="dashboard.js"></script>
+</body>
+</html>
