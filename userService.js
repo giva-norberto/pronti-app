@@ -12,7 +12,7 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc( ) {
+export async function ensureUserAndTrialDoc(  ) {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -152,7 +152,10 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
-                const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'nova-empresa.html'];
+                // ======================= INÍCIO DA 1ª ALTERAÇÃO CIRÚRGICA =======================
+                // Adicionado 'meuperfil.html' para consistência.
+                const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
+                // ======================== FIM DA 1ª ALTERAÇÃO CIRÚRGICA =========================
 
                 if (!user) {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
@@ -171,13 +174,9 @@ export async function verificarAcesso() {
                 console.log("[DEBUG] Empresa ativaId localStorage:", empresaAtivaId);
                 console.log("[DEBUG] Empresas retornadas:", empresas.map(e => e.id));
 
-                // ======================= INÍCIO DA ALTERAÇÃO CIRÚRGICA =======================
-                // Se a empresa do localStorage não estiver na lista de empresas permitidas, invalida-a.
                 if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) { empresaAtivaId = null; }
-                // ======================== FIM DA ALTERAÇÃO CIRÚRGICA =========================
 
-                // Tenta usar empresa ativa salva, só se for ativa E está na lista correta do usuário
-                if (empresaAtivaId) { // A verificação contra a lista 'empresas' já foi feita acima.
+                if (empresaAtivaId) {
                     empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     if (!empresaDocSnap.exists() || empresaDocSnap.data().status !== "ativo") {
                         console.log("[DEBUG] Empresa ativa não existe ou não está ativa, limpando localStorage.");
@@ -189,22 +188,28 @@ export async function verificarAcesso() {
                     }
                 }
 
-                // Seleção de empresa correta e SEM misturar dados de outras empresas
                 if (!empresaDocSnap) {
-                    if (empresas.length === 0 && !isAdmin) {
+                    // ======================= INÍCIO DA 2ª ALTERAÇÃO CIRÚRGICA =======================
+                    // Removemos a condição '!isAdmin' para que TODOS os usuários sem empresa,
+                    // incluindo o admin, passem por este fluxo.
+                    if (empresas.length === 0) {
                         console.log("[DEBUG] Nenhuma empresa associada ao usuário.");
                         cachedSessionProfile = {
                             user,
                             empresaId: null,
                             perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'novo' },
                             isOwner: false,
-                            isAdmin: false,
+                            isAdmin: isAdmin, // Mantém o status de admin
                             papel: 'novo',
                             empresas: []
                         };
-                        if (currentPage !== 'nova-empresa.html') window.location.replace('nova-empresa.html');
+                        // Corrigimos o redirecionamento para 'meuperfil.html'.
+                        if (currentPage !== 'meuperfil.html') {
+                            window.location.replace('meuperfil.html');
+                        }
                         isProcessing = false;
                         return reject(new Error("Nenhuma empresa associada."));
+                    // ======================== FIM DA 2ª ALTERAÇÃO CIRÚRGICA =========================
                     } else if (empresas.length === 1) {
                         empresaAtivaId = empresas[0].id;
                         localStorage.setItem('empresaAtivaId', empresaAtivaId);
@@ -217,7 +222,7 @@ export async function verificarAcesso() {
                             empresaId: null,
                             perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'multi' },
                             isOwner: false,
-                            isAdmin: false,
+                            isAdmin: isAdmin,
                             papel: 'multi',
                             empresas
                         };
@@ -252,7 +257,6 @@ export async function verificarAcesso() {
                 const statusAssinatura = await checkUserStatus(user, empresaData);
                 console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
 
-                // Monta perfil ANTES do bloqueio
                 let perfilDetalhado, papel;
                 const isOwner = empresaData.donoId === user.uid;
 
@@ -290,7 +294,6 @@ export async function verificarAcesso() {
                 };
                 console.log("[DEBUG] SessionProfile FINAL:", sessionProfile);
 
-                // Bloqueio correto de assinatura/trial
                 if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html') {
                     console.log("[DEBUG] Assinatura expirada, redirecionando para assinatura.");
                     window.location.replace('assinatura.html');
