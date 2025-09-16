@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (VERSÃO FINAL - CORRIGIDO PARA USAR O CAMPO SLUG)
+// PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO E VERIFICAÇÃO CORRETA)
 // ======================================================================
 
 import {
@@ -14,13 +14,7 @@ import {
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
-// Garante que os serviços do Firebase foram inicializados
-if (!app || !db || !auth || !storage   ) {
-    console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
-    throw new Error("Firebase não inicializado.");
-}
-
-// Funções auxiliares para o slug (sem alterações)
+// Funções auxiliares para o slug (sem alterações )
 function criarSlug(texto) {
     if (!texto) return '';
     const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
@@ -31,18 +25,30 @@ function criarSlug(texto) {
         .replace(/&/g, '-e-').replace(/[^\w\-]+/g, '')
         .replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
 }
+
+// ✅ CORREÇÃO: A função agora aceita o ID da empresa atual para ignorá-la na busca
 async function garantirSlugUnico(slugBase, idEmpresaAtual = null) {
     let slugFinal = slugBase;
     let contador = 1;
     let slugExiste = true;
+
     while (slugExiste) {
         const q = query(collection(db, "empresarios"), where("slug", "==", slugFinal));
         const snapshot = await getDocs(q);
-        if (snapshot.empty || (snapshot.docs.length === 1 && snapshot.docs[0].id === idEmpresaAtual)) {
+        
+        // Se não encontrou nenhum documento, o slug está livre.
+        if (snapshot.empty) {
             slugExiste = false;
         } else {
-            contador++;
-            slugFinal = `${slugBase}-${contador}`;
+            // Se encontrou, verifica se o único documento encontrado é o da própria empresa que estamos editando.
+            const docUnico = snapshot.docs.length === 1 ? snapshot.docs[0] : null;
+            if (docUnico && docUnico.id === idEmpresaAtual) {
+                slugExiste = false; // É o slug da própria empresa, então está OK.
+            } else {
+                // O slug pertence a outra empresa, então precisamos de um novo.
+                contador++;
+                slugFinal = `${slugBase}-${contador}`;
+            }
         }
     }
     return slugFinal;
@@ -50,12 +56,11 @@ async function garantirSlugUnico(slugBase, idEmpresaAtual = null) {
 
 
 window.addEventListener('DOMContentLoaded', () => {
-    // Mapeamento dos elementos do DOM
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
         nomeNegocioInput: document.getElementById('nomeNegocio'),
-        slugInput: document.getElementById('slug'), // ✅ Mapeia o novo campo
+        slugInput: document.getElementById('slug'),
         descricaoInput: document.getElementById('descricao'),
         localizacaoInput: document.getElementById('localizacao'),
         horarioFuncionamentoInput: document.getElementById('horarioFuncionamento'),
@@ -152,36 +157,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 freeEmDias: 15
             };
 
-            // ============================================================
-            //           ✅ INÍCIO DA CORREÇÃO DA LÓGICA DO SLUG
-            // ============================================================
-
-            // 1. Pega o valor do campo "Link Personalizado". Se estiver vazio, usa o "Nome do Negócio".
             const valorSlugInput = elements.slugInput.value.trim();
             const textoParaSlug = valorSlugInput || nomeNegocio;
-            
-            // 2. Cria o slug a partir do texto escolhido.
             const slugBase = criarSlug(textoParaSlug);
 
-            // 3. A lógica de verificação de unicidade continua a mesma.
             if (slugBase) {
-                if (!empresaId) { // Criando nova empresa
-                    dadosEmpresa.slug = await garantirSlugUnico(slugBase);
-                } else { // Editando empresa existente
-                    const empresaAtual = empresasDoDono.find(e => e.id === empresaId);
-                    // Só gera um novo slug se o slug atual for diferente do que seria gerado
-                    if (empresaAtual && empresaAtual.dados.slug !== slugBase) {
-                        dadosEmpresa.slug = await garantirSlugUnico(slugBase, empresaId);
-                    } else if (!empresaAtual.dados.slug) {
-                        // Caso a empresa seja antiga e não tenha slug, cria um
-                        dadosEmpresa.slug = await garantirSlugUnico(slugBase, empresaId);
-                    }
-                }
+                // A lógica de garantir unicidade agora recebe o ID da empresa atual
+                const slugFinal = await garantirSlugUnico(slugBase, empresaId);
+                dadosEmpresa.slug = slugFinal;
             }
-
-            // ============================================================
-            //           ✅ FIM DA CORREÇÃO
-            // ============================================================
 
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
@@ -249,7 +233,7 @@ window.addEventListener('DOMContentLoaded', () => {
         empresaId = null;
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el   ) el.style.display = 'none'; });
+        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el  ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
@@ -257,6 +241,17 @@ window.addEventListener('DOMContentLoaded', () => {
     
     function adicionarListenersDeEvento() {
         if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
+        
+        // ✅ CORREÇÃO: Listener para atualizar o slug em tempo real
+        if (elements.nomeNegocioInput && elements.slugInput) {
+            elements.nomeNegocioInput.addEventListener('input', () => {
+                // Só atualiza o campo de slug se ele estiver vazio (o usuário não digitou nada manualmente)
+                if (elements.slugInput.value.trim() === '') {
+                    elements.slugInput.value = criarSlug(elements.nomeNegocioInput.value);
+                }
+            });
+        }
+
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
         if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
         if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
@@ -285,7 +280,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.form) elements.form.reset();
         empresaId = null;
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el   ) el.style.display = 'none'; });
+        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el  ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
         if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
@@ -300,10 +295,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!dadosEmpresa) return;
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
         if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
-        
-        // ✅ CORREÇÃO: Preenche o campo de slug com o valor do banco de dados
         if (elements.slugInput) elements.slugInput.value = dadosEmpresa.slug || '';
-
         if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
         if (elements.localizacaoInput) elements.localizacaoInput.value = dadosEmpresa.localizacao || '';
         if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
@@ -311,16 +303,23 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.logoPreview) {
             elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         }
-        if (!empresaId   ) return;
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        if (!empresaId  ) return;
+        
+        // ✅ CORREÇÃO: Mostra o novo link curto se o slug existir
+        const slug = dadosEmpresa.slug;
+        const urlCompleta = slug 
+            ? `${window.location.origin}/r.html?c=${slug}`
+            : `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
         if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
     }
 
     function copiarLink() {
-        if (!empresaId) return;
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        // ✅ CORREÇÃO: Copia o link que está sendo exibido na tela
+        const urlCompleta = document.getElementById('url-vitrine-display').textContent;
+        if (!urlCompleta) return;
         navigator.clipboard.writeText(urlCompleta).then(() => {
             alert("Link da vitrine copiado!");
         }, () => {
