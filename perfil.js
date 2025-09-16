@@ -1,6 +1,6 @@
 // =====================================================================
 // PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO E VERIFICAÇÃO CORRETA)
-// =====================================================================
+// ====================================================================
 
 import {
     getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, where, getDocs
