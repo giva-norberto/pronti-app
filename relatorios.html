@@ -18,7 +18,7 @@
       margin: 0;
       padding: 0;
       font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #f7f8fa 80%, #e0e7ff 100% );
+      background: linear-gradient(135deg, #f7f8fa 80%, #e0e7ff 100%  );
       min-height: 100vh;
     }
     .main-relatorios {
@@ -309,22 +309,20 @@
   </script>
   <script src="relatorios.js" type="module"></script>
 
-  <!-- SCRIPT CORRIGIDO E DEFINITIVO -->
+  <!-- ✅ INÍCIO DA MODIFICAÇÃO CIRÚRGICA -->
   <script>
-    // 1. Adiciona uma entrada "falsa" no topo do histórico.
-    //    Isso é necessário para que o evento 'popstate' seja disparado
-    //    quando o usuário clicar em "Voltar" pela primeira vez.
-    window.history.pushState({ "paginaRelatorio": true }, "");
-
-    // 2. Adiciona um ouvinte para o evento 'popstate', que é acionado
-    //    pelo botão "Voltar" do navegador.
-    window.addEventListener('popstate', function(event) {
-      // 3. Intercepta a ação de "Voltar" e força o redirecionamento
-      //    para a 'index.html', ignorando o histórico real.
-      window.location.replace('index.html');
+    // Este script garante que o botão "Voltar" do NAVEGADOR leve para a index.html
+    // Ele é a forma mais limpa de fazer isso sem criar novos arquivos ou alterar a lógica de outros scripts.
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Insere a 'index.html' no histórico de navegação, logo "atrás" da página atual.
+        window.history.pushState(null, '', 'index.html');
+        // 2. Imediatamente, "empurra" a URL da página de relatórios de volta para o topo do histórico.
+        //    Isso faz com que a URL na barra de endereço não mude, mas o histórico interno do navegador
+        //    agora tem [..., página_anterior, index.html, relatorios.html].
+        window.history.pushState(null, '', 'relatorios.html');
     });
   </script>
-  <!-- FIM DO SCRIPT CORRIGIDO -->
+  <!-- ✅ FIM DA MODIFICAÇÃO CIRÚRGICA -->
 
 </body>
 </html>
