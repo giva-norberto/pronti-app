@@ -10,40 +10,32 @@
     <style>
         :root { --sidebar-width: 240px; }
         body {
-            display: flex;
-            margin: 0;
-            font-family: 'Poppins', sans-serif;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%  );
+            display: flex; margin: 0; font-family: 'Poppins', sans-serif;
+            /* ✅ CORREÇÃO ANTI-PISCA: A página começa invisível. */
+            visibility: hidden; 
+            opacity: 0; 
+            transition: opacity 0.3s ease-in-out;
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100% );
         }
-        body.loaded { opacity: 1; }
+        /* ✅ Esta classe torna a página visível apenas quando tudo estiver pronto. */
+        body.loaded { 
+            visibility: visible;
+            opacity: 1; 
+        }
         #menu-container { flex-shrink: 0; }
-
         main.main-content {
-            flex-grow: 1;
-            padding: 40px;
-            box-sizing: border-box;
-            height: 100vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
+            flex-grow: 1; padding: 40px; box-sizing: border-box;
+            height: 100vh; overflow-y: auto; display: flex; flex-direction: column;
+            justify-content: flex-start; align-items: center;
         }
-
+        /* (O restante do seu CSS foi mantido como estava) */
         .dashboard-welcome-center { text-align: center; margin-bottom: 5vh; width: 100%; }
         .dashboard-welcome-center h1 { font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 400; color: #e0e7ff; }
-        
         .dashboard-grid-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 900px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px; width: 100%; max-width: 900px;
         }
-        
         .menu-card {
             color: #fff; border-radius: 16px; padding: 20px 10px;
             display: flex; flex-direction: column; align-items: center;
@@ -53,10 +45,7 @@
             transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
             border: none; aspect-ratio: 1 / 1;
         }
-        .menu-card:hover {
-            transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            filter: brightness(1.1); cursor: pointer;
-        }
+        .menu-card:hover { transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2); filter: brightness(1.1); cursor: pointer; }
         .menu-card i { font-size: 2rem; }
         [data-card-id="dashboard"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
         [data-card-id="agenda"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
@@ -66,11 +55,7 @@
         [data-card-id="perfil"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
         [data-card-id="relatorios"] { background: linear-gradient(135deg, #374151, #111827); }
         [data-card-id="administracao"], [data-card-id="permissoes"] { background: linear-gradient(135deg, #111827, #374151); }
-        
-        @media (max-width: 900px) {
-            body { flex-direction: column; }
-            main.main-content { height: auto; }
-        }
+        @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
     </style>
 </head>
 <body>
@@ -95,42 +80,28 @@
     </main>
     
     <script type="module">
-        import { verificarAcesso } from './userService.js';
-        import { auth, db } from './firebase-config.js';
+        // Importa as funções necessárias. A função 'verificarAcesso' é a mais importante.
+        import { verificarAcesso } from './userService.js'; 
+        import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        async function aplicarPermissoesMenusCards(papelUsuario ) {
+        // --- FUNÇÕES DE LÓGICA DA PÁGINA ---
+
+        async function aplicarPermissoes(papelUsuario) {
             try {
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
-                const regrasGlobais = permissoesSnap.exists() ? permissoesSnap.data() : {};
-
-                const aplicarVisibilidade = (elemento, podeVer) => {
-                    if (podeVer) {
-                        elemento.style.display = '';
-                    } else {
-                        elemento.style.display = 'none';
-                    }
-                };
-
-                // Aplica permissões nos itens do menu lateral
-                document.querySelectorAll('#menu-container [data-menu-id]').forEach(item => {
-                    const menuId = item.dataset.menuId;
-                    const regraParaMenu = regrasGlobais[menuId];
-                    const podeVer = !regraParaMenu || regraParaMenu[papelUsuario] === true;
-                    aplicarVisibilidade(item, podeVer);
-                });
+                const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
                 // Aplica permissões nos cards da tela principal
-                document.querySelectorAll('[data-card-id]').forEach(card => {
-                    const cardId = card.dataset.cardId;
-                    const regraParaCard = regrasGlobais[cardId];
-                    const podeVer = !regraParaCard || regraParaCard[papelUsuario] === true;
-                    aplicarVisibilidade(card, podeVer);
+                document.querySelectorAll('[data-card-id]').forEach(el => {
+                    const id = el.dataset.cardId;
+                    const regra = regras[id];
+                    const podeVer = !regra || regra[papelUsuario] === true;
+                    el.style.display = podeVer ? 'flex' : 'none';
                 });
             } catch (error) {
-                console.error("Erro ao aplicar permissões nos menus e cards:", error);
+                console.error("Erro ao aplicar permissões nos cards:", error);
             }
         }
 
@@ -145,37 +116,61 @@
                     menuModule.ativarMenuLateral();
                 }
 
-                await aplicarPermissoesMenusCards(papelUsuario);
+                // Aplica permissões também nos itens do menu lateral
+                const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
+                const permissoesSnap = await getDoc(permissoesRef);
+                const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
+                
+                document.querySelectorAll('#menu-container [data-menu-id]').forEach(item => {
+                    const menuId = item.dataset.menuId;
+                    const regraParaMenu = regras[menuId];
+                    const podeVer = !regraParaMenu || regraParaMenu[papelUsuario] === true;
+                    if (!podeVer) item.style.display = 'none';
+                });
+
             } catch (error) {
-                document.getElementById('menu-container').innerHTML =
-                    "<div style='color:white;background:#4f46e5;padding:1em;border-radius:8px;'>Menu lateral não carregado</div>";
-                console.error("Falha ao carregar o menu lateral ou aplicar permissões:", error);
+                console.error("Falha ao carregar o menu lateral:", error);
             }
         }
 
+        function popularCabecalho(sessao) {
+            const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
+            const hora = new Date().getHours();
+            
+            document.getElementById('saudacao').textContent = 
+                (hora >= 5 && hora < 12) ? "Bom dia" :
+                (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
+            document.getElementById('nome-usuario').textContent = nomeUsuario;
+        }
+
+        // --- PONTO DE ENTRADA DA APLICAÇÃO ---
+
         async function inicializarPagina() {
             try {
+                // 1. VERIFICA O ACESSO: Esta função é o "segurança" da página.
+                // Ela lida com todos os redirecionamentos necessários antes de a página carregar.
                 const sessao = await verificarAcesso();
-                const papelUsuario = sessao.perfil?.papel || (sessao.isAdmin ? "admin" : (sessao.isOwner ? "dono" : "funcionario"));
-                const nomeUsuario = sessao.user.displayName?.split(" ")[0] || sessao.perfil.nome?.split(" ")[0] || "Usuário";
-                const hora = new Date().getHours();
-                
-                document.getElementById('saudacao').textContent =
-                    (hora >= 5 && hora < 12) ? "Bom dia" :
-                    (hora >= 12 && hora < 18) ? "Boa tarde" : "Boa noite";
-                document.getElementById('nome-usuario').textContent = nomeUsuario;
 
-                await loadAndSetupMenu(papelUsuario);
+                // 2. ACESSO CONCEDIDO: O código só chega aqui se o usuário estiver 100% autorizado.
+                const papelUsuario = sessao.papel;
+                if (!papelUsuario) throw new Error("O papel do usuário não foi definido na sessão.");
+
+                // 3. RENDERIZA A PÁGINA
+                popularCabecalho(sessao);
+                await loadAndSetupMenu(papelUsuario); // Carrega o menu e aplica suas permissões
+                await aplicarPermissoes(papelUsuario); // Aplica permissões nos cards da página
 
             } catch (error) {
-                if (error.message && !error.message.includes("Redirecionando")) {
-                    console.error("Erro ao inicializar a página:", error);
-                }
+                // Se `verificarAcesso` rejeitar, o redirecionamento já ocorreu.
+                // O erro já é logado dentro do 'user-service' se for inesperado.
             } finally {
+                // 4. TORNAR A PÁGINA VISÍVEL
+                // Acontece no final, garantindo que não haja "pisca-pisca".
                 document.body.classList.add('loaded');
             }
         }
         
+        // Inicia todo o processo.
         inicializarPagina();
     </script>
 </body>
