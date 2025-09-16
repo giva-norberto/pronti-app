@@ -31,7 +31,6 @@
             flex-grow: 1;
         }
 
-        /* ✅ OBJETIVO 3: Novo container para o Header (Título + Botão) */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -49,7 +48,6 @@
             color: #1e293b;
         }
 
-        /* ✅ OBJETIVO 3: Estilo do botão "Adicionar" corrigido */
         .btn-new { 
             background-color: var(--primary-color); 
             color: white; 
@@ -64,15 +62,14 @@
             background-color: #4338ca;
         }
 
-        /* ✅ OBJETIVO 2: Categoria com branco mais forte e sombra */
+        /* ✅ OBJETIVO 3: Categoria com branco sólido e mais destaque */
         .categoria-titulo {
-            font-size: 1.6rem; /* Um pouco maior para mais destaque */
+            font-size: 1.6rem;
             font-weight: 800;
-            color: #ffffff; /* Branco puro */
-            opacity: 1; /* Garante opacidade total */
+            color: #FFFFFF; /* Branco puro e sólido */
             margin-top: 24px;
             margin-bottom: 16px;
-            text-shadow: 1px 1px 4px rgba(0,0,0,0.25);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
         }
 
         .servico-card { 
@@ -81,8 +78,16 @@
             border-radius: 12px;
             padding: 20px; 
             margin-bottom: 15px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            /* ✅ OBJETIVO 2: Efeito de transição adicionado */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
+        /* ✅ OBJETIVO 2: Efeito de "levantar" no hover */
+        .servico-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
         .servico-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .servico-titulo { font-size: 1.3em; font-weight: bold; color: #333; margin: 0; }
         .servico-descricao { color: #666; margin: 10px 0; line-height: 1.4; }
@@ -90,14 +95,15 @@
         .servico-preco { font-size: 1.2em; font-weight: bold; color: #28a745; }
         .servico-duracao { color: #666; font-size: 0.9em; }
         .servico-acoes { display: flex; gap: 10px; }
-        .btn-acao { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: opacity 0.2s; }
-        .btn-acao:hover { opacity: 0.8; } /* Efeito de hover genérico */
+        
+        .btn-acao { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
         
         .btn-editar { background-color: #ffc107; color: #333; }
+        .btn-editar:hover { background-color: #e0a800; }
         
-        /* ✅ OBJETIVO 1: Efeito de hover no botão Excluir */
+        /* ✅ OBJETIVO 1: Efeito de hover no botão Excluir corrigido */
         .btn-excluir { background-color: #dc3545; color: white; }
-        .btn-excluir:hover { background-color: #c82333; } /* Cor mais escura no hover */
+        .btn-excluir:hover { background-color: #c82333; opacity: 1; } /* Garante opacidade e muda a cor */
         
         @media (max-width: 900px) { 
             body { flex-direction: column; }
@@ -123,7 +129,6 @@
 <div id="sidebar-placeholder"></div>
 
 <main class="main-content">
-    <!-- ✅ OBJETIVO 3: Nova estrutura do Header -->
     <div class="page-header">
         <h1>Nossos Serviços</h1>
         <a href="novo-servico.html" class="btn-new">Adicionar Novo Serviço</a>
