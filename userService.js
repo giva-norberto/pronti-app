@@ -1,5 +1,5 @@
 // ======================================================================
-//      USER-SERVICE.JS (VERSÃO FINAL CORRIGIDA - TRIAL, NOME, EMPRESAS ATIVAS)
+//      USER-SERVICE.JS (VERSÃO FINAL REVISADA - SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
 // ======================================================================
 
 import {
@@ -76,10 +76,10 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
-// --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade) ---
+// --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade e SEM misturar dados) ---
 export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
-    const empresasEncontradas = new Map();
+    const empresasUnicas = new Map();
 
     // DONO: só empresas ativas
     try {
@@ -90,7 +90,7 @@ export async function getEmpresasDoUsuario(user) {
         );
         const snapshotDono = await getDocs(qDono);
         snapshotDono.forEach(doc => {
-            empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() });
+            empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() });
         });
     } catch (e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas como dono:", e);
@@ -101,7 +101,8 @@ export async function getEmpresasDoUsuario(user) {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
         if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
-            const idsDeEmpresas = mapaSnap.data().empresas.filter(id => !empresasEncontradas.has(id));
+            // Não misturar: filtra empresas que NÃO estão no Map e só busca empresas ativas
+            const idsDeEmpresas = mapaSnap.data().empresas.filter(id => !empresasUnicas.has(id));
             for (let i = 0; i < idsDeEmpresas.length; i += 10) {
                 const chunk = idsDeEmpresas.slice(i, i + 10);
                 const q = query(
@@ -110,13 +111,14 @@ export async function getEmpresasDoUsuario(user) {
                     where("status", "==", "ativo")
                 );
                 const snap = await getDocs(q);
-                snap.forEach(doc => empresasEncontradas.set(doc.id, { id: doc.id, ...doc.data() }));
+                snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
             }
         }
     } catch(e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas pelo mapa:", e);
     }
-    return Array.from(empresasEncontradas.values());
+    // Retorna empresas ativas, SEM duplicidade, SEM mistura!
+    return Array.from(empresasUnicas.values());
 }
 
 // ======================================================================
@@ -148,7 +150,7 @@ export async function verificarAcesso() {
                 let empresaDocSnap = null;
                 let empresas = await getEmpresasDoUsuario(user);
 
-                // Tenta usar empresa ativa salva, só se for ativa
+                // Tenta usar empresa ativa salva, só se for ativa E está na lista correta do usuário
                 if (empresaAtivaId && empresas.find(e => e.id === empresaAtivaId)) {
                     empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
                     if (!empresaDocSnap.exists() || empresaDocSnap.data().status !== "ativo") {
@@ -158,7 +160,7 @@ export async function verificarAcesso() {
                     }
                 }
 
-                // Seleção de empresa correta
+                // Seleção de empresa correta e SEM misturar dados de outras empresas
                 if (!empresaDocSnap) {
                     if (empresas.length === 0 && !isAdmin) {
                         cachedSessionProfile = {
