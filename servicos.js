@@ -1,14 +1,15 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO NOTA 10 - LAYOUT FINAL + TEMPO REAL)
+// ARQUIVO: servicos.js (VERSÃO FINAL, COMPLETA E REVISADA)
 // ======================================================================
 
 import { collection, doc, getDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
+// ✅ GARANTIA: Importando as funções do vitrini-utils para garantir que estejam disponíveis.
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
 // --- Mapeamento de Elementos do DOM ---
-const listaServicosDiv = document.getElementById('lista-servicos');
+const listaServicosDiv = document.getElementById('lista-servicos' );
 const btnAddServico = document.querySelector('.btn-new');
 
 // --- Variáveis de Estado ---
@@ -33,7 +34,9 @@ onAuthStateChanged(auth, async (user) => {
             const empresaRef = doc(db, "empresarios", empresaId);
             const empresaSnap = await getDoc(empresaRef);
             if (empresaSnap.exists()) {
-                isDono = empresaSnap.data().donoId === user.uid;
+                // ✅ GARANTIA: Verifica se o usuário é o dono OU o admin geral.
+                const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                isDono = (empresaSnap.data().donoId === user.uid) || (user.uid === adminUID);
             }
 
             if (btnAddServico) {
@@ -68,36 +71,31 @@ function iniciarListenerDeServicos() {
     });
 }
 
-// --- ⭐ Renderização Final (Com Categoria + Card Limpo) ---
+// --- Renderização Final ---
 function renderizarServicos(servicos) {
     if (!listaServicosDiv) return;
 
     if (!servicos || servicos.length === 0) {
-        listaServicosDiv.innerHTML = `<p>Nenhum serviço cadastrado. ${isDono ? 'Clique em "Adicionar Novo Serviço" para começar.' : ''}</p>`;
+        listaServicosDiv.innerHTML = `<p style="color: #fff; font-weight: 500;">Nenhum serviço cadastrado. ${isDono ? 'Clique em "Adicionar Novo Serviço" para começar.' : ''}</p>`;
         return;
     }
 
-    // 1. Agrupa os serviços por categoria
     const agrupados = {};
     servicos.forEach(servico => {
-        const cat = (servico.categoria && servico.categoria.trim()) ? servico.categoria.trim() : "Sem Categoria";
+        const cat = (servico.categoria && servico.categoria.trim()) ? servico.categoria.trim() : "Outros";
         if (!agrupados[cat]) agrupados[cat] = [];
         agrupados[cat].push(servico);
     });
 
-    // 2. Ordena as categorias em ordem alfabética
     const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, "pt-BR"));
 
-    // 3. Gera o HTML final
     listaServicosDiv.innerHTML = categoriasOrdenadas.map(cat => {
-        // Ordena os serviços dentro de cada categoria
         const servicosCategoria = agrupados[cat].sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         
         return `
             <div class="categoria-bloco">
-                <h2 class="categoria-titulo" style="color: #6366f1; margin-top: 24px; margin-bottom: 12px;">
-                    ${sanitizeHTML(cat)}
-                </h2>
+                <!-- ✅ CORREÇÃO: Removido o 'style' inline para que o CSS do HTML funcione -->
+                <h2 class="categoria-titulo">${sanitizeHTML(cat)}</h2>
                 ${servicosCategoria.map(servico => `
                     <div class="servico-card">
                         <div class="servico-header">
@@ -110,7 +108,7 @@ function renderizarServicos(servicos) {
                                 <span class="servico-duracao"> • ${servico.duracao || 0} min</span>
                             </div>
                             <div class="servico-acoes">
-                                <button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>
+                                ${isDono ? `<button class="btn-acao btn-editar" data-id="${servico.id}">Editar</button>` : ""}
                                 ${isDono ? `<button class="btn-acao btn-excluir" data-id="${servico.id}">Excluir</button>` : ""}
                             </div>
                         </div>
@@ -121,20 +119,24 @@ function renderizarServicos(servicos) {
     }).join("");
 }
 
-
+// --- Funções de Ação ---
 async function excluirServico(servicoId) {
     if (!isDono) {
         await showAlert("Acesso Negado", "Apenas o dono pode excluir serviços.");
         return;
     }
-    const confirmado = await showCustomConfirm("Confirmar Exclusão", "Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.");
+    // ✅ GARANTIA: Usando o confirm nativo do navegador como fallback seguro.
+    // Se o seu showCustomConfirm estiver funcionando, ótimo. Se não, isso garante a funcionalidade.
+    const confirmado = window.confirm("Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.");
     if (!confirmado) return;
 
     try {
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         await deleteDoc(servicoRef);
-        await showAlert("Sucesso!", "Serviço excluído com sucesso!");
+        // O onSnapshot vai atualizar a tela automaticamente, não precisa de showAlert aqui.
+        console.log("Serviço excluído com sucesso!");
     } catch (error) {
+        console.error("Erro ao excluir serviço:", error);
         await showAlert("Erro", "Ocorreu um erro ao excluir o serviço: " + error.message);
     }
 }
@@ -169,11 +171,10 @@ if (listaServicosDiv) {
 
 if (btnAddServico) {
     btnAddServico.addEventListener('click', (e) => {
+        e.preventDefault(); // Previne o comportamento padrão do link
         if (!isDono) {
-            e.preventDefault();
             showAlert("Acesso Negado", "Apenas o dono pode adicionar serviços.");
         } else {
-            e.preventDefault();
             window.location.href = 'novo-servico.html';
         }
     });
