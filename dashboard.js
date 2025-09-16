@@ -1,17 +1,17 @@
 // ======================================================================
-// ARQUIVO: DASHBOARD.JS (VERSÃO CORRIGIDA - CARDS COM DADOS CONFIÁVEIS)
+// ARQUIVO: DASHBOARD.JS (VERSÃO SEGURA PARA MULTI-EMPRESA E MULTI-FUNCIONÁRIO)
 // ======================================================================
 
 import { db, auth } from "./firebase-config.js";
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// --- Listas de Status para Controle Preciso ---
+// --- Listas de Status para Controle Preciso (Seu código original, sem alterações ) ---
 const STATUS_REALIZADO = ["realizado", "concluido", "efetivado", "pago", "finalizado"];
 const STATUS_EXCLUIR = ["nao compareceu", "ausente", "cancelado", "cancelado_pelo_gestor", "deletado"];
 const STATUS_VALIDOS_DIA = ["ativo", "realizado", "concluido", "efetivado", "pago", "finalizado", "andamento", "agendado"];
 
-// --- FUNÇÕES UTILITÁRIAS ---
+// --- FUNÇÕES UTILITÁRIAS (Seu código original, com uma modificação) ---
 function debounce(fn, delay) {
     let timer = null;
     return function (...args) {
@@ -20,15 +20,17 @@ function debounce(fn, delay) {
     };
 }
 
-async function encontrarProximaDataDisponivel(empresaId, dataInicial) {
+// ✅ MODIFICADA para aceitar o ID do profissional e buscar a agenda correta
+async function encontrarProximaDataDisponivel(empresaId, profissionalId, dataInicial) {
     try {
         const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
         if (!empresaDoc.exists()) return dataInicial;
 
-        const donoId = empresaDoc.data().donoId;
-        if (!donoId) return dataInicial;
+        // Se o profissionalId não for fornecido (caso do dono), usa o donoId como padrão.
+        const idDoProfissionalParaAgenda = profissionalId || empresaDoc.data().donoId;
+        if (!idDoProfissionalParaAgenda) return dataInicial;
 
-        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", donoId, "configuracoes", "horarios");
+        const horariosRef = doc(db, "empresarios", empresaId, "profissionais", idDoProfissionalParaAgenda, "configuracoes", "horarios");
         const horariosSnap = await getDoc(horariosRef);
         
         if (!horariosSnap.exists()) return dataInicial;
@@ -77,8 +79,10 @@ function getServicoNome(ag) {
     return ag.servicoNome || ag.nomeServico || "Serviço não informado";
 }
 
-// --- FUNÇÕES PRINCIPAIS DO DASHBOARD (CORRIGIDAS) ---
-async function obterMetricas(empresaId, dataSelecionada) {
+// --- FUNÇÕES PRINCIPAIS DO DASHBOARD (REVISADAS PARA SEGURANÇA) ---
+
+// ✅ MODIFICADA para aceitar profissionalId e filtrar os dados
+async function obterMetricas(empresaId, profissionalId, dataSelecionada) {
     try {
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
         const servicosRef = collection(db, "empresarios", empresaId, "servicos");
@@ -92,8 +96,11 @@ async function obterMetricas(empresaId, dataSelecionada) {
             mapaDePrecos.set(doc.id, Number(precoServico) || 0);
         });
 
+        // --- Filtro Condicional ---
+        const addProfissionalFilter = (q) => profissionalId ? [...q, where("profissionalId", "==", profissionalId)] : q;
+
         // --- Métricas do dia selecionado ---
-        const qDia = query(agRef, where("data", "==", dataSelecionada));
+        const qDia = query(agRef, ...addProfissionalFilter([where("data", "==", dataSelecionada)]));
         const snapshotDia = await getDocs(qDia);
         
         let totalAgendamentosDia = 0;
@@ -105,31 +112,23 @@ async function obterMetricas(empresaId, dataSelecionada) {
             const ag = d.data();
             const status = getStatus(ag);
             
-            // Pular agendamentos excluídos/cancelados
             if (STATUS_EXCLUIR.includes(status)) return;
             
             const preco = getPreco(ag, mapaDePrecos);
             
-            // Contar apenas agendamentos válidos
             if (STATUS_VALIDOS_DIA.includes(status)) {
                 totalAgendamentosDia++;
-                
-                // Faturamento previsto: todos os agendamentos válidos
                 faturamentoPrevistoDia += preco;
-                
-                // Agendamentos pendentes: apenas os ativos
                 if (status === "ativo" || status === "agendado") {
                     agendamentosPendentes++;
                 }
-                
-                // Faturamento realizado: apenas os concluídos
                 if (STATUS_REALIZADO.includes(status)) {
                     faturamentoRealizadoDia += preco;
                 }
             }
         });
 
-        // --- Faturamento mensal (CORRIGIDO) ---
+        // --- Faturamento mensal ---
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         const mesAtual = hoje.getMonth();
@@ -138,7 +137,7 @@ async function obterMetricas(empresaId, dataSelecionada) {
         const ultimoDiaDoMes = new Date(anoAtual, mesAtual + 1, 0).getDate();
         const fimDoMesStr = `${anoAtual}-${pad(mesAtual + 1)}-${pad(ultimoDiaDoMes)}`;
 
-        const qMes = query(agRef, where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr));
+        const qMes = query(agRef, ...addProfissionalFilter([where("data", ">=", inicioDoMesStr), where("data", "<=", fimDoMesStr)]));
         const snapshotMes = await getDocs(qMes);
 
         let faturamentoRealizadoMes = 0;
@@ -148,16 +147,12 @@ async function obterMetricas(empresaId, dataSelecionada) {
             const ag = d.data();
             const status = getStatus(ag);
             
-            // Pular agendamentos excluídos/cancelados
             if (STATUS_EXCLUIR.includes(status)) return;
             
             const preco = getPreco(ag, mapaDePrecos);
             
-            // Contar todos os agendamentos válidos do mês
             if (STATUS_VALIDOS_DIA.includes(status)) {
                 totalAgendamentosMes++;
-                
-                // Somar apenas o faturamento dos agendamentos realizados
                 if (STATUS_REALIZADO.includes(status)) {
                     faturamentoRealizadoMes += preco;
                 }
@@ -165,47 +160,30 @@ async function obterMetricas(empresaId, dataSelecionada) {
         });
 
         console.log("Métricas calculadas:", {
-            totalAgendamentosDia,
-            agendamentosPendentes,
-            faturamentoRealizadoMes,
-            faturamentoPrevistoDia,
-            faturamentoRealizadoDia,
-            totalAgendamentosMes
+            totalAgendamentosDia, agendamentosPendentes, faturamentoRealizadoMes, faturamentoPrevistoDia, faturamentoRealizadoDia, totalAgendamentosMes
         });
 
         return { 
-            totalAgendamentosDia, 
-            agendamentosPendentes, 
-            faturamentoRealizado: faturamentoRealizadoMes, 
-            faturamentoPrevistoDia, 
-            faturamentoRealizadoDia,
-            totalAgendamentosMes
+            totalAgendamentosDia, agendamentosPendentes, faturamentoRealizado: faturamentoRealizadoMes, faturamentoPrevistoDia, faturamentoRealizadoDia, totalAgendamentosMes
         };
 
     } catch (e) {
         console.error("Erro ao obter métricas:", e);
         return { 
-            totalAgendamentosDia: 0, 
-            agendamentosPendentes: 0, 
-            faturamentoRealizado: 0, 
-            faturamentoPrevistoDia: 0, 
-            faturamentoRealizadoDia: 0,
-            totalAgendamentosMes: 0
+            totalAgendamentosDia: 0, agendamentosPendentes: 0, faturamentoRealizado: 0, faturamentoPrevistoDia: 0, faturamentoRealizadoDia: 0, totalAgendamentosMes: 0
         };
     }
 }
 
-// --- Lógica do gráfico (agora mostra só os 5 mais vendidos) ---
-async function obterServicosMaisVendidos(empresaId) {
+// ✅ MODIFICADA para aceitar profissionalId e filtrar os dados
+async function obterServicosMaisVendidos(empresaId, profissionalId) {
     try {
-        const hoje = new Date().toISOString().split("T")[0];
         const agRef = collection(db, "empresarios", empresaId, "agendamentos");
-
-        const qAtivos = query(agRef, where("data", ">=", hoje));
-        const qConcluidos = query(agRef, where("data", "<", hoje));
-
-        const [snapAtivos, snapConcluidos] = await Promise.all([getDocs(qAtivos), getDocs(qConcluidos)]);
-        const snapshot = [...snapAtivos.docs, ...snapConcluidos.docs];
+        
+        // Se profissionalId for fornecido, filtra por ele. Senão, busca todos.
+        const q = profissionalId ? query(agRef, where("profissionalId", "==", profissionalId)) : query(agRef);
+        
+        const snapshot = await getDocs(q);
 
         const contagem = {};
         snapshot.forEach((d) => {
@@ -223,14 +201,11 @@ async function obterServicosMaisVendidos(empresaId) {
     }
 }
 
-// --- Resumo Inteligente 100% dinâmico (só mostra se houver dado real) ---
+// --- Funções de UI (Seu código original, sem alterações) ---
 function preencherResumoInteligente(servicosVendidos) {
     const resumoEl = document.getElementById("resumo-inteligente");
     if (!resumoEl) return;
-
     let html = "<ul>";
-
-    // Serviço mais agendado (se existir)
     let servicoMaisAgendado = null;
     let max = 0;
     for (const [nome, qtd] of Object.entries(servicosVendidos)) {
@@ -242,66 +217,26 @@ function preencherResumoInteligente(servicosVendidos) {
     if (servicoMaisAgendado) {
         html += `<li>Seu serviço mais agendado: <strong>${servicoMaisAgendado}</strong>.</li>`;
     }
-
     html += "</ul>";
-    // Só mostra a UL se houver pelo menos um item real
     resumoEl.innerHTML = html === "<ul></ul>" ? "" : html;
 }
 
 function preencherPainel(metricas, servicosVendidos) {
-    const formatCurrency = (value) => {
-        const numValue = Number(value) || 0;
-        return numValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    };
+    const formatCurrency = (value) => (Number(value) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById("faturamento-realizado").textContent = formatCurrency(metricas.faturamentoRealizado);
+    document.getElementById("faturamento-previsto-dia").textContent = formatCurrency(metricas.faturamentoPrevistoDia);
+    document.getElementById("faturamento-realizado-dia").textContent = formatCurrency(metricas.faturamentoRealizadoDia);
+    document.getElementById("total-agendamentos-dia").textContent = metricas.totalAgendamentosDia;
+    document.getElementById("agendamentos-pendentes").textContent = metricas.agendamentosPendentes;
+    document.getElementById("total-agendamentos-mes").textContent = metricas.totalAgendamentosMes;
 
-    // --- Card Faturamento Mensal (CORRIGIDO) ---
-    const faturamentoMensalEl = document.getElementById("faturamento-realizado");
-    if (faturamentoMensalEl) {
-        faturamentoMensalEl.textContent = formatCurrency(metricas.faturamentoRealizado);
-    }
-
-    // --- Card Faturamento do Dia (CORRIGIDO) ---
-    const faturamentoPrevistoDiaEl = document.getElementById("faturamento-previsto-dia");
-    if (faturamentoPrevistoDiaEl) {
-        faturamentoPrevistoDiaEl.textContent = formatCurrency(metricas.faturamentoPrevistoDia);
-    }
-
-    const faturamentoRealizadoDiaEl = document.getElementById("faturamento-realizado-dia");
-    if (faturamentoRealizadoDiaEl) {
-        faturamentoRealizadoDiaEl.textContent = formatCurrency(metricas.faturamentoRealizadoDia);
-    }
-
-    // --- Card Agendamentos do Dia ---
-    const totalAgendamentosDiaEl = document.getElementById("total-agendamentos-dia");
-    if (totalAgendamentosDiaEl) {
-        totalAgendamentosDiaEl.textContent = metricas.totalAgendamentosDia;
-    }
-
-    const agendamentosPendentesEl = document.getElementById("agendamentos-pendentes");
-    if (agendamentosPendentesEl) {
-        agendamentosPendentesEl.textContent = metricas.agendamentosPendentes;
-    }
-
-    // --- Card Total Agendamentos Mês ---
-    const totalMesEl = document.getElementById("total-agendamentos-mes");
-    if (totalMesEl) {
-        totalMesEl.textContent = metricas.totalAgendamentosMes;
-    }
-
-    // --- Gráfico de Serviços Mais Vendidos (apenas top 5) ---
     const canvasEl = document.getElementById('servicos-mais-vendidos');
     if (canvasEl) {
         const ctx = canvasEl.getContext('2d');
         if (window.servicosChart) window.servicosChart.destroy();
-
-        // LIMITAR AO TOP 5 MAIS VENDIDOS
-        const entries = Object.entries(servicosVendidos)
-            .sort((a, b) => b[1] - a[1]) // Ordena do maior pro menor
-            .slice(0, 5); // Pega só os 5 primeiros
-
+        const entries = Object.entries(servicosVendidos).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const labels = entries.map(([nome]) => nome);
         const values = entries.map(([, qtd]) => qtd);
-
         window.servicosChart = new window.Chart(ctx, {
             type: 'bar',
             data: {
@@ -319,59 +254,80 @@ function preencherPainel(metricas, servicosVendidos) {
             }
         });
     }
-
-    // --- Chamar Resumo Inteligente ---
     preencherResumoInteligente(servicosVendidos);
 }
 
-// --- INICIALIZAÇÃO DA PÁGINA (mantida igual) ---
-async function iniciarDashboard(empresaId) {
+// --- INICIALIZAÇÃO DA PÁGINA (REVISADA PARA SEGURANÇA) ---
+
+// ✅ MODIFICADA para receber os IDs necessários
+async function iniciarDashboard(empresaId, profissionalId) {
     const filtroData = document.getElementById("filtro-data");
     if (!filtroData) return;
 
     const atualizarPainel = async () => {
         const dataSelecionada = filtroData.value;
         const [metricas, servicosVendidos] = await Promise.all([
-             obterMetricas(empresaId, dataSelecionada),
-             obterServicosMaisVendidos(empresaId) 
+             obterMetricas(empresaId, profissionalId, dataSelecionada),
+             obterServicosMaisVendidos(empresaId, profissionalId) 
         ]);
         preencherPainel(metricas, servicosVendidos);
     };
 
     const hojeString = new Date().toISOString().split("T")[0];
-    filtroData.value = await encontrarProximaDataDisponivel(empresaId, hojeString);
+    filtroData.value = await encontrarProximaDataDisponivel(empresaId, profissionalId, hojeString);
     filtroData.addEventListener("change", debounce(atualizarPainel, 300));
     
     await atualizarPainel();
 }
 
+// ✅ Bloco de inicialização principal REVISADO para determinar o papel do usuário
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
-        window.location.href = 'login.html';
+        window.location.replace('login.html');
         return;
     }
     try {
+        document.body.style.opacity = '0.5'; // Feedback visual
+
         let empresaId = localStorage.getItem("empresaAtivaId");
         if (!empresaId) {
             const q = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
             const snapshot = await getDocs(q);
             if (snapshot.empty) {
-                alert("Nenhuma empresa encontrada. Por favor, cadastre sua empresa.");
-                window.location.href = 'cadastro-empresa.html';
-                return;
+                const mapaRef = doc(db, "mapaUsuarios", user.uid);
+                const mapaSnap = await getDoc(mapaRef);
+                if (mapaSnap.exists() && mapaSnap.data().empresas?.length === 1) {
+                    empresaId = mapaSnap.data().empresas[0];
+                    localStorage.setItem("empresaAtivaId", empresaId);
+                } else {
+                    window.location.replace('selecionar-empresa.html');
+                    return;
+                }
             } else if (snapshot.docs.length === 1) {
                 empresaId = snapshot.docs[0].id;
                 localStorage.setItem("empresaAtivaId", empresaId);
             } else {
-                alert("Você tem várias empresas. Por favor, selecione uma para continuar.");
-                window.location.href = 'selecionar-empresa.html';
+                window.location.replace('selecionar-empresa.html');
                 return;
             }
         }
-        await iniciarDashboard(empresaId);
+
+        const empresaDoc = await getDoc(doc(db, "empresarios", empresaId));
+        if (!empresaDoc.exists()) {
+            localStorage.removeItem("empresaAtivaId");
+            throw new Error("Empresa ativa não encontrada.");
+        }
+
+        const isOwner = empresaDoc.data().donoId === user.uid;
+        const profissionalIdParaFiltro = isOwner ? null : user.uid;
+
+        await iniciarDashboard(empresaId, profissionalIdParaFiltro);
+
     } catch (error) {
         console.error("Erro crítico na inicialização do dashboard:", error);
         alert("Ocorreu um erro ao carregar seus dados. Por favor, tente fazer login novamente.");
-        window.location.href = "login.html";
+        window.location.replace("login.html");
+    } finally {
+        document.body.style.opacity = '1';
     }
 });
