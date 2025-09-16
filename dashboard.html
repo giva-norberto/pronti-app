@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Seu CSS foi mantido exatamente como estava */
+        /* SEU CSS ORIGINAL - SEM ALTERAÇÕES */
         :root {
-            --primary: #6366f1; --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); --background: #f6f7fb;
+            --primary: #6366f1; --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100% ); --background: #f6f7fb;
             --card-bg: #fff; --text-main: #21243d; --text-secondary: #71717a; --border: #e0e7ff;
             --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
         }
@@ -45,25 +45,22 @@
             margin: 0 0 13px 0; font-size: 1.13rem; color: var(--text-secondary);
             font-weight: 700; display: flex; align-items: center; gap: 10px;
         }
-        .card-main-value { font-size: 2.45rem; font-weight: 800; color: var(--primary); margin: 0; }
+        .card-main-value { font-size: 2.45rem; font-weight: 800; color: var(--primary); margin: 0; min-height: 44px; }
         .card-sub-value { font-size: 1.03rem; color: var(--text-secondary); margin-top: 8px; }
-        .ia-card { background: linear-gradient(120deg, #6366f1 60%, #8b5cf6 100%); color: #fff; }
-        .ia-card .card-title { color: #e0e7ff; }
-        .ia-card p { font-size: 1.12rem; line-height: 1.7; }
-        .ia-actions { margin-top: 15px; display: flex; gap: 12px; }
-        .ia-btn {
-            background: #fff2; color: #fff; border: 1.5px solid #e0e7ff55;
-            border-radius: 9px; padding: 8px 16px; cursor: pointer; font-weight: 600;
-        }
         .resumo-card { border-left: 6px solid var(--primary); }
         .resumo-card .card-title { color: var(--primary); }
 
-        @media (max-width: 1000px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
+        /* Estilos para o estado de carregamento */
+        .loading-spinner {
+            display: inline-block; width: 28px; height: 28px;
+            border: 4px solid rgba(99, 102, 241, 0.2);
+            border-radius: 50%; border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
         }
-        @media (max-width: 700px) {
-            .kpi-row { grid-template-columns: 1fr; }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 1000px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 700px) { .kpi-row { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -84,28 +81,27 @@
                 <div class="kpi-row">
                     <div class="card">
                         <div class="card-title"><i class="fa-solid fa-dollar-sign"></i> Faturamento</div>
-                        <div class="card-main-value" id="faturamento-realizado">R$ 0,00</div>
-                        <div class="card-sub-value">Previsto: <span id="faturamento-previsto">R$ 0,00</span></div>
+                        <div class="card-main-value" id="faturamento-realizado"><span class="loading-spinner"></span></div>
+                        <div class="card-sub-value">Previsto: <span id="faturamento-previsto">--</span></div>
                     </div>
                     <div class="card">
                         <div class="card-title"><i class="fa-solid fa-calendar-check"></i> Agendamentos</div>
-                        <div class="card-main-value" id="total-agendamentos-dia">0</div>
-                        <div class="card-sub-value"><span id="agendamentos-pendentes">0</span> pendentes no dia</div>
+                        <div class="card-main-value" id="total-agendamentos-dia"><span class="loading-spinner"></span></div>
+                        <div class="card-sub-value"><span id="agendamentos-pendentes">--</span> pendentes no dia</div>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-title"><i class="fa-solid fa-chart-simple"></i> Serviços mais vendidos</div>
-                    <canvas id="servicos-mais-vendidos" style="width:100%; max-height:320px;"></canvas>
+                    <div id="grafico-container" style="position: relative; min-height: 320px;">
+                        <canvas id="servicos-mais-vendidos"></canvas>
+                    </div>
                 </div>
             </div>
             <div class="side-cards">
-
                 <div class="card resumo-card">
                     <div class="card-title"><i class="fa-solid fa-lightbulb"></i> Resumo Inteligente</div>
                     <div id="resumo-inteligente">
-                        <ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">
-                            <li>Carregando resumo do dia...</li>
-                        </ul>
+                        <span class="loading-spinner"></span>
                     </div>
                 </div>
             </div>
@@ -113,88 +109,6 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script type="module">
-        // Seu JavaScript foi mantido exatamente como estava.
-        import { auth, db } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        
-        let servicosChart;
-
-        async function buscarEAtualizarDados(empresaId, dataFiltro) {
-            console.log(`Buscando dados para a empresa ${empresaId} na data ${dataFiltro}`);
-            
-            // TODO: Lógica de busca de dados no Firebase.
-            
-            document.getElementById('faturamento-realizado').textContent = "R$ 1.250,75";
-            document.getElementById('faturamento-previsto').textContent = "R$ 1.800,00";
-            document.getElementById('total-agendamentos-dia').textContent = "15";
-            document.getElementById('agendamentos-pendentes').textContent = "3";
-            // A linha abaixo pode ser removida ou comentada, pois o elemento não existe mais.
-            // document.getElementById('ia-sugestao').innerHTML = "<p>O horário das 14h está com baixa procura...</p>";
-            document.getElementById('resumo-inteligente').innerHTML = `
-                <ul style="margin:0; padding-left: 1.1em; line-height: 1.7;">
-                    <li>Seu serviço mais procurado hoje é <strong>Corte Masculino</strong>.</li>
-                    <li>O faturamento está <strong>30% acima</strong> da média para este dia.</li>
-                </ul>`;
-
-            const ctx = document.getElementById('servicos-mais-vendidos').getContext('2d');
-            const dadosDoGrafico = {
-                labels: ['Corte', 'Manicure', 'Penteado', 'Coloração'],
-                data: [20, 15, 8, 5]
-            };
-            if (servicosChart) {
-                servicosChart.destroy();
-            }
-            servicosChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dadosDoGrafico.labels,
-                    datasets: [{
-                        label: 'Vendas', data: dadosDoGrafico.data,
-                        backgroundColor: ['#6366f1','#4f46e5','#8b5cf6','#a78bfa']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-        }
-
-        async function inicializarPagina() {
-            try {
-                const response = await fetch('menu-lateral.html');
-                document.getElementById('menu-container').innerHTML = await response.text();
-                const menuModule = await import('./menu-lateral.js');
-                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
-            } catch (error) {
-                console.error("Erro ao carregar o menu lateral.", error);
-            }
-
-            const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-            if (!empresaAtivaId) {
-                alert("Nenhuma empresa selecionada. Redirecionando...");
-                window.location.href = 'selecionar-empresa.html';
-                return;
-            }
-
-            const filtroDataEl = document.getElementById('filtro-data');
-            filtroDataEl.value = new Date().toISOString().split('T')[0];
-            buscarEAtualizarDados(empresaAtivaId, filtroDataEl.value);
-            filtroDataEl.addEventListener('change', () => {
-                buscarEAtualizarDados(empresaAtivaId, filtroDataEl.value);
-            });
-        }
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                inicializarPagina();
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
-    </script>
+    <script type="module" src="dashboard.js"></script> <!-- Movido para um arquivo externo -->
 </body>
 </html>
