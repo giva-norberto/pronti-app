@@ -1,5 +1,5 @@
 // ======================================================================
-// PERFIL.JS (CORRIGIDO PARA SUPORTE A MÚLTIPLAS EMPRESAS E CRIAÇÃO DE USUÁRIO/freeEmDias)
+// PERFIL.JS (PASSO 1: ADICIONANDO O 'SLUG' DE FORMA SEGURA)
 // ======================================================================
 
 import {
@@ -13,13 +13,67 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
-import { verificarAcesso } from "./userService.js";
 
 // Garante que os serviços do Firebase foram inicializados
-if (!app || !db || !auth || !storage ) {
+if (!app || !db || !auth || !storage  ) {
     console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
     throw new Error("Firebase não inicializado.");
 }
+
+// ============================================================
+//           ✅ INÍCIO DA NOVA LÓGICA (FUNÇÕES AUXILIARES)
+// ============================================================
+
+/**
+ * Converte um texto em um formato amigável para URL (slug).
+ * Ex: "Barbearia do João" -> "barbearia-do-joao"
+ */
+function criarSlug(texto) {
+    if (!texto) return '';
+    const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
+    const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
+    const p = new RegExp(a.split('').join('|'), 'g')
+
+    return texto.toString().toLowerCase()
+        .replace(/\s+/g, '-') // Substitui espaços por -
+        .replace(p, c => b.charAt(a.indexOf(c))) // Substitui caracteres especiais
+        .replace(/&/g, '-e-') // Substitui & por 'e'
+        .replace(/[^\w\-]+/g, '') // Remove todos os caracteres não-alfanuméricos exceto -
+        .replace(/\-\-+/g, '-') // Substitui múltiplos - por um único -
+        .replace(/^-+/, '') // Remove - do início do texto
+        .replace(/-+$/, '') // Remove - do final do texto
+}
+
+/**
+ * Verifica se um slug já existe no banco de dados e, se existir,
+ * adiciona um número no final para torná-lo único.
+ * A verificação ignora o documento da própria empresa que está sendo editada.
+ */
+async function garantirSlugUnico(slugBase, idEmpresaAtual = null) {
+    let slugFinal = slugBase;
+    let contador = 1;
+    let slugExiste = true;
+
+    while (slugExiste) {
+        const q = query(collection(db, "empresarios"), where("slug", "==", slugFinal));
+        const snapshot = await getDocs(q);
+        
+        // Verifica se o slug encontrado pertence à empresa que já estamos editando
+        if (snapshot.empty || (snapshot.docs.length === 1 && snapshot.docs[0].id === idEmpresaAtual)) {
+            slugExiste = false; // Encontrou um slug único ou é o slug da própria empresa
+        } else {
+            // O slug já existe e pertence a outra empresa, tenta o próximo número
+            contador++;
+            slugFinal = `${slugBase}-${contador}`;
+        }
+    }
+    return slugFinal;
+}
+
+// ============================================================
+//           ✅ FIM DA NOVA LÓGICA
+// ============================================================
+
 
 window.addEventListener('DOMContentLoaded', () => {
     // Mapeamento dos elementos do DOM
@@ -123,6 +177,27 @@ window.addEventListener('DOMContentLoaded', () => {
                 freeEmDias: 15
             };
 
+            // ============================================================
+            //           ✅ INÍCIO DA ALTERAÇÃO: LÓGICA DO SLUG
+            // ============================================================
+
+            const slugBase = criarSlug(nomeNegocio);
+            if (slugBase) { // Apenas executa se o nome do negócio não for vazio
+                if (!empresaId) { // Criando nova empresa
+                    dadosEmpresa.slug = await garantirSlugUnico(slugBase);
+                } else { // Editando empresa existente
+                    const empresaAtual = empresasDoDono.find(e => e.id === empresaId);
+                    // Só gera um novo slug se o nome fantasia realmente mudou
+                    if (empresaAtual && criarSlug(empresaAtual.dados.nomeFantasia) !== slugBase) {
+                        dadosEmpresa.slug = await garantirSlugUnico(slugBase, empresaId);
+                    }
+                }
+            }
+
+            // ============================================================
+            //           ✅ FIM DA ALTERAÇÃO
+            // ============================================================
+
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
                 const storagePath = `logos/${uid}/${Date.now()}-${logoFile.name}`;
@@ -131,8 +206,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!empresaId) {
-                // ======================= INÍCIO DA ALTERAÇÃO CIRÚRGICA =======================
-                // 1. Garante que o documento do usuário existe na coleção 'usuarios'
+                // CRIANDO NOVA EMPRESA
                 const userRef = doc(db, "usuarios", uid);
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) {
@@ -143,14 +217,11 @@ window.addEventListener('DOMContentLoaded', () => {
                         isPremium: false
                     });
                 }
-                // ======================== FIM DA ALTERAÇÃO CIRÚRGICA =========================
-
-                // 2. Criando a nova empresa na coleção 'empresarios'
+                
                 dadosEmpresa.createdAt = serverTimestamp();
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 const novoEmpresaId = novaEmpresaRef.id;
 
-                // 3. Atualizando o mapaUsuarios para adicionar a nova empresa à lista do utilizador
                 const mapaRef = doc(db, "mapaUsuarios", uid);
                 const mapaSnap = await getDoc(mapaRef);
                 let empresasAtuais = [];
@@ -168,9 +239,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     empresasAtuais.push(novoEmpresaId);
                 }
 
-                await setDoc(mapaRef, { empresas: empresasAtuais }, { merge: true }); // Usar merge: true para segurança
+                await setDoc(mapaRef, { empresas: empresasAtuais }, { merge: true });
                 
-                // 4. Adicionando o dono como profissional da nova empresa
                 await setDoc(doc(db, "empresarios", novoEmpresaId, "profissionais", uid), {
                     uid: uid,
                     nome: currentUser.displayName || nomeNegocio,
@@ -185,11 +255,8 @@ window.addEventListener('DOMContentLoaded', () => {
                         <div style="padding:12px 2px;">
                             <span style="font-size:1.14em;">
                                 ✅ Seu negócio foi cadastrado com sucesso!  
-
                                 <span style="color:#065f46;">Você ganhou <strong>15 dias grátis</strong>!</span>  
-
                                 <span style="color:#22223b;">Por segurança, será necessário sair e fazer login novamente.  
-
                                 Após logar, selecione sua empresa no menu.</span>
                             </span>
                         </div>
@@ -203,6 +270,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
 
             } else {
+                // EDITANDO EMPRESA EXISTENTE
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
                 await carregarEmpresasDoUsuario(uid);
@@ -220,7 +288,7 @@ window.addEventListener('DOMContentLoaded', () => {
         empresaId = null;
         if (elements.form) elements.form.reset();
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el ) el.style.display = 'none'; });
+        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el  ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
@@ -256,7 +324,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.form) elements.form.reset();
         empresaId = null;
         if (elements.logoPreview) elements.logoPreview.src = "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el ) el.style.display = 'none'; });
+        [elements.containerLinkVitrine, elements.btnAbrirVitrine, elements.btnAbrirVitrineInline].forEach(el => { if (el  ) el.style.display = 'none'; });
         if (elements.msgCadastroSucesso) elements.msgCadastroSucesso.style.display = "none";
         if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.style.display = 'inline-flex';
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
@@ -278,7 +346,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.logoPreview) {
             elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         }
-        if (!empresaId ) return;
+        if (!empresaId  ) return;
         const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
