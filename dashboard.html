@@ -8,61 +8,148 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* SEU CSS ORIGINAL - COM AJUSTE PARA 3 COLUNAS */
+        /* ======================================================================
+                    CSS FINAL, REVISADO E COM FUNDO CORRIGIDO
+           ====================================================================== */
+
         :root {
-            --primary: #6366f1; --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  ); --background: #f6f7fb;
-            --card-bg: #fff; --text-main: #21243d; --text-secondary: #71717a; --border: #e0e7ff;
+            --primary: #6366f1; 
+            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100% ); 
+            /* A variável --background não será mais usada no body */
+            --card-bg: #fff; 
+            --text-main: #21243d; 
+            --text-secondary: #71717a; 
+            --border: #e0e7ff;
             --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
         }
+
         body {
-            margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--background);
-            color: var(--text-main); display: flex;
+            margin: 0; 
+            font-family: 'Inter', Arial, sans-serif; 
+            /* ✅ CORREÇÃO DEFINITIVA: Gradiente aplicado diretamente, removendo a variável conflitante. */
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: var(--text-main); 
+            display: flex;
         }
+
         .dashboard-main {
-            flex-grow: 1; max-width: 1200px; margin: 0 auto; padding: 32px 18px;
+            flex-grow: 1; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 32px 18px;
             box-sizing: border-box;
         }
+
         .dashboard-header {
-            display: flex; align-items: center; justify-content: space-between; gap: 16px;
-            flex-wrap: wrap; margin-bottom: 32px;
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            gap: 16px;
+            flex-wrap: wrap; 
+            margin-bottom: 32px;
+            /* Adicionado um fundo branco ao header para melhor leitura sobre o fundo azul */
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 16px 24px;
+            border-radius: 14px;
+            box-shadow: var(--shadow);
         }
+
         .dashboard-header h1 {
-            font-size: 2.1rem; font-weight: 800; letter-spacing: -0.5px; background: var(--gradient);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;
+            font-size: 2.1rem; 
+            font-weight: 800; 
+            letter-spacing: -0.5px; 
+            background: var(--gradient);
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            margin: 0;
         }
+
         .date-filter input[type="date"] {
-            padding: 10px 14px; border-radius: 9px; border: 1.5px solid var(--border);
-            font-size: 1rem; background: var(--card-bg); color: var(--text-main);
+            padding: 10px 14px; 
+            border-radius: 9px; 
+            border: 1.5px solid var(--border);
+            font-size: 1rem; 
+            background: var(--card-bg); 
+            color: var(--text-main);
         }
-        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
-        .main-cards, .side-cards { display: flex; flex-direction: column; gap: 24px; }
+
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: 2fr 1fr; 
+            gap: 30px; 
+        }
+
+        .main-cards, .side-cards { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 24px; 
+        }
         
-        /* ✅ ALTERAÇÃO: Ajustado para 3 colunas para acomodar o novo card */
-        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+        .kpi-row { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 22px; 
+        }
 
         .card {
-            background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow);
-            padding: 28px 22px 23px 22px; border: 1.5px solid var(--border);
+            background: var(--card-bg); 
+            border-radius: 18px; 
+            box-shadow: var(--shadow);
+            padding: 28px 22px 23px 22px; 
+            /* ✅ BORDA AZUL APLICADA AQUI */
+            border: 2px solid var(--primary);
         }
+
         .card-title {
-            margin: 0 0 13px 0; font-size: 1.13rem; color: var(--text-secondary);
-            font-weight: 700; display: flex; align-items: center; gap: 10px;
+            margin: 0 0 13px 0; 
+            font-size: 1.13rem; 
+            color: var(--text-secondary);
+            font-weight: 700; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
         }
-        .card-main-value { font-size: 2.45rem; font-weight: 800; color: var(--primary); margin: 0; min-height: 44px; }
-        .card-sub-value { font-size: 1.03rem; color: var(--text-secondary); margin-top: 8px; }
-        .resumo-card { border-left: 6px solid var(--primary); }
-        .resumo-card .card-title { color: var(--primary); }
+
+        .card-main-value { 
+            font-size: 2.45rem; 
+            font-weight: 800; 
+            color: var(--primary); 
+            margin: 0; 
+            min-height: 44px; 
+        }
+
+        .card-sub-value { 
+            font-size: 1.03rem; 
+            color: var(--text-secondary); 
+            margin-top: 8px; 
+        }
+
+        /* Card do Resumo Inteligente com destaque */
+        .resumo-card { 
+            border: 2px solid var(--primary); /* Garante a borda azul também */
+        }
+        .resumo-card .card-title { 
+            color: var(--primary); 
+        }
 
         .loading-spinner {
-            display: inline-block; width: 28px; height: 28px;
+            display: inline-block; 
+            width: 28px; 
+            height: 28px;
             border: 4px solid rgba(99, 102, 241, 0.2);
-            border-radius: 50%; border-top-color: var(--primary);
+            border-radius: 50%; 
+            border-top-color: var(--primary);
             animation: spin 1s ease-in-out infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 1000px) { .dashboard-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 800px) { .kpi-row { grid-template-columns: 1fr; } }
+        /* --- RESPONSIVIDADE --- */
+        @media (max-width: 1000px) { 
+            .dashboard-grid { grid-template-columns: 1fr; } 
+        }
+        @media (max-width: 800px) { 
+            .kpi-row { grid-template-columns: 1fr; } 
+        }
     </style>
 </head>
 <body>
@@ -91,7 +178,6 @@
                         <div class="card-main-value" id="total-agendamentos-dia"><span class="loading-spinner"></span></div>
                         <div class="card-sub-value"><span id="agendamentos-pendentes">--</span> pendentes</div>
                     </div>
-                    <!-- ✅ NOVO CARD ADICIONADO AQUI -->
                     <div class="card">
                         <div class="card-title"><i class="fa-solid fa-chart-line"></i> Faturamento (Mês)</div>
                         <div class="card-main-value" id="faturamento-mensal"><span class="loading-spinner"></span></div>
