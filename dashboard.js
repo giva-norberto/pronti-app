@@ -1,5 +1,5 @@
 // ======================================================================
-//          DASHBOARD.JS (VERSÃO FINAL COM DADOS MENSAIS )
+//          DASHBOARD.JS (VERSÃO FINAL, COMPLETA E REVISADA)
 // ======================================================================
 
 import { verificarAcesso } from "./userService.js";
@@ -117,9 +117,14 @@ async function buscarDadosDoDia(empresaId, data) {
         const ag = doc.data();
         totalAgendamentosDia++;
         faturamentoPrevisto += Number(ag.servicoPreco) || 0;
-        if (ag.status === "realizado") faturamentoRealizado += Number(ag.servicoPreco) || 0;
-        else if (ag.status === "ativo" && timeStringToMinutes(ag.horario) >= minutosAgora) agendamentosPendentes++;
-        
+        if (ag.status === "realizado") {
+            faturamentoRealizado += Number(ag.servicoPreco) || 0;
+        } else if (ag.status === "ativo") {
+            const minutosAg = timeStringToMinutes(ag.horario);
+            if (minutosAg >= minutosAgora) {
+                agendamentosPendentes++;
+            }
+        }
         agsParaIA.push({
             inicio: `${ag.data}T${ag.horario}:00`,
             cliente: ag.clienteNome,
