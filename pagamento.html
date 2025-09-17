@@ -33,8 +33,7 @@
         <h1>Renove a sua Assinatura</h1>
         <h2 id="info-usuario">A carregar dados da sua empresa...</h2>
         
-        <div class="lista-planos">
-            </div>
+        <div class="lista-planos"></div>
 
         <p id="erro-selecao"></p>
         <button id="btn-pagar" class="btn-pagar" disabled>Selecione um plano</button>
@@ -55,27 +54,33 @@
         let planoSelecionado = null;
         let licencasNecessarias = 0;
 
+        // ✅ NOVA TABELA DE PREÇOS COM DEGRAUS MAIS SUAVES
         const configuracaoPrecos = {
             precoBase: 59.90,
             funcionariosInclusos: 2,
             faixasDePrecoExtra: [
-                { de: 3, ate: 10, valor: 29.90 },
-                { de: 11, ate: 50, valor: 24.90 },
+                { de: 3,  ate: 5,  valor: 24.90 },
+                { de: 6,  ate: 10, valor: 19.90 },
+                { de: 11, ate: 20, valor: 14.90 },
+                { de: 21, ate: 50, valor: 9.90 }
             ]
         };
-        const planosParaExibir = [2, 5, 10, 15, 20, 30, 50];
+
+        const planosParaExibir = [2, 3, 4, 5, 6, 8, 10, 15, 20, 30, 50];
 
         function calcularPreco(totalFuncionarios) {
             if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
             let total = configuracaoPrecos.precoBase;
             for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
-                const inicioDaFaixa = faixa.de;
-                if (totalFuncionarios >= inicioDaFaixa) {
-                    const fimDaFaixa = faixa.ate;
-                    const funcionariosNestaFaixa = Math.min(totalFuncionarios, fimDaFaixa) - Math.max(configuracaoPrecos.funcionariosInclusos, inicioDaFaixa) + 1;
-                    if(funcionariosNestaFaixa > 0) {
-                        const funcionariosJaCobrados = Math.max(0, inicioDaFaixa - configuracaoPrecos.funcionariosInclusos -1);
-                        total += (funcionariosNestaFaixa - funcionariosJaCobrados) * faixa.valor;
+                const inicio = faixa.de;
+                if (totalFuncionarios >= inicio) {
+                    const fim = faixa.ate;
+                    const funcionariosNestaFaixa =
+                        Math.min(totalFuncionarios, fim) -
+                        Math.max(configuracaoPrecos.funcionariosInclusos, inicio) + 1;
+                    if (funcionariosNestaFaixa > 0) {
+                        const jaCobrados = Math.max(0, inicio - configuracaoPrecos.funcionariosInclusos - 1);
+                        total += (funcionariosNestaFaixa - jaCobrados) * faixa.valor;
                     }
                 }
             }
@@ -91,8 +96,8 @@
                 card.className = `card-plano ${isDesabilitado ? 'desabilitado' : ''}`;
                 card.dataset.funcionarios = numFuncionarios;
                 card.innerHTML = `
-                    <h3 class="titulo">Plano para até ${numFuncionarios} Funcionários</h3>
-                    <p class="preco">${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span>/mês</span></p>
+                    <h3 class="titulo">Até ${numFuncionarios} colaboradores</h3>
+                    <p class="preco">${preco.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}<span>/mês</span></p>
                     <p class="descricao">${isDesabilitado ? 'Este plano não comporta a sua equipa atual.' : 'Ideal para equipas em crescimento.'}</p>
                 `;
                 card.addEventListener('click', () => {
@@ -104,7 +109,7 @@
                     card.classList.add('selecionado');
                     planoSelecionado = { totalFuncionarios: numFuncionarios };
                     btnPagar.disabled = false;
-                    btnPagar.textContent = `Pagar Assinatura (${preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`;
+                    btnPagar.textContent = `Pagar Assinatura (${preco.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})`;
                     erroSelecao.textContent = '';
                 });
                 listaPlanosContainer.appendChild(card);
@@ -120,7 +125,6 @@
                 });
 
                 if (!response.ok) {
-                    // Se a resposta do servidor for um erro (ex: 403, 404), lança um erro para ser tratado pelo bloco catch.
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.message || 'Empresa inválida ou assinatura expirada.');
                 }
@@ -132,32 +136,22 @@
 
             } catch (error) {
                 console.error("Erro ao inicializar página:", error);
-                
-                // **INÍCIO DA CORREÇÃO DO LOOP (Conforme a sua análise)**
-                // Centraliza o tratamento de todos os erros que indicam uma empresa inválida
                 infoUsuarioDiv.textContent = error.message || 'Empresa inválida ou assinatura expirada. A redirecionar...';
                 infoUsuarioDiv.style.color = '#dc2626';
-
-                // 1. Limpa o ID inválido de TODOS os locais possíveis para quebrar o loop.
                 sessionStorage.removeItem('empresaId');
                 localStorage.removeItem('empresaAtivaId'); 
-
-                // 2. Redireciona o utilizador para a seleção de empresa.
                 setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 3000);
-                return; // Para a execução da função aqui.
-                // **FIM DA CORREÇÃO DO LOOP**
+                return;
             }
         }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Lógica centralizada para obter o ID da empresa
                 let empresaId = sessionStorage.getItem('empresaId') || localStorage.getItem('empresaAtivaId');
-                
                 if (!empresaId) {
                     const urlParams = new URLSearchParams(window.location.search);
                     empresaId = urlParams.get('empresaId');
-                    if(empresaId) {
+                    if (empresaId) {
                         sessionStorage.setItem('empresaId', empresaId);
                         localStorage.setItem('empresaAtivaId', empresaId);
                     }
@@ -169,7 +163,6 @@
                     setTimeout(() => { window.location.href = 'selecionar-empresa.html'; }, 2500);
                     return;
                 }
-                
                 inicializarPagina(user, empresaId);
             } else {
                 infoUsuarioDiv.textContent = 'Você não está logado. A redirecionar para o login...';
@@ -185,7 +178,6 @@
                 erroSelecao.textContent = 'Erro: Utilizador ou empresa não identificados. Por favor, selecione a empresa novamente.';
                 return;
             }
-            
             btnPagar.disabled = true;
             btnPagar.textContent = 'A criar link de pagamento...';
 
@@ -198,12 +190,10 @@
                         planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios }
                     })
                 });
-                
                 if (!response.ok) {
                     const err = await response.json();
                     throw new Error(err.error || 'Erro do servidor');
                 }
-
                 const preference = await response.json();
                 if (preference.init_point) {
                     window.location.href = preference.init_point;
@@ -217,7 +207,6 @@
                 btnPagar.textContent = 'Tentar Novamente';
             }
         });
-
     </script>
 </body>
 </html>
