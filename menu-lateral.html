@@ -1,7 +1,7 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">
-        <!-- ✅ Espaço reservado para o logo, com 'id' para o JS -->
-        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/config%2Flogo-pronti-app.png?alt=media&token=023e5b0d-1cb4-4da8-bcd8-3e9742cca5c9" alt="Logo Pronti" id="sidebar-logo">
+        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/config%2Flogo-pronti-app.png?alt=media&token=023e5b0d-1cb4-4da8-bcd8-3e9742cca5c9" 
+             alt="Logo Pronti" id="sidebar-logo">
     </a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
@@ -44,7 +44,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
-/* --- CSS do seu menu --- */
+/* --- CSS do sidebar --- */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -73,7 +73,8 @@
     min-height: 50px; 
     display: block;
     margin: 0 auto;
-    background-color: rgba(255,255,255,0.1);
+    background-color: #fff; /* garante visibilidade */
+    padding: 4px;
     border-radius: 8px;
 }
 .sidebar hr {
@@ -99,7 +100,7 @@
   font-size: 1.08em;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  transition: all 0.2s ease;
+  transition: background 0.3s ease, color 0.3s ease, border 0.3s ease;
   padding: 14px 18px;
   text-decoration: none;
   border: 2px solid transparent;
@@ -170,12 +171,12 @@
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// --- Função do menu lateral ---
+// --- Ativa menu lateral ---
 export function ativarMenuLateral() {
-  const nomePaginaAtual = window.location.pathname.split('/').pop();
+  const nomePaginaAtual = window.location.pathname.split('/').pop().split('?')[0].split('#')[0];
   document.querySelectorAll('.sidebar-links a').forEach(link => {
     link.classList.remove('active');
-    const linkPagina = link.getAttribute('href').split('/').pop();
+    const linkPagina = link.getAttribute('href').split('/').pop().split('?')[0].split('#')[0];
     if (linkPagina === nomePaginaAtual || (nomePaginaAtual === '' && linkPagina === 'index.html')) {
       link.classList.add('active');
     }
