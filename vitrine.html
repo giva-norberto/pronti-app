@@ -19,7 +19,7 @@
     <meta property="og:type" content="website">
     -->
 
-    <!-- ✅ NOVO: Estilos para o seu modal de login, para deixá-lo no padrão Pronti -->
+    <!-- ✅ ESTILOS DO MODAL ATUALIZADOS -->
     <style>
         .modal-overlay {
             display: none; /* Começa oculto */
@@ -44,19 +44,42 @@
             width: 90%;
             max-width: 400px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative; /* Para o botão de fechar */
+        }
+        /* ✅ NOVO: Botão para fechar o modal */
+        #modal-auth-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        #modal-auth-close-btn:hover {
+            background: #e2e8f0;
+            transform: rotate(90deg);
         }
         .modal-auth-step h2 {
             font-size: 1.5rem;
             color: #1e293b;
             text-align: center;
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         .modal-auth-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
             padding: 12px;
             font-size: 1rem;
@@ -65,15 +88,24 @@
             cursor: pointer;
             transition: all 0.2s ease;
             border: 1px solid #d1d5db;
-            background-color: #4f46e5;
-            color: white;
         }
+        /* ✅ NOVO: Estilo padrão Google para o botão */
         #modal-auth-btn-google {
-            background-color: #fff;
+            background-color: #ffffff;
             color: #374151;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         #modal-auth-btn-google:hover {
              background-color: #f9fafb;
+             border-color: #adb5bd;
+        }
+        .modal-auth-btn-submit {
+             background-color: #4f46e5;
+             color: white;
+             border: none;
+        }
+        .modal-auth-btn-submit:hover {
+            opacity: 0.9;
         }
         .modal-auth-step input {
             width: 100%;
@@ -217,34 +249,39 @@
 
     <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
     
-    <!-- ✅ MODAL DE AUTENTICAÇÃO ATUALIZADO COM OS NOVOS ESTILOS -->
+    <!-- ✅ MODAL DE AUTENTICAÇÃO ATUALIZADO E REVISADO -->
     <div id="modal-auth-janela" class="modal-overlay">
         <div class="modal-auth-container">
+            <!-- ✅ NOVO: Botão de fechar -->
+            <button id="modal-auth-close-btn" title="Fechar">&times;</button>
+            
             <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
+
             <div id="modal-auth-login" class="modal-auth-step">
-                <h2>Entrar</h2>
+                <h2>Faça seu Login</h2>
+                <p style="text-align:center; margin-top: -15px; margin-bottom: 24px; color: #64748b;">para continuar com o agendamento.</p>
                 <button type="button" class="modal-auth-btn" id="modal-auth-btn-google">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" style="width: 18px; height: 18px;">
                     <span>Entrar com Google</span>
                 </button>
-                <div style="text-align:center;color:#888;margin:16px 0;">ou</div>
+                <div style="text-align:center;color:#9ca3af;margin:16px 0;">ou</div>
                 <form id="modal-auth-form-login">
-                    <input id="modal-auth-login-email" type="email" placeholder="Email" required>
+                    <input id="modal-auth-login-email" type="email" placeholder="E-mail" required>
                     <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>
-                    <button class="modal-auth-btn">Entrar</button>
+                    <button class="modal-auth-btn modal-auth-btn-submit">Entrar</button>
                 </form>
                 <div style="text-align:center;margin-top:16px;">
                     <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
                 </div>
             </div>
             <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
-                <h2>Criar Conta</h2>
+                <h2>Crie sua Conta</h2>
                 <form id="modal-auth-form-cadastro">
                     <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
                     <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
                     <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
                     <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required>
-                    <button class="modal-auth-btn">Cadastrar</button>
+                    <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
                 </form>
                 <div style="text-align:center;margin-top:16px;">
                     <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
@@ -253,44 +290,43 @@
         </div>
     </div>
     
-    <!-- Scripts que controlam a página -->
     <script type="module" src="./vitrine.js"></script>
-    <!-- Adicione aqui os outros scripts que você tem, na ordem correta -->
-    <!-- Exemplo:
-    <script type="module" src="./vitrini-firebase.js"></script>
-    <script type="module" src="./vitrini-agendamento.js"></script>
-    ...
-    -->
+    <!-- Adicione aqui os outros scripts que você tem -->
 
-    <!-- ✅ NOVO SCRIPT "PORTEIRO": Verifica o login antes de agendar -->
+    <!-- ✅ SCRIPT "PORTEIRO" ATUALIZADO COM LÓGICA DE FECHAR O MODAL -->
     <script type="module">
         import { auth } from './firebase-config.js';
 
-        // Espera o conteúdo da página carregar para adicionar o "porteiro"
         document.addEventListener('DOMContentLoaded', () => {
             const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
             const modalAuth = document.getElementById('modal-auth-janela');
+            const btnCloseModal = document.getElementById('modal-auth-close-btn');
 
-            if (btnConfirmarAgendamento && modalAuth) {
+            if (btnConfirmarAgendamento && modalAuth && btnCloseModal) {
+                
+                // Função para fechar o modal
+                const fecharModal = () => {
+                    modalAuth.style.display = 'none';
+                };
+
                 // Adiciona o "porteiro" ao botão de confirmar.
-                // O 'true' no final faz com que ele seja o primeiro a verificar o clique.
                 btnConfirmarAgendamento.addEventListener('click', (event) => {
-                    const usuarioLogado = auth.currentUser;
-
-                    if (!usuarioLogado) {
-                        // Se o usuário NÃO ESTÁ logado:
+                    if (!auth.currentUser) {
                         console.log('Usuário não logado. Exibindo modal de login.');
-                        
-                        // 1. Impede que a lógica original de agendamento prossiga.
                         event.preventDefault(); 
-                        event.stopImmediatePropagation(); // Garante que nenhum outro script ouça este clique.
-
-                        // 2. Mostra o modal de login que já existe na sua página.
+                        event.stopImmediatePropagation();
                         modalAuth.style.display = 'flex';
                     }
-                    // Se o usuário ESTIVER logado, este script não faz nada,
-                    // e o clique prossegue para a sua lógica de agendamento original.
                 }, true);
+
+                // Adiciona a funcionalidade de fechar o modal
+                btnCloseModal.addEventListener('click', fecharModal);
+                modalAuth.addEventListener('click', (event) => {
+                    // Fecha o modal se o clique for no fundo escuro
+                    if (event.target === modalAuth) {
+                        fecharModal();
+                    }
+                });
             }
         });
     </script>
