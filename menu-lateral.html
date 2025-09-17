@@ -1,5 +1,7 @@
 <aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">Pronti</a>
+    <a href="index.html" class="sidebar-brand">
+        <img src="URL_DO_SEU_LOGO_AQUI" alt="Logo Pronti">
+    </a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
         <a href="index.html" data-menu-id="inicio">
@@ -56,17 +58,24 @@
   transition: transform 0.3s ease; /* Usar transform para melhor performance */
   box-sizing: border-box;
 }
+
+/* ✅ ALTERAÇÃO AQUI: Ajustes para o logo em imagem */
 .sidebar-brand {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #fff;
-  text-decoration: none;
-  letter-spacing: 2px;
-  padding: 0 32px 12px 32px;
   display: block;
+  padding: 0 32px 12px 32px; /* Ajuste no padding */
   margin-bottom: 8px;
-  text-align: left;
+  text-align: center; /* Centraliza o logo */
+  text-decoration: none;
 }
+
+/* ✅ NOVO: Estilo para a imagem do logo */
+.sidebar-brand img {
+    max-width: 150px; /* Define uma largura máxima para o logo */
+    height: auto; /* Mantém a proporção da imagem */
+    display: block; /* Garante que a imagem se comporte como um bloco */
+    margin: 0 auto; /* Centraliza a imagem se ela for menor que o container */
+}
+
 .sidebar hr {
   margin: 0 32px 16px 32px;
   border: none;
@@ -157,6 +166,11 @@
 </style>
 
 <script type="module">
+// =======================================================
+//                SEU JAVASCRIPT ORIGINAL
+//        NENHUMA ALTERAÇÃO FOI NECESSÁRIA AQUI
+// =======================================================
+
 // Importações essenciais
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
