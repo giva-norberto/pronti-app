@@ -1,7 +1,7 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">
-        <!-- ✅ CORREÇÃO FINALÍSSIMA 2.0: Corrigido o erro de digitação no nome do arquivo. -->
-        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=94e6d834-0ead-4934-acf6-3064ae4edc07" alt="Logo Pronti">
+        <!-- ✅ ALTERAÇÃO 1: 'src' agora está vazio e a imagem tem um 'id' para o JS encontrá-la. -->
+        <img src="" alt="Logo Pronti" id="sidebar-logo">
     </a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
@@ -41,10 +41,10 @@
     </div>
 </aside>
 
-<!-- O resto do seu arquivo (CSS e JS ) permanece exatamente igual -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
+/* Seu CSS original foi mantido... */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100% );
@@ -67,11 +67,15 @@
   text-align: center;
   text-decoration: none;
 }
+/* ✅ ALTERAÇÃO 2: Estilo de placeholder para a logo enquanto ela carrega. */
 .sidebar-brand img {
     max-width: 150px;
     height: auto;
+    min-height: 50px; /* Evita que o layout "pule" */
     display: block;
     margin: 0 auto;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 8px;
 }
 .sidebar hr {
   margin: 0 32px 16px 32px;
@@ -163,11 +167,35 @@
 </style>
 
 <script type="module">
-import { auth } from "./firebase-config.js";
+// ✅ ALTERAÇÃO 3: Importando as ferramentas necessárias do Firebase.
+import { auth, db } from "./firebase-config.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-export function ativarMenuLateral( ) {
+// ✅ ALTERAÇÃO 4: Nova função para buscar a logo do Firestore.
+async function carregarLogoPadrao( ) {
+    const logoElement = document.getElementById('sidebar-logo');
+    if (!logoElement) return;
 
+    try {
+        const configRef = doc(db, "configuracoesGlobais", "permissoes");
+        const configSnap = await getDoc(configRef);
+        
+        if (configSnap.exists() && configSnap.data().logoUrlPadrao) {
+            logoElement.src = configSnap.data().logoUrlPadrao;
+        } else {
+            // Fallback: Se não encontrar a URL, usa a logo antiga como segurança.
+            logoElement.src = "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FLogo%20PRONTI%20AZUL.png?alt=media&token=2c9321eb-656c-4736-8ea8-4858f98b16cc";
+        }
+    } catch (error ) {
+        console.error("Erro ao carregar logo padrão:", error);
+        // Em caso de erro, também usa a logo antiga.
+        logoElement.src = "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FLogo%20PRONTI%20AZUL.png?alt=media&token=2c9321eb-656c-4736-8ea8-4858f98b16cc";
+    }
+}
+
+// Sua função original, sem alterações.
+export function ativarMenuLateral( ) {
   const nomePaginaAtual = window.location.pathname.split('/').pop();
   document.querySelectorAll('.sidebar-links a').forEach(link => {
     link.classList.remove('active');
@@ -196,5 +224,7 @@ export function ativarMenuLateral( ) {
   }
 }
 
+// ✅ ALTERAÇÃO 5: Chama as duas funções na inicialização.
+carregarLogoPadrao();
 ativarMenuLateral();
 </script>
