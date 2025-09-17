@@ -12,7 +12,7 @@
     <!-- ✅ ESTILOS ATUALIZADOS APENAS PARA OS NOVOS ELEMENTOS -->
     <style>
         body { font-family: 'Inter', sans-serif; margin: 0; background-color: #f1f5f9; }
-        .container { max-width: 800px; margin: 32px auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .container { max-width: 800px; margin: 32px auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08 ); }
         h2 { color: #4f46e5; font-weight: 700; border-bottom: 2px solid #eef2ff; padding-bottom: 12px; }
         p { color: #64748b; margin-top: 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -53,7 +53,7 @@
 
         <div class="config-section">
             <h2>Permissões Globais de Menu</h2>
-            <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
+            <p>Defina quais menus cada papel (Funcionário / Dono / Admin ) pode acessar em TODAS as empresas.</p>
             <table>
                 <thead>
                     <tr>
@@ -77,7 +77,7 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // --- SUA LÓGICA DE ACESSO ORIGINAL (NÃO FOI ALTERADA) ---
+        // --- SUA LÓGICA DE ACESSO ORIGINAL (NÃO FOI ALTERADA ) ---
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
 
         // ✅ NOVOS ELEMENTOS DO DOM PARA O UPLOAD
@@ -134,20 +134,13 @@
 
         // --- SUA FUNÇÃO ORIGINAL (NÃO FOI ALTERADA) ---
         function renderTabela() {
-            permissoesTabela.innerHTML = menus.map(menu => `
-                <tr>
-                    <td>${menu}</td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
-                </tr>
-            `).join("");
+            permissoesTabela.innerHTML = menus.map(menu => `\n                <tr>\n                    <td>${menu}</td>\n                    <td><input type=\"checkbox\" data-menu=\"${menu}\" data-role=\"funcionario\" ${permissoesAtuais[menu].funcionario ? \"checked\" : \"\"}></td>\n                    <td><input type=\"checkbox\" data-menu=\"${menu}\" data-role=\"dono\" ${permissoesAtuais[menu].dono ? \"checked\" : \"\"}></td>\n                    <td><input type=\"checkbox\" data-menu=\"${menu}\" data-role=\"admin\" ${permissoesAtuais[menu].admin ? \"checked\" : \"\"}></td>\n                </tr>\n            `).join("");
         }
 
         // ✅ FUNÇÃO ATUALIZADA PARA SALVAR O LOGO E AS PERMISSÕES
         salvarBtn.addEventListener("click", async () => {
             salvarBtn.disabled = true;
-            salvarBtn.textContent = 'A Salvar...';
+            salvarBtn.textContent = \'A Salvar...\';
 
             try {
                 const configParaSalvar = {};
@@ -156,7 +149,7 @@
                 if (logoFile) {
                     const storage = getStorage();
                     // O caminho fixo garante que o logo seja sempre o mesmo arquivo no Storage
-                    const storageRef = ref(storage, 'config/logo-pronti-app.png'); 
+                    const storageRef = ref(storage, \'config/logo-pronti-app.png\'); 
                     await uploadBytes(storageRef, logoFile);
                     const downloadURL = await getDownloadURL(storageRef);
                     // Adiciona a URL ao objeto que será salvo no Firestore
@@ -177,15 +170,15 @@
 
                 // 3. Salva tudo (logo + permissões) no mesmo documento
                 await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
-                alert("Configurações globais salvas com sucesso!");
+                console.log("Configurações globais salvas com sucesso!");
                 logoFile = null; // Limpa o arquivo após o upload
 
             } catch (error) {
                 console.error("Erro ao salvar configurações:", error);
-                alert("Ocorreu um erro ao salvar as configurações.");
+                console.error("Ocorreu um erro ao salvar as configurações.");
             } finally {
                 salvarBtn.disabled = false;
-                salvarBtn.textContent = 'Salvar Todas as Configurações';
+                salvarBtn.textContent = \'Salvar Todas as Configurações\';
             }
         });
 
@@ -194,7 +187,7 @@
             if (!user) {
                 window.location.href = "login.html";
             } else if (user.uid !== ADMIN_UID) {
-                alert("Acesso negado. Apenas Administrador.");
+                console.error("Acesso negado. Apenas Administrador.");
                 window.location.href = "index.html";
             } else {
                 // Atualizado para chamar a nova função que carrega tudo
