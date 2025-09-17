@@ -2,33 +2,53 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Permissões Globais</title>
+  <title>Configurações Globais</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9fafb; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    h2, h3 { color: #333; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background: #f4f4f4; }
-    button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
+    button { margin-top: 20px; padding: 10px 20px; cursor: pointer; background-color: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: bold; }
     input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+    .config-section { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #eee; }
+    .form-group { margin-top: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .form-group input[type=text] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <h2>Permissões Globais de Menu</h2>
-  <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
-  <table>
-    <thead>
-      <tr>
-        <th>Menu</th>
-        <th>Funcionário</th>
-        <th>Dono</th>
-        <th>Admin</th>
-      </tr>
-    </thead>
-    <tbody id="permissoes-tabela"></tbody>
-  </table>
-  <button id="salvar">Salvar</button>
+  <div class="container">
+    <!-- ✅ INÍCIO DA NOVA SEÇÃO -->
+    <div class="config-section">
+      <h2>Configurações do Sistema</h2>
+      <div class="form-group">
+        <label for="logo-url-padrao">URL da Logo Padrão do Menu Lateral</label>
+        <input type="text" id="logo-url-padrao" placeholder="Cole aqui a URL pública da imagem da logo">
+      </div>
+    </div>
+    <!-- ✅ FIM DA NOVA SEÇÃO -->
 
-  <!-- 🔥 Script só roda depois do HTML existir -->
+    <div class="config-section">
+      <h2>Permissões Globais de Menu</h2>
+      <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Menu</th>
+            <th>Funcionário</th>
+            <th>Dono</th>
+            <th>Admin</th>
+          </tr>
+        </thead>
+        <tbody id="permissoes-tabela"></tbody>
+      </table>
+    </div>
+    
+    <button id="salvar">Salvar Todas as Configurações</button>
+  </div>
+
   <script type="module">
     import { auth, db } from "./firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -36,36 +56,29 @@
 
     const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
+    const logoUrlInput = document.getElementById("logo-url-padrao" ); // ✅ Novo elemento
     const permissoesTabela = document.getElementById("permissoes-tabela");
     const salvarBtn = document.getElementById("salvar");
 
-    const menus = [
-      "inicio",
-      "dashboard",
-      "agenda",
-      "equipe",
-      "servicos",
-      "clientes",
-      "perfil",
-      "relatorios",
-      "administracao",
-      "permissoes"
-    ];
-
+    const menus = [ "inicio", "dashboard", "agenda", "equipe", "servicos", "clientes", "perfil", "relatorios", "administracao", "permissoes" ];
     let permissoesAtuais = {};
+    let logoUrlAtual = ""; // ✅ Nova variável
 
-    async function carregarPermissoesGlobais() {
+    async function carregarConfiguracoesGlobais() {
       const ref = doc(db, "configuracoesGlobais", "permissoes");
       const snap = await getDoc(ref);
-      permissoesAtuais = snap.exists() ? snap.data() : {};
+      
+      if (snap.exists()) {
+        const data = snap.data();
+        permissoesAtuais = data.menus || {};
+        logoUrlAtual = data.logoUrlPadrao || ""; // ✅ Carrega a URL da logo
+      }
+      
+      logoUrlInput.value = logoUrlAtual; // ✅ Preenche o campo
 
       menus.forEach(menu => {
         if (!permissoesAtuais[menu]) {
           permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
-        } else {
-          permissoesAtuais[menu].funcionario ??= true;
-          permissoesAtuais[menu].dono ??= true;
-          permissoesAtuais[menu].admin ??= true;
         }
       });
 
@@ -92,8 +105,15 @@
         if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
         novasPermissoes[menu][role] = chk.checked;
       });
-      await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
-      alert("Permissões globais salvas!");
+
+      // ✅ Monta o objeto final para salvar
+      const configParaSalvar = {
+        logoUrlPadrao: logoUrlInput.value.trim(),
+        menus: novasPermissoes
+      };
+
+      await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
+      alert("Configurações globais salvas!");
     });
 
     onAuthStateChanged(auth, (user) => {
@@ -103,7 +123,7 @@
         alert("Acesso negado. Apenas Administrador.");
         window.location.href = "index.html";
       } else {
-        carregarPermissoesGlobais();
+        carregarConfiguracoesGlobais(); // ✅ Nome da função atualizado
       }
     });
   </script>
