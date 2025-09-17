@@ -1,6 +1,7 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">
-        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FLogo%20PRONTI%20AZUL.png?alt=media&token=2c9321eb-656c-4736-8ea8-4858f98b16cc" alt="Logo Pronti">
+        <!-- ✅ CORREÇÃO FINALÍSSIMA: Usando o link montado a partir da sua imagem. -->
+        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=94e6d834-0ead-4934-acf6-3064ae4edc07" alt="Logo Pronti">
     </a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
@@ -40,12 +41,13 @@
     </div>
 </aside>
 
+<!-- O resto do seu arquivo (CSS e JS ) permanece exatamente igual -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
 .sidebar {
   width: 250px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100% );
   min-height: 100vh;
   color: #fff;
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
@@ -164,7 +166,7 @@
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-export function ativarMenuLateral() {
+export function ativarMenuLateral( ) {
 
   const nomePaginaAtual = window.location.pathname.split('/').pop();
   document.querySelectorAll('.sidebar-links a').forEach(link => {
