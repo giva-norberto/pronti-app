@@ -67,13 +67,14 @@
   text-align: center;
   text-decoration: none;
 }
+/* Estilo de placeholder para o logo enquanto ele carrega, evitando que o layout "pule". */
 .sidebar-brand img {
     max-width: 150px;
     height: auto;
     min-height: 50px; 
     display: block;
     margin: 0 auto;
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgba(255,255,255,0.1); /* Fundo subtil enquanto carrega */
     border-radius: 8px;
 }
 .sidebar hr {
@@ -166,31 +167,79 @@
 </style>
 
 <script type="module">
-// ✅ CORREÇÃO FINAL: A lógica de busca agora está dentro de uma função que garante
-// que o Firebase foi inicializado antes de tentar a conexão.
-
 // Importa as ferramentas necessárias do Firebase.
 import { auth, db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 /**
- * Função que busca a URL da logo no Firestore e a aplica no menu.
+ * ✅ FUNÇÃO ATUALIZADA COM MENSAGENS DE DIAGNÓSTICO
+ * Agora, ela irá imprimir no console (F12 ) exatamente onde a dificuldade está.
  */
-async function carregarLogoPadrao( ) {
-    const logoElement = document.getElementById('sidebar-logo');
-    if (!logoElement) return;
+async function carregarLogoPadrao() {
+    console.log("A tentar carregar o logo...");
+    const logoElement = document.getElementById(\'sidebar-logo\');
+    if (!logoElement) {
+        console.error("DIFICULDADE: O elemento da imagem com id \'sidebar-logo\' não foi encontrado no HTML.");
+        return;
+    }
 
     try {
+        console.log("A procurar o documento em \'configuracoesGlobais/permissoes\'...");
         const configRef = doc(db, "configuracoesGlobais", "permissoes");
         const configSnap = await getDoc(configRef);
         
-        if (configSnap.exists() && configSnap.data().logoUrlPadrao) {
-            logoElement.src = configSnap.data().logoUrlPadrao;
+        if (configSnap.exists()) {
+            const data = configSnap.data();
+            console.log("Documento de configurações encontrado:", data);
+            if (data.logoUrlPadrao) {
+                console.log("URL do logo encontrada com sucesso! A aplicar imagem.");
+                logoElement.src = data.logoUrlPadrao;
+            } else {
+                console.error("DIFICULDADE: O documento \'permissoes\' foi encontrado, mas falta o campo \'logoUrlPadrao\' dentro dele.");
+                logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
+            }
         } else {
-            // Fallback: Se não encontrar a URL, usa uma logo padrão como segurança.
-            logoElement.src = "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FLogo%20PRONTI%20AZUL.png?alt=media&token=2c9321eb-656c-4736-8ea8-4858f98b16cc";
+            console.error("DIFICULDADE: O documento \'configuracoesGlobais/permissoes\' NÃO FOI ENCONTRADO. Verifique se a coleção e o documento existem no banco de dados correto que está configurado no seu \'firebase-config.js\'." );
+            logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
         }
     } catch (error ) {
-        console.error("Erro ao carregar logo padrão:", error);
-        logoElement.src = "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FLogo%20
+        console.error("DIFICULDADE: Ocorreu um erro de Firebase ao tentar buscar o logo.", error);
+        logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
+    }
+}
+
+// --- SUA FUNÇÃO ORIGINAL (NÃO FOI ALTERADA ) ---
+export function ativarMenuLateral() {
+  const nomePaginaAtual = window.location.pathname.split(\'/\').pop();
+  document.querySelectorAll(\'.sidebar-links a\').forEach(link => {
+    link.classList.remove(\'active\');
+    const linkPagina = link.getAttribute(\'href\').split(\'/\').pop();
+    if (linkPagina === nomePaginaAtual || (nomePaginaAtual === \'\' && linkPagina === \'index.html\')) {
+      link.classList.add(\'active\');
+    }
+  });
+
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    const newBtnLogout = btnLogout.cloneNode(true);
+    btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
+
+    newBtnLogout.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = "login.html";
+      } catch (erro) {
+        console.error("Erro ao tentar fazer logout:", erro);
+        console.error("Não foi possível sair. Tente novamente.\nErro: " + erro.message);
+      }
+    });
+  }
+}
+
+// Executa as duas funções na inicialização.
+carregarLogoPadrao();
+ativarMenuLateral();
+</script>
