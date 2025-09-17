@@ -1,6 +1,6 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">
-        <!-- ✅ PASSO 1: O "espaço reservado" para o logo, com um 'id' para o JS encontrá-lo. -->
+        <!-- ✅ O "espaço reservado" para o logo, com um 'id' para o JS encontrá-lo. -->
         <img src="" alt="Logo Pronti" id="sidebar-logo">
     </a>
     <hr />
@@ -67,14 +67,14 @@
   text-align: center;
   text-decoration: none;
 }
-/* ✅ Estilo de placeholder para o logo enquanto ele carrega, evitando que o layout "pule". */
+/* Estilo de placeholder para o logo enquanto ele carrega, evitando que o layout "pule". */
 .sidebar-brand img {
     max-width: 150px;
     height: auto;
     min-height: 50px; 
     display: block;
     margin: 0 auto;
-    background-color: rgba(255,255,255,0.1); /* Fundo sutil enquanto carrega */
+    background-color: rgba(255,255,255,0.1); /* Fundo subtil enquanto carrega */
     border-radius: 8px;
 }
 .sidebar hr {
@@ -167,33 +167,44 @@
 </style>
 
 <script type="module">
-// ✅ PASSO 2: O "CÉREBRO" - Importa as ferramentas necessárias do Firebase.
+// Importa as ferramentas necessárias do Firebase.
 import { auth, db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 /**
- * Nova função que busca a URL do logo no Firestore e preenche o "espaço reservado".
- * Exatamente como a vitrine faz para buscar os dados da empresa.
+ * ✅ FUNÇÃO ATUALIZADA COM MENSAGENS DE DIAGNÓSTICO
+ * Agora, ela irá imprimir no console (F12) exatamente onde a dificuldade está.
  */
 async function carregarLogoPadrao() {
+    console.log("A tentar carregar o logo...");
     const logoElement = document.getElementById('sidebar-logo');
-    if (!logoElement) return;
+    if (!logoElement) {
+        console.error("DIFICULDADE: O elemento da imagem com id 'sidebar-logo' não foi encontrado no HTML.");
+        return;
+    }
 
     try {
+        console.log("A procurar o documento em 'configuracoesGlobais/permissoes'...");
         const configRef = doc(db, "configuracoesGlobais", "permissoes");
         const configSnap = await getDoc(configRef);
         
-        if (configSnap.exists() && configSnap.data().logoUrlPadrao) {
-            // Se encontrou a URL no banco, usa ela.
-            logoElement.src = configSnap.data().logoUrlPadrao;
+        if (configSnap.exists()) {
+            const data = configSnap.data();
+            console.log("Documento de configurações encontrado:", data);
+            if (data.logoUrlPadrao) {
+                console.log("URL do logo encontrada com sucesso! A aplicar imagem.");
+                logoElement.src = data.logoUrlPadrao;
+            } else {
+                console.error("DIFICULDADE: O documento 'permissoes' foi encontrado, mas falta o campo 'logoUrlPadrao' dentro dele.");
+                logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
+            }
         } else {
-            // Se não encontrou, usa um placeholder genérico.
+            console.error("DIFICULDADE: O documento 'configuracoesGlobais/permissoes' NÃO FOI ENCONTRADO. Verifique se a coleção e o documento existem no banco de dados correto que está configurado no seu 'firebase-config.js'.");
             logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
         }
     } catch (error) {
-        console.error("Erro ao carregar logo padrão:", error);
-        // Em caso de erro, também usa o placeholder.
+        console.error("DIFICULDADE: Ocorreu um erro de Firebase ao tentar buscar o logo.", error);
         logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
     }
 }
@@ -228,8 +239,7 @@ export function ativarMenuLateral() {
   }
 }
 
-// ✅ PASSO 3: Executa as duas funções na inicialização.
-// Primeiro ele busca o logo, depois ativa o resto do menu.
+// Executa as duas funções na inicialização.
 carregarLogoPadrao();
 ativarMenuLateral();
 </script>
