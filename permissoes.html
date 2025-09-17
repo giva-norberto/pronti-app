@@ -9,11 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
+    <!-- ✅ ESTILOS ATUALIZADOS PARA UM VISUAL MAIS PROFISSIONAL -->
     <style>
-        /* Estilos revisados para a página de Configurações */
         body { font-family: 'Inter', sans-serif; margin: 0; background-color: #f1f5f9; }
         .container { max-width: 800px; margin: 32px auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         h2 { color: #4f46e5; font-weight: 700; border-bottom: 2px solid #eef2ff; padding-bottom: 12px; }
+        p { color: #64748b; margin-top: -10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: center; }
         th { background: #f8fafc; font-weight: 600; color: #475569; }
@@ -32,7 +33,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- SEÇÃO DE LOGO, SEGUINDO O PADRÃO DO PERFIL -->
+        <!-- ✅ INÍCIO DA NOVA SEÇÃO DE UPLOAD DE LOGO -->
         <div class="config-section">
             <h2>Logo do Aplicativo</h2>
             <div class="form-group">
@@ -48,10 +49,11 @@
                 </div>
             </div>
         </div>
+        <!-- ✅ FIM DA NOVA SEÇÃO -->
 
         <div class="config-section">
             <h2>Permissões Globais de Menu</h2>
-            <p style="color: #64748b; margin-top: -10px;">Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar.</p>
+            <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
             <table>
                 <thead>
                     <tr>
@@ -69,52 +71,59 @@
     </div>
 
     <script type="module">
+        // ✅ ADICIONADAS IMPORTAÇÕES DO STORAGE
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // ✅ CORREÇÃO: Lógica de acesso restaurada para a original que funcionava.
-        // Este UID é do seu projeto antigo. Se estiver configurando o projeto novo,
-        // substitua este valor pelo novo UID de admin (4h77lRB...).
+        // --- LÓGICA DE ACESSO ORIGINAL (NÃO FOI ALTERADA) ---
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
 
+        // ✅ NOVOS ELEMENTOS DO DOM PARA O UPLOAD
         const logoPreview = document.getElementById("logo-preview");
         const logoUploadInput = document.getElementById("logo-upload-input");
         const btnUploadLogo = document.getElementById("btn-upload-logo");
         
+        // --- SEUS ELEMENTOS ORIGINAIS ---
         const permissoesTabela = document.getElementById("permissoes-tabela");
         const salvarBtn = document.getElementById("salvar");
 
+        // --- SUAS VARIÁVEIS ORIGINAIS ---
         const menus = [ "inicio", "dashboard", "agenda", "equipe", "servicos", "clientes", "perfil", "relatorios", "administracao", "permissoes" ];
         let permissoesAtuais = {};
+        
+        // ✅ NOVA VARIÁVEL PARA O ARQUIVO DE LOGO
         let logoFile = null;
 
+        // ✅ NOVA LÓGICA PARA SELECIONAR E PRÉ-VISUALIZAR O LOGO
         btnUploadLogo.addEventListener('click', () => logoUploadInput.click());
         logoUploadInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
-                logoFile = file;
+                logoFile = file; // Guarda o arquivo para o upload
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    logoPreview.src = e.target.result;
+                    logoPreview.src = e.target.result; // Mostra a pré-visualização
                 };
                 reader.readAsDataURL(file);
             }
         });
 
+        // ✅ FUNÇÃO ATUALIZADA PARA CARREGAR TAMBÉM A URL DO LOGO
         async function carregarConfiguracoesGlobais() {
             const ref = doc(db, "configuracoesGlobais", "permissoes");
             const snap = await getDoc(ref);
             
-            if (snap.exists()) {
-                const data = snap.data();
-                permissoesAtuais = data.menus || {};
-                if (data.logoUrlPadrao) {
-                    logoPreview.src = data.logoUrlPadrao;
-                }
+            // Lógica original de carregar permissões
+            permissoesAtuais = snap.exists() ? snap.data().menus || {} : {};
+
+            // Nova lógica para carregar o logo
+            if (snap.exists() && snap.data().logoUrlPadrao) {
+                logoPreview.src = snap.data().logoUrlPadrao;
             }
             
+            // Lógica original para preencher a tabela
             menus.forEach(menu => {
                 if (!permissoesAtuais[menu]) {
                     permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
@@ -123,6 +132,7 @@
             renderTabela();
         }
 
+        // --- SUA FUNÇÃO ORIGINAL (NÃO FOI ALTERADA) ---
         function renderTabela() {
             permissoesTabela.innerHTML = menus.map(menu => `
                 <tr>
@@ -134,22 +144,24 @@
             `).join("");
         }
 
+        // ✅ FUNÇÃO ATUALIZADA PARA SALVAR O LOGO E AS PERMISSÕES
         salvarBtn.addEventListener("click", async () => {
             salvarBtn.disabled = true;
             salvarBtn.textContent = 'A Salvar...';
 
             try {
-                // A lógica de salvar foi mantida, pois ela não afeta o acesso à página.
                 const configParaSalvar = {};
 
+                // 1. Nova lógica: Faz o upload do novo logo, se houver um
                 if (logoFile) {
                     const storage = getStorage();
-                    const storageRef = ref(storage, 'config/logo-pronti-app.png');
+                    const storageRef = ref(storage, 'config/logo-pronti-app.png'); // Caminho fixo
                     await uploadBytes(storageRef, logoFile);
                     const downloadURL = await getDownloadURL(storageRef);
-                    configParaSalvar.logoUrlPadrao = downloadURL;
+                    configParaSalvar.logoUrlPadrao = downloadURL; // Adiciona a URL ao objeto que será salvo
                 }
 
+                // 2. Sua lógica original para salvar permissões
                 const checkboxes = document.querySelectorAll("input[type=checkbox]");
                 const novasPermissoes = {};
                 checkboxes.forEach(chk => {
@@ -158,11 +170,12 @@
                     if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
                     novasPermissoes[menu][role] = chk.checked;
                 });
-                configParaSalvar.menus = novasPermissoes;
+                configParaSalvar.menus = novasPermissoes; // Adiciona as permissões
 
+                // 3. Salva tudo (logo + permissões) no mesmo documento
                 await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
                 alert("Configurações globais salvas com sucesso!");
-                logoFile = null;
+                logoFile = null; // Limpa o arquivo após o upload
 
             } catch (error) {
                 console.error("Erro ao salvar configurações:", error);
@@ -173,7 +186,7 @@
             }
         });
 
-        // A lógica de verificação de acesso foi mantida exatamente como na sua versão original.
+        // --- SUA LÓGICA DE ACESSO ORIGINAL (NÃO FOI ALTERADA) ---
         onAuthStateChanged(auth, (user) => {
             if (!user) {
                 window.location.href = "login.html";
