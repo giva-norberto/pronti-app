@@ -134,14 +134,7 @@
 
         // --- SUA FUNÇÃO ORIGINAL (NÃO FOI ALTERADA) ---
         function renderTabela() {
-            permissoesTabela.innerHTML = menus.map(menu => `
-                <tr>
-                    <td>${menu}</td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
-                </tr>
-            `).join("");
+            permissoesTabela.innerHTML = menus.map(menu => `\n                <tr>\n                    <td>${menu}</td>\n                    <td><input type=\"checkbox\" data-menu=\"${menu}\" data-role=\"funcionario\" ${permissoesAtuais[menu].funcionario ? \"checked\" : \"\"}></td>\n                    <td><input type=\"checkbox\" data-menu=\"${menu}\" data-role=\"dono\" ${permissoesAtuais[menu].dono ? \"checked\" : \"\"}></td>\n                    <td><input type=\"checkbox\" data-menu=\"${menu}\" data-role=\"admin\" ${permissoesAtuais[menu].admin ? \"checked\" : \"\"}></td>\n                </tr>\n            `).join("");
         }
 
         // ✅ FUNÇÃO ATUALIZADA PARA SALVAR O LOGO E AS PERMISSÕES
