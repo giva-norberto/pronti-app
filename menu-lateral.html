@@ -1,6 +1,6 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">
-        <!-- ✅ O 'src' começa vazio e a imagem tem um 'id' para que o JavaScript possa encontrá-la e preenchê-la. -->
+        <!-- ✅ PASSO 1: O "espaço reservado" para o logo, com um 'id' para o JS encontrá-lo. -->
         <img src="" alt="Logo Pronti" id="sidebar-logo">
     </a>
     <hr />
@@ -67,14 +67,14 @@
   text-align: center;
   text-decoration: none;
 }
-/* ✅ Estilo de placeholder para a logo enquanto ela carrega, evitando que o layout "pule". */
+/* ✅ Estilo de placeholder para o logo enquanto ele carrega, evitando que o layout "pule". */
 .sidebar-brand img {
     max-width: 150px;
     height: auto;
     min-height: 50px; 
     display: block;
     margin: 0 auto;
-    background-color: rgba(255,255,255,0.1);
+    background-color: rgba(255,255,255,0.1); /* Fundo sutil enquanto carrega */
     border-radius: 8px;
 }
 .sidebar hr {
@@ -167,12 +167,15 @@
 </style>
 
 <script type="module">
-// ✅ Importando as ferramentas necessárias do Firebase.
+// ✅ PASSO 2: O "CÉREBRO" - Importa as ferramentas necessárias do Firebase.
 import { auth, db } from "./firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// ✅ Nova função para buscar a logo do Firestore.
+/**
+ * Nova função que busca a URL do logo no Firestore e preenche o "espaço reservado".
+ * Exatamente como a vitrine faz para buscar os dados da empresa.
+ */
 async function carregarLogoPadrao() {
     const logoElement = document.getElementById('sidebar-logo');
     if (!logoElement) return;
@@ -185,13 +188,13 @@ async function carregarLogoPadrao() {
             // Se encontrou a URL no banco, usa ela.
             logoElement.src = configSnap.data().logoUrlPadrao;
         } else {
-            // Se não encontrou, usa uma imagem padrão como segurança.
-            logoElement.src = "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FLogo%20PRONTI%20AZUL.png?alt=media&token=2c9321eb-656c-4736-8ea8-4858f98b16cc";
+            // Se não encontrou, usa um placeholder genérico.
+            logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
         }
     } catch (error) {
         console.error("Erro ao carregar logo padrão:", error);
-        // Em caso de erro, também usa a imagem padrão.
-        logoElement.src = "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FLogo%20PRONTI%20AZUL.png?alt=media&token=2c9321eb-656c-4736-8ea8-4858f98b16cc";
+        // Em caso de erro, também usa o placeholder.
+        logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
     }
 }
 
@@ -225,7 +228,8 @@ export function ativarMenuLateral() {
   }
 }
 
-// ✅ Chama as duas funções na inicialização: primeiro carrega o logo, depois ativa o menu.
+// ✅ PASSO 3: Executa as duas funções na inicialização.
+// Primeiro ele busca o logo, depois ativa o resto do menu.
 carregarLogoPadrao();
 ativarMenuLateral();
 </script>
