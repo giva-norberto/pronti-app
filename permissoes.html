@@ -9,12 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <!-- ✅ ESTILOS ATUALIZADOS PARA UM VISUAL MAIS PROFISSIONAL -->
+    <!-- ✅ ESTILOS ATUALIZADOS APENAS PARA OS NOVOS ELEMENTOS -->
     <style>
         body { font-family: 'Inter', sans-serif; margin: 0; background-color: #f1f5f9; }
         .container { max-width: 800px; margin: 32px auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         h2 { color: #4f46e5; font-weight: 700; border-bottom: 2px solid #eef2ff; padding-bottom: 12px; }
-        p { color: #64748b; margin-top: -10px; }
+        p { color: #64748b; margin-top: 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: center; }
         th { background: #f8fafc; font-weight: 600; color: #475569; }
@@ -77,7 +77,7 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // --- LÓGICA DE ACESSO ORIGINAL (NÃO FOI ALTERADA) ---
+        // --- SUA LÓGICA DE ACESSO ORIGINAL (NÃO FOI ALTERADA) ---
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
 
         // ✅ NOVOS ELEMENTOS DO DOM PARA O UPLOAD
@@ -155,10 +155,12 @@
                 // 1. Nova lógica: Faz o upload do novo logo, se houver um
                 if (logoFile) {
                     const storage = getStorage();
-                    const storageRef = ref(storage, 'config/logo-pronti-app.png'); // Caminho fixo
+                    // O caminho fixo garante que o logo seja sempre o mesmo arquivo no Storage
+                    const storageRef = ref(storage, 'config/logo-pronti-app.png'); 
                     await uploadBytes(storageRef, logoFile);
                     const downloadURL = await getDownloadURL(storageRef);
-                    configParaSalvar.logoUrlPadrao = downloadURL; // Adiciona a URL ao objeto que será salvo
+                    // Adiciona a URL ao objeto que será salvo no Firestore
+                    configParaSalvar.logoUrlPadrao = downloadURL; 
                 }
 
                 // 2. Sua lógica original para salvar permissões
@@ -170,7 +172,8 @@
                     if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
                     novasPermissoes[menu][role] = chk.checked;
                 });
-                configParaSalvar.menus = novasPermissoes; // Adiciona as permissões
+                // Adiciona as permissões atualizadas ao objeto
+                configParaSalvar.menus = novasPermissoes;
 
                 // 3. Salva tudo (logo + permissões) no mesmo documento
                 await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
@@ -194,7 +197,8 @@
                 alert("Acesso negado. Apenas Administrador.");
                 window.location.href = "index.html";
             } else {
-                carregarConfiguracoesGlobais();
+                // Atualizado para chamar a nova função que carrega tudo
+                carregarConfiguracoesGlobais(); 
             }
         });
     </script>
