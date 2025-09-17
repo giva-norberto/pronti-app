@@ -1,131 +1,201 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Configurações Globais</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9fafb; }
-    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    h2, h3 { color: #333; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-    th { background: #f4f4f4; }
-    button { margin-top: 20px; padding: 10px 20px; cursor: pointer; background-color: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: bold; }
-    input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
-    .config-section { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid #eee; }
-    .form-group { margin-top: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-    .form-group input[type=text] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Configurações Globais - Pronti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        /* Estilos revisados para a página de Configurações */
+        body { font-family: 'Inter', sans-serif; margin: 0; background-color: #f1f5f9; }
+        .container { max-width: 800px; margin: 32px auto; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { color: #4f46e5; font-weight: 700; border-bottom: 2px solid #eef2ff; padding-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: center; }
+        th { background: #f8fafc; font-weight: 600; color: #475569; }
+        button { margin-top: 32px; padding: 12px 24px; cursor: pointer; background-color: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; transition: background-color 0.2s; }
+        button:disabled { background-color: #a5b4fc; cursor: not-allowed; }
+        button:hover:not(:disabled) { background-color: #4338ca; }
+        input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; accent-color: #4f46e5; }
+        .config-section { margin-bottom: 40px; }
+        .form-group { margin-top: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #334155; }
+        .logo-upload-container { display: flex; align-items: center; gap: 16px; }
+        #logo-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; }
+        .btn-upload { padding: 10px 16px; font-size: 0.95rem; background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: 500; }
+        .btn-upload:hover { background: #eef2ff; border-color: #4f46e5; color: #4f46e5; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <!-- ✅ INÍCIO DA NOVA SEÇÃO -->
-    <div class="config-section">
-      <h2>Configurações do Sistema</h2>
-      <div class="form-group">
-        <label for="logo-url-padrao">URL da Logo Padrão do Menu Lateral</label>
-        <input type="text" id="logo-url-padrao" placeholder="Cole aqui a URL pública da imagem da logo">
-      </div>
+    <div class="container">
+        <!-- ✅ INÍCIO DA SEÇÃO DE LOGO, SEGUINDO O PADRÃO DO PERFIL -->
+        <div class="config-section">
+            <h2>Logo do Aplicativo</h2>
+            <div class="form-group">
+                <label for="logo-upload">Logo Padrão do Menu Lateral</label>
+                <div class="logo-upload-container">
+                    <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logo">
+                    <div>
+                        <input type="file" id="logo-upload-input" accept="image/png, image/jpeg" style="display: none;">
+                        <button type="button" id="btn-upload-logo" class="btn-upload">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i> Escolher Arquivo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ✅ FIM DA SEÇÃO DE LOGO -->
+
+        <div class="config-section">
+            <h2>Permissões Globais de Menu</h2>
+            <p style="color: #64748b; margin-top: -10px;">Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Menu</th>
+                        <th>Funcionário</th>
+                        <th>Dono</th>
+                        <th>Admin</th>
+                    </tr>
+                </thead>
+                <tbody id="permissoes-tabela"></tbody>
+            </table>
+        </div>
+        
+        <button id="salvar">Salvar Todas as Configurações</button>
     </div>
-    <!-- ✅ FIM DA NOVA SEÇÃO -->
 
-    <div class="config-section">
-      <h2>Permissões Globais de Menu</h2>
-      <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Menu</th>
-            <th>Funcionário</th>
-            <th>Dono</th>
-            <th>Admin</th>
-          </tr>
-        </thead>
-        <tbody id="permissoes-tabela"></tbody>
-      </table>
-    </div>
-    
-    <button id="salvar">Salvar Todas as Configurações</button>
-  </div>
+    <script type="module">
+        // ✅ ADICIONADAS IMPORTAÇÕES DO STORAGE
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+        import { auth, db } from "./firebase-config.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-  <script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        // Seu UID de admin aqui
+        const ADMIN_UID = "4h77lRBW72bRH8tJXPCPAFMGo3w1"; 
 
-    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+        // ✅ NOVOS ELEMENTOS DO DOM PARA O UPLOAD
+        const logoPreview = document.getElementById("logo-preview");
+        const logoUploadInput = document.getElementById("logo-upload-input");
+        const btnUploadLogo = document.getElementById("btn-upload-logo");
+        
+        const permissoesTabela = document.getElementById("permissoes-tabela");
+        const salvarBtn = document.getElementById("salvar");
 
-    const logoUrlInput = document.getElementById("logo-url-padrao" ); // ✅ Novo elemento
-    const permissoesTabela = document.getElementById("permissoes-tabela");
-    const salvarBtn = document.getElementById("salvar");
+        const menus = [ "inicio", "dashboard", "agenda", "equipe", "servicos", "clientes", "perfil", "relatorios", "administracao", "permissoes" ];
+        let permissoesAtuais = {};
+        let logoFile = null; // ✅ Variável para guardar o novo arquivo de logo
 
-    const menus = [ "inicio", "dashboard", "agenda", "equipe", "servicos", "clientes", "perfil", "relatorios", "administracao", "permissoes" ];
-    let permissoesAtuais = {};
-    let logoUrlAtual = ""; // ✅ Nova variável
+        // ✅ LÓGICA DE UPLOAD
+        btnUploadLogo.addEventListener('click', () => logoUploadInput.click());
+        logoUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                logoFile = file; // Guarda o arquivo para o upload
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    logoPreview.src = e.target.result; // Mostra a pré-visualização
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
-    async function carregarConfiguracoesGlobais() {
-      const ref = doc(db, "configuracoesGlobais", "permissoes");
-      const snap = await getDoc(ref);
-      
-      if (snap.exists()) {
-        const data = snap.data();
-        permissoesAtuais = data.menus || {};
-        logoUrlAtual = data.logoUrlPadrao || ""; // ✅ Carrega a URL da logo
-      }
-      
-      logoUrlInput.value = logoUrlAtual; // ✅ Preenche o campo
-
-      menus.forEach(menu => {
-        if (!permissoesAtuais[menu]) {
-          permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
+        async function carregarConfiguracoesGlobais() {
+            const ref = doc(db, "configuracoesGlobais", "permissoes");
+            const snap = await getDoc(ref);
+            
+            if (snap.exists()) {
+                const data = snap.data();
+                permissoesAtuais = data.menus || {};
+                // ✅ Carrega a URL da logo salva e exibe na pré-visualização
+                if (data.logoUrlPadrao) {
+                    logoPreview.src = data.logoUrlPadrao;
+                }
+            }
+            
+            menus.forEach(menu => {
+                if (!permissoesAtuais[menu]) {
+                    permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
+                }
+            });
+            renderTabela();
         }
-      });
 
-      renderTabela();
-    }
+        function renderTabela() {
+            permissoesTabela.innerHTML = menus.map(menu => `
+                <tr>
+                    <td>${menu}</td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
+                </tr>
+            `).join("");
+        }
 
-    function renderTabela() {
-      permissoesTabela.innerHTML = menus.map(menu => `
-        <tr>
-          <td>${menu}</td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
-        </tr>
-      `).join("");
-    }
+        salvarBtn.addEventListener("click", async () => {
+            salvarBtn.disabled = true;
+            salvarBtn.textContent = 'A Salvar...';
 
-    salvarBtn.addEventListener("click", async () => {
-      const checkboxes = document.querySelectorAll("input[type=checkbox]");
-      const novasPermissoes = {};
-      checkboxes.forEach(chk => {
-        const menu = chk.dataset.menu;
-        const role = chk.dataset.role;
-        if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
-        novasPermissoes[menu][role] = chk.checked;
-      });
+            try {
+                // ✅ LÓGICA DE SALVAR ATUALIZADA
+                const configParaSalvar = {};
 
-      // ✅ Monta o objeto final para salvar
-      const configParaSalvar = {
-        logoUrlPadrao: logoUrlInput.value.trim(),
-        menus: novasPermissoes
-      };
+                // 1. Verifica se um novo logo foi selecionado
+                if (logoFile) {
+                    console.log("A enviar novo logo...");
+                    const storage = getStorage();
+                    // Define um caminho fixo para o logo do app, para ser fácil de encontrar
+                    const storageRef = ref(storage, 'config/logo-pronti-app.png');
+                    
+                    // Faz o upload
+                    await uploadBytes(storageRef, logoFile);
+                    
+                    // Pega a URL pública do arquivo
+                    const downloadURL = await getDownloadURL(storageRef);
+                    configParaSalvar.logoUrlPadrao = downloadURL;
+                    console.log("Logo enviado com sucesso:", downloadURL);
+                }
 
-      await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
-      alert("Configurações globais salvas!");
-    });
+                // 2. Coleta as permissões da tabela
+                const checkboxes = document.querySelectorAll("input[type=checkbox]");
+                const novasPermissoes = {};
+                checkboxes.forEach(chk => {
+                    const menu = chk.dataset.menu;
+                    const role = chk.dataset.role;
+                    if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
+                    novasPermissoes[menu][role] = chk.checked;
+                });
+                configParaSalvar.menus = novasPermissoes;
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = "login.html";
-      } else if (user.uid !== ADMIN_UID) {
-        alert("Acesso negado. Apenas Administrador.");
-        window.location.href = "index.html";
-      } else {
-        carregarConfiguracoesGlobais(); // ✅ Nome da função atualizado
-      }
-    });
-  </script>
+                // 3. Salva tudo no Firestore
+                await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
+                alert("Configurações globais salvas com sucesso!");
+                logoFile = null; // Limpa o arquivo após o upload
+
+            } catch (error) {
+                console.error("Erro ao salvar configurações:", error);
+                alert("Ocorreu um erro ao salvar as configurações.");
+            } finally {
+                salvarBtn.disabled = false;
+                salvarBtn.textContent = 'Salvar Todas as Configurações';
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else if (user.uid !== ADMIN_UID) {
+                alert("Acesso negado. Apenas Administrador.");
+                window.location.href = "index.html";
+            } else {
+                carregarConfiguracoesGlobais();
+            }
+        });
+    </script>
 </body>
 </html>
