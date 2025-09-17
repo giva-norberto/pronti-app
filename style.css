@@ -583,3 +583,18 @@ textarea.form-input:focus {
 .hidden {
     display: none !important;
 }
+/* ... (seu CSS existente) ... */
+
+/* CSS ESPECÍFICO PARA A LOGO DO SIDEBAR */
+#sidebar-logo {
+  max-width: 120px;
+  min-height: 50px;
+  display: block;
+  margin: 0 auto 8px auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px 8px;
+  box-shadow: 0 2px 12px rgba(79,70,229,0.08);
+  border: 2px solid #e3eafc;
+  object-fit: contain;
+}
