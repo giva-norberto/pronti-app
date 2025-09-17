@@ -19,7 +19,7 @@
     <meta property="og:type" content="website">
     -->
 
-    <!-- ✅ ESTILOS DO MODAL ATUALIZADOS -->
+    <!-- Estilos do modal -->
     <style>
         .modal-overlay {
             display: none; /* Começa oculto */
@@ -46,7 +46,6 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             position: relative; /* Para o botão de fechar */
         }
-        /* ✅ NOVO: Botão para fechar o modal */
         #modal-auth-close-btn {
             position: absolute;
             top: 10px;
@@ -89,7 +88,6 @@
             transition: all 0.2s ease;
             border: 1px solid #d1d5db;
         }
-        /* ✅ NOVO: Estilo padrão Google para o botão */
         #modal-auth-btn-google {
             background-color: #ffffff;
             color: #374151;
@@ -249,14 +247,10 @@
 
     <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
     
-    <!-- ✅ MODAL DE AUTENTICAÇÃO ATUALIZADO E REVISADO -->
     <div id="modal-auth-janela" class="modal-overlay">
         <div class="modal-auth-container">
-            <!-- ✅ NOVO: Botão de fechar -->
             <button id="modal-auth-close-btn" title="Fechar">&times;</button>
-            
             <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
-
             <div id="modal-auth-login" class="modal-auth-step">
                 <h2>Faça seu Login</h2>
                 <p style="text-align:center; margin-top: -15px; margin-bottom: 24px; color: #64748b;">para continuar com o agendamento.</p>
@@ -293,9 +287,11 @@
     <script type="module" src="./vitrine.js"></script>
     <!-- Adicione aqui os outros scripts que você tem -->
 
-    <!-- ✅ SCRIPT "PORTEIRO" ATUALIZADO COM LÓGICA DE FECHAR O MODAL -->
+    <!-- ✅ SCRIPT FINAL REVISADO E COMPLETO -->
     <script type="module">
         import { auth } from './firebase-config.js';
+        // ✅ ADICIONADO: Precisamos da função que observa o status do login
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         document.addEventListener('DOMContentLoaded', () => {
             const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
@@ -304,7 +300,6 @@
 
             if (btnConfirmarAgendamento && modalAuth && btnCloseModal) {
                 
-                // Função para fechar o modal
                 const fecharModal = () => {
                     modalAuth.style.display = 'none';
                 };
@@ -312,17 +307,36 @@
                 // Adiciona o "porteiro" ao botão de confirmar.
                 btnConfirmarAgendamento.addEventListener('click', (event) => {
                     if (!auth.currentUser) {
-                        console.log('Usuário não logado. Exibindo modal de login.');
                         event.preventDefault(); 
                         event.stopImmediatePropagation();
                         modalAuth.style.display = 'flex';
+
+                        // ✅ LÓGICA "SUPERVISORA" ADICIONADA AQUI
+                        // Esta função fica "escutando" por uma mudança no login
+                        const unsubscribe = onAuthStateChanged(auth, (user) => {
+                            if (user) {
+                                // O usuário acabou de fazer login com sucesso!
+                                console.log('Login detectado! Fechando modal e continuando agendamento.');
+                                
+                                // 1. Para de escutar para não ser chamada de novo
+                                unsubscribe();
+                                
+                                // 2. Fecha o modal de login
+                                fecharModal();
+                                
+                                // 3. Clica novamente no botão de confirmar para o usuário
+                                //    Damos um pequeno tempo para a UI se atualizar
+                                setTimeout(() => {
+                                    btnConfirmarAgendamento.click();
+                                }, 150);
+                            }
+                        });
                     }
                 }, true);
 
-                // Adiciona a funcionalidade de fechar o modal
+                // Lógica para fechar o modal (sem alterações)
                 btnCloseModal.addEventListener('click', fecharModal);
                 modalAuth.addEventListener('click', (event) => {
-                    // Fecha o modal se o clique for no fundo escuro
                     if (event.target === modalAuth) {
                         fecharModal();
                     }
