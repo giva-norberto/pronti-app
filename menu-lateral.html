@@ -1,7 +1,7 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">
         <!-- ✅ Espaço reservado para o logo, com 'id' para o JS -->
-        <img src="" alt="Logo Pronti" id="sidebar-logo">
+        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/config%2Flogo-pronti-app.png?alt=media&token=023e5b0d-1cb4-4da8-bcd8-3e9742cca5c9" alt="Logo Pronti" id="sidebar-logo">
     </a>
     <hr />
     <nav class="sidebar-links" id="sidebar-links">
@@ -169,24 +169,36 @@
 // --- Firebase ---
 import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
-
-// --- Função para carregar logo do Storage ---
-async function carregarLogoPadrao() {
-    const logoElement = document.getElementById('sidebar-logo');
-    if (!logoElement) return;
-
-    try {
-        const storage = getStorage();
-        const logoRef = ref(storage, "config/logo-pronti-app.png");
-        const url = await getDownloadURL(logoRef);
-        logoElement.src = url;
-    } catch (error) {
-        console.error("Erro ao carregar logo do Storage:", error);
-        // fallback
-        logoElement.src = "https://placehold.co/150x50/FFFFFF/4f46e5?text=Pronti";
-    }
-}
 
 // --- Função do menu lateral ---
-export fu
+export function ativarMenuLateral() {
+  const nomePaginaAtual = window.location.pathname.split('/').pop();
+  document.querySelectorAll('.sidebar-links a').forEach(link => {
+    link.classList.remove('active');
+    const linkPagina = link.getAttribute('href').split('/').pop();
+    if (linkPagina === nomePaginaAtual || (nomePaginaAtual === '' && linkPagina === 'index.html')) {
+      link.classList.add('active');
+    }
+  });
+
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    const newBtnLogout = btnLogout.cloneNode(true);
+    btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
+
+    newBtnLogout.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = "login.html";
+      } catch (erro) {
+        console.error("Erro ao tentar fazer logout:", erro);
+      }
+    });
+  }
+}
+
+// --- Inicialização ---
+ativarMenuLateral();
+</script>
