@@ -6,9 +6,94 @@
     <title>Agendamento Online</title>
     
     <link rel="stylesheet" href="vitrine.css">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <!-- 
+    <meta property="og:title" content="Perfil de Negócio no Pronti App">
+    <meta property="og:description" content="Clique para ver os serviços e fazer seu agendamento.">
+    <meta property="og:image" content="URL_DA_SUA_IMAGEM_PRONTI_AQUI">
+    <meta property="og:type" content="website">
+    -->
+
+    <!-- ✅ NOVO: Estilos para o seu modal de login, para deixá-lo no padrão Pronti -->
+    <style>
+        .modal-overlay {
+            display: none; /* Começa oculto */
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-auth-container {
+            background: white;
+            padding: 2rem 1.5rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .modal-auth-step h2 {
+            font-size: 1.5rem;
+            color: #1e293b;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .modal-auth-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #d1d5db;
+            background-color: #4f46e5;
+            color: white;
+        }
+        #modal-auth-btn-google {
+            background-color: #fff;
+            color: #374151;
+        }
+        #modal-auth-btn-google:hover {
+             background-color: #f9fafb;
+        }
+        .modal-auth-step input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        .modal-auth-step a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+         .modal-auth-step a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
 </head>
 <body>
     <div id="vitrine-loader">
@@ -16,7 +101,7 @@
     </div>
 
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
-        <!-- Sidebar para desktop (desaparece no mobile) -->
+        
         <aside class="sidebar-vitrine">
             <div class="header-vitrine">
                 <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
@@ -31,12 +116,12 @@
         </aside>
 
         <main class="main-content-vitrine">
-            <!-- HEADER MOBILE: Logo + Nome aparecem no topo só no mobile -->
+            
             <div class="header-vitrine-mobile" style="display: none;">
                 <img id="logo-publico-mobile" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">
                 <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
             </div>
-            <!-- TELA: Agendamento -->
+            
             <div id="menu-agendamento" class="menu-content ativo">
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
@@ -52,8 +137,6 @@
                         <div class="form-group">
                             <label id="label-servicos">2. Escolha o(s) serviço(s)</label>
                             <div id="lista-servicos" class="servicos-container-cards"></div>
-                            
-                            <!-- Container para o resumo e botão de prosseguir (para múltiplos serviços) -->
                             <div id="servicos-resumo-container" style="display: none; margin-top: 20px;">
                                 <div class="servicos-resumo">
                                     <p id="resumo-texto"></p>
@@ -62,7 +145,6 @@
                             </div>
                         </div>
                         
-                        <!-- Data, horário, resumo final e botão confirmar -->
                         <div id="data-e-horario-container" style="display:none;">
                             <div class="form-group">
                                 <label for="data-agendamento">3. Escolha uma data</label>
@@ -74,7 +156,6 @@
                                     <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
                                 </div>
                             </div>
-                            <!-- RESUMO FINAL DO AGENDAMENTO -->
                             <div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div>
                             <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
                         </div>
@@ -82,7 +163,6 @@
                 </div>
             </div>
 
-            <!-- TELA: Informações -->
             <div id="menu-informacoes" class="menu-content">
                 <div class="card">
                     <h2>Sobre o Negócio</h2>
@@ -98,7 +178,6 @@
                 </div>
             </div>
             
-            <!-- TELA: Visualização de Agendamentos -->
             <div id="menu-visualizacao" class="menu-content">
                 <div class="card">
                     <h2>Reservas</h2>
@@ -113,7 +192,6 @@
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             
-            <!-- TELA: Perfil -->
             <div id="menu-perfil" class="menu-content">
                 <div class="card">
                     <h2>Meu Perfil</h2>
@@ -130,7 +208,6 @@
         </main>
     </div>
 
-    <!-- Bottom Navigation para Mobile -->
     <nav class="bottom-nav-vitrine">
         <button class="ativo" data-menu="agendamento">📅<span>Agendar</span></button>
         <button data-menu="informacoes">📋<span>Info</span></button>
@@ -138,125 +215,84 @@
         <button data-menu="perfil">👤<span>Perfil</span></button>
     </nav>
 
-    <!-- MODAL DE CONFIRMAÇÃO -->
-    <div id="custom-confirm-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 id="modal-titulo">Confirmar Ação</h3>
-            <p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p>
-            <div class="modal-botoes">
-                <button id="modal-btn-cancelar">Cancelar</button>
-                <button id="modal-btn-confirmar">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL DE AUTENTICAÇÃO -->
-    <div id="modal-auth-janela" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
-        <div style="background:white;padding:2rem 1.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0003;">
+    <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
+    
+    <!-- ✅ MODAL DE AUTENTICAÇÃO ATUALIZADO COM OS NOVOS ESTILOS -->
+    <div id="modal-auth-janela" class="modal-overlay">
+        <div class="modal-auth-container">
             <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
             <div id="modal-auth-login" class="modal-auth-step">
                 <h2>Entrar</h2>
-                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google" style="width:100%;margin-bottom:1em;">Entrar com Google</button>
-                <div style="text-align:center;color:#888;margin:8px 0;">ou</div>
+                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" style="width: 18px; height: 18px;">
+                    <span>Entrar com Google</span>
+                </button>
+                <div style="text-align:center;color:#888;margin:16px 0;">ou</div>
                 <form id="modal-auth-form-login">
-                    <input id="modal-auth-login-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
-                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:10px;">
-                    <button class="modal-auth-btn" style="width:100%;">Entrar</button>
+                    <input id="modal-auth-login-email" type="email" placeholder="Email" required>
+                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>
+                    <button class="modal-auth-btn">Entrar</button>
                 </form>
-                <div style="text-align:center;margin-top:10px;">
+                <div style="text-align:center;margin-top:16px;">
                     <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
                 </div>
             </div>
             <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
                 <h2>Criar Conta</h2>
                 <form id="modal-auth-form-cadastro">
-                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required style="width:100%;margin-bottom:6px;">
-                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
-                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:6px;">
-                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required style="width:100%;margin-bottom:10px;">
-                    <button class="modal-auth-btn" style="width:100%;">Cadastrar</button>
+                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
+                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
+                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required>
+                    <button class="modal-auth-btn">Cadastrar</button>
                 </form>
-                <div style="text-align:center;margin-top:10px;">
+                <div style="text-align:center;margin-top:16px;">
                     <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- SCRIPTS -->
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        // Mostra logo e nome no topo do main-content no mobile
-        function toggleMobileHeader() {
-          if(window.innerWidth <= 900) {
-            document.querySelector('.header-vitrine-mobile').style.display = "flex";
-            // Sincroniza logo e nome (pode ser dinâmico do Firebase)
-            document.getElementById('logo-publico-mobile').src = document.getElementById('logo-publico').src;
-            document.getElementById('nome-negocio-publico-mobile').textContent = document.getElementById('nome-negocio-publico').textContent;
-          } else {
-            document.querySelector('.header-vitrine-mobile').style.display = "none";
-          }
-        }
-        toggleMobileHeader();
-        window.addEventListener('resize', toggleMobileHeader);
-
-        function showMenu(menu) {
-          document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
-          document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
-          document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
-          let btnSide = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + menu + '"]');
-          let btnMob = document.querySelector('.bottom-nav-vitrine button[data-menu="' + menu + '"]');
-          let tela = document.getElementById('menu-' + menu);
-          if(btnSide) btnSide.classList.add('ativo');
-          if(btnMob) btnMob.classList.add('ativo');
-          if(tela) tela.classList.add('ativo');
-          if(menu === "informacoes" && window.renderInformacoes) window.renderInformacoes();
-          if(menu === "agendamento" && window.renderAgendamento) window.renderAgendamento();
-          if(menu === "visualizacao" && window.renderVisualizacao) window.renderVisualizacao();
-          if(menu === "perfil" && window.renderPerfil) window.renderPerfil();
-        }
-        // Sidebar navigation
-        document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
-          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); });
-        });
-        // Bottom navigation
-        function toggleNavs() {
-          if(window.innerWidth <= 900) {
-            document.querySelector('.bottom-nav-vitrine').style.display = "flex";
-            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "none";
-          } else {
-            document.querySelector('.bottom-nav-vitrine').style.display = "none";
-            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "";
-          }
-        }
-        toggleNavs();
-        window.addEventListener('resize', toggleNavs);
-
-        document.querySelectorAll('.bottom-nav-vitrine button').forEach(btn => {
-          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-        });
-
-        // Seleção de profissional visual (mobile e desktop)
-        document.getElementById('lista-profissionais').addEventListener('click', function(e) {
-          const card = e.target.closest('.card-profissional');
-          if (!card) return;
-          document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
-          card.classList.add('selecionado');
-          window.state = window.state || {};
-          window.state.agendamento = window.state.agendamento || {};
-          window.state.agendamento.profissionalId = card.dataset.id;
-          if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
-        });
-      });
-    </script>
-    <script type="module" src="./vitrini-firebase.js"></script>
-    <script type="module" src="./vitrini-utils.js"></script>
-    <script type="module" src="./vitrini-profissionais.js"></script>
-    <script type="module" src="./vitrini-agendamento.js"></script>
-    <script type="module" src="./vitrini-state.js"></script>
-    <script type="module" src="./vitrini-ui.js"></script>
-    <script type="module" src="./vitrini-auth.js"></script>
+    <!-- Scripts que controlam a página -->
     <script type="module" src="./vitrine.js"></script>
-    <script type="module" src="./vitrine-auth-modal.js"></script>
+    <!-- Adicione aqui os outros scripts que você tem, na ordem correta -->
+    <!-- Exemplo:
+    <script type="module" src="./vitrini-firebase.js"></script>
+    <script type="module" src="./vitrini-agendamento.js"></script>
+    ...
+    -->
+
+    <!-- ✅ NOVO SCRIPT "PORTEIRO": Verifica o login antes de agendar -->
+    <script type="module">
+        import { auth } from './firebase-config.js';
+
+        // Espera o conteúdo da página carregar para adicionar o "porteiro"
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
+            const modalAuth = document.getElementById('modal-auth-janela');
+
+            if (btnConfirmarAgendamento && modalAuth) {
+                // Adiciona o "porteiro" ao botão de confirmar.
+                // O 'true' no final faz com que ele seja o primeiro a verificar o clique.
+                btnConfirmarAgendamento.addEventListener('click', (event) => {
+                    const usuarioLogado = auth.currentUser;
+
+                    if (!usuarioLogado) {
+                        // Se o usuário NÃO ESTÁ logado:
+                        console.log('Usuário não logado. Exibindo modal de login.');
+                        
+                        // 1. Impede que a lógica original de agendamento prossiga.
+                        event.preventDefault(); 
+                        event.stopImmediatePropagation(); // Garante que nenhum outro script ouça este clique.
+
+                        // 2. Mostra o modal de login que já existe na sua página.
+                        modalAuth.style.display = 'flex';
+                    }
+                    // Se o usuário ESTIVER logado, este script não faz nada,
+                    // e o clique prossegue para a sua lógica de agendamento original.
+                }, true);
+            }
+        });
+    </script>
 </body>
 </html>
