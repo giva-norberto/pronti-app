@@ -32,7 +32,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- ✅ INÍCIO DA SEÇÃO DE LOGO, SEGUINDO O PADRÃO DO PERFIL -->
+        <!-- SEÇÃO DE LOGO, SEGUINDO O PADRÃO DO PERFIL -->
         <div class="config-section">
             <h2>Logo do Aplicativo</h2>
             <div class="form-group">
@@ -48,7 +48,6 @@
                 </div>
             </div>
         </div>
-        <!-- ✅ FIM DA SEÇÃO DE LOGO -->
 
         <div class="config-section">
             <h2>Permissões Globais de Menu</h2>
@@ -70,16 +69,16 @@
     </div>
 
     <script type="module">
-        // ✅ ADICIONADAS IMPORTAÇÕES DO STORAGE
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // Seu UID de admin aqui
-        const ADMIN_UID = "4h77lRBW72bRH8tJXPCPAFMGo3w1"; 
+        // ✅ CORREÇÃO: Lógica de acesso restaurada para a original que funcionava.
+        // Este UID é do seu projeto antigo. Se estiver configurando o projeto novo,
+        // substitua este valor pelo novo UID de admin (4h77lRB...).
+        const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
 
-        // ✅ NOVOS ELEMENTOS DO DOM PARA O UPLOAD
         const logoPreview = document.getElementById("logo-preview");
         const logoUploadInput = document.getElementById("logo-upload-input");
         const btnUploadLogo = document.getElementById("btn-upload-logo");
@@ -89,17 +88,16 @@
 
         const menus = [ "inicio", "dashboard", "agenda", "equipe", "servicos", "clientes", "perfil", "relatorios", "administracao", "permissoes" ];
         let permissoesAtuais = {};
-        let logoFile = null; // ✅ Variável para guardar o novo arquivo de logo
+        let logoFile = null;
 
-        // ✅ LÓGICA DE UPLOAD
         btnUploadLogo.addEventListener('click', () => logoUploadInput.click());
         logoUploadInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
-                logoFile = file; // Guarda o arquivo para o upload
+                logoFile = file;
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    logoPreview.src = e.target.result; // Mostra a pré-visualização
+                    logoPreview.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
@@ -112,7 +110,6 @@
             if (snap.exists()) {
                 const data = snap.data();
                 permissoesAtuais = data.menus || {};
-                // ✅ Carrega a URL da logo salva e exibe na pré-visualização
                 if (data.logoUrlPadrao) {
                     logoPreview.src = data.logoUrlPadrao;
                 }
@@ -142,26 +139,17 @@
             salvarBtn.textContent = 'A Salvar...';
 
             try {
-                // ✅ LÓGICA DE SALVAR ATUALIZADA
+                // A lógica de salvar foi mantida, pois ela não afeta o acesso à página.
                 const configParaSalvar = {};
 
-                // 1. Verifica se um novo logo foi selecionado
                 if (logoFile) {
-                    console.log("A enviar novo logo...");
                     const storage = getStorage();
-                    // Define um caminho fixo para o logo do app, para ser fácil de encontrar
                     const storageRef = ref(storage, 'config/logo-pronti-app.png');
-                    
-                    // Faz o upload
                     await uploadBytes(storageRef, logoFile);
-                    
-                    // Pega a URL pública do arquivo
                     const downloadURL = await getDownloadURL(storageRef);
                     configParaSalvar.logoUrlPadrao = downloadURL;
-                    console.log("Logo enviado com sucesso:", downloadURL);
                 }
 
-                // 2. Coleta as permissões da tabela
                 const checkboxes = document.querySelectorAll("input[type=checkbox]");
                 const novasPermissoes = {};
                 checkboxes.forEach(chk => {
@@ -172,10 +160,9 @@
                 });
                 configParaSalvar.menus = novasPermissoes;
 
-                // 3. Salva tudo no Firestore
                 await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
                 alert("Configurações globais salvas com sucesso!");
-                logoFile = null; // Limpa o arquivo após o upload
+                logoFile = null;
 
             } catch (error) {
                 console.error("Erro ao salvar configurações:", error);
@@ -186,6 +173,7 @@
             }
         });
 
+        // A lógica de verificação de acesso foi mantida exatamente como na sua versão original.
         onAuthStateChanged(auth, (user) => {
             if (!user) {
                 window.location.href = "login.html";
