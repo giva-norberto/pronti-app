@@ -140,7 +140,7 @@
         // ✅ FUNÇÃO ATUALIZADA PARA SALVAR O LOGO E AS PERMISSÕES
         salvarBtn.addEventListener("click", async () => {
             salvarBtn.disabled = true;
-            salvarBtn.textContent = \'A Salvar...\';
+            salvarBtn.textContent = 'A Salvar...';
 
             try {
                 const configParaSalvar = {};
@@ -149,7 +149,7 @@
                 if (logoFile) {
                     const storage = getStorage();
                     // O caminho fixo garante que o logo seja sempre o mesmo arquivo no Storage
-                    const storageRef = ref(storage, \'config/logo-pronti-app.png\'); 
+                    const storageRef = ref(storage, 'config/logo-pronti-app.png'); 
                     await uploadBytes(storageRef, logoFile);
                     const downloadURL = await getDownloadURL(storageRef);
                     // Adiciona a URL ao objeto que será salvo no Firestore
@@ -178,7 +178,7 @@
                 console.error("Ocorreu um erro ao salvar as configurações.");
             } finally {
                 salvarBtn.disabled = false;
-                salvarBtn.textContent = \'Salvar Todas as Configurações\';
+                salvarBtn.textContent = 'Salvar Todas as Configurações';
             }
         });
 
