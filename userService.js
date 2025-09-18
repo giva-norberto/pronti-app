@@ -1,6 +1,6 @@
 // ======================================================================
 //      USER-SERVICE.JS (DEBUG COMPLETO - CORRIGIDO, SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
-// =====================================================================
+// ======================================================================
 
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
@@ -12,7 +12,7 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc(  ) {
+export async function ensureUserAndTrialDoc() {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -127,7 +127,7 @@ export async function getEmpresasDoUsuario(user) {
                 snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
             }
         }
-    } catch(e) {
+    } catch (e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas pelo mapa:", e);
     }
     const empresasFinal = Array.from(empresasUnicas.values());
@@ -174,7 +174,9 @@ export async function verificarAcesso() {
                 console.log("[DEBUG] Empresa ativaId localStorage:", empresaAtivaId);
                 console.log("[DEBUG] Empresas retornadas:", empresas.map(e => e.id));
 
-                if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) { empresaAtivaId = null; }
+                if (empresaAtivaId && !empresas.some(e => e.id === empresaAtivaId)) {
+                    empresaAtivaId = null;
+                }
 
                 if (empresaAtivaId) {
                     empresaDocSnap = await getDoc(doc(db, "empresarios", empresaAtivaId));
