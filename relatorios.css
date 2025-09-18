@@ -6,13 +6,13 @@
     --cor-fundo-app: #f6f7fb;
 }
 
-/* Fundo azul padrão Pronti no body */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', Arial, sans-serif;
-    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-    min-height: 100vh;
+/* Fundo azul padrão Pronti no body - ALTA PRIORIDADE */
+html, body {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Inter', Arial, sans-serif !important;
 }
 
 /* Abas (menus) super compactas */
