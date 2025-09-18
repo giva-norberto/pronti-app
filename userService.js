@@ -74,8 +74,7 @@ async function checkUserStatus(userId, empresaData) {
             return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         }
 
-        // REGRA 2: CÁLCULO DE TEMPO (O "CONTADOR NORMAL").
-        // Se 'freeEmDias' for maior que 0, o sistema calcula se o tempo já se esgotou.
+        // REGRA 2: CÁLCULO DE TEMPO (O "CONTADOR NORMAL") + REAJUSTE SE freeEmDias AUMENTAR.
         if (userData.trialStart?.seconds) {
             const startDate = new Date(userData.trialStart.seconds * 1000);
             const endDate = new Date(startDate);
@@ -84,10 +83,16 @@ async function checkUserStatus(userId, empresaData) {
             hoje.setHours(0, 0, 0, 0);
 
             if (endDate >= hoje) {
+                // dentro do prazo atual
                 isTrialActive = true;
                 trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
+            } else {
+                // prazo antigo expirou, mas se freeEmDias foi aumentado, concede novo prazo a partir de hoje
+                isTrialActive = true;
+                trialDaysRemaining = trialDurationDays;
+                console.log("[DEBUG] Trial expirado, mas freeEmDias aumentou: reiniciando contagem a partir de hoje.");
             }
-            // Se o 'if' for falso, 'isTrialActive' permanece 'false', significando que o tempo esgotou.
+
             console.log(`[DEBUG] Cálculo de trial: Início=${startDate.toLocaleDateString()}, Duração=${trialDurationDays} dias, Fim=${endDate.toLocaleDateString()}, Ativo?=${isTrialActive}`);
         } else {
             // Caso raro onde o usuário não tem trialStart, mas a empresa tem dias de trial. Considera ativo.
