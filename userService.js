@@ -48,8 +48,9 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
-// ---> ALTERAÇÃO 1/3: A função agora recebe um 'userId' para verificar qualquer usuário (essencial para checar o dono).
-// A lógica interna permanece a mesma.
+// ==================================================================================
+// ---> A ÚNICA ALTERAÇÃO ESTÁ AQUI: NA LÓGICA DA FUNÇÃO checkUserStatus <---
+// ==================================================================================
 async function checkUserStatus(userId, empresaData) {
     try {
         if (!userId) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
@@ -61,32 +62,49 @@ async function checkUserStatus(userId, empresaData) {
         if (!userData) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
 
-        let trialDurationDays = empresaData?.freeEmDias ?? 15;
+        const trialDurationDays = empresaData?.freeEmDias ?? 0; // Se 'freeEmDias' não existir, considera 0.
         let trialDaysRemaining = 0;
         let isTrialActive = false;
 
+        // REGRA 1: CONTROLE MANUAL (A "PALAVRA FINAL").
+        // Se 'freeEmDias' for 0, o trial é FORÇADO como expirado, ignorando o cálculo de datas.
+        if (trialDurationDays <= 0) {
+            console.log(`[DEBUG] Trial FORÇADO como expirado pois freeEmDias é ${trialDurationDays}.`);
+            return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+        }
+
+        // REGRA 2: CÁLCULO DE TEMPO (O "CONTADOR NORMAL").
+        // Se 'freeEmDias' for maior que 0, o sistema calcula se o tempo já se esgotou.
         if (userData.trialStart?.seconds) {
             const startDate = new Date(userData.trialStart.seconds * 1000);
             const endDate = new Date(startDate);
             endDate.setDate(startDate.getDate() + trialDurationDays);
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
+
             if (endDate >= hoje) {
                 isTrialActive = true;
                 trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
             }
-            console.log(`[DEBUG] Trial: start ${startDate}, end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
+            // Se o 'if' for falso, 'isTrialActive' permanece 'false', significando que o tempo esgotou.
+            console.log(`[DEBUG] Cálculo de trial: Início=${startDate.toLocaleDateString()}, Duração=${trialDurationDays} dias, Fim=${endDate.toLocaleDateString()}, Ativo?=${isTrialActive}`);
         } else {
+            // Caso raro onde o usuário não tem trialStart, mas a empresa tem dias de trial. Considera ativo.
             isTrialActive = true;
             trialDaysRemaining = trialDurationDays;
-            console.log(`[DEBUG] Trial: trialStart ausente, usando padrão: diasRestantes ${trialDaysRemaining}`);
         }
+        
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
+
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
         return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
     }
 }
+// ==================================================================================
+// ---> FIM DA ÚNICA ALTERAÇÃO <---
+// ==================================================================================
+
 
 // --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade e SEM misturar dados) ---
 export async function getEmpresasDoUsuario(user) {
