@@ -97,12 +97,14 @@
             justify-content: center;
             font-size: 2.5rem;
             font-weight: 600;
+            flex-shrink: 0; /* Impede que o logo encolha */
         }
         .empresa-nome {
             font-weight: 600;
             color: var(--cor-texto-titulo);
             font-size: 1rem;
             text-align: center;
+            word-break: break-word; /* Garante que nomes longos não quebrem o layout */
         }
         .criar-empresa-card {
             border-style: dashed;
@@ -146,6 +148,26 @@
             margin-bottom: 30px;
             color: var(--cor-texto-corpo);
         }
+        
+        /* ---> ALTERAÇÃO: Estilos para a tag "Expirado" e para o container do nome da empresa */
+        .empresa-info-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px; /* Espaço entre o nome e a tag */
+            height: 40px; /* Altura fixa para alinhar os cards */
+            justify-content: center;
+        }
+        .status-expirado {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #d93025; /* Vermelho */
+            background-color: #fce8e6; /* Fundo vermelho claro */
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        /* ---> FIM DA ALTERAÇÃO */
+
     </style>
 </head>
 <body>
@@ -195,6 +217,40 @@
             }
         });
 
+        // ---> ALTERAÇÃO: A função de checar o status foi refatorada para buscar os dados do DONO da empresa.
+        async function checkUserStatus(userId, empresaData) {
+            try {
+                if (!userId) return { hasActivePlan: false, isTrialActive: false };
+                const userRef = doc(db, "usuarios", userId); // Busca na coleção 'usuarios'
+                const userSnap = await getDoc(userRef);
+
+                if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: false };
+                const userData = userSnap.data();
+                if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
+
+                let trialDurationDays = empresaData?.freeEmDias ?? 15;
+                let isTrialActive = false;
+
+                if (userData.trialStart?.seconds) {
+                    const startDate = new Date(userData.trialStart.seconds * 1000);
+                    const endDate = new Date(startDate);
+                    endDate.setDate(startDate.getDate() + trialDurationDays);
+                    const hoje = new Date();
+                    hoje.setHours(0, 0, 0, 0); // Zera a hora para comparar apenas o dia
+                    if (endDate >= hoje) {
+                        isTrialActive = true;
+                    }
+                } else {
+                    // Se não houver data de início, considera como ativo (pode ser um usuário antigo)
+                    isTrialActive = true; 
+                }
+                return { hasActivePlan: false, isTrialActive };
+            } catch (error) {
+                console.error("Erro em checkUserStatus para o usuário " + userId, error);
+                return { hasActivePlan: false, isTrialActive: false }; // Retorna como expirado em caso de erro
+            }
+        }
+
         async function carregarEmpresas(userId) {
             try {
                 const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
@@ -215,7 +271,7 @@
                 }
                 if (idsDasEmpresas.length === 1) {
                     localStorage.setItem('empresaAtivaId', idsDasEmpresas[0]);
-                    window.location.href = 'index.html';
+                    window.location.href = 'index.html'; // Sua lógica original de redirect para empresa única foi mantida
                     return;
                 }
                 const empresasRef = collection(db, "empresarios");
@@ -224,7 +280,17 @@
                 const empresas = snapshotsDasEmpresas.docs
                     .filter(snapshot => snapshot.exists())
                     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
-                renderizarOpcoes(empresas);
+
+                // ---> ALTERAÇÃO: Verifica o status de cada empresa ANTES de renderizar
+                const empresasComStatus = await Promise.all(
+                    empresas.map(async (empresa) => {
+                        const status = await checkUserStatus(empresa.donoId, empresa);
+                        return { ...empresa, statusAssinatura: status };
+                    })
+                );
+
+                renderizarOpcoes(empresasComStatus);
+
             } catch (error) {
                 console.error("Erro ao carregar empresas: ", error);
                 grid.innerHTML = `<p style="color: red;">Ocorreu um erro ao buscar suas empresas.</p>`;
@@ -253,46 +319,46 @@
             grid.style.margin = '0 auto';
         }
 
-        async function checarAssinaturaOuTrial(empresaId) {
-            // Checa assinatura ativa ou trial válido ANTES do redirect
-            const empresaRef = doc(db, "empresarios", empresaId);
-            const empresaSnap = await getDoc(empresaRef);
-            if (!empresaSnap.exists()) return false;
-            const empresa = empresaSnap.data();
-            if (empresa.isPremium) return true;
-            let diasRestantes = 0;
-            if (empresa.trialStart && empresa.freeEmDias !== undefined) {
-                let startDate = empresa.trialStart.seconds 
-                    ? new Date(empresa.trialStart.seconds * 1000) 
-                    : new Date(empresa.trialStart);
-                let endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + empresa.freeEmDias);
-                let now = new Date();
-                diasRestantes = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-            }
-            return diasRestantes > 0;
-        }
+        // Esta função não é mais necessária, a lógica foi movida para carregarEmpresas
+        // async function checarAssinaturaOuTrial(empresaId) { ... }
 
         function criarEmpresaCard(empresa) {
             const card = document.createElement('a');
             card.className = 'empresa-card';
             card.href = '#';
-            card.addEventListener('click', async (e) => {
+
+            // ---> ALTERAÇÃO: A verificação agora é instantânea, sem 'await' no clique
+            const isTrialActive = empresa.statusAssinatura.isTrialActive;
+
+            card.addEventListener('click', (e) => {
                 e.preventDefault();
                 localStorage.setItem('empresaAtivaId', empresa.id);
-                const acessoLiberado = await checarAssinaturaOuTrial(empresa.id);
-                if (acessoLiberado) {
+                
+                if (isTrialActive) {
                     window.location.href = 'index.html';
                 } else {
                     window.location.href = 'assinatura.html';
                 }
             });
+
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            card.innerHTML = `<div class="empresa-logo">${inicial}</div><span class="empresa-nome">${nomeFantasia}</span>`;
+
+            // ---> ALTERAÇÃO: O HTML do card agora inclui a tag 'Expirado' se necessário
+            const statusHtml = !isTrialActive ? '<span class="status-expirado">Expirado</span>' : '';
+            
+            card.innerHTML = `
+                <div class="empresa-logo">${inicial}</div>
+                <div class="empresa-info-wrapper">
+                    <span class="empresa-nome">${nomeFantasia}</span>
+                    ${statusHtml}
+                </div>
+            `;
+
             if (empresa.logoUrl) {
                 card.querySelector('.empresa-logo').innerHTML = `<img src="${empresa.logoUrl}" alt="Logo de ${nomeFantasia}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             }
+
             return card;
         }
 
