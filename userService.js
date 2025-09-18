@@ -48,8 +48,9 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
+
 // ==================================================================================
-// ---> A ÚNICA ALTERAÇÃO ESTÁ AQUI: NA LÓGICA DA FUNÇÃO checkUserStatus <---
+// ---> ESTA É A VERSÃO FINAL E CORRETA DA LÓGICA DE TRIAL <---
 // ==================================================================================
 async function checkUserStatus(userId, empresaData) {
     try {
@@ -102,7 +103,7 @@ async function checkUserStatus(userId, empresaData) {
     }
 }
 // ==================================================================================
-// ---> FIM DA ÚNICA ALTERAÇÃO <---
+// ---> FIM DA ALTERAÇÃO <---
 // ==================================================================================
 
 
