@@ -85,61 +85,47 @@
         <p>A verificar o estado da sua assinatura...</p>
     </div>
 
-    SCRIPT REVISADO E FINAL PARA QUEBRAR O LOOP <---                   -->
+    SCRIPT FINAL E CORRIGIDO CONFORME SUA ANÁLISE <---                 -->
     <script type="module">
         import { auth } from "./firebase-config.js";
         import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         // ATENÇÃO: Verifique se o nome do seu arquivo de serviço é 'user-service.js'
-        // Importamos a NOVA função, que é mais segura e não causa loops.
-        import { obterStatusDoUsuario } from "./user-service.js"; 
+        import { verificarAcesso } from "./user-service.js";
 
-        const btnLogout = document.getElementById('btn-logout');
-        const container = document.getElementById('assinatura-container');
         const loader = document.getElementById('loader');
+        const container = document.getElementById('assinatura-container');
+        const btnLogout = document.getElementById('btn-logout');
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("Página de assinatura: obtendo status do usuário...");
-
-            obterStatusDoUsuario()
-                .then(perfil => {
-                    const { statusAssinatura } = perfil;
-
-                    // Verifica se o usuário tem um plano ativo ou trial válido
-                    if (statusAssinatura.hasActivePlan || statusAssinatura.isTrialActive) {
-                        // Se tiver, ele não deveria estar aqui. Redireciona para o painel.
-                        console.log("Plano ativo encontrado. Redirecionando para o painel...");
-                        window.location.href = "index.html";
-                    } else {
-                        // Se NÃO tiver, ele está no lugar certo. Apenas mostra a tela de pagamento.
-                        // ISTO QUEBRA O LOOP.
-                        console.log("Plano inativo. Exibindo container de assinatura.");
-                        loader.style.display = "none";
-                        container.style.display = "block";
-                    }
+            verificarAcesso()
+                .then(() => {
+                    // SUCESSO: O usuário tem plano ativo ou trial. Ele não deveria estar aqui.
+                    // Redireciona para o painel.
+                    window.location.href = "index.html";
                 })
                 .catch(error => {
-                    // Lida com erros (ex: usuário não logado) sem causar loops.
-                    console.error("Erro ao obter status do usuário:", error.message);
-                    loader.innerHTML = `<p style="color:red;">Ocorreu um erro: ${error.message}</p>`;
-                    
-                    // Se o erro for de autenticação, redireciona para o login após um tempo
-                    if (error.message.includes("autenticado")) {
-                        setTimeout(() => { window.location.href = 'login.html'; }, 2500);
+                    // FALHA: A promise foi rejeitada. Verificamos o motivo.
+                    if (error.message.includes("Assinatura expirada")) {
+                        // Este é o cenário esperado. O usuário está no lugar certo.
+                        // Mostramos a tela de pagamento e quebramos o loop.
+                        loader.style.display = "none";
+                        container.style.display = "block";
+                    } else {
+                        // Outros erros (não logado, etc.) são apenas exibidos.
+                        loader.innerHTML = `<p style="color:red;">Erro: ${error.message}</p>`;
                     }
                 });
         });
 
-        if (btnLogout) {
-            btnLogout.addEventListener('click', async () => {
-                try {
-                    localStorage.removeItem('empresaAtivaId');
-                    await signOut(auth);
-                    window.location.href = 'login.html';
-                } catch (error) {
-                    console.error("Erro ao fazer logout:", error);
-                }
-            });
-        }
+        btnLogout.addEventListener('click', async () => {
+            try {
+                localStorage.removeItem('empresaAtivaId');
+                await signOut(auth);
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error("Erro ao fazer logout:", error);
+            }
+        });
     </script>
 
 </body>
