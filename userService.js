@@ -48,16 +48,17 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
-// --- Função: Checa status de plano/trial corretamente ---
-async function checkUserStatus(user, empresaData) {
+// ---> ALTERAÇÃO 1/3: A função agora recebe um 'userId' para verificar qualquer usuário (essencial para checar o dono).
+// A lógica interna permanece a mesma.
+async function checkUserStatus(userId, empresaData) {
     try {
-        if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
-        const userRef = doc(db, "usuarios", user.uid);
+        if (!userId) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+        const userRef = doc(db, "usuarios", userId);
         const userSnap = await getDoc(userRef);
-        console.log("[DEBUG] Usuário para checkUserStatus:", userSnap.exists() ? userSnap.data() : "não existe");
-        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        console.log("[DEBUG] Usuário para checkUserStatus (" + userId + "):", userSnap.exists() ? userSnap.data() : "não existe");
+        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         const userData = userSnap.data();
-        if (!userData) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        if (!userData) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
 
         let trialDurationDays = empresaData?.freeEmDias ?? 15;
@@ -83,7 +84,7 @@ async function checkUserStatus(user, empresaData) {
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
-        return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
     }
 }
 
@@ -117,14 +118,16 @@ export async function getEmpresasDoUsuario(user) {
             console.log("[DEBUG] Empresas profissional ativas (IDs):", idsDeEmpresas);
             for (let i = 0; i < idsDeEmpresas.length; i += 10) {
                 const chunk = idsDeEmpresas.slice(i, i + 10);
-                const q = query(
-                    collection(db, "empresarios"),
-                    where(documentId(), "in", chunk),
-                    where("status", "==", "ativo")
-                );
-                const snap = await getDocs(q);
-                console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
-                snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+                if (chunk.length > 0) { // Garante que o chunk não está vazio
+                    const q = query(
+                        collection(db, "empresarios"),
+                        where(documentId(), "in", chunk),
+                        where("status", "==", "ativo")
+                    );
+                    const snap = await getDocs(q);
+                    console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
+                    snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+                }
             }
         }
     } catch (e) {
@@ -134,6 +137,29 @@ export async function getEmpresasDoUsuario(user) {
     console.log("[DEBUG] Empresas finais (ativas e sem duplicidade):", empresasFinal.map(e => e.id));
     return empresasFinal;
 }
+
+
+// ---> ALTERAÇÃO 2/3: Nova função EXPORTADA para ser usada na tela 'selecionar-empresa'.
+// Ela reutiliza suas funções existentes para retornar as empresas já com o status de assinatura.
+export async function getEmpresasComStatus() {
+    const user = auth.currentUser;
+    if (!user) return [];
+
+    const empresas = await getEmpresasDoUsuario(user);
+
+    const empresasComStatus = await Promise.all(
+        empresas.map(async (empresa) => {
+            const status = await checkUserStatus(empresa.donoId, empresa);
+            return {
+                ...empresa,
+                statusAssinatura: status
+            };
+        })
+    );
+    
+    return empresasComStatus;
+}
+
 
 // ======================================================================
 // FUNÇÃO GUARDA PRINCIPAL: Valida sessão, empresa ativa, plano, permissões
@@ -256,8 +282,10 @@ export async function verificarAcesso() {
                 const empresaData = empresaDocSnap.data();
                 console.log("[DEBUG] Dados da empresa ativa:", empresaData);
 
-                const statusAssinatura = await checkUserStatus(user, empresaData);
-                console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
+                // ---> ALTERAÇÃO 3/3: A chamada agora usa o 'donoId' da empresa, e não o usuário logado.
+                // Isso corrige a lógica central de verificação de assinatura.
+                const statusAssinatura = await checkUserStatus(empresaData.donoId, empresaData);
+                console.log("[DEBUG] Status assinatura/trial (baseado no dono):", statusAssinatura);
 
                 let perfilDetalhado, papel;
                 const isOwner = empresaData.donoId === user.uid;
