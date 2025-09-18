@@ -11,13 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-        /* ======================================================= */
-        /* CSS FINAL: FUNDO AZUL COM CARD BRANCO EM DESTAQUE   */
-        /* ======================================================= */
         :root {
             --cor-primaria: #4f46e5;
             --gradiente-texto: linear-gradient(90deg, #4f46e5 0%, #6366f1 100%);
-            --cor-fundo-card-interno: #f7f8ff; /* Tom suave para cards internos */
+            --cor-fundo-card-interno: #f7f8ff;
             --cor-texto-titulo: #1e293b;
             --cor-texto-corpo: #64748b;
             --cor-borda: #e2e8f0;
@@ -187,7 +184,6 @@
             } catch (error) { console.error("Erro ao sair:", error); }
         });
 
-        // Ponto de entrada: verifica se o usuário está autenticado
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 localStorage.removeItem('empresaAtivaId');
@@ -199,55 +195,36 @@
             }
         });
 
-        // --- Funções Principais ---
         async function carregarEmpresas(userId) {
             try {
                 const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
                 const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
-                
-                let idsDasEmpresas = []; // Inicia a lista de IDs vazia
-
-                // =================================================================================
-                // ✅ CIRURGIA REALIZADA AQUI
-                // O código agora verifica os dois casos: 'empresas' (novo) e 'empresaId' (antigo).
-                // =================================================================================
+                let idsDasEmpresas = [];
                 if (mapaUsuarioSnap.exists()) {
                     const dadosMapa = mapaUsuarioSnap.data();
-                    // 1. Tenta pegar a lista 'empresas' (padrão correto)
                     if (dadosMapa.empresas && Array.isArray(dadosMapa.empresas) && dadosMapa.empresas.length > 0) {
                         idsDasEmpresas = dadosMapa.empresas;
                     } 
-                    // 2. Se não achar, tenta pegar o campo 'empresaId' (padrão antigo)
                     else if (dadosMapa.empresaId && typeof dadosMapa.empresaId === 'string') {
-                        // Transforma o texto em uma lista com um item só
                         idsDasEmpresas = [dadosMapa.empresaId];
                     }
                 }
-
-                // Se, depois de tudo, a lista de IDs continuar vazia, mostra o primeiro acesso.
                 if (idsDasEmpresas.length === 0) {
                     renderizarPrimeiroAcesso();
                     return;
                 }
-                
-                // Se a lista tiver apenas um ID, redireciona (sua lógica original).
                 if (idsDasEmpresas.length === 1) {
                     localStorage.setItem('empresaAtivaId', idsDasEmpresas[0]);
                     window.location.href = 'index.html';
                     return;
                 }
-
-                // Se tiver mais de um, busca os dados completos das empresas.
                 const empresasRef = collection(db, "empresarios");
                 const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
                 const snapshotsDasEmpresas = await getDocs(q);
-                
                 const empresas = snapshotsDasEmpresas.docs
                     .filter(snapshot => snapshot.exists())
                     .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
-
                 renderizarOpcoes(empresas);
-
             } catch (error) {
                 console.error("Erro ao carregar empresas: ", error);
                 grid.innerHTML = `<p style="color: red;">Ocorreu um erro ao buscar suas empresas.</p>`;
@@ -276,14 +253,39 @@
             grid.style.margin = '0 auto';
         }
 
+        async function checarAssinaturaOuTrial(empresaId) {
+            // Checa assinatura ativa ou trial válido ANTES do redirect
+            const empresaRef = doc(db, "empresarios", empresaId);
+            const empresaSnap = await getDoc(empresaRef);
+            if (!empresaSnap.exists()) return false;
+            const empresa = empresaSnap.data();
+            if (empresa.isPremium) return true;
+            let diasRestantes = 0;
+            if (empresa.trialStart && empresa.freeEmDias !== undefined) {
+                let startDate = empresa.trialStart.seconds 
+                    ? new Date(empresa.trialStart.seconds * 1000) 
+                    : new Date(empresa.trialStart);
+                let endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + empresa.freeEmDias);
+                let now = new Date();
+                diasRestantes = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+            }
+            return diasRestantes > 0;
+        }
+
         function criarEmpresaCard(empresa) {
             const card = document.createElement('a');
             card.className = 'empresa-card';
             card.href = '#';
-            card.addEventListener('click', (e) => {
+            card.addEventListener('click', async (e) => {
                 e.preventDefault();
                 localStorage.setItem('empresaAtivaId', empresa.id);
-                window.location.href = 'index.html';
+                const acessoLiberado = await checarAssinaturaOuTrial(empresa.id);
+                if (acessoLiberado) {
+                    window.location.href = 'index.html';
+                } else {
+                    window.location.href = 'assinatura.html';
+                }
             });
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
