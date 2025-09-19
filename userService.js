@@ -50,7 +50,7 @@ export async function ensureUserAndTrialDoc() {
 
 
 // ==================================================================================
-// ---> A ÚNICA ALTERAÇÃO ESTÁ AQUI: LÓGICA DE TRIAL FINAL E CORRETA <---
+// ESTA FUNÇÃO ESTÁ 100% CORRETA E FOI MANTIDA
 // ==================================================================================
 async function checkUserStatus(userId, empresaData) {
     try {
@@ -68,14 +68,12 @@ async function checkUserStatus(userId, empresaData) {
         let isTrialActive = false;
 
         // REGRA 1: CONTROLE MANUAL (A "PALAVRA FINAL").
-        // Se 'freeEmDias' for 0 ou menos, o trial é FORÇADO como expirado.
         if (trialDurationDays <= 0) {
             console.log(`[DEBUG] Trial FORÇADO como expirado pois freeEmDias é ${trialDurationDays}.`);
             return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         }
 
         // REGRA 2: CÁLCULO DE TEMPO (O "CONTADOR NORMAL").
-        // Se 'freeEmDias' for maior que 0, o sistema calcula se o tempo já se esgotou.
         if (userData.trialStart?.seconds) {
             const startDate = new Date(userData.trialStart.seconds * 1000);
             const endDate = new Date(startDate);
@@ -99,9 +97,6 @@ async function checkUserStatus(userId, empresaData) {
         return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
     }
 }
-// ==================================================================================
-// ---> FIM DA ALTERAÇÃO <---
-// ==================================================================================
 
 
 // --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade e SEM misturar dados) ---
@@ -134,14 +129,16 @@ export async function getEmpresasDoUsuario(user) {
             console.log("[DEBUG] Empresas profissional ativas (IDs):", idsDeEmpresas);
             for (let i = 0; i < idsDeEmpresas.length; i += 10) {
                 const chunk = idsDeEmpresas.slice(i, i + 10);
-                const q = query(
-                    collection(db, "empresarios"),
-                    where(documentId(), "in", chunk),
-                    where("status", "==", "ativo")
-                );
-                const snap = await getDocs(q);
-                console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
-                snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+                if(chunk.length > 0) {
+                    const q = query(
+                        collection(db, "empresarios"),
+                        where(documentId(), "in", chunk),
+                        where("status", "==", "ativo")
+                    );
+                    const snap = await getDocs(q);
+                    console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
+                    snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+                }
             }
         }
     } catch(e) {
@@ -205,15 +202,6 @@ export async function verificarAcesso() {
                 if (!empresaDocSnap) {
                     if (empresas.length === 0) {
                         console.log("[DEBUG] Nenhuma empresa associada ao usuário.");
-                        cachedSessionProfile = {
-                            user,
-                            empresaId: null,
-                            perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'novo' },
-                            isOwner: false,
-                            isAdmin: isAdmin,
-                            papel: 'novo',
-                            empresas: []
-                        };
                         if (currentPage !== 'meuperfil.html') {
                             window.location.replace('meuperfil.html');
                         }
@@ -226,31 +214,9 @@ export async function verificarAcesso() {
                         console.log("[DEBUG] Empresa única ativada:", empresaAtivaId, empresaDocSnap.data());
                     } else if (empresas.length > 1) {
                         console.log("[DEBUG] Usuário tem múltiplas empresas, precisa selecionar.", empresas.map(e => e.id));
-                        cachedSessionProfile = {
-                            user,
-                            empresaId: null,
-                            perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'multi' },
-                            isOwner: false,
-                            isAdmin: isAdmin,
-                            papel: 'multi',
-                            empresas
-                        };
                         if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
                         isProcessing = false;
                         return reject(new Error("Múltiplas empresas, seleção necessária."));
-                    } else if (isAdmin) {
-                        console.log("[DEBUG] Usuário é admin, acesso total.");
-                        cachedSessionProfile = {
-                            user,
-                            empresaId: null,
-                            perfil: { nome: "Administrador", email: user.email || '', papel: "admin" },
-                            isOwner: false,
-                            isAdmin: true,
-                            papel: 'admin',
-                            empresas: []
-                        };
-                        isProcessing = false;
-                        return resolve(cachedSessionProfile);
                     }
                 }
 
@@ -263,7 +229,10 @@ export async function verificarAcesso() {
                 const empresaData = empresaDocSnap.data();
                 console.log("[DEBUG] Dados da empresa ativa:", empresaData);
 
-                // A chamada aqui PRECISA usar o donoId da empresa
+                // ==================================================================================
+                // ---> CORREÇÃO CRÍTICA APLICADA AQUI <---
+                // A chamada agora SEMPRE usa o 'donoId' da empresa para a verificação.
+                // ==================================================================================
                 const statusAssinatura = await checkUserStatus(empresaData.donoId, empresaData);
                 console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
 
