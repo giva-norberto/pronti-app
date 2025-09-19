@@ -294,7 +294,7 @@ export async function verificarAcesso() {
                 };
                 console.log("[DEBUG] SessionProfile FINAL:", sessionProfile);
 
-                                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html' && currentPage !== 'selecionar-empresa.html') {
+                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html' && currentPage !== 'selecionar-empresa.html') {
                     console.log("[DEBUG] Assinatura expirada, redirecionando para assinatura.");
                     window.location.replace('assinatura.html');
                     cachedSessionProfile = sessionProfile;
