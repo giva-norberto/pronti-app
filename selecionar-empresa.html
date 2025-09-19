@@ -1,154 +1,132 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Selecionar Empresa - Pronti</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      background: linear-gradient(135deg,#3b82f6,#60a5fa);
-      color: #1e293b;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      background: #1e3a8a;
-      color: #fff;
-      padding: 20px;
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-    main {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      padding: 30px;
-      max-width: 500px;
-      width: 100%;
-      text-align: center;
-    }
-    h1 {
-      margin-top: 0;
-      font-size: 1.8rem;
-      margin-bottom: 20px;
-      color: #1e293b;
-    }
-    #lista-empresas {
-      list-style: none;
-      padding: 0;
-      margin: 20px 0;
-    }
-    #lista-empresas li {
-      background: #f1f5f9;
-      margin-bottom: 10px;
-      padding: 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    #lista-empresas li:hover {
-      background: #e2e8f0;
-    }
-    .btn-sair {
-      background: none;
-      border: none;
-      color: #64748b;
-      font-size: 1rem;
-      cursor: pointer;
-      text-decoration: underline;
-      margin-top: 20px;
-    }
-    #loader {
-      font-size: 1.1rem;
-      color: #334155;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura Expirada - Pronti</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container-assinatura {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+        .container-assinatura h1 {
+            color: #1e293b;
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        .container-assinatura p {
+            color: #64748b;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .btn-assinar {
+            display: block;
+            width: 100%;
+            background: #10b981;
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 0;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-assinar:hover {
+            background: #059669;
+        }
+        .btn-logout {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1rem;
+            text-decoration: underline;
+            margin-top: 20px;
+        }
+        #loader {
+            font-size: 1.2rem;
+            color: #4f46e5;
+        }
+    </style>
 </head>
 <body>
 
-  <header>Pronti - Selecionar Empresa</header>
-
-  <main>
-    <div class="card">
-      <h1>Selecione uma empresa</h1>
-      <p>Escolha abaixo a empresa que deseja gerenciar:</p>
-      <ul id="lista-empresas"></ul>
-      <div id="loader">Carregando empresas...</div>
-      <button id="btn-sair" class="btn-sair">Sair da conta</button>
+    <div class="container-assinatura" id="assinatura-container" style="display:none;">
+        <h1>O seu período de teste terminou!</h1>
+        <p>Agradecemos por experimentar o Pronti. Para continuar a gerir o seu negócio, por favor, escolha um dos nossos planos.</p>
+        
+        <a href="pagamento.html" id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</a>
+        <button id="btn-logout" class="btn-logout">Sair da conta</button>
     </div>
-  </main>
 
-  <script type="module">
-    import { auth, db } from './firebase-config.js';
-    import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-    import { verificarAcesso } from './user-service.js';
+    <div id="loader">
+        <p>A verificar o estado da sua assinatura...</p>
+    </div>
 
-    const lista = document.getElementById('lista-empresas');
-    const loader = document.getElementById('loader');
-    const btnSair = document.getElementById('btn-sair');
+    SCRIPT FINAL E CORRIGIDO CONFORME SUA ANÁLISE <---                 -->
+    <script type="module">
+        import { auth } from "./firebase-config.js";
+        import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        // ATENÇÃO: Verifique se o nome do seu arquivo de serviço é 'user-service.js'
+        import { verificarAcesso } from "./user-service.js";
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const session = await verificarAcesso();
-        const user = session.user;
+        const loader = document.getElementById('loader');
+        const container = document.getElementById('assinatura-container');
+        const btnLogout = document.getElementById('btn-logout');
 
-        // Busca todas as empresas onde o usuário é dono ou profissional
-        const empresas = [];
-        const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
-        const snapDono = await getDocs(qDono);
-        snapDono.forEach(doc => empresas.push({ id: doc.id, ...doc.data() }));
-
-        // Também busca via mapaUsuarios (se necessário)
-        const mapaDoc = await getDocs(collection(db,"mapaUsuarios"));
-        mapaDoc.forEach(m => {
-          const dados = m.data();
-          if (m.id === user.uid && dados.empresas) {
-            dados.empresas.forEach(eid => empresas.push({ id: eid }));
-          }
+        document.addEventListener('DOMContentLoaded', () => {
+            verificarAcesso()
+                .then(() => {
+                    // SUCESSO: O usuário tem plano ativo ou trial. Ele não deveria estar aqui.
+                    // Redireciona para o painel.
+                    window.location.href = "index.html";
+                })
+                .catch(error => {
+                    // FALHA: A promise foi rejeitada. Verificamos o motivo.
+                    if (error.message.includes("Assinatura expirada")) {
+                        // Este é o cenário esperado. O usuário está no lugar certo.
+                        // Mostramos a tela de pagamento e quebramos o loop.
+                        loader.style.display = "none";
+                        container.style.display = "block";
+                    } else {
+                        // Outros erros (não logado, etc.) são apenas exibidos.
+                        loader.innerHTML = `<p style="color:red;">Erro: ${error.message}</p>`;
+                    }
+                });
         });
 
-        loader.style.display = 'none';
-        if (empresas.length === 0) {
-          lista.innerHTML = '<li>Nenhuma empresa encontrada.</li>';
-          return;
-        }
-
-        empresas.forEach(emp => {
-          const li = document.createElement('li');
-          li.textContent = emp.nomeFantasia || emp.id;
-          li.addEventListener('click', () => {
-            localStorage.setItem('empresaAtivaId', emp.id);
-            window.location.href = 'index.html';
-          });
-          lista.appendChild(li);
+        btnLogout.addEventListener('click', async () => {
+            try {
+                localStorage.removeItem('empresaAtivaId');
+                await signOut(auth);
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error("Erro ao fazer logout:", error);
+            }
         });
-      } catch (err) {
-        loader.textContent = 'Erro ao carregar empresas: ' + err.message;
-        console.error(err);
-      }
-    });
-
-    btnSair.addEventListener('click', async () => {
-      await signOut(auth);
-      localStorage.removeItem('empresaAtivaId');
-      window.location.href = 'login.html';
-    });
-  </script>
+    </script>
 
 </body>
 </html>
