@@ -12,7 +12,7 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc(  ) {
+export async function ensureUserAndTrialDoc() {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -48,33 +48,45 @@ export async function ensureUserAndTrialDoc(  ) {
     }
 }
 
-// --- Função: Checa status de plano/trial corretamente ---
-async function checkUserStatus(user, empresaData) {
+// ==================================================================================
+// ---> ÚNICA ALTERAÇÃO REALIZADA: LÓGICA DE TRIAL FINAL E CORRETA <---
+// ==================================================================================
+async function checkUserStatus(userId, empresaData) {
     try {
-        if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
-        const userRef = doc(db, "usuarios", user.uid);
+        if (!userId) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+        const userRef = doc(db, "usuarios", userId);
         const userSnap = await getDoc(userRef);
         console.log("[DEBUG] Usuário para checkUserStatus:", userSnap.exists() ? userSnap.data() : "não existe");
-        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         const userData = userSnap.data();
-        if (!userData) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        if (!userData) return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
 
-        let trialDurationDays = empresaData?.freeEmDias ?? 15;
+        const trialDurationDays = empresaData?.freeEmDias ?? 0;
         let trialDaysRemaining = 0;
         let isTrialActive = false;
 
+        // REGRA 1: CONTROLE MANUAL (A "PALAVRA FINAL").
+        // Se 'freeEmDias' for 0, o trial é FORÇADO como expirado, ignorando o cálculo de datas.
+        if (trialDurationDays <= 0) {
+            console.log(`[DEBUG] Trial FORÇADO como expirado pois freeEmDias é ${trialDurationDays}.`);
+            return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
+        }
+
+        // REGRA 2: CÁLCULO DE TEMPO (O "CONTADOR NORMAL").
+        // Se 'freeEmDias' for maior que 0, o sistema calcula se o tempo já se esgotou.
         if (userData.trialStart?.seconds) {
             const startDate = new Date(userData.trialStart.seconds * 1000);
             const endDate = new Date(startDate);
             endDate.setDate(startDate.getDate() + trialDurationDays);
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
+
             if (endDate >= hoje) {
                 isTrialActive = true;
                 trialDaysRemaining = Math.ceil((endDate - hoje) / (1000 * 60 * 60 * 24));
             }
-            console.log(`[DEBUG] Trial: start ${startDate}, end ${endDate}, hoje ${hoje}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
+            console.log(`[DEBUG] Trial: start ${startDate.toLocaleDateString()}, end ${endDate.toLocaleDateString()}, hoje ${hoje.toLocaleDateString()}, diasRestantes ${trialDaysRemaining}, ativo? ${isTrialActive}`);
         } else {
             isTrialActive = true;
             trialDaysRemaining = trialDurationDays;
@@ -83,9 +95,13 @@ async function checkUserStatus(user, empresaData) {
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
-        return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+        return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
     }
 }
+// ==================================================================================
+// ---> FIM DA ALTERAÇÃO <---
+// ==================================================================================
+
 
 // --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade e SEM misturar dados) ---
 export async function getEmpresasDoUsuario(user) {
@@ -117,14 +133,16 @@ export async function getEmpresasDoUsuario(user) {
             console.log("[DEBUG] Empresas profissional ativas (IDs):", idsDeEmpresas);
             for (let i = 0; i < idsDeEmpresas.length; i += 10) {
                 const chunk = idsDeEmpresas.slice(i, i + 10);
-                const q = query(
-                    collection(db, "empresarios"),
-                    where(documentId(), "in", chunk),
-                    where("status", "==", "ativo")
-                );
-                const snap = await getDocs(q);
-                console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
-                snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+                if(chunk.length > 0) {
+                    const q = query(
+                        collection(db, "empresarios"),
+                        where(documentId(), "in", chunk),
+                        where("status", "==", "ativo")
+                    );
+                    const snap = await getDocs(q);
+                    console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
+                    snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+                }
             }
         }
     } catch(e) {
@@ -152,10 +170,7 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
-                // ======================= INÍCIO DA 1ª ALTERAÇÃO CIRÚRGICA =======================
-                // Adicionado 'meuperfil.html' para consistência.
                 const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
-                // ======================== FIM DA 1ª ALTERAÇÃO CIRÚRGICA =========================
 
                 if (!user) {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
@@ -189,9 +204,6 @@ export async function verificarAcesso() {
                 }
 
                 if (!empresaDocSnap) {
-                    // ======================= INÍCIO DA 2ª ALTERAÇÃO CIRÚRGICA =======================
-                    // Removemos a condição '!isAdmin' para que TODOS os usuários sem empresa,
-                    // incluindo o admin, passem por este fluxo.
                     if (empresas.length === 0) {
                         console.log("[DEBUG] Nenhuma empresa associada ao usuário.");
                         cachedSessionProfile = {
@@ -199,17 +211,15 @@ export async function verificarAcesso() {
                             empresaId: null,
                             perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'novo' },
                             isOwner: false,
-                            isAdmin: isAdmin, // Mantém o status de admin
+                            isAdmin: isAdmin,
                             papel: 'novo',
                             empresas: []
                         };
-                        // Corrigimos o redirecionamento para 'meuperfil.html'.
                         if (currentPage !== 'meuperfil.html') {
                             window.location.replace('meuperfil.html');
                         }
                         isProcessing = false;
                         return reject(new Error("Nenhuma empresa associada."));
-                    // ======================== FIM DA 2ª ALTERAÇÃO CIRÚRGICA =========================
                     } else if (empresas.length === 1) {
                         empresaAtivaId = empresas[0].id;
                         localStorage.setItem('empresaAtivaId', empresaAtivaId);
@@ -254,7 +264,8 @@ export async function verificarAcesso() {
                 const empresaData = empresaDocSnap.data();
                 console.log("[DEBUG] Dados da empresa ativa:", empresaData);
 
-                const statusAssinatura = await checkUserStatus(user, empresaData);
+                // A chamada aqui PRECISA usar o donoId da empresa
+                const statusAssinatura = await checkUserStatus(empresaData.donoId, empresaData);
                 console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
 
                 let perfilDetalhado, papel;
