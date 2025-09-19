@@ -1,194 +1,154 @@
-/**
- * @file selecionar-empresa.js
- * @description Script autônomo para a página de seleção de empresa.
- * Gerencia a exibição de empresas e o redirecionamento.
- * Não chama o 'verificarAcesso' para evitar loops.
- */
-
-// Importações diretas, tornando o script independente.
-import { auth, db } from "./firebase-config.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-
-// --- Elementos do DOM ---
-const grid = document.getElementById('empresas-grid' );
-const loader = document.getElementById('loader');
-const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
-const btnLogout = document.getElementById('btn-logout');
-
-// ---> ALTERAÇÃO: Adicionamos a função de checar status aqui para manter o script autônomo.
-// Esta função verifica o status de trial de um usuário específico (o dono da empresa).
-async function checkUserStatus(userId, empresaData) {
-    try {
-        if (!userId) return { hasActivePlan: false, isTrialActive: false };
-        const userRef = doc(db, "usuarios", userId);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) return { hasActivePlan: false, isTrialActive: false };
-        const userData = userSnap.data();
-        if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false };
-
-        let trialDurationDays = empresaData?.freeEmDias ?? 15;
-        let isTrialActive = false;
-
-        if (userData.trialStart?.seconds) {
-            const startDate = new Date(userData.trialStart.seconds * 1000);
-            const endDate = new Date(startDate);
-            endDate.setDate(startDate.getDate() + trialDurationDays);
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            if (endDate >= hoje) {
-                isTrialActive = true;
-            }
-        } else {
-            isTrialActive = true;
-        }
-        return { hasActivePlan: false, isTrialActive };
-    } catch (error) {
-        console.error("Erro em checkUserStatus:", error);
-        return { hasActivePlan: false, isTrialActive: false };
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Selecionar Empresa - Pronti</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg,#3b82f6,#60a5fa);
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-}
-
-
-// --- Eventos ---
-if (btnLogout) {
-    btnLogout.addEventListener('click', async () => {
-        localStorage.removeItem('empresaAtivaId');
-        await signOut(auth).catch(error => console.error("Erro ao sair:", error));
-        window.location.href = 'login.html';
-    });
-}
-
-// Ponto de entrada principal do script
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        localStorage.removeItem('empresaAtivaId');
-        
-        const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-        if (tituloBoasVindas) {
-            tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-        }
-        carregarEmpresas(user.uid);
-    } else {
-        window.location.href = 'login.html';
+    header {
+      background: #1e3a8a;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
     }
-});
-
-// --- Funções Principais ---
-async function carregarEmpresas(userId) {
-    try {
-        const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
-        const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
-
-        if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
-            renderizarOpcoes([]);
-            return;
-        }
-        
-        const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
-
-        // ✅ SUA LÓGICA ORIGINAL PRESERVADA: Se houver apenas uma empresa, redireciona direto.
-        if (idsDasEmpresas.length === 1) {
-            const empresaId = idsDasEmpresas[0];
-            localStorage.setItem('empresaAtivaId', empresaId);
-            window.location.href = 'index.html';
-            return; 
-        }
-
-        const empresasRef = collection(db, "empresarios");
-        const q = query(empresasRef, where(documentId(), "in", idsDasEmpresas));
-        const snapshotsDasEmpresas = await getDocs(q);
-        
-        const empresas = snapshotsDasEmpresas.docs
-            .filter(snapshot => snapshot.exists())
-            .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
-
-        // ---> ALTERAÇÃO: Para cada empresa encontrada, buscamos o seu status de assinatura.
-        const empresasComStatus = await Promise.all(
-            empresas.map(async (empresa) => {
-                // A verificação é feita com base no 'donoId' da empresa.
-                const status = await checkUserStatus(empresa.donoId, empresa);
-                return {
-                    ...empresa,
-                    statusAssinatura: status 
-                };
-            })
-        );
-        
-        // Passamos a lista de empresas já com o status para a função de renderização.
-        renderizarOpcoes(empresasComStatus);
-
-    } catch (error) {
-        console.error("Erro ao carregar empresas: ", error);
-        if (grid) {
-            grid.innerHTML = `<p style="color: red;">Erro ao carregar empresas. Detalhes: ${error.message}</p>`;
-        }
-    } finally {
-        if (loader) loader.style.display = 'none';
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
     }
-}
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      color: #1e293b;
+    }
+    #lista-empresas {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+    #lista-empresas li {
+      background: #f1f5f9;
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #lista-empresas li:hover {
+      background: #e2e8f0;
+    }
+    .btn-sair {
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 20px;
+    }
+    #loader {
+      font-size: 1.1rem;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
 
-function renderizarOpcoes(empresas) {
-    if (!grid) return;
-    grid.innerHTML = ''; 
-    if (empresas.length > 0) {
-        empresas.forEach(empresa => {
-            // A função criarEmpresaCard agora recebe a empresa com o status da assinatura
-            grid.appendChild(criarEmpresaCard(empresa));
+  <header>Pronti - Selecionar Empresa</header>
+
+  <main>
+    <div class="card">
+      <h1>Selecione uma empresa</h1>
+      <p>Escolha abaixo a empresa que deseja gerenciar:</p>
+      <ul id="lista-empresas"></ul>
+      <div id="loader">Carregando empresas...</div>
+      <button id="btn-sair" class="btn-sair">Sair da conta</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { verificarAcesso } from './user-service.js';
+
+    const lista = document.getElementById('lista-empresas');
+    const loader = document.getElementById('loader');
+    const btnSair = document.getElementById('btn-sair');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const session = await verificarAcesso();
+        const user = session.user;
+
+        // Busca todas as empresas onde o usuário é dono ou profissional
+        const empresas = [];
+        const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
+        const snapDono = await getDocs(qDono);
+        snapDono.forEach(doc => empresas.push({ id: doc.id, ...doc.data() }));
+
+        // Também busca via mapaUsuarios (se necessário)
+        const mapaDoc = await getDocs(collection(db,"mapaUsuarios"));
+        mapaDoc.forEach(m => {
+          const dados = m.data();
+          if (m.id === user.uid && dados.empresas) {
+            dados.empresas.forEach(eid => empresas.push({ id: eid }));
+          }
         });
-    } else {
-       grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
-    }
-    grid.appendChild(criarNovoCard());
-}
 
-function criarEmpresaCard(empresa) {
-    const card = document.createElement('a');
-    card.className = 'empresa-card';
-    card.href = '#';
-
-    // ---> ALTERAÇÃO: A lógica de clique agora depende do status do trial.
-    const isTrialActive = empresa.statusAssinatura.isTrialActive;
-
-    card.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.setItem('empresaAtivaId', empresa.id);
-
-        if (isTrialActive) {
-            // Se o trial está ATIVO, vai para a página principal.
-            window.location.href = 'index.html';
-        } else {
-            // Se o trial está EXPIRADO, vai direto para a página de assinatura.
-            window.location.href = 'assinatura.html';
+        loader.style.display = 'none';
+        if (empresas.length === 0) {
+          lista.innerHTML = '<li>Nenhuma empresa encontrada.</li>';
+          return;
         }
+
+        empresas.forEach(emp => {
+          const li = document.createElement('li');
+          li.textContent = emp.nomeFantasia || emp.id;
+          li.addEventListener('click', () => {
+            localStorage.setItem('empresaAtivaId', emp.id);
+            window.location.href = 'index.html';
+          });
+          lista.appendChild(li);
+        });
+      } catch (err) {
+        loader.textContent = 'Erro ao carregar empresas: ' + err.message;
+        console.error(err);
+      }
     });
 
-    const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
-    const inicial = nomeFantasia.charAt(0).toUpperCase();
-    const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial )}`;
+    btnSair.addEventListener('click', async () => {
+      await signOut(auth);
+      localStorage.removeItem('empresaAtivaId');
+      window.location.href = 'login.html';
+    });
+  </script>
 
-    // ---> ALTERAÇÃO: Adiciona a tag "Expirado" ao HTML se o trial não estiver ativo.
-    const statusHtml = !isTrialActive ? '<span class="status-expirado">Expirado</span>' : '';
-
-    card.innerHTML = `
-        <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
-        <div class="empresa-info-wrapper">
-            <span class="empresa-nome">${nomeFantasia}</span>
-            ${statusHtml}
-        </div>
-    `;
-    return card;
-}
-
-function criarNovoCard() {
-    const card = document.createElement('a');
-    card.className = 'criar-empresa-card';
-    card.href = 'perfil.html'; 
-
-    card.innerHTML = `
-        <div class="plus-icon"><i class="fas fa-plus"></i></div>
-        <span class="empresa-nome">Criar Nova Empresa</span>
-    `;
-    return card;
-}
+</body>
+</html>
