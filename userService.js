@@ -1,5 +1,5 @@
 // ======================================================================
-//        USER-SERVICE.JS (VERSÃO FINAL COM LÓGICA DE ACESSO REVISADA)
+//        USER-SERVICE.JS (VERSÃO FINAL COM TODAS AS LÓGICAS)
 // ======================================================================
 
 import {
