@@ -81,7 +81,7 @@
             height: 180px;
             width: 100%;
             box-sizing: border-box;
-            position: relative; /* Adicionado para posicionar a tag de status */
+            position: relative; 
         }
 
         .empresa-card:hover, .criar-empresa-card:hover {
@@ -166,7 +166,6 @@
             color: var(--cor-texto-corpo);
         }
 
-        /* ---> ADICIONADO: Estilo para a tag "Expirado" <--- */
         .status-expirado {
             position: absolute;
             bottom: 10px;
@@ -211,7 +210,6 @@
         btnLogout.addEventListener('click', async () => {
             localStorage.removeItem('empresaAtivaId');
             await signOut(auth);
-            // Redirecionamento direto para o login, sem necessidade de try/catch para este caso.
             window.location.href = 'login.html';
         });
         
@@ -220,15 +218,13 @@
                 localStorage.removeItem('empresaAtivaId');
                 const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
                 tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-                carregarEmpresas(user); // Passamos o objeto 'user' completo
+                carregarEmpresas(user);
             } else {
                 window.location.href = 'login.html';
             }
         });
 
-        // ==================================================================================
-        // ---> LÓGICA DE VERIFICAÇÃO DE TRIAL INTEGRADA DIRETAMENTE AQUI <---
-        // ==================================================================================
+        // --- Funções Helper (Lógica de verificação integrada) ---
         async function checkUserStatus(userId, empresaData) {
             try {
                 if (!userId) return { isTrialActive: false };
@@ -255,28 +251,128 @@
                 return { isTrialActive: false };
             }
         }
-        // ==================================================================================
-        
-        async function carregarEmpresas(user) {
+
+        async function getEmpresasDoUsuario(user) {
+            const empresasUnicas = new Map();
             try {
-                // ETAPA 1: Buscar o mapa para pegar IDs (Lógica original mantida)
-                const mapaUsuarioRef = doc(db, "mapaUsuarios", user.uid);
-                const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
-                
-                let idsDasEmpresas = [];
-                if (mapaUsuarioSnap.exists()) {
-                    const dadosMapa = mapaUsuarioSnap.data();
-                    if (dadosMapa.empresas && Array.isArray(dadosMapa.empresas) && dadosMapa.empresas.length > 0) {
-                        idsDasEmpresas = dadosMapa.empresas;
-                    } 
-                    else if (dadosMapa.empresaId && typeof dadosMapa.empresaId === 'string') {
-                        idsDasEmpresas = [dadosMapa.empresaId];
+                const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid), where("status", "==", "ativo"));
+                const snapshotDono = await getDocs(qDono);
+                snapshotDono.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+            } catch (e) {}
+            try {
+                const mapaRef = doc(db, "mapaUsuarios", user.uid);
+                const mapaSnap = await getDoc(mapaRef);
+                if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
+                    const idsDeEmpresas = mapaSnap.data().empresas.filter(id => !empresasUnicas.has(id));
+                    for (let i = 0; i < idsDeEmpresas.length; i += 10) {
+                        const chunk = idsDeEmpresas.slice(i, i + 10);
+                        if (chunk.length > 0) {
+                            const q = query(collection(db, "empresarios"), where(documentId(), "in", chunk), where("status", "==", "ativo"));
+                            const snap = await getDocs(q);
+                            snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
+                        }
                     }
                 }
+            } catch (e) {}
+            return Array.from(empresasUnicas.values());
+        }
 
-                if (idsDasEmpresas.length === 0) {
+
+        // --- Funções Principais ---
+        async function carregarEmpresas(user) {
+            try {
+                const empresas = await getEmpresasDoUsuario(user);
+
+                if (empresas.length === 0) {
                     renderizarPrimeiroAcesso();
                     return;
                 }
                 
-                // ETAPA 2
+                // Antes de qualquer decisão, verifica o status de todas
+                const empresasComStatus = await Promise.all(
+                    empresas.map(async (empresa) => {
+                        const status = await checkUserStatus(empresa.donoId, empresa);
+                        return { ...empresa, statusAssinatura: status };
+                    })
+                );
+
+                // SUA LÓGICA ORIGINAL DE "UMA EMPRESA ENTRAR DIRETO" (AGORA MAIS INTELIGENTE)
+                if (empresasComStatus.length === 1) {
+                    const empresaUnica = empresasComStatus[0];
+                    localStorage.setItem('empresaAtivaId', empresaUnica.id);
+                    if (empresaUnica.statusAssinatura.isTrialActive) {
+                        window.location.href = 'index.html';
+                    } else {
+                        window.location.href = 'assinatura.html';
+                    }
+                    return; 
+                }
+                
+                // Se chegou aqui, é porque tem mais de uma empresa
+                renderizarOpcoes(empresasComStatus);
+
+            } catch (error) {
+                console.error("Erro ao carregar empresas: ", error);
+                grid.innerHTML = `<p style="color: red;">Ocorreu um erro ao buscar suas empresas.</p>`;
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        }
+
+        function renderizarOpcoes(empresas) {
+            grid.innerHTML = '';
+            subtituloSelecao.textContent = 'Selecione uma de suas empresas para continuar.';
+            empresas.forEach(empresa => grid.appendChild(criarEmpresaCard(empresa)));
+            grid.appendChild(criarNovoCard());
+        }
+
+        function renderizarPrimeiroAcesso() {
+            grid.innerHTML = '';
+            subtituloSelecao.textContent = 'Você ainda não possui empresas cadastradas.';
+            grid.appendChild(criarNovoCard());
+            grid.style.gridTemplateColumns = '1fr';
+            grid.style.maxWidth = '200px';
+            grid.style.margin = '0 auto';
+        }
+
+        function criarEmpresaCard(empresa) {
+            const card = document.createElement('a');
+            card.className = 'empresa-card';
+            card.href = '#';
+
+            const isTrialActive = empresa.statusAssinatura.isTrialActive;
+
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.setItem('empresaAtivaId', empresa.id);
+                if (isTrialActive) {
+                    window.location.href = 'index.html';
+                } else {
+                    window.location.href = 'assinatura.html';
+                }
+            });
+            
+            const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
+            const inicial = nomeFantasia.charAt(0).toUpperCase();
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
+            
+            const statusHtml = !isTrialActive ? '<span class="status-expirado">Expirado</span>' : '';
+            
+            card.innerHTML = `
+                <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
+                <span class="empresa-nome">${nomeFantasia}</span>
+                ${statusHtml}
+            `;
+            return card;
+        }
+
+        function criarNovoCard() {
+            const card = document.createElement('a');
+            card.className = 'criar-empresa-card';
+            card.href = 'perfil.html';
+            card.innerHTML = `<div class="plus-icon"><i class="fas fa-plus"></i></div><span class="empresa-nome">Criar Nova Empresa</span>`;
+            return card;
+        }
+    </script>
+</body>
+</html>
