@@ -231,7 +231,7 @@
                 if (idsDasEmpresas.length === 1) {
                     const empresaId = idsDasEmpresas[0];
                     localStorage.setItem('empresaAtivaId', empresaId);
-                    window.location.href = 'index.html';
+                    window.location.href = 'assinatura.html';
                     return; // Encerra a função para evitar renderização
                 }
 
@@ -272,7 +272,7 @@
             card.addEventListener('click', (e) => {
                 e.preventDefault();
                 localStorage.setItem('empresaAtivaId', empresa.id);
-                window.location.href = 'index.html';
+                window.location.href = 'assinatura.html';
             });
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
