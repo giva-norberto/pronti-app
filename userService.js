@@ -30,7 +30,6 @@ export async function ensureUserAndTrialDoc() {
             });
             console.log("[DEBUG] Criado doc do usuário!");
         } else {
-            // Garante nome, email e trialStart SEMPRE
             const userData = userSnap.data();
             let updateObj = {};
             if (!userData.nome) updateObj.nome = user.displayName || user.email || 'Usuário';
@@ -66,13 +65,11 @@ async function checkUserStatus(userId, empresaData) {
         let trialDaysRemaining = 0;
         let isTrialActive = false;
 
-        // REGRA 1: CONTROLE MANUAL (A "PALAVRA FINAL").
         if (trialDurationDays <= 0) {
             console.log(`[DEBUG] Trial FORÇADO como expirado pois freeEmDias é ${trialDurationDays}.`);
             return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
         }
 
-        // REGRA 2: CÁLCULO DE TEMPO (O "CONTADOR NORMAL").
         if (userData.trialStart?.seconds) {
             const startDate = new Date(userData.trialStart.seconds * 1000);
             const endDate = new Date(startDate);
@@ -102,7 +99,6 @@ export async function getEmpresasDoUsuario(user) {
     if (!user) return [];
     const empresasUnicas = new Map();
 
-    // DONO: só empresas ativas
     try {
         const qDono = query(
             collection(db, "empresarios"),
@@ -118,7 +114,6 @@ export async function getEmpresasDoUsuario(user) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas como dono:", e);
     }
 
-    // PROFISSIONAL: só empresas ativas, sem duplicidade, chunk de 10
     try {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
@@ -142,6 +137,7 @@ export async function getEmpresasDoUsuario(user) {
     } catch(e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas pelo mapa:", e);
     }
+
     const empresasFinal = Array.from(empresasUnicas.values());
     console.log("[DEBUG] Empresas finais (ativas e sem duplicidade):", empresasFinal.map(e => e.id));
     return empresasFinal;
@@ -227,7 +223,6 @@ export async function verificarAcesso() {
                 const empresaData = empresaDocSnap.data();
                 console.log("[DEBUG] Dados da empresa ativa:", empresaData);
 
-                // ---> CORREÇÃO CRÍTICA APLICADA AQUI <---
                 const statusAssinatura = await checkUserStatus(empresaData.donoId, empresaData);
                 console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
 
@@ -268,7 +263,6 @@ export async function verificarAcesso() {
                 };
                 console.log("[DEBUG] SessionProfile FINAL:", sessionProfile);
 
-                // ======== CORREÇÃO DA CONDIÇÃO PARA EVITAR LOOP EM assinatura.html ========
                 if (
                     !isAdmin &&
                     !statusAssinatura.hasActivePlan &&
