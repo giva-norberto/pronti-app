@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -231,7 +233,7 @@
                 if (idsDasEmpresas.length === 1) {
                     const empresaId = idsDasEmpresas[0];
                     localStorage.setItem('empresaAtivaId', empresaId);
-                    window.location.href = 'assinatura.html';
+                    window.location.href = 'index.html';
                     return; // Encerra a função para evitar renderização
                 }
 
@@ -272,7 +274,7 @@
             card.addEventListener('click', (e) => {
                 e.preventDefault();
                 localStorage.setItem('empresaAtivaId', empresa.id);
-                window.location.href = 'assinatura.html';
+                window.location.href = 'index.html';
             });
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
