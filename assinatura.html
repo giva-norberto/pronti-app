@@ -76,7 +76,6 @@
     <div class="container-assinatura" id="assinatura-container" style="display:none;">
         <h1>O seu período de teste terminou!</h1>
         <p>Agradecemos por experimentar o Pronti. Para continuar a gerir o seu negócio, por favor, escolha um dos nossos planos.</p>
-        
         <a href="pagamento.html" id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</a>
         <button id="btn-logout" class="btn-logout">Sair da conta</button>
     </div>
@@ -85,11 +84,9 @@
         <p>A verificar o estado da sua assinatura...</p>
     </div>
 
-    SCRIPT FINAL E CORRIGIDO CONFORME SUA ANÁLISE <---                 -->
     <script type="module">
         import { auth } from "./firebase-config.js";
         import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // ATENÇÃO: Verifique se o nome do seu arquivo de serviço é 'user-service.js'
         import { verificarAcesso } from "./user-service.js";
 
         const loader = document.getElementById('loader');
@@ -99,19 +96,13 @@
         document.addEventListener('DOMContentLoaded', () => {
             verificarAcesso()
                 .then(() => {
-                    // SUCESSO: O usuário tem plano ativo ou trial. Ele não deveria estar aqui.
-                    // Redireciona para o painel.
                     window.location.href = "index.html";
                 })
                 .catch(error => {
-                    // FALHA: A promise foi rejeitada. Verificamos o motivo.
                     if (error.message.includes("Assinatura expirada")) {
-                        // Este é o cenário esperado. O usuário está no lugar certo.
-                        // Mostramos a tela de pagamento e quebramos o loop.
                         loader.style.display = "none";
                         container.style.display = "block";
                     } else {
-                        // Outros erros (não logado, etc.) são apenas exibidos.
                         loader.innerHTML = `<p style="color:red;">Erro: ${error.message}</p>`;
                     }
                 });
@@ -130,3 +121,4 @@
 
 </body>
 </html>
+
