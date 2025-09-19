@@ -48,8 +48,9 @@ export async function ensureUserAndTrialDoc() {
     }
 }
 
+
 // ==================================================================================
-// ---> ÚNICA ALTERAÇÃO REALIZADA: LÓGICA DE TRIAL FINAL E CORRETA <---
+// ---> A ÚNICA ALTERAÇÃO ESTÁ AQUI: LÓGICA DE TRIAL FINAL E CORRETA <---
 // ==================================================================================
 async function checkUserStatus(userId, empresaData) {
     try {
@@ -67,7 +68,7 @@ async function checkUserStatus(userId, empresaData) {
         let isTrialActive = false;
 
         // REGRA 1: CONTROLE MANUAL (A "PALAVRA FINAL").
-        // Se 'freeEmDias' for 0, o trial é FORÇADO como expirado, ignorando o cálculo de datas.
+        // Se 'freeEmDias' for 0 ou menos, o trial é FORÇADO como expirado.
         if (trialDurationDays <= 0) {
             console.log(`[DEBUG] Trial FORÇADO como expirado pois freeEmDias é ${trialDurationDays}.`);
             return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
@@ -133,16 +134,14 @@ export async function getEmpresasDoUsuario(user) {
             console.log("[DEBUG] Empresas profissional ativas (IDs):", idsDeEmpresas);
             for (let i = 0; i < idsDeEmpresas.length; i += 10) {
                 const chunk = idsDeEmpresas.slice(i, i + 10);
-                if(chunk.length > 0) {
-                    const q = query(
-                        collection(db, "empresarios"),
-                        where(documentId(), "in", chunk),
-                        where("status", "==", "ativo")
-                    );
-                    const snap = await getDocs(q);
-                    console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
-                    snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
-                }
+                const q = query(
+                    collection(db, "empresarios"),
+                    where(documentId(), "in", chunk),
+                    where("status", "==", "ativo")
+                );
+                const snap = await getDocs(q);
+                console.log("[DEBUG] Chunk empresas profissionais ativas:", snap.docs.map(doc => doc.id));
+                snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
             }
         }
     } catch(e) {
