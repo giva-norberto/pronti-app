@@ -150,7 +150,8 @@
     
     .form-group input[type="text"],
     .form-group textarea,
-    #selectEmpresa {
+    #selectEmpresa,
+    .form-group input[type="number"] {
       border: 1.5px solid var(--border-color);
       border-radius: 10px;
       padding: 12px 14px;
@@ -162,6 +163,7 @@
       box-sizing: border-box;
     }
     .form-group input[type="text"]:focus,
+    .form-group input[type="number"]:focus,
     .form-group textarea:focus,
     #selectEmpresa:focus {
       border-color: var(--primary-color);
@@ -314,6 +316,25 @@
             <label for="chavePix">Chave PIX (Opcional)</label>
             <input type="text" id="chavePix" placeholder="Digite sua chave PIX">
           </div>
+          
+          <!-- ======================== CAMPOS NOVOS PARA GESTÃO DO TRIAL ======================== -->
+          <div class="form-group">
+            <label for="freeEmDias">Dias de Trial Grátis</label>
+            <input type="number" id="freeEmDias" min="0" step="1" placeholder="Ex: 15">
+          </div>
+          <div class="form-group">
+            <label for="trialDisponivel">Trial Disponível?</label>
+            <select id="trialDisponivel">
+              <option value="true">Sim</option>
+              <option value="false">Não</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="trialMotivoBloqueio">Motivo Bloqueio do Trial (opcional)</label>
+            <input type="text" id="trialMotivoBloqueio" placeholder="Ex: Bloqueio administrativo">
+          </div>
+          <!-- ======================= FIM DOS CAMPOS PARA GESTÃO DO TRIAL ======================= -->
+
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
