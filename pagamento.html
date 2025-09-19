@@ -1,199 +1,347 @@
-<aside class="sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-brand">
-        <!-- ✅ ALTERAÇÃO CIRÚRGICA: Apenas o 'src' da imagem foi atualizado. -->
-        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e4758837-a50e-433b-912b-5386341419f9" alt="Logo Pronti">
-    </a>
-    <hr />
-    <nav class="sidebar-links" id="sidebar-links">
-        <a href="index.html" data-menu-id="inicio">
-            <span><i class="fa-solid fa-house"></i></span> Início
-        </a>
-        <a href="dashboard.html" data-menu-id="dashboard">
-            <span><i class="fa-solid fa-chart-pie"></i></span> Dashboard
-        </a>
-        <a href="agenda.html" data-menu-id="agenda">
-            <span><i class="fa-solid fa-calendar-days"></i></span> Agenda
-        </a>
-        <a href="equipe.html" data-menu-id="equipe">
-            <span><i class="fa-solid fa-users"></i></span> Equipe
-        </a>
-        <a href="servicos.html" data-menu-id="servicos">
-            <span><i class="fa-solid fa-scissors"></i></span> Serviços
-        </a>
-        <a href="clientes.html" data-menu-id="clientes">
-            <span><i class="fa-solid fa-user"></i></span> Clientes
-        </a>
-        <a href="perfil.html" data-menu-id="perfil">
-            <span><i class="fa-solid fa-id-card"></i></span> Empresa
-        </a>
-        <a href="relatorios.html" data-menu-id="relatorios">
-            <span><i class="fa-solid fa-chart-line"></i></span> Relatórios
-        </a>
-        <a href="admin-clientes.html" data-menu-id="administracao">
-            <span><i class="fa-solid fa-shield"></i></span> Administração
-        </a>
-        <a href="permissoes.html" data-menu-id="permissoes">
-            <span><i class="fa-solid fa-sliders"></i></span> Permissões
-        </a>
-    </nav>
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn-logout">Sair</button>
-    </div>
-</aside>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-<style>
-.sidebar {
-  width: 250px;
-  background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100% );
-  min-height: 100vh;
-  color: #fff;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  padding-top: 24px;
-  transition: transform 0.3s ease;
-  box-sizing: border-box;
-}
-.sidebar-brand {
-  display: block;
-  padding: 0 32px 12px 32px;
-  margin-bottom: 8px;
-  text-align: center;
-  text-decoration: none;
-}
-.sidebar-brand img {
-    max-width: 150px;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-}
-.sidebar hr {
-  margin: 0 32px 16px 32px;
-  border: none;
-  border-top: 1px solid #787cff55;
-}
-.sidebar-links {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 24px;
-  flex-grow: 1;
-  overflow-y: auto;
-}
-.sidebar-links a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #fff;
-  color: #4f46e5;
-  font-weight: 600;
-  font-size: 1.08em;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  transition: all 0.2s ease;
-  padding: 14px 18px;
-  text-decoration: none;
-  border: 2px solid transparent;
-  box-sizing: border-box;
-}
-.sidebar-links a span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-}
-.sidebar-links a.active,
-.sidebar-links a:focus {
-  background: #4f46e5;
-  color: #fff;
-  font-weight: 700;
-  border: 2px solid #fff;
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3);
-  outline: none;
-}
-.sidebar-links a:hover:not(.active) {
-  background: #f0f1ff;
-  color: #3b2fd6;
-  border-color: #d1d5fa;
-}
-.sidebar-footer {
-  margin-top: auto;
-  padding: 32px;
-  flex-shrink: 0;
-}
-.btn-logout {
-  background: #fff;
-  color: #4f46e5;
-  border: none;
-  padding: 14px 0;
-  width: 100%;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 1.05em;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.07);
-  border: 2px solid transparent;
-  outline: none;
-}
-.btn-logout:hover,
-.btn-logout:focus {
-  background: #4f46e5;
-  color: #fff;
-  border: 2px solid #fff;
-}
-@media (max-width: 900px) {
-  .sidebar {
-    transform: translateX(-100%);
-    z-index: 2000;
-  }
-  .sidebar.open {
-    transform: translateX(0);
-  }
-  body.sidebar-open {
-    overflow: hidden;
-  }
-}
-</style>
-
-<script type="module">
-import { auth } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
-export function ativarMenuLateral( ) {
-
-  const nomePaginaAtual = window.location.pathname.split('/').pop();
-  document.querySelectorAll('.sidebar-links a').forEach(link => {
-    link.classList.remove('active');
-    const linkPagina = link.getAttribute('href').split('/').pop();
-    if (linkPagina === nomePaginaAtual || (nomePaginaAtual === '' && linkPagina === 'index.html')) {
-      link.classList.add('active');
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pagamento de Assinatura - Pronti</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
     }
-  });
+    .container-pagamento {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 550px;
+    }
+    h1 {
+      color: #1e293b;
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    #info-usuario {
+      font-size: 1.1rem;
+      color: #4f46e5;
+      background-color: #eef2ff;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+    .lista-planos {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .card-plano {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .card-plano:hover {
+      border-color: #94a3b8;
+      transform: translateY(-3px);
+    }
+    .card-plano.selecionado {
+      border-color: #10b981;
+      background-color: #f0fdf4;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    }
+    .card-plano.desabilitado {
+      background-color: #f8fafc;
+      color: #cbd5e1;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .card-plano.desabilitado:hover {
+      border-color: #e2e8f0;
+      transform: none;
+    }
+    .card-plano .titulo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+    }
+    .card-plano.desabilitado .titulo {
+      color: #94a3b8;
+    }
+    .card-plano .preco {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #10b981;
+      margin: 10px 0 5px 0;
+    }
+    .card-plano .preco span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: #64748b;
+    }
+    .card-plano .descricao {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin: 0;
+    }
+    #erro-selecao {
+      color: #dc2626;
+      font-weight: 600;
+      min-height: 24px;
+      margin-top: 0;
+    }
+    .btn-pagar {
+      width: 100%;
+      background: #10b981;
+      color: #fff;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      padding: 15px 0;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+    .btn-pagar:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-pagamento">
+    <h1>Renove a sua Assinatura</h1>
+    <h2 id="info-usuario">A carregar dados da sua empresa...</h2>
 
-  const btnLogout = document.getElementById("btn-logout");
-  if (btnLogout) {
-    const newBtnLogout = btnLogout.cloneNode(true);
-    btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
+    <div class="lista-planos"></div>
 
-    newBtnLogout.addEventListener("click", async () => {
+    <p id="erro-selecao"></p>
+    <button id="btn-pagar" class="btn-pagar" disabled>Selecione um plano</button>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+    const getStatusUrl =
+      "https://getstatusempresa-uzuwj4imfa-uc.a.run.app";
+    const createPreferenceUrl =
+      "https://createpreference-uzuwj4imfa-uc.a.run.app";
+
+    const infoUsuarioDiv = document.getElementById("info-usuario");
+    const listaPlanosContainer = document.querySelector(".lista-planos");
+    const btnPagar = document.getElementById("btn-pagar");
+    const erroSelecao = document.getElementById("erro-selecao");
+
+    let planoSelecionado = null;
+    let licencasNecessarias = 0;
+
+    // 🔹 Preço base + faixas mais graduais
+    const configuracaoPrecos = {
+      precoBase: 59.9,
+      funcionariosInclusos: 2,
+      faixasDePrecoExtra: [
+        { de: 3, ate: 5, valor: 24.9 },
+        { de: 6, ate: 10, valor: 19.9 },
+        { de: 11, ate: 20, valor: 14.9 },
+        { de: 21, ate: 50, valor: 9.9 },
+      ],
+    };
+
+    const planosParaExibir = [2, 3, 5, 10, 15, 20, 30, 50];
+
+    function calcularPreco(totalFuncionarios) {
+      if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos)
+        return configuracaoPrecos.precoBase;
+      let total = configuracaoPrecos.precoBase;
+      for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
+        const inicio = faixa.de;
+        if (totalFuncionarios >= inicio) {
+          const fim = faixa.ate;
+          const funcionariosNestaFaixa =
+            Math.min(totalFuncionarios, fim) -
+            Math.max(configuracaoPrecos.funcionariosInclusos, inicio) +
+            1;
+          if (funcionariosNestaFaixa > 0) {
+            total += funcionariosNestaFaixa * faixa.valor;
+          }
+        }
+      }
+      return total;
+    }
+
+    function gerarCardsDePlano() {
+      listaPlanosContainer.innerHTML = "";
+      planosParaExibir.forEach((num) => {
+        const preco = calcularPreco(num);
+        const isDesabilitado = num < licencasNecessarias;
+        const card = document.createElement("div");
+        card.className = `card-plano ${isDesabilitado ? "desabilitado" : ""}`;
+        card.dataset.funcionarios = num;
+        card.innerHTML = `
+          <h3 class="titulo">Plano para até ${num} Funcionários</h3>
+          <p class="preco">${preco.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}<span>/mês</span></p>
+          <p class="descricao">${
+            isDesabilitado
+              ? "Este plano não comporta a sua equipa atual."
+              : "Ideal para equipas em crescimento."
+          }</p>
+        `;
+        card.addEventListener("click", () => {
+          if (isDesabilitado) {
+            erroSelecao.textContent = `Você precisa de um plano para no mínimo ${licencasNecessarias} funcionários.`;
+            return;
+          }
+          document
+            .querySelectorAll(".card-plano")
+            .forEach((c) => c.classList.remove("selecionado"));
+          card.classList.add("selecionado");
+          planoSelecionado = { totalFuncionarios: num };
+          btnPagar.disabled = false;
+          btnPagar.textContent = `Pagar Assinatura (${preco.toLocaleString(
+            "pt-BR",
+            { style: "currency", currency: "BRL" }
+          )})`;
+          erroSelecao.textContent = "";
+        });
+        listaPlanosContainer.appendChild(card);
+      });
+    }
+
+    async function inicializarPagina(user, empresaId) {
       try {
-        await signOut(auth);
-        localStorage.clear();
-        sessionStorage.clear();
-        window.location.href = "login.html";
-      } catch (erro) {
-        console.error("Erro ao tentar fazer logout:", erro);
-        alert("Não foi possível sair. Tente novamente.\nErro: " + erro.message);
+        const response = await fetch(getStatusUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: empresaId }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || "Empresa inválida ou assinatura expirada."
+          );
+        }
+
+        const data = await response.json();
+        licencasNecessarias = data.licencasNecessarias;
+        infoUsuarioDiv.textContent = `A sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
+        gerarCardsDePlano();
+      } catch (error) {
+        console.error("Erro ao inicializar página:", error);
+        infoUsuarioDiv.textContent =
+          error.message || "Empresa inválida ou assinatura expirada.";
+        infoUsuarioDiv.style.color = "#dc2626";
+        sessionStorage.removeItem("empresaId");
+        localStorage.removeItem("empresaAtivaId");
+        setTimeout(() => {
+          window.location.href = "selecionar-empresa.html";
+        }, 3000);
+        return;
+      }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        let empresaId =
+          sessionStorage.getItem("empresaId") ||
+          localStorage.getItem("empresaAtivaId");
+
+        if (!empresaId) {
+          const urlParams = new URLSearchParams(window.location.search);
+          empresaId = urlParams.get("empresaId");
+          if (empresaId) {
+            sessionStorage.setItem("empresaId", empresaId);
+            localStorage.setItem("empresaAtivaId", empresaId);
+          }
+        }
+
+        if (!empresaId) {
+          infoUsuarioDiv.textContent =
+            "Nenhuma empresa selecionada. A redirecionar...";
+          infoUsuarioDiv.style.color = "#dc2626";
+          setTimeout(() => {
+            window.location.href = "selecionar-empresa.html";
+          }, 2500);
+          return;
+        }
+
+        inicializarPagina(user, empresaId);
+      } else {
+        infoUsuarioDiv.textContent =
+          "Você não está logado. A redirecionar para o login...";
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 2500);
       }
     });
-  }
-}
 
-ativarMenuLateral();
-</script>
+    btnPagar.addEventListener("click", async () => {
+      if (!planoSelecionado) return;
+      const user = auth.currentUser;
+      const empresaId =
+        sessionStorage.getItem("empresaId") ||
+        localStorage.getItem("empresaAtivaId");
+      if (!user || !empresaId) {
+        erroSelecao.textContent =
+          "Erro: Utilizador ou empresa não identificados. Por favor, selecione a empresa novamente.";
+        return;
+      }
+
+      btnPagar.disabled = true;
+      btnPagar.textContent = "A criar link de pagamento...";
+
+      try {
+        const response = await fetch(createPreferenceUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: empresaId,
+            planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios },
+          }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || "Erro do servidor");
+        }
+
+        const preference = await response.json();
+        if (preference.init_point) {
+          window.location.href = preference.init_point;
+        } else {
+          throw new Error("Não foi possível gerar o link de pagamento.");
+        }
+      } catch (error) {
+        console.error("Erro ao pagar:", error);
+        erroSelecao.textContent = error.message;
+        btnPagar.disabled = false;
+        btnPagar.textContent = "Tentar Novamente";
+      }
+    });
+  </script>
+</body>
+</html>
