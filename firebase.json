@@ -9,8 +9,14 @@
     "rewrites": [
       {
         "source": "/:slug",
-        "destination": "/vitrine.html"
+        "destination": "/vitrine.html",
+        "not": [
+          {
+            "glob": "**/*.{html,css,js,png,jpg,jpeg,gif,svg,ico,map}"
+          }
+        ]
       }
     ]
   }
 }
+
