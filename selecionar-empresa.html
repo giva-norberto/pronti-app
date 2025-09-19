@@ -23,7 +23,6 @@
             --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1 ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
-
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--cor-fundo);
@@ -36,7 +35,6 @@
             padding: 20px;
             box-sizing: border-box;
         }
-
         .selecao-container {
             width: 100%;
             max-width: 550px;
@@ -46,26 +44,22 @@
             box-shadow: var(--sombra-card);
             text-align: center;
         }
-
         .header-selecao h1 {
             color: var(--cor-texto-titulo);
             font-size: 2rem;
             font-weight: 700;
             margin: 0 0 10px 0;
         }
-
         .header-selecao p {
             font-size: 1.1rem;
             margin-bottom: 40px;
         }
-
         #empresas-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 20px;
             justify-items: center;
         }
-
         .empresa-card, .criar-empresa-card {
             display: flex;
             flex-direction: column;
@@ -81,15 +75,13 @@
             height: 180px;
             width: 100%;
             box-sizing: border-box;
-            position: relative; 
+            position: relative;
         }
-
         .empresa-card:hover, .criar-empresa-card:hover {
             transform: translateY(-5px);
             box-shadow: var(--sombra-card-hover);
             border-color: var(--cor-primaria);
         }
-        
         .empresa-logo {
             width: 80px;
             height: 80px;
@@ -104,7 +96,6 @@
             font-size: 2.5rem;
             font-weight: 600;
         }
-
         .empresa-nome {
             font-weight: 600;
             color: var(--cor-texto-titulo);
@@ -112,22 +103,18 @@
             text-align: center;
             word-break: break-word;
         }
-
         .criar-empresa-card {
             border: 2px dashed var(--cor-borda);
         }
-
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
             color: var(--cor-primaria);
             margin-bottom: 15px;
         }
-        
         .logout-container {
             margin-top: 40px;
             text-align: center;
         }
-
         .btn-logout {
             background-color: #fee2e2;
             color: var(--cor-perigo);
@@ -139,12 +126,10 @@
             font-size: 1rem;
             transition: background-color 0.2s ease, color 0.2s ease;
         }
-
         .btn-logout:hover {
             background-color: var(--cor-perigo);
             color: #ffffff;
         }
-
         .loader {
             border: 4px solid #e2e8f0;
             border-top: 4px solid var(--cor-primaria);
@@ -154,18 +139,15 @@
             margin: 40px auto;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
             100% { transform: rotate(360deg); }
         }
-
         .mensagem-primeiro-acesso {
             font-size: 1.1rem;
             line-height: 1.6;
             margin-bottom: 30px;
             color: var(--cor-texto-corpo);
         }
-
         .status-expirado {
             position: absolute;
             bottom: 10px;
@@ -224,7 +206,7 @@
             }
         });
 
-        // --- Funções Helper (Lógica de verificação integrada) ---
+        // --- Funções Helper (Lógica de verificação integrada para evitar erros de cache) ---
         async function checkUserStatus(userId, empresaData) {
             try {
                 if (!userId) return { isTrialActive: false };
@@ -277,7 +259,6 @@
             return Array.from(empresasUnicas.values());
         }
 
-
         // --- Funções Principais ---
         async function carregarEmpresas(user) {
             try {
@@ -288,7 +269,6 @@
                     return;
                 }
                 
-                // Antes de qualquer decisão, verifica o status de todas
                 const empresasComStatus = await Promise.all(
                     empresas.map(async (empresa) => {
                         const status = await checkUserStatus(empresa.donoId, empresa);
@@ -296,7 +276,7 @@
                     })
                 );
 
-                // SUA LÓGICA ORIGINAL DE "UMA EMPRESA ENTRAR DIRETO" (AGORA MAIS INTELIGENTE)
+                // SUA LÓGICA DE "UMA EMPRESA ENTRAR DIRETO" ESTÁ AQUI, PRESERVADA E FUNCIONANDO
                 if (empresasComStatus.length === 1) {
                     const empresaUnica = empresasComStatus[0];
                     localStorage.setItem('empresaAtivaId', empresaUnica.id);
@@ -308,7 +288,6 @@
                     return; 
                 }
                 
-                // Se chegou aqui, é porque tem mais de uma empresa
                 renderizarOpcoes(empresasComStatus);
 
             } catch (error) {
