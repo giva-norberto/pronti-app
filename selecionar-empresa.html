@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -7,12 +5,10 @@
     <title>Selecionar Empresa - Pronti</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome para o ícone de adicionar (fa-plus ) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <style>
@@ -85,6 +81,7 @@
             height: 180px;
             width: 100%;
             box-sizing: border-box;
+            position: relative; /* Adicionado para posicionar a tag */
         }
 
         .empresa-card:hover, .criar-empresa-card:hover {
@@ -113,6 +110,7 @@
             color: var(--cor-texto-titulo);
             font-size: 1rem;
             text-align: center;
+            word-break: break-word;
         }
 
         .criar-empresa-card {
@@ -160,6 +158,18 @@
         @keyframes spin {
             100% { transform: rotate(360deg); }
         }
+
+        /* ---> ADICIONADO: Estilos para a tag "Expirado" <--- */
+        .status-expirado {
+            position: absolute;
+            bottom: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #d93025;
+            background-color: #fce8e6;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
@@ -179,19 +189,13 @@
     </div>
 
     <script type="module">
-        // ======================= INÍCIO DA CORREÇÃO CIRÚRGICA =======================
-        // Força uma nova seleção sempre que esta página é acessada, limpando qualquer
-        // empresa que possa ter ficado salva em sessões anteriores.
-        localStorage.removeItem('empresaAtivaId');
-        // ======================== FIM DA CORREÇÃO CIRÚRGICA =========================
-
-        // O restante do seu script permanece 100% intacto.
-        import { auth, db } from "./firebase-config.js";
+        // Importa a função que busca empresas JÁ COM O STATUS
+        import { getEmpresasComStatus } from './userService.js'; 
+        import { auth } from "./firebase-config.js";
         import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { doc, getDoc, collection, getDocs, query, where, documentId } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-
+        
         // --- Elementos do DOM ---
-        const grid = document.getElementById('empresas-grid' );
+        const grid = document.getElementById('empresas-grid');
         const loader = document.getElementById('loader');
         const tituloBoasVindas = document.getElementById('titulo-boas-vindas');
         const btnLogout = document.getElementById('btn-logout');
@@ -199,52 +203,47 @@
         // --- Eventos ---
         btnLogout.addEventListener('click', async () => {
             localStorage.removeItem('empresaAtivaId');
-            await signOut(auth).catch(error => console.error("Erro ao sair:", error));
+            await signOut(auth);
+            window.location.href = 'login.html';
         });
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // A sua lógica original de limpar o localStorage aqui também é boa e foi mantida.
-                // A linha extra no topo serve como uma garantia adicional.
                 localStorage.removeItem('empresaAtivaId');
                 const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
                 tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
-                carregarEmpresas(user.uid);
+                carregarEmpresas(user); // Passa o objeto 'user' completo
             } else {
                 window.location.href = 'login.html';
             }
         });
 
-        // --- Funções Principais ---
-        async function carregarEmpresas(userId) {
+        // --- Funções Principais (REVISADAS) ---
+        async function carregarEmpresas(user) {
             try {
-                // ETAPA 1: Buscar o mapa do usuário para obter a lista de IDs de empresas.
-                const mapaUsuarioRef = doc(db, "mapaUsuarios", userId);
-                const mapaUsuarioSnap = await getDoc(mapaUsuarioRef);
+                // ETAPA 1: Usa a nova função para buscar empresas já com o status
+                const empresasComStatus = await getEmpresasComStatus();
 
-                if (!mapaUsuarioSnap.exists() || !mapaUsuarioSnap.data().empresas || mapaUsuarioSnap.data().empresas.length === 0) {
+                if (empresasComStatus.length === 0) {
                     renderizarOpcoes([]);
                     return;
                 }
                 
-                const idsDasEmpresas = mapaUsuarioSnap.data().empresas;
-
-                // LÓGICA DE REDIRECIONAMENTO AUTOMÁTICO
-                if (idsDasEmpresas.length === 1) {
-                    const empresaId = idsDasEmpresas[0];
-                    localStorage.setItem('empresaAtivaId', empresaId);
-                    window.location.href = 'index.html';
-                    return; // Encerra a função para evitar renderização
+                // LÓGICA DE REDIRECIONAMENTO AUTOMÁTICO (Mantida)
+                if (empresasComStatus.length === 1) {
+                    const empresa = empresasComStatus[0];
+                    localStorage.setItem('empresaAtivaId', empresa.id);
+                    // Verifica o status antes de redirecionar
+                    if (empresa.statusAssinatura.isTrialActive) {
+                        window.location.href = 'index.html';
+                    } else {
+                        window.location.href = 'assinatura.html';
+                    }
+                    return; 
                 }
 
-                // ETAPA 2: Com a lista de IDs, buscar os dados de cada empresa.
-                const promessasDeEmpresas = idsDasEmpresas.map(id => getDoc(doc(db, "empresarios", id)));
-                const snapshotsDasEmpresas = await Promise.all(promessasDeEmpresas);
-                const empresas = snapshotsDasEmpresas
-                    .filter(snapshot => snapshot.exists())
-                    .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }));
-
-                renderizarOpcoes(empresas);
+                // ETAPA 2: Renderiza as opções com base nos dados completos
+                renderizarOpcoes(empresasComStatus);
 
             } catch (error) {
                 console.error("Erro ao carregar empresas: ", error);
@@ -255,7 +254,7 @@
         }
 
         function renderizarOpcoes(empresas) {
-            grid.innerHTML = ''; // Limpa o grid (e o loader)
+            grid.innerHTML = ''; 
             if (empresas.length > 0) {
                 empresas.forEach(empresa => {
                     grid.appendChild(criarEmpresaCard(empresa));
@@ -263,7 +262,6 @@
             } else {
                  grid.innerHTML = '<p>Você ainda não possui empresas cadastradas.</p>';
             }
-            // Adiciona sempre o card para criar uma nova empresa
             grid.appendChild(criarNovoCard());
         }
 
@@ -271,19 +269,30 @@
             const card = document.createElement('a');
             card.className = 'empresa-card';
             card.href = '#';
+
+            const isTrialActive = empresa.statusAssinatura.isTrialActive;
+
             card.addEventListener('click', (e) => {
                 e.preventDefault();
                 localStorage.setItem('empresaAtivaId', empresa.id);
-                window.location.href = 'index.html';
+                // A decisão é tomada com base no status que já foi carregado
+                if (isTrialActive) {
+                    window.location.href = 'index.html';
+                } else {
+                    window.location.href = 'assinatura.html';
+                }
             });
 
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
-            const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial )}`;
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(nomeFantasia.charAt(0).toUpperCase())}`;
+            
+            // Adiciona a tag "Expirado" se o trial não estiver ativo
+            const statusHtml = !isTrialActive ? '<span class="status-expirado">Expirado</span>' : '';
 
             card.innerHTML = `
                 <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
                 <span class="empresa-nome">${nomeFantasia}</span>
+                ${statusHtml}
             `;
             return card;
         }
@@ -291,7 +300,7 @@
         function criarNovoCard() {
             const card = document.createElement('a');
             card.className = 'criar-empresa-card';
-            card.href = 'perfil.html'; // Página para criar/editar perfil/empresa
+            card.href = 'perfil.html';
 
             card.innerHTML = `
                 <div class="plus-icon"><i class="fas fa-plus"></i></div>
