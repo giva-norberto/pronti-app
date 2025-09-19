@@ -1,6 +1,6 @@
 // ======================================================================
 //      USER-SERVICE.JS (DEBUG COMPLETO - CORRIGIDO, SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
-// =====================================================================
+// ======================================================================
 
 import {
     collection, getDocs, doc, getDoc, setDoc, updateDoc, serverTimestamp, query, where, documentId
@@ -47,7 +47,6 @@ export async function ensureUserAndTrialDoc() {
         console.error("❌ [ensureUserAndTrialDoc] Erro:", error);
     }
 }
-
 
 // ==================================================================================
 // ESTA FUNÇÃO ESTÁ 100% CORRETA E FOI MANTIDA
@@ -97,7 +96,6 @@ async function checkUserStatus(userId, empresaData) {
         return { hasActivePlan: false, isTrialActive: false, trialDaysRemaining: 0 };
     }
 }
-
 
 // --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade e SEM misturar dados) ---
 export async function getEmpresasDoUsuario(user) {
@@ -164,13 +162,13 @@ export async function verificarAcesso() {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             unsubscribe();
             try {
-                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+                const currentPage = (window.location.pathname || '').toLowerCase();
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
                 const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
 
                 if (!user) {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
-                    if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
+                    if (!paginasPublicas.some(p => currentPage.endsWith(p))) window.location.replace('login.html');
                     isProcessing = false;
                     return reject(new Error("Utilizador não autenticado."));
                 }
@@ -202,7 +200,7 @@ export async function verificarAcesso() {
                 if (!empresaDocSnap) {
                     if (empresas.length === 0) {
                         console.log("[DEBUG] Nenhuma empresa associada ao usuário.");
-                        if (currentPage !== 'meuperfil.html') {
+                        if (!currentPage.endsWith('meuperfil.html')) {
                             window.location.replace('meuperfil.html');
                         }
                         isProcessing = false;
@@ -214,7 +212,7 @@ export async function verificarAcesso() {
                         console.log("[DEBUG] Empresa única ativada:", empresaAtivaId, empresaDocSnap.data());
                     } else if (empresas.length > 1) {
                         console.log("[DEBUG] Usuário tem múltiplas empresas, precisa selecionar.", empresas.map(e => e.id));
-                        if (currentPage !== 'selecionar-empresa.html') window.location.replace('selecionar-empresa.html');
+                        if (!currentPage.endsWith('selecionar-empresa.html')) window.location.replace('selecionar-empresa.html');
                         isProcessing = false;
                         return reject(new Error("Múltiplas empresas, seleção necessária."));
                     }
@@ -229,10 +227,7 @@ export async function verificarAcesso() {
                 const empresaData = empresaDocSnap.data();
                 console.log("[DEBUG] Dados da empresa ativa:", empresaData);
 
-                // ==================================================================================
                 // ---> CORREÇÃO CRÍTICA APLICADA AQUI <---
-                // A chamada agora SEMPRE usa o 'donoId' da empresa para a verificação.
-                // ==================================================================================
                 const statusAssinatura = await checkUserStatus(empresaData.donoId, empresaData);
                 console.log("[DEBUG] Status assinatura/trial:", statusAssinatura);
 
@@ -273,7 +268,13 @@ export async function verificarAcesso() {
                 };
                 console.log("[DEBUG] SessionProfile FINAL:", sessionProfile);
 
-                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html') {
+                // ======== CORREÇÃO DA CONDIÇÃO PARA EVITAR LOOP EM assinatura.html ========
+                if (
+                    !isAdmin &&
+                    !statusAssinatura.hasActivePlan &&
+                    !statusAssinatura.isTrialActive &&
+                    !currentPage.includes('assinatura.html')
+                ) {
                     console.log("[DEBUG] Assinatura expirada, redirecionando para assinatura.");
                     window.location.replace('assinatura.html');
                     cachedSessionProfile = sessionProfile;
