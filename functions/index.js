@@ -1,10 +1,9 @@
 /**
  * Arquivo de Cloud Functions para o backend do sistema de pagamentos Pronti.
- * VERSÃO FINALÍSSIMA 3.1: Corrigido CORS, parâmetros, nomes, e comentários.
- * Atenção: Use sempre os endpoints do Firebase Functions no frontend!
+ * VERSÃO FINALÍSSIMA 3.2: CORS revisado, parâmetros revisados, compatível com Firebase Functions v2.
+ * ATENÇÃO: O CORS deve responder o preflight (OPTIONS) e liberar o domínio.
  */
 
-// Importações necessárias
 const { onRequest } = require("firebase-functions/v2/https");
 const { defineString } = require('firebase-functions/v2/params');
 const functions = require("firebase-functions");
@@ -12,7 +11,7 @@ const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-// Inicializa o Firebase Admin apenas uma vez
+// Inicializa Firebase Admin apenas uma vez
 try {
   admin.initializeApp();
 } catch (e) {
@@ -30,28 +29,41 @@ const whitelist = [
   "http://localhost:3000"
 ];
 
-// Configuração do middleware CORS
+// Configuração do middleware CORS (revisado!)
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || whitelist.indexOf(origin) !== -1) {
+    // Permite requisições sem origin (ex: curl, Postman) e das origens na whitelist
+    if (!origin || whitelist.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Origem não permitida por CORS'));
     }
   },
+  // Permite enviar cookies/headers customizados, se necessário
+  credentials: true,
+  // Permite todos os métodos necessários
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
 const corsHandler = cors(corsOptions);
 
 // =================================================================================
 // ENDPOINT 1: verificarEmpresa
 // =================================================================================
-exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, (req, res) => {
+exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
+  // Garante que responde preflight OPTIONS para CORS
+  if (req.method === 'OPTIONS') {
+    corsHandler(req, res, () => {
+      res.status(204).send('');
+    });
+    return;
+  }
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido. Use POST.' });
     }
     try {
-      // Corrigido: Recebe empresaId corretamente do body
+      // Recebe empresaId corretamente do body
       const { empresaId } = req.body;
       if (!empresaId) {
         return res.status(400).json({ error: 'ID da empresa inválido ou não fornecido.' });
@@ -71,7 +83,14 @@ exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadop
 // =================================================================================
 // ENDPOINT 2: createPreference
 // =================================================================================
-exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, (req, res) => {
+exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
+  // Preflight OPTIONS CORS
+  if (req.method === 'OPTIONS') {
+    corsHandler(req, res, () => {
+      res.status(204).send('');
+    });
+    return;
+  }
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido.' });
@@ -89,7 +108,7 @@ exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadop
       const userRecord = await admin.auth().getUser(userId);
       const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
 
-      // NOTA: notificationUrl deve ser o endpoint público que recebe notificações do MercadoPago
+      // notificationUrl: endpoint público que recebe notificações do MercadoPago
       const notificationUrl = "https://us-central1-pronti-app.cloudfunctions.net/receberWebhookMercadoPago";
 
       const subscriptionData = {
@@ -128,39 +147,47 @@ exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadop
 // =================================================================================
 exports.receberWebhookMercadoPago = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
   // Webhook do MercadoPago para atualizar status da assinatura
-  console.log("Webhook recebido:", req.body);
-  const { id, type } = req.body;
-  if (type === "preapproval") {
-    try {
-      const client = getMercadoPagoClient();
-      if (!client) {
-        return res.status(500).send("Erro de configuração interna.");
-      }
-      const preapproval = new Preapproval(client);
-      const subscription = await preapproval.get({ id: id });
-      const assinaturaId = subscription.id;
-      const statusMP = subscription.status;
-      const query = db.collectionGroup("assinatura").where("mercadoPagoAssinaturaId", "==", assinaturaId);
-      const snapshot = await query.get();
-      if (snapshot.empty) {
-        return res.status(200).send("OK");
-      }
-      let novoStatus = statusMP === "authorized" ? "ativa"
-        : (statusMP === "cancelled" ? "cancelada"
-        : (statusMP === "paused" ? "pausada" : "desconhecido"));
-      for (const doc of snapshot.docs) {
-        await doc.ref.update({
-          status: novoStatus,
-          ultimoStatusMP: statusMP,
-          ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp()
-        });
-      }
-    } catch (error) {
-      functions.logger.error("Erro ao processar webhook:", error);
-      return res.status(500).send("Erro interno");
-    }
+  if (req.method === 'OPTIONS') {
+    corsHandler(req, res, () => {
+      res.status(204).send('');
+    });
+    return;
   }
-  return res.status(200).send("OK");
+  corsHandler(req, res, async () => {
+    console.log("Webhook recebido:", req.body);
+    const { id, type } = req.body;
+    if (type === "preapproval") {
+      try {
+        const client = getMercadoPagoClient();
+        if (!client) {
+          return res.status(500).send("Erro de configuração interna.");
+        }
+        const preapproval = new Preapproval(client);
+        const subscription = await preapproval.get({ id: id });
+        const assinaturaId = subscription.id;
+        const statusMP = subscription.status;
+        const query = db.collectionGroup("assinatura").where("mercadoPagoAssinaturaId", "==", assinaturaId);
+        const snapshot = await query.get();
+        if (snapshot.empty) {
+          return res.status(200).send("OK");
+        }
+        let novoStatus = statusMP === "authorized" ? "ativa"
+          : (statusMP === "cancelled" ? "cancelada"
+          : (statusMP === "paused" ? "pausada" : "desconhecido"));
+        for (const doc of snapshot.docs) {
+          await doc.ref.update({
+            status: novoStatus,
+            ultimoStatusMP: statusMP,
+            ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } catch (error) {
+        functions.logger.error("Erro ao processar webhook:", error);
+        return res.status(500).send("Erro interno");
+      }
+    }
+    return res.status(200).send("OK");
+  });
 });
 
 // =================================================================================
