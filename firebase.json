@@ -1,4 +1,4 @@
-{
+echo '{
   "hosting": {
     "public": ".",
     "ignore": [
@@ -17,5 +17,4 @@
     "source": "functions",
     "runtime": "nodejs20"
   }
-}
-
+}' > firebase.json
