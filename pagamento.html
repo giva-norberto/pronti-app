@@ -143,10 +143,12 @@
     import { auth, db } from "./firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
+    // CORRIGIDO: Use os endpoints do Firebase Functions!
+    // Troque pelo ID do seu projeto Firebase, exemplo: pronti-app
     const getStatusUrl =
-      "https://getstatusempresa-uzuwj4imfa-uc.a.run.app";
+      "https://us-central1-pronti-app.cloudfunctions.net/verificarEmpresa";
     const createPreferenceUrl =
-      "https://createpreference-uzuwj4imfa-uc.a.run.app";
+      "https://us-central1-pronti-app.cloudfunctions.net/createPreference";
 
     const infoUsuarioDiv = document.getElementById("info-usuario");
     const listaPlanosContainer = document.querySelector(".lista-planos");
@@ -156,7 +158,7 @@
     let planoSelecionado = null;
     let licencasNecessarias = 0;
 
-    // 🔹 Preço base + faixas mais graduais
+    // 🔹 Configuração dos preços dos planos
     const configuracaoPrecos = {
       precoBase: 59.9,
       funcionariosInclusos: 2,
@@ -233,10 +235,11 @@
 
     async function inicializarPagina(user, empresaId) {
       try {
+        // CORRIGIDO: Parâmetro deve ser empresaId!
         const response = await fetch(getStatusUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: empresaId }),
+          body: JSON.stringify({ empresaId: empresaId }),
         });
 
         if (!response.ok) {
