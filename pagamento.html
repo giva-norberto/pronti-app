@@ -140,15 +140,16 @@
   </div>
 
   <script type="module">
-    import { auth, db } from "./firebase-config.js";
+    import { auth } from "./firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-    // CORRIGIDO: Use os endpoints do Firebase Functions!
-    // Troque pelo ID do seu projeto Firebase, exemplo: pronti-app
+    // =========================================================================
+    // CORREÇÃO FINAL: As URLs agora apontam para a região correta (southamerica-east1)
+    // =========================================================================
     const getStatusUrl =
-      "https://us-central1-pronti-app.cloudfunctions.net/verificarEmpresa";
+      "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/verificarEmpresa";
     const createPreferenceUrl =
-      "https://us-central1-pronti-app.cloudfunctions.net/createPreference";
+      "https://southamerica-east1-pronti-app-37c6e.cloudfunctions.net/createPreference";
 
     const infoUsuarioDiv = document.getElementById("info-usuario");
     const listaPlanosContainer = document.querySelector(".lista-planos");
@@ -158,38 +159,34 @@
     let planoSelecionado = null;
     let licencasNecessarias = 0;
 
-    // 🔹 Configuração dos preços dos planos
     const configuracaoPrecos = {
-      precoBase: 59.9,
+      precoBase: 59.90,
       funcionariosInclusos: 2,
       faixasDePrecoExtra: [
-        { de: 3, ate: 5, valor: 24.9 },
-        { de: 6, ate: 10, valor: 19.9 },
-        { de: 11, ate: 20, valor: 14.9 },
-        { de: 21, ate: 50, valor: 9.9 },
-      ],
+        { de: 3, ate: 10, valor: 29.90 },
+        { de: 11, ate: 50, valor: 24.90 }
+      ]
     };
 
     const planosParaExibir = [2, 3, 5, 10, 15, 20, 30, 50];
 
+    // CORREÇÃO: Usando a mesma lógica de cálculo do backend para consistência.
     function calcularPreco(totalFuncionarios) {
-      if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos)
-        return configuracaoPrecos.precoBase;
-      let total = configuracaoPrecos.precoBase;
+      if (totalFuncionarios <= 0) return 0;
+      if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
+      let precoTotal = configuracaoPrecos.precoBase;
+      const funcionariosExtras = totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
+      let funcionariosJaPrecificados = 0;
       for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
-        const inicio = faixa.de;
-        if (totalFuncionarios >= inicio) {
-          const fim = faixa.ate;
-          const funcionariosNestaFaixa =
-            Math.min(totalFuncionarios, fim) -
-            Math.max(configuracaoPrecos.funcionariosInclusos, inicio) +
-            1;
-          if (funcionariosNestaFaixa > 0) {
-            total += funcionariosNestaFaixa * faixa.valor;
-          }
+        const funcionariosNaFaixa = (faixa.ate - faixa.de) + 1;
+        const extrasNestaFaixa = Math.min(funcionariosExtras - funcionariosJaPrecificados, funcionariosNaFaixa);
+        if (extrasNestaFaixa > 0) {
+          precoTotal += extrasNestaFaixa * faixa.valor;
+          funcionariosJaPrecificados += extrasNestaFaixa;
         }
+        if (funcionariosJaPrecificados >= funcionariosExtras) break;
       }
-      return total;
+      return Number(precoTotal.toFixed(2));
     }
 
     function gerarCardsDePlano() {
@@ -235,7 +232,6 @@
 
     async function inicializarPagina(user, empresaId) {
       try {
-        // CORRIGIDO: Parâmetro deve ser empresaId!
         const response = await fetch(getStatusUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -244,8 +240,9 @@
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
+          // Mostra a mensagem de erro vinda do servidor, se houver.
           throw new Error(
-            errorData.message || "Empresa inválida ou assinatura expirada."
+            errorData.error || "Não foi possível verificar os dados da empresa."
           );
         }
 
@@ -256,7 +253,7 @@
       } catch (error) {
         console.error("Erro ao inicializar página:", error);
         infoUsuarioDiv.textContent =
-          error.message || "Empresa inválida ou assinatura expirada.";
+          error.message || "Ocorreu um erro. Tente novamente mais tarde.";
         infoUsuarioDiv.style.color = "#dc2626";
         sessionStorage.removeItem("empresaId");
         localStorage.removeItem("empresaAtivaId");
@@ -321,8 +318,10 @@
         const response = await fetch(createPreferenceUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          // CORREÇÃO: Enviando o ID do usuário e da empresa separadamente.
           body: JSON.stringify({
-            userId: empresaId,
+            userId: user.uid, // O ID do usuário autenticado
+            empresaId: empresaId, // O ID da empresa que está pagando
             planoEscolhido: { totalFuncionarios: planoSelecionado.totalFuncionarios },
           }),
         });
