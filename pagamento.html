@@ -212,6 +212,8 @@
         card.addEventListener("click", () => {
           if (isDesabilitado) {
             erroSelecao.textContent = `Você precisa de um plano para no mínimo ${licencasNecessarias} funcionários.`;
+            // DEBUG: clique em plano desabilitado
+            console.debug("DEBUG: Plano desabilitado clicado", { num, licencasNecessarias });
             return;
           }
           document
@@ -225,28 +227,39 @@
             { style: "currency", currency: "BRL" }
           )})`;
           erroSelecao.textContent = "";
+          // DEBUG: plano selecionado
+          console.debug("DEBUG: Plano selecionado", planoSelecionado);
         });
         listaPlanosContainer.appendChild(card);
       });
+      // DEBUG: Planos gerados
+      console.debug("DEBUG: gerarCardsDePlano concluído", { licencasNecessarias, planosParaExibir });
     }
 
     async function inicializarPagina(user, empresaId) {
       try {
+        console.debug("DEBUG: inicializarPagina chamada", { userUid: user.uid, empresaId });
         const response = await fetch(getStatusUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ empresaId: empresaId }),
         });
 
+        // DEBUG: resposta do fetch verificarEmpresa
+        console.debug("DEBUG: Response status verificarEmpresa", { status: response.status });
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          // Mostra a mensagem de erro vinda do servidor, se houver.
+          // DEBUG: erro recebido do backend
+          console.debug("DEBUG: Erro backend verificarEmpresa", errorData);
           throw new Error(
             errorData.error || "Não foi possível verificar os dados da empresa."
           );
         }
 
         const data = await response.json();
+        // DEBUG: dados recebidos do backend
+        console.debug("DEBUG: Dados recebidos verificarEmpresa", data);
         licencasNecessarias = data.licencasNecessarias;
         infoUsuarioDiv.textContent = `A sua empresa precisa de ${licencasNecessarias} licenças. Selecione um plano compatível.`;
         gerarCardsDePlano();
@@ -265,14 +278,22 @@
     }
 
     onAuthStateChanged(auth, (user) => {
+      // DEBUG: onAuthStateChanged disparado
+      console.debug("DEBUG: onAuthStateChanged", { user });
+
       if (user) {
         let empresaId =
           sessionStorage.getItem("empresaId") ||
           localStorage.getItem("empresaAtivaId");
 
+        // DEBUG: empresaId antes de buscar em URL
+        console.debug("DEBUG: empresaId buscado em storage", { empresaId });
+
         if (!empresaId) {
           const urlParams = new URLSearchParams(window.location.search);
           empresaId = urlParams.get("empresaId");
+          // DEBUG: empresaId buscado em URL
+          console.debug("DEBUG: empresaId buscado em URL", { empresaId });
           if (empresaId) {
             sessionStorage.setItem("empresaId", empresaId);
             localStorage.setItem("empresaAtivaId", empresaId);
@@ -283,6 +304,8 @@
           infoUsuarioDiv.textContent =
             "Nenhuma empresa selecionada. A redirecionar...";
           infoUsuarioDiv.style.color = "#dc2626";
+          // DEBUG: empresaId não encontrado
+          console.debug("DEBUG: empresaId não encontrado, redirecionando");
           setTimeout(() => {
             window.location.href = "selecionar-empresa.html";
           }, 2500);
@@ -293,6 +316,8 @@
       } else {
         infoUsuarioDiv.textContent =
           "Você não está logado. A redirecionar para o login...";
+        // DEBUG: usuário não logado
+        console.debug("DEBUG: usuário não logado, redirecionando");
         setTimeout(() => {
           window.location.href = "login.html";
         }, 2500);
@@ -300,14 +325,21 @@
     });
 
     btnPagar.addEventListener("click", async () => {
+      // DEBUG: clique no botão pagar
+      console.debug("DEBUG: Clique no btnPagar", { planoSelecionado });
+
       if (!planoSelecionado) return;
       const user = auth.currentUser;
       const empresaId =
         sessionStorage.getItem("empresaId") ||
         localStorage.getItem("empresaAtivaId");
+      // DEBUG: dados antes do pagamento
+      console.debug("DEBUG: dados para pagamento", { user, empresaId, planoSelecionado });
+
       if (!user || !empresaId) {
         erroSelecao.textContent =
           "Erro: Utilizador ou empresa não identificados. Por favor, selecione a empresa novamente.";
+        console.debug("DEBUG: Falha de identificação user ou empresaId");
         return;
       }
 
@@ -326,12 +358,20 @@
           }),
         });
 
+        // DEBUG: resposta do fetch createPreference
+        console.debug("DEBUG: Response status createPreference", { status: response.status });
+
         if (!response.ok) {
           const err = await response.json();
+          // DEBUG: erro recebido do backend createPreference
+          console.debug("DEBUG: Erro backend createPreference", err);
           throw new Error(err.error || "Erro do servidor");
         }
 
         const preference = await response.json();
+        // DEBUG: preference recebido
+        console.debug("DEBUG: preference recebido", preference);
+
         if (preference.init_point) {
           window.location.href = preference.init_point;
         } else {
