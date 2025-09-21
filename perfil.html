@@ -11,10 +11,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* ===================================================================
-                CSS FINAL, REVISADO E COM LAYOUT RESTAURADO
-       ====================================================================== */
-    
     :root {
         --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
         --primary-color: #4f46e5;
@@ -22,10 +18,9 @@
         --text-main: #1e293b;
         --text-secondary: #64748b;
         --border-color: #e2e8f0;
-        --input-bg: #f8fafc; /* Fundo para os inputs */
+        --input-bg: #f8fafc;
         --shadow: 0 4px 20px rgba(0,0,0,0.06);
     }
-
     body {
       font-family: 'Inter', Arial, sans-serif;
       background: var(--gradient-primary);
@@ -33,14 +28,12 @@
       color: var(--text-main);
       display: flex;
     }
-
     .main-content {
       margin-left: 270px;
       padding: 32px;
       flex-grow: 1;
       min-height: 100vh;
     }
-
     .form-card {
       background: var(--card-bg);
       border-radius: 20px;
@@ -49,7 +42,6 @@
       max-width: 700px;
       margin: 0 auto;
     }
-
     .header-section {
       display: flex;
       justify-content: space-between;
@@ -74,8 +66,6 @@
       align-items: center;
       gap: 12px;
     }
-
-    /* --- BOTÕES --- */
     .btn-new, .btn-submit, .btn-copy, .btn-open, .btn-upload {
       display: inline-flex;
       align-items: center;
@@ -103,7 +93,6 @@
     .btn-submit:hover {
       background-color: #4338ca;
     }
-    
     .btn-copy, .btn-open {
       background: #f9fafb;
       color: var(--primary-color);
@@ -114,7 +103,6 @@
     .btn-copy:hover, .btn-open:hover {
       background: #eef2ff;
     }
-
     .btn-upload {
       background: #f9fafb;
       color: #374151;
@@ -127,8 +115,6 @@
       border-color: var(--primary-color);
       color: var(--primary-color);
     }
-
-    /* --- FORMULÁRIO --- */
     .form-section h3 {
       margin: 24px 0 18px 0;
       font-size: 1.2em;
@@ -147,7 +133,6 @@
       font-weight: 500;
       display: block;
     }
-    
     .form-group input[type="text"],
     .form-group textarea,
     #selectEmpresa,
@@ -174,8 +159,6 @@
       text-align: right;
       margin-top: 32px;
     }
-
-    /* --- LINK DA VITRINE --- */
     .vitrine-link-container {
       display: flex;
       align-items: center;
@@ -195,8 +178,6 @@
       padding: 0;
       flex-grow: 1;
     }
-
-    /* --- LOGO --- */
     .logo-upload-container {
       display: flex;
       align-items: center;
@@ -210,8 +191,6 @@
       border-radius: 50%;
       border: 2px solid var(--border-color);
     }
-
-    /* --- RESPONSIVIDADE --- */
     @media (max-width: 900px) {
       body { flex-direction: column; }
       .main-content { margin-left: 0; padding: 16px; }
@@ -262,18 +241,10 @@
             <label for="nomeNegocio">Nome do Negócio</label>
             <input type="text" id="nomeNegocio" placeholder="Ex: Barbearia do João" required>
           </div>
-
-          <!-- ============================================================ -->
-          <!--           ✅ INÍCIO DA ALTERAÇÃO: CAMPO DO SLUG               -->
-          <!-- ============================================================ -->
           <div class="form-group">
             <label for="slug">Link Personalizado (Apelido)</label>
             <input type="text" id="slug" placeholder="Ex: barbearia-do-joao">
           </div>
-          <!-- ============================================================ -->
-          <!--           ✅ FIM DA ALTERAÇÃO                                 -->
-          <!-- ============================================================ -->
-
           <div class="form-group" id="container-link-vitrine" style="display: none;">
             <label>Link da sua Vitrine Pública</label>
             <div class="vitrine-link-container">
@@ -316,25 +287,10 @@
             <label for="chavePix">Chave PIX (Opcional)</label>
             <input type="text" id="chavePix" placeholder="Digite sua chave PIX">
           </div>
-          
-          <!-- ======================== CAMPOS NOVOS PARA GESTÃO DO TRIAL ======================== -->
           <div class="form-group">
             <label for="freeEmDias">Dias de Trial Grátis</label>
             <input type="number" id="freeEmDias" min="0" step="1" placeholder="Ex: 15">
           </div>
-          <div class="form-group">
-            <label for="trialDisponivel">Trial Disponível?</label>
-            <select id="trialDisponivel">
-              <option value="true">Sim</option>
-              <option value="false">Não</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="trialMotivoBloqueio">Motivo Bloqueio do Trial (opcional)</label>
-            <input type="text" id="trialMotivoBloqueio" placeholder="Ex: Bloqueio administrativo">
-          </div>
-          <!-- ======================= FIM DOS CAMPOS PARA GESTÃO DO TRIAL ======================= -->
-
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-submit">Salvar Todas as Configurações</button>
