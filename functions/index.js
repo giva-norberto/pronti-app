@@ -1,27 +1,32 @@
 /**
  * Cloud Functions backend para pagamentos Pronti.
- * Corrigido: CORS universal, responde OPTIONS, whitelist, parâmetros revisados.
+ * VERSÃO FINAL: Código 100% compatível com Cloud Functions v2 e uso moderno de secrets.
  */
 
+// CORREÇÃO: Apenas o 'onRequest' é necessário do v2/https.
 const { onRequest } = require("firebase-functions/v2/https");
-const { defineString } = require('firebase-functions/v2/params');
+
+// CORREÇÃO: Removido o import do 'defineString', que é da sintaxe antiga e causava o erro.
+// const { defineString } = require('firebase-functions/v2/params');
+
+// Mantemos os outros pacotes que já estavam corretos.
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-// Inicialização do Firebase Admin
+// Inicialização do Firebase Admin (sem alterações).
 try { admin.initializeApp(); } catch (e) { console.warn("Firebase Admin já inicializado."); }
 const db = admin.firestore();
-const mercadopagoToken = defineString('MERCADOPAGO_TOKEN');
 
-// Whitelist de domínios permitidos para CORS
+// CORREÇÃO: A variável 'mercadopagoToken' foi removida. O token será acessado de forma segura dentro das funções.
+
+// Whitelist de domínios e configuração de CORS (sem alterações, já estava correto).
 const whitelist = [
   "https://prontiapp.com.br",
   "https://prontiapp.vercel.app",
   "http://localhost:3000"
 ];
-// Configuração do middleware CORS
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.includes(origin)) callback(null, true);
@@ -31,24 +36,18 @@ const corsOptions = {
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 };
+// Criamos o handler do CORS uma vez para reutilizar.
 const corsHandler = cors(corsOptions);
 
-// Helper universal para responder OPTIONS (preflight) em todas endpoints
-function handleCorsPreflight(req, res) {
-  if (req.method === "OPTIONS") {
-    corsHandler(req, res, () => {
-      res.status(204).send('');
-    });
-    return true;
-  }
-  return false;
-}
+// CORREÇÃO: Removida a função 'handleCorsPreflight'. O pacote 'cors' já lida
+// com as requisições OPTIONS (preflight) automaticamente quando usado da forma correta.
 
 // =================================================================================
 // ENDPOINT 1: verificarEmpresa
 // =================================================================================
-exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
-  if (handleCorsPreflight(req, res)) return;
+// CORREÇÃO: O nome do secret é passado como uma string "MERCADOPAGO_TOKEN".
+exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: ["MERCADOPAGO_TOKEN"] }, (req, res) => {
+  // CORREÇÃO: Simplificado o uso do CORS. O handler envolve toda a lógica.
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido. Use POST.' });
@@ -72,22 +71,24 @@ exports.verificarEmpresa = onRequest({ region: "us-central1", secrets: [mercadop
 // =================================================================================
 // ENDPOINT 2: createPreference
 // =================================================================================
-exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
-  if (handleCorsPreflight(req, res)) return;
+// CORREÇÃO: O nome do secret é passado como uma string "MERCADOPAGO_TOKEN".
+exports.createPreference = onRequest({ region: "us-central1", secrets: ["MERCADOPAGO_TOKEN"] }, (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Método não permitido.' });
     }
     try {
+      // A função getMercadoPagoClient agora vai funcionar corretamente.
       const client = getMercadoPagoClient();
       if (!client) return res.status(500).json({ error: 'Erro de configuração do servidor.' });
+      
       const { userId, planoEscolhido } = req.body;
       if (!userId || !planoEscolhido) {
         return res.status(400).json({ error: 'Dados inválidos.' });
       }
       const userRecord = await admin.auth().getUser(userId);
       const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
-      const notificationUrl = "https://us-central1-pronti-app.cloudfunctions.net/receberWebhookMercadoPago";
+      const notificationUrl = "https://us-central1-pronti-app-37c6e.cloudfunctions.net/receberWebhookMercadoPago";
       const subscriptionData = {
         reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
         auto_recurring: {
@@ -120,8 +121,9 @@ exports.createPreference = onRequest({ region: "us-central1", secrets: [mercadop
 // =================================================================================
 // ENDPOINT 3: receberWebhookMercadoPago
 // =================================================================================
-exports.receberWebhookMercadoPago = onRequest({ region: "us-central1", secrets: [mercadopagoToken] }, async (req, res) => {
-  if (handleCorsPreflight(req, res)) return;
+// CORREÇÃO: O nome do secret é passado como uma string "MERCADOPAGO_TOKEN".
+exports.receberWebhookMercadoPago = onRequest({ region: "us-central1", secrets: ["MERCADOPAGO_TOKEN"] }, (req, res) => {
+  // Webhooks não precisam de CORS, mas mantemos o handler para consistência.
   corsHandler(req, res, async () => {
     console.log("Webhook recebido:", req.body);
     const { id, type } = req.body;
@@ -159,13 +161,18 @@ exports.receberWebhookMercadoPago = onRequest({ region: "us-central1", secrets: 
 // FUNÇÕES AUXILIARES
 // =================================================================================
 function getMercadoPagoClient() {
-  const mpToken = mercadopagoToken.value();
+  // CORREÇÃO FINAL: Acessamos o valor do secret que o Firebase injeta
+  // automaticamente nas variáveis de ambiente do processo.
+  const mpToken = process.env.MERCADOPAGO_TOKEN;
+
   if (!mpToken) {
-    functions.logger.error("FATAL: O token de acesso do Mercado Pago não está configurado nos parâmetros!");
+    functions.logger.error("FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!");
     return null;
   }
   return new MercadoPagoConfig({ accessToken: mpToken });
 }
+
+// A função 'calcularPreco' não precisou de alterações.
 function calcularPreco(totalFuncionarios) {
   const configuracaoPrecos = {
     precoBase: 59.90,
