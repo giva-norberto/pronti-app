@@ -1,7 +1,8 @@
 /**
  * Cloud Functions backend para pagamentos Pronti.
- * VERSÃO FINALÍSSIMA: Corrigida a região para southamerica-east1 para alinhar com o Firestore
- * e adicionado tratamento explícito do método OPTIONS para CORS.
+ * VERSÃO FINALÍSSIMA: Região corrigida para southamerica-east1.
+ * Tratamento explícito do método OPTIONS para CORS.
+ * Melhoria: tratamento empresa não encontrada, plano free expirado e subcoleção vazia.
  */
 
 // ============================ Imports principais ==============================
@@ -12,7 +13,11 @@ const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
 // ========================= Inicialização do Firebase ==========================
-try { admin.initializeApp(); } catch (e) { console.warn("Firebase Admin já inicializado."); }
+try {
+  admin.initializeApp();
+} catch (e) {
+  console.warn("Firebase Admin já inicializado.");
+}
 const db = admin.firestore();
 
 // =========================== Configuração de CORS =============================
@@ -47,22 +52,32 @@ exports.verificarEmpresa = onRequest(
       if (req.method !== "POST") {
         return res.status(405).json({ error: "Método não permitido. Use POST." });
       }
+
       try {
         const { empresaId } = req.body;
         if (!empresaId) {
-          return res
-            .status(400)
-            .json({ error: "ID da empresa inválido ou não fornecido." });
+          return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
         }
-        const profissionaisSnapshot = await db
-          .collection("empresarios")
-          .doc(empresaId)
-          .collection("profissionais")
-          .get();
+
+        // Busca documento da empresa
+        const empresaDocRef = db.collection("empresarios").doc(empresaId);
+        const empresaDoc = await empresaDocRef.get();
+        if (!empresaDoc.exists) {
+          return res.status(404).json({ error: "Empresa não encontrada." });
+        }
+
+        // Verifica plano e status
+        const plano = empresaDoc.get("plano");
+        const status = empresaDoc.get("status");
+        if (plano === "free" && status === "expirado") {
+          return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
+        }
+
+        // Busca profissionais
+        const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
         const licencasNecessarias = profissionaisSnapshot.size;
-        functions.logger.info(
-          `Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`
-        );
+
+        functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
         return res.status(200).json({ licencasNecessarias });
       } catch (error) {
         functions.logger.error("Erro em verificarEmpresa:", error);
@@ -90,9 +105,7 @@ exports.createPreference = onRequest(
       try {
         const client = getMercadoPagoClient();
         if (!client)
-          return res
-            .status(500)
-            .json({ error: "Erro de configuração do servidor." });
+          return res.status(500).json({ error: "Erro de configuração do servidor." });
 
         const { userId, planoEscolhido } = req.body;
         if (!userId || !planoEscolhido) {
@@ -118,6 +131,7 @@ exports.createPreference = onRequest(
         };
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
+
         await db
           .collection("empresarios")
           .doc(userId)
@@ -136,9 +150,7 @@ exports.createPreference = onRequest(
         return res.status(200).json({ init_point: response.init_point });
       } catch (error) {
         functions.logger.error("Erro em createPreference:", error);
-        return res
-          .status(500)
-          .json({ error: "Erro ao criar preferência de pagamento." });
+        return res.status(500).json({ error: "Erro ao criar preferência de pagamento." });
       }
     });
   }
@@ -202,9 +214,7 @@ exports.receberWebhookMercadoPago = onRequest(
 function getMercadoPagoClient() {
   const mpToken = process.env.MERCADOPAGO_TOKEN;
   if (!mpToken) {
-    functions.logger.error(
-      "FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!"
-    );
+    functions.logger.error("FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!");
     return null;
   }
   return new MercadoPagoConfig({ accessToken: mpToken });
