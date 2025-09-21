@@ -144,6 +144,25 @@ window.addEventListener('DOMContentLoaded', () => {
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
             
+            // =================== CORREÇÃO: CAMPOS NOVOS NO FIREBASE ===================
+            // Aqui garantimos que os campos trialDisponivel e trialMotivoBloqueio existam no documento Firebase.
+            // Eles NÃO aparecem na tela, mas são sempre criados/atualizados no Firestore.
+            // Se o documento já tem, mantem. Se não tem, cria com valor padrão.
+            let trialDisponivel = true;
+            let trialMotivoBloqueio = "";
+
+            if (empresaId) {
+                const empresaDocRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaDocRef);
+                const empresaData = empresaSnap.exists() ? empresaSnap.data() : {};
+                if (typeof empresaData.trialDisponivel !== "undefined") {
+                    trialDisponivel = empresaData.trialDisponivel;
+                }
+                if (typeof empresaData.trialMotivoBloqueio !== "undefined") {
+                    trialMotivoBloqueio = empresaData.trialMotivoBloqueio;
+                }
+            }
+
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
                 descricao: elements.descricaoInput.value.trim(),
@@ -154,7 +173,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 plano: "free",
                 status: "ativo",
                 updatedAt: serverTimestamp(),
-                freeEmDias: 15
+                // Não aparece na tela, mas sempre salva/atualiza:
+                trialDisponivel: trialDisponivel,
+                trialMotivoBloqueio: trialMotivoBloqueio
             };
 
             const valorSlugInput = elements.slugInput.value.trim();
