@@ -21,7 +21,8 @@
     <div class="container-assinatura" id="assinatura-container" style="display:none;">
         <h1>Seu período de teste terminou!</h1>
         <p>Para continuar a usar nossos serviços, por favor, escolha um plano.</p>
-        <a href="pagamento.html" class="btn-assinar">Ver Planos e Assinar</a>
+        <!-- CORREÇÃO: O link agora tem um ID para ser modificado pelo JavaScript -->
+        <a href="pagamento.html" id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</a>
         <button id="btn-logout" class="btn-logout">Sair da conta</button>
     </div>
     <div id="loader"><p>Verificando sua assinatura...</p></div>
@@ -34,6 +35,8 @@
         const container = document.getElementById('assinatura-container');
         const loader = document.getElementById('loader');
         const btnLogout = document.getElementById('btn-logout');
+        // CORREÇÃO: Pegamos a referência do botão de assinar.
+        const btnAssinar = document.getElementById('btn-assinar');
 
         async function checkStatusRapido() {
             return new Promise((resolve) => {
@@ -45,10 +48,15 @@
                     try {
                         const empresaAtivaId = localStorage.getItem('empresaAtivaId');
                         if (!empresaAtivaId) {
-                            // Se não tem empresa selecionada, não deveria estar aqui. Volta pra seleção.
                             window.location.href = 'selecionar-empresa.html';
                             return;
                         }
+                        
+                        // ====================================================================
+                        // CORREÇÃO: Atualiza a URL do botão com o ID da empresa ativa
+                        // ====================================================================
+                        btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
+
                         const empresaRef = doc(db, "empresarios", empresaAtivaId);
                         const empresaSnap = await getDoc(empresaRef);
                         if (!empresaSnap.exists()) {
@@ -77,6 +85,7 @@
                         }
                         resolve(false); // Resolve com false se expirado
                     } catch (e) {
+                        console.error("Erro ao verificar status:", e);
                         resolve(false); // Em caso de erro, assume que expirou
                     }
                 });
@@ -95,6 +104,8 @@
 
         btnLogout.addEventListener('click', async () => {
             await signOut(auth);
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = 'login.html';
         });
     </script>
