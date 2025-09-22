@@ -289,3 +289,20 @@ function calcularPreco(totalFuncionarios) {
   }
   return Number(precoTotal.toFixed(2));
 }
+// ============================================================================
+// ENDPOINT DE TESTE: testeConexao
+// ============================================================================
+exports.testeConexao = onRequest({ region: "southamerica-east1" }, async (req, res) => {
+  functions.logger.info("Iniciando teste de conexão...");
+  try {
+    await db.collection("_test_canary").limit(1).get();
+    functions.logger.info("SUCESSO: Conexão com Firestore está OK.");
+    res.status(200).send("Conexão com Firestore OK.");
+  } catch (error) {
+    functions.logger.error("FALHA NO TESTE: Não foi possível conectar ao Firestore.", {
+      errorMessage: error.message,
+      errorCode: error.code,
+    });
+    res.status(500).send("Falha ao conectar com o Firestore: " + error.message);
+  }
+});
