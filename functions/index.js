@@ -1,4 +1,5 @@
 /**
+ * FORÇANDO A REIMPLANTAÇÃO em qualquer lugar dentro da função verificarEmpresa.
  * Cloud Functions backend para pagamentos Pronti.
  * VERSÃO FINALÍSSIMA 3.0: Corrige erro 5 NOT_FOUND em verificarEmpresa.
  * Região corrigida para southamerica-east1.
