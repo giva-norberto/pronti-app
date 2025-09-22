@@ -78,8 +78,8 @@ exports.verificarEmpresa = onRequest(
         }
 
         // Verifica plano e status
-        const plano = empresaDoc.get("plano");
-        const status = empresaDoc.get("status");
+        const plano = empresaDoc.get("plano") || "free";
+        const status = empresaDoc.get("status") || "";
         functions.logger.info("DEBUG: Plano e status da empresa", { plano, status });
 
         if (plano === "free" && status === "expirado") {
@@ -87,11 +87,16 @@ exports.verificarEmpresa = onRequest(
           return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
         }
 
-        // Busca profissionais
-        const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
-        functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: profissionaisSnapshot.size });
-
-        const licencasNecessarias = profissionaisSnapshot.size;
+        // Busca profissionais (trata subcoleção vazia!)
+        let licencasNecessarias = 0;
+        try {
+          const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
+          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: profissionaisSnapshot.size });
+          licencasNecessarias = profissionaisSnapshot.size;
+        } catch (profErr) {
+          functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais", { error: profErr });
+          licencasNecessarias = 0;
+        }
 
         functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
         return res.status(200).json({ licencasNecessarias });
