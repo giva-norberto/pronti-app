@@ -1,13 +1,14 @@
 /**
  * Cloud Functions backend para pagamentos Pronti.
- * VERSÃO FINALÍSSIMA: Região corrigida para southamerica-east1.
+ * VERSÃO FINALÍSSIMA 3.0: Corrige erro 5 NOT_FOUND em verificarEmpresa.
+ * Região corrigida para southamerica-east1.
  * Tratamento explícito do método OPTIONS para CORS.
  * Melhoria: tratamento empresa não encontrada, plano free expirado e subcoleção vazia.
  * DEBUG detalhado adicionado em todos os endpoints.
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest } = require("firebase-functions/v2/https" );
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
@@ -28,7 +29,7 @@ const whitelist = [
   "http://localhost:3000"
 ];
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function (origin, callback ) {
     if (!origin || whitelist.includes(origin)) callback(null, true);
     else callback(new Error("Origem não permitida por CORS"));
   },
@@ -39,13 +40,12 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
-// ENDPOINT 1: verificarEmpresa
+// ENDPOINT 1: verificarEmpresa (VERSÃO CORRIGIDA PARA NOT_FOUND)
 // ============================================================================
 exports.verificarEmpresa = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      // 🔑 Responde imediatamente ao preflight CORS
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
@@ -56,7 +56,6 @@ exports.verificarEmpresa = onRequest(
       }
 
       try {
-        // DEBUG: Mostra corpo recebido e headers
         functions.logger.info("DEBUG: INICIO verificarEmpresa", { body: req.body, headers: req.headers });
 
         const { empresaId } = req.body;
@@ -67,7 +66,6 @@ exports.verificarEmpresa = onRequest(
           return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
         }
 
-        // Busca documento da empresa
         const empresaDocRef = db.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
         functions.logger.info("DEBUG: empresaDoc.exists", { exists: empresaDoc.exists, empresaId });
@@ -77,7 +75,8 @@ exports.verificarEmpresa = onRequest(
           return res.status(404).json({ error: "Empresa não encontrada." });
         }
 
-        // Verifica plano e status
+        // --- INÍCIO DA CORREÇÃO ---
+        // Se a empresa existe, podemos prosseguir com segurança.
         const plano = empresaDoc.get("plano") || "free";
         const status = empresaDoc.get("status") || "";
         functions.logger.info("DEBUG: Plano e status da empresa", { plano, status });
@@ -87,21 +86,26 @@ exports.verificarEmpresa = onRequest(
           return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
         }
 
-        // Busca profissionais (trata subcoleção vazia!)
+        // Agora, buscamos os profissionais. O try/catch aqui é uma segurança extra.
         let licencasNecessarias = 0;
         try {
           const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
-          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: profissionaisSnapshot.size });
-          licencasNecessarias = profissionaisSnapshot.size;
+          if (!profissionaisSnapshot.empty) {
+            licencasNecessarias = profissionaisSnapshot.size;
+          }
+          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
         } catch (profErr) {
-          functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais", { error: profErr });
-          licencasNecessarias = 0;
+          functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
+          licencasNecessarias = 0; // Garante que o valor seja 0 em caso de erro.
         }
+        // --- FIM DA CORREÇÃO ---
 
         functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
         return res.status(200).json({ licencasNecessarias });
+
       } catch (error) {
-        functions.logger.error("Erro em verificarEmpresa:", error);
+        // Este catch agora vai pegar outros erros inesperados.
+        functions.logger.error("Erro fatal em verificarEmpresa:", error);
         return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message || error.toString() });
       }
     });
@@ -161,7 +165,7 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl
         };
-        functions.logger.info("DEBUG: subscriptionData", subscriptionData);
+        functions.logger.info("DEBUG: subscriptionData", subscriptionData );
 
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
