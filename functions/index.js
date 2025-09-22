@@ -1,7 +1,6 @@
 /**
  * Cloud Functions backend para pagamentos Pronti.
- * VERSÃO DE DIAGNÓSTICO 4.0: Testa a conexão com o Firestore antes de executar a lógica.
- * O objetivo é isolar se o problema é de permissão/inicialização do DB ou do código da função.
+ * VERSÃO FINALÍSSIMA 3.0: Corrige erro 5 NOT_FOUND em verificarEmpresa.
  */
 
 // ============================ Imports principais ==============================
@@ -37,27 +36,12 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
-// ENDPOINT 1: verificarEmpresa (VERSÃO DE DIAGNÓSTICO)
+// ENDPOINT 1: verificarEmpresa
 // ============================================================================
 exports.verificarEmpresa = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      // ======================= INÍCIO DO DIAGNÓSTICO =======================
-      try {
-        // Tenta uma operação de leitura simples e inofensiva no Firestore.
-        await db.collection("_test_connection").limit(1).get();
-        functions.logger.info("DIAGNÓSTICO: Conexão com Firestore bem-sucedida.");
-      } catch (dbError) {
-        functions.logger.error("DIAGNÓSTICO FALHOU: Não foi possível conectar ao Firestore.", {
-          errorMessage: dbError.message,
-          errorCode: dbError.code,
-        });
-        // Se a conexão com o DB falhar, não adianta continuar.
-        return res.status(500).json({ error: "Falha na inicialização do serviço de banco de dados." });
-      }
-      // ======================== FIM DO DIAGNÓSTICO =========================
-
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
@@ -119,7 +103,7 @@ exports.verificarEmpresa = onRequest(
   }
 );
 
-
+// ... (O resto do arquivo com createPreference e receberWebhookMercadoPago continua igual)
 // ============================================================================
 // ENDPOINT 2: createPreference
 // ============================================================================
