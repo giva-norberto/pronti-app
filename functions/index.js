@@ -1,11 +1,7 @@
 /**
- * FORÇANDO A REIMPLANTAÇÃO em qualquer lugar dentro da função verificarEmpresa.
  * Cloud Functions backend para pagamentos Pronti.
- * VERSÃO FINALÍSSIMA 3.0: Corrige erro 5 NOT_FOUND em verificarEmpresa.
- * Região corrigida para southamerica-east1.
- * Tratamento explícito do método OPTIONS para CORS.
- * Melhoria: tratamento empresa não encontrada, plano free expirado e subcoleção vazia.
- * DEBUG detalhado adicionado em todos os endpoints.
+ * VERSÃO DE DIAGNÓSTICO 4.0: Testa a conexão com o Firestore antes de executar a lógica.
+ * O objetivo é isolar se o problema é de permissão/inicialização do DB ou do código da função.
  */
 
 // ============================ Imports principais ==============================
@@ -41,12 +37,27 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
-// ENDPOINT 1: verificarEmpresa (VERSÃO CORRIGIDA PARA NOT_FOUND)
+// ENDPOINT 1: verificarEmpresa (VERSÃO DE DIAGNÓSTICO)
 // ============================================================================
 exports.verificarEmpresa = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
+      // ======================= INÍCIO DO DIAGNÓSTICO =======================
+      try {
+        // Tenta uma operação de leitura simples e inofensiva no Firestore.
+        await db.collection("_test_connection").limit(1).get();
+        functions.logger.info("DIAGNÓSTICO: Conexão com Firestore bem-sucedida.");
+      } catch (dbError) {
+        functions.logger.error("DIAGNÓSTICO FALHOU: Não foi possível conectar ao Firestore.", {
+          errorMessage: dbError.message,
+          errorCode: dbError.code,
+        });
+        // Se a conexão com o DB falhar, não adianta continuar.
+        return res.status(500).json({ error: "Falha na inicialização do serviço de banco de dados." });
+      }
+      // ======================== FIM DO DIAGNÓSTICO =========================
+
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
@@ -76,8 +87,6 @@ exports.verificarEmpresa = onRequest(
           return res.status(404).json({ error: "Empresa não encontrada." });
         }
 
-        // --- INÍCIO DA CORREÇÃO ---
-        // Se a empresa existe, podemos prosseguir com segurança.
         const plano = empresaDoc.get("plano") || "free";
         const status = empresaDoc.get("status") || "";
         functions.logger.info("DEBUG: Plano e status da empresa", { plano, status });
@@ -87,7 +96,6 @@ exports.verificarEmpresa = onRequest(
           return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
         }
 
-        // Agora, buscamos os profissionais. O try/catch aqui é uma segurança extra.
         let licencasNecessarias = 0;
         try {
           const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
@@ -97,21 +105,20 @@ exports.verificarEmpresa = onRequest(
           functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
         } catch (profErr) {
           functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
-          licencasNecessarias = 0; // Garante que o valor seja 0 em caso de erro.
+          licencasNecessarias = 0;
         }
-        // --- FIM DA CORREÇÃO ---
 
         functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
         return res.status(200).json({ licencasNecessarias });
 
       } catch (error) {
-        // Este catch agora vai pegar outros erros inesperados.
         functions.logger.error("Erro fatal em verificarEmpresa:", error);
         return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message || error.toString() });
       }
     });
   }
 );
+
 
 // ============================================================================
 // ENDPOINT 2: createPreference
@@ -120,7 +127,6 @@ exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      // 🔑 Preflight CORS
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
@@ -205,7 +211,6 @@ exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      // 🔑 Preflight CORS
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
