@@ -1,48 +1,64 @@
 <?php
-// Carrega as ferramentas necessárias (que instalaremos com o Composer)
+// =====================================================
+// Webhook PHP para atualizar status de assinaturas
+// =====================================================
+
+// Carrega as bibliotecas instaladas via Composer
 require __DIR__ . '/vendor/autoload.php';
 
 use Kreait\Firebase\Factory;
 use MercadoPago\Client\PreApproval\PreApprovalClient;
 use MercadoPago\MercadoPagoConfig;
 
+// -----------------------------------------------------
 // --- INICIALIZAÇÃO SEGURA ---
+// -----------------------------------------------------
 
-// O ideal é guardar estas informações em variáveis de ambiente no seu painel de hospedagem
+// Recupera credenciais de variáveis de ambiente
 $mercadoPagoToken = getenv('MERCADOPAGO_TOKEN');
-$firebaseCredentialsPath = getenv('FIREBASE_CREDENTIALS_PATH'); // Ex: /home/seu_usuario/config/firebase_credentials.json
+$firebaseCredentialsPath = getenv('FIREBASE_CREDENTIALS_PATH'); // Ex: /home/seu_usuario/config/firebase-credentials.json
 
-// Se não tiver variáveis de ambiente, use um ficheiro de configuração SEGURO fora do nível raiz público
+// Verifica se as variáveis estão definidas
 if (!$mercadoPagoToken) {
-    // Exemplo: $config = require '/home/seu_usuario/config/config.php';
-    // $mercadoPagoToken = $config['mp_token'];
-    // $firebaseCredentialsPath = $config['firebase_path'];
+    error_log("Token do Mercado Pago não definido.");
+    http_response_code(500);
+    die('Token do Mercado Pago não configurado.');
 }
 
+// Para ambientes tradicionais que usam JSON do Firebase
 if (!$firebaseCredentialsPath) {
+    error_log("Credenciais do Firebase não definidas.");
     http_response_code(500);
     die('Credenciais do Firebase não configuradas.');
 }
 
 try {
-    $firebase = (new Factory)->withServiceAccount($firebaseCredentialsPath);
-    $db = $firebase->createFirestore()->database();
+    // Inicializa Firebase
+    $firebase = (new Factory)
+        ->withServiceAccount($firebaseCredentialsPath) // ou ->withDefaultCredentials() se estiver no Cloud
+        ->createFirestore();
+    $db = $firebase->database();
+
+    // Inicializa Mercado Pago
     MercadoPagoConfig::setAccessToken($mercadoPagoToken);
+
 } catch (\Exception $e) {
     error_log('Falha na inicialização: ' . $e->getMessage());
     http_response_code(500);
     die('Erro de configuração do servidor.');
 }
 
-
+// -----------------------------------------------------
 // --- LÓGICA DO WEBHOOK ---
+// -----------------------------------------------------
 
-// Recebe a notificação do Mercado Pago
+// Recebe notificação do Mercado Pago
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
 error_log("Webhook recebido: " . $json);
 
+// Só processa notificações de assinaturas (preapproval)
 if (isset($data['type']) && $data['type'] === 'preapproval') {
     try {
         $client = new PreApprovalClient();
@@ -50,9 +66,10 @@ if (isset($data['type']) && $data['type'] === 'preapproval') {
 
         $assinaturaId = $preapproval->id;
         $statusMP = $preapproval->status;
-        
-        // Procura no Firestore qual empresa tem esta assinatura
-        $assinaturasRef = $db->collectionGroup('assinatura')->where('mercadoPagoAssinaturaId', '==', $assinaturaId);
+
+        // Busca empresa pelo ID da assinatura no Firestore
+        $assinaturasRef = $db->collectionGroup('assinatura')
+            ->where('mercadoPagoAssinaturaId', '==', $assinaturaId);
         $snapshot = $assinaturasRef->documents();
 
         if ($snapshot->isEmpty()) {
@@ -62,17 +79,19 @@ if (isset($data['type']) && $data['type'] === 'preapproval') {
             exit;
         }
 
+        // Mapeia status do Mercado Pago para status interno
         $novoStatus = 'desconhecido';
         if ($statusMP === 'authorized') $novoStatus = 'ativo';
         if ($statusMP === 'cancelled') $novoStatus = 'cancelado';
         if ($statusMP === 'paused') $novoStatus = 'pausado';
 
+        // Atualiza Firestore para cada assinatura encontrada
         foreach ($snapshot as $doc) {
             $empresaRef = $doc->reference()->parent()->parent();
             $empresaData = $empresaRef->snapshot()->data();
             $usuarioRef = $db->collection('usuarios')->document($empresaData['donoId']);
-            
-            // Atualiza os documentos
+
+            // Atualiza status
             $doc->reference()->update([['path' => 'status', 'value' => $novoStatus]]);
             $empresaRef->update([['path' => 'status', 'value' => $novoStatus]]);
             $usuarioRef->update([['path' => 'isPremium', 'value' => ($novoStatus === 'ativo')]]);
@@ -88,6 +107,8 @@ if (isset($data['type']) && $data['type'] === 'preapproval') {
     }
 }
 
+// Resposta final para o Mercado Pago
 http_response_code(200);
 echo "OK";
+
 ?>
