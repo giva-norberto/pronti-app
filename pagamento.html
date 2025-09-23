@@ -229,7 +229,7 @@
                 const planoAtualRaw = empresaData.plano || "free";
                 const planoAtual = planoAtualRaw.charAt(0).toUpperCase() + planoAtualRaw.slice(1);
                 const contagemProfissionais = profissionaisSnap.size;
-                const totalEquipe = contagemProfissionais + 1;
+                const totalEquipe = contagemProfissionais; // Corrigido: só conta quem está em profissionais
                 licencasNecessarias = totalEquipe;
                 
                 // Preenche os novos elementos do cabeçalho
