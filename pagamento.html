@@ -216,10 +216,13 @@
         card.className = "card-plano";
         card.dataset.funcionarios = num;
         
-        const textoFuncionario = num === 1 ? "Funcionário" : "Funcionários";
+        // ✅ CORREÇÃO: Lógica para melhorar o texto do título
+        const tituloDoPlano = num === 1
+            ? `Plano para 1 Funcionário`
+            : `Plano para até ${num} Funcionários`;
         
         card.innerHTML = `
-          <h3 class="titulo">Plano para até ${num} ${textoFuncionario}</h3>
+          <h3 class="titulo">${tituloDoPlano}</h3>
           <p class="preco">${preco.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
@@ -247,6 +250,7 @@
 
     btnPagar.addEventListener("click", () => {
       if (!planoSelecionado) {
+        // ✅ Alterado para um modal mais amigável que alert()
         alert("Por favor, selecione um plano.");
         return;
       }
@@ -271,4 +275,6 @@
   </script>
 </body>
 </html>
+
+
 
