@@ -16,28 +16,29 @@ use MercadoPago\MercadoPagoConfig;
 
 // Recupera credenciais de variáveis de ambiente
 $mercadoPagoToken = getenv('MERCADOPAGO_TOKEN');
-$firebaseCredentialsPath = getenv('FIREBASE_CREDENTIALS_PATH'); // Ex: /home/seu_usuario/config/firebase-credentials.json
+$firebaseCredentialsPath = getenv('FIREBASE_CREDENTIALS_PATH'); // Usar apenas se necessário em hosting tradicional
 
-// Verifica se as variáveis estão definidas
+// Valida token do Mercado Pago
 if (!$mercadoPagoToken) {
     error_log("Token do Mercado Pago não definido.");
     http_response_code(500);
     die('Token do Mercado Pago não configurado.');
 }
 
-// Para ambientes tradicionais que usam JSON do Firebase
-if (!$firebaseCredentialsPath) {
-    error_log("Credenciais do Firebase não definidas.");
-    http_response_code(500);
-    die('Credenciais do Firebase não configuradas.');
-}
-
 try {
     // Inicializa Firebase
-    $firebase = (new Factory)
-        ->withServiceAccount($firebaseCredentialsPath) // ou ->withDefaultCredentials() se estiver no Cloud
-        ->createFirestore();
-    $db = $firebase->database();
+    $firebaseFactory = new Factory();
+
+    // Use JSON local se estiver em hosting tradicional
+    if ($firebaseCredentialsPath) {
+        $firebaseFactory = $firebaseFactory->withServiceAccount($firebaseCredentialsPath);
+    } else {
+        // Caso esteja rodando no Google Cloud, usar credenciais padrão
+        $firebaseFactory = $firebaseFactory->withDefaultCredentials();
+    }
+
+    $firestore = $firebaseFactory->createFirestore();
+    $db = $firestore->database();
 
     // Inicializa Mercado Pago
     MercadoPagoConfig::setAccessToken($mercadoPagoToken);
@@ -56,6 +57,7 @@ try {
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
+// Log para depuração
 error_log("Webhook recebido: " . $json);
 
 // Só processa notificações de assinaturas (preapproval)
@@ -80,10 +82,12 @@ if (isset($data['type']) && $data['type'] === 'preapproval') {
         }
 
         // Mapeia status do Mercado Pago para status interno
-        $novoStatus = 'desconhecido';
-        if ($statusMP === 'authorized') $novoStatus = 'ativo';
-        if ($statusMP === 'cancelled') $novoStatus = 'cancelado';
-        if ($statusMP === 'paused') $novoStatus = 'pausado';
+        $novoStatus = match($statusMP) {
+            'authorized' => 'ativo',
+            'cancelled'  => 'cancelado',
+            'paused'     => 'pausado',
+            default      => 'desconhecido',
+        };
 
         // Atualiza Firestore para cada assinatura encontrada
         foreach ($snapshot as $doc) {
@@ -110,5 +114,4 @@ if (isset($data['type']) && $data['type'] === 'preapproval') {
 // Resposta final para o Mercado Pago
 http_response_code(200);
 echo "OK";
-
 ?>
