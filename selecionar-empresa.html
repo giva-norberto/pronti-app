@@ -12,51 +12,40 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <style>
-        :root {
-            --cor-primaria: #4f46e5;
-            --cor-sucesso: #10b981;
-            --cor-perigo: #ef4444;
-            --cor-fundo: #f8fafc;
-            --cor-texto-titulo: #1e293b;
-            --cor-texto-corpo: #64748b;
-            --cor-borda: #e2e8f0;
-            --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1 ), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --sombra-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
+        /* === ESTILO PADRÃO PRONTI APLICADO === */
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: var(--cor-fundo);
-            color: var(--cor-texto-corpo);
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
+            color: #e0e7ff;
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 40px 20px;
             box-sizing: border-box;
         }
         .selecao-container {
             width: 100%;
-            max-width: 550px;
-            background-color: #ffffff;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: var(--sombra-card);
+            max-width: 600px;
+            background-color: transparent;
             text-align: center;
         }
         .header-selecao h1 {
-            color: var(--cor-texto-titulo);
-            font-size: 2rem;
+            color: #ffffff;
+            font-size: clamp(2rem, 5vw, 2.8rem);
             font-weight: 700;
             margin: 0 0 10px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .header-selecao p {
-            font-size: 1.1rem;
+            font-size: clamp(1rem, 2.5vw, 1.1rem);
             margin-bottom: 40px;
+            color: #e0e7ff;
         }
         #empresas-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 20px;
             justify-items: center;
         }
@@ -65,22 +54,22 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 1px solid var(--cor-borda);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 20px;
             cursor: pointer;
-            background: #fff;
+            background: linear-gradient(135deg, #6366f1, #4facfe);
             text-decoration: none;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            transition: transform 0.25s, box-shadow 0.25s;
             height: 180px;
             width: 100%;
             box-sizing: border-box;
             position: relative;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+            border: none;
         }
         .empresa-card:hover, .criar-empresa-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--sombra-card-hover);
-            border-color: var(--cor-primaria);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
         .empresa-logo {
             width: 80px;
@@ -88,27 +77,32 @@
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 15px;
-            background-color: #eef2ff;
-            color: var(--cor-primaria);
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
             font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
         .empresa-nome {
             font-weight: 600;
-            color: var(--cor-texto-titulo);
+            color: #ffffff;
             font-size: 1rem;
             text-align: center;
             word-break: break-word;
         }
         .criar-empresa-card {
-            border: 2px dashed var(--cor-borda);
+            background: transparent;
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+        }
+         .criar-empresa-card:hover {
+            border-color: rgba(255, 255, 255, 0.8);
         }
         .criar-empresa-card .plus-icon {
             font-size: 2.5rem;
-            color: var(--cor-primaria);
+            color: #ffffff;
             margin-bottom: 15px;
         }
         .logout-container {
@@ -116,23 +110,22 @@
             text-align: center;
         }
         .btn-logout {
-            background-color: #fee2e2;
-            color: var(--cor-perigo);
-            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
             padding: 10px 20px;
             cursor: pointer;
             font-weight: 600;
             font-size: 1rem;
-            transition: background-color 0.2s ease, color 0.2s ease;
+            transition: background-color 0.2s ease;
         }
         .btn-logout:hover {
-            background-color: var(--cor-perigo);
-            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.2);
         }
         .loader {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--cor-primaria);
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid #ffffff;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -142,21 +135,15 @@
         @keyframes spin {
             100% { transform: rotate(360deg); }
         }
-        .mensagem-primeiro-acesso {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            color: var(--cor-texto-corpo);
-        }
         .status-expirado {
             position: absolute;
             bottom: 10px;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: #d93025;
-            background-color: #fce8e6;
-            padding: 2px 8px;
-            border-radius: 10px;
+            color: #ffffff;
+            background-color: #ef4444;
+            padding: 3px 10px;
+            border-radius: 12px;
         }
     </style>
 </head>
@@ -172,7 +159,7 @@
         </div>
 
         <div class="logout-container">
-            <button id="btn-logout" class="btn-logout">Sair da conta</button>
+            <button id="btn-logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Sair da conta</button>
         </div>
     </div>
 
@@ -191,6 +178,7 @@
         // --- Eventos ---
         btnLogout.addEventListener('click', async () => {
             localStorage.removeItem('empresaAtivaId');
+            sessionStorage.clear();
             await signOut(auth);
             window.location.href = 'login.html';
         });
@@ -198,8 +186,9 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 localStorage.removeItem('empresaAtivaId');
+                sessionStorage.clear();
                 const primeiroNome = user.displayName ? user.displayName.split(' ')[0] : 'Empreendedor(a)';
-                tituloBoasVindas.textContent = `Bem-vindo(a), ${primeiroNome}!`;
+                tituloBoasVindas.textContent = `Olá, ${primeiroNome}!`;
                 carregarEmpresas(user);
             } else {
                 window.location.href = 'login.html';
@@ -214,7 +203,14 @@
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) return { isTrialActive: false };
                 const userData = userSnap.data();
-                if (userData.isPremium === true) return { isTrialActive: false };
+                
+                // Se o status da empresa for algo diferente de 'ativo', consideramos expirado
+                if (empresaData.status !== 'ativo') {
+                    return { isTrialActive: false };
+                }
+                
+                // Se o usuário tem uma assinatura premium, consideramos ativo
+                if (userData.isPremium === true) return { isTrialActive: true };
 
                 const trialDurationDays = empresaData?.freeEmDias ?? 0;
                 if (trialDurationDays <= 0) return { isTrialActive: false };
@@ -237,25 +233,25 @@
         async function getEmpresasDoUsuario(user) {
             const empresasUnicas = new Map();
             try {
-                const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid), where("status", "==", "ativo"));
+                const qDono = query(collection(db, "empresarios"), where("donoId", "==", user.uid));
                 const snapshotDono = await getDocs(qDono);
                 snapshotDono.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
-            } catch (e) {}
+            } catch (e) { console.warn("Não foi possível buscar empresas por 'donoId'", e); }
             try {
                 const mapaRef = doc(db, "mapaUsuarios", user.uid);
                 const mapaSnap = await getDoc(mapaRef);
                 if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
                     const idsDeEmpresas = mapaSnap.data().empresas.filter(id => !empresasUnicas.has(id));
-                    for (let i = 0; i < idsDeEmpresas.length; i += 10) {
-                        const chunk = idsDeEmpresas.slice(i, i + 10);
+                     for (let i = 0; i < idsDeEmpresas.length; i += 30) {
+                        const chunk = idsDeEmpresas.slice(i, i + 30);
                         if (chunk.length > 0) {
-                            const q = query(collection(db, "empresarios"), where(documentId(), "in", chunk), where("status", "==", "ativo"));
+                            const q = query(collection(db, "empresarios"), where(documentId(), "in", chunk));
                             const snap = await getDocs(q);
                             snap.forEach(doc => empresasUnicas.set(doc.id, { id: doc.id, ...doc.data() }));
                         }
                     }
                 }
-            } catch (e) {}
+            } catch (e) { console.warn("Não foi possível buscar empresas por 'mapaUsuarios'", e); }
             return Array.from(empresasUnicas.values());
         }
 
@@ -292,7 +288,7 @@
 
             } catch (error) {
                 console.error("Erro ao carregar empresas: ", error);
-                grid.innerHTML = `<p style="color: red;">Ocorreu um erro ao buscar suas empresas.</p>`;
+                grid.innerHTML = `<p style="color: #ffb8b8;">Ocorreu um erro ao buscar suas empresas.</p>`;
             } finally {
                 if (loader) loader.style.display = 'none';
             }
@@ -333,12 +329,14 @@
             
             const nomeFantasia = empresa.nomeFantasia || "Empresa Sem Nome";
             const inicial = nomeFantasia.charAt(0).toUpperCase();
-            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/eef2ff/4f46e5?text=${encodeURIComponent(inicial)}`;
+            const logoSrc = empresa.logoUrl || `https://placehold.co/100x100/ffffff/4f46e5?text=${encodeURIComponent(inicial)}&font=poppins`;
             
             const statusHtml = !isTrialActive ? '<span class="status-expirado">Expirado</span>' : '';
             
             card.innerHTML = `
-                <img src="${logoSrc}" alt="Logo de ${nomeFantasia}" class="empresa-logo">
+                <div class="empresa-logo" style="background-image: url('${logoSrc}')">
+                   ${!empresa.logoUrl ? inicial : ''}
+                </div>
                 <span class="empresa-nome">${nomeFantasia}</span>
                 ${statusHtml}
             `;
