@@ -57,7 +57,7 @@
         .btn-assinar {
             display: block;
             width: 100%;
-            background: linear-gradient(90deg, var(--pronti-verde) 60%, #23d2c8 100%);
+            background: linear-gradient(90deg, var(--pronti-azul) 80%, var(--pronti-azul-escuro) 100%);
             color: var(--pronti-contraste);
             font-weight: 700;
             border: none;
@@ -67,11 +67,11 @@
             cursor: pointer;
             text-decoration: none;
             margin-bottom: 10px;
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.13);
+            box-shadow: 0 4px 16px rgba(24, 121, 215, 0.13);
             transition: background 0.22s, transform 0.13s;
         }
         .btn-assinar:hover, .btn-assinar:focus {
-            background: linear-gradient(90deg, #13996a 60%, #1bc4c2 100%);
+            background: linear-gradient(90deg, #155799 80%, #155799 100%);
             transform: translateY(-2px) scale(1.027);
         }
         .btn-logout {
@@ -143,10 +143,7 @@
                             window.location.href = 'selecionar-empresa.html';
                             return;
                         }
-                        
-                        // Ajusta o link de planos para empresa correta
                         btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
-
                         const empresaRef = doc(db, "empresarios", empresaAtivaId);
                         const empresaSnap = await getDoc(empresaRef);
                         if (!empresaSnap.exists()) {
@@ -157,7 +154,7 @@
                         const userRef = doc(db, "usuarios", empresaData.donoId);
                         const userSnap = await getDoc(userRef);
                         if (!userSnap.exists() || userSnap.data().isPremium) {
-                            resolve(true); // Está ativo
+                            resolve(true);
                             return;
                         }
                         const trialDays = empresaData.freeEmDias ?? 0;
@@ -169,14 +166,14 @@
                                 endDate.setDate(startDate.getDate() + trialDays);
                                 const hoje = new Date();
                                 hoje.setHours(0, 0, 0, 0);
-                                resolve(endDate >= hoje); // Resolve com true se ativo
+                                resolve(endDate >= hoje);
                                 return;
                             }
                         }
-                        resolve(false); // Resolve com false se expirado
+                        resolve(false);
                     } catch (e) {
                         console.error("Erro ao verificar status:", e);
-                        resolve(false); // Em caso de erro, assume que expirou
+                        resolve(false);
                     }
                 });
             });
