@@ -122,21 +122,22 @@
 <body>
   <div class="container-pagamento">
     <h1>Escolha o seu Plano</h1>
-    <h2 id="info-usuario">Selecione o plano ideal para a sua equipe.</h2>
+    <h2 id="info-usuario">Carregando dados da sua empresa...</h2>
 
     <div class="lista-planos"></div>
 
     <button id="btn-pagar" class="btn-pagar" disabled>Selecione um plano</button>
   </div>
 
+  <!-- ✅ NOVA IMPORTAÇÃO DO FIREBASE PARA BUSCAR DADOS -->
+  <script type="module" src="./firebase-config.js"></script>
+
   <script type="module">
-    // =========================================================================
-    // NOVO SISTEMA DE PAGAMENTO MANUAL
-    // Este código agora usa os links de pagamento que você criou no Mercado Pago.
-    // =========================================================================
+    // ✅ NOVA IMPORTAÇÃO PARA LER DADOS DO FIRESTORE
+    import { db } from './firebase-config.js';
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
     const linksDosPlanos = {
-      // "numeroDeFuncionarios": "SEU_LINK_DO_MERCADO_PAGO"
       1: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca1b0887e74842659651f9763f203f13",
       2: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=642a8aead0404c9aae87499dd7795aac",
       3: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=7877711c561b463bb7245ad1ad24e2cb",
@@ -146,12 +147,15 @@
       20: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cd27c2649a1f4262813cb2e44cf6842f",
     };
 
+    const infoUsuarioDiv = document.getElementById("info-usuario");
     const listaPlanosContainer = document.querySelector(".lista-planos");
     const btnPagar = document.getElementById("btn-pagar");
     let planoSelecionado = null;
 
+    // ✅ CORREÇÃO: Estrutura de preços atualizada
     const configuracaoPrecos = {
-      precoBase: 59.90,
+      precoIndividual: 29.90, // Preço para 1 funcionário
+      precoBase: 59.90,       // Preço para 2 funcionários
       funcionariosInclusos: 2,
       faixasDePrecoExtra: [
         { de: 3, ate: 10, valor: 29.90 },
@@ -159,10 +163,32 @@
       ]
     };
 
+    // ✅ NOVA FUNÇÃO PARA BUSCAR O NOME DA EMPRESA
+    async function buscarDadosEmpresa(empresaId) {
+        if (!empresaId) {
+            infoUsuarioDiv.textContent = "Selecione o plano ideal para a sua equipe.";
+            return;
+        }
+        try {
+            const empresaRef = doc(db, "empresarios", empresaId);
+            const empresaSnap = await getDoc(empresaRef);
+            if (empresaSnap.exists()) {
+                const nomeFantasia = empresaSnap.data().nomeFantasia;
+                infoUsuarioDiv.textContent = `Olá, ${nomeFantasia}! Escolha seu plano.`;
+            } else {
+                 infoUsuarioDiv.textContent = "Empresa não encontrada. Selecione um plano.";
+            }
+        } catch (error) {
+            console.error("Erro ao buscar dados da empresa:", error);
+            infoUsuarioDiv.textContent = "Erro ao carregar dados. Selecione um plano.";
+        }
+    }
+
+    // ✅ CORREÇÃO: Lógica de cálculo de preço atualizada
     function calcularPreco(totalFuncionarios) {
         if (totalFuncionarios <= 0) return 0;
-        // CORREÇÃO: Plano de 1 funcionário tem o mesmo preço base
-        if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
+        if (totalFuncionarios === 1) return configuracaoPrecos.precoIndividual;
+        if (totalFuncionarios === 2) return configuracaoPrecos.precoBase;
         
         let precoTotal = configuracaoPrecos.precoBase;
         const funcionariosExtras = totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
@@ -172,8 +198,8 @@
             const funcionariosNaFaixa = (faixa.ate - faixa.de) + 1;
             const extrasNestaFaixa = Math.min(funcionariosExtras - funcionariosJaPrecificados, funcionariosNaFaixa);
             if (extrasNestaFaixa > 0) {
-            precoTotal += extrasNestaFaixa * faixa.valor;
-            funcionariosJaPrecificados += extrasNestaFaixa;
+              precoTotal += extrasNestaFaixa * faixa.valor;
+              funcionariosJaPrecificados += extrasNestaFaixa;
             }
             if (funcionariosJaPrecificados >= funcionariosExtras) break;
         }
@@ -182,7 +208,6 @@
 
     function gerarCardsDePlano() {
       listaPlanosContainer.innerHTML = "";
-      // Garante que os planos sejam exibidos em ordem numérica
       const planosOrdenados = Object.keys(linksDosPlanos).map(Number).sort((a, b) => a - b);
 
       planosOrdenados.forEach((num) => {
@@ -191,7 +216,6 @@
         card.className = "card-plano";
         card.dataset.funcionarios = num;
         
-        // Ajusta o texto para singular quando for 1 funcionário
         const textoFuncionario = num === 1 ? "Funcionário" : "Funcionários";
         
         card.innerHTML = `
@@ -213,7 +237,7 @@
           btnPagar.disabled = false;
           btnPagar.textContent = `Pagar com Mercado Pago (${preco.toLocaleString(
             "pt-BR",
-            { style: "currency", currency: "BRL" }
+            { style: "currency", "currency": "BRL" }
           )})`;
         });
         
@@ -236,8 +260,15 @@
       }
     });
 
-    gerarCardsDePlano();
+    // ✅ NOVA LÓGICA: LÊ O ID DA EMPRESA DA URL E PERSONALIZA A PÁGINA
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const empresaId = urlParams.get("empresaId");
+        buscarDadosEmpresa(empresaId);
+        gerarCardsDePlano();
+    });
 
   </script>
 </body>
 </html>
+
