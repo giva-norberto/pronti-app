@@ -6,6 +6,14 @@
   <title>Login - Pronti IA</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
   <style>
+    :root {
+      --cor-fundo: linear-gradient(135deg, #1879d7 0%, #155799 100%);
+      --cor-primaria: #1879d7;
+      --cor-primaria-escuro: #155799;
+      --cor-branco: #fff;
+      --cor-texto-leve: #64748b;
+      --sombra-elevada: 0 8px 32px rgba(24, 121, 215, 0.18), 0 2px 8px rgba(0,0,0,0.06);
+    }
     body {
       display: flex;
       justify-content: center;
@@ -29,6 +37,8 @@
       font-size: 2em;
       color: var(--cor-primaria);
       margin-bottom: 10px;
+      font-weight: 700;
+      letter-spacing: -1px;
     }
     .login-card p {
       color: var(--cor-texto-leve);
@@ -52,7 +62,8 @@
     }
     .btn-google:hover {
       background-color: #f8f8f8;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(24,121,215,0.10);
+      border-color: #1879d7;
     }
     .btn-google img {
       width: 20px;
@@ -91,6 +102,12 @@
       border-radius: 8px;
       box-sizing: border-box;
       font-size: 1em;
+      background: #f8fbff;
+    }
+    .form-group input:focus {
+      border-color: var(--cor-primaria);
+      outline: none;
+      background: #e6f0fa;
     }
     .btn-login {
       width: 100%;
@@ -98,14 +115,16 @@
       font-size: 1em;
       font-weight: 600;
       color: var(--cor-branco);
-      background-color: var(--cor-primaria);
+      background: linear-gradient(90deg, #1879d7 80%, #155799 100%);
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background 0.2s, opacity 0.2s;
+      box-shadow: 0 4px 16px rgba(24, 121, 215, 0.13);
     }
     .btn-login:hover {
-      opacity: 0.9;
+      background: linear-gradient(90deg, #155799 80%, #1879d7 100%);
+      opacity: 0.96;
     }
     .footer-links {
       margin-top: 20px;
@@ -114,9 +133,19 @@
     .footer-links a {
       color: var(--cor-primaria);
       text-decoration: none;
+      font-weight: 500;
     }
     .footer-links a:hover {
       text-decoration: underline;
+      color: var(--cor-primaria-escuro);
+    }
+    @media (max-width: 600px) {
+      .login-card {
+        padding: 24px 8vw;
+      }
+      .login-container {
+        padding: 8px;
+      }
     }
   </style>
 </head>
