@@ -53,7 +53,6 @@
     <script type="module">
         import { auth, db } from "./firebase-config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // ---> Importação ADICIONADA: 'serverTimestamp' para resetar o cronômetro <---
         import { collection, getDocs, doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
@@ -72,9 +71,6 @@
             // Sua função original, sem alterações
         }
         
-        // ==================================================================================
-        // ---> ÚNICA ALTERAÇÃO: A função agora reseta o cronômetro do trial <---
-        // ==================================================================================
         async function salvarDiasTeste(empresaId, donoId, button) {
             const input = document.getElementById(`trial-input-${empresaId}`);
             const novoValor = parseInt(input.value, 10);
@@ -90,16 +86,13 @@
 
             button.disabled = true;
             try {
-                // 1. Atualiza o número de dias na empresa
                 const empresaRef = doc(db, "empresarios", empresaId);
                 await updateDoc(empresaRef, { freeEmDias: novoValor });
 
-                // 2. Reseta o cronômetro, atualizando a data de início no documento do DONO
                 const donoRef = doc(db, "usuarios", donoId);
                 await updateDoc(donoRef, { trialStart: serverTimestamp() });
                 
                 alert('Dias de teste atualizados e período de trial reiniciado!');
-                // Recarrega os dados para mostrar a nova contagem de dias restantes
                 carregarDados();
 
             } catch (error) {
@@ -117,7 +110,7 @@
         conteudoDiv.addEventListener('click', function(event) {
             const target = event.target;
             const empresaId = target.dataset.id;
-            const donoId = target.dataset.donoid; // Adicionado para a função de salvar
+            const donoId = target.dataset.donoid;
             if (!empresaId) return;
 
             if (target.classList.contains('btn-block') || target.classList.contains('btn-unblock')) {
@@ -125,7 +118,7 @@
             } else if (target.classList.contains('btn-delete')) {
                 excluirEmpresa(empresaId, target);
             } else if (target.classList.contains('btn-save-trial')) {
-                salvarDiasTeste(empresaId, donoId, target); // Passa o donoId
+                salvarDiasTeste(empresaId, donoId, target);
             } else if (target.classList.contains('btn-save-license')) {
                 salvarLicencas(empresaId, target);
             }
@@ -137,7 +130,7 @@
             if (trialStart.seconds) {
                 startDate = new Date(trialStart.seconds * 1000);
             } else {
-                startDate = new Date(trialStart); // Fallback para outros formatos de data
+                startDate = new Date(trialStart);
             }
             const endDate = new Date(startDate);
             endDate.setDate(endDate.getDate() + freeEmDias);
@@ -153,7 +146,7 @@
                 htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
             } else {
                 htmlFinal += empresas.map(empresa => {
-                    const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0;
+                    const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0; // <- CORRIGIDO!
                     const licencaValue = empresa.usuariosLicenciados === undefined ? totalFuncionarios : empresa.usuariosLicenciados;
                     const diasRestantes = calcularDiasRestantes(empresa.trialStart, empresa.freeEmDias === undefined ? 15 : empresa.freeEmDias);
                     return `
@@ -217,7 +210,6 @@
                     const profSnap = await getDocs(collection(db, "empresarios", empresa.uid, "profissionais"));
                     empresa.funcionarios = profSnap.docs.map(p => ({ id: p.id, ...p.data() }));
 
-                    // Traz a data de início do trial do dono para o objeto da empresa
                     if (empresa.donoId) {
                         try {
                             const donoDoc = await getDoc(doc(db, "usuarios", empresa.donoId));
