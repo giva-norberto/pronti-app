@@ -21,7 +21,6 @@
     <div class="container-assinatura" id="assinatura-container" style="display:none;">
         <h1>Seu período de teste terminou!</h1>
         <p>Para continuar a usar nossos serviços, por favor, escolha um plano.</p>
-        <!-- CORREÇÃO: O link agora tem um ID para ser modificado pelo JavaScript -->
         <a href="pagamento.html" id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</a>
         <button id="btn-logout" class="btn-logout">Sair da conta</button>
     </div>
@@ -35,7 +34,6 @@
         const container = document.getElementById('assinatura-container');
         const loader = document.getElementById('loader');
         const btnLogout = document.getElementById('btn-logout');
-        // CORREÇÃO: Pegamos a referência do botão de assinar.
         const btnAssinar = document.getElementById('btn-assinar');
 
         async function checkStatusRapido() {
@@ -52,9 +50,7 @@
                             return;
                         }
                         
-                        // ====================================================================
-                        // CORREÇÃO: Atualiza a URL do botão com o ID da empresa ativa
-                        // ====================================================================
+                        // Esta linha é a mais importante e está correta.
                         btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
 
                         const empresaRef = doc(db, "empresarios", empresaAtivaId);
