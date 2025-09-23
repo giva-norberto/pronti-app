@@ -1,6 +1,7 @@
 <?php
 // =====================================================
-// Webhook PHP simples para atualizar status de assinaturas
+// Webhook PHP para atualizar status de assinaturas
+// VERSÃO CORRIGIDA: Usa o ficheiro de credenciais para autenticar no Firebase
 // =====================================================
 
 require __DIR__ . '/vendor/autoload.php';
@@ -10,8 +11,10 @@ use MercadoPago\Client\PreApproval\PreApprovalClient;
 use MercadoPago\MercadoPagoConfig;
 
 // -----------------------------------------------------
-// Configuração mínima
+// Configuração Segura e Correta
 // -----------------------------------------------------
+
+// 1. Pega o Token do Mercado Pago a partir das variáveis de ambiente do seu hosting
 $mercadoPagoToken = getenv('MERCADOPAGO_TOKEN');
 if (!$mercadoPagoToken) {
     http_response_code(500);
@@ -19,12 +22,26 @@ if (!$mercadoPagoToken) {
 }
 MercadoPagoConfig::setAccessToken($mercadoPagoToken);
 
-// Inicializa Firebase usando credenciais padrão do Cloud
-$firestore = (new Factory())->withDefaultCredentials()->createFirestore();
-$db = $firestore->database();
+// 2. Pega o CAMINHO para a sua chave do Firebase a partir das variáveis de ambiente
+$firebaseCredentialsPath = getenv('FIREBASE_CREDENTIALS_PATH');
+if (!$firebaseCredentialsPath) {
+    http_response_code(500);
+    die('Caminho das credenciais do Firebase não configurado.');
+}
+
+try {
+    // 3. ✅ CORREÇÃO: Autentica no Firebase usando o seu ficheiro de chave JSON
+    $firebase = (new Factory)->withServiceAccount($firebaseCredentialsPath);
+    $db = $firebase->createFirestore()->database();
+} catch (\Exception $e) {
+    error_log("Erro na inicialização: " . $e->getMessage());
+    http_response_code(500);
+    die("Erro de configuração do servidor.");
+}
+
 
 // -----------------------------------------------------
-// Recebe notificação
+// Recebe notificação (A sua lógica original, que está perfeita)
 // -----------------------------------------------------
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
