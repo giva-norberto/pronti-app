@@ -8,19 +8,113 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f0f4f8; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container-assinatura { background: #ffffff; border-radius: 16px; padding: 40px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1); max-width: 450px; }
-        .container-assinatura h1 { color: #1e293b; font-size: 2rem; margin-bottom: 15px; }
-        .container-assinatura p { color: #64748b; font-size: 1.1rem; line-height: 1.6; margin-bottom: 30px; }
-        .btn-assinar { display: block; width: 100%; background: #10b981; color: #fff; font-weight: 600; border: none; border-radius: 8px; padding: 15px 0; font-size: 1.1rem; cursor: pointer; text-decoration: none; }
-        .btn-logout { background: none; border: none; color: #64748b; cursor: pointer; font-size: 1rem; text-decoration: underline; margin-top: 20px; }
-        #loader { font-size: 1.2rem; color: #4f46e5; }
+        :root {
+            --pronti-azul: #1879d7;
+            --pronti-azul-escuro: #155799;
+            --pronti-azul-claro: #e6f0fa;
+            --pronti-verde: #10b981;
+            --pronti-cinza: #f5f8fa;
+            --pronti-titulo: #ffffff;
+            --pronti-texto: #e5e7eb;
+            --pronti-contraste: #fff;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--pronti-azul) 0%, var(--pronti-azul-escuro) 100%);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container-assinatura {
+            background: var(--pronti-azul-claro);
+            border-radius: 20px;
+            padding: 42px 36px 36px 36px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(24, 121, 215, 0.18),
+                        0 2px 8px rgba(0,0,0,0.08);
+            max-width: 410px;
+            width: 92vw;
+            border: 2px solid var(--pronti-azul);
+            position: relative;
+        }
+        .container-assinatura h1 {
+            color: var(--pronti-azul);
+            font-size: 2.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+            text-shadow: 0 2px 6px rgba(24,121,215,0.07);
+        }
+        .container-assinatura p {
+            color: #34495e;
+            font-size: 1.12rem;
+            line-height: 1.7;
+            margin-bottom: 34px;
+            font-weight: 500;
+        }
+        .btn-assinar {
+            display: block;
+            width: 100%;
+            background: linear-gradient(90deg, var(--pronti-verde) 60%, #23d2c8 100%);
+            color: var(--pronti-contraste);
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 0;
+            font-size: 1.16rem;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.13);
+            transition: background 0.22s, transform 0.13s;
+        }
+        .btn-assinar:hover, .btn-assinar:focus {
+            background: linear-gradient(90deg, #13996a 60%, #1bc4c2 100%);
+            transform: translateY(-2px) scale(1.027);
+        }
+        .btn-logout {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1.01rem;
+            text-decoration: underline;
+            margin-top: 17px;
+            font-weight: 600;
+            transition: color 0.16s;
+        }
+        .btn-logout:hover, .btn-logout:focus {
+            color: var(--pronti-azul);
+        }
+        #loader {
+            font-size: 1.20rem;
+            color: var(--pronti-contraste);
+            background: rgba(24,121,215,0.9);
+            padding: 40px 48px;
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(24,121,215,0.13),
+                        0 1.5px 6px rgba(0,0,0,0.07);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        @media (max-width: 600px) {
+            .container-assinatura {
+                padding: 24px 8vw 24px 8vw;
+                max-width: 95vw;
+            }
+            #loader {
+                padding: 28px 8vw;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container-assinatura" id="assinatura-container" style="display:none;">
         <h1>Seu período de teste terminou!</h1>
-        <p>Para continuar a usar nossos serviços, por favor, escolha um plano.</p>
+        <p>Para continuar usando o Pronti, escolha um plano de assinatura.<br>
+        Se tiver dúvidas, clique em "Sair da conta" e consulte nosso suporte.</p>
         <a href="pagamento.html" id="btn-assinar" class="btn-assinar">Ver Planos e Assinar</a>
         <button id="btn-logout" class="btn-logout">Sair da conta</button>
     </div>
@@ -50,7 +144,7 @@
                             return;
                         }
                         
-                        // Esta linha é a mais importante e está correta.
+                        // Ajusta o link de planos para empresa correta
                         btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
 
                         const empresaRef = doc(db, "empresarios", empresaAtivaId);
