@@ -286,7 +286,8 @@
       }
       const linkDePagamento = linksDosPlanos[planoSelecionado];
       if (linkDePagamento && linkDePagamento.startsWith("http")) {
-        window.location.href = linkDe pagamento;
+        // ✅ CORREÇÃO DO ERRO DE SINTAXE
+        window.location.href = linkDePagamento;
       } else {
         avisoSelecao.textContent = "Link de pagamento não configurado. Contacte o suporte.";
       }
@@ -301,4 +302,3 @@
   </script>
 </body>
 </html>
-
