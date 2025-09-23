@@ -10,6 +10,8 @@
     href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
     rel="stylesheet"
   />
+  <!-- ✅ Adicionada biblioteca de ícones Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <style>
     /* === ESTILO PADRÃO PRONTI === */
     body {
@@ -34,19 +36,35 @@
       color: #ffffff;
       font-size: clamp(2rem, 5vw, 2.8rem);
       text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      margin-bottom: 10px;
+      margin-bottom: 25px; /* Aumentado o espaçamento */
     }
-    #info-usuario {
-      font-size: clamp(1rem, 2.5vw, 1.1rem);
-      color: #e0e7ff;
+    
+    /* ✅ INÍCIO: NOVOS ESTILOS PARA O CABEÇALHO PROFISSIONAL */
+    #info-status-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
       background-color: rgba(0, 0, 0, 0.15);
-      padding: 12px 20px;
+      padding: 15px 20px;
       border-radius: 12px;
       margin-bottom: 40px;
-      font-weight: 600;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      min-height: 24px; /* Garante que a altura não mude durante o carregamento */
+      flex-wrap: wrap; /* Para telas pequenas */
     }
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: clamp(0.9rem, 2vw, 1rem);
+        color: #e0e7ff;
+        font-weight: 600;
+    }
+    .info-item i {
+        font-size: 1.2rem;
+        color: #a5b4fc;
+    }
+    /* ✅ FIM: NOVOS ESTILOS */
+
     .lista-planos {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -134,7 +152,19 @@
 <body>
   <div class="container-pagamento">
     <h1>Escolha o seu Plano</h1>
-    <h2 id="info-usuario">Carregando dados da sua empresa...</h2>
+
+    <!-- ✅ INÍCIO: NOVA ESTRUTURA HTML PARA O CABEÇALHO PROFISSIONAL -->
+    <div id="info-status-container">
+        <div class="info-item">
+            <i class="fa-solid fa-file-invoice"></i>
+            <span id="info-plano-atual">Carregando plano...</span>
+        </div>
+        <div class="info-item">
+            <i class="fa-solid fa-users"></i>
+            <span id="info-equipe-atual">Carregando equipe...</span>
+        </div>
+    </div>
+    <!-- ✅ FIM: NOVA ESTRUTURA HTML -->
 
     <div class="lista-planos"></div>
     
@@ -159,12 +189,14 @@
       20: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cd27c2649a1f4262813cb2e44cf6842f",
     };
 
-    const infoUsuarioDiv = document.getElementById("info-usuario");
+    // ✅ ELEMENTOS DO DOM ATUALIZADOS PARA O NOVO CABEÇALHO
+    const infoPlanoAtual = document.getElementById("info-plano-atual");
+    const infoEquipeAtual = document.getElementById("info-equipe-atual");
     const listaPlanosContainer = document.querySelector(".lista-planos");
     const btnPagar = document.getElementById("btn-pagar");
     const avisoSelecao = document.getElementById("aviso-selecao");
     let planoSelecionado = null;
-    let licencasNecessarias = 1; // Inicia com 1 para o caso de não haver ID
+    let licencasNecessarias = 1;
 
     const configuracaoPrecos = {
       precoIndividual: 29.90,
@@ -176,10 +208,11 @@
       ]
     };
 
-    // ✅ FUNÇÃO ATUALIZADA PARA BUSCAR PLANO ATUAL E CONTAR FUNCIONÁRIOS + DONO
+    // ✅ FUNÇÃO ATUALIZADA PARA PREENCHER O NOVO CABEÇALHO
     async function buscarDadosEmpresa(empresaId) {
         if (!empresaId) {
-            infoUsuarioDiv.textContent = "Selecione o plano ideal para a sua equipe.";
+            infoPlanoAtual.textContent = "Plano: Não identificado";
+            infoEquipeAtual.textContent = "Equipe: Não identificada";
             return;
         }
         try {
@@ -196,25 +229,21 @@
                 const planoAtualRaw = empresaData.plano || "free";
                 const planoAtual = planoAtualRaw.charAt(0).toUpperCase() + planoAtualRaw.slice(1);
                 const contagemProfissionais = profissionaisSnap.size;
-                
-                // CONTA OS FUNCIONÁRIOS + 1 (PARA O DONO)
                 const totalEquipe = contagemProfissionais + 1;
-
-                // Atualiza a variável global para a lógica de bloqueio
                 licencasNecessarias = totalEquipe;
                 
-                // Formata o texto para o cabeçalho
-                const textoPlano = `Seu plano atual: ${planoAtual}.`;
-                const textoEquipe = `Sua equipe tem ${totalEquipe} membro${totalEquipe > 1 ? 's' : ''} (incluindo você).`;
-
-                infoUsuarioDiv.textContent = `${textoPlano} ${textoEquipe}`;
+                // Preenche os novos elementos do cabeçalho
+                infoPlanoAtual.textContent = `Plano Atual: ${planoAtual}`;
+                infoEquipeAtual.textContent = `Equipe: ${totalEquipe} Membro${totalEquipe > 1 ? 's' : ''}`;
             } else {
-                 infoUsuarioDiv.textContent = "Empresa não encontrada. Selecione um plano.";
+                infoPlanoAtual.textContent = "Plano: Empresa não encontrada";
+                infoEquipeAtual.textContent = "Equipe: Não identificada";
             }
 
         } catch (error) {
             console.error("Erro ao buscar dados da empresa:", error);
-            infoUsuarioDiv.textContent = "Erro ao carregar dados. Selecione um plano.";
+            infoPlanoAtual.textContent = "Plano: Erro ao carregar";
+            infoEquipeAtual.textContent = "Equipe: Erro ao carregar";
         }
     }
     
@@ -286,7 +315,6 @@
       }
       const linkDePagamento = linksDosPlanos[planoSelecionado];
       if (linkDePagamento && linkDePagamento.startsWith("http")) {
-        // ✅ CORREÇÃO DO ERRO DE SINTAXE
         window.location.href = linkDePagamento;
       } else {
         avisoSelecao.textContent = "Link de pagamento não configurado. Contacte o suporte.";
