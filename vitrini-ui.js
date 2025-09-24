@@ -46,12 +46,24 @@ export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
             `<div class="info-categoria-bloco">
                 <div class="info-categoria-titulo">${cat}</div>
                 <div class="info-categoria-servicos">
-                    ${agrupados[cat].map(s =>
-                        `<div class="servico-info-item">
-                            <strong>${s.nome}</strong>
-                            <span>R$ ${s.preco.toFixed(2)} (${s.duracao} min)</span>
-                        </div>`
-                    ).join('')}
+                    ${agrupados[cat].map(s => {
+                        let precoHtml = '';
+                        if (s.promocao) {
+                            precoHtml = `
+                                <span class="preco-original" style="text-decoration:line-through; color:#ef4444; margin-right:8px;">R$ ${s.promocao.precoOriginal.toFixed(2)}</span>
+                                <span class="preco-promocional" style="color:#059669; font-weight:bold;">R$ ${s.promocao.precoComDesconto.toFixed(2)}</span>
+                                <span class="badge-promocao" style="background:#facc15; color:#92400e; border-radius:8px; padding:2px 8px; margin-left:8px; font-size:0.86em;">PROMO</span>
+                            `;
+                        } else {
+                            precoHtml = `<span class="preco-promocional">R$ ${s.preco.toFixed(2)}</span>`;
+                        }
+                        return `
+                            <div class="servico-info-item">
+                                <strong>${s.nome}</strong>
+                                <span>${precoHtml} (${s.duracao} min)</span>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>`
         ).join('');
@@ -132,12 +144,23 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
     function renderizarServicosDaCategoria(catAtual) {
         const servicosCat = agrupados[catAtual];
         document.getElementById('servicos-por-categoria').innerHTML = servicosCat.map(s => {
+            let precoHtml = '';
+            if (s.promocao) {
+                precoHtml = `
+                    <span class="preco-original" style="text-decoration:line-through; color:#ef4444; margin-right:8px;">R$ ${s.promocao.precoOriginal.toFixed(2)}</span>
+                    <span class="preco-promocional" style="color:#059669; font-weight:bold;">R$ ${s.promocao.precoComDesconto.toFixed(2)}</span>
+                    <span class="badge-promocao" style="background:#facc15; color:#92400e; border-radius:8px; padding:2px 8px; margin-left:8px; font-size:0.86em;">PROMO</span>
+                `;
+            } else {
+                precoHtml = `<span class="preco-promocional">R$ ${s.preco.toFixed(2)}</span>`;
+            }
+
             if (permiteMultiplos) {
                 return `
                     <div class="card-servico card-checkbox" data-id="${s.id}">
                         <div class="servico-info-multi">
                             <span class="servico-nome">${s.nome}</span>
-                            <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
+                            <span class="servico-detalhes">${precoHtml} - ${s.duracao} min</span>
                         </div>
                         <span class="checkmark"></span>
                     </div>
@@ -146,7 +169,7 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
                 return `
                     <div class="card-servico" data-id="${s.id}">
                         <span class="servico-nome">${s.nome}</span>
-                        <span class="servico-detalhes">R$ ${s.preco.toFixed(2)} - ${s.duracao} min</span>
+                        <span class="servico-detalhes">${precoHtml} - ${s.duracao} min</span>
                     </div>
                 `;
             }
@@ -433,7 +456,7 @@ export function atualizarResumoAgendamento(servicosSelecionados) {
 
     if (servicosSelecionados.length > 0) {
         const duracaoTotal = servicosSelecionados.reduce((acc, s) => acc + s.duracao, 0);
-        const precoTotal = servicosSelecionados.reduce((acc, s) => acc + s.preco, 0);
+        const precoTotal = servicosSelecionados.reduce((acc, s) => acc + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0);
         textoEl.innerHTML = `<strong>Resumo:</strong> ${servicosSelecionados.length} serviço(s) | <strong>Duração:</strong> ${duracaoTotal} min | <strong>Total:</strong> R$ ${precoTotal.toFixed(2)}`;
         container.style.display = 'block';
     } else {
@@ -453,7 +476,7 @@ export function atualizarResumoAgendamentoFinal() {
         el.innerHTML = '';
         return;
     }
-    const total = servicos.reduce((soma, s) => soma + (s.preco || 0), 0);
+    const total = servicos.reduce((soma, s) => soma + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0);
     const duracao = servicos.reduce((soma, s) => soma + (s.duracao || 0), 0);
     el.innerHTML = `
         <div class="resumo-agendamento">
