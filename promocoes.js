@@ -1,48 +1,104 @@
 // ======================================================================
-// ARQUIVO: promocoes.js 
+// ARQUIVO: promocoes.js (VERSÃO FINAL E FUNCIONAL)
 // ======================================================================
 
-import { collection, doc, addDoc, onSnapshot, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, doc, addDoc, onSnapshot, query, getDocs, deleteDoc, Timestamp, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
-// Reutilize seus helpers!
-import { showAlert } from "./vitrini-utils.js";
 
-// --- Mapeamento do DOM ---
+// --- Mapeamento de Elementos do DOM ---
 const formPromocao = document.getElementById('form-promocao');
-const selectServico = document.getElementById('servico-promo');
+const checkTodosServicos = document.getElementById('todos-servicos');
+const servicosContainer = document.getElementById('servicos-checkbox-container');
+const diasContainer = document.getElementById('dias-semana-container');
 const listaPromocoesDiv = document.getElementById('lista-promocoes');
+const promoNomeInput = document.getElementById('promo-nome');
+const tipoDescontoSelect = document.getElementById('tipo-desconto');
+const valorDescontoInput = document.getElementById('valor-desconto');
 
 // --- Variáveis de Estado ---
 let empresaId = localStorage.getItem("empresaAtivaId") || null;
+let todosOsServicos = []; // Vamos guardar os serviços aqui para reutilizar
 
 // --- Inicialização ---
 onAuthStateChanged(auth, (user) => {
     if (user && empresaId) {
-        carregarServicosNoSelect();
+        carregarServicosParaCheckboxes();
+        adicionarListenersDeInteracao();
         iniciarListenerDePromocoes();
     } else {
+        console.error("Usuário não autenticado ou empresaId não encontrado.");
         window.location.href = 'login.html';
     }
 });
 
-// --- Funções Principais ---
+/**
+ * 1. Carrega os serviços da empresa e cria os checkboxes dinamicamente.
+ */
+async function carregarServicosParaCheckboxes() {
+    try {
+        const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+        const snapshot = await getDocs(servicosRef);
+        
+        servicosContainer.innerHTML = ''; // Limpa a mensagem "Carregando..."
+        
+        if (snapshot.empty) {
+            servicosContainer.innerHTML = '<p style="color: #666;">Nenhum serviço cadastrado para selecionar.</p>';
+            return;
+        }
+        
+        todosOsServicos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-// 1. Carrega seus serviços da empresa para popular o <select>
-async function carregarServicosNoSelect() {
-    const servicosRef = collection(db, "empresarios", empresaId, "servicos");
-    const snapshot = await getDocs(servicosRef);
-    
-    snapshot.forEach(doc => {
-        const servico = { id: doc.id, ...doc.data() };
-        const option = document.createElement('option');
-        option.value = servico.id;
-        option.textContent = servico.nome; // Exibe o nome do serviço
-        selectServico.appendChild(option);
+        todosOsServicos.forEach(servico => {
+            const itemHTML = `
+                <div class="checkbox-item">
+                    <input type="checkbox" class="servico-individual" value="${servico.id}" id="servico-${servico.id}">
+                    <label for="servico-${servico.id}">${servico.nome}</label>
+                </div>
+            `;
+            // ✅ CORREÇÃO: Usamos 'insertAdjacentHTML' que é seguro e eficiente 
+            // para adicionar blocos de HTML, evitando o erro de 'appendChild' com null.
+            servicosContainer.insertAdjacentHTML('beforeend', itemHTML);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar serviços:", error);
+        servicosContainer.innerHTML = '<p style="color: red;">Falha ao carregar serviços.</p>';
+    }
+}
+
+/**
+ * 2. Adiciona a lógica de interação entre o checkbox "TODOS" e os individuais.
+ */
+function adicionarListenersDeInteracao() {
+    if (!checkTodosServicos) return;
+
+    checkTodosServicos.addEventListener('change', () => {
+        const servicosIndividuais = servicosContainer.querySelectorAll('.servico-individual');
+        servicosIndividuais.forEach(check => {
+            check.disabled = checkTodosServicos.checked;
+            if (checkTodosServicos.checked) {
+                check.checked = false;
+            }
+        });
+    });
+
+    servicosContainer.addEventListener('change', (e) => {
+        if (e.target.classList.contains('servico-individual') && e.target.checked) {
+            if (checkTodosServicos) {
+                checkTodosServicos.checked = false;
+                // Re-habilita todos, caso o "TODOS" tenha sido desmarcado por esta ação
+                const servicosIndividuais = servicosContainer.querySelectorAll('.servico-individual');
+                servicosIndividuais.forEach(check => {
+                    check.disabled = false;
+                });
+            }
+        }
     });
 }
 
-// 2. Ouve em tempo real as promoções salvas e as exibe
+/**
+ * 3. Ouve as promoções salvas no Firestore e as exibe na tela.
+ */
 function iniciarListenerDePromocoes() {
     const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
     const q = query(promocoesRef);
@@ -50,69 +106,114 @@ function iniciarListenerDePromocoes() {
     onSnapshot(q, (snapshot) => {
         const promocoes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderizarPromocoes(promocoes);
+    }, (error) => {
+        console.error("Erro ao ouvir promoções:", error);
+        listaPromocoesDiv.innerHTML = `<p style="color: red;">Erro ao carregar promoções.</p>`;
     });
 }
 
-// 3. Renderiza a lista de promoções
+/**
+ * 4. Renderiza os cards das promoções na parte inferior da página.
+ */
 function renderizarPromocoes(promocoes) {
     if (promocoes.length === 0) {
-        listaPromocoesDiv.innerHTML = "<p>Nenhuma promoção cadastrada.</p>";
+        listaPromocoesDiv.innerHTML = "<p>Nenhuma promoção cadastrada ainda.</p>";
         return;
     }
-    // Lógica para criar o HTML da lista de promoções com um botão de excluir
-    // (muito similar à sua função renderizarServicos)
+
     listaPromocoesDiv.innerHTML = promocoes.map(promo => {
-        // Obter o nome do serviço ou "Todos os serviços"
-        // Formatar o desconto
-        // Criar o card com o botão de excluir
+        const nomeServicos = promo.servicoIds
+            ? promo.servicoIds.map(id => todosOsServicos.find(s => s.id === id)?.nome || 'Serviço removido').join(', ')
+            : '<strong>Todos os serviços</strong>';
+
+        const diasSemana = promo.diasSemana?.map(formatarDiaSemana).join(', ') || 'Nenhum dia';
+        const desconto = formatarDesconto(promo);
+
         return `
-            <div class="promocao-card">
-                <p><strong>Serviço:</strong> ${promo.servicoId || 'Todos os serviços'}</p>
-                <p><strong>Dia:</strong> ${formatarDiaSemana(promo.diaSemana)}</p>
-                <p><strong>Desconto:</strong> ${formatarDesconto(promo)}</p>
-                <button class="btn-excluir-promo" data-id="${promo.id}">Excluir</button>
+            <div class="promocao-card" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                <h4>${promo.nome || 'Promoção sem nome'}</h4>
+                <p><strong>Serviços:</strong> ${nomeServicos}</p>
+                <p><strong>Dias:</strong> ${diasSemana}</p>
+                <p><strong>Desconto:</strong> ${desconto}</p>
+                <button class="btn-excluir-promo" data-id="${promo.id}" style="color: red; cursor: pointer;">Excluir</button>
             </div>
         `;
     }).join('');
 }
 
-
-// 4. Salva a nova promoção quando o formulário é enviado
+/**
+ * 5. Gerencia o envio do formulário para salvar a promoção.
+ */
 formPromocao.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const servicoId = document.getElementById('servico-promo').value;
+    let servicosSelecionados = null;
+    if (!checkTodosServicos.checked) {
+        servicosSelecionados = Array.from(servicosContainer.querySelectorAll('.servico-individual:checked')).map(cb => cb.value);
+        if (servicosSelecionados.length === 0) {
+            alert("Erro: Selecione 'TODOS os serviços' ou pelo menos um serviço individual.");
+            return;
+        }
+    }
+
+    const diasSelecionados = Array.from(diasContainer.querySelectorAll('input[name="dia-semana"]:checked')).map(cb => parseInt(cb.value, 10));
+    if (diasSelecionados.length === 0) {
+        alert("Erro: Selecione pelo menos um dia da semana.");
+        return;
+    }
     
     const novaPromocao = {
-        servicoId: servicoId === 'todos' ? null : servicoId,
-        diaSemana: parseInt(document.getElementById('dia-semana').value, 10),
-        tipoDesconto: document.getElementById('tipo-desconto').value,
-        valor: parseFloat(document.getElementById('valor-desconto').value),
+        nome: promoNomeInput.value,
+        servicoIds: servicosSelecionados,
+        diasSemana: diasSelecionados,
+        tipoDesconto: tipoDescontoSelect.value,
+        valor: parseFloat(valorDescontoInput.value),
         ativo: true,
-        criadoEm: new Date() // Firestore vai converter para Timestamp
+        criadoEm: Timestamp.now()
     };
 
     try {
         const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
         await addDoc(promocoesRef, novaPromocao);
         formPromocao.reset();
-        showAlert("Sucesso!", "Promoção salva com sucesso.");
+        // Re-habilita os checkboxes de serviço após o reset
+        servicosContainer.querySelectorAll('.servico-individual').forEach(check => check.disabled = false);
+        alert("Promoção salva com sucesso!");
     } catch (error) {
         console.error("Erro ao salvar promoção:", error);
-        showAlert("Erro", "Não foi possível salvar a promoção.");
+        alert("Não foi possível salvar a promoção. Tente novamente.");
     }
 });
 
-// 5. Listener para os botões de excluir na lista
+/**
+ * 6. Adiciona funcionalidade de exclusão aos botões.
+ */
 listaPromocoesDiv.addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-excluir-promo')) {
         const promoId = e.target.dataset.id;
         if (confirm("Tem certeza que deseja excluir esta promoção?")) {
-            const promoRef = doc(db, "empresarios", empresaId, "precos_especiais", promoId);
-            await deleteDoc(promoRef);
+            try {
+                const promoRef = doc(db, "empresarios", empresaId, "precos_especiais", promoId);
+                await deleteDoc(promoRef);
+                // A tela irá atualizar automaticamente por causa do onSnapshot
+            } catch (error) {
+                console.error("Erro ao excluir promoção:", error);
+                alert("Falha ao excluir a promoção.");
+            }
         }
     }
 });
 
-// Funções auxiliares (formatarDiaSemana, formatarDesconto, etc.)
-// ...
+
+// --- Funções Auxiliares ---
+function formatarDiaSemana(dia) {
+    const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    return dias[dia] || '';
+}
+
+function formatarDesconto(promo) {
+    if (promo.tipoDesconto === 'percentual') {
+        return `${promo.valor}% de desconto`;
+    }
+    return `R$ ${promo.valor.toFixed(2)} de desconto`;
+}
