@@ -49,6 +49,24 @@
         [data-card-id="perfil"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
         [data-card-id="relatorios"] { background: linear-gradient(135deg, #374151, #111827); }
         [data-card-id="administracao"], [data-card-id="permissoes"] { background: linear-gradient(135deg, #111827, #374151); }
+        
+        /* Estilo para o novo botão de notificação */
+        .notification-button {
+            background-color: #ff5858;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 20px;
+        }
+        .notification-button:hover {
+            background-color: #f59e42;
+        }
+
         @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
     </style>
 </head>
@@ -58,6 +76,11 @@
         <div class="dashboard-welcome-center">
             <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
             <p>Pronto para gerenciar seu dia?</p>
+            
+            <!-- NOVO BOTÃO PARA ATIVAR NOTIFICAÇÕES -->
+            <button class="notification-button" onclick="solicitarPermissaoParaNotificacoes()">
+                <i class="fa-solid fa-bell"></i> Ativar Notificações
+            </button>
         </div>
         
         <div class="dashboard-grid-cards" id="dashboard-grid-cards">
@@ -73,6 +96,14 @@
             <a href="permissoes.html" class="menu-card" data-card-id="permissoes"><i class="fa-solid fa-sliders"></i><span>Permissões</span></a>
         </div>
     </main>
+
+    <!-- NOVOS SCRIPTS DO FIREBASE PARA MENSAGENS -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging-compat.js"></script>
+    <script src="messaging.js"></script>
+
     <script type="module">
         import { verificarAcesso } from './userService.js'; 
         import { db } from './firebase-config.js';
@@ -169,3 +200,4 @@
     </script>
 </body>
 </html>
+
