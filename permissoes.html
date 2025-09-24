@@ -89,7 +89,7 @@
         let permissoesAtuais = {};
         let logoFile = null;
 
-        // Função auxiliar para checar permissão para 1 ou mais papéis
+        // Função auxiliar para checar permissão para 1 ou mais papéis (igual menu lateral/index)
         function temPermissao(menus, id, papelUsuario) {
             if (!menus[id]) return false;
             if (Array.isArray(papelUsuario)) {
@@ -99,9 +99,24 @@
             }
         }
 
-        // Checagem de permissão de acesso à página (administração)
-        async function checarPermissaoAcesso() {
-            const user = auth.currentUser;
+        // Função para obter os papéis do usuário igual index/menu lateral
+        async function obterPapeisUsuario(user) {
+            // Você pode ajustar a coleção/campos conforme seu projeto
+            const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
+            let perfil = perfilSnap.exists() ? perfilSnap.data() : {};
+            let papeisUsuario = [];
+            if (perfil.papeis && Array.isArray(perfil.papeis) && perfil.papeis.length > 0) {
+                papeisUsuario = perfil.papeis;
+            } else {
+                if (perfil.isAdmin) papeisUsuario.push('admin');
+                if (perfil.isOwner) papeisUsuario.push('dono');
+                if (perfil.papel && papeisUsuario.length === 0) papeisUsuario.push(perfil.papel);
+            }
+            return papeisUsuario;
+        }
+
+        // Checagem de permissão de acesso à página (administração) - mesma lógica do menu/index
+        async function checarPermissaoAcesso(user) {
             if (!user) {
                 window.location.href = "login.html";
                 return false;
@@ -112,18 +127,11 @@
             const regras = snap.exists() ? snap.data() : {};
             const menusGlobais = regras.menus || {};
 
-            // Descobrir papéis do usuário
-            let papelUsuario = [];
-            if (user.customClaims && user.customClaims.papeis && Array.isArray(user.customClaims.papeis)) {
-                papelUsuario = user.customClaims.papeis;
-            } else {
-                if (user.customClaims && user.customClaims.isAdmin) papelUsuario.push('admin');
-                if (user.customClaims && user.customClaims.isOwner) papelUsuario.push('dono');
-                // aqui pode adicionar outros papéis se necessário
-            }
+            // Obtém os papéis do usuário
+            const papeisUsuario = await obterPapeisUsuario(user);
 
             // Só permite se algum dos papéis pode acessar administração
-            if (!temPermissao(menusGlobais, "administracao", papelUsuario)) {
+            if (!temPermissao(menusGlobais, "administracao", papeisUsuario)) {
                 alert("Você não tem permissão para acessar esta página.");
                 window.location.href = "index.html";
                 return false;
@@ -209,7 +217,6 @@
         });
 
         // Permissão de acesso só para ADMIN_UID e papel correto
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 window.location.href = "login.html";
@@ -217,8 +224,8 @@
                 alert("Acesso restrito apenas ao administrador.");
                 window.location.href = "index.html";
             } else {
-                // Checa permissão global antes de liberar
-                if (await checarPermissaoAcesso()) {
+                // Checa permissão global antes de liberar (igual menu lateral/index)
+                if (await checarPermissaoAcesso(user)) {
                     carregarConfiguracoesGlobais();
                 }
             }
