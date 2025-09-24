@@ -5,12 +5,9 @@ import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 // ===================================================================================
-// !!! AÇÃO OBRIGATÓRIA !!!
-// Cole aqui a sua Chave VAPID (Certificado de Push da Web) do Firebase.
-// Você pode encontrá-la em:
-// Configurações do Projeto ⚙️ > Cloud Messaging > Configuração da Web
+// CORREÇÃO: A Chave VAPID (Certificado de Push da Web) foi inserida abaixo.
 // ===================================================================================
-const VAPID_KEY = "COLE_SUA_CHAVE_VAPID_AQUI";
+const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w";
 
 // --- Inicialização dos Serviços do Firebase ---
 const auth = getAuth(app);
