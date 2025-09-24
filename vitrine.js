@@ -11,6 +11,10 @@ import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, b
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
+// --- IMPORTS PARA PROMOÇÕES ---
+import { db } from './firebase-config.js';
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
 // --- INICIALIZAÇÃO DA PÁGINA ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -31,6 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
         
+        // --- PROMOÇÕES: Buscar e aplicar promoções antes do render da UI ---
+        await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId);
+
         // Renderiza a interface inicial com os dados carregados
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
         UI.renderizarProfissionais(state.listaProfissionais);
@@ -44,6 +51,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById("vitrine-loader").innerHTML = `<p style="text-align: center; color:red; padding: 20px;">${error.message}</p>`;
     }
 });
+
+// --- FUNÇÕES PARA PROMOÇÕES NA VITRINE ---
+async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
+    if (!empresaId) return;
+
+    const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
+    const snapshot = await getDocs(promocoesRef);
+
+    const promocoesAtivas = [];
+    const hoje = new Date().getDay();
+
+    snapshot.forEach(doc => {
+        const promo = doc.data();
+        if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) {
+            promocoesAtivas.push({ id: doc.id, ...promo });
+        }
+    });
+
+    listaServicos.forEach(servico => {
+        let melhorPromocao = null;
+        // 1. Promo específica para o serviço
+        for (let promo of promocoesAtivas) {
+            if (promo.servicoIds && promo.servicoIds.includes(servico.id)) {
+                melhorPromocao = promo;
+                break;
+            }
+        }
+        // 2. Promoção para todos os serviços
+        if (!melhorPromocao) {
+            melhorPromocao = promocoesAtivas.find(promo => !promo.servicoIds);
+        }
+
+        if (melhorPromocao) {
+            let precoAntigo = servico.preco;
+            let precoNovo = precoAntigo;
+            if (melhorPromocao.tipoDesconto === "percentual") {
+                precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100);
+            } else if (melhorPromocao.tipoDesconto === "valorFixo") {
+                precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
+            }
+            servico.promocao = {
+                nome: melhorPromocao.nome,
+                precoOriginal: precoAntigo,
+                precoComDesconto: precoNovo,
+                tipoDesconto: melhorPromocao.tipoDesconto,
+                valorDesconto: melhorPromocao.valor
+            };
+        }
+    });
+}
 
 // --- CONFIGURAÇÃO DE EVENTOS ---
 function configurarEventosGerais() {
