@@ -1,7 +1,5 @@
 // ======================================================================
 //          VITRINE.JS - O Maestro da Aplicação
-//      Responsabilidade: Orquestrar o estado, os dados, a UI
-//      e as interações do utilizador na página da vitrine.
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -23,21 +21,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
         const [dados, profissionais, todosServicos] = await Promise.all([
-            getDadosEmpresa(empresaId), getProfissionaisDaEmpresa(empresaId), getTodosServicosDaEmpresa(empresaId)
+            getDadosEmpresa(empresaId),
+            getProfissionaisDaEmpresa(empresaId),
+            getTodosServicosDaEmpresa(empresaId)
         ]);
 
         if (!dados) throw new Error("Empresa não encontrada.");
-        
+
         setEmpresa(empresaId, dados);
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
 
-        // Ao iniciar, NÃO exibe promoção ainda; só após seleção de data!
+        // Ao iniciar, NUNCA exibe promoção! Só depois de selecionar a data.
         await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId, null, true);
 
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
         UI.renderizarProfissionais(state.listaProfissionais);
-        
+
         configurarEventosGerais();
         setupAuthListener(handleUserAuthStateChange);
         UI.toggleLoader(false);
@@ -49,29 +49,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Função para aplicar promoções válidas SOMENTE para o dia da data selecionada.
- * Se não houver data, NÃO aplica NENHUMA promoção (mostra preços normais).
- * Se for para forçar o "vazio" (parâmetro forceNoPromo), limpa todas promoções.
+ * Aplica promoções válidas SOMENTE para o dia da data selecionada.
+ * Se não houver data, NÃO aplica NENHUMA promoção.
+ * Se forceNoPromo=true, limpa as promoções.
  */
 async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null, forceNoPromo = false) {
     if (!empresaId) return;
-
-    // Sempre limpa promoções anteriores
+    // Limpa sempre promoções anteriores
     listaServicos.forEach(s => { s.promocao = null; });
 
-    // Se for para não mostrar promoções, retorna já limpo
     if (forceNoPromo) return;
-
-    // Se não houver data selecionada, NÃO aplica nenhuma promoção (só preço normal)
     if (!dataSelecionadaISO) return;
 
     const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
     const snapshot = await getDocs(promocoesRef);
 
-    const promocoesAtivas = [];
+    // Calcula o dia da semana da data selecionada (0=domingo, 1=segunda, ..., 3=quarta, ...)
     const data = new Date(dataSelecionadaISO);
-    const diaSemana = data.getDay(); // 0=domingo, 1=segunda, etc
+    const diaSemana = data.getDay();
 
+    // Busca promoções ativas para o dia correto
+    const promocoesAtivas = [];
     snapshot.forEach(doc => {
         const promo = doc.data();
         if (promo.ativo && Array.isArray(promo.diasSemana) && promo.diasSemana.includes(diaSemana)) {
@@ -79,8 +77,8 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
         }
     });
 
+    // Aplica promoções apenas se o dia da promoção bate com a data escolhida
     listaServicos.forEach(servico => {
-        servico.promocao = null;
         let melhorPromocao = null;
         for (let promo of promocoesAtivas) {
             if (Array.isArray(promo.servicoIds) && promo.servicoIds.includes(servico.id)) {
@@ -281,7 +279,7 @@ async function handleDataChange(e) {
     const { profissional, servicos, data } = state.agendamento;
     const duracaoTotal = servicos.reduce((total, s) => total + s.duracao, 0);
 
-    // Só aplica promoção SE a data foi mesmo selecionada (nunca antes!)
+    // Só aplica promoção SE a data foi mesmo selecionada!
     await aplicarPromocoesNaVitrine(state.todosOsServicos, state.empresaId, data, false);
 
     if (profissional) {
