@@ -9,12 +9,25 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
 /**
  * Função principal que ativa todo o menu lateral.
  * É exportada para ser chamada pela página que o carrega (ex: index.html).
- * Recebe obrigatoriamente o papel do usuário logado ('admin', 'dono', 'funcionario').
+ * Recebe obrigatoriamente o papel do usuário logado ('admin', 'dono', 'funcionario') 
+ * ou um array de papéis.
  */
 export async function ativarMenuLateral(papelUsuario) {
     await aplicarPermissoesMenuLateral(papelUsuario);
     marcarLinkAtivo();
     configurarBotaoLogout(); // Garante que o logout sempre funcione.
+}
+
+/**
+ * Função auxiliar para checar permissão para 1 ou mais papéis.
+ */
+function temPermissao(menus, id, papelUsuario) {
+    if (!menus[id]) return false;
+    if (Array.isArray(papelUsuario)) {
+        return papelUsuario.some(papel => menus[id][papel] === true);
+    } else {
+        return menus[id][papelUsuario] === true;
+    }
 }
 
 /**
@@ -33,8 +46,7 @@ async function aplicarPermissoesMenuLateral(papelUsuario) {
         const menus = regras.menus || {};
         document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
             const id = link.dataset.menuId;
-            const regra = menus[id];
-            const podeVer = regra && regra[papelUsuario] === true;
+            const podeVer = temPermissao(menus, id, papelUsuario);
             link.style.display = podeVer ? "" : "none";
         });
     } catch (error) {
