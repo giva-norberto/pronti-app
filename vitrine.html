@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
+
     <!-- 
     <meta property="og:title" content="Perfil de Negócio no Pronti App">
     <meta property="og:description" content="Clique para ver os serviços e fazer seu agendamento.">
@@ -405,9 +405,11 @@
                         break;
                     }
                 }
-                // 2. Promoção para todos os serviços
+                // 2. Promoção para todos os serviços (corrigido!)
                 if (!melhorPromocao) {
-                    melhorPromocao = promocoesAtivas.find(promo => !promo.servicoIds);
+                    melhorPromocao = promocoesAtivas.find(
+                        promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
+                    );
                 }
 
                 if (melhorPromocao) {
