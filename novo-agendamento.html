@@ -33,13 +33,17 @@
                     <input type="text" id="cliente" name="cliente" required class="form-input">
                 </div>
                 <div class="form-group">
-                    <label for="servico">1. Escolha o Serviço:</label>
+                    <label for="dia">1. Escolha o Dia:</label>
+                    <input type="date" id="dia" name="dia" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="servico">2. Escolha o Serviço:</label>
                     <div id="aviso-multiplo" class="aviso-multiplo" style="display:none; color: #0ea5e9; font-weight: 600; margin-bottom: 6px;">
                       <i class="fa fa-layer-group"></i>
-                      Modo múltiplos serviços ativado! Você pode selecionar mais de um serviço.
+                      Modo múltiplos serviços ativado!
                     </div>
-                    <select id="servico" name="servico" required class="form-select">
-                        <option value="">Selecione um serviço</option>
+                    <select id="servico" name="servico" required class="form-select" disabled>
+                        <option value="">Primeiro, selecione um dia</option>
                     </select>
                 </div>
 
@@ -59,14 +63,10 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="profissional">2. Escolha o Profissional:</label>
+                    <label for="profissional">3. Escolha o Profissional:</label>
                     <select id="profissional" name="profissional" required class="form-select" disabled>
                         <option value="">Primeiro, selecione um serviço</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label for="dia">3. Escolha o Dia:</label>
-                    <input type="date" id="dia" name="dia" required class="form-input">
                 </div>
                 <div class="form-group">
                     <label>4. Escolha o Horário Disponível:</label>
