@@ -78,6 +78,16 @@
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
+        // Função auxiliar para checar permissão para 1 ou mais papéis
+        function temPermissao(menus, id, papelUsuario) {
+            if (!menus[id]) return false;
+            if (Array.isArray(papelUsuario)) {
+                return papelUsuario.some(papel => menus[id][papel] === true);
+            } else {
+                return menus[id][papelUsuario] === true;
+            }
+        }
+
         // Aplica as permissões dos cards do dashboard de acordo com as permissões dos MENUS
         async function aplicarPermissoes(papelUsuario) {
             try {
@@ -87,12 +97,10 @@
                 const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
                 const menus = regras.menus || {};
 
-                // Para cada card, verifica se aquele papel tem permissão explicitamente
+                // Para cada card, verifica se algum dos papéis do usuário tem permissão
                 document.querySelectorAll('[data-card-id]').forEach(el => {
                     const id = el.dataset.cardId;
-                    const regra = menus[id];
-                    // Só mostra o card se existe permissão para o papel
-                    const podeVer = regra && regra[papelUsuario] === true;
+                    const podeVer = temPermissao(menus, id, papelUsuario);
                     el.style.display = podeVer ? 'flex' : 'none';
                 });
             } catch (error) {
@@ -110,7 +118,6 @@
                 // Importa o módulo do menu lateral que já aplica o logout e ativa o menu
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
-                    // Agora ativarMenuLateral recebe o papel do usuário para aplicar as permissões do menu lateral corretamente!
                     await menuModule.ativarMenuLateral(papelUsuario);
                 }
             } catch (error) {
@@ -133,7 +140,11 @@
             try {
                 // 1. Checa acesso e obtém sessão
                 const sessao = await verificarAcesso();
-                const papelUsuario = sessao.papel;
+                let papelUsuario = sessao.papel;
+                // Permitir múltiplos papéis, se existir
+                if (sessao.papeis && Array.isArray(sessao.papeis) && sessao.papeis.length > 0) {
+                    papelUsuario = sessao.papeis;
+                }
                 if (!papelUsuario) throw new Error("O papel do usuário não foi definido na sessão.");
 
                 // 2. Popular cabeçalho, menu lateral e cards
@@ -144,7 +155,6 @@
             } catch (error) {
                 // Se erro de acesso, já redireciona
             } finally {
-                // Torna a página visível só ao final
                 document.body.classList.add('loaded');
             }
         }
