@@ -1,35 +1,41 @@
-// Importa as funções necessárias da SDK moderna do Firebase e da sua configuração
+// Importa as funções necessárias da SDK moderna do Firebase
 import { app } from './firebase-config.js'; 
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 // ===================================================================================
-// !!! AÇÃO NECESSÁRIA: COLE SUA CHAVE VAPID (Web Push Certificate) AQUI !!!
-// 1. Vá para o Console do Firebase
-// 2. Clique na Engrenagem ⚙️ > Configurações do Projeto
-// 3. Vá para a aba "Cloud Messaging"
-// 4. Em "Configuração da Web", encontre "Certificados de push da Web" e clique em "Gerar par de chaves"
-// 5. Copie a chave longa e cole abaixo.
+// !!! AÇÃO OBRIGATÓRIA !!!
+// Cole aqui a sua Chave VAPID (Certificado de Push da Web) do Firebase.
+// Você pode encontrá-la em:
+// Configurações do Projeto ⚙️ > Cloud Messaging > Configuração da Web
 // ===================================================================================
 const VAPID_KEY = "COLE_SUA_CHAVE_VAPID_AQUI";
 
-// Inicializa os serviços do Firebase
+// --- Inicialização dos Serviços do Firebase ---
 const auth = getAuth(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
 
-// Função auxiliar para salvar o token no Firestore
+/**
+ * Salva o token FCM de um dispositivo no Firestore, associado ao usuário logado.
+ * @param {string} token - O token FCM gerado para o dispositivo.
+ */
 async function salvarTokenNoFirestore(token) {
     try {
         const user = auth.currentUser;
         if (user) {
             console.log(`Usuário logado encontrado: ${user.uid}`);
+            
+            // Define o caminho no Firestore: /usuarios/{userId}/tokens/{fcmToken}
             const userRef = doc(db, 'usuarios', user.uid);
             const tokenRef = doc(userRef, 'tokens', token);
+            
+            // Salva o token com um timestamp de quando foi adicionado
             await setDoc(tokenRef, {
                 timestamp: serverTimestamp()
             });
+            
             console.log('Token salvo no Firestore com sucesso!');
             alert('Notificações ativadas com sucesso!');
         } else {
@@ -38,25 +44,32 @@ async function salvarTokenNoFirestore(token) {
         }
     } catch (error) {
         console.error('Erro ao salvar o token no Firestore:', error);
+        alert('Ocorreu um erro ao salvar suas preferências de notificação.');
     }
 }
 
-// Função PRINCIPAL para solicitar a permissão do usuário
+/**
+ * Função principal que solicita a permissão do usuário para receber notificações.
+ * Se a permissão for concedida, obtém o token FCM e o salva no Firestore.
+ */
 async function solicitarPermissao() {
-    console.log('Iniciando solicitação de permissão...');
+    console.log('Iniciando solicitação de permissão de notificação...');
 
+    // Verificação de segurança para garantir que a VAPID_KEY foi configurada
     if (!VAPID_KEY || VAPID_KEY === "COLE_SUA_CHAVE_VAPID_AQUI") {
-        console.error("ERRO: A VAPID_KEY não foi configurada em messaging.js");
+        console.error("ERRO CRÍTICO: A VAPID_KEY não foi configurada em messaging.js");
         alert("Erro de configuração: A chave de notificação (VAPID) não foi definida pelo desenvolvedor.");
         return;
     }
 
     try {
+        // Pede a permissão ao usuário através do pop-up do navegador
         const permission = await Notification.requestPermission();
+        
         if (permission === 'granted') {
             console.log('Permissão de notificação concedida.');
             
-            // Obtém o token usando a VAPID key
+            // Obtém o token do dispositivo usando a VAPID key
             const token = await getToken(messaging, { vapidKey: VAPID_KEY });
 
             if (token) {
@@ -64,17 +77,18 @@ async function solicitarPermissao() {
                 await salvarTokenNoFirestore(token);
             } else {
                 console.warn('Não foi possível obter o token. A permissão foi concedida, mas o token está vazio.');
+                alert('Não foi possível registrar o dispositivo para notificações. Tente novamente.');
             }
         } else {
-            console.warn('Permissão de notificação não concedida.');
-            alert('Você não permitiu as notificações.');
+            console.warn('Permissão de notificação não concedida pelo usuário.');
+            alert('Você escolheu não receber notificações.');
         }
     } catch (error) {
-        console.error('Erro ao solicitar permissão ou obter token:', error);
-        alert("Não foi possível obter permissão. Verifique as configurações do seu navegador ou se o seu dispositivo suporta notificações push.");
+        console.error('Erro durante o processo de permissão ou obtenção do token:', error);
+        alert("Não foi possível ativar as notificações. Verifique as configurações do seu navegador ou se o seu dispositivo suporta notificações push.");
     }
 }
 
-// Atrelamos a função ao objeto window para que ela seja acessível pelo `onclick` no HTML
+// Para que a função `solicitarPermissao` possa ser chamada pelo `onclick="..."` no HTML,
+// nós a tornamos acessível globalmente através do objeto 'window'.
 window.solicitarPermissaoParaNotificacoes = solicitarPermissao;
-
