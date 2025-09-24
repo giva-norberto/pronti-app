@@ -1,3 +1,7 @@
+// ======================================================================
+// ARQUIVO: novo-agendamento.js (VERSÃO FINAL COM PROMOÇÕES INTEGRADAS)
+// ======================================================================
+
 import { db, auth } from "./firebase-config.js";
 import {
     collection,
@@ -7,11 +11,12 @@ import {
     doc,
     query,
     where,
-    serverTimestamp
+    serverTimestamp,
+    Timestamp // ✅ Adicionado para verificações de data
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-// --- Funções auxiliares ---
+// --- Funções auxiliares (Seu código original mantido) ---
 function timeStringToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
@@ -37,6 +42,11 @@ function mostrarToast(texto, cor = '#38bdf8') {
 function getEmpresaIdAtiva() {
     return localStorage.getItem("empresaAtivaId") || null;
 }
+// ✅ NOVA FUNÇÃO AUXILIAR PARA FORMATAR PREÇO
+function formatarMoeda(valor) {
+    if (typeof valor !== 'number') return 'R$ 0,00';
+    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
 // --- Elementos do DOM ---
 const formAgendamento = document.getElementById("form-agendamento");
@@ -46,10 +56,22 @@ const inputData = document.getElementById("dia");
 const gradeHorarios = document.getElementById("grade-horarios");
 const inputHorarioFinal = document.getElementById("horario-final");
 const inputClienteNome = document.getElementById("cliente");
+// ✅ NOVOS ELEMENTOS DO RESUMO DE PREÇO
+const resumoAgendamentoDiv = document.getElementById('resumo-agendamento');
+const precoOriginalSpan = document.getElementById('preco-original');
+const precoFinalSpan = document.getElementById('preco-final');
+const linhaDescontoDiv = document.getElementById('linha-desconto');
+const descontoNomeSpan = document.getElementById('desconto-nome');
+const descontoValorSpan = document.getElementById('desconto-valor');
 
+// --- Variáveis de Estado ---
 let empresaId = null;
 let servicosCache = [];
 let profissionaisCache = [];
+// ✅ NOVAS VARIÁVEIS PARA ARMAZENAR PREÇOS
+let precoOriginalTotal = 0;
+let precoFinalTotal = 0;
+
 
 // --- Lógica principal ---
 onAuthStateChanged(auth, async (user) => {
@@ -63,6 +85,11 @@ onAuthStateChanged(auth, async (user) => {
     selectServico.addEventListener("change", popularSelectProfissionais);
     selectProfissional.addEventListener("change", buscarHorariosDisponiveis);
     inputData.addEventListener("change", buscarHorariosDisponiveis);
+    
+    // ✅ NOVOS LISTENERS PARA ATUALIZAR O PREÇO
+    selectServico.addEventListener("change", atualizarResumoDePreco);
+    inputData.addEventListener("change", atualizarResumoDePreco);
+    
     gradeHorarios.addEventListener("click", selecionarHorarioSlot);
     formAgendamento.addEventListener("submit", salvarAgendamento);
 });
@@ -76,40 +103,39 @@ async function carregarDadosIniciais() {
     ]);
     servicosCache = servicosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Carrega profissionais e também busca os horários de cada um no subdocumento "configuracoes/horarios"
     profissionaisCache = [];
     for (const docProf of profissionaisSnapshot.docs) {
         let dadosProf = { id: docProf.id, ...docProf.data() };
-        // Busca o subdocumento 'configuracoes/horarios'
         try {
             const horariosSnap = await getDoc(doc(
-                db,
-                "empresarios", empresaId,
-                "profissionais", docProf.id,
-                "configuracoes", "horarios"
+                db, "empresarios", empresaId, "profissionais", docProf.id, "configuracoes", "horarios"
             ));
             if (horariosSnap.exists()) {
                 dadosProf.horarios = horariosSnap.data();
             }
-        } catch (e) {
-            // Ignorar se não existir
-        }
+        } catch (e) { /* Ignorar se não existir */ }
         profissionaisCache.push(dadosProf);
     }
 
-    // Permitir seleção múltipla de serviços se qualquer profissional permitir
     const permitirMultiplo = profissionaisCache.some(p => p.horarios && p.horarios.permitirAgendamentoMultiplo);
-    if (permitirMultiplo) selectServico.setAttribute("multiple", "multiple");
-    else selectServico.removeAttribute("multiple");
+    if (permitirMultiplo) {
+        selectServico.setAttribute("multiple", "multiple");
+        document.getElementById('aviso-multiplo').style.display = 'block';
+    } else {
+        selectServico.removeAttribute("multiple");
+        document.getElementById('aviso-multiplo').style.display = 'none';
+    }
 
     selectServico.innerHTML = '<option value="">Selecione um serviço</option>';
-    servicosCache.forEach(servico => {
-        selectServico.appendChild(new Option(`${servico.nome} (${servico.duracao} min)`, servico.id));
+    servicosCache.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(servico => {
+        // ✅ Preço adicionado à opção para clareza
+        const textoOpcao = `${servico.nome} (${servico.duracao} min) - ${formatarMoeda(servico.preco)}`;
+        selectServico.appendChild(new Option(textoOpcao, servico.id));
     });
 }
 
+// Sua função original mantida
 function popularSelectProfissionais() {
-    // Para múltiplos serviços, mostra todos profissionais que fazem pelo menos um deles
     const servicoIds = Array.from(selectServico.selectedOptions).map(opt => opt.value);
     selectProfissional.innerHTML = '<option value="">Primeiro, selecione um serviço</option>';
     selectProfissional.disabled = true;
@@ -130,11 +156,12 @@ function popularSelectProfissionais() {
     }
 }
 
+// Sua função original mantida
 async function buscarHorariosDisponiveis() {
     const servicoIds = Array.from(selectServico.selectedOptions).map(opt => opt.value);
     const profissionalId = selectProfissional.value;
     const dataSelecionada = inputData.value;
-    if (!servicoIds.length || !profissionalId || !dataSelecionada) {
+    if (!servicoIds.length || servicoIds[0] === "" || !profissionalId || !dataSelecionada) {
         gradeHorarios.innerHTML = `<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>`;
         return;
     }
@@ -147,21 +174,16 @@ async function buscarHorariosDisponiveis() {
         gradeHorarios.innerHTML = `<p class="aviso-horarios" style="color: red;">Este profissional não tem horários configurados.</p>`;
         return;
     }
-
-    // Calcular duração total dos serviços selecionados
-    let duracaoTotal = 0;
-    if (profissional.horarios.permitirAgendamentoMultiplo) {
-        duracaoTotal = servicosSelecionados.reduce((total, s) => total + (s.duracao || 0), 0);
-    } else {
-        duracaoTotal = servicosSelecionados[0]?.duracao || 0;
+    
+    let duracaoTotal = servicosSelecionados.reduce((total, s) => total + (s.duracao || 0), 0);
+    // Se não permite multiplo, considera apenas o primeiro
+    if (!profissional.horarios.permitirAgendamentoMultiplo && servicosSelecionados.length > 0) {
+        duracaoTotal = servicosSelecionados[0].duracao || 0;
     }
 
     const agendamentosDoDia = await buscarAgendamentosDoDia(empresaId, dataSelecionada, profissionalId);
     const slotsDisponiveis = calcularSlotsDisponiveis(
-        dataSelecionada,
-        agendamentosDoDia,
-        profissional.horarios,
-        duracaoTotal
+        dataSelecionada, agendamentosDoDia, profissional.horarios, duracaoTotal
     );
 
     gradeHorarios.innerHTML = '';
@@ -180,30 +202,26 @@ async function buscarHorariosDisponiveis() {
     inputHorarioFinal.value = '';
 }
 
-// --- Funções de slots (igual vitrine) ---
+// Sua função original mantida
 function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     const dataObj = new Date(`${data}T12:00:00Z`);
     const nomeDia = diaDaSemana[dataObj.getUTCDay()];
     const diaDeTrabalho = horariosTrabalho?.[nomeDia];
-    // Intervalo pode estar no objeto do dia OU no principal:
     const intervaloEntreSessoes = diaDeTrabalho?.intervalo || horariosTrabalho.intervalo || 0;
 
-    if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos || diaDeTrabalho.blocos.length === 0) {
-        return [];
-    }
+    if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos || diaDeTrabalho.blocos.length === 0) return [];
+
     const slotsDisponiveis = [];
     const horariosOcupados = agendamentosDoDia.map(ag => {
         const inicio = timeStringToMinutes(ag.horario);
-        const fim = inicio + (ag.servicoDuracao || ag.duracaoTotal || duracaoServico);
+        const fim = inicio + (ag.duracaoTotal || duracaoServico);
         return { inicio, fim };
     });
 
     const hoje = new Date();
     const ehHoje = hoje.toISOString().split('T')[0] === data;
-    const minutosAgora = timeStringToMinutes(
-        `${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`
-    );
+    const minutosAgora = timeStringToMinutes(`${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`);
 
     for (const bloco of diaDeTrabalho.blocos) {
         let slotAtualEmMinutos = timeStringToMinutes(bloco.inicio);
@@ -214,10 +232,7 @@ function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, dur
             let temConflito = horariosOcupados.some(ocupado =>
                 slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio
             );
-            if (
-                !temConflito &&
-                (!ehHoje || slotAtualEmMinutos > minutosAgora)
-            ) {
+            if (!temConflito && (!ehHoje || slotAtualEmMinutos > minutosAgora)) {
                 slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
             }
             slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico;
@@ -226,19 +241,20 @@ function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, dur
     return slotsDisponiveis;
 }
 
+// Sua função original mantida
 async function buscarAgendamentosDoDia(empresaId, data, profissionalId) {
     const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
     const q = query(
         agendamentosRef,
         where("data", "==", data),
         where("profissionalId", "==", profissionalId),
-        where("status", "==", "ativo")
+        where("status", "in", ["agendado", "confirmado", "ativo"]) // Considera múltiplos status
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-// --- Slot de horário selecionável (igual vitrine) ---
+// Sua função original mantida
 function selecionarHorarioSlot(e) {
     if (e.target.classList.contains("slot-horario")) {
         document.querySelectorAll('.slot-horario.selecionado').forEach(slot => slot.classList.remove('selecionado'));
@@ -247,7 +263,94 @@ function selecionarHorarioSlot(e) {
     }
 }
 
-// --- Salvar Agendamento ---
+// ✅ --- LÓGICA DE PROMOÇÕES E PREÇOS (SEÇÃO NOVA) ---
+
+async function atualizarResumoDePreco() {
+    const servicoIds = Array.from(selectServico.selectedOptions).map(opt => opt.value).filter(Boolean);
+    const diaSelecionado = inputData.value;
+
+    if (servicoIds.length === 0 || !diaSelecionado) {
+        resumoAgendamentoDiv.style.display = 'none';
+        return;
+    }
+    
+    const dataObj = new Date(diaSelecionado + 'T12:00:00Z');
+    const diaDaSemana = dataObj.getUTCDay();
+
+    const promocoesDoDia = await buscarPromocoesAtivas(empresaId, diaDaSemana);
+
+    let totalOriginal = 0;
+    let totalFinal = 0;
+    let descontoAplicado = false;
+    let nomesPromocoes = new Set(); // Para evitar nomes duplicados
+
+    for (const servicoId of servicoIds) {
+        const servico = servicosCache.find(s => s.id === servicoId);
+        if (servico) {
+            const infoPreco = calcularPrecoComDesconto(servico, promocoesDoDia);
+            totalOriginal += servico.preco;
+            totalFinal += infoPreco.precoFinal;
+            if(infoPreco.temDesconto) {
+                descontoAplicado = true;
+                nomesPromocoes.add(infoPreco.promocaoAplicada.nome || 'Promoção');
+            }
+        }
+    }
+
+    exibirResumo(totalOriginal, totalFinal, descontoAplicado, Array.from(nomesPromocoes));
+}
+
+async function buscarPromocoesAtivas(empresaId, diaDaSemana) {
+    try {
+        const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
+        const q = query(promocoesRef, where("diasSemana", "array-contains", diaDaSemana), where("ativo", "==", true));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error("Erro ao buscar promoções:", error);
+        return [];
+    }
+}
+
+function calcularPrecoComDesconto(servico, promocoesDoDia) {
+    const precoOriginal = servico.preco;
+    const promocaoEspecifica = promocoesDoDia.find(p => p.servicoIds && p.servicoIds.includes(servico.id));
+    const promocaoGeral = promocoesDoDia.find(p => p.servicoIds === null);
+    const promocaoAplicavel = promocaoEspecifica || promocaoGeral;
+
+    if (!promocaoAplicavel) {
+        return { precoFinal: precoOriginal, temDesconto: false };
+    }
+
+    let precoFinal = precoOriginal;
+    if (promocaoAplicavel.tipoDesconto === 'percentual') {
+        precoFinal = precoOriginal * (1 - promocaoAplicavel.valor / 100);
+    } else if (promocaoAplicavel.tipoDesconto === 'valorFixo') {
+        precoFinal = precoOriginal - promocaoAplicavel.valor;
+    }
+    precoFinal = Math.max(0, precoFinal);
+
+    return { precoFinal, temDesconto: true, promocaoAplicada: promocaoAplicavel };
+}
+
+function exibirResumo(totalOriginal, totalFinal, temDesconto, nomesDasPromos) {
+    precoOriginalSpan.textContent = formatarMoeda(totalOriginal);
+    precoFinalSpan.textContent = formatarMoeda(totalFinal);
+    precoOriginalTotal = totalOriginal; // Salva para uso no submit
+    precoFinalTotal = totalFinal; // Salva para uso no submit
+
+    if (temDesconto) {
+        const valorDoDesconto = totalOriginal - totalFinal;
+        descontoNomeSpan.textContent = `Desconto (${nomesDasPromos.join(', ')})`;
+        descontoValorSpan.textContent = `-${formatarMoeda(valorDoDesconto)}`;
+        linhaDescontoDiv.style.display = 'flex';
+    } else {
+        linhaDescontoDiv.style.display = 'none';
+    }
+    resumoAgendamentoDiv.style.display = 'block';
+}
+
+// --- Salvar Agendamento (Sua função original MODIFICADA) ---
 async function salvarAgendamento(e) {
     e.preventDefault();
     const servicoIds = Array.from(selectServico.selectedOptions).map(opt => opt.value);
@@ -264,19 +367,19 @@ async function salvarAgendamento(e) {
         return;
     }
 
-    let duracaoTotal = 0;
-    if (profissional.horarios.permitirAgendamentoMultiplo) {
-        duracaoTotal = servicosSelecionados.reduce((total, s) => total + (s.duracao || 0), 0);
-    } else {
-        duracaoTotal = servicosSelecionados[0]?.duracao || 0;
+    let duracaoTotal = servicosSelecionados.reduce((total, s) => total + (s.duracao || 0), 0);
+    if (!profissional.horarios.permitirAgendamentoMultiplo && servicosSelecionados.length > 0) {
+        duracaoTotal = servicosSelecionados[0].duracao || 0;
     }
 
+    // ✅ MODIFICAÇÃO: Inclusão dos campos de preço no objeto a ser salvo
     const novoAgendamento = {
         clienteNome: inputClienteNome.value,
         servicos: servicosSelecionados.map(s => ({
             id: s.id,
             nome: s.nome,
-            duracao: s.duracao
+            duracao: s.duracao,
+            preco: s.preco // Salva o preço original de cada serviço
         })),
         duracaoTotal,
         profissionalId,
@@ -284,7 +387,10 @@ async function salvarAgendamento(e) {
         data: inputData.value,
         horario: inputHorarioFinal.value,
         status: 'ativo',
-        criadoEm: serverTimestamp()
+        criadoEm: serverTimestamp(),
+        // ✅ NOVOS CAMPOS DE PREÇO
+        precoOriginal: precoOriginalTotal,
+        precoFinal: precoFinalTotal,
     };
 
     if (!novoAgendamento.horario) {
@@ -299,6 +405,8 @@ async function salvarAgendamento(e) {
         gradeHorarios.innerHTML = `<p class="aviso-horarios">Preencha os campos acima para ver os horários.</p>`;
         selectProfissional.innerHTML = '<option value="">Primeiro, selecione um serviço</option>';
         selectProfissional.disabled = true;
+        // ✅ Esconder o resumo após salvar
+        resumoAgendamentoDiv.style.display = 'none';
         setTimeout(() => { window.location.href = 'agenda.html'; }, 1500);
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
