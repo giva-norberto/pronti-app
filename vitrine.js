@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTodosOsServicos(todosServicos);
         
         // --- PROMOÇÕES: Buscar e aplicar promoções antes do render da UI ---
-        await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId);
+        await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId, null);
 
         // Renderiza a interface inicial com os dados carregados
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
@@ -53,26 +53,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- FUNÇÕES PARA PROMOÇÕES NA VITRINE ---
-async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
+// Corrigida: só aplica promoção se a data informada for compatível com a promoção (diasSemana)
+async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null) {
     if (!empresaId) return;
 
     const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
     const snapshot = await getDocs(promocoesRef);
 
     const promocoesAtivas = [];
-    const hoje = new Date().getDay();
+    // Determina o dia da semana: 0 = domingo, ..., 6 = sábado
+    let diaSemana;
+    if (dataSelecionadaISO) {
+        // dataSelecionadaISO: "2025-09-25"
+        const data = new Date(dataSelecionadaISO);
+        diaSemana = data.getDay();
+    } else {
+        diaSemana = new Date().getDay();
+    }
 
     snapshot.forEach(doc => {
         const promo = doc.data();
-        if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) {
+        if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(diaSemana)) {
             promocoesAtivas.push({ id: doc.id, ...promo });
         }
     });
 
     // Adicione um log para depuração
-    console.log("Promoções ativas para hoje:", promocoesAtivas);
+    console.log("Promoções ativas para dia da semana", diaSemana, promocoesAtivas);
 
     listaServicos.forEach(servico => {
+        servico.promocao = null; // Limpa promo antiga
         let melhorPromocao = null;
         // 1. Promo específica para o serviço
         for (let promo of promocoesAtivas) {
@@ -297,6 +307,21 @@ async function handleDataChange(e) {
     // Calcula a duração total a partir do array 'servicos'
     const duracaoTotal = servicos.reduce((total, s) => total + s.duracao, 0);
 
+    // --- REAPLICA PROMOÇÕES PARA A DATA ESCOLHIDA ---
+    await aplicarPromocoesNaVitrine(state.todosOsServicos, state.empresaId, data);
+
+    // --- ATUALIZA UI com promoções corretas do dia selecionado ---
+    if (profissional) {
+        const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
+        const servicosDoProfissional = (profissional.servicos || []).map(servicoId => state.todosOsServicos.find(servico => servico.id === servicoId)).filter(Boolean);
+        UI.renderizarServicos(servicosDoProfissional, permiteMultiplos);
+        // Re-seleciona os serviços já escolhidos pelo usuário
+        state.agendamento.servicos.forEach(s => UI.selecionarCard('servico', s.id));
+        if (permiteMultiplos) {
+            UI.atualizarResumoAgendamento(state.agendamento.servicos);
+        }
+    }
+
     if (!profissional || duracaoTotal === 0 || !data) return;
 
     UI.renderizarHorarios([], 'A calcular horários...');
@@ -348,7 +373,7 @@ async function handleConfirmarAgendamento() {
             id: servicos.map(s => s.id).join(','),
             nome: servicos.map(s => s.nome).join(' + '),
             duracao: servicos.reduce((total, s) => total + s.duracao, 0),
-            preco: servicos.reduce((total, s) => total + s.preco, 0)
+            preco: servicos.reduce((total, s) => total + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0)
         };
 
         // Prepara o objeto final para salvar, garantindo que ele tenha a propriedade 'servico' (combinado).
