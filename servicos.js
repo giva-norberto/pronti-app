@@ -1,16 +1,17 @@
 // ======================================================================
-// ARQUIVO: servicos.js (VERSÃO FINAL, COMPLETA E REVISADA)
+// ARQUIVO: servicos.js (VERSÃO FINAL COM BOTÃO DE PROMOÇÕES)
 // ======================================================================
 
 import { collection, doc, getDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
-// ✅ GARANTIA: Importando as funções do vitrini-utils para garantir que estejam disponíveis.
 import { showCustomConfirm, showAlert } from "./vitrini-utils.js";
 
 // --- Mapeamento de Elementos do DOM ---
-const listaServicosDiv = document.getElementById('lista-servicos' );
+const listaServicosDiv = document.getElementById('lista-servicos');
 const btnAddServico = document.querySelector('.btn-new');
+// ✅ ADIÇÃO: Mapear o novo botão de promoções
+const btnPromocoes = document.getElementById('btnPromocoes');
 
 // --- Variáveis de Estado ---
 let empresaId = null;
@@ -27,20 +28,23 @@ onAuthStateChanged(auth, async (user) => {
         try {
             empresaId = getEmpresaIdAtiva();
             if (!empresaId) {
-                if(listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada.</p>';
+                if (listaServicosDiv) listaServicosDiv.innerHTML = '<p style="color:red;">Nenhuma empresa ativa selecionada.</p>';
                 return;
             }
 
             const empresaRef = doc(db, "empresarios", empresaId);
             const empresaSnap = await getDoc(empresaRef);
             if (empresaSnap.exists()) {
-                // ✅ GARANTIA: Verifica se o usuário é o dono OU o admin geral.
                 const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 isDono = (empresaSnap.data().donoId === user.uid) || (user.uid === adminUID);
             }
 
+            // ✅ MODIFICAÇÃO: Controlar visibilidade de AMBOS os botões
             if (btnAddServico) {
                 btnAddServico.style.display = isDono ? 'inline-flex' : 'none';
+            }
+            if (btnPromocoes) {
+                btnPromocoes.style.display = isDono ? 'inline-flex' : 'none';
             }
 
             iniciarListenerDeServicos();
@@ -94,7 +98,6 @@ function renderizarServicos(servicos) {
         
         return `
             <div class="categoria-bloco">
-                <!-- ✅ CORREÇÃO: Removido o 'style' inline para que o CSS do HTML funcione -->
                 <h2 class="categoria-titulo">${sanitizeHTML(cat)}</h2>
                 ${servicosCategoria.map(servico => `
                     <div class="servico-card">
@@ -125,15 +128,12 @@ async function excluirServico(servicoId) {
         await showAlert("Acesso Negado", "Apenas o dono pode excluir serviços.");
         return;
     }
-    // ✅ GARANTIA: Usando o confirm nativo do navegador como fallback seguro.
-    // Se o seu showCustomConfirm estiver funcionando, ótimo. Se não, isso garante a funcionalidade.
     const confirmado = window.confirm("Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.");
     if (!confirmado) return;
 
     try {
         const servicoRef = doc(db, "empresarios", empresaId, "servicos", servicoId);
         await deleteDoc(servicoRef);
-        // O onSnapshot vai atualizar a tela automaticamente, não precisa de showAlert aqui.
         console.log("Serviço excluído com sucesso!");
     } catch (error) {
         console.error("Erro ao excluir serviço:", error);
@@ -171,11 +171,24 @@ if (listaServicosDiv) {
 
 if (btnAddServico) {
     btnAddServico.addEventListener('click', (e) => {
-        e.preventDefault(); // Previne o comportamento padrão do link
+        e.preventDefault();
         if (!isDono) {
             showAlert("Acesso Negado", "Apenas o dono pode adicionar serviços.");
         } else {
             window.location.href = 'novo-servico.html';
+        }
+    });
+}
+
+// ✅ ADIÇÃO: Event Listener para o novo botão de promoções
+if (btnPromocoes) {
+    btnPromocoes.addEventListener('click', (e) => {
+        e.preventDefault(); // Previne o comportamento padrão do link
+        if (!isDono) {
+            showAlert("Acesso Negado", "Apenas o dono pode gerenciar promoções.");
+        } else {
+            // O próprio href já aponta para 'promocoes.html', mas podemos forçar aqui
+            window.location.href = 'promocoes.html';
         }
     });
 }
