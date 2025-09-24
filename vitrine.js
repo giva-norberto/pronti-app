@@ -13,6 +13,21 @@ import * as UI from './vitrini-ui.js';
 import { db } from './firebase-config.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
+// --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
+function parseDataISO(dateStr) {
+    if (!dateStr) return null;
+    if (dateStr.includes('-')) {
+        // formato yyyy-MM-dd
+        return new Date(dateStr + "T00:00:00");
+    }
+    if (dateStr.includes('/')) {
+        // formato dd/MM/yyyy
+        const [dia, mes, ano] = dateStr.split('/');
+        return new Date(`${ano}-${mes}-${dia}T00:00:00`);
+    }
+    return new Date(dateStr);
+}
+
 // --- INICIALIZAÇÃO DA PÁGINA ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -62,14 +77,15 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
     if (forceNoPromo) return;
     if (!dataSelecionadaISO) return;
 
-    const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
-    const snapshot = await getDocs(promocoesRef);
-
-    // Calcula o dia da semana da data selecionada (0=domingo, ..., 3=quarta, ...)
-    const data = new Date(dataSelecionadaISO);
+    // Usa utilitário para garantir o dia correto
+    const data = parseDataISO(dataSelecionadaISO);
+    if (!data || isNaN(data.getTime())) return;
     const diaSemana = data.getDay();
 
     // Busca promoções ativas para o dia correto
+    const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
+    const snapshot = await getDocs(promocoesRef);
+
     const promocoesAtivas = [];
     snapshot.forEach(doc => {
         const promo = doc.data();
