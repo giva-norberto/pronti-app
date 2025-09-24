@@ -106,24 +106,12 @@
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
 
+                // Importa o módulo do menu lateral que já aplica o logout e ativa o menu
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
-                    menuModule.ativarMenuLateral();
+                    // Agora ativarMenuLateral recebe o papel do usuário para aplicar as permissões do menu lateral corretamente!
+                    await menuModule.ativarMenuLateral(papelUsuario);
                 }
-
-                // Aplica permissões também nos itens do menu lateral
-                const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
-                const permissoesSnap = await getDoc(permissoesRef);
-                const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-                const menus = regras.menus || {};
-
-                document.querySelectorAll('#menu-container [data-menu-id]').forEach(item => {
-                    const menuId = item.dataset.menuId;
-                    const regraParaMenu = menus[menuId];
-                    const podeVer = regraParaMenu && regraParaMenu[papelUsuario] === true;
-                    if (!podeVer) item.style.display = 'none';
-                });
-
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
             }
@@ -150,7 +138,7 @@
 
                 // 2. Popular cabeçalho, menu lateral e cards
                 popularCabecalho(sessao);
-                await loadAndSetupMenu(papelUsuario);
+                await loadAndSetupMenu(papelUsuario); // agora passa o papel para o menu lateral
                 await aplicarPermissoes(papelUsuario);
 
             } catch (error) {
