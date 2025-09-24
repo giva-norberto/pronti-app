@@ -1,4 +1,4 @@
-// Importa e inicializa o Firebase no Service Worker
+// CORREÇÃO: Usando a versão 10.13.2 e a sintaxe moderna (import)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
