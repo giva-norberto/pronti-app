@@ -122,6 +122,27 @@
          .modal-auth-step a:hover {
             text-decoration: underline;
         }
+        /* Desconto na vitrine */
+        .preco-original {
+            text-decoration: line-through;
+            color: #888;
+            margin-right: 6px;
+            font-size: 1em;
+        }
+        .preco-promocional {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1.18em;
+        }
+        .badge-promocao {
+            background: #facc15;
+            color: #b45309;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 700;
+            padding: 2px 7px;
+            margin-left: 8px;
+        }
     </style>
 
 </head>
@@ -343,6 +364,122 @@
                 });
             }
         });
+    </script>
+
+    <!-- SCRIPT PARA DESCONTO NA VITRINE -->
+    <script type="module">
+        import { db } from './firebase-config.js';
+        import { collection, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        // Função utilitária para descobrir dia da semana (0=Dom, 1=Seg, ...)
+        function getHojeDiaSemana() {
+            return new Date().getDay();
+        }
+
+        // Busca e aplica promoções nos serviços exibidos na vitrine
+        async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
+            if (!empresaId) return;
+
+            const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
+            const snapshot = await getDocs(promocoesRef);
+
+            const promocoesAtivas = [];
+            const hoje = getHojeDiaSemana();
+
+            snapshot.forEach(doc => {
+                const promo = doc.data();
+                // Só promoções ativas E para o dia de hoje
+                if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) {
+                    promocoesAtivas.push({ id: doc.id, ...promo });
+                }
+            });
+
+            // Para cada serviço, tente aplicar a promoção mais relevante
+            listaServicos.forEach(servico => {
+                let melhorPromocao = null;
+
+                // 1. Promo específica para o serviço
+                for (let promo of promocoesAtivas) {
+                    if (promo.servicoIds && promo.servicoIds.includes(servico.id)) {
+                        melhorPromocao = promo;
+                        break;
+                    }
+                }
+                // 2. Promoção para todos os serviços
+                if (!melhorPromocao) {
+                    melhorPromocao = promocoesAtivas.find(promo => !promo.servicoIds);
+                }
+
+                if (melhorPromocao) {
+                    let precoAntigo = servico.preco;
+                    let precoNovo = precoAntigo;
+                    if (melhorPromocao.tipoDesconto === "percentual") {
+                        precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100);
+                    } else if (melhorPromocao.tipoDesconto === "valorFixo") {
+                        precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
+                    }
+                    // Adiciona info no objeto do serviço (para quem exibe saber)
+                    servico.promocao = {
+                        nome: melhorPromocao.nome,
+                        precoOriginal: precoAntigo,
+                        precoComDesconto: precoNovo,
+                        tipoDesconto: melhorPromocao.tipoDesconto,
+                        valorDesconto: melhorPromocao.valor
+                    };
+                }
+            });
+        }
+
+        // Função para renderizar a lista de serviços na vitrine
+        // Você pode já ter sua função própria; adapte o uso desta lógica
+        async function renderizarServicosVitrine(empresaId) {
+            // Exemplo: buscar serviços cadastrados no Firestore
+            const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+            const snapshot = await getDocs(servicosRef);
+            const listaServicos = [];
+            snapshot.forEach(doc => {
+                listaServicos.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Busca e aplica promoções
+            await aplicarPromocoesNaVitrine(listaServicos, empresaId);
+
+            // Renderiza os serviços já com promoções aplicadas
+            const listaServicosDiv = document.getElementById("lista-servicos");
+            if (!listaServicosDiv) return;
+            listaServicosDiv.innerHTML = "";
+
+            listaServicos.forEach(servico => {
+                const div = document.createElement("div");
+                div.classList.add("servico-card");
+                
+                let precoHtml = "";
+                if (servico.promocao) {
+                    precoHtml = `
+                        <span class="preco-original">R$ ${servico.promocao.precoOriginal.toFixed(2)}</span>
+                        <span class="preco-promocional">R$ ${servico.promocao.precoComDesconto.toFixed(2)}</span>
+                        <span class="badge-promocao">PROMO</span>
+                    `;
+                } else {
+                    precoHtml = `<span class="preco-promocional">R$ ${servico.preco.toFixed(2)}</span>`;
+                }
+
+                div.innerHTML = `
+                    <h4>${servico.nome}</h4>
+                    <p>${servico.descricao || ""}</p>
+                    <div>${precoHtml}</div>
+                `;
+                listaServicosDiv.appendChild(div);
+            });
+        }
+
+        // Descobre empresaId da mesma forma que as outras telas
+        let empresaId = localStorage.getItem("empresaAtivaId") || null;
+        if (empresaId) {
+            // Chame a função de renderização quando apropriado na sua lógica
+            // Exemplo: após carregar profissionais, agendamento, etc.
+            renderizarServicosVitrine(empresaId);
+        }
     </script>
 </body>
 </html>
