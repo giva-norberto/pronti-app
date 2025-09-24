@@ -141,11 +141,18 @@
                 // 1. Checa acesso e obtém sessão
                 const sessao = await verificarAcesso();
                 let papelUsuario = sessao.papel;
+
                 // Permitir múltiplos papéis, se existir
                 if (sessao.papeis && Array.isArray(sessao.papeis) && sessao.papeis.length > 0) {
                     papelUsuario = sessao.papeis;
                 }
-                if (!papelUsuario) throw new Error("O papel do usuário não foi definido na sessão.");
+                // Se vier flags isAdmin/isOwner, monta array
+                if ((!Array.isArray(papelUsuario) || papelUsuario.length === 0) && (sessao.isAdmin || sessao.isOwner)) {
+                    papelUsuario = [];
+                    if (sessao.isAdmin) papelUsuario.push('admin');
+                    if (sessao.isOwner) papelUsuario.push('dono');
+                }
+                if (!papelUsuario || (Array.isArray(papelUsuario) && papelUsuario.length === 0)) throw new Error("O papel do usuário não foi definido na sessão.");
 
                 // 2. Popular cabeçalho, menu lateral e cards
                 popularCabecalho(sessao);
