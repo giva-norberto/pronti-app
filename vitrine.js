@@ -69,18 +69,23 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
         }
     });
 
+    // Adicione um log para depuração
+    console.log("Promoções ativas para hoje:", promocoesAtivas);
+
     listaServicos.forEach(servico => {
         let melhorPromocao = null;
         // 1. Promo específica para o serviço
         for (let promo of promocoesAtivas) {
-            if (promo.servicoIds && promo.servicoIds.includes(servico.id)) {
+            if (Array.isArray(promo.servicoIds) && promo.servicoIds.includes(servico.id)) {
                 melhorPromocao = promo;
                 break;
             }
         }
-        // 2. Promoção para todos os serviços
+        // 2. Promoção para todos os serviços (servicoIds null, undefined ou array vazio)
         if (!melhorPromocao) {
-            melhorPromocao = promocoesAtivas.find(promo => !promo.servicoIds);
+            melhorPromocao = promocoesAtivas.find(
+                promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
+            );
         }
 
         if (melhorPromocao) {
@@ -98,6 +103,8 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
                 tipoDesconto: melhorPromocao.tipoDesconto,
                 valorDesconto: melhorPromocao.valor
             };
+            // Log para debug
+            console.log(`Promo aplicada ao serviço ${servico.nome}:`, servico.promocao);
         }
     });
 }
