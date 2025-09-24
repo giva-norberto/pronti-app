@@ -19,26 +19,22 @@ import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
-        // MULTIEMPRESA: empresaId da vitrine obtido SEMPRE da URL
         const empresaId = getEmpresaIdFromURL();
         if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
-        // Carrega os dados essenciais em paralelo para um carregamento mais rápido
         const [dados, profissionais, todosServicos] = await Promise.all([
             getDadosEmpresa(empresaId), getProfissionaisDaEmpresa(empresaId), getTodosServicosDaEmpresa(empresaId)
         ]);
 
         if (!dados) throw new Error("Empresa não encontrada.");
         
-        // Armazena os dados no estado central da aplicação
         setEmpresa(empresaId, dados);
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
-        
-        // --- PROMOÇÕES: Buscar e aplicar promoções antes do render da UI ---
-        await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId, null);
 
-        // Renderiza a interface inicial com os dados carregados
+        // Ao iniciar, NÃO exibe promoção ainda; só após seleção de data!
+        await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId, null, true);
+
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
         UI.renderizarProfissionais(state.listaProfissionais);
         
@@ -52,76 +48,80 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- FUNÇÕES PARA PROMOÇÕES NA VITRINE ---
-// Corrigida: só aplica promoção se a data informada for compatível com a promoção (diasSemana)
-async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null) {
+/**
+ * Função para aplicar promoções válidas SOMENTE para o dia da data selecionada.
+ * Se não houver data, NÃO aplica NENHUMA promoção (mostra preços normais).
+ * Se for para forçar o "vazio" (parâmetro forceNoPromo), limpa todas promoções.
+ */
+async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null, forceNoPromo = false) {
     if (!empresaId) return;
+
+    // Sempre limpa promoções anteriores
+    listaServicos.forEach(s => { s.promocao = null; });
+
+    // Se for para não mostrar promoções, retorna já limpo
+    if (forceNoPromo) return;
 
     const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
     const snapshot = await getDocs(promocoesRef);
 
     const promocoesAtivas = [];
-    // Determina o dia da semana: 0 = domingo, ..., 6 = sábado
-    let diaSemana;
+    let diaSemana = null;
     if (dataSelecionadaISO) {
-        // dataSelecionadaISO: "2025-09-25"
         const data = new Date(dataSelecionadaISO);
-        diaSemana = data.getDay();
-    } else {
-        diaSemana = new Date().getDay();
+        diaSemana = data.getDay(); // 0=domingo, 1=segunda,...
     }
+    // Se dataSelecionadaISO for null, NÃO aplica promoção nenhuma (só preço normal!)
 
-    snapshot.forEach(doc => {
-        const promo = doc.data();
-        if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(diaSemana)) {
-            promocoesAtivas.push({ id: doc.id, ...promo });
-        }
-    });
-
-    // Adicione um log para depuração
-    console.log("Promoções ativas para dia da semana", diaSemana, promocoesAtivas);
-
-    listaServicos.forEach(servico => {
-        servico.promocao = null; // Limpa promo antiga
-        let melhorPromocao = null;
-        // 1. Promo específica para o serviço
-        for (let promo of promocoesAtivas) {
-            if (Array.isArray(promo.servicoIds) && promo.servicoIds.includes(servico.id)) {
-                melhorPromocao = promo;
-                break;
+    // Só filtra promoções se já existe data (não mostra promo antes da escolha!)
+    if (diaSemana !== null) {
+        snapshot.forEach(doc => {
+            const promo = doc.data();
+            if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(diaSemana)) {
+                promocoesAtivas.push({ id: doc.id, ...promo });
             }
-        }
-        // 2. Promoção para todos os serviços (servicoIds null, undefined ou array vazio)
-        if (!melhorPromocao) {
-            melhorPromocao = promocoesAtivas.find(
-                promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
-            );
-        }
+        });
 
-        if (melhorPromocao) {
-            let precoAntigo = servico.preco;
-            let precoNovo = precoAntigo;
-            if (melhorPromocao.tipoDesconto === "percentual") {
-                precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100);
-            } else if (melhorPromocao.tipoDesconto === "valorFixo") {
-                precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
+        // Log para debug
+        console.log("[PROMO] Promoções ativas para dia da semana", diaSemana, promocoesAtivas);
+
+        listaServicos.forEach(servico => {
+            servico.promocao = null;
+            let melhorPromocao = null;
+            for (let promo of promocoesAtivas) {
+                if (Array.isArray(promo.servicoIds) && promo.servicoIds.includes(servico.id)) {
+                    melhorPromocao = promo;
+                    break;
+                }
             }
-            servico.promocao = {
-                nome: melhorPromocao.nome,
-                precoOriginal: precoAntigo,
-                precoComDesconto: precoNovo,
-                tipoDesconto: melhorPromocao.tipoDesconto,
-                valorDesconto: melhorPromocao.valor
-            };
-            // Log para debug
-            console.log(`Promo aplicada ao serviço ${servico.nome}:`, servico.promocao);
-        }
-    });
+            if (!melhorPromocao) {
+                melhorPromocao = promocoesAtivas.find(
+                    promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
+                );
+            }
+            if (melhorPromocao) {
+                let precoAntigo = servico.preco;
+                let precoNovo = precoAntigo;
+                if (melhorPromocao.tipoDesconto === "percentual") {
+                    precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100);
+                } else if (melhorPromocao.tipoDesconto === "valorFixo") {
+                    precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
+                }
+                servico.promocao = {
+                    nome: melhorPromocao.nome,
+                    precoOriginal: precoAntigo,
+                    precoComDesconto: precoNovo,
+                    tipoDesconto: melhorPromocao.tipoDesconto,
+                    valorDesconto: melhorPromocao.valor
+                };
+                console.log(`[PROMO] Aplicada ao serviço ${servico.nome}:`, servico.promocao);
+            }
+        });
+    }
 }
 
 // --- CONFIGURAÇÃO DE EVENTOS ---
 function configurarEventosGerais() {
-    // Função auxiliar para adicionar listeners de forma segura, evitando erros se um elemento não existir
     const addSafeListener = (selector, event, handler, isQuerySelector = false) => {
         const element = isQuerySelector ? document.querySelector(selector) : document.getElementById(selector);
         if (element) {
@@ -146,7 +146,6 @@ function configurarEventosGerais() {
 
 // --- HANDLERS ---
 
-/** Lida com a mudança de estado do utilizador (login/logout). */
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
@@ -162,7 +161,6 @@ function handleUserAuthStateChange(user) {
     }
 }
 
-/** Lida com o clique nos botões do menu para trocar de aba. */
 function handleMenuClick(e) {
     const menuButton = e.target.closest('[data-menu]');
     if (menuButton) {
@@ -178,7 +176,6 @@ function handleMenuClick(e) {
     }
 }
 
-/** Lida com a seleção de um profissional. */
 async function handleProfissionalClick(e) {
     const card = e.target.closest('.card-profissional');
     if (!card) return;
@@ -189,30 +186,27 @@ async function handleProfissionalClick(e) {
     
     const profissionalId = card.dataset.id;
     const profissional = state.listaProfissionais.find(p => p.id === profissionalId);
-    UI.selecionarCard('profissional', profissionalId, true); // Mostra o feedback de carregamento
+    UI.selecionarCard('profissional', profissionalId, true);
 
     try {
         profissional.horarios = await getHorariosDoProfissional(state.empresaId, profissionalId);
         setAgendamento('profissional', profissional);
         
         const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
-        
         const servicosDoProfissional = (profissional.servicos || []).map(servicoId => state.todosOsServicos.find(servico => servico.id === servicoId)).filter(Boolean);
 
-        // --- AGRUPAMENTO POR CATEGORIA ---
         UI.mostrarContainerForm(true);
-        UI.renderizarServicos(servicosDoProfissional, permiteMultiplos); // <-- O agrupamento deve ser feito dentro desta função do UI!
+        UI.renderizarServicos(servicosDoProfissional, permiteMultiplos);
         UI.configurarModoAgendamento(permiteMultiplos);
 
     } catch (error) {
         console.error("Erro ao buscar horários do profissional:", error);
         await UI.mostrarAlerta("Erro", "Não foi possível carregar os dados deste profissional.");
     } finally {
-        UI.selecionarCard('profissional', profissionalId, false); // Remove o feedback de carregamento
+        UI.selecionarCard('profissional', profissionalId, false);
     }
 }
 
-/** Lida com a seleção de um ou mais serviços. */
 async function handleServicoClick(e) {
     const card = e.target.closest('.card-servico');
     if (!card) return;
@@ -228,7 +222,6 @@ async function handleServicoClick(e) {
     let servicosAtuais = [...state.agendamento.servicos];
 
     if (permiteMultiplos) {
-        // Lógica de MÚLTIPLA seleção (adiciona ou remove)
         const index = servicosAtuais.findIndex(s => s.id === servicoId);
         if (index > -1) {
             servicosAtuais.splice(index, 1);
@@ -237,20 +230,16 @@ async function handleServicoClick(e) {
         }
         card.classList.toggle('selecionado');
     } else {
-        // Lógica de ÚNICA seleção (substitui)
         servicosAtuais = [servicoSelecionado];
         UI.selecionarCard('servico', servicoId);
     }
 
     setAgendamento('servicos', servicosAtuais);
-    
-    // Reseta os passos seguintes
     setAgendamento('data', null);
     setAgendamento('horario', null);
     UI.limparSelecao('horario');
     UI.desabilitarBotaoConfirmar();
     
-    // Se for modo múltiplo, atualiza o resumo. Se for único, avança direto.
     if (permiteMultiplos) {
         UI.atualizarResumoAgendamento(servicosAtuais);
     } else {
@@ -261,7 +250,6 @@ async function handleServicoClick(e) {
     }
 }
 
-/** Lida com o clique no botão "Escolher Data e Horário" no modo de múltiplos serviços. */
 async function handleProsseguirDataClick() {
     const servicos = state.agendamento.servicos;
     if (!servicos || servicos.length === 0) {
@@ -272,7 +260,6 @@ async function handleProsseguirDataClick() {
     await buscarPrimeiraDataDisponivel();
 }
 
-/** Função auxiliar para buscar a primeira data com vagas. */
 async function buscarPrimeiraDataDisponivel() {
     UI.atualizarStatusData(true, 'A procurar a data mais próxima com vagas...');
     const duracaoTotal = state.agendamento.servicos.reduce((total, s) => total + s.duracao, 0);
@@ -282,7 +269,7 @@ async function buscarPrimeiraDataDisponivel() {
         if (primeiraData) {
             dataInput.value = primeiraData;
             dataInput.disabled = false;
-            dataInput.dispatchEvent(new Event('change')); // Dispara o evento para carregar os horários
+            dataInput.dispatchEvent(new Event('change'));
         } else {
             UI.renderizarHorarios([], 'Nenhuma data disponível para os serviços selecionados nos próximos 3 meses.');
             UI.atualizarStatusData(false);
@@ -294,28 +281,21 @@ async function buscarPrimeiraDataDisponivel() {
     }
 }
 
-/** Lida com a mudança de data no seletor. */
 async function handleDataChange(e) {
     setAgendamento('data', e.target.value);
     setAgendamento('horario', null);
     UI.limparSelecao('horario');
     UI.desabilitarBotaoConfirmar();
-    
-    // **LÓGICA UNIFICADA:** Lê sempre de 'servicos', eliminando a necessidade de 'servico' (singular).
     const { profissional, servicos, data } = state.agendamento;
-    
-    // Calcula a duração total a partir do array 'servicos'
     const duracaoTotal = servicos.reduce((total, s) => total + s.duracao, 0);
 
-    // --- REAPLICA PROMOÇÕES PARA A DATA ESCOLHIDA ---
-    await aplicarPromocoesNaVitrine(state.todosOsServicos, state.empresaId, data);
+    // Só aplica promoção SE a data foi mesmo selecionada (nunca antes!)
+    await aplicarPromocoesNaVitrine(state.todosOsServicos, state.empresaId, data, false);
 
-    // --- ATUALIZA UI com promoções corretas do dia selecionado ---
     if (profissional) {
         const permiteMultiplos = profissional.horarios?.permitirAgendamentoMultiplo || false;
         const servicosDoProfissional = (profissional.servicos || []).map(servicoId => state.todosOsServicos.find(servico => servico.id === servicoId)).filter(Boolean);
         UI.renderizarServicos(servicosDoProfissional, permiteMultiplos);
-        // Re-seleciona os serviços já escolhidos pelo usuário
         state.agendamento.servicos.forEach(s => UI.selecionarCard('servico', s.id));
         if (permiteMultiplos) {
             UI.atualizarResumoAgendamento(state.agendamento.servicos);
@@ -336,27 +316,22 @@ async function handleDataChange(e) {
     }
 }
 
-/** Lida com a seleção de um horário. */
 function handleHorarioClick(e) {
     const btn = e.target.closest('.btn-horario');
     if (!btn || btn.disabled) return;
     setAgendamento('horario', btn.dataset.horario);
     UI.selecionarCard('horario', btn.dataset.horario);
-    UI.atualizarResumoAgendamentoFinal(); // MOSTRA O RESUMO EMBAIXO
-    UI.habilitarBotaoConfirmar();         // HABILITA O BOTÃO
+    UI.atualizarResumoAgendamentoFinal();
+    UI.habilitarBotaoConfirmar();
 }
 
-/** Lida com a confirmação final do agendamento. */
 async function handleConfirmarAgendamento() {
     if (!state.currentUser) {
         await UI.mostrarAlerta("Login Necessário", "Você precisa de fazer login para confirmar o agendamento.");
         if (UI.abrirModalLogin) UI.abrirModalLogin(); 
         return;
     }
-
-    // **LÓGICA UNIFICADA:** Lê sempre de 'servicos'.
     const { profissional, servicos, data, horario } = state.agendamento;
-    
     if (!profissional || !servicos || servicos.length === 0 || !data || !horario) {
         await UI.mostrarAlerta("Informação Incompleta", "Por favor, selecione profissional, serviço(s), data e horário.");
         return;
@@ -367,8 +342,6 @@ async function handleConfirmarAgendamento() {
     btn.disabled = true;
     btn.textContent = 'A agendar...';
     try {
-        // A lógica de criar um "serviço combinado" agora é a única forma de salvar.
-        // Funciona para 1 ou mais serviços.
         const servicoParaSalvar = {
             id: servicos.map(s => s.id).join(','),
             nome: servicos.map(s => s.nome).join(' + '),
@@ -376,12 +349,11 @@ async function handleConfirmarAgendamento() {
             preco: servicos.reduce((total, s) => total + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0)
         };
 
-        // Prepara o objeto final para salvar, garantindo que ele tenha a propriedade 'servico' (combinado).
         const agendamentoParaSalvar = { 
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
             horario: state.agendamento.horario,
-            servico: servicoParaSalvar // Apenas o serviço combinado é salvo
+            servico: servicoParaSalvar
         };
 
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
@@ -399,7 +371,6 @@ async function handleConfirmarAgendamento() {
     }
 }
 
-/** Lida com a filtragem de agendamentos (ativos vs. histórico). */
 async function handleFiltroAgendamentos(e) {
     if (!e.target.matches('.btn-toggle') || !state.currentUser) return;
     const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
@@ -415,7 +386,6 @@ async function handleFiltroAgendamentos(e) {
     }
 }
 
-/** Lida com o clique para cancelar um agendamento. */
 async function handleCancelarClick(e) {
     const btnCancelar = e.target.closest('.btn-cancelar');
     if (btnCancelar) {
