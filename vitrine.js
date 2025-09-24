@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
 
-        // Ao iniciar, NUNCA exibe promoção! Só depois de selecionar a data.
+        // Ao iniciar, NÃO exibe promoção! Só após seleção de data.
         await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId, null, true);
 
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
@@ -49,13 +49,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Aplica promoções válidas SOMENTE para o dia da data selecionada.
+ * Função para aplicar promoções válidas SOMENTE para o dia da data selecionada.
  * Se não houver data, NÃO aplica NENHUMA promoção.
  * Se forceNoPromo=true, limpa as promoções.
  */
 async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null, forceNoPromo = false) {
     if (!empresaId) return;
-    // Limpa sempre promoções anteriores
+
+    // Sempre limpa promoções anteriores
     listaServicos.forEach(s => { s.promocao = null; });
 
     if (forceNoPromo) return;
@@ -64,7 +65,7 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
     const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
     const snapshot = await getDocs(promocoesRef);
 
-    // Calcula o dia da semana da data selecionada (0=domingo, 1=segunda, ..., 3=quarta, ...)
+    // Calcula o dia da semana da data selecionada (0=domingo, ..., 3=quarta, ...)
     const data = new Date(dataSelecionadaISO);
     const diaSemana = data.getDay();
 
@@ -72,7 +73,9 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
     const promocoesAtivas = [];
     snapshot.forEach(doc => {
         const promo = doc.data();
-        if (promo.ativo && Array.isArray(promo.diasSemana) && promo.diasSemana.includes(diaSemana)) {
+        // Certifique-se que diasSemana é array de números
+        let dias = Array.isArray(promo.diasSemana) ? promo.diasSemana.map(Number) : [];
+        if (promo.ativo && dias.includes(diaSemana)) {
             promocoesAtivas.push({ id: doc.id, ...promo });
         }
     });
