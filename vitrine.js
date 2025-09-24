@@ -62,62 +62,54 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
     // Se for para não mostrar promoções, retorna já limpo
     if (forceNoPromo) return;
 
+    // Se não houver data selecionada, NÃO aplica nenhuma promoção (só preço normal)
+    if (!dataSelecionadaISO) return;
+
     const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
     const snapshot = await getDocs(promocoesRef);
 
     const promocoesAtivas = [];
-    let diaSemana = null;
-    if (dataSelecionadaISO) {
-        const data = new Date(dataSelecionadaISO);
-        diaSemana = data.getDay(); // 0=domingo, 1=segunda,...
-    }
-    // Se dataSelecionadaISO for null, NÃO aplica promoção nenhuma (só preço normal!)
+    const data = new Date(dataSelecionadaISO);
+    const diaSemana = data.getDay(); // 0=domingo, 1=segunda, etc
 
-    // Só filtra promoções se já existe data (não mostra promo antes da escolha!)
-    if (diaSemana !== null) {
-        snapshot.forEach(doc => {
-            const promo = doc.data();
-            if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(diaSemana)) {
-                promocoesAtivas.push({ id: doc.id, ...promo });
-            }
-        });
+    snapshot.forEach(doc => {
+        const promo = doc.data();
+        if (promo.ativo && Array.isArray(promo.diasSemana) && promo.diasSemana.includes(diaSemana)) {
+            promocoesAtivas.push({ id: doc.id, ...promo });
+        }
+    });
 
-        // Log para debug
-        console.log("[PROMO] Promoções ativas para dia da semana", diaSemana, promocoesAtivas);
-
-        listaServicos.forEach(servico => {
-            servico.promocao = null;
-            let melhorPromocao = null;
-            for (let promo of promocoesAtivas) {
-                if (Array.isArray(promo.servicoIds) && promo.servicoIds.includes(servico.id)) {
-                    melhorPromocao = promo;
-                    break;
-                }
+    listaServicos.forEach(servico => {
+        servico.promocao = null;
+        let melhorPromocao = null;
+        for (let promo of promocoesAtivas) {
+            if (Array.isArray(promo.servicoIds) && promo.servicoIds.includes(servico.id)) {
+                melhorPromocao = promo;
+                break;
             }
-            if (!melhorPromocao) {
-                melhorPromocao = promocoesAtivas.find(
-                    promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
-                );
+        }
+        if (!melhorPromocao) {
+            melhorPromocao = promocoesAtivas.find(
+                promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
+            );
+        }
+        if (melhorPromocao) {
+            let precoAntigo = servico.preco;
+            let precoNovo = precoAntigo;
+            if (melhorPromocao.tipoDesconto === "percentual") {
+                precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100);
+            } else if (melhorPromocao.tipoDesconto === "valorFixo") {
+                precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
             }
-            if (melhorPromocao) {
-                let precoAntigo = servico.preco;
-                let precoNovo = precoAntigo;
-                if (melhorPromocao.tipoDesconto === "percentual") {
-                    precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100);
-                } else if (melhorPromocao.tipoDesconto === "valorFixo") {
-                    precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
-                }
-                servico.promocao = {
-                    nome: melhorPromocao.nome,
-                    precoOriginal: precoAntigo,
-                    precoComDesconto: precoNovo,
-                    tipoDesconto: melhorPromocao.tipoDesconto,
-                    valorDesconto: melhorPromocao.valor
-                };
-                console.log(`[PROMO] Aplicada ao serviço ${servico.nome}:`, servico.promocao);
-            }
-        });
-    }
+            servico.promocao = {
+                nome: melhorPromocao.nome,
+                precoOriginal: precoAntigo,
+                precoComDesconto: precoNovo,
+                tipoDesconto: melhorPromocao.tipoDesconto,
+                valorDesconto: melhorPromocao.valor
+            };
+        }
+    });
 }
 
 // --- CONFIGURAÇÃO DE EVENTOS ---
