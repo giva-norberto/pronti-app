@@ -97,12 +97,12 @@
         </div>
     </main>
 
-    <!-- CORREÇÃO: Adicionado 'defer' para garantir a ordem de carregamento -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging-compat.js"></script>
-    <script src="messaging.js"></script>
+    <!-- 
+      CORREÇÃO: 
+      1. Os scripts antigos (versão 8) foram REMOVIDOS para eliminar o conflito.
+      2. O 'messaging.js' agora é carregado como um "module", assim como seu script principal.
+    -->
+    <script type="module" src="messaging.js"></script>
 
     <script type="module">
         import { verificarAcesso } from './userService.js'; 
@@ -200,5 +200,3 @@
     </script>
 </body>
 </html>
-
-
