@@ -1,5 +1,5 @@
 // ===================================================================================
-// ARQUIVO messaging.js CORRIGIDO E SEGURO PARA NOTIFICAÇÕES PUSH FIREBASE
+// ARQUIVO messaging.js CORRIGIDO, SEGURO E COM LOGS DETALHADOS PARA FIREBASE PUSH
 // ===================================================================================
 
 // Importa as funções necessárias da SDK moderna do Firebase
@@ -9,7 +9,7 @@ import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 // ===================================================================================
-// CORREÇÃO: A Chave VAPID (Certificado de Push da Web) foi inserida abaixo.
+// CHAVE VAPID (CERTIFICADO DE PUSH DA WEB) – A MESMA DO FIREBASE
 // ===================================================================================
 const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w";
 
@@ -19,11 +19,12 @@ const db = getFirestore(app);
 const messaging = getMessaging(app);
 
 // ===================================================================================
-// REGISTRO SEGURO DO SERVICE WORKER (OBRIGATÓRIO PARA PUSH)
+// REGISTRO DO SERVICE WORKER (OBRIGATÓRIO PARA PUSH)
 // ===================================================================================
 async function registrarServiceWorker() {
     if ('serviceWorker' in navigator) {
         try {
+            console.log('Tentando registrar o Service Worker...');
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
             console.log('Service Worker registrado com sucesso:', registration);
             return registration;
@@ -38,26 +39,22 @@ async function registrarServiceWorker() {
     }
 }
 
-/**
- * Salva o token FCM de um dispositivo no Firestore, associado ao usuário logado.
- * @param {string} token - O token FCM gerado para o dispositivo.
- */
+// ===================================================================================
+// SALVAR TOKEN FCM NO FIRESTORE
+// ===================================================================================
 async function salvarTokenNoFirestore(token) {
     try {
         const user = auth.currentUser;
         if (user) {
             console.log(`Usuário logado encontrado: ${user.uid}`);
             
-            // Define o caminho no Firestore: /usuarios/{userId}/tokens/{fcmToken}
             const userRef = doc(db, 'usuarios', user.uid);
             const tokenRef = doc(userRef, 'tokens', token);
             
-            // Salva o token com um timestamp de quando foi adicionado
-            await setDoc(tokenRef, {
-                timestamp: serverTimestamp()
-            });
+            console.log('Salvando token no Firestore...');
+            await setDoc(tokenRef, { timestamp: serverTimestamp() });
             
-            console.log('Token salvo no Firestore com sucesso!');
+            console.log('Token salvo com sucesso!');
             alert('Notificações ativadas com sucesso!');
         } else {
             console.warn('Nenhum usuário logado para salvar o token.');
@@ -69,41 +66,37 @@ async function salvarTokenNoFirestore(token) {
     }
 }
 
-/**
- * Função principal que solicita a permissão do usuário para receber notificações.
- * Se a permissão for concedida, obtém o token FCM e o salva no Firestore.
- */
+// ===================================================================================
+// SOLICITAR PERMISSÃO E OBTER TOKEN FCM
+// ===================================================================================
 async function solicitarPermissao() {
     console.log('Iniciando solicitação de permissão de notificação...');
-
-    // Verificação de segurança para garantir que a VAPID_KEY foi configurada
+    
     if (!VAPID_KEY || VAPID_KEY === "SUA_CHAVE_VAPID_PUBLICA_AQUI") {
-        console.error("ERRO CRÍTICO: A VAPID_KEY não foi configurada corretamente em messaging.js");
+        console.error("ERRO CRÍTICO: A VAPID_KEY não está configurada corretamente");
         alert("Erro de configuração: A chave de notificação (VAPID) não foi definida ou está incorreta.");
         return;
     }
 
     try {
-        // Pede a permissão ao usuário através do pop-up do navegador
         const permission = await Notification.requestPermission();
-        
-        if (permission === 'granted') {
-            console.log('Permissão de notificação concedida.');
+        console.log('Permissão de notificação:', permission);
 
-            // REGISTRA O SERVICE WORKER ANTES DE PEGAR O TOKEN
+        if (permission === 'granted') {
+            console.log('Permissão concedida, registrando Service Worker...');
             const swRegistration = await registrarServiceWorker();
 
-            // Obtém o token do dispositivo usando a VAPID key e o service worker registration
+            console.log('Obtendo token FCM...');
             const token = await getToken(messaging, {
                 vapidKey: VAPID_KEY,
                 serviceWorkerRegistration: swRegistration
             });
 
             if (token) {
-                console.log('Token FCM do dispositivo:', token);
+                console.log('Token FCM obtido com sucesso:', token);
                 await salvarTokenNoFirestore(token);
             } else {
-                console.warn('Não foi possível obter o token. A permissão foi concedida, mas o token está vazio.');
+                console.warn('Token vazio: não foi possível obter o token FCM.');
                 alert('Não foi possível registrar o dispositivo para notificações. Tente novamente.');
             }
         } else {
@@ -111,11 +104,17 @@ async function solicitarPermissao() {
             alert('Você escolheu não receber notificações.');
         }
     } catch (error) {
-        console.error('Erro durante o processo de permissão ou obtenção do token:', error);
-        alert("Não foi possível ativar as notificações. Verifique as configurações do seu navegador ou se o seu dispositivo suporta notificações push.");
+        console.error('Erro ao solicitar permissão ou obter token FCM:', error);
+        alert("Não foi possível ativar as notificações. Verifique o navegador ou suporte a push.");
     }
 }
 
-// Para que a função `solicitarPermissao` possa ser chamada pelo `onclick="..."` no HTML,
-// nós a tornamos acessível globalmente através do objeto 'window'.
+// ===================================================================================
+// DISPONIBILIZA FUNÇÃO GLOBAL PARA CHAMADA NO HTML
+// ===================================================================================
 window.solicitarPermissaoParaNotificacoes = solicitarPermissao;
+
+// ===================================================================================
+// DEBUG ADICIONAL
+// ===================================================================================
+console.log('[DEBUG] messaging.js carregado e pronto para uso.');
