@@ -74,8 +74,8 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // UID do admin autorizado
-        const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; 
+        // Lista de UIDs de administradores permitidos
+        const ADMIN_UIDS = [ "BX6Q7HrVMrcCBqe72r7K76EBPkX2" ]; // Adicione mais UIDs se necessário
 
         // Elementos DOM
         const logoPreview = document.getElementById("logo-preview");
@@ -101,7 +101,6 @@
 
         // Função para obter os papéis do usuário igual index/menu lateral
         async function obterPapeisUsuario(user) {
-            // Você pode ajustar a coleção/campos conforme seu projeto
             const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
             let perfil = perfilSnap.exists() ? perfilSnap.data() : {};
             let papeisUsuario = [];
@@ -115,22 +114,30 @@
             return papeisUsuario;
         }
 
-        // Checagem de permissão de acesso à página (administração) - mesma lógica do menu/index
+        // Checagem de permissão de acesso à página
         async function checarPermissaoAcesso(user) {
             if (!user) {
                 window.location.href = "login.html";
                 return false;
             }
+            // Permite se UID está na lista OU se tem papel 'admin'
+            const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
+            const perfil = perfilSnap.exists() ? perfilSnap.data() : {};
+            const isAdminUid = ADMIN_UIDS.includes(user.uid);
+            const isAdminPapel = perfil.isAdmin === true || (perfil.papeis && perfil.papeis.includes("admin"));
+            if (!isAdminUid && !isAdminPapel) {
+                alert("Acesso restrito apenas a administradores.");
+                window.location.href = "index.html";
+                return false;
+            }
+
             // Busca permissões globais
             const refDoc = doc(db, "configuracoesGlobais", "permissoes");
             const snap = await getDoc(refDoc);
             const regras = snap.exists() ? snap.data() : {};
             const menusGlobais = regras.menus || {};
-
-            // Obtém os papéis do usuário
             const papeisUsuario = await obterPapeisUsuario(user);
 
-            // Só permite se algum dos papéis pode acessar administração
             if (!temPermissao(menusGlobais, "administracao", papeisUsuario)) {
                 alert("Você não tem permissão para acessar esta página.");
                 window.location.href = "index.html";
@@ -216,15 +223,12 @@
             }
         });
 
-        // Permissão de acesso só para ADMIN_UID e papel correto
+        // Permissão de acesso por UID OU por papel de admin
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 window.location.href = "login.html";
-            } else if (user.uid !== ADMIN_UID) {
-                alert("Acesso restrito apenas ao administrador.");
-                window.location.href = "index.html";
             } else {
-                // Checa permissão global antes de liberar (igual menu lateral/index)
+                // Checa permissão global antes de liberar
                 if (await checarPermissaoAcesso(user)) {
                     carregarConfiguracoesGlobais();
                 }
