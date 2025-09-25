@@ -1,28 +1,28 @@
 // ======================================================================
-// 	 	 	 ARQUIVO firebase-messaging-sw.js (VERSÃO CORRETA E SEGURA)
+//               ARQUIVO firebase-messaging-sw.js  (CORRIGIDO)
 // ======================================================================
+// Service Worker para receber notificações em segundo plano via FCM.
 
-// Este código usa 'importScripts' que é a forma correta de carregar
-// as bibliotecas do Firebase dentro de um Service Worker.
+// Importa as bibliotecas do Firebase (versão modular 10.13.2)
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js');
 
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js' );
-importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js' );
-
-// Suas credenciais do Firebase
-const firebaseConfig = {
+// Configuração do seu projeto Firebase
+firebase.initializeApp({
   apiKey: "AIzaSyC9aewvqMIfAcXeKH0Y8KMn3-clYL4GTv0",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
-};
+});
 
-// Inicializa o Firebase para que o serviço de mensagens possa funcionar
-firebase.initializeApp(firebaseConfig);
-
-// Obtém a instância do serviço de Mensagens
+// Inicializa o serviço de mensagens
 const messaging = firebase.messaging();
 
-// O arquivo agora está pronto para receber notificações em segundo plano.
-ra receber notificações em segundo plano.
+// (Opcional) Handler para mensagens recebidas em segundo plano
+// messaging.onBackgroundMessage((payload) => {
+//   console.log('[firebase-messaging-sw.js] Mensagem em background:', payload);
+//   // Aqui você pode exibir uma notification personalizada:
+//   // self.registration.showNotification(payload.notification.title, {...payload.notification});
+// });
