@@ -9,9 +9,10 @@ import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 // ===================================================================================
-// CORREÇÃO: A Chave VAPID (Certificado de Push da Web) foi inserida abaixo.
+// CORREÇÃO: A Chave VAPID (Certificado de Push da Web ) DEVE SER INSERIDA AQUI.
+// Esta NÃO é a sua apiKey do Firebase. Ela começa com 'BP'.
 // ===================================================================================
-const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w";
+const VAPID_KEY = "SUA_CHAVE_VAPID_PUBLICA_AQUI"; // <--- SUBSTITUA POR SUA CHAVE VAPID PÚBLICA REAL (COMEÇA COM 'BP')
 
 // --- Inicialização dos Serviços do Firebase ---
 const auth = getAuth(app);
@@ -77,9 +78,9 @@ async function solicitarPermissao() {
     console.log('Iniciando solicitação de permissão de notificação...');
 
     // Verificação de segurança para garantir que a VAPID_KEY foi configurada
-    if (!VAPID_KEY || VAPID_KEY === "COLE_SUA_CHAVE_VAPID_AQUI") {
-        console.error("ERRO CRÍTICO: A VAPID_KEY não foi configurada em messaging.js");
-        alert("Erro de configuração: A chave de notificação (VAPID) não foi definida pelo desenvolvedor.");
+    if (!VAPID_KEY || VAPID_KEY === "SUA_CHAVE_VAPID_PUBLICA_AQUI") {
+        console.error("ERRO CRÍTICO: A VAPID_KEY não foi configurada corretamente em messaging.js");
+        alert("Erro de configuração: A chave de notificação (VAPID) não foi definida ou está incorreta.");
         return;
     }
 
