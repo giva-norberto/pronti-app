@@ -89,13 +89,14 @@
         let permissoesAtuais = {};
         let logoFile = null;
 
-        // Função auxiliar para checar permissão para 1 ou mais papéis (igual menu lateral/index)
+        // Função auxiliar para checar permissão para papel 'admin' apenas
         function temPermissao(menus, id, papelUsuario) {
+            // Somente papel 'admin' é aceito
             if (!menus[id]) return false;
             if (Array.isArray(papelUsuario)) {
-                return papelUsuario.some(papel => menus[id][papel] === true);
+                return papelUsuario.includes("admin") && menus[id]["admin"] === true;
             } else {
-                return menus[id][papelUsuario] === true;
+                return papelUsuario === "admin" && menus[id]["admin"] === true;
             }
         }
 
@@ -108,7 +109,6 @@
                 papeisUsuario = perfil.papeis;
             } else {
                 if (perfil.isAdmin) papeisUsuario.push('admin');
-                if (perfil.isOwner) papeisUsuario.push('dono');
                 if (perfil.papel && papeisUsuario.length === 0) papeisUsuario.push(perfil.papel);
             }
             return papeisUsuario;
@@ -182,8 +182,8 @@
             permissoesTabela.innerHTML = menus.map(menu => `
                 <tr>
                     <td>${menu}</td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""} disabled></td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""} disabled></td>
                     <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
                 </tr>
             `).join("");
