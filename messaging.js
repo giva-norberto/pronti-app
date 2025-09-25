@@ -1,3 +1,7 @@
+// ===================================================================================
+// ARQUIVO messaging.js CORRIGIDO E SEGURO PARA NOTIFICAÇÕES PUSH FIREBASE
+// ===================================================================================
+
 // Importa as funções necessárias da SDK moderna do Firebase
 import { app } from './firebase-config.js'; 
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -13,6 +17,26 @@ const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYot
 const auth = getAuth(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
+
+// ===================================================================================
+// REGISTRO SEGURO DO SERVICE WORKER (OBRIGATÓRIO PARA PUSH)
+// ===================================================================================
+async function registrarServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('Service Worker registrado com sucesso:', registration);
+            return registration;
+        } catch (error) {
+            console.error('Erro ao registrar Service Worker:', error);
+            alert('Não foi possível registrar o Service Worker para notificações.');
+            throw error;
+        }
+    } else {
+        alert('Seu navegador não suporta notificações push.');
+        throw new Error('Service Worker não suportado');
+    }
+}
 
 /**
  * Salva o token FCM de um dispositivo no Firestore, associado ao usuário logado.
@@ -65,9 +89,15 @@ async function solicitarPermissao() {
         
         if (permission === 'granted') {
             console.log('Permissão de notificação concedida.');
-            
-            // Obtém o token do dispositivo usando a VAPID key
-            const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+
+            // REGISTRA O SERVICE WORKER ANTES DE PEGAR O TOKEN
+            const swRegistration = await registrarServiceWorker();
+
+            // Obtém o token do dispositivo usando a VAPID key e o service worker registration
+            const token = await getToken(messaging, {
+                vapidKey: VAPID_KEY,
+                serviceWorkerRegistration: swRegistration
+            });
 
             if (token) {
                 console.log('Token FCM do dispositivo:', token);
