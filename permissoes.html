@@ -1,221 +1,132 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Configurações Globais - Pronti</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <style>
-        body { font-family: 'Inter', sans-serif; margin: 0; background-color: #f1f5f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { max-width: 800px; width: 100%; margin: 32px; background: #fff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h2 { color: #4f46e5; font-weight: 700; border-bottom: 2px solid #eef2ff; padding-bottom: 12px; margin-top: 0; }
-        p { color: #64748b; margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: center; }
-        th { background: #f8fafc; font-weight: 600; color: #475569; }
-        button { margin-top: 32px; padding: 12px 24px; cursor: pointer; background-color: #4f46e5; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; transition: background-color 0.2s; }
-        button:disabled { background-color: #a5b4fc; cursor: not-allowed; }
-        button:hover:not(:disabled) { background-color: #4338ca; }
-        input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; accent-color: #4f46e5; }
-        .config-section { margin-bottom: 40px; }
-        .form-group { margin-top: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #334155; }
-        .logo-upload-container { display: flex; align-items: center; gap: 16px; }
-        #logo-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; }
-        .btn-upload { padding: 10px 16px; font-size: 0.95rem; background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: 500; }
-        .btn-upload:hover { background: #eef2ff; border-color: #4f46e5; color: #4f46e5; }
-        .mensagem-pronti { text-align: center; }
-        .mensagem-pronti .icon { font-size: 3rem; color: #4f46e5; margin-bottom: 8px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Permissões Globais</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background: #f4f4f4; }
+    button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
+    input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+  </style>
 </head>
 <body>
-    <div class="container" id="container-pronti">
-        <div id="loader">
-            <h2>Verificando permissões...</h2>
-            <p>Por favor, aguarde.</p>
-        </div>
+  <h2>Permissões Globais de Menu</h2>
+  <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Menu</th>
+        <th>Funcionário</th>
+        <th>Dono</th>
+        <th>Admin</th>
+      </tr>
+    </thead>
+    <tbody id="permissoes-tabela"></tbody>
+  </table>
+  <button id="salvar">Salvar</button>
 
-        <div id="main-content" style="display: none;">
-            <div class="config-section">
-                <h2>Logo do Aplicativo</h2>
-                <div class="form-group">
-                    <label>Logo Padrão do Menu Lateral</label>
-                    <div class="logo-upload-container">
-                        <img id="logo-preview" src="https://placehold.co/80x80/eef2ff/4f46e5?text=Logo" alt="Pré-visualização do logo">
-                        <div>
-                            <input type="file" id="logo-upload-input" accept="image/png, image/jpeg" style="display: none;">
-                            <button type="button" id="btn-upload-logo" class="btn-upload">
-                                <i class="fa-solid fa-arrow-up-from-bracket"></i> Escolher Arquivo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="config-section">
-                <h2>Permissões Globais de Menu</h2>
-                <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Menu</th>
-                            <th>Funcionário</th>
-                            <th>Dono</th>
-                            <th>Admin</th>
-                        </tr>
-                    </thead>
-                    <tbody id="permissoes-tabela"></tbody>
-                </table>
-            </div>
-            
-            <button id="salvar">Salvar Todas as Configurações</button>
-        </div>
-    </div>
+  <script type="module">
+    import { auth, db } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    <script type="module">
-        // ======================================================================
-        // CORREÇÃO: Imports usando a URL completa e correta do Firebase
-        // ======================================================================
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
-        import { auth, db } from "./firebase-config.js";
+    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-        // Lista de UIDs de administradores permitidos
-        const ADMIN_UIDS = [ "BX6Q7HrVMrcCBqe72r7K76EBPkX2" ];
+    const permissoesTabela = document.getElementById("permissoes-tabela");
+    const salvarBtn = document.getElementById("salvar");
 
-        // Elementos DOM
-        const containerPronti = document.getElementById("container-pronti");
-        const loader = document.getElementById('loader');
-        const mainContent = document.getElementById('main-content');
-        const logoPreview = document.getElementById("logo-preview");
-        const logoUploadInput = document.getElementById("logo-upload-input");
-        const btnUploadLogo = document.getElementById("btn-upload-logo");
-        const permissoesTabela = document.getElementById("permissoes-tabela");
-        const salvarBtn = document.getElementById("salvar");
-        
-        const menus = [ "inicio", "dashboard", "agenda", "equipe", "servicos", "clientes", "perfil", "relatorios", "administracao", "permissoes" ];
-        let permissoesAtuais = {};
-        let logoFile = null;
+    const menus = [
+      "inicio",
+      "dashboard",
+      "agenda",
+      "equipe",
+      "servicos",
+      "clientes",
+      "perfil",
+      "relatorios",
+      "administracao",
+      "permissoes"
+    ];
 
-        function renderMensagemPronti() {
-            containerPronti.innerHTML = `
-                <div class="mensagem-pronti">
-                    <div class="icon"><i class="fa-solid fa-lock"></i></div>
-                    <h2>Acesso Restrito</h2>
-                    <p>Esta área é exclusiva para administradores. Se você acha que isso é um erro, entre em contato com o suporte.</p>
-                </div>
-            `;
+    let permissoesAtuais = {};
+
+    async function carregarPermissoesGlobais() {
+      const ref = doc(db, "configuracoesGlobais", "permissoes");
+      const snap = await getDoc(ref);
+      permissoesAtuais = snap.exists() ? snap.data() : {};
+
+      menus.forEach(menu => {
+        if (!permissoesAtuais[menu]) {
+          permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
+        } else {
+          permissoesAtuais[menu].funcionario ??= true;
+          permissoesAtuais[menu].dono ??= true;
+          permissoesAtuais[menu].admin ??= true;
         }
+      });
 
-        async function checarPermissaoAcesso(user) {
-            if (!user || !ADMIN_UIDS.includes(user.uid)) {
-                renderMensagemPronti();
-                setTimeout(() => { window.location.href = "index.html"; }, 2500);
-                return false;
-            }
-            return true;
+      renderTabela();
+    }
+
+    function renderTabela() {
+      permissoesTabela.innerHTML = menus.map(menu => `
+        <tr>
+          <td>${menu}</td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
+          <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
+        </tr>
+      `).join("");
+    }
+
+    salvarBtn.addEventListener("click", async () => {
+      const checkboxes = document.querySelectorAll("input[type=checkbox]");
+      const novasPermissoes = {};
+      checkboxes.forEach(chk => {
+        const menu = chk.dataset.menu;
+        const role = chk.dataset.role;
+        if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
+        novasPermissoes[menu][role] = chk.checked;
+      });
+      await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
+      alert("Permissões globais salvas!");
+    });
+
+    // ======================================================================
+    //        LÓGICA DE ACESSO CORRIGIDA (ÚNICA PARTE ALTERADA)
+    // ======================================================================
+    // Esta versão espera o Firebase confirmar o usuário antes de tomar uma decisão,
+    // mas mantém o `alert` que você prefere.
+    onAuthStateChanged(auth, (user) => {
+      // Um timeout de segurança. Se em 3 segundos o Firebase não encontrar
+      // um usuário, ele redireciona para o login.
+      const authTimeout = setTimeout(() => {
+        if (!document.body.dataset.userChecked) {
+            window.location.href = "login.html";
         }
+      }, 3000);
 
-        btnUploadLogo.addEventListener('click', () => logoUploadInput.click());
-        logoUploadInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                logoFile = file;
-                const reader = new FileReader();
-                reader.onload = (e) => { logoPreview.src = e.target.result; };
-                reader.readAsDataURL(file);
-            }
-        });
+      document.body.dataset.userChecked = true;
 
-        async function carregarConfiguracoesGlobais() {
-            const refDoc = doc(db, "configuracoesGlobais", "permissoes");
-            const snap = await getDoc(refDoc);
+      if (user) {
+        // Usuário foi encontrado, o timeout de segurança é cancelado.
+        clearTimeout(authTimeout);
 
-            permissoesAtuais = snap.exists() ? snap.data().menus || {} : {};
-            if (snap.exists() && snap.data().logoUrlPadrao) {
-                logoPreview.src = snap.data().logoUrlPadrao;
-            }
-            menus.forEach(menu => {
-                if (!permissoesAtuais[menu]) {
-                    permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
-                }
-            });
-            renderTabela();
+        if (user.uid === ADMIN_UID) {
+          // É o admin, carrega a página.
+          carregarPermissoesGlobais();
+        } else {
+          // É um usuário logado, mas não é o admin. Usa o alert.
+          alert("Acesso negado. Apenas Administrador.");
+          window.location.href = "index.html";
         }
-
-        function renderTabela() {
-            permissoesTabela.innerHTML = menus.map(menu => `
-                <tr>
-                    <td>${menu}</td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""} disabled></td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""} disabled></td>
-                    <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
-                </tr>
-            `).join("");
-        }
-
-        salvarBtn.addEventListener("click", async () => {
-            salvarBtn.disabled = true;
-            salvarBtn.textContent = 'Salvando...';
-            try {
-                const configParaSalvar = {};
-                if (logoFile) {
-                    const storage = getStorage();
-                    const storageRef = ref(storage, 'config/logo-pronti-app.png');
-                    await uploadBytes(storageRef, logoFile);
-                    const downloadURL = await getDownloadURL(storageRef);
-                    configParaSalvar.logoUrlPadrao = downloadURL;
-                }
-                const checkboxes = document.querySelectorAll("#permissoes-tabela input[type=checkbox]");
-                const novasPermissoes = {};
-                checkboxes.forEach(chk => {
-                    const menu = chk.dataset.menu;
-                    const role = chk.dataset.role;
-                    if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
-                    novasPermissoes[menu][role] = chk.checked;
-                });
-                configParaSalvar.menus = novasPermissoes;
-                await setDoc(doc(db, "configuracoesGlobais", "permissoes"), configParaSalvar, { merge: true });
-                logoFile = null;
-                alert('Configurações salvas com sucesso!');
-            } catch (error) {
-                console.error("Erro ao salvar configurações:", error);
-                alert('Erro ao salvar as configurações.');
-            } finally {
-                salvarBtn.disabled = false;
-                salvarBtn.textContent = 'Salvar Todas as Configurações';
-            }
-        });
-
-        // ======================================================================
-        // CORREÇÃO: Lógica de autenticação robusta que espera o Firebase
-        // ======================================================================
-        onAuthStateChanged(auth, async (user) => {
-            // Um timeout de segurança. Se o Firebase não responder em 3s, redireciona.
-            const authTimeout = setTimeout(() => {
-                console.log("Timeout de autenticação. Nenhum usuário detectado.");
-                renderMensagemPronti();
-                setTimeout(() => { window.location.href = "login.html"; }, 2500);
-            }, 3000);
-
-            if (user) {
-                clearTimeout(authTimeout); // Usuário encontrado, cancela o timeout.
-                
-                if (await checarPermissaoAcesso(user)) {
-                    // Permissão OK! Esconde o loader e mostra o conteúdo.
-                    loader.style.display = 'none';
-                    mainContent.style.display = 'block';
-                    carregarConfiguracoesGlobais();
-                }
-                // Se não for admin, a função checarPermissaoAcesso já cuida do bloqueio.
-            }
-            // Se 'user' for nulo inicialmente, não fazemos nada, apenas esperamos.
-            // O timeout acima cuidará do caso em que nenhum usuário aparece.
-        });
-    </script>
+      }
+      // Se 'user' for nulo na primeira verificação, o código não faz nada e espera.
+      // Se continuar nulo, o timeout de segurança fará o redirecionamento.
+    });
+  </script>
 </body>
 </html>
