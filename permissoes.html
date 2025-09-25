@@ -94,8 +94,8 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // Lista de UIDs de administradores permitidos
-        const ADMIN_UIDS = [ "BX6Q7HrVMrcCBqe72r7K76EBPkX2" ]; // Adicione mais UIDs se necessário
+        // Lista de UIDs de administradores permitidos (APENAS valida pelo UID)
+        const ADMIN_UIDS = [ "BX6Q7HrVMrcCBqe72r7K76EBPkX2" ]; // Seu UID
 
         // Elementos DOM
         const logoPreview = document.getElementById("logo-preview");
@@ -110,30 +110,6 @@
         let permissoesAtuais = {};
         let logoFile = null;
 
-        // Função auxiliar para checar permissão para papel 'admin' apenas
-        function temPermissao(menus, id, papelUsuario) {
-            if (!menus[id]) return false;
-            if (Array.isArray(papelUsuario)) {
-                return papelUsuario.includes("admin") && menus[id]["admin"] === true;
-            } else {
-                return papelUsuario === "admin" && menus[id]["admin"] === true;
-            }
-        }
-
-        // Função para obter os papéis do usuário igual index/menu lateral
-        async function obterPapeisUsuario(user) {
-            const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
-            let perfil = perfilSnap.exists() ? perfilSnap.data() : {};
-            let papeisUsuario = [];
-            if (perfil.papeis && Array.isArray(perfil.papeis) && perfil.papeis.length > 0) {
-                papeisUsuario = perfil.papeis;
-            } else {
-                if (perfil.isAdmin) papeisUsuario.push('admin');
-                if (perfil.papel && papeisUsuario.length === 0) papeisUsuario.push(perfil.papel);
-            }
-            return papeisUsuario;
-        }
-
         // Função de mensagem padrão Pronti
         function renderMensagemPronti() {
             containerPronti.innerHTML = `
@@ -147,32 +123,14 @@
             `;
         }
 
-        // Checagem de permissão de acesso à página
+        // Checagem de permissão de acesso à página - apenas UID
         async function checarPermissaoAcesso(user) {
             if (!user) {
                 renderMensagemPronti();
                 setTimeout(() => { window.location.href = "login.html"; }, 2500);
                 return false;
             }
-            // Permite se UID está na lista OU se tem papel 'admin'
-            const perfilSnap = await getDoc(doc(db, "usuarios", user.uid));
-            const perfil = perfilSnap.exists() ? perfilSnap.data() : {};
-            const isAdminUid = ADMIN_UIDS.includes(user.uid);
-            const isAdminPapel = perfil.isAdmin === true || (perfil.papeis && perfil.papeis.includes("admin"));
-            if (!isAdminUid && !isAdminPapel) {
-                renderMensagemPronti();
-                setTimeout(() => { window.location.href = "index.html"; }, 2500);
-                return false;
-            }
-
-            // Busca permissões globais
-            const refDoc = doc(db, "configuracoesGlobais", "permissoes");
-            const snap = await getDoc(refDoc);
-            const regras = snap.exists() ? snap.data() : {};
-            const menusGlobais = regras.menus || {};
-            const papeisUsuario = await obterPapeisUsuario(user);
-
-            if (!temPermissao(menusGlobais, "administracao", papeisUsuario)) {
+            if (!ADMIN_UIDS.includes(user.uid)) {
                 renderMensagemPronti();
                 setTimeout(() => { window.location.href = "index.html"; }, 2500);
                 return false;
@@ -257,7 +215,7 @@
             }
         });
 
-        // Permissão de acesso por UID OU por papel de admin
+        // Permissão de acesso por UID
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 renderMensagemPronti();
