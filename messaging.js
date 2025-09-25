@@ -9,10 +9,9 @@ import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 // ===================================================================================
-// CORREÇÃO: A Chave VAPID (Certificado de Push da Web ) DEVE SER INSERIDA AQUI.
-// Esta NÃO é a sua apiKey do Firebase. Ela começa com 'BP'.
+// CORREÇÃO: A Chave VAPID (Certificado de Push da Web) foi inserida abaixo.
 // ===================================================================================
-const VAPID_KEY = "SUA_CHAVE_VAPID_PUBLICA_AQUI"; // <--- SUBSTITUA POR SUA CHAVE VAPID PÚBLICA REAL (COMEÇA COM 'BP')
+const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w";
 
 // --- Inicialização dos Serviços do Firebase ---
 const auth = getAuth(app);
