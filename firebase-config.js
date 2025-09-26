@@ -9,24 +9,24 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-
 
 // Configuração do seu projeto Firebase. Use esta em todo o app.
 const firebaseConfig = {
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
-  authDomain: "pronti-app-37c6e.firebaseapp.com",
-  projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app", // ✅ CORRIGIDO
-  messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // ✅ ATUALIZADO com a nova chave que você criou
+  authDomain: "pronti-app-37c6e.firebaseapp.com",
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.firebasestorage.app",
+  messagingSenderId: "736700619274",
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
 // Função Singleton: Garante que o app seja inicializado apenas uma vez.
 const getFirebaseApp = () => {
-  return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 };
 
 // Inicializa e exporta tudo a partir da instância única
 const app = getFirebaseApp();
 const auth = getAuth(app);
 
-// ✅ Agora basta chamar getStorage(app), não precisa forçar gs://
+// Agora basta chamar getStorage(app), não precisa forçar gs://
 const storage = getStorage(app);
 
 const provider = new GoogleAuthProvider();
@@ -35,7 +35,7 @@ const provider = new GoogleAuthProvider();
 // ✨ CORREÇÃO IMPORTANTE ABAIXO ✨
 // Adiciona o parâmetro que força a tela de seleção de conta do Google
 provider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: 'select_account'
 });
 // ==================================================
 
