@@ -9,10 +9,10 @@ importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-com
 
 // ======================================================================
 // Configuração do seu projeto Firebase
-// ATENÇÃO: A apiKey DEVE SER EXATAMENTE A MESMA DO firebase-config.js!
+// ATENÇÃO: a apiKey deve ser exatamente a mesma do firebase-config.js
 // ======================================================================
 firebase.initializeApp({
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us", // CORRIGIDO! (deve ser igual ao app principal)
+  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
@@ -26,31 +26,27 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // ======================================================================
-// Handler para mensagens recebidas em segundo plano
+// Handler para mensagens recebidas em segundo plano (API nova v10)
 // ======================================================================
-messaging.setBackgroundMessageHandler(function(payload) {
+messaging.onBackgroundMessage(function (payload) {
   console.log('[firebase-messaging-sw.js] Mensagem em background recebida:', payload);
 
-  // Extrai dados da mensagem ou usa defaults
-  const notificationTitle = payload.data?.title || 'Nova notificação';
+  const notificationTitle = payload.notification?.title || 'Nova notificação';
   const notificationOptions = {
-    body: payload.data?.body || '',
-    icon: payload.data?.icon || '/icon.png',
-    image: payload.data?.image || undefined
+    body: payload.notification?.body || '',
+    icon: payload.notification?.icon || '/icon.png',
+    image: payload.notification?.image || undefined
   };
 
-  // Exibe a notificação
-  return self.registration.showNotification(notificationTitle, notificationOptions);
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // ======================================================================
 // (Opcional) Listener de clique na notificação
 // ======================================================================
-self.addEventListener('notificationclick', function(event) {
+self.addEventListener('notificationclick', function (event) {
   console.log('[firebase-messaging-sw.js] Notificação clicada:', event.notification);
   event.notification.close();
-
-  // Exemplo: abre a página principal do site
   event.waitUntil(
     clients.openWindow('https://prontiapp.com.br/')
   );
