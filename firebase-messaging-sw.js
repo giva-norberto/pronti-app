@@ -1,16 +1,12 @@
 // ======================================================================
-//               ARQUIVO firebase-messaging-sw.js  (FUNCIONAL CORRIGIDO)
+// firebase-messaging-sw.js  (para Firebase v10.x)
 // ======================================================================
-// Service Worker para receber notificações em segundo plano via FCM.
 
-// Importa as bibliotecas compatíveis do Firebase (v10 via compat para SW)
+// Importa a versão compatível para Service Worker
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
-// ======================================================================
-// Configuração do seu projeto Firebase
-// ATENÇÃO: a apiKey deve ser exatamente a mesma do firebase-config.js
-// ======================================================================
+// === Configuração do Firebase (a mesma do firebase-config.js) ===
 firebase.initializeApp({
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
@@ -20,34 +16,28 @@ firebase.initializeApp({
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 });
 
-// ======================================================================
-// Inicializa o serviço de mensagens
-// ======================================================================
+// === Inicializa o Messaging ===
 const messaging = firebase.messaging();
 
-// ======================================================================
-// Handler para mensagens recebidas em segundo plano (API nova v10)
-// ======================================================================
+// === Recebe mensagens em segundo plano ===
 messaging.onBackgroundMessage(function (payload) {
-  console.log('[firebase-messaging-sw.js] Mensagem em background recebida:', payload);
+  console.log('[firebase-messaging-sw.js] Mensagem em segundo plano:', payload);
 
-  const notificationTitle = payload.notification?.title || 'Nova notificação';
+  const notificationTitle = payload.notification?.title || payload.data?.title || 'Nova notificação';
   const notificationOptions = {
-    body: payload.notification?.body || '',
-    icon: payload.notification?.icon || '/icon.png',
-    image: payload.notification?.image || undefined
+    body: payload.notification?.body || payload.data?.body || '',
+    icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
+    image: payload.notification?.image || payload.data?.image
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// ======================================================================
-// (Opcional) Listener de clique na notificação
-// ======================================================================
+// === Clique na notificação ===
 self.addEventListener('notificationclick', function (event) {
-  console.log('[firebase-messaging-sw.js] Notificação clicada:', event.notification);
   event.notification.close();
   event.waitUntil(
     clients.openWindow('https://prontiapp.com.br/')
   );
 });
+
