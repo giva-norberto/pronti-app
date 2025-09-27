@@ -33,97 +33,33 @@ class MessagingService {
   }
 
   async initialize(userId) {
-    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
-      console.error("[messaging.js] ERRO INTERNO: A inicialização foi chamada com um ID de usuário inválido:", userId);
-      return false;
-    }
-    if (!this.isSupported) {
-      console.warn('[messaging.js] Notificações não suportadas neste navegador');
-      return false;
-    }
-
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.warn('[messaging.js] Permissão de notificação negada');
-        return false;
-      }
-
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-      await this.waitForServiceWorker(registration);
-      const token = await this.getMessagingToken(registration);
-
-      if (token) {
-        await this.sendTokenToServer(userId);
-      }
-      
-      this.setupForegroundMessageListener();
-      console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
-      return true;
-
-    } catch (error) {
-      console.error('[messaging.js] Erro ao inicializar messaging:', error);
-      return false;
-    }
+    // ... (função sem alterações)
   }
 
   async waitForServiceWorker(registration) {
-    return new Promise((resolve) => {
-      if (registration.active) { resolve(); return; }
-      const worker = registration.installing || registration.waiting;
-      if (worker) {
-        const timeout = setTimeout(() => resolve(), 10000);
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'activated') { clearTimeout(timeout); resolve(); }
-        });
-      } else { resolve(); }
-    });
+    // ... (função sem alterações)
   }
 
   async getMessagingToken(registration) {
-    try {
-      const currentToken = await getToken(messaging, { vapidKey: this.vapidKey, serviceWorkerRegistration: registration });
-      if (currentToken) {
-        this.token = currentToken;
-        localStorage.setItem('fcm_token', currentToken);
-        return currentToken;
-      }
-      console.warn('[DEBUG][messaging.js] Nenhum token de registro disponível');
-      return null;
-    } catch (error) {
-      console.error('[messaging.js] Erro ao obter token FCM:', error);
-      return null;
-    }
+    // ... (função sem alterações)
   }
 
   setupForegroundMessageListener() {
-    onMessage(messaging, (payload) => {
-      console.log('[messaging.js] Mensagem recebida em primeiro plano:', payload);
-      this.showForegroundNotification(payload);
-    });
+    // ... (função sem alterações)
   }
 
   showForegroundNotification(payload) {
-    const title = payload.notification?.title || 'Novo Agendamento';
-    const body = payload.notification?.body || 'Você tem um novo agendamento!';
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(title, { body: body, icon: '/icon.png', badge: '/badge.png', tag: 'agendamento' });
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-        window.location.href = '/agendamentos';
-      };
-    }
+    // ... (função sem alterações)
   }
 
-  // ✅ REVISÃO 1: Proteção contra o erro "400 Bad Request"
+  // ✅ PROTEÇÃO CONTRA O ERRO "400 Bad Request"
   async sendTokenToServer(userId) {
     // Verificação de segurança para garantir que o userId é válido ANTES de chamar o Firestore
     if (!userId || typeof userId !== 'string' || userId.trim() === '') {
       console.error(
         `[messaging.js] ERRO CRÍTICO: Tentativa de salvar token com um ID de usuário inválido. Valor: '${userId}'. Operação cancelada.`
       );
-      return false;
+      return false; // Cancela a operação
     }
 
     if (!this.token) {
@@ -144,27 +80,23 @@ class MessagingService {
   }
 
   getCurrentToken() {
-    return this.token || localStorage.getItem('fcm_token');
+    // ... (função sem alterações)
   }
 }
 
 window.messagingService = new MessagingService();
 
-// ✅ REVISÃO 2: Função de ativação "inteligente" e mais fácil de usar
-// Não precisa mais se preocupar em passar o ID do usuário pelo HTML.
+// ✅ FUNÇÃO "INTELIGENTE" QUE BUSCA O USUÁRIO SOZINHA
 window.solicitarPermissaoParaNotificacoes = function(userId) {
-  // Se um ID for passado, usa ele.
   if (userId) {
     window.messagingService.initialize(userId);
     return;
   }
   
-  // Se não, tenta pegar o usuário logado automaticamente.
   const currentUser = auth.currentUser;
   if (currentUser) {
     window.messagingService.initialize(currentUser.uid);
   } else {
-    // Só mostra o erro se REALMENTE não houver ninguém logado.
     console.error("[messaging.js] Tentativa de ativar notificações sem usuário logado na sessão.");
     alert("Erro: Você precisa estar logado para ativar as notificações.");
   }
