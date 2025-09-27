@@ -130,7 +130,7 @@ class MessagingService {
         return null;
       }
     } catch (error) {
-      console.error('[debug][messaging.js] Erro ao obter token FCM:', error);
+      console.error('[messaging.js] Erro ao obter token FCM:', error);
       return null;
     }
   }
@@ -202,6 +202,10 @@ class MessagingService {
   }
 }
 
-// Exporta uma instância singleton
-const messagingService = new MessagingService();
-export default messagingService;
+// Exporta a instância para o escopo global (necessário para onclick no HTML)
+window.messagingService = new MessagingService();
+
+// Função global para botão permitir notificações
+window.solicitarPermissaoParaNotificacoes = function() {
+  window.messagingService.initialize();
+};
