@@ -130,7 +130,7 @@ class MessagingService {
         return null;
       }
     } catch (error) {
-      console.error('[DEBUG][messaging.js] Erro ao obter token FCM:', error);
+      console.error('[messaging.js] Erro ao obter token FCM:', error);
       return null;
     }
   }
