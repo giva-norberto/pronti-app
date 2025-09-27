@@ -5,7 +5,7 @@
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 // >>> NOVO: Firestore <<<
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Use a MESMA configuração do projeto central
 const firebaseConfig = {
@@ -149,6 +149,26 @@ class MessagingService {
       return true;
     } catch (err) {
       console.error('[messaging.js] Erro ao salvar token no Firestore:', err);
+      return false;
+    }
+  }
+
+  // >>> NOVO: função para salvar um alerta de agendamento no Firestore <<<
+  async saveAlert(empresaId, clienteNome, servico, horario) {
+    try {
+      const alertsRef = collection(db, "alerts");
+      await addDoc(alertsRef, {
+        empresaId: empresaId,
+        clienteNome: clienteNome,
+        servico: servico,
+        horario: horario,
+        createdAt: new Date(),
+        status: "novo"
+      });
+      console.log('[messaging.js] Alerta salvo no Firestore com sucesso!');
+      return true;
+    } catch (err) {
+      console.error('[messaging.js] Erro ao salvar alerta no Firestore:', err);
       return false;
     }
   }
