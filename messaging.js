@@ -69,7 +69,7 @@ async function salvarTokenNoFirestore(token) {
         await setDoc(tokenRef, { timestamp: serverTimestamp() });
         logDebug('Token do usuário salvo com sucesso:', token);
 
-        // Notificação para o dono da empresa
+        // Notificação para o dono da empresa (opcional, só se user.empresaId existir)
         if (user.empresaId) {
             const donoRef = collection(db, 'empresas', user.empresaId, 'notificacoes');
             await addDoc(donoRef, { tipo: 'reserva', usuarioId: user.uid, timestamp: serverTimestamp() });
@@ -137,4 +137,5 @@ async function solicitarPermissaoParaNotificacoes() {
 // DISPONIBILIZA FUNÇÃO GLOBAL
 // ===================================================================================
 window.solicitarPermissaoParaNotificacoes = solicitarPermissaoParaNotificacoes;
+window.messaging = messaging; // Para testes no console!
 logDebug('messaging.js carregado e pronto para uso.');
