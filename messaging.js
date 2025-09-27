@@ -7,7 +7,7 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 
 // Configuração do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // Chave nova, conferida e ativa
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
@@ -25,6 +25,7 @@ class MessagingService {
   constructor() {
     this.token = null;
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
+    this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
   }
 
   // Solicita permissão e registra o service worker
@@ -59,7 +60,7 @@ class MessagingService {
       await this.waitForServiceWorker(registration);
 
       // Obtém o token FCM
-      await this.getMessagingToken();
+      await this.getMessagingToken(registration);
 
       // Configura listener para mensagens em primeiro plano
       this.setupForegroundMessageListener();
@@ -90,9 +91,9 @@ class MessagingService {
         
         // Timeout para evitar travamento
         const timeout = setTimeout(() => {
-          console.log('[DEBUG][messaging.js] Timeout - continuando mesmo assim');
+          console.log('[DEBUG][messaging.js] Timeout - SW não ativou, mas continuando mesmo assim');
           resolve();
-        }, 5000);
+        }, 10000); // timeout aumentado para 10s
         
         worker.addEventListener('statechange', () => {
           console.log('[DEBUG][messaging.js] Worker state:', worker.state);
@@ -109,12 +110,13 @@ class MessagingService {
   }
 
   // Obtém o token FCM
-  async getMessagingToken() {
+  async getMessagingToken(registration) {
     try {
       console.log('[DEBUG][messaging.js] Tentando obter token FCM...');
-      
+      // Garantia: Passa explicitamente o registration para o getToken
       const currentToken = await getToken(messaging, {
-        vapidKey: 'BEl62iUYgUivxIkv69yViLAXjl6XtZ1y4T3qfAAbtAGHHoMh4A6ckHh1dAiIncaLcDNbm4C7B1lxbgKq26kD0sY'
+        vapidKey: this.vapidKey,
+        serviceWorkerRegistration: registration
       });
 
       if (currentToken) {
