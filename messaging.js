@@ -1,11 +1,12 @@
 // ======================================================================
-// messaging.js - Serviço de notificações Firebase (COMPLETO)
+// messaging.js - Serviço de notificações Firebase (COMPLETO E REVISADO)
 // ======================================================================
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-// ✅ 1. IMPORTAÇÕES DO FIRESTORE ADICIONADAS
 import { getFirestore, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// ✅ REVISÃO: Importa as funções de autenticação para buscar o usuário automaticamente
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // Use a MESMA configuração do projeto central
 const firebaseConfig = {
@@ -20,8 +21,9 @@ const firebaseConfig = {
 // Singleton: Inicializa ou recupera instância única
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
-// ✅ 2. INSTÂNCIA DO FIRESTORE INICIALIZADA
 const db = getFirestore(app);
+// ✅ REVISÃO: Inicializa o serviço de autenticação
+const auth = getAuth(app);
 
 console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso.');
 
@@ -32,13 +34,12 @@ class MessagingService {
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
   }
 
-  // ✅ 3. MÉTODO INITIALIZE ATUALIZADO PARA RECEBER O ID DO USUÁRIO
   async initialize(userId) {
     if (!userId) {
-      console.error("[messaging.js] ERRO: O ID do usuário (userId) é necessário para inicializar as notificações.");
-      return false;
-    }
-    if (!this.isSupported) {
+      console.error("[messaging.js] ERRO INTERNO: O ID do usuário (userId) é necessário para inicializar as notificações.");
+      return false;
+    }
+    if (!this.isSupported) {
       console.warn('[messaging.js] Notificações não suportadas neste navegador');
       return false;
     }
@@ -55,12 +56,11 @@ class MessagingService {
       console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
       await this.waitForServiceWorker(registration);
 
-      // Pega o token e já tenta salvar no Firestore
-      const token = await this.getMessagingToken(registration);
-      if (token) {
-        await this.sendTokenToServer(userId);
-      }
-      
+      const token = await this.getMessagingToken(registration);
+      if (token) {
+        await this.sendTokenToServer(userId);
+      }
+      
       this.setupForegroundMessageListener();
 
       console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
@@ -140,30 +140,23 @@ class MessagingService {
     }
   }
 
-  // ✅ 4. FUNÇÃO PARA GRAVAR NO FIREBASE (COMPLETA)
   async sendTokenToServer(userId) {
     if (!this.token) {
       console.warn('[messaging.js] Token não disponível para envio ao servidor.');
       return false;
     }
 
-    try {
-      // Cria a referência para o documento do usuário na sua coleção 'usuarios'
-      const userDocRef = doc(db, 'usuarios', userId);
-
-      // Atualiza o documento adicionando o novo token a um array chamado 'fcmTokens'.
-      // O 'arrayUnion' é inteligente: ele só adiciona o token se ele já não estiver na lista.
-      await updateDoc(userDocRef, {
-          fcmTokens: arrayUnion(this.token)
-      });
-
-      console.log(`[messaging.js] Token salvo com sucesso para o usuário ${userId}`);
-      return true;
-
-    } catch (error) {
-      console.error('[messaging.js] Erro ao salvar token no Firestore:', error);
-      return false;
-    }
+    try {
+      const userDocRef = doc(db, 'usuarios', userId);
+      await updateDoc(userDocRef, {
+          fcmTokens: arrayUnion(this.token)
+      });
+      console.log(`[messaging.js] Token salvo com sucesso para o usuário ${userId}`);
+      return true;
+    } catch (error) {
+      console.error('[messaging.js] Erro ao salvar token no Firestore:', error);
+      return false;
+    }
   }
 
   getCurrentToken() {
@@ -174,13 +167,29 @@ class MessagingService {
 // Exporta a instância para o escopo global
 window.messagingService = new MessagingService();
 
-// ✅ 5. FUNÇÃO GLOBAL ATUALIZADA PARA REQUERER O ID DO USUÁRIO
-// É essa função que o seu botão "Ativar Notificações" deve chamar.
+// ✅ REVISÃO: ESTA É A PRINCIPAL CORREÇÃO.
+// A função agora é "inteligente": se o ID do usuário (userId) não for passado,
+// ela tenta pegar o usuário logado automaticamente.
 window.solicitarPermissaoParaNotificacoes = function(userId) {
-  if (!userId) {
-      alert("Erro: Você precisa estar logado para ativar as notificações.");
-      console.error("[messaging.js] Tentativa de ativar notificações sem um userId.");
-      return;
+
+  // Se um ID de usuário for passado diretamente (melhor caso), usa ele.
+  if (userId) {
+    console.log(`[messaging.js] ID do usuário fornecido diretamente: ${userId}`);
+    window.messagingService.initialize(userId);
+    return;
   }
-  window.messagingService.initialize(userId);
+  
+  // Se o ID não foi passado, tenta pegar o usuário da sessão de autenticação atual.
+  console.warn("[messaging.js] ID do usuário não foi fornecido. Tentando obter usuário atual da autenticação...");
+  const currentUser = auth.currentUser;
+
+  if (currentUser) {
+    // Se encontrou um usuário logado, usa o ID (uid) dele.
+    console.log(`[messaging.js] Usuário da sessão encontrado: ${currentUser.uid}`);
+    window.messagingService.initialize(currentUser.uid);
+  } else {
+    // Se realmente não há ninguém logado, então exibe o erro.
+    console.error("[messaging.js] Tentativa de ativar notificações sem um userId e sem usuário logado na sessão.");
+    alert("Erro: Você precisa estar logado para ativar as notificações.");
+  }
 };
