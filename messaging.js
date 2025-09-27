@@ -1,5 +1,5 @@
 // ======================================================================
-// messaging.js - Serviço de notificações Firebase (com gravação automática do token)
+// messaging.js - Serviço de notificações Firebase (ESPELHO DO CENTRAL)
 // ======================================================================
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -7,12 +7,12 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Configuração do Firebase (espelhando central)
+// Configuração IGUAL ao firebase-config.js
 const firebaseConfig = {
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app", // igual ao central!
+  storageBucket: "pronti-app-37c6e.appspot.com", // <-- CORRETO!
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
@@ -23,7 +23,7 @@ const messaging = getMessaging(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (espelhando firebase-config.js).');
+console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (configuração igual ao central).');
 
 class MessagingService {
   constructor() {
@@ -48,7 +48,7 @@ class MessagingService {
       console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
       await this.waitForServiceWorker(registration);
 
-      await this.getMessagingToken(registration); // <-- Aqui já salva automaticamente!
+      await this.getMessagingToken(registration);
 
       this.setupForegroundMessageListener();
       console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
