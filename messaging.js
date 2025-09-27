@@ -1,23 +1,27 @@
 // ======================================================================
-// messaging.js - Serviço de notificações Firebase (ESPELHO DA CENTRAL)
+// messaging.js - Serviço de notificações Firebase (com gravação automática do token)
 // ======================================================================
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Use a MESMA configuração do projeto central
+// Configuração do Firebase (espelhando central)
 const firebaseConfig = {
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app", // igual ao seu central!
+  storageBucket: "pronti-app-37c6e.firebasestorage.app", // igual ao central!
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Singleton: Inicializa ou recupera instância única
+// Singleton do app
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (espelhando firebase-config.js).');
 
@@ -33,7 +37,6 @@ class MessagingService {
       console.warn('[messaging.js] Notificações não suportadas neste navegador');
       return false;
     }
-
     try {
       const permission = await Notification.requestPermission();
       console.log('[DEBUG][messaging.js] Permissão de notificação:', permission);
@@ -41,17 +44,15 @@ class MessagingService {
         console.warn('[messaging.js] Permissão de notificação negada');
         return false;
       }
-
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
       console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
       await this.waitForServiceWorker(registration);
 
-      await this.getMessagingToken(registration);
-      this.setupForegroundMessageListener();
+      await this.getMessagingToken(registration); // <-- Aqui já salva automaticamente!
 
+      this.setupForegroundMessageListener();
       console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
       return true;
-
     } catch (error) {
       console.error('[messaging.js] Erro ao inicializar messaging:', error);
       return false;
@@ -90,6 +91,17 @@ class MessagingService {
         this.token = currentToken;
         localStorage.setItem('fcm_token', currentToken);
         console.log('[DEBUG][messaging.js] Token FCM obtido:', currentToken);
+
+        // === GRAVAÇÃO AUTOMÁTICA NO FIRESTORE ===
+        const user = auth.currentUser;
+        if (user && user.uid) {
+          await setDoc(doc(db, "users", user.uid), { fcmToken: currentToken }, { merge: true });
+          console.log(`[DEBUG][messaging.js] Token FCM salvo no Firestore para user ${user.uid}`);
+        } else {
+          console.warn('[messaging.js] Usuário não autenticado, não foi possível salvar o token no Firestore.');
+        }
+        // ========================================
+
         return currentToken;
       } else {
         console.warn('[DEBUG][messaging.js] Nenhum token de registro disponível');
