@@ -1,9 +1,9 @@
 // ======================================================================
-// messaging.js - Serviço de notificações Firebase
+// messaging.js - Serviço de notificações Firebase (CDN version)
 // ======================================================================
 
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -130,7 +130,7 @@ class MessagingService {
         return null;
       }
     } catch (error) {
-      console.error('[messaging.js] Erro ao obter token FCM:', error);
+      console.error('[debug][messaging.js] Erro ao obter token FCM:', error);
       return null;
     }
   }
