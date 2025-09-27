@@ -10,7 +10,7 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 // ===================================================================================
 // CONFIGURAÇÕES
 // ===================================================================================
-const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w";
+const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w"; // <-- CHAVE NOVA
 const auth = getAuth(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
@@ -33,7 +33,6 @@ async function registrarServiceWorker() {
     logDebug('Tentando registrar Service Worker...');
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
 
-    // Aguarda o SW ativar totalmente
     const esperarAtivacao = (sw) => new Promise(resolve => {
         if (!sw || sw.state === 'activated') return resolve();
         sw.addEventListener('statechange', e => {
@@ -66,10 +65,9 @@ async function salvarTokenNoFirestore(token) {
         const userRef = doc(db, 'usuarios', user.uid);
         const tokenRef = doc(userRef, 'tokens', token);
         await setDoc(tokenRef, { timestamp: serverTimestamp() });
-
         logDebug('Token do usuário salvo com sucesso:', token);
 
-        // Notificação para o dono da empresa (ajuste: empresaId pode estar em custom claims ou perfil)
+        // Notificação para o dono da empresa
         if (user.empresaId) {
             const donoRef = collection(db, 'empresas', user.empresaId, 'notificacoes');
             await addDoc(donoRef, { tipo: 'reserva', usuarioId: user.uid, timestamp: serverTimestamp() });
