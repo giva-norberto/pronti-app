@@ -1,6 +1,6 @@
 // =====================================================================
 // ARQUIVO: firebase-config.js (VERSÃO ÚNICA E CENTRAL)
-// =====================================================================
+// ====================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
