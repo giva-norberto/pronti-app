@@ -1,49 +1,42 @@
-// =====================================================================
-// ARQUIVO: firebase-config.js (VERSÃO ÚNICA E CENTRAL)
-// ====================================================================
+// ======================================================================
+// firebase-messaging-sw.js  (para Firebase v10.x)
+// ======================================================================
 
-import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+// Importa a versão compatível para Service Worker
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
-// Configuração do seu projeto Firebase. Use esta em todo o app.
-const firebaseConfig = {
-  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // ✅ ATUALIZADO com a nova chave que você criou
-  authDomain: "pronti-app-37c6e.firebaseapp.com",
-  projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app",
-  messagingSenderId: "736700619274",
-  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
-};
-
-// Função Singleton: Garante que o app seja inicializado apenas uma vez.
-const getFirebaseApp = () => {
-  return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-};
-
-// Inicializa e exporta tudo a partir da instância única
-const app = getFirebaseApp();
-const auth = getAuth(app);
-
-// Agora basta chamar getStorage(app), não precisa forçar gs://
-const storage = getStorage(app);
-
-const provider = new GoogleAuthProvider();
-
-// ==================================================
-// ✨ CORREÇÃO IMPORTANTE ABAIXO ✨
-// Adiciona o parâmetro que força a tela de seleção de conta do Google
-provider.setCustomParameters({
-  prompt: 'select_account'
+// === Configuração do Firebase (a mesma do firebase-config.js) ===
+firebase.initializeApp({
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // CHAVE NOVA
+  authDomain: "pronti-app-37c6e.firebaseapp.com",
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.appspot.com",
+  messagingSenderId: "736700619274",
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 });
-// ==================================================
 
-// Conecta ao banco de dados com nome "pronti-app"
-const db = getFirestore(app, "pronti-app");
+// === Inicializa o Messaging ===
+const messaging = firebase.messaging();
 
-// Define a persistência do login
-setPersistence(auth, browserLocalPersistence);
+// === Recebe mensagens em segundo plano ===
+messaging.onBackgroundMessage(function (payload) {
+  console.log('[firebase-messaging-sw.js] Mensagem em segundo plano:', payload);
 
-// Exporta as instâncias para serem usadas em outros arquivos
-export { app, db, auth, storage, provider };
+  const notificationTitle = payload.notification?.title || payload.data?.title || 'Nova notificação';
+  const notificationOptions = {
+    body: payload.notification?.body || payload.data?.body || '',
+    icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
+    image: payload.notification?.image || payload.data?.image
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// === Clique na notificação ===
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow('https://prontiapp.com.br/')
+  );
+});
