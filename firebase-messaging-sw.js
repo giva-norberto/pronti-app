@@ -43,15 +43,15 @@ messaging.onBackgroundMessage(function (payload) {
     ]
   };
 
-  return self.registration.showNotification(notificationTitle, notificationOptions);
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // === Clique na notificação ===
 self.addEventListener('notificationclick', function (event) {
   console.log('[firebase-messaging-sw.js] Notificação clicada:', event.action);
-  
+
   event.notification.close();
-  
+
   if (event.action === 'view') {
     event.waitUntil(
       clients.openWindow('https://prontiapp.com.br/agendamentos')
