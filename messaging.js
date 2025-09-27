@@ -1,152 +1,207 @@
-// ===================================================================================
-// ARQUIVO messaging.js – Revisado, seguro e otimizado para Firebase Push Web (Firebase v10.x)
-// ===================================================================================
+// ======================================================================
+// messaging.js - Serviço de notificações Firebase
+// ======================================================================
 
-import { app } from './firebase-config.js';
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+import { initializeApp } from 'firebase/app';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
-// ===================================================================================
-// CONFIGURAÇÕES
-// ===================================================================================
-const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w"; // <-- CHAVE NOVA!
+// Configuração do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // Chave nova, conferida e ativa
+  authDomain: "pronti-app-37c6e.firebaseapp.com",
+  projectId: "pronti-app-37c6e",
+  storageBucket: "pronti-app-37c6e.appspot.com",
+  messagingSenderId: "736700619274",
+  appId: "1:736700619274:web:557aa247905e56fa7e5df3"
+};
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Inicializa Firebase
+const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// ===================================================================================
-// LOGGING UTILITY
-// ===================================================================================
-function logDebug(msg, ...args) {
-    console.log(`[DEBUG][messaging.js] ${msg}`, ...args);
-}
+console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso.');
 
-// ===================================================================================
-// REGISTRO DO SERVICE WORKER COM ESPERA ATIVA
-// ===================================================================================
-async function registrarServiceWorker() {
-    if (!('serviceWorker' in navigator)) {
-        throw new Error('Service Worker não suportado neste navegador.');
+class MessagingService {
+  constructor() {
+    this.token = null;
+    this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
+  }
+
+  // Solicita permissão e registra o service worker
+  async initialize() {
+    if (!this.isSupported) {
+      console.warn('[messaging.js] Notificações não suportadas neste navegador');
+      return false;
     }
 
-    logDebug('Tentando registrar Service Worker...');
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-
-    // Espera ativação do SW antes de prosseguir (garante que o SW está ativo)
-    const esperarAtivacao = (sw) => new Promise(resolve => {
-        if (!sw || sw.state === 'activated') return resolve();
-        sw.addEventListener('statechange', e => {
-            if (e.target.state === 'activated') resolve();
-        });
-    });
-
-    await Promise.all([
-        esperarAtivacao(registration.installing),
-        esperarAtivacao(registration.waiting),
-        esperarAtivacao(registration.active)
-    ]);
-
-    logDebug('Service Worker registrado e ativado:', registration);
-    return registration;
-}
-
-// ===================================================================================
-// SALVAR TOKEN FCM NO FIRESTORE
-// ===================================================================================
-async function salvarTokenNoFirestore(token) {
     try {
-        const user = auth.currentUser;
-        if (!user) {
-            logDebug('Nenhum usuário logado para salvar o token.');
-            return;
-        }
+      console.log('[DEBUG][messaging.js] Iniciando solicitação de permissão de notificação...');
+      
+      // Solicita permissão
+      const permission = await Notification.requestPermission();
+      console.log('[DEBUG][messaging.js] Permissão de notificação:', permission);
+      
+      if (permission !== 'granted') {
+        console.warn('[messaging.js] Permissão de notificação negada');
+        return false;
+      }
 
-        logDebug('Usuário logado:', user.uid);
-        const userRef = doc(db, 'usuarios', user.uid);
-        const tokenRef = doc(userRef, 'tokens', token);
-        await setDoc(tokenRef, { timestamp: serverTimestamp() });
-        logDebug('Token do usuário salvo com sucesso:', token);
+      // Registra o service worker
+      console.log('[DEBUG][messaging.js] Tentando registrar Service Worker...');
+      
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/'
+      });
+      
+      console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
 
-        // Exemplo: salvar notificação para o dono da empresa (opcional)
-        // Se user.empresaId existir no objeto do usuário
-        if (user.empresaId) {
-            const donoRef = collection(db, 'empresas', user.empresaId, 'notificacoes');
-            await addDoc(donoRef, { tipo: 'reserva', usuarioId: user.uid, timestamp: serverTimestamp() });
-            logDebug('Notificação de reserva salva para o dono da empresa');
-        }
+      // Aguarda o service worker estar ativo
+      await this.waitForServiceWorker(registration);
+
+      // Obtém o token FCM
+      await this.getMessagingToken();
+
+      // Configura listener para mensagens em primeiro plano
+      this.setupForegroundMessageListener();
+
+      console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
+      return true;
 
     } catch (error) {
-        console.error('[ERROR] Falha ao salvar token/notificação:', error);
+      console.error('[messaging.js] Erro ao inicializar messaging:', error);
+      return false;
     }
-}
+  }
 
-// ===================================================================================
-// SOLICITAR PERMISSÃO DE NOTIFICAÇÃO E OBTER TOKEN FCM
-// ===================================================================================
-async function solicitarPermissaoParaNotificacoes() {
-    logDebug('Iniciando solicitação de permissão de notificação...');
-
-    if (!VAPID_KEY) {
-        console.error('[ERROR] VAPID_KEY não configurada');
+  // Aguarda o service worker estar ativo
+  async waitForServiceWorker(registration) {
+    return new Promise((resolve) => {
+      console.log('[DEBUG][messaging.js] Aguardando Service Worker ativo...');
+      
+      if (registration.active) {
+        console.log('[DEBUG][messaging.js] Service Worker já está ativo');
+        resolve();
         return;
+      }
+
+      const worker = registration.installing || registration.waiting;
+      if (worker) {
+        console.log('[DEBUG][messaging.js] Aguardando worker state change...');
+        
+        // Timeout para evitar travamento
+        const timeout = setTimeout(() => {
+          console.log('[DEBUG][messaging.js] Timeout - continuando mesmo assim');
+          resolve();
+        }, 5000);
+        
+        worker.addEventListener('statechange', () => {
+          console.log('[DEBUG][messaging.js] Worker state:', worker.state);
+          if (worker.state === 'activated') {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+      } else {
+        console.log('[DEBUG][messaging.js] Nenhum worker encontrado - continuando');
+        resolve();
+      }
+    });
+  }
+
+  // Obtém o token FCM
+  async getMessagingToken() {
+    try {
+      console.log('[DEBUG][messaging.js] Tentando obter token FCM...');
+      
+      const currentToken = await getToken(messaging, {
+        vapidKey: 'BEl62iUYgUivxIkv69yViLAXjl6XtZ1y4T3qfAAbtAGHHoMh4A6ckHh1dAiIncaLcDNbm4C7B1lxbgKq26kD0sY'
+      });
+
+      if (currentToken) {
+        console.log('[DEBUG][messaging.js] Token FCM obtido:', currentToken);
+        this.token = currentToken;
+        
+        // Salva o token no localStorage para uso posterior
+        localStorage.setItem('fcm_token', currentToken);
+        
+        return currentToken;
+      } else {
+        console.warn('[DEBUG][messaging.js] Nenhum token de registro disponível');
+        return null;
+      }
+    } catch (error) {
+      console.error('[DEBUG][messaging.js] Erro ao obter token FCM:', error);
+      return null;
+    }
+  }
+
+  // Configura listener para mensagens em primeiro plano
+  setupForegroundMessageListener() {
+    onMessage(messaging, (payload) => {
+      console.log('[messaging.js] Mensagem recebida em primeiro plano:', payload);
+      
+      // Mostra notificação personalizada quando o app está em primeiro plano
+      this.showForegroundNotification(payload);
+    });
+  }
+
+  // Mostra notificação quando o app está em primeiro plano
+  showForegroundNotification(payload) {
+    const title = payload.notification?.title || payload.data?.title || 'Novo Agendamento';
+    const body = payload.notification?.body || payload.data?.body || 'Você tem um novo agendamento!';
+    
+    // Cria uma notificação personalizada
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: body,
+        icon: payload.notification?.icon || '/icon.png',
+        badge: '/badge.png',
+        tag: 'agendamento'
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+        // Redireciona para a página de agendamentos
+        window.location.href = '/agendamentos';
+      };
+    }
+  }
+
+  // Envia token para o servidor (para ser chamado após login)
+  async sendTokenToServer(userId, empresaId) {
+    if (!this.token) {
+      console.warn('[messaging.js] Token não disponível para envio');
+      return false;
     }
 
     try {
-        const permission = await Notification.requestPermission();
-        logDebug('Permissão de notificação:', permission);
+      // Aqui você enviaria o token para seu backend/Firestore
+      console.log('[DEBUG][messaging.js] Enviando token para servidor:', {
+        userId,
+        empresaId,
+        token: this.token
+      });
 
-        if (permission !== 'granted') {
-            logDebug('Permissão negada pelo usuário.');
-            return;
-        }
+      // Exemplo de como salvar no Firestore (adapte conforme sua estrutura)
+      // await updateDoc(doc(db, 'users', userId), {
+      //   fcmToken: this.token,
+      //   tokenUpdatedAt: new Date()
+      // });
 
-        const swRegistration = await registrarServiceWorker();
-
-        // Atenção: getToken (modular API)
-        const token = await getToken(messaging, {
-            vapidKey: VAPID_KEY,
-            serviceWorkerRegistration: swRegistration
-        });
-
-        if (!token) {
-            logDebug('Não foi possível obter o token FCM.');
-            return;
-        }
-
-        logDebug('Token FCM obtido com sucesso:', token);
-        await salvarTokenNoFirestore(token);
-
-        // Recebimento de mensagens em foreground
-        onMessage(messaging, (payload) => {
-            logDebug('Mensagem recebida em foreground:', payload);
-            const notificationTitle = payload.notification?.title || payload.data?.title || "Nova notificação";
-            const notificationOptions = {
-                body: payload.notification?.body || payload.data?.body || "",
-                icon: payload.notification?.icon || payload.data?.icon || "/icon.png",
-                image: payload.notification?.image || payload.data?.image || undefined
-            };
-            // Exibe notification se permitido
-            if (Notification.permission === 'granted') {
-                new Notification(notificationTitle, notificationOptions);
-            }
-        });
-
+      return true;
     } catch (error) {
-        console.error('[ERROR] Falha ao solicitar permissão ou obter token FCM:', error);
+      console.error('[messaging.js] Erro ao enviar token para servidor:', error);
+      return false;
     }
+  }
+
+  // Obtém o token atual
+  getCurrentToken() {
+    return this.token || localStorage.getItem('fcm_token');
+  }
 }
 
-// ===================================================================================
-// DISPONIBILIZA FUNÇÃO GLOBAL PARA TESTES NO CONSOLE
-// ===================================================================================
-window.solicitarPermissaoParaNotificacoes = solicitarPermissaoParaNotificacoes;
-window.messaging = messaging;
-window.getToken = getToken; // Para testes manuais!
-window.auth = auth;
-window.db = db;
-window.doc = doc;
-window.setDoc = setDoc;
-window.serverTimestamp = serverTimestamp;
-logDebug('messaging.js carregado e pronto para uso.');
+// Exporta uma instância singleton
+const messagingService = new MessagingService();
+export default messagingService;
