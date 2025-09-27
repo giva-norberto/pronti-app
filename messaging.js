@@ -10,7 +10,9 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 // ===================================================================================
 // CONFIGURAÇÕES
 // ===================================================================================
-const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w"; // <-- CHAVE NOVA
+// ATENÇÃO: Duas chaves VAPID estavam sendo usadas antes. Mantenho só A NOVA (a última que você enviou).
+const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w"; // <-- CHAVE NOVA (mantida apenas uma!)
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 const messaging = getMessaging(app);
