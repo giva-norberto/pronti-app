@@ -4,8 +4,6 @@
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-// ADICIONADO Firestore para criação automática do documento:
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Use a MESMA configuração do projeto central
 const firebaseConfig = {
@@ -20,8 +18,6 @@ const firebaseConfig = {
 // Singleton: Inicializa ou recupera instância única
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
-// Instância do Firestore
-const db = getFirestore(app);
 
 console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (espelhando firebase-config.js).');
 
@@ -50,22 +46,7 @@ class MessagingService {
       console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
       await this.waitForServiceWorker(registration);
 
-      const token = await this.getMessagingToken(registration);
-
-      // ======= CRIA DOCUMENTO AUTOMATICAMENTE NO FIRESTORE =======
-      if (token) {
-        try {
-          await setDoc(doc(db, "fcmTokens", token), {
-            token: token,
-            createdAt: new Date().toISOString()
-          });
-          console.log(`[DEBUG][messaging.js] Documento criado/atualizado em fcmTokens/${token}`);
-        } catch (fireErr) {
-          console.error('[messaging.js] Erro ao criar documento no Firestore:', fireErr);
-        }
-      }
-      // ======= FIM DA CRIAÇÃO AUTOMÁTICA =======
-
+      await this.getMessagingToken(registration);
       this.setupForegroundMessageListener();
 
       console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
