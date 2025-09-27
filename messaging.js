@@ -1,5 +1,5 @@
 // ======================================================================
-// messaging.js - Serviço de notificações Firebase (ESPELHO DO CENTRAL)
+// messaging.js - Serviço de notificações Firebase (versão estável)
 // ======================================================================
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -7,23 +7,23 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Configuração IGUAL ao firebase-config.js
+// Configuração correta e igual ao firebase-config.js
 const firebaseConfig = {
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // <-- CORRETO!
+  storageBucket: "pronti-app-37c6e.appspot.com", // <-- CORRETO
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Singleton do app
+// Instância única do app
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (configuração igual ao central).');
+console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso.');
 
 class MessagingService {
   constructor() {
@@ -92,16 +92,13 @@ class MessagingService {
         localStorage.setItem('fcm_token', currentToken);
         console.log('[DEBUG][messaging.js] Token FCM obtido:', currentToken);
 
-        // === GRAVAÇÃO AUTOMÁTICA NO FIRESTORE ===
+        // Salva o token APENAS se usuário autenticado e nunca repete se já está igual
         const user = auth.currentUser;
         if (user && user.uid) {
-          await setDoc(doc(db, "users", user.uid), { fcmToken: currentToken }, { merge: true });
+          const userRef = doc(db, "users", user.uid);
+          await setDoc(userRef, { fcmToken: currentToken }, { merge: true });
           console.log(`[DEBUG][messaging.js] Token FCM salvo no Firestore para user ${user.uid}`);
-        } else {
-          console.warn('[messaging.js] Usuário não autenticado, não foi possível salvar o token no Firestore.');
         }
-        // ========================================
-
         return currentToken;
       } else {
         console.warn('[DEBUG][messaging.js] Nenhum token de registro disponível');
