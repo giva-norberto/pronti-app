@@ -1,7 +1,26 @@
 <?php
+/**
+ * FireBaseNotifications.class.php
+ * 
+ * Classe para enviar notificações via Firebase Cloud Messaging (FCM)
+ * Pode enviar para tokens específicos ou tópicos.
+ */
+
 class FireBaseNotifications {
-    private $serverApiKey = "SUA_SERVER_KEY_DO_FIREBASE"; // pega em Configurações do projeto -> Cloud Messaging
-    private $firebaseUrl = "https://fcm.googleapis.com/fcm/send";
+    private $serverApiKey;
+    private $firebaseUrl;
+
+    /**
+     * Construtor
+     * @param string $serverApiKey Chave do servidor FCM (Configurações do projeto -> Cloud Messaging)
+     */
+    public function __construct(string $serverApiKey = '') {
+        if (!$serverApiKey) {
+            throw new Exception("É necessário fornecer a server API key do Firebase.");
+        }
+        $this->serverApiKey = $serverApiKey;
+        $this->firebaseUrl = "https://fcm.googleapis.com/fcm/send";
+    }
 
     /**
      * Envia notificação para tokens específicos
@@ -10,9 +29,10 @@ class FireBaseNotifications {
      * @param string $mensagem Corpo da notificação
      * @param string|null $icone URL do ícone
      * @param string|null $imagem URL da imagem
+     * @return array Resultado da requisição
      */
-    public function sendToTokens(array $tokens, string $titulo, string $mensagem, string $icone = null, string $imagem = null) {
-        if(empty($tokens)) return false;
+    public function sendToTokens(array $tokens, string $titulo, string $mensagem, string $icone = null, string $imagem = null): array {
+        if (empty($tokens)) return ['success' => false, 'error' => 'Nenhum token fornecido'];
 
         $msg = [
             'title' => $titulo,
@@ -37,8 +57,9 @@ class FireBaseNotifications {
      * @param string $mensagem
      * @param string|null $icone
      * @param string|null $imagem
+     * @return array Resultado da requisição
      */
-    public function sendToTopic(string $topic, string $titulo, string $mensagem, string $icone = null, string $imagem = null) {
+    public function sendToTopic(string $topic, string $titulo, string $mensagem, string $icone = null, string $imagem = null): array {
         $msg = [
             'title' => $titulo,
             'body'  => $mensagem,
@@ -55,8 +76,12 @@ class FireBaseNotifications {
         return $this->executeCurl($payload);
     }
 
-    // Executa requisição CURL para FCM
-    private function executeCurl(array $payload) {
+    /**
+     * Executa a requisição CURL para FCM
+     * @param array $payload Dados da notificação
+     * @return array Resultado da requisição
+     */
+    private function executeCurl(array $payload): array {
         $headers = [
             'Authorization: key=' . $this->serverApiKey,
             'Content-Type: application/json'
@@ -74,7 +99,10 @@ class FireBaseNotifications {
         $error = curl_error($ch);
         curl_close($ch);
 
-        if($error) return ['success' => false, 'error' => $error];
+        if ($error) {
+            return ['success' => false, 'error' => $error];
+        }
+
         return ['success' => true, 'response' => json_decode($result, true)];
     }
 }
