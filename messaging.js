@@ -1,32 +1,29 @@
 // ======================================================================
-// messaging.js - Versão Definitiva, Completa e Corrigida
+// messaging.js - Serviço de notificações Firebase (ESPELHO DA CENTRAL)
 // ======================================================================
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-// ✅ ADIÇÃO 1: Importa as funções do Firestore e Autenticação
-import { getFirestore, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+// >>> NOVO: Firestore <<<
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-
-// Sua configuração original. Não foi alterada.
+// Use a MESMA configuração do projeto central
 const firebaseConfig = {
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app",
+  storageBucket: "pronti-app-37c6e.firebasestorage.app", // igual ao seu central!
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Singleton e inicialização dos serviços Firebase
+// Singleton: Inicializa ou recupera instância única
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
-// ✅ ADIÇÃO 2: Inicializa o Firestore e a Autenticação
+// >>> NOVO: instância do Firestore <<<
 const db = getFirestore(app);
-const auth = getAuth(app);
 
-console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso.');
+console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (espelhando firebase-config.js).');
 
 class MessagingService {
   constructor() {
@@ -35,12 +32,7 @@ class MessagingService {
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
   }
 
-  // ✅ CORREÇÃO 1: O método 'initialize' agora precisa do ID do usuário para funcionar
-  async initialize(userId) {
-    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
-      console.error("[messaging.js] ERRO FATAL: A inicialização foi chamada sem um ID de usuário válido. Operação cancelada.");
-      return false;
-    }
+  async initialize() {
     if (!this.isSupported) {
       console.warn('[messaging.js] Notificações não suportadas neste navegador');
       return false;
@@ -48,22 +40,20 @@ class MessagingService {
 
     try {
       const permission = await Notification.requestPermission();
+      console.log('[DEBUG][messaging.js] Permissão de notificação:', permission);
       if (permission !== 'granted') {
         console.warn('[messaging.js] Permissão de notificação negada');
         return false;
       }
 
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+      console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
       await this.waitForServiceWorker(registration);
-      const token = await this.getMessagingToken(registration);
 
-      // Se o token foi obtido com sucesso, chama a função para salvar
-      if (token) {
-        await this.sendTokenToServer(userId);
-      }
-      
+      await this.getMessagingToken(registration);
       this.setupForegroundMessageListener();
-      console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso para o usuário:', userId);
+
+      console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
       return true;
 
     } catch (error) {
@@ -73,31 +63,42 @@ class MessagingService {
   }
 
   async waitForServiceWorker(registration) {
-    // Esta função está correta, não precisa de alterações.
     return new Promise((resolve) => {
-      if (registration.active) { resolve(); return; }
+      if (registration.active) {
+        resolve();
+        return;
+      }
       const worker = registration.installing || registration.waiting;
       if (worker) {
         const timeout = setTimeout(() => resolve(), 10000);
         worker.addEventListener('statechange', () => {
-          if (worker.state === 'activated') { clearTimeout(timeout); resolve(); }
+          if (worker.state === 'activated') {
+            clearTimeout(timeout);
+            resolve();
+          }
         });
-      } else { resolve(); }
+      } else {
+        resolve();
+      }
     });
   }
 
   async getMessagingToken(registration) {
-    // Esta função está correta, não precisa de alterações.
     try {
-      const currentToken = await getToken(messaging, { vapidKey: this.vapidKey, serviceWorkerRegistration: registration });
+      const currentToken = await getToken(messaging, {
+        vapidKey: this.vapidKey,
+        serviceWorkerRegistration: registration
+      });
+
       if (currentToken) {
         this.token = currentToken;
         localStorage.setItem('fcm_token', currentToken);
         console.log('[DEBUG][messaging.js] Token FCM obtido:', currentToken);
         return currentToken;
+      } else {
+        console.warn('[DEBUG][messaging.js] Nenhum token de registro disponível');
+        return null;
       }
-      console.warn('[DEBUG][messaging.js] Nenhum token de registro disponível');
-      return null;
     } catch (error) {
       console.error('[messaging.js] Erro ao obter token FCM:', error);
       return null;
@@ -105,7 +106,6 @@ class MessagingService {
   }
 
   setupForegroundMessageListener() {
-    // Esta função está correta, não precisa de alterações.
     onMessage(messaging, (payload) => {
       console.log('[messaging.js] Mensagem recebida em primeiro plano:', payload);
       this.showForegroundNotification(payload);
@@ -113,11 +113,15 @@ class MessagingService {
   }
 
   showForegroundNotification(payload) {
-    // Esta função está correta, não precisa de alterações.
-    const title = payload.notification?.title || 'Novo Agendamento';
-    const body = payload.notification?.body || 'Você tem um novo agendamento!';
+    const title = payload.notification?.title || payload.data?.title || 'Novo Agendamento';
+    const body = payload.notification?.body || payload.data?.body || 'Você tem um novo agendamento!';
     if (Notification.permission === 'granted') {
-      const notification = new Notification(title, { body: body, icon: '/icon.png', badge: '/badge.png', tag: 'agendamento' });
+      const notification = new Notification(title, {
+        body: body,
+        icon: payload.notification?.icon || '/icon.png',
+        badge: '/badge.png',
+        tag: 'agendamento'
+      });
       notification.onclick = () => {
         window.focus();
         notification.close();
@@ -126,54 +130,36 @@ class MessagingService {
     }
   }
 
-  // ✅ CORREÇÃO 2: Preenche a função que estava vazia com a lógica de salvar
-  async sendTokenToServer(userId) {
-    // Adiciona uma verificação de segurança para evitar erros de 'Bad Request'
-    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
-        console.error(`[messaging.js] ERRO CRÍTICO ao salvar: ID de usuário inválido ('${userId}').`);
-        return false;
-    }
+  // >>> NOVO: grava token diretamente no Firestore <<<
+  async sendTokenToServer(userId, empresaId) {
     if (!this.token) {
-      console.warn('[messaging.js] Token não disponível para envio ao servidor.');
+      console.warn('[messaging.js] Token não disponível para envio');
       return false;
     }
-
     try {
-      console.log(`[messaging.js] Salvando token no Firestore para o usuário: ${userId}`);
-      const userDocRef = doc(db, 'usuarios', userId);
-      // 'arrayUnion' garante que o mesmo token não seja adicionado várias vezes
-      await updateDoc(userDocRef, { fcmTokens: arrayUnion(this.token) });
-      console.log(`[messaging.js] Token salvo com sucesso!`);
+      const ref = doc(db, "mensagensTokens", userId);
+      await setDoc(ref, {
+        empresaId: empresaId,
+        userId: userId,
+        fcmToken: this.token,
+        updatedAt: new Date()
+      }, { merge: true });
+
+      console.log('[messaging.js] Token salvo no Firestore com sucesso!');
       return true;
-    } catch (error) {
-      console.error(`[messaging.js] FALHA AO SALVAR TOKEN no Firestore para o usuário ${userId}:`, error);
+    } catch (err) {
+      console.error('[messaging.js] Erro ao salvar token no Firestore:', err);
       return false;
     }
   }
 
   getCurrentToken() {
-    // Esta função está correta, não precisa de alterações.
     return this.token || localStorage.getItem('fcm_token');
   }
 }
 
+// Exporta a instância para o escopo global (para uso no HTML)
 window.messagingService = new MessagingService();
-
-// ✅ CORREÇÃO 3: Torna a função global "inteligente" para encontrar o usuário sozinha
-window.solicitarPermissaoParaNotificacoes = function(userId) {
-  // Se o ID do usuário for passado diretamente, usa ele.
-  if (userId) {
-    window.messagingService.initialize(userId);
-    return;
-  }
-  
-  // Se não, tenta encontrar o usuário logado na sessão atual.
-  const currentUser = auth.currentUser;
-  if (currentUser) {
-    // Se encontrou, usa o ID (uid) dele.
-    window.messagingService.initialize(currentUser.uid);
-  } else {
-    // Se realmente não encontrou ninguém, avisa o usuário.
-    alert("Erro: Você precisa estar logado para ativar as notificações.");
-  }
+window.solicitarPermissaoParaNotificacoes = function() {
+  window.messagingService.initialize();
 };
