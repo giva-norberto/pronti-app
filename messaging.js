@@ -1,5 +1,5 @@
 // ===================================================================================
-// ARQUIVO messaging.js – Revisado, seguro e otimizado para Firebase Push Web
+// ARQUIVO messaging.js – Revisado, seguro e otimizado para Firebase Push Web (Firebase v10.x)
 // ===================================================================================
 
 import { app } from './firebase-config.js'; 
@@ -10,8 +10,7 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 // ===================================================================================
 // CONFIGURAÇÕES
 // ===================================================================================
-// ATENÇÃO: Duas chaves VAPID estavam sendo usadas antes. Mantenho só A NOVA (a última que você enviou).
-const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w"; // <-- CHAVE NOVA (mantida apenas uma!)
+const VAPID_KEY = "BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w"; // <-- CHAVE NOVA!
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -35,6 +34,7 @@ async function registrarServiceWorker() {
     logDebug('Tentando registrar Service Worker...');
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
 
+    // Espera ativação do SW antes de prosseguir (garante que o SW está ativo)
     const esperarAtivacao = (sw) => new Promise(resolve => {
         if (!sw || sw.state === 'activated') return resolve();
         sw.addEventListener('statechange', e => {
@@ -69,7 +69,8 @@ async function salvarTokenNoFirestore(token) {
         await setDoc(tokenRef, { timestamp: serverTimestamp() });
         logDebug('Token do usuário salvo com sucesso:', token);
 
-        // Notificação para o dono da empresa (opcional, só se user.empresaId existir)
+        // Exemplo: salvar notificação para o dono da empresa (opcional)
+        // Se user.empresaId existir no objeto do usuário
         if (user.empresaId) {
             const donoRef = collection(db, 'empresas', user.empresaId, 'notificacoes');
             await addDoc(donoRef, { tipo: 'reserva', usuarioId: user.uid, timestamp: serverTimestamp() });
@@ -103,6 +104,7 @@ async function solicitarPermissaoParaNotificacoes() {
 
         const swRegistration = await registrarServiceWorker();
 
+        // Atenção: getToken (modular API)
         const token = await getToken(messaging, {
             vapidKey: VAPID_KEY,
             serviceWorkerRegistration: swRegistration
@@ -119,13 +121,16 @@ async function solicitarPermissaoParaNotificacoes() {
         // Recebimento de mensagens em foreground
         onMessage(messaging, (payload) => {
             logDebug('Mensagem recebida em foreground:', payload);
-            const notificationTitle = payload.data?.title || "Nova notificação";
+            const notificationTitle = payload.notification?.title || payload.data?.title || "Nova notificação";
             const notificationOptions = {
-                body: payload.data?.body || "",
-                icon: payload.data?.icon || "/icon.png",
-                image: payload.data?.image || undefined
+                body: payload.notification?.body || payload.data?.body || "",
+                icon: payload.notification?.icon || payload.data?.icon || "/icon.png",
+                image: payload.notification?.image || payload.data?.image || undefined
             };
-            new Notification(notificationTitle, notificationOptions);
+            // Exibe notification se permitido
+            if (Notification.permission === 'granted') {
+                new Notification(notificationTitle, notificationOptions);
+            }
         });
 
     } catch (error) {
@@ -134,8 +139,9 @@ async function solicitarPermissaoParaNotificacoes() {
 }
 
 // ===================================================================================
-// DISPONIBILIZA FUNÇÃO GLOBAL
+// DISPONIBILIZA FUNÇÃO GLOBAL PARA TESTES NO CONSOLE
 // ===================================================================================
 window.solicitarPermissaoParaNotificacoes = solicitarPermissaoParaNotificacoes;
-window.messaging = messaging; // Para testes no console!
+window.messaging = messaging;
+window.getToken = getToken; // Para testes manuais!
 logDebug('messaging.js carregado e pronto para uso.');
