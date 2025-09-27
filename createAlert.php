@@ -1,67 +1,57 @@
 <?php
 require_once 'FireBaseNotifications.class.php';
-require 'vendor/autoload.php'; // se você estiver usando o SDK do Firebase PHP
+require 'vendor/autoload.php';
 
 use Google\Cloud\Firestore\FirestoreClient;
+
+header('Content-Type: application/json');
 
 try {
     // === CONFIGURAÇÕES ===
     $firebaseServerKey = 'SUA_SERVER_KEY_DO_FIREBASE';
-    $donoId = $_POST['donoId'] ?? ''; // ID do dono da empresa
+    $donoId = $_POST['donoId'] ?? '';
     $empresaId = $_POST['empresaId'] ?? '';
     $titulo = $_POST['titulo'] ?? 'Novo Agendamento';
     $mensagem = $_POST['mensagem'] ?? 'Você tem um novo agendamento!';
 
     if (!$donoId || !$empresaId) {
-        throw new Exception("donoId e empresaId são obrigatórios.");
+        throw new Exception("Parâmetros obrigatórios ausentes: donoId e empresaId.");
     }
 
     // === INICIALIZA FIRESTORE ===
-    $firestore = new FirestoreClient([
-        'projectId' => 'pronti-app-37c6e'
-    ]);
+    $firestore = new FirestoreClient(['projectId' => 'pronti-app-37c6e']);
 
     // === REFERÊNCIA AO DOCUMENTO DE ALERTA ===
-    $docRef = $firestore->collection('alerts')->document($empresaId . '_' . $donoId);
+    $docId = $empresaId . '_' . $donoId;
+    $docRef = $firestore->collection('alerts')->document($docId);
 
-    // === CRIA DOCUMENTO SE NÃO EXISTIR ===
-    $snapshot = $docRef->snapshot();
-    if (!$snapshot->exists()) {
-        $docRef->set([
-            'empresaId' => $empresaId,
-            'donoId' => $donoId,
-            'titulo' => $titulo,
-            'mensagem' => $mensagem,
-            'createdAt' => new \Google\Cloud\Core\Timestamp(new DateTime()),
-            'updatedAt' => new \Google\Cloud\Core\Timestamp(new DateTime()),
-            'status' => 'ativo'
-        ]);
-    } else {
-        // Atualiza apenas a mensagem e updatedAt
-        $docRef->update([
-            ['path' => 'mensagem', 'value' => $mensagem],
-            ['path' => 'updatedAt', 'value' => new \Google\Cloud\Core\Timestamp(new DateTime())]
-        ]);
-    }
+    // === CRIA OU ATUALIZA DOCUMENTO ===
+    $now = new \Google\Cloud\Core\Timestamp(new DateTime());
+    $docRef->set([
+        'empresaId' => $empresaId,
+        'donoId' => $donoId,
+        'titulo' => $titulo,
+        'mensagem' => $mensagem,
+        'status' => 'ativo',
+        'createdAt' => $now,
+        'updatedAt' => $now
+    ], ['merge' => true]); // merge = true garante atualização se já existir
 
     // === BUSCA TOKEN DO USUÁRIO ===
     $tokenDoc = $firestore->collection('userTokens')->document($donoId)->snapshot();
-    if (!$tokenDoc->exists()) {
-        throw new Exception("Token do dono não encontrado no Firestore.");
-    }
-    $token = $tokenDoc['fcmToken'] ?? '';
+    $token = $tokenDoc->exists() ? ($tokenDoc['fcmToken'] ?? '') : '';
 
     if (!$token) {
-        throw new Exception("Token FCM vazio para o dono.");
+        throw new Exception("Token FCM não encontrado para o dono.");
     }
 
-    // === ENVIA NOTIFICAÇÃO VIA FireBaseNotifications ===
+    // === ENVIA NOTIFICAÇÃO ===
     $firebase = new FireBaseNotifications($firebaseServerKey);
-    $result = $firebase->sendToTokens([$token], $titulo, $mensagem);
+    $firebaseResult = $firebase->sendToTokens([$token], $titulo, $mensagem);
 
     echo json_encode([
         'success' => true,
-        'firebaseResult' => $result
+        'firebaseResult' => $firebaseResult
     ]);
 
 } catch (Exception $e) {
