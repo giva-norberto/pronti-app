@@ -2,7 +2,7 @@
 // ARQUIVO messaging.js – Revisado, seguro e otimizado para Firebase Push Web (Firebase v10.x)
 // ===================================================================================
 
-import { app } from './firebase-config.js'; 
+import { app } from './firebase-config.js';
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
@@ -144,4 +144,9 @@ async function solicitarPermissaoParaNotificacoes() {
 window.solicitarPermissaoParaNotificacoes = solicitarPermissaoParaNotificacoes;
 window.messaging = messaging;
 window.getToken = getToken; // Para testes manuais!
+window.auth = auth;
+window.db = db;
+window.doc = doc;
+window.setDoc = setDoc;
+window.serverTimestamp = serverTimestamp;
 logDebug('messaging.js carregado e pronto para uso.');
