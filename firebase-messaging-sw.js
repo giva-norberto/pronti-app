@@ -8,7 +8,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-com
 
 // === Configuração do Firebase (a mesma do firebase-config.js) ===
 firebase.initializeApp({
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // CHAVE NOVA
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
@@ -40,4 +40,3 @@ self.addEventListener('notificationclick', function (event) {
     clients.openWindow('https://prontiapp.com.br/')
   );
 });
-
