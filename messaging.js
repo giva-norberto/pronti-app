@@ -1,147 +1,209 @@
 // ======================================================================
-// messaging.js - Revisado para se conectar com user-service.js
+// messaging.js - Serviço de notificações Firebase (ESPELHO DA CENTRAL)
 // ======================================================================
 
-// REVISÃO: Importações foram organizadas e a do user-service foi adicionada.
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-import { getFirestore, doc, setDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// >>> NOVO: Firestore <<<
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// REVISÃO: Importa a função principal do seu user-service para obter a sessão do usuário.
-import { verificarAcesso } from './user-service.js';
-
-// --- Configuração do Firebase (sem alteração) ---
+// Use a MESMA configuração do projeto central
 const firebaseConfig = {
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app",
+  storageBucket: "pronti-app-37c6e.firebasestorage.app", // igual ao seu central!
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// --- Inicialização dos Serviços (sem alteração) ---
+// Singleton: Inicializa ou recupera instância única
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const messaging = getMessaging(app);
+// >>> NOVO: instância do Firestore <<<
 const db = getFirestore(app);
-const messaging = getMessaging(); // A partir do v9, getMessaging() é suficiente se o app já foi inicializado.
-const VAPID_KEY = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
 
-console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso.');
+console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (espelhando firebase-config.js).');
 
-// ======================================================================
-// REVISÃO: A lógica da classe foi transformada em funções mais simples e diretas
-// para facilitar a integração com o user-service.js.
-// ======================================================================
-
-/**
- * Função interna que usa a SUA lógica original para salvar o token.
- * Nenhuma lógica foi alterada aqui, apenas o nome da coleção foi mantido.
- * @param {string} userId - ID do usuário.
- * @param {string} empresaId - ID da empresa.
- * @param {string} token - Token FCM do dispositivo.
- */
-async function sendTokenToServer(userId, empresaId, token) {
-  if (!token) {
-    console.warn('[Messaging] Tentativa de salvar sem um token.');
-    return;
+class MessagingService {
+  constructor() {
+    this.token = null;
+    this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
+    this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
   }
-  try {
-    const ref = doc(db, "mensagensTokens", userId);
-    // Usando a sua lógica original de setDoc com merge: true
-    await setDoc(ref, {
-      empresaId: empresaId,
-      userId: userId,
-      fcmToken: token,
-      updatedAt: serverTimestamp() // Usando serverTimestamp para consistência
-    }, { merge: true });
 
-    console.log('[Messaging] Token salvo no Firestore com sucesso!');
-  } catch (err) {
-    console.error('[Messaging] Erro ao salvar token no Firestore:', err);
-  }
-}
-
-/**
- * Função principal que o botão "Ativar Notificações" vai chamar.
- * Ela orquestra todo o processo de forma segura.
- */
-export async function solicitarPermissaoEAtivarNotificacoes() {
-  console.log('[Messaging] Processo de ativação de notificações iniciado...');
-  
-  try {
-    // 1. CHAMA O SEU USER-SERVICE para obter a sessão atual.
-    const sessionProfile = await verificarAcesso();
-    const { user, empresaId } = sessionProfile;
-
-    if (!user || !empresaId) {
-      throw new Error("Sessão inválida. Usuário ou Empresa não encontrados.");
-    }
-    console.log(`[Messaging] Sessão válida encontrada para: ${user.uid}`);
-
-    // 2. Pede permissão ao usuário.
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      alert('Permissão para notificações foi negada.');
-      return;
+  async initialize() {
+    if (!this.isSupported) {
+      console.warn('[messaging.js] Notificações não suportadas neste navegador');
+      return false;
     }
 
-    // 3. Obtém o token do dispositivo.
-    const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
-    if (!currentToken) {
-      alert('Não foi possível registrar o dispositivo para notificações. Tente recarregar a página.');
-      return;
+    try {
+      const permission = await Notification.requestPermission();
+      console.log('[DEBUG][messaging.js] Permissão de notificação:', permission);
+      if (permission !== 'granted') {
+        console.warn('[messaging.js] Permissão de notificação negada');
+        return false;
+      }
+
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+      console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
+      await this.waitForServiceWorker(registration);
+
+      await this.getMessagingToken(registration);
+      this.setupForegroundMessageListener();
+
+      console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
+      return true;
+
+    } catch (error) {
+      console.error('[messaging.js] Erro ao inicializar messaging:', error);
+      return false;
     }
-
-    // 4. Chama a função para salvar o token com os dados obtidos do user-service.
-    await sendTokenToServer(user.uid, empresaId, currentToken);
-    alert('Notificações ativadas com sucesso neste dispositivo!');
-
-  } catch (error) {
-    console.error("[Messaging] Falha no processo de ativação:", error);
-    alert(`Ocorreu um erro: ${error.message}`);
   }
-}
 
-/**
- * Inicia o listener para receber mensagens quando o site está aberto.
- * É recomendado chamar esta função assim que a página principal do seu app carrega.
- */
-export function iniciarListenerDeNotificacoes() {
-  onMessage(messaging, (payload) => {
-    console.log('[Messaging] Mensagem recebida em primeiro plano:', payload);
-    const title = payload.notification?.title || 'Nova Mensagem';
-    const options = {
-      body: payload.notification?.body || '',
-      icon: payload.notification?.icon || '/icon.png'
-    };
-    new Notification(title, options);
-  });
-  console.log('[Messaging] Listener para notificações em primeiro plano está ativo.');
-}
-
-/**
- * Esta é a sua função original para salvar alertas.
- * Nenhuma alteração foi feita nela. Ela pode ser usada por outras partes do seu sistema.
- * @param {string} empresaId
- * @param {string} clienteNome
- * @param {string} servico
- * @param {string} horario
- */
-export async function saveAlert(empresaId, clienteNome, servico, horario) {
-  try {
-    const alertsRef = collection(db, "alerts");
-    await addDoc(alertsRef, {
-      empresaId: empresaId,
-      clienteNome: clienteNome,
-      servico: servico,
-      horario: horario,
-      createdAt: new Date(),
-      status: "novo"
+  async waitForServiceWorker(registration) {
+    return new Promise((resolve) => {
+      if (registration.active) {
+        resolve();
+        return;
+      }
+      const worker = registration.installing || registration.waiting;
+      if (worker) {
+        const timeout = setTimeout(() => resolve(), 10000);
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'activated') {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+      } else {
+        resolve();
+      }
     });
-    console.log('[messaging.js] Alerta salvo no Firestore com sucesso!');
-    return true;
-  } catch (err) {
-    console.error('[messaging.js] Erro ao salvar alerta no Firestore:', err);
-    return false;
+  }
+
+  async getMessagingToken(registration) {
+    try {
+      const currentToken = await getToken(messaging, {
+        vapidKey: this.vapidKey,
+        serviceWorkerRegistration: registration
+      });
+
+      if (currentToken) {
+        this.token = currentToken;
+        localStorage.setItem('fcm_token', currentToken);
+        console.log('[DEBUG][messaging.js] Token FCM obtido:', currentToken);
+        return currentToken;
+      } else {
+        console.warn('[DEBUG][messaging.js] Nenhum token de registro disponível');
+        return null;
+      }
+    } catch (error) {
+      console.error('[messaging.js] Erro ao obter token FCM:', error);
+      return null;
+    }
+  }
+
+  setupForegroundMessageListener() {
+    onMessage(messaging, (payload) => {
+      console.log('[messaging.js] Mensagem recebida em primeiro plano:', payload);
+      this.showForegroundNotification(payload);
+    });
+  }
+
+  showForegroundNotification(payload) {
+    const title = payload.notification?.title || payload.data?.title || 'Novo Agendamento';
+    const body = payload.notification?.body || payload.data?.body || 'Você tem um novo agendamento!';
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: body,
+        icon: payload.notification?.icon || '/icon.png',
+        badge: '/badge.png',
+        tag: 'agendamento'
+      });
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+        window.location.href = '/agendamentos';
+      };
+    }
+  }
+
+  // >>> NOVO: grava token diretamente no Firestore <<<
+  async sendTokenToServer(userId, empresaId) {
+    if (!this.token) {
+      console.warn('[messaging.js] Token não disponível para envio');
+      return false;
+    }
+    try {
+      const ref = doc(db, "mensagensTokens", userId);
+
+      // Verifica se já existe o documento para esse usuário
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        console.log('[messaging.js] Token já existe no Firestore, atualizando campos.');
+        // Atualiza os campos obrigatórios SEM apagar outros existentes
+        await setDoc(ref, {
+          empresaId: empresaId,
+          userId: userId,
+          fcmToken: this.token,
+          updatedAt: new Date(),
+          // CAMPOS NOVOS PADRÃO:
+          ativo: true,
+          tipo: "web",
+          navegador: navigator.userAgent || "",
+        }, { merge: true });
+        return true;
+      }
+
+      // Cria o documento se não existe
+      await setDoc(ref, {
+        empresaId: empresaId,
+        userId: userId,
+        fcmToken: this.token,
+        updatedAt: new Date(),
+        // CAMPOS NOVOS PADRÃO:
+        ativo: true,
+        tipo: "web",
+        navegador: navigator.userAgent || "",
+      });
+
+      console.log('[messaging.js] Token salvo no Firestore com sucesso!');
+      return true;
+    } catch (err) {
+      console.error('[messaging.js] Erro ao salvar token no Firestore:', err);
+      return false;
+    }
+  }
+
+  // >>> NOVO: função para salvar um alerta de agendamento no Firestore <<<
+  async saveAlert(empresaId, clienteNome, servico, horario) {
+    try {
+      const alertsRef = collection(db, "alerts");
+      await addDoc(alertsRef, {
+        empresaId: empresaId,
+        clienteNome: clienteNome,
+        servico: servico,
+        horario: horario,
+        createdAt: new Date(),
+        status: "novo"
+      });
+      console.log('[messaging.js] Alerta salvo no Firestore com sucesso!');
+      return true;
+    } catch (err) {
+      console.error('[messaging.js] Erro ao salvar alerta no Firestore:', err);
+      return false;
+    }
+  }
+
+  getCurrentToken() {
+    return this.token || localStorage.getItem('fcm_token');
   }
 }
+
+// Exporta a instância para o escopo global (para uso no HTML)
+window.messagingService = new MessagingService();
+window.solicitarPermissaoParaNotificacoes = function() {
+  window.messagingService.initialize();
+};
