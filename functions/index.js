@@ -5,6 +5,7 @@
 
 // ============================ Imports principais ==============================
 const { onRequest } = require("firebase-functions/v2/https" );
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
@@ -337,11 +338,12 @@ exports.testeFirestoreDireto = onRequest(
 
 // ============================================================================
 // NOVA FUNÇÃO: Escuta filaDeNotificacoes e envia push FCM
+// CORRIGIDO para SDK v2
 // ============================================================================
-exports.enviarNotificacaoFCM = functions
-  .region('southamerica-east1') // CORRIGIDO: região alinhada com demais funções
-  .firestore.document('filaDeNotificacoes/{bilheteId}')
-  .onCreate(async (snap, context) => {
+exports.enviarNotificacaoFCM = onDocumentCreated(
+  "filaDeNotificacoes/{bilheteId}",
+  { region: "southamerica-east1" },
+  async (snap, context) => {
     const bilhete = snap.data();
     const bilheteId = context.params.bilheteId;
 
@@ -351,7 +353,6 @@ exports.enviarNotificacaoFCM = functions
     }
 
     try {
-      // Busca o token FCM do dono
       const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
       if (!tokenDoc.exists) {
         functions.logger.warn(`[FCM] Nenhum token FCM encontrado para donoId: ${bilhete.paraDonoId}`);
@@ -364,7 +365,6 @@ exports.enviarNotificacaoFCM = functions
         return;
       }
 
-      // Monta a mensagem
       const message = {
         token: fcmToken,
         notification: {
@@ -377,16 +377,14 @@ exports.enviarNotificacaoFCM = functions
         }
       };
 
-      // Envia push
       await fcm.send(message);
       functions.logger.info(`[FCM] Notificação enviada com sucesso para donoId: ${bilhete.paraDonoId}`, { bilheteId });
 
-      // Atualiza status do bilhete
       await snap.ref.update({ status: 'processado' });
       functions.logger.info(`[FCM] Bilhete ${bilheteId} marcado como processado`);
 
     } catch (error) {
       functions.logger.error(`[FCM] Erro ao enviar notificação para bilhete ${bilheteId}:`, error);
     }
-  });
-
+  }
+);
