@@ -338,8 +338,9 @@ exports.testeFirestoreDireto = onRequest(
 // ============================================================================
 // NOVA FUNÇÃO: Escuta filaDeNotificacoes e envia push FCM
 // ============================================================================
-exports.enviarNotificacaoFCM = functions.firestore
-  .document('filaDeNotificacoes/{bilheteId}')
+exports.enviarNotificacaoFCM = functions
+  .region('southamerica-east1') // CORRIGIDO: região alinhada com demais funções
+  .firestore.document('filaDeNotificacoes/{bilheteId}')
   .onCreate(async (snap, context) => {
     const bilhete = snap.data();
     const bilheteId = context.params.bilheteId;
