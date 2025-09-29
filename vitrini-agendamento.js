@@ -1,6 +1,6 @@
 // ======================================================================
 // vitrini-agendamento.js (VERSÃO ORIGINAL)
-// ✅ ADICIONADA A FUNÇÃO DE NOTIFICAÇÃO COM O NOME DO ARQUIVO CORRETO
+// ✅ ADICIONADA A CRIAÇÃO DO "BILHETE" DE NOTIFICAÇÃO DENTRO DE salvarAgendamento
 // ======================================================================
 
 import { db } from './firebase-config.js';
@@ -17,7 +17,7 @@ import {
 import { limparUIAgendamento } from './vitrini-ui.js';
 
 // --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr   ) {
+function timeStringToMinutes(timeStr  ) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
@@ -128,12 +128,11 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 }
 
 /**
- * Salva um novo agendamento no banco de dados.
- * ✅ ADIÇÃO: Após salvar, chama a função para notificar o dono via PHP.
+ * Salva um novo agendamento e cria o "bilhete" de notificação na fila.
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
-        // --- LÓGICA ORIGINAL (INTACTA) ---
+        // --- PASSO 1: Salva o agendamento principal (lógica original intacta) ---
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
         await addDoc(agendamentosRef, {
             empresaId: empresaId,
@@ -152,67 +151,36 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        // --- LÓGICA DE NOTIFICAÇÃO (ADICIONADA) ---
+        // ✅ --- PASSO 2: Cria o "bilhete" na fila de notificações (lógica adicionada) ---
+        // Esta parte só executa DEPOIS que o agendamento foi salvo com sucesso.
         if (agendamento.empresa && agendamento.empresa.donoId) {
-            await enviarNotificacaoNovoAgendamento(
-                empresaId,
-                agendamento.empresa.donoId,
-                `🎉 Novo Agendamento!`,
-                `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`
-            );
+            try {
+                const filaRef = collection(db, "filaDeNotificacoes");
+                await addDoc(filaRef, {
+                    paraDonoId: agendamento.empresa.donoId,
+                    titulo: "🎉 Novo Agendamento!",
+                    mensagem: `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`,
+                    criadoEm: new Date(),
+                    status: "pendente"
+                });
+                console.log("✅ Bilhete de notificação adicionado à fila.");
+            } catch (error) {
+                // O erro de permissão acontecerá aqui. Vamos resolvê-lo com as Regras do Firestore.
+                console.error("❌ Erro ao adicionar notificação à fila:", error);
+            }
         } else {
-            console.warn("AVISO: 'donoId' não encontrado no objeto do agendamento. A notificação não foi enviada.");
+            // Este aviso ajuda a depurar se o 'donoId' não for passado pelo 'vitrine.js'
+            console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação não foi criado.");
         }
 
-        // --- LÓGICA ORIGINAL (INTACTA) ---
+        // --- PASSO 3: Limpa a UI (lógica original intacta) ---
         if (typeof limparUIAgendamento === "function") {
             limparUIAgendamento();
         }
         
     } catch (error) {
-        console.error("Erro ao salvar agendamento:", error);
+        console.error("Erro principal ao salvar agendamento:", error);
         throw new Error('Ocorreu um erro ao confirmar seu agendamento.');
-    }
-}
-
-/**
- * ✅ NOVA FUNÇÃO: Envia os dados para o script PHP que dispara a notificação.
- * Esta função é nova e não altera nenhuma outra parte do seu código.
- */
-async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensagem) {
-    // ✅ CORREÇÃO: A URL agora aponta para 'createAlert.php', conforme sua informação.
-    // Substitua 'https://prontiapp.com.br/createAlert.php' pela URL real no seu servidor.
-    const PHP_NOTIFICATION_SCRIPT_URL = 'https://prontiapp.com.br/createAlert.php'; 
-
-    const formData = new FormData(  );
-    formData.append('empresaId', empresaId);
-    formData.append('donoId', donoId);
-    formData.append('titulo', titulo);
-    formData.append('mensagem', mensagem);
-
-    try {
-        const response = await fetch(PHP_NOTIFICATION_SCRIPT_URL, {
-            method: 'POST',
-            body: formData
-        });
-
-        // Se a resposta não for OK (ex: 404, 500), loga o erro e não tenta ler como JSON.
-        if (!response.ok) {
-            console.error(`Erro do servidor ao chamar script de notificação: ${response.status} ${response.statusText}`);
-            return;
-        }
-
-        // Tenta ler a resposta como JSON. O erro 'Unexpected token <' acontecerá aqui se a resposta for HTML.
-        const result = await response.json();
-
-        if (result.success) {
-            console.log("✅ Notificação enviada com sucesso via PHP:", result);
-        } else {
-            console.error("❌ Erro retornado pelo script PHP de notificação:", result.error);
-        }
-    } catch (error) {
-        // Captura erros de rede (CORS, DNS, etc.) ou erros de parsing do JSON.
-        console.error("❌ Erro de rede ou na chamada ao script PHP de notificação:", error);
     }
 }
 
