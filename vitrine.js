@@ -1,6 +1,6 @@
 // ======================================================================
 //          VITRINE.JS - O Maestro da Aplicação
-// ✅ CÓDIGO ORIGINAL COM A MÍNIMA ADIÇÃO PARA A FILA DE NOTIFICAÇÕES
+// ✅ ADICIONADA A LÓGICA PARA CRIAR O "BILHETE" DE NOTIFICAÇÃO NA FILA
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -10,12 +10,13 @@ import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, b
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
-// --- IMPORTS PARA PROMOÇÕES ---
+// --- IMPORTS PARA PROMOÇÕES E FILA DE NOTIFICAÇÃO ---
 import { db } from './firebase-config.js';
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// ✅ ADIÇÃO: 'addDoc' é necessário para criar o "bilhete" na fila.
+import { collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
-function parseDataISO(dateStr  ) {
+function parseDataISO(dateStr ) {
     if (!dateStr) return null;
     if (dateStr.includes('-')) {
         // formato yyyy-MM-dd
@@ -359,24 +360,47 @@ async function handleConfirmarAgendamento() {
             preco: servicos.reduce((total, s) => total + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0)
         };
 
-        // ✅ ADIÇÃO MÍNIMA E NECESSÁRIA
-        // A função 'salvarAgendamento' precisa do 'donoId' para a notificação.
-        // Esta linha adiciona o objeto da empresa (que já está na memória em 'state.dadosEmpresa')
-        // ao pacote de dados do agendamento, sem alterar nenhuma outra lógica.
         const agendamentoParaSalvar = { 
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
             horario: state.agendamento.horario,
-            servico: servicoParaSalvar,
-            empresa: state.dadosEmpresa // Esta é a única linha adicionada.
+            servico: servicoParaSalvar
         };
 
+        // --- LÓGICA ORIGINAL (INTACTA) ---
+        // 1. Salva o agendamento principal.
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
         
+        // ✅ --- NOVA LÓGICA: DEIXAR O "BILHETE" NA FILA ---
+        // 2. Após o sucesso, cria o documento na 'filaDeNotificacoes'.
+        // Esta lógica é adicionada, não altera o fluxo original.
+        if (state.dadosEmpresa && state.dadosEmpresa.donoId) {
+            try {
+                const filaRef = collection(db, "filaDeNotificacoes");
+                await addDoc(filaRef, {
+                    paraDonoId: state.dadosEmpresa.donoId,
+                    titulo: "🎉 Novo Agendamento!",
+                    mensagem: `${state.currentUser.displayName} agendou ${servicoParaSalvar.nome} com ${profissional.nome} às ${horario}.`,
+                    criadoEm: new Date(),
+                    status: "pendente"
+                });
+                console.log("✅ Bilhete de notificação adicionado à fila para o dono:", state.dadosEmpresa.donoId);
+            } catch (error) {
+                // Loga o erro mas não impede o fluxo principal de continuar.
+                console.error("❌ Erro ao adicionar notificação à fila:", error);
+            }
+        } else {
+            console.warn("AVISO: 'donoId' não encontrado no estado da aplicação. O bilhete de notificação não foi criado.");
+        }
+        // ✅ --- FIM DA NOVA LÓGICA ---
+
+        // --- LÓGICA ORIGINAL (INTACTA) ---
+        // 3. Mostra o alerta de sucesso e reseta a UI.
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
         await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
         resetarAgendamento();
         handleMenuClick({ target: document.querySelector('[data-menu="visualizacao"]') });
+
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         await UI.mostrarAlerta("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
