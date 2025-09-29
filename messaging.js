@@ -4,7 +4,6 @@
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-// >>> NOVO: Firestore <<<
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Use a MESMA configuração do projeto central
@@ -20,7 +19,6 @@ const firebaseConfig = {
 // Singleton: Inicializa ou recupera instância única
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
-// >>> NOVO: instância do Firestore <<<
 const db = getFirestore(app);
 
 console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (espelhando firebase-config.js).');
@@ -130,46 +128,31 @@ class MessagingService {
     }
   }
 
-  // >>> NOVO: grava token diretamente no Firestore <<<
+  // >>> CORRIGIDO: grava token diretamente no Firestore <<<
   async sendTokenToServer(userId, empresaId) {
     if (!this.token) {
       console.warn('[messaging.js] Token não disponível para envio');
       return false;
     }
+    if (!userId || !empresaId) {
+      console.error('[messaging.js] userId ou empresaId não definido!');
+      return false;
+    }
     try {
       const ref = doc(db, "mensagensTokens", userId);
 
-      // Verifica se já existe o documento para esse usuário
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        console.log('[messaging.js] Token já existe no Firestore, atualizando campos.');
-        // Atualiza os campos obrigatórios SEM apagar outros existentes
-        await setDoc(ref, {
-          empresaId: empresaId,
-          userId: userId,
-          fcmToken: this.token,
-          updatedAt: new Date(),
-          // CAMPOS NOVOS PADRÃO:
-          ativo: true,
-          tipo: "web",
-          navegador: navigator.userAgent || "",
-        }, { merge: true });
-        return true;
-      }
-
-      // Cria o documento se não existe
+      // Sempre faz MERGE para garantir que os campos são criados/atualizados corretamente
       await setDoc(ref, {
         empresaId: empresaId,
         userId: userId,
         fcmToken: this.token,
         updatedAt: new Date(),
-        // CAMPOS NOVOS PADRÃO:
         ativo: true,
         tipo: "web",
         navegador: navigator.userAgent || "",
-      });
+      }, { merge: true });
 
-      console.log('[messaging.js] Token salvo no Firestore com sucesso!');
+      console.log('[messaging.js] Token salvo/atualizado no Firestore com sucesso!');
       return true;
     } catch (err) {
       console.error('[messaging.js] Erro ao salvar token no Firestore:', err);
@@ -177,7 +160,6 @@ class MessagingService {
     }
   }
 
-  // >>> NOVO: função para salvar um alerta de agendamento no Firestore <<<
   async saveAlert(empresaId, clienteNome, servico, horario) {
     try {
       const alertsRef = collection(db, "alerts");
@@ -203,7 +185,11 @@ class MessagingService {
 }
 
 // Exporta a instância para o escopo global (para uso no HTML)
+// ATENÇÃO: É OBRIGATÓRIO CHAMAR sendTokenToServer APÓS O initialize!
 window.messagingService = new MessagingService();
-window.solicitarPermissaoParaNotificacoes = function() {
-  window.messagingService.initialize();
+window.solicitarPermissaoParaNotificacoes = async function(userId, empresaId) {
+  const ok = await window.messagingService.initialize();
+  if (ok) {
+    await window.messagingService.sendTokenToServer(userId, empresaId);
+  }
 };
