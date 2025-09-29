@@ -1,7 +1,6 @@
 // ======================================================================
 //          VITRINE.JS - O Maestro da Aplicação
-// ✅ CORREÇÃO: Código completo para resolver o 'Unexpected end of input'
-// ✅ ADIÇÃO MÍNIMA: Passa o 'donoId' para a função de salvar.
+// ✅ CÓDIGO ORIGINAL COM A MÍNIMA ADIÇÃO PARA A FILA DE NOTIFICAÇÕES
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -16,7 +15,7 @@ import { db } from './firebase-config.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
-function parseDataISO(dateStr ) {
+function parseDataISO(dateStr  ) {
     if (!dateStr) return null;
     if (dateStr.includes('-')) {
         // formato yyyy-MM-dd
