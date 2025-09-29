@@ -1,5 +1,6 @@
 // ======================================================================
 //    userService.js (DEBUG COMPLETO - CORRIGIDO, SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
+// ✅ ADICIONADA A CHAMADA PARA INICIAR O OUVINTE DE NOTIFICAÇÕES
 // =====================================================================
 
 import {
@@ -12,7 +13,7 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc(  ) {
+export async function ensureUserAndTrialDoc(   ) {
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -152,17 +153,32 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
-                // ======================= INÍCIO DA 1ª ALTERAÇÃO CIRÚRGICA =======================
-                // Adicionado 'meuperfil.html' para consistência.
                 const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
-                // ======================== FIM DA 1ª ALTERAÇÃO CIRÚRGICA =========================
 
                 if (!user) {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
                     if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
+                    
+                    // ✅ ADIÇÃO: Garante que o ouvinte seja parado no logout.
+                    if (window.pararOuvinteDeNotificacoes) {
+                        window.pararOuvinteDeNotificacoes();
+                    }
+                    
                     isProcessing = false;
                     return reject(new Error("Utilizador não autenticado."));
                 }
+
+                // ✅ --- ADIÇÃO DA LÓGICA DO OUVINTE ---
+                // Inicia o ouvinte de notificações para o usuário logado.
+                // Esta é a única adição funcional nesta parte do código.
+                console.log("✅ Painel do Dono: Usuário logado detectado. ID:", user.uid);
+                console.log("Tentando iniciar o ouvinte de notificações...");
+                if (window.iniciarOuvinteDeNotificacoes) {
+                    window.iniciarOuvinteDeNotificacoes(user.uid);
+                } else {
+                    console.error("❌ ERRO: A função 'iniciarOuvinteDeNotificacoes' não foi encontrada. Verifique se o script messaging.js está carregado.");
+                }
+                // ✅ --- FIM DA ADIÇÃO ---
 
                 await ensureUserAndTrialDoc();
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
@@ -189,9 +205,6 @@ export async function verificarAcesso() {
                 }
 
                 if (!empresaDocSnap) {
-                    // ======================= INÍCIO DA 2ª ALTERAÇÃO CIRÚRGICA =======================
-                    // Removemos a condição '!isAdmin' para que TODOS os usuários sem empresa,
-                    // incluindo o admin, passem por este fluxo.
                     if (empresas.length === 0) {
                         console.log("[DEBUG] Nenhuma empresa associada ao usuário.");
                         cachedSessionProfile = {
@@ -199,17 +212,15 @@ export async function verificarAcesso() {
                             empresaId: null,
                             perfil: { nome: user.displayName || user.email || 'Usuário', email: user.email || '', papel: 'novo' },
                             isOwner: false,
-                            isAdmin: isAdmin, // Mantém o status de admin
+                            isAdmin: isAdmin,
                             papel: 'novo',
                             empresas: []
                         };
-                        // Corrigimos o redirecionamento para 'meuperfil.html'.
                         if (currentPage !== 'meuperfil.html') {
                             window.location.replace('meuperfil.html');
                         }
                         isProcessing = false;
                         return reject(new Error("Nenhuma empresa associada."));
-                    // ======================== FIM DA 2ª ALTERAÇÃO CIRÚRGICA =========================
                     } else if (empresas.length === 1) {
                         empresaAtivaId = empresas[0].id;
                         localStorage.setItem('empresaAtivaId', empresaAtivaId);
