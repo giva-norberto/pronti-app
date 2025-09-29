@@ -5,18 +5,18 @@
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// IMPORTANTE: importa do seu maestro
+import { verificarAcesso } from './userService.js'; // Ajuste o nome se necessário
 
-// Use a MESMA configuração do projeto central
 const firebaseConfig = {
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app", // igual ao seu central!
+  storageBucket: "pronti-app-37c6e.firebasestorage.app",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Singleton: Inicializa ou recupera instância única
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
 const db = getFirestore(app);
@@ -128,7 +128,6 @@ class MessagingService {
     }
   }
 
-  // >>> CORRIGIDO: grava token diretamente no Firestore <<<
   async sendTokenToServer(userId, empresaId) {
     if (!this.token) {
       console.warn('[messaging.js] Token não disponível para envio');
@@ -141,7 +140,6 @@ class MessagingService {
     try {
       const ref = doc(db, "mensagensTokens", userId);
 
-      // Sempre faz MERGE para garantir que os campos são criados/atualizados corretamente
       await setDoc(ref, {
         empresaId: empresaId,
         userId: userId,
@@ -184,12 +182,22 @@ class MessagingService {
   }
 }
 
-// Exporta a instância para o escopo global (para uso no HTML)
-// ATENÇÃO: É OBRIGATÓRIO CHAMAR sendTokenToServer APÓS O initialize!
+// Exporta a instância global para uso no HTML/app
 window.messagingService = new MessagingService();
-window.solicitarPermissaoParaNotificacoes = async function(userId, empresaId) {
+
+// Função global que busca userId e empresaId do seu maestro e garante gravação dos campos!
+window.solicitarPermissaoParaNotificacoes = async function() {
   const ok = await window.messagingService.initialize();
   if (ok) {
-    await window.messagingService.sendTokenToServer(userId, empresaId);
+    // Busca dados do usuário e empresa ativa do maestro/cachedSessionProfile:
+    try {
+      const sessionProfile = await verificarAcesso();
+      const userId = sessionProfile.user.uid;
+      const empresaId = sessionProfile.empresaId;
+      console.log('[DEBUG][messaging.js] Chamando sendTokenToServer com:', { userId, empresaId });
+      await window.messagingService.sendTokenToServer(userId, empresaId);
+    } catch (e) {
+      console.error('[messaging.js] Erro ao buscar perfil no maestro:', e);
+    }
   }
 };
