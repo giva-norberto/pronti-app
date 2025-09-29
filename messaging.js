@@ -4,7 +4,7 @@
 
 import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-// >>> NOVO: Firestore <<<
+// >>> Firestore já estava importado <<<
 import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Use a MESMA configuração do projeto central
@@ -12,7 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.firebasestorage.app", // igual ao seu central!
+  storageBucket: "pronti-app-37c6e.firebasestorage.app",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
@@ -20,7 +20,6 @@ const firebaseConfig = {
 // Singleton: Inicializa ou recupera instância única
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const messaging = getMessaging(app);
-// >>> NOVO: instância do Firestore <<<
 const db = getFirestore(app);
 
 console.log('[DEBUG][messaging.js] messaging.js carregado e pronto para uso (espelhando firebase-config.js).');
@@ -32,7 +31,12 @@ class MessagingService {
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
   }
 
-  async initialize() {
+  // >>> ADIÇÃO: O método agora recebe os IDs necessários <<<
+  async initialize(userId, empresaId) {
+    if (!userId || !empresaId) {
+        console.error("[messaging.js] ERRO: userId e empresaId são obrigatórios para inicializar.");
+        return false;
+    }
     if (!this.isSupported) {
       console.warn('[messaging.js] Notificações não suportadas neste navegador');
       return false;
@@ -50,7 +54,12 @@ class MessagingService {
       console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
       await this.waitForServiceWorker(registration);
 
-      await this.getMessagingToken(registration);
+      // >>> ADIÇÃO: Se o token for obtido, chama a função para salvar no Firestore <<<
+      const token = await this.getMessagingToken(registration);
+      if (token) {
+        await this.sendTokenToServer(userId, empresaId);
+      }
+      
       this.setupForegroundMessageListener();
 
       console.log('[DEBUG][messaging.js] Messaging inicializado com sucesso!');
@@ -63,33 +72,26 @@ class MessagingService {
   }
 
   async waitForServiceWorker(registration) {
+    // Nenhuma alteração nesta função
     return new Promise((resolve) => {
-      if (registration.active) {
-        resolve();
-        return;
-      }
+      if (registration.active) { resolve(); return; }
       const worker = registration.installing || registration.waiting;
       if (worker) {
         const timeout = setTimeout(() => resolve(), 10000);
         worker.addEventListener('statechange', () => {
-          if (worker.state === 'activated') {
-            clearTimeout(timeout);
-            resolve();
-          }
+          if (worker.state === 'activated') { clearTimeout(timeout); resolve(); }
         });
-      } else {
-        resolve();
-      }
+      } else { resolve(); }
     });
   }
 
   async getMessagingToken(registration) {
+    // Nenhuma alteração nesta função
     try {
       const currentToken = await getToken(messaging, {
         vapidKey: this.vapidKey,
         serviceWorkerRegistration: registration
       });
-
       if (currentToken) {
         this.token = currentToken;
         localStorage.setItem('fcm_token', currentToken);
@@ -106,6 +108,7 @@ class MessagingService {
   }
 
   setupForegroundMessageListener() {
+    // Nenhuma alteração nesta função
     onMessage(messaging, (payload) => {
       console.log('[messaging.js] Mensagem recebida em primeiro plano:', payload);
       this.showForegroundNotification(payload);
@@ -113,6 +116,7 @@ class MessagingService {
   }
 
   showForegroundNotification(payload) {
+    // Nenhuma alteração nesta função
     const title = payload.notification?.title || payload.data?.title || 'Novo Agendamento';
     const body = payload.notification?.body || payload.data?.body || 'Você tem um novo agendamento!';
     if (Notification.permission === 'granted') {
@@ -130,14 +134,18 @@ class MessagingService {
     }
   }
 
-  // >>> NOVO: grava token diretamente no Firestore <<<
   async sendTokenToServer(userId, empresaId) {
+    // Nenhuma alteração na lógica, apenas adicionado um log para depuração
     if (!this.token) {
       console.warn('[messaging.js] Token não disponível para envio');
       return false;
     }
     try {
+      console.log(`[messaging.js] Preparando para salvar token para userId: ${userId}, empresaId: ${empresaId}`);
       const ref = doc(db, "mensagensTokens", userId);
+
+      // A opção { merge: true } é a chave: ela CRIA o documento se não existir,
+      // ou ATUALIZA os campos se ele já existir. Exatamente o que você pediu.
       await setDoc(ref, {
         empresaId: empresaId,
         userId: userId,
@@ -153,8 +161,8 @@ class MessagingService {
     }
   }
 
-  // >>> NOVO: função para salvar um alerta de agendamento no Firestore <<<
   async saveAlert(empresaId, clienteNome, servico, horario) {
+    // Nenhuma alteração nesta função. addDoc sempre cria um novo documento.
     try {
       const alertsRef = collection(db, "alerts");
       await addDoc(alertsRef, {
@@ -174,12 +182,19 @@ class MessagingService {
   }
 
   getCurrentToken() {
+    // Nenhuma alteração nesta função
     return this.token || localStorage.getItem('fcm_token');
   }
 }
 
 // Exporta a instância para o escopo global (para uso no HTML)
 window.messagingService = new MessagingService();
-window.solicitarPermissaoParaNotificacoes = function() {
-  window.messagingService.initialize();
+
+// >>> ADIÇÃO: A função global agora passa os IDs para o método initialize <<<
+window.solicitarPermissaoParaNotificacoes = function(userId, empresaId) {
+  if (!userId || !empresaId) {
+      alert("Erro: ID do usuário e ID da empresa são necessários para ativar as notificações.");
+      return;
+  }
+  window.messagingService.initialize(userId, empresaId);
 };
