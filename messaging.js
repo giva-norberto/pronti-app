@@ -1,25 +1,21 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
 // REVISADO PARA USAR CONFIGURAÇÃO CENTRALIZADA
+// ✅ ADICIONADO: Ouvinte da fila de notificações para o painel do dono.
 // ======================================================================
 
 // --- PASSO 1: Importar instâncias centrais ---
-// Em vez de inicializar o Firebase aqui, importamos 'app' e 'db'
-// do seu arquivo de configuração principal.
-// Certifique-se de que o caminho './firebase-config.js' está correto.
 import { app, db } from './firebase-config.js';
 
 // --- PASSO 2: Importar apenas as funções necessárias dos módulos ---
-// Importamos as funções que vamos usar dos SDKs do Firebase.
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-import { doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// ✅ ADIÇÃO: Imports necessários para o ouvinte do Firestore.
+import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Importa a função principal do seu 'maestro' para obter dados do usuário.
 import { verificarAcesso } from './userService.js';
 
 // --- PASSO 3: Inicializar o serviço de Messaging ---
-// Usamos a instância 'app' importada para inicializar o Messaging.
-// Isso garante que ele opere na mesma sessão Firebase do resto do seu aplicativo.
 const messaging = getMessaging(app );
 
 // Mensagem de log para confirmar que o arquivo foi carregado corretamente.
@@ -171,8 +167,6 @@ class MessagingService {
       console.log('[messaging.js] Token salvo/atualizado no Firestore com sucesso!');
       return true;
     } catch (err) {
-      // Se o erro persistir aqui, é provável que seja um problema de rede/firewall,
-      // já que as regras e a inicialização estão corretas.
       console.error('[messaging.js] ERRO CRÍTICO ao salvar token no Firestore:', err);
       return false;
     }
@@ -205,15 +199,12 @@ class MessagingService {
 }
 
 // --- PASSO 4: Expor a funcionalidade para o restante do aplicativo ---
-// Cria uma instância única da classe e a anexa ao objeto 'window' para ser facilmente acessível.
 window.messagingService = new MessagingService();
 
-// Função global que orquestra todo o processo de pedir permissão e salvar o token.
 window.solicitarPermissaoParaNotificacoes = async function() {
   const ok = await window.messagingService.initialize();
   if (ok) {
     try {
-      // Usa sua função 'verificarAcesso' para obter os dados necessários.
       const sessionProfile = await verificarAcesso();
       if (!sessionProfile || !sessionProfile.user || !sessionProfile.empresaId) {
           console.error('[messaging.js] Perfil de sessão inválido. Não foi possível salvar o token.');
@@ -229,3 +220,79 @@ window.solicitarPermissaoParaNotificacoes = async function() {
     }
   }
 };
+
+
+// ✅ --- NOVA FUNCIONALIDADE: OUVINTE DA FILA DE NOTIFICAÇÕES ---
+// Esta seção foi adicionada e não interfere com o código acima.
+
+// Variável global para manter a referência da função de 'unsubscribe' do ouvinte.
+let unsubscribeDeFila = null;
+
+/**
+ * Inicia um ouvinte em tempo real na coleção 'filaDeNotificacoes'.
+ * @param {string} donoId - O ID do usuário (dono) que está logado no painel.
+ */
+function iniciarOuvinteDeNotificacoes(donoId) {
+    // Se já existir um ouvinte ativo, desliga-o antes de criar um novo.
+    if (unsubscribeDeFila) {
+        unsubscribeDeFila();
+    }
+    if (!donoId) {
+        console.warn('[Ouvinte] donoId não fornecido. O ouvinte não será iniciado.');
+        return;
+    }
+
+    // Cria uma consulta para buscar documentos na fila que são para o dono atual e estão pendentes.
+    const q = query(
+        collection(db, "filaDeNotificacoes"),
+        where("paraDonoId", "==", donoId),
+        where("status", "==", "pendente")
+    );
+
+    // Ativa o ouvinte do Firestore. A função de callback será chamada sempre que houver uma mudança.
+    unsubscribeDeFila = onSnapshot(q, (snapshot) => {
+        // Itera sobre as mudanças detectadas (documentos adicionados, modificados, removidos).
+        snapshot.docChanges().forEach((change) => {
+            // Nos interessa apenas quando um novo "bilhete" (documento) é adicionado.
+            if (change.type === "added") {
+                const notificacao = change.doc.data();
+                const docId = change.doc.id;
+                console.log("✅ [Ouvinte] Novo bilhete de notificação recebido:", notificacao);
+
+                // Usa a função que já existe para mostrar a notificação na tela do dono.
+                if (window.messagingService) {
+                    window.messagingService.showForegroundNotification({
+                        notification: {
+                            title: notificacao.titulo,
+                            body: notificacao.mensagem
+                        }
+                    });
+                }
+
+                // ATUALIZA o status do bilhete para 'processado' para não ser pego novamente.
+                const docRef = doc(db, "filaDeNotificacoes", docId);
+                updateDoc(docRef, { status: "processado" }).catch(err => {
+                    console.error("[Ouvinte] Erro ao atualizar status do bilhete:", err);
+                });
+            }
+        });
+    });
+
+    console.log(`✅ [Ouvinte] Ouvinte de notificações em tempo real iniciado para o dono: ${donoId}`);
+}
+
+/**
+ * Para o ouvinte de notificações quando o usuário faz logout ou fecha a página.
+ */
+function pararOuvinteDeNotificacoes() {
+    if (unsubscribeDeFila) {
+        unsubscribeDeFila();
+        unsubscribeDeFila = null;
+        console.log("🛑 [Ouvinte] Ouvinte de notificações parado.");
+    }
+}
+
+// Anexa as novas funções ao objeto 'window' para que possam ser chamadas
+// a partir de outros arquivos do seu painel de dono.
+window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
+window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
