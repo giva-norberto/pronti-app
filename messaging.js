@@ -1,7 +1,7 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
 // REVISADO PARA USAR CONFIGURAÇÃO CENTRALIZADA
-// ✅ ADICIONADO: Ouvinte da fila de notificações para o painel do dono.
+// ✅ CORRIGIDA A ORDEM DAS OPERAÇÕES NO OUVINTE DA FILA
 // ======================================================================
 
 // --- PASSO 1: Importar instâncias centrais ---
@@ -9,14 +9,13 @@ import { app, db } from './firebase-config.js';
 
 // --- PASSO 2: Importar apenas as funções necessárias dos módulos ---
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-// ✅ ADIÇÃO: Imports necessários para o ouvinte do Firestore.
 import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Importa a função principal do seu 'maestro' para obter dados do usuário.
 import { verificarAcesso } from './userService.js';
 
 // --- PASSO 3: Inicializar o serviço de Messaging ---
-const messaging = getMessaging(app );
+const messaging = getMessaging(app  );
 
 // Mensagem de log para confirmar que o arquivo foi carregado corretamente.
 console.log('[DEBUG][messaging.js] Módulo carregado, usando instância central do Firebase.');
@@ -24,11 +23,8 @@ console.log('[DEBUG][messaging.js] Módulo carregado, usando instância central 
 // A classe encapsula toda a lógica de notificações.
 class MessagingService {
   constructor() {
-    // Armazena o token FCM do dispositivo.
     this.token = null;
-    // Verifica se o navegador suporta as tecnologias necessárias (Service Worker, Notificações).
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
-    // Sua VAPID key pública para autenticar as solicitações de push.
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
   }
 
@@ -40,7 +36,6 @@ class MessagingService {
     }
 
     try {
-      // Solicita permissão ao usuário para enviar notificações.
       const permission = await Notification.requestPermission();
       console.log('[DEBUG][messaging.js] Permissão de notificação:', permission);
       if (permission !== 'granted') {
@@ -48,14 +43,11 @@ class MessagingService {
         return false;
       }
 
-      // Registra o Service Worker do Firebase, que é essencial para receber notificações em segundo plano.
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
       console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
       
-      // Espera o Service Worker ficar ativo para evitar condições de corrida.
       await this.waitForServiceWorker(registration);
 
-      // Obtém o token FCM e configura o listener para mensagens em primeiro plano.
       await this.getMessagingToken(registration);
       this.setupForegroundMessageListener();
 
@@ -74,7 +66,7 @@ class MessagingService {
       if (registration.active) return resolve();
       const worker = registration.installing || registration.waiting;
       if (worker) {
-        const timeout = setTimeout(() => resolve(), 5000); // Timeout de 5s como segurança.
+        const timeout = setTimeout(() => resolve(), 5000);
         worker.addEventListener('statechange', () => {
           if (worker.state === 'activated') {
             clearTimeout(timeout);
@@ -97,11 +89,11 @@ class MessagingService {
 
       if (currentToken) {
         this.token = currentToken;
-        localStorage.setItem('fcm_token', currentToken); // Salva no localStorage como backup.
+        localStorage.setItem('fcm_token', currentToken);
         console.log('[DEBUG][messaging.js] Token FCM obtido:', currentToken);
         return currentToken;
       } else {
-        console.warn('[DEBUG][messaging.js] Não foi possível obter o token FCM. O usuário pode ter negado a permissão ou há um problema de configuração.');
+        console.warn('[DEBUG][messaging.js] Não foi possível obter o token FCM.');
         return null;
       }
     } catch (error) {
@@ -110,36 +102,35 @@ class MessagingService {
     }
   }
 
-  // Configura um listener para exibir notificações quando o app está aberto (em primeiro plano).
+  // Configura um listener para mensagens PUSH (não da fila), se necessário no futuro.
   setupForegroundMessageListener() {
     onMessage(messaging, (payload) => {
-      console.log('[messaging.js] Mensagem recebida em primeiro plano:', payload);
+      console.log('[messaging.js] Mensagem PUSH recebida em primeiro plano:', payload);
       this.showForegroundNotification(payload);
     });
   }
 
   // Cria e exibe a notificação na tela.
   showForegroundNotification(payload) {
+    // Unifica a origem dos dados, seja de um PUSH ou da nossa fila.
     const title = payload.notification?.title || payload.data?.title || 'Nova Notificação';
     const body = payload.notification?.body || payload.data?.body || 'Você recebeu uma nova mensagem.';
+    
     if (Notification.permission === 'granted') {
       const notification = new Notification(title, {
         body: body,
-        icon: payload.notification?.icon || '/icon.png',
+        icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
         badge: '/badge.png',
-        tag: 'prontiapp-notification' // Uma tag para agrupar ou substituir notificações.
+        tag: 'prontiapp-notification'
       });
-      // Define o que acontece quando o usuário clica na notificação.
       notification.onclick = () => {
-        window.focus(); // Traz a janela do app para o foco.
+        window.focus();
         notification.close();
-        // Opcional: redirecionar para uma página específica.
-        // window.location.href = '/agendamentos';
       };
     }
   }
 
-  // Envia o token FCM para o Firestore para que você possa enviar notificações para este dispositivo a partir do seu backend.
+  // Envia o token FCM para o Firestore.
   async sendTokenToServer(userId, empresaId) {
     if (!this.token) {
       console.warn('[messaging.js] Token não disponível para ser salvo no servidor.');
@@ -150,10 +141,7 @@ class MessagingService {
       return false;
     }
     try {
-      // Usa a instância 'db' importada para criar a referência do documento.
       const ref = doc(db, "mensagensTokens", userId);
-
-      // Salva ou atualiza o documento com os novos dados.
       await setDoc(ref, {
         empresaId: empresaId,
         userId: userId,
@@ -162,7 +150,7 @@ class MessagingService {
         ativo: true,
         tipo: "web",
         navegador: navigator.userAgent || "Não identificado",
-      }, { merge: true }); // 'merge: true' evita sobrescrever outros campos se o documento já existir.
+      }, { merge: true });
 
       console.log('[messaging.js] Token salvo/atualizado no Firestore com sucesso!');
       return true;
@@ -172,7 +160,7 @@ class MessagingService {
     }
   }
 
-  // Função para salvar alertas (não relacionada ao token, mas usa o mesmo 'db').
+  // Função para salvar alertas (não relacionada ao token).
   async saveAlert(empresaId, clienteNome, servico, horario) {
     try {
       const alertsRef = collection(db, "alerts");
@@ -198,7 +186,7 @@ class MessagingService {
   }
 }
 
-// --- PASSO 4: Expor a funcionalidade para o restante do aplicativo ---
+// --- LÓGICA ORIGINAL (INTACTA) ---
 window.messagingService = new MessagingService();
 
 window.solicitarPermissaoParaNotificacoes = async function() {
@@ -222,18 +210,11 @@ window.solicitarPermissaoParaNotificacoes = async function() {
 };
 
 
-// ✅ --- NOVA FUNCIONALIDADE: OUVINTE DA FILA DE NOTIFICAÇÕES ---
-// Esta seção foi adicionada e não interfere com o código acima.
+// ✅ --- LÓGICA DO OUVINTE DA FILA (CORRIGIDA) ---
 
-// Variável global para manter a referência da função de 'unsubscribe' do ouvinte.
 let unsubscribeDeFila = null;
 
-/**
- * Inicia um ouvinte em tempo real na coleção 'filaDeNotificacoes'.
- * @param {string} donoId - O ID do usuário (dono) que está logado no painel.
- */
 function iniciarOuvinteDeNotificacoes(donoId) {
-    // Se já existir um ouvinte ativo, desliga-o antes de criar um novo.
     if (unsubscribeDeFila) {
         unsubscribeDeFila();
     }
@@ -242,48 +223,54 @@ function iniciarOuvinteDeNotificacoes(donoId) {
         return;
     }
 
-    // Cria uma consulta para buscar documentos na fila que são para o dono atual e estão pendentes.
     const q = query(
         collection(db, "filaDeNotificacoes"),
         where("paraDonoId", "==", donoId),
         where("status", "==", "pendente")
     );
 
-    // Ativa o ouvinte do Firestore. A função de callback será chamada sempre que houver uma mudança.
     unsubscribeDeFila = onSnapshot(q, (snapshot) => {
-        // Itera sobre as mudanças detectadas (documentos adicionados, modificados, removidos).
         snapshot.docChanges().forEach((change) => {
-            // Nos interessa apenas quando um novo "bilhete" (documento) é adicionado.
             if (change.type === "added") {
-                const notificacao = change.doc.data();
-                const docId = change.doc.id;
-                console.log("✅ [Ouvinte] Novo bilhete de notificação recebido:", notificacao);
+                const bilhete = change.doc.data();
+                const bilheteId = change.doc.id;
+                console.log("✅ [Ouvinte] Novo bilhete de notificação recebido:", bilhete);
 
-                // Usa a função que já existe para mostrar a notificação na tela do dono.
+                // ✅ --- CORREÇÃO DA ORDEM ---
+                // PASSO 1: MOSTRAR A NOTIFICAÇÃO VISUAL PRIMEIRO.
                 if (window.messagingService) {
-                    window.messagingService.showForegroundNotification({
-                        notification: {
-                            title: notificacao.titulo,
-                            body: notificacao.mensagem
+                    // Monta um payload que a função 'showForegroundNotification' entende.
+                    const payload = {
+                        data: {
+                            title: bilhete.titulo,
+                            body: bilhete.mensagem
                         }
-                    });
+                    };
+                    window.messagingService.showForegroundNotification(payload);
+                    console.log("✅ [Ouvinte] A função para mostrar a notificação na tela foi chamada.");
+                } else {
+                    console.error("❌ [Ouvinte] Erro: 'window.messagingService' não está definido. Não foi possível mostrar a notificação.");
                 }
 
-                // ATUALIZA o status do bilhete para 'processado' para não ser pego novamente.
-                const docRef = doc(db, "filaDeNotificacoes", docId);
-                updateDoc(docRef, { status: "processado" }).catch(err => {
-                    console.error("[Ouvinte] Erro ao atualizar status do bilhete:", err);
-                });
+                // PASSO 2: DEPOIS de tentar mostrar, atualiza o status do bilhete.
+                const docRef = doc(db, "filaDeNotificacoes", bilheteId);
+                updateDoc(docRef, { status: "processado" })
+                    .then(() => {
+                        console.log(`✅ [Ouvinte] Status do bilhete ${bilheteId} atualizado para 'processado'.`);
+                    })
+                    .catch(err => {
+                        console.error(`[Ouvinte] Erro ao atualizar status do bilhete ${bilheteId}:`, err);
+                    });
+                // ✅ --- FIM DA CORREÇÃO ---
             }
         });
+    }, (error) => {
+        console.error("❌ [Ouvinte] Erro fatal no listener da fila de notificações:", error);
     });
 
     console.log(`✅ [Ouvinte] Ouvinte de notificações em tempo real iniciado para o dono: ${donoId}`);
 }
 
-/**
- * Para o ouvinte de notificações quando o usuário faz logout ou fecha a página.
- */
 function pararOuvinteDeNotificacoes() {
     if (unsubscribeDeFila) {
         unsubscribeDeFila();
@@ -292,7 +279,5 @@ function pararOuvinteDeNotificacoes() {
     }
 }
 
-// Anexa as novas funções ao objeto 'window' para que possam ser chamadas
-// a partir de outros arquivos do seu painel de dono.
 window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
 window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
