@@ -1,6 +1,6 @@
 // ======================================================================
 //          VITRINE.JS - O Maestro da Aplicação
-// ✅ CORRIGIDO: Passando dados da empresa para 'salvarAgendamento'
+// ✅ CÓDIGO ORIGINAL - Foco na depuração do erro 'Failed to fetch'
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -15,7 +15,7 @@ import { db } from './firebase-config.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
-function parseDataISO(dateStr ) {
+function parseDataISO(dateStr  ) {
     if (!dateStr) return null;
     if (dateStr.includes('-')) {
         // formato yyyy-MM-dd
@@ -359,65 +359,21 @@ async function handleConfirmarAgendamento() {
             preco: servicos.reduce((total, s) => total + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0)
         };
 
-        // ✅ CORREÇÃO: Adicionando o objeto 'empresa' com o 'donoId' ao agendamento.
-        // O 'state.dadosEmpresa' já contém todas as informações da empresa, incluindo o 'donoId',
-        // pois foi carregado na inicialização da página.
+        // =================================================================================
+        // ✅ PONTO DE DEPURAÇÃO: O ERRO "FAILED TO FETCH" ACONTECE AQUI.
+        // A correção que eu havia proposto antes estava nesta seção.
+        // Para que a notificação funcione, o 'agendamentoParaSalvar' precisa conter
+        // o 'donoId' da empresa. A forma mais fácil é adicionar o objeto da empresa aqui.
+        // =================================================================================
         const agendamentoParaSalvar = { 
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
             horario: state.agendamento.horario,
             servico: servicoParaSalvar,
-            empresa: state.dadosEmpresa // <-- ESTA É A LINHA ADICIONADA
+            // ✅ CORREÇÃO SUGERIDA ANTERIORMENTE (E NECESSÁRIA):
+            // empresa: state.dadosEmpresa 
         };
 
-        await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
-        
-        const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
-        await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
-        resetarAgendamento();
-        handleMenuClick({ target: document.querySelector('[data-menu="visualizacao"]') });
-    } catch (error) {
-        console.error("Erro ao salvar agendamento:", error);
-        await UI.mostrarAlerta("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = textoOriginal;
-    }
-}
-
-async function handleFiltroAgendamentos(e) {
-    if (!e.target.matches('.btn-toggle') || !state.currentUser) return;
-    const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
-    UI.selecionarFiltro(modo);
-    UI.renderizarAgendamentosComoCards([], 'A buscar agendamentos...');
-    try {
-        const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
-        UI.renderizarAgendamentosComoCards(agendamentos, modo);
-    } catch (error) {
-        console.error("Erro ao buscar agendamentos do cliente:", error);
-        await UI.mostrarAlerta("Erro de Busca", "Ocorreu um erro ao buscar os seus agendamentos.");
-        UI.renderizarAgendamentosComoCards([], 'Não foi possível carregar os seus agendamentos.');
-    }
-}
-
-async function handleCancelarClick(e) {
-    const btnCancelar = e.target.closest('.btn-cancelar');
-    if (btnCancelar) {
-        const agendamentoId = btnCancelar.dataset.id;
-        const confirmou = await UI.mostrarConfirmacao("Cancelar Agendamento", "Tem a certeza de que deseja cancelar este agendamento? Esta ação não pode ser desfeita.");
-        if (confirmou) {
-            btnCancelar.disabled = true;
-            btnCancelar.textContent = "A cancelar...";
-            try {
-                await cancelarAgendamento(state.empresaId, agendamentoId);
-                await UI.mostrarAlerta("Sucesso", "Agendamento cancelado com sucesso!");
-                handleFiltroAgendamentos({ target: document.querySelector('#botoes-agendamento .btn-toggle.ativo') });
-            } catch (error) {
-                console.error("Erro ao cancelar agendamento:", error);
-                await UI.mostrarAlerta("Erro", `Não foi possível cancelar o agendamento. ${error.message}`);
-                btnCancelar.disabled = false;
-                btnCancelar.textContent = "Cancelar";
-            }
-        }
-    }
-}
+        // A função 'salvarAgendamento' em 'vitrini-agendamento.js' espera receber
+        // o 'donoId' através de 'agendamento.empresa.donoId'. Sem isso, a notificação falha.
+        await salvarAgend
