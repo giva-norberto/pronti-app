@@ -1,6 +1,6 @@
 // ======================================================================
 // vitrini-agendamento.js (VERSÃO CORRIGIDA E COMPLETA)
-// ✅ ADICIONADA CHAMADA AO SCRIPT PHP PARA ENVIAR NOTIFICAÇÃO AO DONO
+// ✅ FOCO NA DEPURAÇÃO DO ERRO 'FAILED TO FETCH'
 // ======================================================================
 
 import { db } from './firebase-config.js';
@@ -17,7 +17,7 @@ import {
 import { limparUIAgendamento } from './vitrini-ui.js';
 
 // --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr  ) {
+function timeStringToMinutes(timeStr   ) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
@@ -181,10 +181,23 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
  * Esta função é chamada por 'salvarAgendamento' e não afeta outras partes do código.
  */
 async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensagem) {
-    // ✅ IMPORTANTE: Substitua esta URL pela URL REAL do seu script PHP no seu servidor!
+    
+    // =================================================================================
+    // ✅ PONTO DE DEPURAÇÃO: O ERRO "FAILED TO FETCH" ACONTECE AQUI.
+    //
+    // PASSO 1: VERIFIQUE ESTA URL. ELA ESTÁ CORRETA?
+    // - Copie e cole esta URL diretamente no seu navegador.
+    // - Se você vir um erro 404 (Not Found) ou qualquer outra página de erro, a URL está errada.
+    // - Se você vir uma mensagem JSON (mesmo que de erro), a URL está CORRETA.
+    //
+    // PASSO 2: SE A URL ESTIVER CORRETA, VERIFIQUE O CORS.
+    // - O erro "Failed to fetch" pode ser um erro de CORS se o seu site e o script PHP
+    //   estiverem em domínios diferentes (ex: site.com e api.outro.com).
+    // - Para resolver, adicione `header("Access-Control-Allow-Origin: *");` no topo do seu arquivo PHP.
+    // =================================================================================
     const PHP_NOTIFICATION_SCRIPT_URL = 'https://seusite.com/caminho/para/send_notification.php'; 
 
-    const formData = new FormData( );
+    const formData = new FormData(  );
     formData.append('empresaId', empresaId);
     formData.append('donoId', donoId);
     formData.append('titulo', titulo);
