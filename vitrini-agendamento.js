@@ -1,6 +1,6 @@
 // ======================================================================
 // vitrini-agendamento.js (VERSÃO ORIGINAL)
-// ✅ ADICIONADA A FUNÇÃO DE NOTIFICAÇÃO SEM ALTERAR A LÓGICA EXISTENTE
+// ✅ ADICIONADA A FUNÇÃO DE NOTIFICAÇÃO COM O NOME DO ARQUIVO CORRETO
 // ======================================================================
 
 import { db } from './firebase-config.js';
@@ -17,7 +17,7 @@ import {
 import { limparUIAgendamento } from './vitrini-ui.js';
 
 // --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr  ) {
+function timeStringToMinutes(timeStr   ) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
@@ -128,7 +128,7 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 }
 
 /**
- * Salva um novo agendamento no banco de dados. (REVISADO: SILENCIOSO)
+ * Salva um novo agendamento no banco de dados.
  * ✅ ADIÇÃO: Após salvar, chama a função para notificar o dono via PHP.
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
@@ -153,8 +153,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
         });
 
         // --- LÓGICA DE NOTIFICAÇÃO (ADICIONADA) ---
-        // Esta parte só executa DEPOIS que o agendamento foi salvo com sucesso.
-        // Ela verifica se a informação necessária ('donoId') foi passada.
         if (agendamento.empresa && agendamento.empresa.donoId) {
             await enviarNotificacaoNovoAgendamento(
                 empresaId,
@@ -163,7 +161,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                 `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`
             );
         } else {
-            // Este aviso ajuda a depurar se o 'donoId' não for passado pelo 'vitrine.js'
             console.warn("AVISO: 'donoId' não encontrado no objeto do agendamento. A notificação não foi enviada.");
         }
 
@@ -183,20 +180,11 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
  * Esta função é nova e não altera nenhuma outra parte do seu código.
  */
 async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensagem) {
-    // =================================================================================
-    // O erro "Failed to fetch" que você está vendo acontece por causa desta URL
-    // ou de um bloqueio de rede (Firewall/CORS). A solução está no seu ambiente,
-    // não neste código.
-    //
-    // PARA RESOLVER:
-    // 1. Verifique se esta URL está 100% correta.
-    // 2. Teste a URL diretamente no seu navegador.
-    // 3. Se a URL funcionar mas o erro persistir, adicione `header("Access-Control-Allow-Origin: *");` ao seu script PHP.
-    // 4. Se a URL for bloqueada pelo FortiGuard, teste em uma rede 4G/5G.
-    // =================================================================================
-    const PHP_NOTIFICATION_SCRIPT_URL = 'https://prontiapp.com.br/send_notification.php'; 
+    // ✅ CORREÇÃO: A URL agora aponta para 'createAlert.php', conforme sua informação.
+    // Substitua 'https://prontiapp.com.br/createAlert.php' pela URL real no seu servidor.
+    const PHP_NOTIFICATION_SCRIPT_URL = 'https://prontiapp.com.br/createAlert.php'; 
 
-    const formData = new FormData( );
+    const formData = new FormData(  );
     formData.append('empresaId', empresaId);
     formData.append('donoId', donoId);
     formData.append('titulo', titulo);
@@ -208,20 +196,23 @@ async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensa
             body: formData
         });
 
+        // Se a resposta não for OK (ex: 404, 500), loga o erro e não tenta ler como JSON.
         if (!response.ok) {
             console.error(`Erro do servidor ao chamar script de notificação: ${response.status} ${response.statusText}`);
             return;
         }
 
+        // Tenta ler a resposta como JSON. O erro 'Unexpected token <' acontecerá aqui se a resposta for HTML.
         const result = await response.json();
 
         if (result.success) {
-            console.log("Notificação de novo agendamento enviada com sucesso via PHP:", result);
+            console.log("✅ Notificação enviada com sucesso via PHP:", result);
         } else {
-            console.error("Erro retornado pelo script PHP de notificação:", result.error);
+            console.error("❌ Erro retornado pelo script PHP de notificação:", result.error);
         }
     } catch (error) {
-        console.error("Erro de rede ou na chamada ao script PHP de notificação:", error);
+        // Captura erros de rede (CORS, DNS, etc.) ou erros de parsing do JSON.
+        console.error("❌ Erro de rede ou na chamada ao script PHP de notificação:", error);
     }
 }
 
