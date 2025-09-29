@@ -1,4 +1,7 @@
+// ======================================================================
 // vitrini-agendamento.js (VERSÃO CORRIGIDA E COMPLETA)
+// ✅ ADICIONADA CHAMADA AO SCRIPT PHP PARA ENVIAR NOTIFICAÇÃO AO DONO
+// ======================================================================
 
 import { db } from './firebase-config.js';
 import {
@@ -10,11 +13,11 @@ import {
     doc,
     updateDoc,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"; // <-- CORREÇÃO: Versão atualizada para 10.13.2
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { limparUIAgendamento } from './vitrini-ui.js';
 
 // --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr ) {
+function timeStringToMinutes(timeStr  ) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
@@ -125,11 +128,12 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 }
 
 /**
- * Salva um novo agendamento no banco de dados. (REVISADO: SILENCIOSO)
- * Após salvar, limpa e reseta a UI do agendamento.
+ * Salva um novo agendamento no banco de dados.
+ * ✅ ADICIONADO: Após salvar, chama a função para notificar o dono via PHP.
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
+        // --- PASSO 1: Salvar o agendamento no Firestore (lógica original) ---
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
         await addDoc(agendamentosRef, {
             empresaId: empresaId,
@@ -148,16 +152,70 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        // Limpa e reseta a UI do agendamento após salvar
+        // --- PASSO 2: Notificar o dono da empresa (nova lógica) ---
+        // É crucial que o objeto 'agendamento.empresa' contenha o 'donoId'.
+        if (agendamento.empresa && agendamento.empresa.donoId) {
+            await enviarNotificacaoNovoAgendamento(
+                empresaId,
+                agendamento.empresa.donoId,
+                `🎉 Novo Agendamento!`,
+                `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`
+            );
+        } else {
+            console.warn("AVISO: 'donoId' não encontrado no objeto do agendamento. A notificação não foi enviada.");
+        }
+
+        // --- PASSO 3: Limpar a UI (lógica original) ---
         if (typeof limparUIAgendamento === "function") {
             limparUIAgendamento();
         }
-        // Mensagem e reload removidos para serem controlados pelo vitrine.js
+        
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         throw new Error('Ocorreu um erro ao confirmar seu agendamento.');
     }
 }
+
+/**
+ * ✅ NOVA FUNÇÃO: Envia os dados para o script PHP que dispara a notificação.
+ * Esta função é chamada por 'salvarAgendamento' e não afeta outras partes do código.
+ */
+async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensagem) {
+    // ✅ IMPORTANTE: Substitua esta URL pela URL REAL do seu script PHP no seu servidor!
+    const PHP_NOTIFICATION_SCRIPT_URL = 'https://seusite.com/caminho/para/send_notification.php'; 
+
+    const formData = new FormData( );
+    formData.append('empresaId', empresaId);
+    formData.append('donoId', donoId);
+    formData.append('titulo', titulo);
+    formData.append('mensagem', mensagem);
+
+    try {
+        const response = await fetch(PHP_NOTIFICATION_SCRIPT_URL, {
+            method: 'POST',
+            body: formData
+        });
+
+        // Verifica se a resposta do servidor foi bem-sucedida
+        if (!response.ok) {
+            // Se o servidor respondeu com um erro (ex: 404, 500), loga o status
+            console.error(`Erro do servidor ao chamar script de notificação: ${response.status} ${response.statusText}`);
+            return; // Não tenta processar a resposta como JSON
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            console.log("Notificação de novo agendamento enviada com sucesso via PHP:", result);
+        } else {
+            console.error("Erro retornado pelo script PHP de notificação:", result.error);
+        }
+    } catch (error) {
+        // Captura erros de rede (ex: CORS, DNS, sem conexão)
+        console.error("Erro de rede ou na chamada ao script PHP de notificação:", error);
+    }
+}
+
 
 /**
  * Busca os agendamentos de um cliente específico.
