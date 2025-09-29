@@ -1,5 +1,6 @@
 // ======================================================================
 //          VITRINE.JS - O Maestro da Aplicação
+// ✅ CORRIGIDO: Passando dados da empresa para 'salvarAgendamento'
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -14,7 +15,7 @@ import { db } from './firebase-config.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
-function parseDataISO(dateStr) {
+function parseDataISO(dateStr ) {
     if (!dateStr) return null;
     if (dateStr.includes('-')) {
         // formato yyyy-MM-dd
@@ -358,11 +359,15 @@ async function handleConfirmarAgendamento() {
             preco: servicos.reduce((total, s) => total + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0)
         };
 
+        // ✅ CORREÇÃO: Adicionando o objeto 'empresa' com o 'donoId' ao agendamento.
+        // O 'state.dadosEmpresa' já contém todas as informações da empresa, incluindo o 'donoId',
+        // pois foi carregado na inicialização da página.
         const agendamentoParaSalvar = { 
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
             horario: state.agendamento.horario,
-            servico: servicoParaSalvar
+            servico: servicoParaSalvar,
+            empresa: state.dadosEmpresa // <-- ESTA É A LINHA ADICIONADA
         };
 
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
