@@ -1,6 +1,6 @@
 // ======================================================================
-// vitrini-agendamento.js (VERSÃO CORRIGIDA E COMPLETA)
-// ✅ FOCO NA DEPURAÇÃO DO ERRO 'FAILED TO FETCH'
+// vitrini-agendamento.js (VERSÃO ORIGINAL)
+// ✅ ADICIONADA A FUNÇÃO DE NOTIFICAÇÃO SEM ALTERAR A LÓGICA EXISTENTE
 // ======================================================================
 
 import { db } from './firebase-config.js';
@@ -17,7 +17,7 @@ import {
 import { limparUIAgendamento } from './vitrini-ui.js';
 
 // --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr   ) {
+function timeStringToMinutes(timeStr  ) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
@@ -128,12 +128,12 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 }
 
 /**
- * Salva um novo agendamento no banco de dados.
- * ✅ ADICIONADO: Após salvar, chama a função para notificar o dono via PHP.
+ * Salva um novo agendamento no banco de dados. (REVISADO: SILENCIOSO)
+ * ✅ ADIÇÃO: Após salvar, chama a função para notificar o dono via PHP.
  */
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
-        // --- PASSO 1: Salvar o agendamento no Firestore (lógica original) ---
+        // --- LÓGICA ORIGINAL (INTACTA) ---
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
         await addDoc(agendamentosRef, {
             empresaId: empresaId,
@@ -152,8 +152,9 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        // --- PASSO 2: Notificar o dono da empresa (nova lógica) ---
-        // É crucial que o objeto 'agendamento.empresa' contenha o 'donoId'.
+        // --- LÓGICA DE NOTIFICAÇÃO (ADICIONADA) ---
+        // Esta parte só executa DEPOIS que o agendamento foi salvo com sucesso.
+        // Ela verifica se a informação necessária ('donoId') foi passada.
         if (agendamento.empresa && agendamento.empresa.donoId) {
             await enviarNotificacaoNovoAgendamento(
                 empresaId,
@@ -162,10 +163,11 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                 `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`
             );
         } else {
+            // Este aviso ajuda a depurar se o 'donoId' não for passado pelo 'vitrine.js'
             console.warn("AVISO: 'donoId' não encontrado no objeto do agendamento. A notificação não foi enviada.");
         }
 
-        // --- PASSO 3: Limpar a UI (lógica original) ---
+        // --- LÓGICA ORIGINAL (INTACTA) ---
         if (typeof limparUIAgendamento === "function") {
             limparUIAgendamento();
         }
@@ -178,26 +180,23 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
 
 /**
  * ✅ NOVA FUNÇÃO: Envia os dados para o script PHP que dispara a notificação.
- * Esta função é chamada por 'salvarAgendamento' e não afeta outras partes do código.
+ * Esta função é nova e não altera nenhuma outra parte do seu código.
  */
 async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensagem) {
-    
     // =================================================================================
-    // ✅ PONTO DE DEPURAÇÃO: O ERRO "FAILED TO FETCH" ACONTECE AQUI.
+    // O erro "Failed to fetch" que você está vendo acontece por causa desta URL
+    // ou de um bloqueio de rede (Firewall/CORS). A solução está no seu ambiente,
+    // não neste código.
     //
-    // PASSO 1: VERIFIQUE ESTA URL. ELA ESTÁ CORRETA?
-    // - Copie e cole esta URL diretamente no seu navegador.
-    // - Se você vir um erro 404 (Not Found) ou qualquer outra página de erro, a URL está errada.
-    // - Se você vir uma mensagem JSON (mesmo que de erro), a URL está CORRETA.
-    //
-    // PASSO 2: SE A URL ESTIVER CORRETA, VERIFIQUE O CORS.
-    // - O erro "Failed to fetch" pode ser um erro de CORS se o seu site e o script PHP
-    //   estiverem em domínios diferentes (ex: site.com e api.outro.com).
-    // - Para resolver, adicione `header("Access-Control-Allow-Origin: *");` no topo do seu arquivo PHP.
+    // PARA RESOLVER:
+    // 1. Verifique se esta URL está 100% correta.
+    // 2. Teste a URL diretamente no seu navegador.
+    // 3. Se a URL funcionar mas o erro persistir, adicione `header("Access-Control-Allow-Origin: *");` ao seu script PHP.
+    // 4. Se a URL for bloqueada pelo FortiGuard, teste em uma rede 4G/5G.
     // =================================================================================
-    const PHP_NOTIFICATION_SCRIPT_URL = 'https://seusite.com/caminho/para/send_notification.php'; 
+    const PHP_NOTIFICATION_SCRIPT_URL = 'https://prontiapp.com.br/send_notification.php'; 
 
-    const formData = new FormData(  );
+    const formData = new FormData( );
     formData.append('empresaId', empresaId);
     formData.append('donoId', donoId);
     formData.append('titulo', titulo);
@@ -209,11 +208,9 @@ async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensa
             body: formData
         });
 
-        // Verifica se a resposta do servidor foi bem-sucedida
         if (!response.ok) {
-            // Se o servidor respondeu com um erro (ex: 404, 500), loga o status
             console.error(`Erro do servidor ao chamar script de notificação: ${response.status} ${response.statusText}`);
-            return; // Não tenta processar a resposta como JSON
+            return;
         }
 
         const result = await response.json();
@@ -224,11 +221,9 @@ async function enviarNotificacaoNovoAgendamento(empresaId, donoId, titulo, mensa
             console.error("Erro retornado pelo script PHP de notificação:", result.error);
         }
     } catch (error) {
-        // Captura erros de rede (ex: CORS, DNS, sem conexão)
         console.error("Erro de rede ou na chamada ao script PHP de notificação:", error);
     }
 }
-
 
 /**
  * Busca os agendamentos de um cliente específico.
