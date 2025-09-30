@@ -1,6 +1,6 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO 3.2: Função de notificação FCM integrada e validada.
+ * VERSÃO 4.0: Correção definitiva da conexão com o Firestore.
  */
 
 // ============================ Imports principais ==============================
@@ -18,11 +18,9 @@ try {
   functions.logger.warn("Firebase Admin já inicializado.");
 }
 
-// Força o uso do databaseId correto (pronti-app) para todas as operações
-const dbInstance = admin.firestore();
-dbInstance.settings({ databaseId: "pronti-app" });
-const dbFinal = dbInstance;
-
+// ✅ CORREÇÃO DEFINITIVA: A linha que forçava o 'databaseId' incorreto foi removida.
+// O SDK já sabe se conectar ao banco de dados padrão '(default)' automaticamente.
+const dbFinal = admin.firestore();
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
@@ -55,41 +53,32 @@ exports.verificarEmpresa = onRequest(
       if (req.method === "OPTIONS") {
         return res.status(204).send("");
       }
-
       if (req.method !== "POST") {
-        functions.logger.info("DEBUG: Método não permitido", { method: req.method });
         return res.status(405).json({ error: "Método não permitido. Use POST." });
       }
-
       try {
-        functions.logger.info("DEBUG: INICIO verificarEmpresa", { body: req.body });
         const { empresaId } = req.body;
         if (!empresaId) {
           return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
         }
-
         const empresaDocRef = dbFinal.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
         if (!empresaDoc.exists) {
           return res.status(404).json({ error: "Empresa não encontrada." });
         }
-
         const plano = empresaDoc.get("plano") || "free";
         const status = empresaDoc.get("status") || "";
         if (plano === "free" && status === "expirado") {
           return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
         }
-
         let licencasNecessarias = 0;
         try {
           const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
           licencasNecessarias = profissionaisSnapshot.size;
         } catch (profErr) {
-          functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
+          functions.logger.warn("Erro ao buscar profissionais, assumindo 0.", { error: profErr });
         }
-
         return res.status(200).json({ licencasNecessarias });
-
       } catch (error) {
         functions.logger.error("Erro fatal em verificarEmpresa:", error);
         return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message });
@@ -113,16 +102,13 @@ exports.createPreference = onRequest(
         if (!client) {
           return res.status(500).json({ error: "Erro de configuração do servidor." });
         }
-
         const { userId, planoEscolhido } = req.body;
         if (!userId || !planoEscolhido) {
           return res.status(400).json({ error: "Dados inválidos." });
         }
         const userRecord = await admin.auth().getUser(userId);
-
         const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
         const notificationUrl = `https://southamerica-east1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/receberWebhookMercadoPago`;
-
         const subscriptionData = {
           reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
           auto_recurring: {
@@ -135,23 +121,15 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl,
         };
-
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
-
-        await dbFinal
-          .collection("empresarios")
-          .doc(userId)
-          .collection("assinatura")
-          .doc("dados")
-          .set({
-            mercadoPagoAssinaturaId: response.id,
-            status: "pendente",
-            planoContratado: planoEscolhido.totalFuncionarios,
-            valorPago: precoFinal,
-            dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
-          }, { merge: true });
-
+        await dbFinal.collection("empresarios").doc(userId).collection("assinatura").doc("dados").set({
+          mercadoPagoAssinaturaId: response.id,
+          status: "pendente",
+          planoContratado: planoEscolhido.totalFuncionarios,
+          valorPago: precoFinal,
+          dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
         return res.status(200).json({ init_point: response.init_point });
       } catch (error) {
         functions.logger.error("Erro em createPreference:", error);
@@ -168,9 +146,7 @@ exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      functions.logger.info("DEBUG: Webhook recebido", { body: req.body });
       const { id, type } = req.body;
-
       if (type === "preapproval") {
         try {
           const client = getMercadoPagoClient();
@@ -179,24 +155,18 @@ exports.receberWebhookMercadoPago = onRequest(
           }
           const preapproval = new Preapproval(client);
           const subscription = await preapproval.get({ id: id });
-
-          const query = dbFinal
-            .collectionGroup("assinatura")
-            .where("mercadoPagoAssinaturaId", "==", subscription.id);
+          const query = dbFinal.collectionGroup("assinatura").where("mercadoPagoAssinaturaId", "==", subscription.id);
           const snapshot = await query.get();
-
           if (snapshot.empty) {
             functions.logger.warn("Webhook para assinatura não encontrada no Firestore:", { id: subscription.id });
             return res.status(200).send("OK. Assinatura não encontrada.");
           }
-
           const statusMap = {
             authorized: "ativa",
             cancelled: "cancelada",
             paused: "pausada",
           };
           const novoStatus = statusMap[subscription.status] || "desconhecido";
-
           for (const doc of snapshot.docs) {
             await doc.ref.update({
               status: novoStatus,
@@ -229,36 +199,30 @@ function getMercadoPagoClient() {
 function calcularPreco(totalFuncionarios) {
   const precoBase = 59.9;
   const funcionariosInclusos = 2;
+  if (totalFuncionarios <= 0) return 0;
   if (totalFuncionarios <= funcionariosInclusos) return precoBase;
-
   let precoTotal = precoBase;
   const funcionariosExtras = totalFuncionarios - funcionariosInclusos;
-  
-  // Lógica de cálculo simplificada para clareza
-  if (funcionariosExtras > 0) {
-      // Exemplo simples: R$29.90 por funcionário extra
-      precoTotal += funcionariosExtras * 29.9;
-  }
-  
+  precoTotal += funcionariosExtras * 29.9; // Exemplo de preço por funcionário extra
   return Number(precoTotal.toFixed(2));
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO
+// FUNÇÃO DE NOTIFICAÇÃO (CORRIGIDA E VALIDADA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    database: "pronti-app",
+    // ✅ CORREÇÃO DEFINITIVA: O databaseId correto é '(default)'. 
+    // Como é o padrão, não precisamos especificá-lo, apenas a região.
     region: "southamerica-east1",
   },
   async (event) => {
     const snap = event.data;
     if (!snap) {
-        functions.logger.error("[FCM] Evento de criação sem dados (snapshot).");
+        functions.logger.error("[FCM] Evento de criação de documento sem dados (snapshot).");
         return;
     }
-
     const bilhete = snap.data();
     const bilheteId = event.params.bilheteId;
     functions.logger.info(`[FCM] Novo bilhete na fila: ${bilheteId}`, { bilhete });
