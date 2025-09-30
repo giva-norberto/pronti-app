@@ -1,6 +1,6 @@
 /**
  * Cloud Functions backend para pagamentos Pronti.
- * VERSÃO FINALÍSSIMA 3.1: Ajuste do databaseId para "pronti-app".
+ * VERSÃO FINALÍSSIMA 3.2: Ajustes finos na função de notificação.
  */
 
 // ============================ Imports principais ==============================
@@ -315,7 +315,7 @@ exports.testeConexao = onRequest({ region: "southamerica-east1" }, async (req, r
 });
 
 // ============================================================================
-// !! NOVO ENDPOINT DE TESTE DE DIAGNÓSTICO !!
+// ENDPOINT DE TESTE DE DIAGNÓSTICO
 // ============================================================================
 exports.testeFirestoreDireto = onRequest(
   { region: "southamerica-east1" },
@@ -342,33 +342,49 @@ exports.testeFirestoreDireto = onRequest(
 );
 
 // ============================================================================
-// NOVA FUNÇÃO: Escuta filaDeNotificacoes e envia push FCM
+// NOVA FUNÇÃO: Escuta filaDeNotificacoes e envia push FCM (REVISADA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
-  "filaDeNotificacoes/{bilheteId}",
-  { region: "southamerica-east1" },
-  async (snap, context) => {
+  // REVISÃO: Definindo explicitamente o databaseId e a região para consistência.
+  {
+    document: "filaDeNotificacoes/{bilheteId}",
+    database: "pronti-app",
+    region: "southamerica-east1",
+  },
+  async (event) => {
+    // REVISÃO: Usando event.data para obter o snapshot, que é o padrão do v2.
+    const snap = event.data;
+    if (!snap) {
+        functions.logger.error("[FCM] Evento de criação de documento sem dados (snapshot).");
+        return;
+    }
     const bilhete = snap.data();
-    const bilheteId = context.params.bilheteId;
+    const bilheteId = event.params.bilheteId;
 
+    functions.logger.info(`[FCM] Novo bilhete na fila: ${bilheteId}`, { bilhete });
+    
+    // Sua lógica de validação (mantida)
     if (!bilhete || !bilhete.paraDonoId) {
-      functions.logger.warn(`[FCM] Bilhete inválido ou sem paraDonoId: ${bilheteId}`);
-      return;
+      functions.logger.warn(`[FCM] Bilhete inválido ou sem paraDonoId: ${bilheteId}. Marcando como 'falha'.`);
+      return snap.ref.update({ status: 'falha', motivo: 'paraDonoId ausente' });
     }
 
     try {
+      // REVISÃO: Usando a instância 'dbFinal' que você configurou no início do arquivo.
       const tokenDoc = await dbFinal.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
-      if (!tokenDoc.exists) {
-        functions.logger.warn(`[FCM] Nenhum token FCM encontrado para donoId: ${bilhete.paraDonoId}`);
-        return;
+      
+      if (!tokenDoc.exists()) {
+        functions.logger.warn(`[FCM] Nenhum documento de token encontrado para donoId: ${bilhete.paraDonoId}. Marcando como 'falha'.`);
+        return snap.ref.update({ status: 'falha', motivo: 'Documento de token não encontrado' });
       }
 
-      const fcmToken = tokenDoc.get('fcmToken');
+      const fcmToken = tokenDoc.data().fcmToken;
       if (!fcmToken) {
-        functions.logger.warn(`[FCM] Token FCM vazio para donoId: ${bilhete.paraDonoId}`);
-        return;
+        functions.logger.warn(`[FCM] Campo fcmToken vazio para donoId: ${bilhete.paraDonoId}. Marcando como 'falha'.`);
+        return snap.ref.update({ status: 'falha', motivo: 'Campo fcmToken vazio' });
       }
 
+      // Sua lógica de montagem da mensagem (mantida)
       const message = {
         token: fcmToken,
         notification: {
@@ -377,18 +393,25 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         },
         data: {
           bilheteId: bilheteId,
-          status: bilhete.status || 'pendente'
+          status: String(bilhete.status || 'pendente') // REVISÃO: Garantindo que o valor seja uma string.
         }
       };
 
+      // Sua lógica de envio (mantida)
       await fcm.send(message);
       functions.logger.info(`[FCM] Notificação enviada com sucesso para donoId: ${bilhete.paraDonoId}`, { bilheteId });
 
-      await snap.ref.update({ status: 'processado' });
-      functions.logger.info(`[FCM] Bilhete ${bilheteId} marcado como processado`);
+      // Atualiza o status do bilhete para 'processado'
+      return snap.ref.update({ status: 'processado', enviadoEm: admin.firestore.FieldValue.serverTimestamp() });
 
     } catch (error) {
-      functions.logger.error(`[FCM] Erro ao enviar notificação para bilhete ${bilheteId}:`, error);
+      functions.logger.error(`[FCM] Erro ao processar notificação para bilhete ${bilheteId}:`, error);
+      // REVISÃO: Em caso de erro, marca o bilhete com o motivo da falha para depuração.
+      try {
+        await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
+      } catch (updateError) {
+        functions.logger.error(`[FCM] Falha ao tentar marcar o bilhete ${bilheteId} como 'erro':`, updateError);
+      }
     }
   }
 );
