@@ -1,7 +1,7 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
-// REVISADO PARA USAR CONFIGURAÇÃO CENTRALIZADA
-// ✅ CORRIGIDA A ORDEM DAS OPERAÇÕES NO OUVINTE DA FILA
+// REVISÃO FINAL: Lógica de 'ouvinte' da fila de notificações foi removida
+// para corrigir o erro de permissão e seguir o fluxo correto do FCM.
 // ======================================================================
 
 // --- PASSO 1: Importar instâncias centrais ---
@@ -9,18 +9,18 @@ import { app, db } from './firebase-config.js';
 
 // --- PASSO 2: Importar apenas as funções necessárias dos módulos ---
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
-import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// Importa a função principal do seu 'maestro' para obter dados do usuário.
+// Importa a função principal do seu userService para obter dados do usuário.
 import { verificarAcesso } from './userService.js';
 
 // --- PASSO 3: Inicializar o serviço de Messaging ---
-const messaging = getMessaging(app  );
+const messaging = getMessaging(app);
 
 // Mensagem de log para confirmar que o arquivo foi carregado corretamente.
 console.log('[DEBUG][messaging.js] Módulo carregado, usando instância central do Firebase.');
 
-// A classe encapsula toda a lógica de notificações.
+// A classe encapsula a lógica de notificações do NAVEGADOR.
 class MessagingService {
   constructor() {
     this.token = null;
@@ -49,7 +49,7 @@ class MessagingService {
       await this.waitForServiceWorker(registration);
 
       await this.getMessagingToken(registration);
-      this.setupForegroundMessageListener();
+      this.setupForegroundMessageListener(); // Configura o listener para PUSH.
 
       console.log('[DEBUG][messaging.js] Serviço de Messaging inicializado com sucesso!');
       return true;
@@ -60,7 +60,7 @@ class MessagingService {
     }
   }
 
-  // Função auxiliar para garantir que o Service Worker esteja ativo antes de prosseguir.
+  // Função auxiliar para garantir que o Service Worker esteja ativo.
   async waitForServiceWorker(registration) {
     return new Promise((resolve) => {
       if (registration.active) return resolve();
@@ -102,7 +102,8 @@ class MessagingService {
     }
   }
 
-  // Configura um listener para mensagens PUSH (não da fila), se necessário no futuro.
+  // ✅ CORREÇÃO: Esta função agora ouve as notificações PUSH enviadas pela sua Cloud Function.
+  // Este é o comportamento correto, em vez de ouvir a fila do Firestore.
   setupForegroundMessageListener() {
     onMessage(messaging, (payload) => {
       console.log('[messaging.js] Mensagem PUSH recebida em primeiro plano:', payload);
@@ -112,14 +113,13 @@ class MessagingService {
 
   // Cria e exibe a notificação na tela.
   showForegroundNotification(payload) {
-    // Unifica a origem dos dados, seja de um PUSH ou da nossa fila.
-    const title = payload.notification?.title || payload.data?.title || 'Nova Notificação';
-    const body = payload.notification?.body || payload.data?.body || 'Você recebeu uma nova mensagem.';
+    const title = payload.notification?.title || 'Nova Notificação';
+    const body = payload.notification?.body || 'Você recebeu uma nova mensagem.';
     
     if (Notification.permission === 'granted') {
       const notification = new Notification(title, {
         body: body,
-        icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
+        icon: payload.notification?.icon || '/icon.png',
         badge: '/badge.png',
         tag: 'prontiapp-notification'
       });
@@ -130,7 +130,7 @@ class MessagingService {
     }
   }
 
-  // Envia o token FCM para o Firestore.
+  // Envia o token FCM para o Firestore (lógica 100% mantida).
   async sendTokenToServer(userId, empresaId) {
     if (!this.token) {
       console.warn('[messaging.js] Token não disponível para ser salvo no servidor.');
@@ -160,7 +160,7 @@ class MessagingService {
     }
   }
 
-  // Função para salvar alertas (não relacionada ao token).
+  // Função para salvar alertas (lógica 100% mantida).
   async saveAlert(empresaId, clienteNome, servico, horario) {
     try {
       const alertsRef = collection(db, "alerts");
@@ -186,9 +186,11 @@ class MessagingService {
   }
 }
 
-// --- LÓGICA ORIGINAL (INTACTA) ---
+// --- LÓGICA DE ATIVAÇÃO ---
+// Instancia o serviço.
 window.messagingService = new MessagingService();
 
+// Função global que o seu botão "Ativar Notificações" chama.
 window.solicitarPermissaoParaNotificacoes = async function() {
   const ok = await window.messagingService.initialize();
   if (ok) {
@@ -209,75 +211,5 @@ window.solicitarPermissaoParaNotificacoes = async function() {
   }
 };
 
-
-// ✅ --- LÓGICA DO OUVINTE DA FILA (CORRIGIDA) ---
-
-let unsubscribeDeFila = null;
-
-function iniciarOuvinteDeNotificacoes(donoId) {
-    if (unsubscribeDeFila) {
-        unsubscribeDeFila();
-    }
-    if (!donoId) {
-        console.warn('[Ouvinte] donoId não fornecido. O ouvinte não será iniciado.');
-        return;
-    }
-
-    const q = query(
-        collection(db, "filaDeNotificacoes"),
-        where("paraDonoId", "==", donoId),
-        where("status", "==", "pendente")
-    );
-
-    unsubscribeDeFila = onSnapshot(q, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === "added") {
-                const bilhete = change.doc.data();
-                const bilheteId = change.doc.id;
-                console.log("✅ [Ouvinte] Novo bilhete de notificação recebido:", bilhete);
-
-                // ✅ --- CORREÇÃO DA ORDEM ---
-                // PASSO 1: MOSTRAR A NOTIFICAÇÃO VISUAL PRIMEIRO.
-                if (window.messagingService) {
-                    // Monta um payload que a função 'showForegroundNotification' entende.
-                    const payload = {
-                        data: {
-                            title: bilhete.titulo,
-                            body: bilhete.mensagem
-                        }
-                    };
-                    window.messagingService.showForegroundNotification(payload);
-                    console.log("✅ [Ouvinte] A função para mostrar a notificação na tela foi chamada.");
-                } else {
-                    console.error("❌ [Ouvinte] Erro: 'window.messagingService' não está definido. Não foi possível mostrar a notificação.");
-                }
-
-                // PASSO 2: DEPOIS de tentar mostrar, atualiza o status do bilhete.
-                const docRef = doc(db, "filaDeNotificacoes", bilheteId);
-                updateDoc(docRef, { status: "processado" })
-                    .then(() => {
-                        console.log(`✅ [Ouvinte] Status do bilhete ${bilheteId} atualizado para 'processado'.`);
-                    })
-                    .catch(err => {
-                        console.error(`[Ouvinte] Erro ao atualizar status do bilhete ${bilheteId}:`, err);
-                    });
-                // ✅ --- FIM DA CORREÇÃO ---
-            }
-        });
-    }, (error) => {
-        console.error("❌ [Ouvinte] Erro fatal no listener da fila de notificações:", error);
-    });
-
-    console.log(`✅ [Ouvinte] Ouvinte de notificações em tempo real iniciado para o dono: ${donoId}`);
-}
-
-function pararOuvinteDeNotificacoes() {
-    if (unsubscribeDeFila) {
-        unsubscribeDeFila();
-        unsubscribeDeFila = null;
-        console.log("🛑 [Ouvinte] Ouvinte de notificações parado.");
-    }
-}
-
-window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
-window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
+// ✅ CORREÇÃO: As funções de 'ouvinte' da fila foram completamente removidas
+// para evitar o erro de permissão e alinhar com a arquitetura correta do FCM.
