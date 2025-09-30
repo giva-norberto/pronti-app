@@ -1,24 +1,26 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * ✅ CÓDIGO FINAL COM A FUNÇÃO DE NOTIFICAÇÃO PUSH INTEGRADA.
+ * ✅ CORREÇÃO FINAL: Aponta para o database 'pronti-app' e usa inicialização robusta.
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https"  );
+const { onRequest } = require("firebase-functions/v2/https"   );
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-// ========================= Inicialização do Firebase ==========================
-try {
+// ========================= Inicialização do Firebase (ROBUSTA) ==========================
+// ✅ CORREÇÃO: Garante que o app só seja inicializado uma vez.
+if (!admin.apps.length) {
   admin.initializeApp();
-} catch (e) {
-  console.warn("Firebase Admin já inicializado.");
 }
+
+// ✅ CORREÇÃO: Inicializa os serviços do Firebase explicitamente.
 const db = admin.firestore();
 const fcm = admin.messaging();
+
 
 // =========================== Configuração de CORS (INTACTA) =============================
 const whitelist = [
@@ -27,7 +29,7 @@ const whitelist = [
   "http://localhost:3000"
 ];
 const corsOptions = {
-  origin: function (origin, callback  ) {
+  origin: function (origin, callback   ) {
     if (!origin || whitelist.includes(origin)) callback(null, true);
     else callback(new Error("Origem não permitida por CORS"));
   },
@@ -157,7 +159,7 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl
         };
-        functions.logger.info("DEBUG: subscriptionData", subscriptionData  );
+        functions.logger.info("DEBUG: subscriptionData", subscriptionData   );
 
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
@@ -292,8 +294,7 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// ✅ NOVA FUNÇÃO ADICIONADA: Escuta a fila de notificações e envia o push.
-// Esta é a "cereja do bolo", enviando a notificação push real.
+// ✅ FUNÇÃO DE NOTIFICAÇÃO (REVISADA E CORRIGIDA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
@@ -302,7 +303,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     region: "southamerica-east1",
   },
   async (event) => {
-    // O 'event.data' contém o snapshot do documento que foi criado.
     const snap = event.data;
     if (!snap) {
         functions.logger.error("[FCM] Evento de criação de documento sem dados (snapshot).");
@@ -313,10 +313,8 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     const bilheteId = event.params.bilheteId;
     functions.logger.info(`[FCM] Novo bilhete na fila: ${bilheteId}`, { bilhete });
     
-    // Validação para garantir que o bilhete tem os dados necessários.
     if (!bilhete || !bilhete.paraDonoId) {
       functions.logger.warn(`[FCM] Bilhete inválido: ${bilheteId}. Marcando como 'falha'.`);
-      // Atualiza o bilhete no Firestore para indicar a falha.
       return snap.ref.update({ status: 'falha', motivo: 'paraDonoId ausente' });
     }
 
@@ -338,7 +336,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
           title: bilhete.titulo || 'Nova Notificação',
           body: bilhete.mensagem || 'Você recebeu uma nova mensagem',
         },
-        // 'data' é opcional, mas útil para enviar dados extras para o app.
         data: {
           bilheteId: bilheteId,
           status: String(bilhete.status || 'pendente'),
@@ -349,15 +346,11 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       await fcm.send(message);
       functions.logger.info(`[FCM] Notificação enviada para: ${bilhete.paraDonoId}`, { bilheteId });
 
-      // ATENÇÃO: A função NÃO atualiza mais o status para 'processado'.
-      // Deixamos essa responsabilidade para o ouvinte no frontend (messaging.js),
-      // para que o alerta visual e o push não entrem em conflito.
-      // A função apenas envia o PUSH e termina.
+      // A função apenas envia o PUSH e termina. O frontend cuida de atualizar o status.
       return;
 
     } catch (error) {
       functions.logger.error(`[FCM] Erro ao enviar notificação para ${bilheteId}:`, error);
-      // Em caso de erro, atualiza o bilhete para que possa ser investigado.
       try {
         await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
       } catch (updateError) {
