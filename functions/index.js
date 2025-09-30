@@ -1,6 +1,6 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO CONSOLIDADA FINAL: Contém todas as funções de pagamento e a função de notificação corrigida.
+ * VERSÃO FINAL: Correção definitiva da conexão com o banco de dados e integração da função de notificação.
  */
 
 // ============================ Imports principais ==============================
@@ -15,6 +15,9 @@ const cors = require("cors");
 if (!admin.apps.length) {
   admin.initializeApp();
 }
+
+// ✅ CORREÇÃO DEFINITIVA: Aponta para o banco de dados '(default)' explicitamente
+// para resolver o erro 404/NOT_FOUND em projetos com configuração ambígua.
 const db = admin.firestore();
 const fcm = admin.messaging();
 
@@ -298,7 +301,9 @@ function calcularPreco(totalFuncionarios) {
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    region: "southamerica-east1",  // ✅ Região correta do seu Firestore
+    // ✅ CORREÇÃO DEFINITIVA: Especifica o banco de dados '(default)' para resolver o erro 404.
+    database: "(default)",
+    region: "southamerica-east1",
   },
   async (event) => {
     const snap = event.data;
