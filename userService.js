@@ -1,6 +1,6 @@
 // ======================================================================
-//    userService.js (DEBUG COMPLETO - CORRIGIDO, SEM MISTURA, TRIAL, NOME, EMPRESAS ATIVAS)
-// ✅ ADICIONADA A CHAMADA PARA INICIAR O OUVINTE DE NOTIFICAÇÕES
+//      userService.js (REVISÃO FINAL)
+// ✅ REMOVIDA A CHAMADA PARA A FUNÇÃO DE OUVINTE ANTIGA E DESNECESSÁRIA
 // =====================================================================
 
 import {
@@ -13,7 +13,8 @@ let cachedSessionProfile = null;
 let isProcessing = false;
 
 // --- Função: Garante doc do usuário e trial, sempre com nome/email ---
-export async function ensureUserAndTrialDoc(   ) {
+export async function ensureUserAndTrialDoc() {
+    // Nenhuma alteração nesta função
     try {
         const user = auth.currentUser;
         if (!user) return;
@@ -31,7 +32,6 @@ export async function ensureUserAndTrialDoc(   ) {
             });
             console.log("[DEBUG] Criado doc do usuário!");
         } else {
-            // Garante nome, email e trialStart SEMPRE
             const userData = userSnap.data();
             let updateObj = {};
             if (!userData.nome) updateObj.nome = user.displayName || user.email || 'Usuário';
@@ -51,6 +51,7 @@ export async function ensureUserAndTrialDoc(   ) {
 
 // --- Função: Checa status de plano/trial corretamente ---
 async function checkUserStatus(user, empresaData) {
+    // Nenhuma alteração nesta função
     try {
         if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
         const userRef = doc(db, "usuarios", user.uid);
@@ -88,12 +89,11 @@ async function checkUserStatus(user, empresaData) {
     }
 }
 
-// --- Função robusta: busca empresas ATIVAS do usuário (dono e profissional, sem duplicidade e SEM misturar dados) ---
+// --- Função robusta: busca empresas ATIVAS do usuário ---
 export async function getEmpresasDoUsuario(user) {
+    // Nenhuma alteração nesta função
     if (!user) return [];
     const empresasUnicas = new Map();
-
-    // DONO: só empresas ativas
     try {
         const qDono = query(
             collection(db, "empresarios"),
@@ -108,8 +108,6 @@ export async function getEmpresasDoUsuario(user) {
     } catch (e) {
         console.error("❌ [getEmpresasDoUsuario] Erro ao buscar empresas como dono:", e);
     }
-
-    // PROFISSIONAL: só empresas ativas, sem duplicidade, chunk de 10
     try {
         const mapaRef = doc(db, "mapaUsuarios", user.uid);
         const mapaSnap = await getDoc(mapaRef);
@@ -159,26 +157,15 @@ export async function verificarAcesso() {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
                     if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
                     
-                    // ✅ ADIÇÃO: Garante que o ouvinte seja parado no logout.
-                    if (window.pararOuvinteDeNotificacoes) {
-                        window.pararOuvinteDeNotificacoes();
-                    }
+                    // ✅ CORREÇÃO: A chamada para 'pararOuvinteDeNotificacoes' foi removida,
+                    // pois a função não existe mais e não é necessária.
                     
                     isProcessing = false;
                     return reject(new Error("Utilizador não autenticado."));
                 }
-
-                // ✅ --- ADIÇÃO DA LÓGICA DO OUVINTE ---
-                // Inicia o ouvinte de notificações para o usuário logado.
-                // Esta é a única adição funcional nesta parte do código.
-                console.log("✅ Painel do Dono: Usuário logado detectado. ID:", user.uid);
-                console.log("Tentando iniciar o ouvinte de notificações...");
-                if (window.iniciarOuvinteDeNotificacoes) {
-                    window.iniciarOuvinteDeNotificacoes(user.uid);
-                } else {
-                    console.error("❌ ERRO: A função 'iniciarOuvinteDeNotificacoes' não foi encontrada. Verifique se o script messaging.js está carregado.");
-                }
-                // ✅ --- FIM DA ADIÇÃO ---
+                
+                // ✅ CORREÇÃO: O bloco inteiro que tentava chamar 'iniciarOuvinteDeNotificacoes'
+                // e causava o erro "função não encontrada" foi REMOVIDO daqui.
 
                 await ensureUserAndTrialDoc();
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
@@ -327,11 +314,13 @@ export async function verificarAcesso() {
 }
 
 export function clearCache() {
+    // Nenhuma alteração nesta função
     cachedSessionProfile = null;
     isProcessing = false;
 }
 
 export async function getTodasEmpresas() {
+    // Nenhuma alteração nesta função
     const empresasCol = collection(db, "empresarios");
     const snap = await getDocs(empresasCol);
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
