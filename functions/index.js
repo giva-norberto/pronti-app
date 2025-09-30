@@ -1,24 +1,27 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * ✅ CORREÇÃO FINAL: Aponta para o database 'pronti-app' e usa inicialização robusta.
+ * ✅ CORREÇÃO FINAL: Aponta para o database 'pronti-app' pelo nome.
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https"   );
+const { onRequest } = require("firebase-functions/v2/https"    );
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
-// ========================= Inicialização do Firebase (ROBUSTA) ==========================
-// ✅ CORREÇÃO: Garante que o app só seja inicializado uma vez.
+// ========================= Inicialização do Firebase (FINAL E SIMPLIFICADA) ==========================
+// Inicializa o app do Firebase Admin, garantindo que só aconteça uma vez.
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// ✅ CORREÇÃO: Inicializa os serviços do Firebase explicitamente.
-const db = admin.firestore();
+// ✅ CORREÇÃO DEFINITIVA: Aponta para o banco de dados 'pronti-app' pelo nome,
+// espelhando a lógica do seu firebase-config.js.
+const db = admin.firestore(undefined, "pronti-app");
+
+// Inicializa o serviço de Messaging.
 const fcm = admin.messaging();
 
 
@@ -29,7 +32,7 @@ const whitelist = [
   "http://localhost:3000"
 ];
 const corsOptions = {
-  origin: function (origin, callback   ) {
+  origin: function (origin, callback    ) {
     if (!origin || whitelist.includes(origin)) callback(null, true);
     else callback(new Error("Origem não permitida por CORS"));
   },
@@ -159,7 +162,7 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl
         };
-        functions.logger.info("DEBUG: subscriptionData", subscriptionData   );
+        functions.logger.info("DEBUG: subscriptionData", subscriptionData    );
 
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
@@ -294,12 +297,12 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// ✅ FUNÇÃO DE NOTIFICAÇÃO (REVISADA E CORRIGIDA)
+// ✅ FUNÇÃO DE NOTIFICAÇÃO (LÓGICA ORIGINAL INTACTA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    database: "pronti-app", // ✅ CORREÇÃO FINAL APLICADA
+    database: "pronti-app",
     region: "southamerica-east1",
   },
   async (event) => {
@@ -319,7 +322,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     }
 
     try {
-      // Busca o token de notificação do dono na coleção 'mensagensTokens'.
       const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
       
       if (!tokenDoc.exists() || !tokenDoc.data().fcmToken) {
@@ -329,7 +331,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       
       const fcmToken = tokenDoc.data().fcmToken;
 
-      // Monta a mensagem da notificação push.
       const message = {
         token: fcmToken,
         notification: {
@@ -342,11 +343,9 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         },
       };
 
-      // Envia a mensagem usando o Firebase Cloud Messaging.
       await fcm.send(message);
       functions.logger.info(`[FCM] Notificação enviada para: ${bilhete.paraDonoId}`, { bilheteId });
 
-      // A função apenas envia o PUSH e termina. O frontend cuida de atualizar o status.
       return;
 
     } catch (error) {
