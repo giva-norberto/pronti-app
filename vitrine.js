@@ -357,7 +357,8 @@ async function handleConfirmarAgendamento() {
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
             horario: state.agendamento.horario,
-            servico: servicoParaSalvar
+            servico: servicoParaSalvar,
+            empresa: state.dadosEmpresa
         };
 
         // 1. Salva o agendamento (lógica original).
