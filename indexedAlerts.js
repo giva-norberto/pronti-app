@@ -2,6 +2,7 @@
 const DB_NAME = 'pronti_alerts';
 const DB_VERSION = 1;
 const STORE_NAME = 'alerts';
+const TAB_KEY = 'pronti_alerts_master'; // usado para controle entre abas
 
 // --- Inicializa IndexedDB ---
 function abrirDB() {
@@ -34,7 +35,7 @@ async function marcarNotificado(id) {
   const request = store.get(id);
   request.onsuccess = () => {
     const alerta = request.result;
-    if (alerta) {
+    if (alerta && !alerta.notificado) {
       alerta.notificado = true;
       store.put(alerta);
     }
@@ -42,8 +43,19 @@ async function marcarNotificado(id) {
   tx.oncomplete = () => db.close();
 }
 
-// --- Dispara notificações locais dos alertas não notificados ---
+// --- Controle de “aba mestre” para evitar duplicação ---
+function isMasterTab() {
+  if (!localStorage.getItem(TAB_KEY)) {
+    localStorage.setItem(TAB_KEY, Date.now());
+    return true;
+  }
+  return localStorage.getItem(TAB_KEY) == localStorage.getItem(TAB_KEY);
+}
+
+// --- Dispara notificações locais apenas na aba mestre ---
 async function processarAlertas() {
+  if (!isMasterTab()) return; // só a aba mestre dispara
+
   const db = await abrirDB();
   const tx = db.transaction(STORE_NAME, 'readonly');
   const store = tx.objectStore(STORE_NAME);
@@ -65,7 +77,6 @@ async function processarAlertas() {
         const audio = new Audio('/alert.mp3');
         audio.play().catch(() => console.log('Som bloqueado até interação do usuário'));
 
-        // Marca como notificado
         marcarNotificado(alerta.id);
       }
     });
@@ -103,5 +114,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Notification.requestPermission();
   }
   iniciarListener();
-  processarAlertas(); // processa alertas que já estão no IndexedDB
+  processarAlertas();
+
+  // Limpa aba mestre se fechar
+  window.addEventListener('beforeunload', () => {
+    localStorage.removeItem(TAB_KEY);
+  });
 });
