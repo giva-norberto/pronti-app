@@ -1,11 +1,10 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * ✅ ADICIONADA A FUNÇÃO DE NOTIFICAÇÃO PUSH SEM ALTERAR A LÓGICA EXISTENTE.
+ * ✅ CÓDIGO FINAL COM A FUNÇÃO DE NOTIFICAÇÃO PUSH INTEGRADA.
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https" );
-// ✅ ADIÇÃO: Importa o 'onDocumentCreated' necessário para a nova função.
+const { onRequest } = require("firebase-functions/v2/https"  );
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -16,10 +15,8 @@ const cors = require("cors");
 try {
   admin.initializeApp();
 } catch (e) {
-  // Isso evita que a função quebre se for inicializada múltiplas vezes em um ambiente de teste.
   console.warn("Firebase Admin já inicializado.");
 }
-// ✅ ADIÇÃO: 'db' e 'fcm' são inicializados aqui para serem usados em todas as funções.
 const db = admin.firestore();
 const fcm = admin.messaging();
 
@@ -30,7 +27,7 @@ const whitelist = [
   "http://localhost:3000"
 ];
 const corsOptions = {
-  origin: function (origin, callback ) {
+  origin: function (origin, callback  ) {
     if (!origin || whitelist.includes(origin)) callback(null, true);
     else callback(new Error("Origem não permitida por CORS"));
   },
@@ -160,7 +157,7 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl
         };
-        functions.logger.info("DEBUG: subscriptionData", subscriptionData );
+        functions.logger.info("DEBUG: subscriptionData", subscriptionData  );
 
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
@@ -296,7 +293,7 @@ function calcularPreco(totalFuncionarios) {
 
 // ============================================================================
 // ✅ NOVA FUNÇÃO ADICIONADA: Escuta a fila de notificações e envia o push.
-// Esta função é a "cereja do bolo", enviando a notificação push real.
+// Esta é a "cereja do bolo", enviando a notificação push real.
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
@@ -361,69 +358,6 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     } catch (error) {
       functions.logger.error(`[FCM] Erro ao enviar notificação para ${bilheteId}:`, error);
       // Em caso de erro, atualiza o bilhete para que possa ser investigado.
-      try {
-        await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
-      } catch (updateError) {
-        functions.logger.error(`[FCM] Falha ao tentar marcar o bilhete ${bilheteId} como 'erro':`, updateError);
-      }
-    }
-  }
-);
-// ============================================================================
-// ✅ NOVA FUNÇÃO ADICIONADA: Escuta a fila de notificações e envia o push.
-// Esta é a "cereja do bolo".
-// ============================================================================
-exports.enviarNotificacaoFCM = onDocumentCreated(
-  {
-    document: "filaDeNotificacoes/{bilheteId}",
-    database: "(default)",
-    region: "southamerica-east1",
-  },
-  async (event) => {
-    const snap = event.data;
-    if (!snap) {
-        functions.logger.error("[FCM] Evento de criação de documento sem dados (snapshot).");
-        return;
-    }
-
-    const bilhete = snap.data();
-    const bilheteId = event.params.bilheteId;
-    functions.logger.info(`[FCM] Novo bilhete na fila: ${bilheteId}`, { bilhete });
-    
-    if (!bilhete || !bilhete.paraDonoId) {
-      functions.logger.warn(`[FCM] Bilhete inválido: ${bilheteId}. Marcando como 'falha'.`);
-      return snap.ref.update({ status: 'falha', motivo: 'paraDonoId ausente' });
-    }
-
-    try {
-      const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
-      
-      if (!tokenDoc.exists() || !tokenDoc.data().fcmToken) {
-        functions.logger.warn(`[FCM] Token não encontrado para dono: ${bilhete.paraDonoId}. Marcando como 'falha'.`);
-        return snap.ref.update({ status: 'falha', motivo: 'Token FCM não encontrado ou vazio' });
-      }
-      
-      const fcmToken = tokenDoc.data().fcmToken;
-
-      const message = {
-        token: fcmToken,
-        notification: {
-          title: bilhete.titulo || 'Nova Notificação',
-          body: bilhete.mensagem || 'Você recebeu uma nova mensagem',
-        },
-        data: {
-          bilheteId: bilheteId,
-          status: String(bilhete.status || 'pendente'),
-        },
-      };
-
-      await fcm.send(message);
-      functions.logger.info(`[FCM] Notificação enviada para: ${bilhete.paraDonoId}`, { bilheteId });
-
-      return;
-
-    } catch (error) {
-      functions.logger.error(`[FCM] Erro ao enviar notificação para ${bilheteId}:`, error);
       try {
         await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
       } catch (updateError) {
