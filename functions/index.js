@@ -1,10 +1,10 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO FINAL: Integração da função de notificação e correção definitiva do erro 404.
+ * ✅ ADICIONADA A FUNÇÃO DE NOTIFICAÇÃO PUSH SEM ALTERAR A LÓGICA EXISTENTE.
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest } = require("firebase-functions/v2/https" );
 // ✅ ADIÇÃO: Importa o 'onDocumentCreated' necessário para a nova função.
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
@@ -16,20 +16,21 @@ const cors = require("cors");
 try {
   admin.initializeApp();
 } catch (e) {
+  // Isso evita que a função quebre se for inicializada múltiplas vezes em um ambiente de teste.
   console.warn("Firebase Admin já inicializado.");
 }
-// ✅ VALIDAÇÃO: 'db' e 'fcm' são inicializados para uso em todas as funções.
+// ✅ ADIÇÃO: 'db' e 'fcm' são inicializados aqui para serem usados em todas as funções.
 const db = admin.firestore();
 const fcm = admin.messaging();
 
-// =========================== Configuração de CORS =============================
+// =========================== Configuração de CORS (INTACTA) =============================
 const whitelist = [
   "https://prontiapp.com.br",
   "https://prontiapp.vercel.app",
   "http://localhost:3000"
 ];
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function (origin, callback ) {
     if (!origin || whitelist.includes(origin)) callback(null, true);
     else callback(new Error("Origem não permitida por CORS"));
   },
@@ -159,7 +160,7 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl
         };
-        functions.logger.info("DEBUG: subscriptionData", subscriptionData);
+        functions.logger.info("DEBUG: subscriptionData", subscriptionData );
 
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
@@ -293,16 +294,18 @@ function calcularPreco(totalFuncionarios) {
   return Number(precoTotal.toFixed(2));
 }
 
+// ============================================================================
 // ✅ NOVA FUNÇÃO ADICIONADA: Escuta a fila de notificações e envia o push.
+// Esta função é a "cereja do bolo", enviando a notificação push real.
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    // ✅ CORREÇÃO DEFINITIVA: Especifica o database '(default)' no gatilho para resolver o erro 404.
     database: "(default)",
     region: "southamerica-east1",
   },
   async (event) => {
+    // O 'event.data' contém o snapshot do documento que foi criado.
     const snap = event.data;
     if (!snap) {
         functions.logger.error("[FCM] Evento de criação de documento sem dados (snapshot).");
@@ -313,12 +316,15 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     const bilheteId = event.params.bilheteId;
     functions.logger.info(`[FCM] Novo bilhete na fila: ${bilheteId}`, { bilhete });
     
+    // Validação para garantir que o bilhete tem os dados necessários.
     if (!bilhete || !bilhete.paraDonoId) {
       functions.logger.warn(`[FCM] Bilhete inválido: ${bilheteId}. Marcando como 'falha'.`);
+      // Atualiza o bilhete no Firestore para indicar a falha.
       return snap.ref.update({ status: 'falha', motivo: 'paraDonoId ausente' });
     }
 
     try {
+      // Busca o token de notificação do dono na coleção 'mensagensTokens'.
       const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
       
       if (!tokenDoc.exists() || !tokenDoc.data().fcmToken) {
@@ -328,25 +334,33 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
       
       const fcmToken = tokenDoc.data().fcmToken;
 
+      // Monta a mensagem da notificação push.
       const message = {
         token: fcmToken,
         notification: {
           title: bilhete.titulo || 'Nova Notificação',
           body: bilhete.mensagem || 'Você recebeu uma nova mensagem',
         },
+        // 'data' é opcional, mas útil para enviar dados extras para o app.
         data: {
           bilheteId: bilheteId,
           status: String(bilhete.status || 'pendente'),
         },
       };
 
+      // Envia a mensagem usando o Firebase Cloud Messaging.
       await fcm.send(message);
       functions.logger.info(`[FCM] Notificação enviada para: ${bilhete.paraDonoId}`, { bilheteId });
 
-      return snap.ref.update({ status: 'processado', enviadoEm: admin.firestore.FieldValue.serverTimestamp() });
+      // ATENÇÃO: A função NÃO atualiza mais o status para 'processado'.
+      // Deixamos essa responsabilidade para o ouvinte no frontend (messaging.js),
+      // para que o alerta visual e o push não entrem em conflito.
+      // A função apenas envia o PUSH e termina.
+      return;
 
     } catch (error) {
       functions.logger.error(`[FCM] Erro ao enviar notificação para ${bilheteId}:`, error);
+      // Em caso de erro, atualiza o bilhete para que possa ser investigado.
       try {
         await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
       } catch (updateError) {
