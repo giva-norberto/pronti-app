@@ -369,3 +369,66 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     }
   }
 );
+// ============================================================================
+// ✅ NOVA FUNÇÃO ADICIONADA: Escuta a fila de notificações e envia o push.
+// Esta é a "cereja do bolo".
+// ============================================================================
+exports.enviarNotificacaoFCM = onDocumentCreated(
+  {
+    document: "filaDeNotificacoes/{bilheteId}",
+    database: "(default)",
+    region: "southamerica-east1",
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) {
+        functions.logger.error("[FCM] Evento de criação de documento sem dados (snapshot).");
+        return;
+    }
+
+    const bilhete = snap.data();
+    const bilheteId = event.params.bilheteId;
+    functions.logger.info(`[FCM] Novo bilhete na fila: ${bilheteId}`, { bilhete });
+    
+    if (!bilhete || !bilhete.paraDonoId) {
+      functions.logger.warn(`[FCM] Bilhete inválido: ${bilheteId}. Marcando como 'falha'.`);
+      return snap.ref.update({ status: 'falha', motivo: 'paraDonoId ausente' });
+    }
+
+    try {
+      const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
+      
+      if (!tokenDoc.exists() || !tokenDoc.data().fcmToken) {
+        functions.logger.warn(`[FCM] Token não encontrado para dono: ${bilhete.paraDonoId}. Marcando como 'falha'.`);
+        return snap.ref.update({ status: 'falha', motivo: 'Token FCM não encontrado ou vazio' });
+      }
+      
+      const fcmToken = tokenDoc.data().fcmToken;
+
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: bilhete.titulo || 'Nova Notificação',
+          body: bilhete.mensagem || 'Você recebeu uma nova mensagem',
+        },
+        data: {
+          bilheteId: bilheteId,
+          status: String(bilhete.status || 'pendente'),
+        },
+      };
+
+      await fcm.send(message);
+      functions.logger.info(`[FCM] Notificação enviada para: ${bilhete.paraDonoId}`, { bilheteId });
+
+      return;
+
+    } catch (error) {
+      functions.logger.error(`[FCM] Erro ao enviar notificação para ${bilheteId}:`, error);
+      try {
+        await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
+      } catch (updateError) {
+        functions.logger.error(`[FCM] Falha ao tentar marcar o bilhete ${bilheteId} como 'erro':`, updateError);
+      }
+    }
+  }
+);
