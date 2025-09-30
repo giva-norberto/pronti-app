@@ -1,10 +1,10 @@
 /**
  * Cloud Functions backend para pagamentos Pronti.
- * VERSÃO FINALÍSSIMA 3.0: Corrige erro 5 NOT_FOUND em verificarEmpresa.
+ * VERSÃO FINALÍSSIMA 3.1: Ajuste do databaseId para "pronti-app".
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https" );
+const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -17,7 +17,14 @@ try {
 } catch (e) {
   console.warn("Firebase Admin já inicializado.");
 }
-const db = admin.firestore();
+
+// 🔧 Ajuste: forçar uso do databaseId correto (pronti-app)
+const db = admin.firestore().doc; // placeholder para evitar conflito
+const firestore = admin.firestore;
+const dbInstance = firestore();
+dbInstance.settings({ databaseId: "pronti-app" });
+const dbFinal = dbInstance;
+
 const fcm = admin.messaging();
 
 // =========================== Configuração de CORS =============================
@@ -27,7 +34,7 @@ const whitelist = [
   "http://localhost:3000"
 ];
 const corsOptions = {
-  origin: function (origin, callback ) {
+  origin: function (origin, callback) {
     if (!origin || whitelist.includes(origin)) callback(null, true);
     else callback(new Error("Origem não permitida por CORS"));
   },
@@ -64,7 +71,7 @@ exports.verificarEmpresa = onRequest(
           return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
         }
 
-        const empresaDocRef = db.collection("empresarios").doc(empresaId);
+        const empresaDocRef = dbFinal.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
         functions.logger.info("DEBUG: empresaDoc.exists", { exists: empresaDoc.exists, empresaId });
 
@@ -157,13 +164,13 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl
         };
-        functions.logger.info("DEBUG: subscriptionData", subscriptionData );
+        functions.logger.info("DEBUG: subscriptionData", subscriptionData);
 
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
         functions.logger.info("DEBUG: Resposta do MercadoPago", { response });
 
-        await db
+        await dbFinal
           .collection("empresarios")
           .doc(userId)
           .collection("assinatura")
@@ -215,7 +222,7 @@ exports.receberWebhookMercadoPago = onRequest(
 
           const assinaturaId = subscription.id;
           const statusMP = subscription.status;
-          const query = db
+          const query = dbFinal
             .collectionGroup("assinatura")
             .where("mercadoPagoAssinaturaId", "==", assinaturaId);
           const snapshot = await query.get();
@@ -297,7 +304,7 @@ function calcularPreco(totalFuncionarios) {
 exports.testeConexao = onRequest({ region: "southamerica-east1" }, async (req, res) => {
   functions.logger.info("Iniciando teste de conexão...");
   try {
-    await db.collection("_test_canary").limit(1).get();
+    await dbFinal.collection("_test_canary").limit(1).get();
     functions.logger.info("SUCESSO: Conexão com Firestore está OK.");
     res.status(200).send("Conexão com Firestore OK.");
   } catch (error) {
@@ -319,7 +326,7 @@ exports.testeFirestoreDireto = onRequest(
     functions.logger.info(`Iniciando teste direto com o ID fixo: ${idFixo}`);
     
     try {
-      const docRef = db.collection("empresarios").doc(idFixo);
+      const docRef = dbFinal.collection("empresarios").doc(idFixo);
       const docSnap = await docRef.get();
 
       if (docSnap.exists) {
@@ -338,7 +345,6 @@ exports.testeFirestoreDireto = onRequest(
 
 // ============================================================================
 // NOVA FUNÇÃO: Escuta filaDeNotificacoes e envia push FCM
-// CORRIGIDO para SDK v2
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   "filaDeNotificacoes/{bilheteId}",
@@ -353,7 +359,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     }
 
     try {
-      const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
+      const tokenDoc = await dbFinal.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
       if (!tokenDoc.exists) {
         functions.logger.warn(`[FCM] Nenhum token FCM encontrado para donoId: ${bilhete.paraDonoId}`);
         return;
