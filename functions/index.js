@@ -19,9 +19,7 @@ try {
 }
 
 // 🔧 Ajuste: forçar uso do databaseId correto (pronti-app)
-const db = admin.firestore().db; // placeholder para evitar conflito
-const firestore = admin.firestore;
-const dbInstance = firestore();
+const dbInstance = admin.firestore();
 dbInstance.settings({ databaseId: "pronti-app" });
 const dbFinal = dbInstance;
 
