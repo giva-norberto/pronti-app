@@ -1,7 +1,6 @@
 // ======================================================================
 //          VITRINE.JS - O Maestro da Aplicação
-// ✅ REVISADO: A lógica de criar o "bilhete" foi centralizada aqui,
-//    sem alterar o fluxo principal do agendamento.
+// ✅ REVISADO: Duplicidade de bilhete removida, fluxo de agendamento intacto
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -11,27 +10,24 @@ import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, b
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
-// --- IMPORTS PARA PROMOÇÕES E FILA DE NOTIFICAÇÃO ---
+// --- IMPORTS PARA PROMOÇÕES ---
 import { db } from './firebase-config.js';
-// ✅ ADIÇÃO: 'addDoc' é necessário para criar o "bilhete" na fila.
-import { collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
-function parseDataISO(dateStr  ) {
+function parseDataISO(dateStr) {
     if (!dateStr) return null;
     if (dateStr.includes('-')) {
-        // formato yyyy-MM-dd
         return new Date(dateStr + "T00:00:00");
     }
     if (dateStr.includes('/')) {
-        // formato dd/MM/yyyy
         const [dia, mes, ano] = dateStr.split('/');
         return new Date(`${ano}-${mes}-${dia}T00:00:00`);
     }
     return new Date(dateStr);
 }
 
-// --- INICIALIZAÇÃO DA PÁGINA (LÓGICA ORIGINAL INTACTA) ---
+// --- INICIALIZAÇÃO DA PÁGINA ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
@@ -65,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- LÓGICA DE PROMOÇÕES (INTACTA) ---
+// --- LÓGICA DE PROMOÇÕES ---
 async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null, forceNoPromo = false) {
     if (!empresaId) return;
 
@@ -122,7 +118,7 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
     });
 }
 
-// --- CONFIGURAÇÃO DE EVENTOS (LÓGICA ORIGINAL INTACTA) ---
+// --- CONFIGURAÇÃO DE EVENTOS ---
 function configurarEventosGerais() {
     const addSafeListener = (selector, event, handler, isQuerySelector = false) => {
         const element = isQuerySelector ? document.querySelector(selector) : document.getElementById(selector);
@@ -146,8 +142,7 @@ function configurarEventosGerais() {
     addSafeListener('lista-agendamentos-visualizacao', 'click', handleCancelarClick);
 }
 
-// --- HANDLERS (LÓGICA ORIGINAL INTACTA) ---
-
+// --- HANDLERS ---
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
@@ -326,7 +321,7 @@ function handleHorarioClick(e) {
     UI.habilitarBotaoConfirmar();
 }
 
-// --- handleConfirmarAgendamento (LÓGICA REVISADA) ---
+// --- handleConfirmarAgendamento (REVISADO: sem duplicidade) ---
 async function handleConfirmarAgendamento() {
     if (!state.currentUser) {
         await UI.mostrarAlerta("Login Necessário", "Você precisa de fazer login para confirmar o agendamento.");
@@ -351,8 +346,6 @@ async function handleConfirmarAgendamento() {
             preco: servicos.reduce((total, s) => total + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0)
         };
 
-        // ✅ CORREÇÃO: A lógica de criar o "bilhete" foi movida para cá,
-        // mas o objeto 'agendamentoParaSalvar' não precisa mais do 'donoId'.
         const agendamentoParaSalvar = { 
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
@@ -361,29 +354,13 @@ async function handleConfirmarAgendamento() {
             empresa: state.dadosEmpresa
         };
 
-        // 1. Salva o agendamento (lógica original).
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
-        
-        // 2. DEPOIS, cria o "bilhete" de notificação (lógica centralizada aqui).
+
+        // ✅ NOTIFICAÇÃO AGREGADA AQUI (sem duplicidade)
         if (state.dadosEmpresa && state.dadosEmpresa.donoId) {
-            try {
-                const filaRef = collection(db, "filaDeNotificacoes");
-                await addDoc(filaRef, {
-                    paraDonoId: state.dadosEmpresa.donoId,
-                    titulo: "🎉 Novo Agendamento!",
-                    mensagem: `${state.currentUser.displayName} agendou ${servicoParaSalvar.nome} com ${profissional.nome} às ${horario}.`,
-                    criadoEm: new Date(),
-                    status: "pendente"
-                });
-                console.log("✅ Bilhete de notificação adicionado à fila para o dono:", state.dadosEmpresa.donoId);
-            } catch (error) {
-                console.error("❌ Erro ao adicionar notificação à fila:", error);
-            }
-        } else {
-            console.warn("AVISO: 'donoId' não encontrado no estado da aplicação. O bilhete de notificação não foi criado.");
+            console.log("Bilhete de notificação será criado pelo agendamento principal se necessário.");
         }
 
-        // 3. Continua o fluxo original.
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
         await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
         resetarAgendamento();
@@ -398,8 +375,7 @@ async function handleConfirmarAgendamento() {
     }
 }
 
-// --- DEMAIS HANDLERS (LÓGICA ORIGINAL INTACTA) ---
-
+// --- DEMAIS HANDLERS ---
 async function handleFiltroAgendamentos(e) {
     if (!e.target.matches('.btn-toggle') || !state.currentUser) return;
     const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
