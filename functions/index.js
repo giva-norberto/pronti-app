@@ -298,7 +298,7 @@ function calcularPreco(totalFuncionarios) {
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    database: "(default)",
+    database: "pronti-app", // ✅ CORREÇÃO FINAL APLICADA
     region: "southamerica-east1",
   },
   async (event) => {
