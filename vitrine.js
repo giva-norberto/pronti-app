@@ -1,5 +1,5 @@
 // ======================================================================
-//           VITRINE.JS - O Maestro da Aplicação
+//          VITRINE.JS - O Maestro da Aplicação
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -10,7 +10,7 @@ import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES ---
-import { db } from './vitrini-firebase.js';
+import { db } from './/vitrini-firebase.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
@@ -156,18 +156,6 @@ function configurarEventosGerais() {
 // --- HANDLERS ---
 
 function handleUserAuthStateChange(user) {
-    // ✨ CORREÇÃO APLICADA AQUI ✨
-    // Antes de qualquer coisa, verifica se o usuário logado é o dono da vitrine.
-    // Se for, força a visão pública (deslogada) e interrompe a função.
-    if (user && state.dadosEmpresa && user.uid === state.dadosEmpresa.donoId) {
-        console.log("Dono da empresa detectado. Forçando modo de visualização pública (preview).");
-        setCurrentUser(null);
-        UI.atualizarUIdeAuth(null);
-        UI.toggleAgendamentoLoginPrompt(true);
-        return; // <-- Importante: Interrompe a função aqui.
-    }
-
-    // Se não for o dono (ou se ninguém estiver logado), a lógica original para clientes continua.
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
     UI.toggleAgendamentoLoginPrompt(!user);
