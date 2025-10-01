@@ -1,6 +1,6 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO FINAL: Contém todas as funções de pagamento e a função de notificação revisada.
+ * VERSÃO FINAL: Correção da conexão com o banco de dados e integração da função de notificação.
  */
 
 // ============================ Imports principais ==============================
@@ -49,34 +49,43 @@ exports.verificarEmpresa = onRequest(
         return res.status(204).send("");
       }
       if (req.method !== "POST") {
+        functions.logger.info("DEBUG: Método não permitido", { method: req.method });
         return res.status(405).json({ error: "Método não permitido. Use POST." });
       }
       try {
+        functions.logger.info("DEBUG: INICIO verificarEmpresa", { body: req.body, headers: req.headers });
         const { empresaId } = req.body;
         if (!empresaId) {
+          functions.logger.info("DEBUG: Falta empresaId no body");
           return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
         }
         const empresaDocRef = db.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
         if (!empresaDoc.exists) {
+          functions.logger.info("DEBUG: Empresa não encontrada", { empresaId });
           return res.status(404).json({ error: "Empresa não encontrada." });
         }
         const plano = empresaDoc.get("plano") || "free";
         const status = empresaDoc.get("status") || "";
         if (plano === "free" && status === "expirado") {
+          functions.logger.info("DEBUG: Plano free expirado", { empresaId });
           return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
         }
         let licencasNecessarias = 0;
         try {
           const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
-          licencasNecessarias = profissionaisSnapshot.size;
+          if (!profissionaisSnapshot.empty) {
+            licencasNecessarias = profissionaisSnapshot.size;
+          }
+          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
         } catch (profErr) {
           functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
         }
+        functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
         return res.status(200).json({ licencasNecessarias });
       } catch (error) {
         functions.logger.error("Erro fatal em verificarEmpresa:", error);
-        return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message });
+        return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message || error.toString() });
       }
     });
   }
@@ -89,6 +98,9 @@ exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
       if (req.method !== "POST") {
         return res.status(405).json({ error: "Método não permitido." });
       }
@@ -128,7 +140,7 @@ exports.createPreference = onRequest(
         return res.status(200).json({ init_point: response.init_point });
       } catch (error) {
         functions.logger.error("Erro em createPreference:", error);
-        return res.status(500).json({ error: "Erro ao criar preferência de pagamento.", detalhes: error.message });
+        return res.status(500).json({ error: "Erro ao criar preferência de pagamento.", detalhes: error.message || error.toString() });
       }
     });
   }
@@ -141,6 +153,9 @@ exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
       const { id, type } = req.body;
       if (type === "preapproval") {
         try {
@@ -220,11 +235,12 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO (Revisada conforme solicitado)
+// FUNÇÃO DE NOTIFICAÇÃO (Versão Única e Corrigida)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
+    // ✅ CORREÇÃO DEFINITIVA: Especifica o banco de dados '(default)' para resolver o erro 404.
     database: "(default)",
     region: "southamerica-east1",
   },
@@ -239,12 +255,10 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     const bilheteId = event.params.bilheteId;
     functions.logger.info(`[FCM] Processando bilhete: ${bilheteId}`, { bilhete });
 
-    // ✅ REVISÃO: Validação de 'paraDonoId' foi REMOVIDA, conforme solicitado.
+    // Conforme solicitado, a validação de 'paraDonoId' foi removida do início.
+    // O erro será capturado pelo bloco 'try...catch' se o campo for nulo.
 
     try {
-      // A função agora prosseguirá diretamente para a busca do token.
-      // Se 'bilhete' ou 'bilhete.paraDonoId' for nulo, a linha abaixo causará um erro
-      // que será capturado pelo bloco 'catch'.
       const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
 
       if (!tokenDoc.exists() || !tokenDoc.data().fcmToken) {
