@@ -3,7 +3,7 @@ const DB_NAME = 'pronti_alerts';
 const DB_VERSION = 1;
 const STORE_NAME = 'alerts';
 const TAB_KEY = 'pronti_alerts_master';
-const DONO_ID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // ajuste dinâmico se precisar
+// DONO_ID deve ser dinâmico, NÃO deixe fixo aqui!
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
 
 // --- Firestore imports ---
@@ -32,10 +32,10 @@ async function salvarAlertaLocal(alerta) {
   const db = await abrirDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const now = Date.now();
-  tx.objectStore(STORE_NAME).put({ 
-    ...alerta, 
-    notificado: false, 
-    createdAt: alerta.createdAt || now 
+  tx.objectStore(STORE_NAME).put({
+    ...alerta,
+    notificado: false,
+    createdAt: alerta.createdAt || now
   });
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => {
@@ -54,7 +54,7 @@ async function marcarTodosNotificados(ids) {
   const db = await abrirDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
-  
+
   const promises = ids.map(id => {
     return new Promise((resolve, reject) => {
       const req = store.get(id);
@@ -71,7 +71,7 @@ async function marcarTodosNotificados(ids) {
   });
 
   await Promise.all(promises);
-  
+
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => {
       db.close();
@@ -89,7 +89,7 @@ async function limparAlertasAntigos() {
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
   const agora = Date.now();
-  
+
   return new Promise((resolve, reject) => {
     const request = store.getAll();
     request.onsuccess = () => {
@@ -119,7 +119,7 @@ async function marcarStatusLidoFirestore(id) {
     console.log(`Alerta ${id} marcado como lido no Firestore`);
   } catch (e) {
     console.error("Erro ao marcar como lido no Firestore:", e);
-    throw e; // Propaga o erro para retry se necessário
+    throw e;
   }
 }
 
@@ -136,37 +136,39 @@ function isMasterTab() {
 }
 
 // --- Bipar e notificar agrupado ---
-async function processarAlertas() {
-  if (!isMasterTab() || processandoAlertas) return;
-  
+// Aceita donoId dinâmico!
+async function processarAlertas(donoId) {
+  if (!isMasterTab() || processandoAlertas || !donoId) return;
+
   processandoAlertas = true;
-  
+
   try {
     await limparAlertasAntigos();
 
     const db = await abrirDB();
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);
-    
+
     const pendentes = await new Promise((resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () => {
-        // Filtra alertas não notificados e status válido
+        // Filtra alertas não notificados e status válido e do dono correto
         const resultado = request.result.filter(
           alerta =>
             !alerta.notificado &&
+            alerta.paraDonoId === donoId &&
             ['novo', 'erro', 'pendente'].includes(alerta.status)
         );
         resolve(resultado);
       };
       request.onerror = () => reject(request.error);
     });
-    
+
     tx.oncomplete = () => db.close();
 
     if (pendentes.length > 0) {
       console.log(`Processando ${pendentes.length} alertas pendentes`);
-      
+
       // --- Toca o som e mostra notificação PRIMEIRO ---
       try {
         const audio = new Audio('/alert.mp3');
@@ -188,15 +190,14 @@ async function processarAlertas() {
       // --- Marca como notificado DEPOIS de tocar/notificar ---
       const ids = pendentes.map(a => a.id);
       await marcarTodosNotificados(ids);
-      
+
       // --- Atualiza Firestore em paralelo ---
-      const firestorePromises = pendentes.map(alerta => 
+      const firestorePromises = pendentes.map(alerta =>
         marcarStatusLidoFirestore(alerta.id).catch(err => {
           console.error(`Falha ao atualizar ${alerta.id}:`, err);
-          // Não bloqueia os outros
         })
       );
-      
+
       await Promise.allSettled(firestorePromises);
       console.log('Alertas processados com sucesso');
     }
@@ -208,10 +209,15 @@ async function processarAlertas() {
 }
 
 // --- Listener Firestore para salvar alertas localmente ---
-function iniciarListener() {
+// Aceita donoId dinâmico!
+function iniciarListener(donoId) {
+  if (!donoId) {
+    console.warn("ID do dono não informado para iniciarListener!");
+    return;
+  }
   const q = query(
     collection(db, "filaDeNotificacoes"),
-    where("paraDonoId", "==", DONO_ID),
+    where("paraDonoId", "==", donoId),
     where("status", "in", ["novo", "erro", "pendente"])
   );
 
@@ -221,30 +227,25 @@ function iniciarListener() {
         const alerta = { ...change.doc.data(), id: change.doc.id };
         console.log('Novo alerta recebido:', alerta.id);
         await salvarAlertaLocal(alerta);
-        // Processa imediatamente quando recebe novo alerta
-        processarAlertas();
+        processarAlertas(donoId);
       }
     });
   });
 }
 
 // --- Inicialização ---
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Iniciando sistema de alertas...');
-  
-  if (Notification.permission !== 'granted') {
-    await Notification.requestPermission();
-  }
-  
-  iniciarListener();
-  processarAlertas();
+// Use as funções abaixo no seu fluxo de login
+export { iniciarListener, processarAlertas };
 
-  // Checa a cada 5 segundos (reduzido de 2s para evitar sobrecarga)
-  setInterval(processarAlertas, 5000);
+// Exemplo de uso (adicione no seu fluxo onde tem o donoId):
+// import { iniciarListener, processarAlertas } from './indexedAlerts.js';
+// const donoId = sessionProfile.userIdOuEmpresaId; // Recupere dinamicamente!
+// iniciarListener(donoId);
+// processarAlertas(donoId);
+// setInterval(() => processarAlertas(donoId), 5000);
 
-  // Limpa aba mestre se fechar
-  window.addEventListener('beforeunload', () => {
-    sessionStorage.removeItem(TAB_KEY);
-    localStorage.removeItem(TAB_KEY);
-  });
+// Limpa aba mestre ao fechar a aba
+window.addEventListener('beforeunload', () => {
+  sessionStorage.removeItem(TAB_KEY);
+  localStorage.removeItem(TAB_KEY);
 });
