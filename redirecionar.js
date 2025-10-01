@@ -7,7 +7,7 @@
 import { db } from "./vitrini-firebase.js"; 
 import { collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-async function redirecionarUsuario( ) {
+async function redirecionarUsuario() {
     // Pega os elementos da página para dar feedback ao usuário
     const statusElement = document.querySelector('.container p');
     const spinnerElement = document.querySelector('.spinner');
@@ -18,6 +18,7 @@ async function redirecionarUsuario( ) {
         // 1. Pega os parâmetros da URL
         const params = new URLSearchParams(window.location.search);
         const slug = params.get('c');
+        const isPreview = params.get('preview') === 'true'; // ✨ NOVO: Verifica se é modo preview
 
         if (!slug) {
             // Se não houver slug, informa o erro claramente.
@@ -46,8 +47,14 @@ async function redirecionarUsuario( ) {
         console.log(`[Redirecionar] Empresa encontrada! ID: ${empresaId}. Redirecionando...`);
         if (statusElement) statusElement.textContent = 'Página encontrada! Redirecionando...';
 
-        // 4. Monta a URL final da vitrine e redireciona
-        const urlFinal = `vitrine.html?empresa=${empresaId}`;
+        // 4. Monta a URL final da vitrine
+        let urlFinal = `vitrine.html?empresa=${empresaId}`; // ✨ ALTERADO: de const para let
+
+        // ✨ NOVO: Se era um link de preview, anexa o parâmetro na URL final
+        if (isPreview) {
+            urlFinal += '&preview=true';
+        }
+
         window.location.replace(urlFinal); // .replace() é melhor para não criar histórico
 
     } catch (error) {
