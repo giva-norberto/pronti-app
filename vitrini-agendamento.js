@@ -151,13 +151,12 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        // ✅ --- PASSO 2: Cria o "bilhete" na fila de notificações (lógica adicionada) ---
-        // Esta parte só executa DEPOIS que o agendamento foi salvo com sucesso.
+        // ✅ --- PASSO 2: Cria o "bilhete" na fila de notificações (ajustado para donoId) ---
         if (agendamento.empresa && agendamento.empresa.donoId) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
                 await addDoc(filaRef, {
-                    paraDonoId: agendamento.empresa.donoId, // <-- GARANTIDO: usa o padrão do Pronti (uid do dono)
+                    donoId: agendamento.empresa.donoId, // <-- agora utiliza o padrão correto do Pronti!
                     titulo: "🎉 Novo Agendamento!",
                     mensagem: `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`,
                     criadoEm: new Date(),
@@ -169,7 +168,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                 console.error("❌ Erro ao adicionar notificação à fila:", error);
             }
         } else {
-            // Este aviso ajuda a depurar se o 'donoId' não for passado pelo 'vitrine.js'
+            // Este aviso ajuda a depurar se o 'donoId' não for passado para salvarAgendamento. O bilhete de notificação não foi criado.
             console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação não foi criado.");
         }
 
