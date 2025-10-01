@@ -1,10 +1,14 @@
-// --- Configuração do IndexedDB e controle de abas ---
+// --- IndexedDB e controle de abas ---
 const DB_NAME = 'pronti_alerts';
 const DB_VERSION = 1;
 const STORE_NAME = 'alerts';
 const TAB_KEY = 'pronti_alerts_master';
-const DONO_ID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // Troque para dinâmico no app real
+const DONO_ID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2"; // ajuste dinâmico se precisar
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
+
+// --- Firestore imports ---
+import { collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { db } from "./firebase-config.js";
 
 // --- IndexedDB helpers ---
 function abrirDB() {
@@ -64,9 +68,6 @@ async function limparAlertasAntigos() {
 }
 
 // --- Marcar como lido no Firestore ---
-import { collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { db } from "./firebase-config.js";
-
 async function marcarStatusLidoFirestore(id) {
   try {
     const ref = doc(db, "filaDeNotificacoes", id);
@@ -76,7 +77,7 @@ async function marcarStatusLidoFirestore(id) {
   }
 }
 
-// --- Controle de aba mestre (sessionStorage + localStorage) ---
+// --- Controle de aba mestre ---
 function isMasterTab() {
   let myId = sessionStorage.getItem(TAB_KEY);
   if (!myId) {
@@ -114,6 +115,8 @@ async function processarAlertas() {
           icon: '/icon.png',
           badge: '/badge.png'
         });
+      } else {
+        alert(`Você tem ${pendentes.length} novo(s) agendamento(s)!`);
       }
       const audio = new Audio('/alert.mp3');
       audio.play().catch(() => console.log('Som bloqueado até interação do usuário'));
