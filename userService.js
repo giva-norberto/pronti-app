@@ -1,6 +1,7 @@
 // ======================================================================
-//      userService.js (REVISÃO FINAL)
+//  userService.js (REVISÃO FINAL)
 // ✅ REMOVIDA A CHAMADA PARA A FUNÇÃO DE OUVINTE ANTIGA E DESNECESSÁRIA
+// ✨ ADICIONADO EVENTO PARA ATUALIZAÇÃO DE TELA E PROTEÇÃO DE ROTA
 // =====================================================================
 
 import {
@@ -151,22 +152,20 @@ export async function verificarAcesso() {
             try {
                 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
                 const paginasPublicas = ['login.html', 'cadastro.html', 'recuperar-senha.html'];
-                const paginasDeConfig = ['perfil.html', 'selecionar-empresa.html', 'assinatura.html', 'meuperfil.html'];
+                // ✨ NOVO: Adicionada a página 'vitrine.html' à lista de páginas públicas
+                // para que a lógica de redirecionamento funcione corretamente.
+                const paginasDeVitrine = ['vitrine.html'];
 
                 if (!user) {
                     console.log("[DEBUG] Usuário não autenticado, página atual:", currentPage);
-                    if (!paginasPublicas.includes(currentPage)) window.location.replace('login.html');
-                    
-                    // ✅ CORREÇÃO: A chamada para 'pararOuvinteDeNotificacoes' foi removida,
-                    // pois a função não existe mais e não é necessária.
-                    
+                    // ✨ LÓGICA MANTIDA: Se a página não for pública (nem de vitrine), redireciona para login.
+                    if (!paginasPublicas.includes(currentPage) && !paginasDeVitrine.includes(currentPage)) {
+                        window.location.replace('login.html');
+                    }
                     isProcessing = false;
                     return reject(new Error("Utilizador não autenticado."));
                 }
                 
-                // ✅ CORREÇÃO: O bloco inteiro que tentava chamar 'iniciarOuvinteDeNotificacoes'
-                // e causava o erro "função não encontrada" foi REMOVIDO daqui.
-
                 await ensureUserAndTrialDoc();
                 const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
                 const isAdmin = user.uid === ADMIN_UID;
@@ -300,7 +299,31 @@ export async function verificarAcesso() {
                     return reject(new Error("Assinatura expirada."));
                 }
 
+                // ✨ NOVO: Adição 1 - Impedir que Dono/Admin fique na vitrine.
+                // Se o usuário for dono ou admin e estiver na página de vitrine,
+                // ele será redirecionado para o painel principal.
+                // Altere 'painel.html' para a página principal do seu sistema.
+                if ((sessionProfile.isOwner || sessionProfile.isAdmin) && paginasDeVitrine.includes(currentPage)) {
+                    console.log(`[DEBUG] Dono/Admin na página de vitrine. Redirecionando para o painel...`);
+                    window.location.replace('painel.html'); 
+                    // A linha acima causa um redirecionamento, então o código abaixo pode não ser executado.
+                    // Isso é intencional para evitar que a página de vitrine seja renderizada.
+                }
+
                 cachedSessionProfile = sessionProfile;
+                
+                // ✨ NOVO: Adição 2 - Mecanismo para atualizar a tela.
+                // Dispara um evento global com os dados da sessão. Outras partes do seu
+                // app podem "ouvir" este evento e se atualizar sem precisar chamar
+                // verificarAcesso() novamente.
+                // Exemplo de como usar em outro arquivo:
+                // window.addEventListener('sessionProfileReady', (event) => {
+                //   const profile = event.detail;
+                //   console.log('Sessão pronta, atualizando UI!', profile);
+                //   document.getElementById('userName').textContent = profile.perfil.nome;
+                // });
+                window.dispatchEvent(new CustomEvent('sessionProfileReady', { detail: sessionProfile }));
+
                 isProcessing = false;
                 resolve(sessionProfile);
 
