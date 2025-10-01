@@ -160,7 +160,7 @@ async function processarAlertas(donoId, contexto = 'dono') {
         const resultado = request.result.filter(
           alerta =>
             !alerta.notificado &&
-            alerta.paraDonoId === donoId &&
+            alerta.donoId === donoId &&
             ['novo', 'erro', 'pendente'].includes(alerta.status)
         );
         resolve(resultado);
@@ -226,7 +226,7 @@ function iniciarListener(donoId, contexto = 'dono') {
 
   const q = query(
     collection(db, "filaDeNotificacoes"),
-    where("paraDonoId", "==", donoId),
+    where("donoId", "==", donoId),
     where("status", "in", ["novo", "erro", "pendente"])
   );
 
