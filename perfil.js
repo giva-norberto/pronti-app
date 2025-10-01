@@ -326,16 +326,12 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         if (!empresaId) return;
         
-        // ✨ CORREÇÃO APLICADA AQUI ✨
-        // Adiciona o parâmetro `&preview=true` ao link para evitar interferência de sessão.
+        // ✅ CÓDIGO RESTAURADO PARA O ORIGINAL
+        // Gera o link da vitrine sem parâmetros extras.
         const slug = dadosEmpresa.slug;
-        const urlBase = slug 
+        const urlCompleta = slug 
             ? `${window.location.origin}/r.html?c=${slug}`
             : `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
-        
-        const urlCompleta = urlBase.includes('?') 
-            ? `${urlBase}&preview=true` 
-            : `${urlBase}?preview=true`;
 
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
@@ -343,7 +339,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function copiarLink() {
-        // ✅ CORREÇÃO: Copia o link que está sendo exibido na tela (que já contém o &preview=true)
+        // ✅ CÓDIGO RESTAURADO PARA O ORIGINAL
+        // Copia o link que está sendo exibido na tela.
         const urlCompleta = document.getElementById('url-vitrine-display').textContent;
         if (!urlCompleta) return;
         navigator.clipboard.writeText(urlCompleta).then(() => {
