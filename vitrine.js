@@ -9,9 +9,9 @@ import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, b
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
-// --- IMPORTS PARA PROMOÇÕES E BILHETE ---
+// --- IMPORTS PARA PROMOÇÕES ---
 import { db } from './firebase-config.js';
-import { collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
 function parseDataISO(dateStr) {
@@ -334,7 +334,6 @@ function handleHorarioClick(e) {
     UI.habilitarBotaoConfirmar();
 }
 
-// --- INCLUSÃO DO BILHETE DE NOTIFICAÇÃO NO AGENDAMENTO ---
 async function handleConfirmarAgendamento() {
     if (!state.currentUser) {
         await UI.mostrarAlerta("Login Necessário", "Você precisa de fazer login para confirmar o agendamento.");
@@ -367,23 +366,6 @@ async function handleConfirmarAgendamento() {
         };
 
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
-
-        // --- BILHETE DE NOTIFICAÇÃO PRONTI PADRÃO ---
-        if (state.dadosEmpresa && state.dadosEmpresa.donoId) {
-            try {
-                const filaRef = collection(db, "filaDeNotificacoes");
-                await addDoc(filaRef, {
-                    donoId: state.dadosEmpresa.donoId,
-                    titulo: "🎉 Novo Agendamento!",
-                    mensagem: `${state.currentUser.displayName} agendou ${servicoParaSalvar.nome} com ${profissional.nome} às ${horario}.`,
-                    criadoEm: new Date(),
-                    status: "pendente"
-                });
-                console.log("✅ Bilhete de notificação adicionado à fila.");
-            } catch (error) {
-                console.error("❌ Erro ao adicionar notificação à fila:", error);
-            }
-        }
         
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
         await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
