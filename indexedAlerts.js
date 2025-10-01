@@ -1,4 +1,7 @@
 // --- IndexedDB e controle de abas ---
+// Este arquivo NÃO DEVE SER IMPORTADO OU EXECUTADO na vitrine pública! 
+// Só use no painel do dono/admin.
+
 const DB_NAME = 'pronti_alerts';
 const DB_VERSION = 1;
 const STORE_NAME = 'alerts';
@@ -126,22 +129,25 @@ async function marcarStatusLidoFirestore(id) {
   }
 }
 
-// --- Controle de aba mestre, agora com contexto ---
+// --- Controle de aba mestre, agora SEM INTERFERÊNCIA ENTRE TELAS ---
 function isMasterTab(contexto) {
+  // Usa apenas sessionStorage para evitar interferência entre abas diferentes/contextos
   const TAB_KEY = getTabKey(contexto);
   let myId = sessionStorage.getItem(TAB_KEY);
   if (!myId) {
     myId = Date.now().toString();
     sessionStorage.setItem(TAB_KEY, myId);
-    localStorage.setItem(TAB_KEY, myId);
+    // Não use localStorage para controle de aba mestre
     return true;
   }
-  return localStorage.getItem(TAB_KEY) === myId;
+  return sessionStorage.getItem(TAB_KEY) === myId;
 }
 
 // --- Bipar e notificar agrupado ---
 // Aceita donoId dinâmico e contexto!
+// Só rode isso se contexto for 'dono' e o arquivo não for usado na vitrine!
 async function processarAlertas(donoId, contexto = 'dono') {
+  if (contexto !== 'dono') return; // Segurança extra: só processa no painel do dono
   if (!isMasterTab(contexto) || processandoAlertas || !donoId) return;
 
   processandoAlertas = true;
@@ -213,14 +219,11 @@ async function processarAlertas(donoId, contexto = 'dono') {
 }
 
 // --- Listener Firestore para salvar alertas localmente ---
-// Aceita donoId dinâmico!
+// Aceita donoId dinâmico! NÃO use na vitrine pública!
 function iniciarListener(donoId, contexto = 'dono') {
+  if (contexto !== 'dono') return; // Segurança extra: só roda no painel do dono
   if (!donoId) {
     console.warn("ID do dono não informado para iniciarListener!");
-    return;
-  }
-  // Só ativa o listener em contexto de dono/admin.
-  if (contexto !== 'dono') {
     return;
   }
 
@@ -243,24 +246,20 @@ function iniciarListener(donoId, contexto = 'dono') {
 }
 
 // --- Inicialização ---
-// Use as funções abaixo no seu fluxo de login PAINEL DONO/ADMIN APENAS!
+// Use as funções abaixo APENAS no fluxo de login PAINEL DONO/ADMIN!
+// Nunca importe ou execute este arquivo em telas de vitrine pública!
 export { iniciarListener, processarAlertas };
 
 // Exemplo de uso (adicione no seu fluxo onde tem o donoId e identifica o contexto):
 // import { iniciarListener, processarAlertas } from './indexedAlerts.js';
-// const donoId = sessionProfile.userIdOuEmpresaId; // Recupere dinamicamente!
-// const contexto = 'dono'; // ou 'vitrine', etc
+// const donoId = sessionProfile.user.uid; // Recupere dinamicamente o UID do dono logado!
+// const contexto = 'dono';
 // if (contexto === 'dono') {
 //   iniciarListener(donoId, contexto);
-//   processarAlertas(donoId, contexto);
 //   setInterval(() => processarAlertas(donoId, contexto), 5000);
 // }
 
-// Limpa aba mestre ao fechar a aba
+// Limpa chave de aba mestre APENAS da própria aba/contexto ao fechar a aba
 window.addEventListener('beforeunload', () => {
-  // Limpa para todos os contextos possíveis
   sessionStorage.removeItem(getTabKey('dono'));
-  localStorage.removeItem(getTabKey('dono'));
-  sessionStorage.removeItem(getTabKey('vitrine'));
-  localStorage.removeItem(getTabKey('vitrine'));
 });
