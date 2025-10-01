@@ -1,21 +1,31 @@
 // ======================================================================
-// ARQUIVO: redirecionar.js (LÓGICA DO PASSO 2)
+// ARQUIVO: redirecionar.js (VERSÃO CORRIGIDA E ROBUSTA)
 // ======================================================================
 
-import { db } from "./firebase-config.js";
+// ✅ CORREÇÃO CRÍTICA: Importa o 'db' da configuração da VITRINE, não do painel.
+// Isso garante que estamos usando a instância isolada "vitrineCliente".
+import { db } from "./vitrini-firebase.js"; 
 import { collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 async function redirecionarUsuario( ) {
+    // Pega os elementos da página para dar feedback ao usuário
+    const statusElement = document.querySelector('.container p');
+    const spinnerElement = document.querySelector('.spinner');
+
     try {
+        console.log("[Redirecionar] Iniciando processo.");
+
         // 1. Pega os parâmetros da URL
         const params = new URLSearchParams(window.location.search);
-        const slug = params.get('c'); // 'c' de 'código' ou 'curto'
+        const slug = params.get('c');
 
         if (!slug) {
-            // Se não houver slug, redireciona para a página principal
-            window.location.href = '/index.html';
-            return;
+            // Se não houver slug, informa o erro claramente.
+            throw new Error("Link inválido. O código da página não foi encontrado na URL.");
         }
+
+        console.log(`[Redirecionar] Buscando empresa com slug: ${slug}`);
+        if (statusElement) statusElement.textContent = 'Verificando o link...';
 
         // 2. Monta a consulta no Firestore para encontrar a empresa pelo slug
         const q = query(
@@ -28,23 +38,31 @@ async function redirecionarUsuario( ) {
 
         if (snapshot.empty) {
             // Se não encontrar nenhuma empresa com esse slug, informa o usuário
-            document.body.innerHTML = '<p>Link não encontrado ou inválido.</p>';
-            return;
+            throw new Error("Página não encontrada. Verifique se o link está correto.");
         }
 
         // 3. Pega o ID longo da empresa encontrada
-        const empresaDoc = snapshot.docs[0];
-        const empresaId = empresaDoc.id;
+        const empresaId = snapshot.docs[0].id;
+        console.log(`[Redirecionar] Empresa encontrada! ID: ${empresaId}. Redirecionando...`);
+        if (statusElement) statusElement.textContent = 'Página encontrada! Redirecionando...';
 
         // 4. Monta a URL final da vitrine e redireciona
-        const urlFinal = `/vitrine.html?empresa=${empresaId}`;
+        const urlFinal = `vitrine.html?empresa=${empresaId}`;
         window.location.replace(urlFinal); // .replace() é melhor para não criar histórico
 
     } catch (error) {
-        console.error("Erro ao redirecionar:", error);
-        document.body.innerHTML = '<p>Ocorreu um erro ao processar o link. Tente novamente.</p>';
+        console.error("[Redirecionar] Erro fatal:", error);
+        // Mostra o erro na tela para o usuário saber o que aconteceu.
+        if (statusElement) {
+            statusElement.textContent = `Erro: ${error.message}`;
+            statusElement.style.color = 'red';
+        }
+        if (spinnerElement) {
+            spinnerElement.style.display = 'none'; // Esconde a animação em caso de erro.
+        }
     }
 }
 
-// Inicia o processo assim que a página carrega
-redirecionarUsuario();
+// Inicia o processo assim que o DOM da página carrega
+// Usar 'DOMContentLoaded' é um pouco mais seguro que chamar a função diretamente.
+document.addEventListener('DOMContentLoaded', redirecionarUsuario);
