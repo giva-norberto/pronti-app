@@ -10,7 +10,7 @@ import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES ---
-import { db } from './firebase-config.js';
+import { db } from './vitrini-firebase.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
