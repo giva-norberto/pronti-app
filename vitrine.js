@@ -1,6 +1,5 @@
 // ======================================================================
 //          VITRINE.JS - O Maestro da Aplicação
-// ✅ REVISADO: Duplicidade de bilhete removida, fluxo de agendamento intacto
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -10,17 +9,19 @@ import { buscarAgendamentosDoDia, calcularSlotsDisponiveis, salvarAgendamento, b
 import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
-// --- IMPORTS PARA PROMOÇÕES ---
+// --- IMPORTS PARA PROMOÇÕES E BILHETE ---
 import { db } from './firebase-config.js';
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO ---
 function parseDataISO(dateStr) {
     if (!dateStr) return null;
     if (dateStr.includes('-')) {
+        // formato yyyy-MM-dd
         return new Date(dateStr + "T00:00:00");
     }
     if (dateStr.includes('/')) {
+        // formato dd/MM/yyyy
         const [dia, mes, ano] = dateStr.split('/');
         return new Date(`${ano}-${mes}-${dia}T00:00:00`);
     }
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setProfissionais(profissionais);
         setTodosOsServicos(todosServicos);
 
+        // Ao iniciar, NÃO exibe promoção! Só após seleção de data.
         await aplicarPromocoesNaVitrine(state.todosOsServicos, empresaId, null, true);
 
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
@@ -61,31 +63,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- LÓGICA DE PROMOÇÕES ---
+/**
+ * Função para aplicar promoções válidas SOMENTE para o dia da data selecionada.
+ * Se não houver data, NÃO aplica NENHUMA promoção.
+ * Se forceNoPromo=true, limpa as promoções.
+ */
 async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null, forceNoPromo = false) {
     if (!empresaId) return;
 
+    // Sempre limpa promoções anteriores
     listaServicos.forEach(s => { s.promocao = null; });
 
     if (forceNoPromo) return;
     if (!dataSelecionadaISO) return;
 
+    // Usa utilitário para garantir o dia correto
     const data = parseDataISO(dataSelecionadaISO);
     if (!data || isNaN(data.getTime())) return;
     const diaSemana = data.getDay();
 
+    // Busca promoções ativas para o dia correto
     const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
     const snapshot = await getDocs(promocoesRef);
 
     const promocoesAtivas = [];
     snapshot.forEach(doc => {
         const promo = doc.data();
+        // Certifique-se que diasSemana é array de números
         let dias = Array.isArray(promo.diasSemana) ? promo.diasSemana.map(Number) : [];
         if (promo.ativo && dias.includes(diaSemana)) {
             promocoesAtivas.push({ id: doc.id, ...promo });
         }
     });
 
+    // Aplica promoções apenas se o dia da promoção bate com a data escolhida
     listaServicos.forEach(servico => {
         let melhorPromocao = null;
         for (let promo of promocoesAtivas) {
@@ -143,6 +154,7 @@ function configurarEventosGerais() {
 }
 
 // --- HANDLERS ---
+
 function handleUserAuthStateChange(user) {
     setCurrentUser(user);
     UI.atualizarUIdeAuth(user);
@@ -286,6 +298,7 @@ async function handleDataChange(e) {
     const { profissional, servicos, data } = state.agendamento;
     const duracaoTotal = servicos.reduce((total, s) => total + s.duracao, 0);
 
+    // Só aplica promoção SE a data foi mesmo selecionada!
     await aplicarPromocoesNaVitrine(state.todosOsServicos, state.empresaId, data, false);
 
     if (profissional) {
@@ -321,7 +334,7 @@ function handleHorarioClick(e) {
     UI.habilitarBotaoConfirmar();
 }
 
-// --- handleConfirmarAgendamento (REVISADO: sem duplicidade) ---
+// --- INCLUSÃO DO BILHETE DE NOTIFICAÇÃO NO AGENDAMENTO ---
 async function handleConfirmarAgendamento() {
     if (!state.currentUser) {
         await UI.mostrarAlerta("Login Necessário", "Você precisa de fazer login para confirmar o agendamento.");
@@ -350,22 +363,32 @@ async function handleConfirmarAgendamento() {
             profissional: state.agendamento.profissional,
             data: state.agendamento.data,
             horario: state.agendamento.horario,
-            servico: servicoParaSalvar,
-            empresa: state.dadosEmpresa
+            servico: servicoParaSalvar
         };
 
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
 
-        // ✅ NOTIFICAÇÃO AGREGADA AQUI (sem duplicidade)
+        // --- BILHETE DE NOTIFICAÇÃO PRONTI PADRÃO ---
         if (state.dadosEmpresa && state.dadosEmpresa.donoId) {
-            console.log("Bilhete de notificação será criado pelo agendamento principal se necessário.");
+            try {
+                const filaRef = collection(db, "filaDeNotificacoes");
+                await addDoc(filaRef, {
+                    donoId: state.dadosEmpresa.donoId,
+                    titulo: "🎉 Novo Agendamento!",
+                    mensagem: `${state.currentUser.displayName} agendou ${servicoParaSalvar.nome} com ${profissional.nome} às ${horario}.`,
+                    criadoEm: new Date(),
+                    status: "pendente"
+                });
+                console.log("✅ Bilhete de notificação adicionado à fila.");
+            } catch (error) {
+                console.error("❌ Erro ao adicionar notificação à fila:", error);
+            }
         }
-
+        
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
         await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
         resetarAgendamento();
         handleMenuClick({ target: document.querySelector('[data-menu="visualizacao"]') });
-
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         await UI.mostrarAlerta("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
@@ -375,7 +398,6 @@ async function handleConfirmarAgendamento() {
     }
 }
 
-// --- DEMAIS HANDLERS ---
 async function handleFiltroAgendamentos(e) {
     if (!e.target.matches('.btn-toggle') || !state.currentUser) return;
     const modo = e.target.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
