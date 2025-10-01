@@ -38,7 +38,16 @@
     </div>
 
     <!-- Scripts do Firebase e da lógica de redirecionamento -->
-    <script src="firebase-config.js" type="module"></script>
+    
+    <!-- 
+      CORREÇÃO APLICADA AQUI: 
+      Alterado de "firebase-config.js" para "vitrini-firebase.js".
+      Isso garante que o redirecionador use a mesma instância isolada do Firebase 
+      que a vitrine, eliminando o conflito.
+    -->
+    <script src="vitrini-firebase.js" type="module"></script>
+    
     <script src="redirecionar.js" type="module"></script>
 </body>
 </html>
+
