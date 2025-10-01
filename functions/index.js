@@ -1,6 +1,6 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO FINAL: Correção da conexão com o banco de dados e integração da função de notificação.
+ * VERSÃO FINAL: Contém todas as funções de pagamento e a função de notificação revisada.
  */
 
 // ============================ Imports principais ==============================
@@ -15,9 +15,6 @@ const cors = require("cors");
 if (!admin.apps.length) {
   admin.initializeApp();
 }
-
-// ✅ CORREÇÃO DEFINITIVA: Aponta para o banco de dados '(default)' explicitamente
-// para resolver o erro 404/NOT_FOUND em projetos com configuração ambígua.
 const db = admin.firestore();
 const fcm = admin.messaging();
 
@@ -52,43 +49,34 @@ exports.verificarEmpresa = onRequest(
         return res.status(204).send("");
       }
       if (req.method !== "POST") {
-        functions.logger.info("DEBUG: Método não permitido", { method: req.method });
         return res.status(405).json({ error: "Método não permitido. Use POST." });
       }
       try {
-        functions.logger.info("DEBUG: INICIO verificarEmpresa", { body: req.body, headers: req.headers });
         const { empresaId } = req.body;
         if (!empresaId) {
-          functions.logger.info("DEBUG: Falta empresaId no body");
           return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
         }
         const empresaDocRef = db.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
         if (!empresaDoc.exists) {
-          functions.logger.info("DEBUG: Empresa não encontrada", { empresaId });
           return res.status(404).json({ error: "Empresa não encontrada." });
         }
         const plano = empresaDoc.get("plano") || "free";
         const status = empresaDoc.get("status") || "";
         if (plano === "free" && status === "expirado") {
-          functions.logger.info("DEBUG: Plano free expirado", { empresaId });
           return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
         }
         let licencasNecessarias = 0;
         try {
           const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
-          if (!profissionaisSnapshot.empty) {
-            licencasNecessarias = profissionaisSnapshot.size;
-          }
-          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
+          licencasNecessarias = profissionaisSnapshot.size;
         } catch (profErr) {
           functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
         }
-        functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
         return res.status(200).json({ licencasNecessarias });
       } catch (error) {
         functions.logger.error("Erro fatal em verificarEmpresa:", error);
-        return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message || error.toString() });
+        return res.status(500).json({ error: "Erro interno do servidor.", detalhes: error.message });
       }
     });
   }
@@ -101,9 +89,6 @@ exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      if (req.method === "OPTIONS") {
-        return res.status(204).send("");
-      }
       if (req.method !== "POST") {
         return res.status(405).json({ error: "Método não permitido." });
       }
@@ -143,7 +128,7 @@ exports.createPreference = onRequest(
         return res.status(200).json({ init_point: response.init_point });
       } catch (error) {
         functions.logger.error("Erro em createPreference:", error);
-        return res.status(500).json({ error: "Erro ao criar preferência de pagamento.", detalhes: error.message || error.toString() });
+        return res.status(500).json({ error: "Erro ao criar preferência de pagamento.", detalhes: error.message });
       }
     });
   }
@@ -156,9 +141,6 @@ exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      if (req.method === "OPTIONS") {
-        return res.status(204).send("");
-      }
       const { id, type } = req.body;
       if (type === "preapproval") {
         try {
@@ -238,50 +220,38 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO (Versão Única e Corrigida)
+// FUNÇÃO DE NOTIFICAÇÃO (Revisada conforme solicitado)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    // ✅ CORREÇÃO DEFINITIVA: Especifica o banco de dados '(default)' para resolver o erro 404.
     database: "(default)",
     region: "southamerica-east1",
   },
   async (event) => {
     const snap = event.data;
     if (!snap) {
-        functions.logger.error("[FCM] Evento de criação sem dados.");
-        return null;
+      functions.logger.error("[FCM] Evento de criação sem dados (snapshot).");
+      return;
     }
 
     const bilhete = snap.data();
     const bilheteId = event.params.bilheteId;
     functions.logger.info(`[FCM] Processando bilhete: ${bilheteId}`, { bilhete });
-    
-    if (!bilhete || !bilhete.paraDonoId) {
-      functions.logger.warn(`[FCM] Bilhete inválido: ${bilheteId}`);
-      await snap.ref.update({ 
-        status: 'falha', 
-        motivo: 'paraDonoId ausente',
-        processadoEm: admin.firestore.FieldValue.serverTimestamp()
-      });
-      return null;
-    }
+
+    // ✅ REVISÃO: Validação de 'paraDonoId' foi REMOVIDA, conforme solicitado.
 
     try {
-      // Usa a variável 'db' que é consistente com o resto do seu código
+      // A função agora prosseguirá diretamente para a busca do token.
+      // Se 'bilhete' ou 'bilhete.paraDonoId' for nulo, a linha abaixo causará um erro
+      // que será capturado pelo bloco 'catch'.
       const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
-      
-      if (!tokenDoc.exists || !tokenDoc.data()?.fcmToken) {
-        functions.logger.warn(`[FCM] Token não encontrado: ${bilhete.paraDonoId}`);
-        await snap.ref.update({ 
-          status: 'falha', 
-          motivo: 'Token FCM não encontrado',
-          processadoEm: admin.firestore.FieldValue.serverTimestamp()
-        });
-        return null;
+
+      if (!tokenDoc.exists() || !tokenDoc.data().fcmToken) {
+        functions.logger.warn(`[FCM] Token não encontrado para dono: ${bilhete.paraDonoId}. Marcando como 'falha'.`);
+        return snap.ref.update({ status: 'falha', motivo: 'Token FCM não encontrado ou vazio' });
       }
-      
+
       const fcmToken = tokenDoc.data().fcmToken;
 
       const message = {
@@ -292,30 +262,22 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         },
         data: {
           bilheteId: bilheteId,
-          tipo: bilhete.tipo || 'geral',
+          status: String(bilhete.status || 'pendente'),
         },
       };
 
       await fcm.send(message);
-      functions.logger.info(`[FCM] Notificação enviada: ${bilheteId}`);
+      functions.logger.info(`[FCM] Notificação enviada para: ${bilhete.paraDonoId}`, { bilheteId });
 
-      await snap.ref.update({ 
-        status: 'enviado', 
-        enviadoEm: admin.firestore.FieldValue.serverTimestamp() 
-      });
-
-      return null;
+      return snap.ref.update({ status: 'processado', enviadoEm: admin.firestore.FieldValue.serverTimestamp() });
 
     } catch (error) {
-      functions.logger.error(`[FCM] Erro: ${bilheteId}`, { error: error.message });
-      
-      await snap.ref.update({ 
-        status: 'erro', 
-        motivo: error.message,
-        erroEm: admin.firestore.FieldValue.serverTimestamp()
-      }).catch(e => functions.logger.error("[FCM] Falha ao atualizar status de erro", e));
-      
-      return null;
+      functions.logger.error(`[FCM] Erro ao enviar notificação para ${bilheteId}:`, error);
+      try {
+        await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
+      } catch (updateError) {
+        functions.logger.error(`[FCM] Falha ao tentar marcar o bilhete ${bilheteId} como 'erro':`, updateError);
+      }
     }
   }
 );
