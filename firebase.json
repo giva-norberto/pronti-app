@@ -8,8 +8,8 @@
     ],
     "rewrites": [
       {
-        "source": "/:slug",
-        "destination": "/vitrine.html"
+        "source": "**",
+        "destination": "/index.html"
       }
     ]
   },
