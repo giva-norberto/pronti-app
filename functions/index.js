@@ -1,11 +1,11 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO FINAL: Correção da conexão com o banco de dados e integração da função de notificação.
+ * VERSÃO COM NOTIFICAÇÕES DESATIVADAS para permitir a implantação das funções de pagamento.
  */
 
 // ============================ Imports principais ==============================
 const { onRequest } = require("firebase-functions/v2/https" );
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+// const { onDocumentCreated } = require("firebase-functions/v2/firestore"); // Import não é mais necessário
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
@@ -16,7 +16,7 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 const db = admin.firestore();
-const fcm = admin.messaging();
+// const fcm = admin.messaging(); // Não é mais necessário para as funções ativas
 
 // =========================== Configuração de CORS =============================
 const whitelist = [
@@ -234,64 +234,18 @@ function calcularPreco(totalFuncionarios) {
   return Number(precoTotal.toFixed(2));
 }
 
+/*
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO (Versão Única e Corrigida)
+// FUNÇÃO DE NOTIFICAÇÃO (DESATIVADA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    // ✅ CORREÇÃO DEFINITIVA: Especifica o banco de dados '(default)' para resolver o erro 404.
     database: "(default)",
     region: "southamerica-east1",
   },
   async (event) => {
-    const snap = event.data;
-    if (!snap) {
-      functions.logger.error("[FCM] Evento de criação sem dados (snapshot).");
-      return;
-    }
-
-    const bilhete = snap.data();
-    const bilheteId = event.params.bilheteId;
-    functions.logger.info(`[FCM] Processando bilhete: ${bilheteId}`, { bilhete });
-
-    // Conforme solicitado, a validação de 'paraDonoId' foi removida do início.
-    // O erro será capturado pelo bloco 'try...catch' se o campo for nulo.
-
-    try {
-      const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
-
-      if (!tokenDoc.exists() || !tokenDoc.data().fcmToken) {
-        functions.logger.warn(`[FCM] Token não encontrado para dono: ${bilhete.paraDonoId}. Marcando como 'falha'.`);
-        return snap.ref.update({ status: 'falha', motivo: 'Token FCM não encontrado ou vazio' });
-      }
-
-      const fcmToken = tokenDoc.data().fcmToken;
-
-      const message = {
-        token: fcmToken,
-        notification: {
-          title: bilhete.titulo || 'Nova Notificação',
-          body: bilhete.mensagem || 'Você recebeu uma nova mensagem',
-        },
-        data: {
-          bilheteId: bilheteId,
-          status: String(bilhete.status || 'pendente'),
-        },
-      };
-
-      await fcm.send(message);
-      functions.logger.info(`[FCM] Notificação enviada para: ${bilhete.paraDonoId}`, { bilheteId });
-
-      return snap.ref.update({ status: 'processado', enviadoEm: admin.firestore.FieldValue.serverTimestamp() });
-
-    } catch (error) {
-      functions.logger.error(`[FCM] Erro ao enviar notificação para ${bilheteId}:`, error);
-      try {
-        await snap.ref.update({ status: 'erro', motivo: error.message || 'Erro desconhecido' });
-      } catch (updateError) {
-        functions.logger.error(`[FCM] Falha ao tentar marcar o bilhete ${bilheteId} como 'erro':`, updateError);
-      }
-    }
+    // A lógica da função foi comentada para evitar erros de implantação.
   }
 );
+*/
