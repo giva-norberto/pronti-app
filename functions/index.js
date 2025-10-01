@@ -4,7 +4,7 @@
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https");
+const { onRequest } = require("firebase-functions/v2/https" );
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -25,7 +25,7 @@ const whitelist = [
   "http://localhost:3000",
 ];
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function (origin, callback ) {
     if (!origin || whitelist.includes(origin)) {
       callback(null, true);
     } else {
@@ -128,7 +128,7 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl,
         };
-        const preapproval = new Preapproval(client);
+        const preapproval = new Preapproval(client );
         const response = await preapproval.create({ body: subscriptionData });
         await db.collection("empresarios").doc(userId).collection("assinatura").doc("dados").set({
           mercadoPagoAssinaturaId: response.id,
