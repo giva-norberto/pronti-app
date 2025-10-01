@@ -10,6 +10,9 @@ const UM_DIA_MS = 24 * 60 * 60 * 1000;
 import { collection, query, where, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { db } from "./firebase-config.js";
 
+// Flag para evitar processamento simultâneo
+let processandoAlertas = false;
+
 // --- IndexedDB helpers ---
 function abrirDB() {
   return new Promise((resolve, reject) => {
@@ -29,8 +32,21 @@ async function salvarAlertaLocal(alerta) {
   const db = await abrirDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const now = Date.now();
-  tx.objectStore(STORE_NAME).put({ ...alerta, notificado: false, createdAt: alerta.createdAt || now });
-  tx.oncomplete = () => db.close();
+  tx.objectStore(STORE_NAME).put({ 
+    ...alerta, 
+    notificado: false, 
+    createdAt: alerta.createdAt || now 
+  });
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
 }
 
 async function marcarTodosNotificados(ids) {
@@ -38,17 +54,34 @@ async function marcarTodosNotificados(ids) {
   const db = await abrirDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
-  for (const id of ids) {
-    const req = store.get(id);
-    req.onsuccess = () => {
-      const alerta = req.result;
-      if (alerta && !alerta.notificado) {
-        alerta.notificado = true;
-        store.put(alerta);
-      }
+  
+  const promises = ids.map(id => {
+    return new Promise((resolve, reject) => {
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const alerta = req.result;
+        if (alerta && !alerta.notificado) {
+          alerta.notificado = true;
+          store.put(alerta);
+        }
+        resolve();
+      };
+      req.onerror = () => reject(req.error);
+    });
+  });
+
+  await Promise.all(promises);
+  
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
     };
-  }
-  tx.oncomplete = () => db.close();
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
 }
 
 async function limparAlertasAntigos() {
@@ -56,15 +89,26 @@ async function limparAlertasAntigos() {
   const tx = db.transaction(STORE_NAME, 'readwrite');
   const store = tx.objectStore(STORE_NAME);
   const agora = Date.now();
-  const request = store.getAll();
-  request.onsuccess = () => {
-    request.result.forEach(alerta => {
-      if (alerta.createdAt && (agora - alerta.createdAt > UM_DIA_MS)) {
-        store.delete(alerta.id);
-      }
-    });
-  };
-  tx.oncomplete = () => db.close();
+  
+  return new Promise((resolve, reject) => {
+    const request = store.getAll();
+    request.onsuccess = () => {
+      request.result.forEach(alerta => {
+        if (alerta.createdAt && (agora - alerta.createdAt > UM_DIA_MS)) {
+          store.delete(alerta.id);
+        }
+      });
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+    };
+    request.onerror = () => reject(request.error);
+  });
 }
 
 // --- Marcar como lido no Firestore ---
@@ -72,8 +116,10 @@ async function marcarStatusLidoFirestore(id) {
   try {
     const ref = doc(db, "filaDeNotificacoes", id);
     await updateDoc(ref, { status: "lido" });
+    console.log(`Alerta ${id} marcado como lido no Firestore`);
   } catch (e) {
     console.error("Erro ao marcar como lido no Firestore:", e);
+    throw e; // Propaga o erro para retry se necessário
   }
 }
 
@@ -91,24 +137,44 @@ function isMasterTab() {
 
 // --- Bipar e notificar agrupado ---
 async function processarAlertas() {
-  if (!isMasterTab()) return;
+  if (!isMasterTab() || processandoAlertas) return;
+  
+  processandoAlertas = true;
+  
+  try {
+    await limparAlertasAntigos();
 
-  await limparAlertasAntigos();
+    const db = await abrirDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    
+    const pendentes = await new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        // Filtra alertas não notificados e status válido
+        const resultado = request.result.filter(
+          alerta =>
+            !alerta.notificado &&
+            ['novo', 'erro', 'pendente'].includes(alerta.status)
+        );
+        resolve(resultado);
+      };
+      request.onerror = () => reject(request.error);
+    });
+    
+    tx.oncomplete = () => db.close();
 
-  const db = await abrirDB();
-  const tx = db.transaction(STORE_NAME, 'readonly');
-  const store = tx.objectStore(STORE_NAME);
-  const request = store.getAll();
-
-  request.onsuccess = async () => {
-    // Filtra alertas não notificados e status válido
-    const pendentes = request.result.filter(
-      alerta =>
-        !alerta.notificado &&
-        ['novo', 'erro', 'pendente'].includes(alerta.status)
-    );
     if (pendentes.length > 0) {
-      // --- Bipa só uma vez e notifica agrupado ---
+      console.log(`Processando ${pendentes.length} alertas pendentes`);
+      
+      // --- Toca o som e mostra notificação PRIMEIRO ---
+      try {
+        const audio = new Audio('/alert.mp3');
+        await audio.play();
+      } catch (err) {
+        console.log('Som bloqueado ou erro ao tocar:', err);
+      }
+
       if (Notification.permission === 'granted') {
         new Notification('Novo Agendamento!', {
           body: `Você tem ${pendentes.length} novo(s) agendamento(s)!`,
@@ -118,17 +184,27 @@ async function processarAlertas() {
       } else {
         alert(`Você tem ${pendentes.length} novo(s) agendamento(s)!`);
       }
-      const audio = new Audio('/alert.mp3');
-      audio.play().catch(() => console.log('Som bloqueado até interação do usuário'));
 
-      // Marca todos como notificados no IndexedDB e Firestore
-      for (const alerta of pendentes) {
-        await marcarTodosNotificados([alerta.id]);
-        await marcarStatusLidoFirestore(alerta.id);
-      }
+      // --- Marca como notificado DEPOIS de tocar/notificar ---
+      const ids = pendentes.map(a => a.id);
+      await marcarTodosNotificados(ids);
+      
+      // --- Atualiza Firestore em paralelo ---
+      const firestorePromises = pendentes.map(alerta => 
+        marcarStatusLidoFirestore(alerta.id).catch(err => {
+          console.error(`Falha ao atualizar ${alerta.id}:`, err);
+          // Não bloqueia os outros
+        })
+      );
+      
+      await Promise.allSettled(firestorePromises);
+      console.log('Alertas processados com sucesso');
     }
-  };
-  tx.oncomplete = () => db.close();
+  } catch (error) {
+    console.error('Erro ao processar alertas:', error);
+  } finally {
+    processandoAlertas = false;
+  }
 }
 
 // --- Listener Firestore para salvar alertas localmente ---
@@ -143,7 +219,10 @@ function iniciarListener() {
     snapshot.docChanges().forEach(async (change) => {
       if (['added', 'modified'].includes(change.type)) {
         const alerta = { ...change.doc.data(), id: change.doc.id };
+        console.log('Novo alerta recebido:', alerta.id);
         await salvarAlertaLocal(alerta);
+        // Processa imediatamente quando recebe novo alerta
+        processarAlertas();
       }
     });
   });
@@ -151,14 +230,17 @@ function iniciarListener() {
 
 // --- Inicialização ---
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('Iniciando sistema de alertas...');
+  
   if (Notification.permission !== 'granted') {
     await Notification.requestPermission();
   }
+  
   iniciarListener();
   processarAlertas();
 
-  // Checa a cada 2 segundos para bipar/notificar e limpar antigos
-  setInterval(processarAlertas, 2000);
+  // Checa a cada 5 segundos (reduzido de 2s para evitar sobrecarga)
+  setInterval(processarAlertas, 5000);
 
   // Limpa aba mestre se fechar
   window.addEventListener('beforeunload', () => {
