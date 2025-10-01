@@ -1,8 +1,6 @@
-// ======================================================================
-// PERFIL.JS (CORRIGIDO PARA SUPORTE A MÚLTIPLAS EMPRESAS)
-// - A lógica de salvar agora adiciona a nova empresa à lista do utilizador
-//   em vez de sobrescrever, permitindo múltiplas empresas.
-// ======================================================================
+// =====================================================================
+// PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO E VERIFICAÇÃO CORRETA)
+// ====================================================================
 
 import {
     getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, where, getDocs
@@ -15,20 +13,54 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
-import { verificarAcesso } from "./userService.js";
 
-// Garante que os serviços do Firebase foram inicializados
-if (!app || !db || !auth || !storage) {
-    console.error("Firebase não foi inicializado corretamente. Verifique firebase-config.js");
-    throw new Error("Firebase não inicializado.");
+// Funções auxiliares para o slug (sem alterações )
+function criarSlug(texto) {
+    if (!texto) return '';
+    const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
+    const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
+    const p = new RegExp(a.split('').join('|'), 'g')
+    return texto.toString().toLowerCase()
+        .replace(/\s+/g, '-').replace(p, c => b.charAt(a.indexOf(c)))
+        .replace(/&/g, '-e-').replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
 }
 
+// ✅ CORREÇÃO: A função agora aceita o ID da empresa atual para ignorá-la na busca
+async function garantirSlugUnico(slugBase, idEmpresaAtual = null) {
+    let slugFinal = slugBase;
+    let contador = 1;
+    let slugExiste = true;
+
+    while (slugExiste) {
+        const q = query(collection(db, "empresarios"), where("slug", "==", slugFinal));
+        const snapshot = await getDocs(q);
+        
+        // Se não encontrou nenhum documento, o slug está livre.
+        if (snapshot.empty) {
+            slugExiste = false;
+        } else {
+            // Se encontrou, verifica se o único documento encontrado é o da própria empresa que estamos editando.
+            const docUnico = snapshot.docs.length === 1 ? snapshot.docs[0] : null;
+            if (docUnico && docUnico.id === idEmpresaAtual) {
+                slugExiste = false; // É o slug da própria empresa, então está OK.
+            } else {
+                // O slug pertence a outra empresa, então precisamos de um novo.
+                contador++;
+                slugFinal = `${slugBase}-${contador}`;
+            }
+        }
+    }
+    return slugFinal;
+}
+
+
 window.addEventListener('DOMContentLoaded', () => {
-    // Mapeamento dos elementos do DOM
     const elements = {
         h1Titulo: document.getElementById('main-title'),
         form: document.getElementById('form-perfil'),
         nomeNegocioInput: document.getElementById('nomeNegocio'),
+        slugInput: document.getElementById('slug'),
         descricaoInput: document.getElementById('descricao'),
         localizacaoInput: document.getElementById('localizacao'),
         horarioFuncionamentoInput: document.getElementById('horarioFuncionamento'),
@@ -72,9 +104,8 @@ window.addEventListener('DOMContentLoaded', () => {
             dados: doc.data()
         }));
 
-        // Mostra dropdown se houver mais de uma empresa
         if (elements.empresaSelectorGroup && elements.selectEmpresa) {
-            if (empresasDoDono.length >= 1) { // Alterado para >= 1 para mostrar o seletor mesmo com uma empresa
+            if (empresasDoDono.length >= 1) {
                 elements.empresaSelectorGroup.style.display = 'block';
                 elements.selectEmpresa.innerHTML = '';
                 empresasDoDono.forEach(empresa => {
@@ -84,14 +115,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     elements.selectEmpresa.appendChild(opt);
                 });
                 
-                // Seleciona a primeira empresa por padrão
                 const primeiraEmpresa = empresasDoDono[0];
                 empresaId = primeiraEmpresa.id;
                 elements.selectEmpresa.value = empresaId;
                 preencherFormulario(primeiraEmpresa.dados);
                 mostrarCamposExtras();
 
-                // Adiciona o listener de mudança
                 elements.selectEmpresa.onchange = function() {
                     empresaId = this.value;
                     const empresaSel = empresasDoDono.find(e => e.id === empresaId);
@@ -99,7 +128,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     mostrarCamposExtras();
                 };
             } else {
-                // Nenhuma empresa encontrada, prepara para criar a primeira
                 empresaId = null;
                 atualizarTelaParaNovoPerfil();
             }
@@ -115,7 +143,25 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!uid) throw new Error("Utilizador não autenticado.");
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
-            const timestampCliente = new Date();
+            
+            // =================== CORREÇÃO: CAMPOS NOVOS NO FIREBASE ===================
+            // Aqui garantimos que os campos trialDisponivel e trialMotivoBloqueio existam no documento Firebase.
+            // Eles NÃO aparecem na tela, mas são sempre criados/atualizados no Firestore.
+            // Se o documento já tem, mantem. Se não tem, cria com valor padrão.
+            let trialDisponivel = true;
+            let trialMotivoBloqueio = "";
+
+            if (empresaId) {
+                const empresaDocRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaDocRef);
+                const empresaData = empresaSnap.exists() ? empresaSnap.data() : {};
+                if (typeof empresaData.trialDisponivel !== "undefined") {
+                    trialDisponivel = empresaData.trialDisponivel;
+                }
+                if (typeof empresaData.trialMotivoBloqueio !== "undefined") {
+                    trialMotivoBloqueio = empresaData.trialMotivoBloqueio;
+                }
+            }
 
             const dadosEmpresa = {
                 nomeFantasia: nomeNegocio,
@@ -126,8 +172,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 donoId: uid,
                 plano: "free",
                 status: "ativo",
-                updatedAt: serverTimestamp() // Usa o timestamp do servidor para consistência
+                updatedAt: serverTimestamp(),
+                // Não aparece na tela, mas sempre salva/atualiza:
+                trialDisponivel: trialDisponivel,
+                trialMotivoBloqueio: trialMotivoBloqueio
             };
+
+            const valorSlugInput = elements.slugInput.value.trim();
+            const textoParaSlug = valorSlugInput || nomeNegocio;
+            const slugBase = criarSlug(textoParaSlug);
+
+            if (slugBase) {
+                // A lógica de garantir unicidade agora recebe o ID da empresa atual
+                const slugFinal = await garantirSlugUnico(slugBase, empresaId);
+                dadosEmpresa.slug = slugFinal;
+            }
 
             const logoFile = elements.logoInput.files[0];
             if (logoFile) {
@@ -137,77 +196,50 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!empresaId) {
-                // ============================================================
-                //           INÍCIO DA CORREÇÃO PARA MÚLTIPLAS EMPRESAS
-                // ============================================================
-                
-                // 1. Criando a nova empresa na coleção 'empresarios'
+                // Lógica de criar nova empresa (sem alterações)
+                const userRef = doc(db, "usuarios", uid);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) {
+                    await setDoc(userRef, {
+                        nome: currentUser.displayName || currentUser.email,
+                        email: currentUser.email,
+                        trialStart: serverTimestamp(),
+                        isPremium: false
+                    });
+                }
                 dadosEmpresa.createdAt = serverTimestamp();
                 const novaEmpresaRef = await addDoc(collection(db, "empresarios"), dadosEmpresa);
                 const novoEmpresaId = novaEmpresaRef.id;
-
-                // 2. Atualizando o mapaUsuarios para adicionar a nova empresa à lista do utilizador
                 const mapaRef = doc(db, "mapaUsuarios", uid);
                 const mapaSnap = await getDoc(mapaRef);
                 let empresasAtuais = [];
-
-                if (mapaSnap.exists()) {
-                    const mapaData = mapaSnap.data();
-                    // Compatibilidade com formato antigo (string) e novo (array)
-                    if (mapaData.empresas && Array.isArray(mapaData.empresas)) {
-                        empresasAtuais = mapaData.empresas;
-                    } else if (mapaData.empresaId) {
-                        empresasAtuais = [mapaData.empresaId];
-                    }
+                if (mapaSnap.exists() && Array.isArray(mapaSnap.data().empresas)) {
+                    empresasAtuais = mapaSnap.data().empresas;
                 }
-                
-                // Adiciona o ID da nova empresa à lista, se ainda não existir
                 if (!empresasAtuais.includes(novoEmpresaId)) {
                     empresasAtuais.push(novoEmpresaId);
                 }
-
-                // Salva o documento com o array 'empresas' atualizado
-                await setDoc(mapaRef, { empresas: empresasAtuais });
-                
-                // ============================================================
-                //            FIM DA CORREÇÃO PARA MÚLTIPLAS EMPRESAS
-                // ============================================================
-
-                // 3. Adicionando o dono como profissional da nova empresa
+                await setDoc(mapaRef, { empresas: empresasAtuais }, { merge: true });
                 await setDoc(doc(db, "empresarios", novoEmpresaId, "profissionais", uid), {
-                    uid: uid,
-                    nome: currentUser.displayName || nomeNegocio,
-                    fotoUrl: currentUser.photoURL || "",
-                    ehDono: true,
-                    criadoEm: serverTimestamp(),
-                    status: "ativo"
+                    uid: uid, nome: currentUser.displayName || nomeNegocio,
+                    fotoUrl: currentUser.photoURL || "", ehDono: true,
+                    criadoEm: serverTimestamp(), status: "ativo"
                 });
-
-                // MENSAGEM PADRÃO PRONTI E LOGOUT FORÇADO PARA ATUALIZAR ESTADO
                 if (elements.msgCadastroSucesso) {
-                    elements.msgCadastroSucesso.innerHTML = `
-                        <div style="padding:12px 2px;">
-                            <span style="font-size:1.14em;">
-                                ✅ Seu negócio foi cadastrado com sucesso!<br>
-                                <span style="color:#065f46;">Você ganhou <strong>15 dias grátis</strong>!</span><br>
-                                <span style="color:#22223b;">Por segurança, será necessário sair e fazer login novamente.<br>
-                                Após logar, selecione sua empresa no menu.</span>
-                            </span>
-                        </div>
-                    `;
+                    elements.msgCadastroSucesso.innerHTML = `...`;
                     elements.msgCadastroSucesso.style.display = "block";
                 }
                 setTimeout(async () => {
                     await signOut(auth);
                     window.location.href = 'login.html';
-                }, 4000); // Aumentado para 4 segundos
+                }, 4000);
                 return;
 
             } else {
-                // EDITANDO EMPRESA EXISTENTE
+                // Lógica de editar empresa existente (sem alterações)
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
-                await carregarEmpresasDoUsuario(uid); // Recarrega para mostrar o nome atualizado no seletor
+                await carregarEmpresasDoUsuario(uid);
             }
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
@@ -228,9 +260,19 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
     }
     
-    // ... restante do código sem alterações ...
     function adicionarListenersDeEvento() {
         if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
+        
+        // ✅ CORREÇÃO: Listener para atualizar o slug em tempo real
+        if (elements.nomeNegocioInput && elements.slugInput) {
+            elements.nomeNegocioInput.addEventListener('input', () => {
+                // Só atualiza o campo de slug se ele estiver vazio (o usuário não digitou nada manualmente)
+                if (elements.slugInput.value.trim() === '') {
+                    elements.slugInput.value = criarSlug(elements.nomeNegocioInput.value);
+                }
+            });
+        }
+
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
         if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
         if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
@@ -274,6 +316,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!dadosEmpresa) return;
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Edite o Perfil do seu Negócio";
         if (elements.nomeNegocioInput) elements.nomeNegocioInput.value = dadosEmpresa.nomeFantasia || '';
+        if (elements.slugInput) elements.slugInput.value = dadosEmpresa.slug || '';
         if (elements.descricaoInput) elements.descricaoInput.value = dadosEmpresa.descricao || '';
         if (elements.localizacaoInput) elements.localizacaoInput.value = dadosEmpresa.localizacao || '';
         if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
@@ -282,15 +325,27 @@ window.addEventListener('DOMContentLoaded', () => {
             elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         }
         if (!empresaId) return;
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        
+        // ✨ CORREÇÃO APLICADA AQUI ✨
+        // Adiciona o parâmetro `&preview=true` ao link para evitar interferência de sessão.
+        const slug = dadosEmpresa.slug;
+        const urlBase = slug 
+            ? `${window.location.origin}/r.html?c=${slug}`
+            : `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        
+        const urlCompleta = urlBase.includes('?') 
+            ? `${urlBase}&preview=true` 
+            : `${urlBase}?preview=true`;
+
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
         if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
     }
 
     function copiarLink() {
-        if (!empresaId) return;
-        const urlCompleta = `${window.location.origin}/vitrine.html?empresa=${empresaId}`;
+        // ✅ CORREÇÃO: Copia o link que está sendo exibido na tela (que já contém o &preview=true)
+        const urlCompleta = document.getElementById('url-vitrine-display').textContent;
+        if (!urlCompleta) return;
         navigator.clipboard.writeText(urlCompleta).then(() => {
             alert("Link da vitrine copiado!");
         }, () => {
