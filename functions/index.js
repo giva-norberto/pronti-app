@@ -1,6 +1,6 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO FINAL: Correção definitiva da conexão com o banco de dados e integração da função de notificação.
+ * VERSÃO FINAL: Correção da conexão com o banco de dados e integração da função de notificação.
  */
 
 // ============================ Imports principais ==============================
@@ -16,7 +16,8 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// ✅ CORREÇÃO DEFINITIVA: Aponta para o banco de dados correto
+// ✅ CORREÇÃO DEFINITIVA: Aponta para o banco de dados '(default)' explicitamente
+// para resolver o erro 404/NOT_FOUND em projetos com configuração ambígua.
 const db = admin.firestore();
 const fcm = admin.messaging();
 
@@ -47,7 +48,9 @@ exports.verificarEmpresa = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      if (req.method === "OPTIONS") return res.status(204).send("");
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
       if (req.method !== "POST") {
         functions.logger.info("DEBUG: Método não permitido", { method: req.method });
         return res.status(405).json({ error: "Método não permitido. Use POST." });
@@ -55,30 +58,32 @@ exports.verificarEmpresa = onRequest(
       try {
         functions.logger.info("DEBUG: INICIO verificarEmpresa", { body: req.body, headers: req.headers });
         const { empresaId } = req.body;
-        functions.logger.info("DEBUG: empresaId recebido", { empresaId });
-        if (!empresaId) return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
-
+        if (!empresaId) {
+          functions.logger.info("DEBUG: Falta empresaId no body");
+          return res.status(400).json({ error: "ID da empresa inválido ou não fornecido." });
+        }
         const empresaDocRef = db.collection("empresarios").doc(empresaId);
         const empresaDoc = await empresaDocRef.get();
-        functions.logger.info("DEBUG: empresaDoc.exists", { exists: empresaDoc.exists, empresaId });
-        if (!empresaDoc.exists) return res.status(404).json({ error: "Empresa não encontrada." });
-
+        if (!empresaDoc.exists) {
+          functions.logger.info("DEBUG: Empresa não encontrada", { empresaId });
+          return res.status(404).json({ error: "Empresa não encontrada." });
+        }
         const plano = empresaDoc.get("plano") || "free";
         const status = empresaDoc.get("status") || "";
-        functions.logger.info("DEBUG: Plano e status da empresa", { plano, status });
         if (plano === "free" && status === "expirado") {
+          functions.logger.info("DEBUG: Plano free expirado", { empresaId });
           return res.status(403).json({ error: "Assinatura gratuita expirada. Por favor, selecione um plano." });
         }
-
         let licencasNecessarias = 0;
         try {
           const profissionaisSnapshot = await empresaDocRef.collection("profissionais").get();
-          if (!profissionaisSnapshot.empty) licencasNecessarias = profissionaisSnapshot.size;
+          if (!profissionaisSnapshot.empty) {
+            licencasNecessarias = profissionaisSnapshot.size;
+          }
+          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
         } catch (profErr) {
           functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
-          licencasNecessarias = 0;
         }
-
         functions.logger.info(`Sucesso: Empresa ${empresaId} possui ${licencasNecessarias} profissionais.`);
         return res.status(200).json({ licencasNecessarias });
       } catch (error) {
@@ -96,19 +101,23 @@ exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      if (req.method === "OPTIONS") return res.status(204).send("");
-      if (req.method !== "POST") return res.status(405).json({ error: "Método não permitido." });
-
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
+      if (req.method !== "POST") {
+        return res.status(405).json({ error: "Método não permitido." });
+      }
       try {
         const client = getMercadoPagoClient();
-        if (!client) return res.status(500).json({ error: "Erro de configuração do servidor." });
-
+        if (!client) {
+          return res.status(500).json({ error: "Erro de configuração do servidor." });
+        }
         const { userId, planoEscolhido } = req.body;
-        if (!userId || !planoEscolhido) return res.status(400).json({ error: "Dados inválidos." });
-
+        if (!userId || !planoEscolhido) {
+          return res.status(400).json({ error: "Dados inválidos." });
+        }
         const userRecord = await admin.auth().getUser(userId);
         const precoFinal = calcularPreco(planoEscolhido.totalFuncionarios);
-
         const notificationUrl = `https://southamerica-east1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/receberWebhookMercadoPago`;
         const subscriptionData = {
           reason: `Assinatura Pronti - Plano ${planoEscolhido.totalFuncionarios} licenças`,
@@ -116,34 +125,24 @@ exports.createPreference = onRequest(
             frequency: 1,
             frequency_type: "months",
             transaction_amount: precoFinal,
-            currency_id: "BRL"
+            currency_id: "BRL",
           },
           back_url: "https://prontiapp.com.br/pagamento-confirmado",
           payer_email: userRecord.email,
-          notification_url: notificationUrl
+          notification_url: notificationUrl,
         };
-
         const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
-
-        await db
-          .collection("empresarios")
-          .doc(userId)
-          .collection("assinatura")
-          .doc("dados")
-          .set(
-            {
-              mercadoPagoAssinaturaId: response.id,
-              status: "pendente",
-              planoContratado: planoEscolhido.totalFuncionarios,
-              valorPago: precoFinal,
-              dataCriacao: admin.firestore.FieldValue.serverTimestamp()
-            },
-            { merge: true }
-          );
-
+        await db.collection("empresarios").doc(userId).collection("assinatura").doc("dados").set({
+          mercadoPagoAssinaturaId: response.id,
+          status: "pendente",
+          planoContratado: planoEscolhido.totalFuncionarios,
+          valorPago: precoFinal,
+          dataCriacao: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
         return res.status(200).json({ init_point: response.init_point });
       } catch (error) {
+        functions.logger.error("Erro em createPreference:", error);
         return res.status(500).json({ error: "Erro ao criar preferência de pagamento.", detalhes: error.message || error.toString() });
       }
     });
@@ -157,38 +156,38 @@ exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
   (req, res) => {
     corsHandler(req, res, async () => {
-      if (req.method === "OPTIONS") return res.status(204).send("");
-
+      if (req.method === "OPTIONS") {
+        return res.status(204).send("");
+      }
       const { id, type } = req.body;
       if (type === "preapproval") {
         try {
           const client = getMercadoPagoClient();
-          if (!client) return res.status(500).send("Erro de configuração interna.");
-
+          if (!client) {
+            return res.status(500).send("Erro de configuração interna.");
+          }
           const preapproval = new Preapproval(client);
           const subscription = await preapproval.get({ id: id });
-          const assinaturaId = subscription.id;
-          const statusMP = subscription.status;
-
-          const query = db
-            .collectionGroup("assinatura")
-            .where("mercadoPagoAssinaturaId", "==", assinaturaId);
+          const query = db.collectionGroup("assinatura").where("mercadoPagoAssinaturaId", "==", subscription.id);
           const snapshot = await query.get();
-          if (snapshot.empty) return res.status(200).send("OK");
-
-          const novoStatus =
-            statusMP === "authorized" ? "ativa" :
-            statusMP === "cancelled" ? "cancelada" :
-            statusMP === "paused" ? "pausada" : "desconhecido";
-
+          if (snapshot.empty) {
+            return res.status(200).send("OK");
+          }
+          const statusMap = {
+            authorized: "ativa",
+            cancelled: "cancelada",
+            paused: "pausada",
+          };
+          const novoStatus = statusMap[subscription.status] || "desconhecido";
           for (const doc of snapshot.docs) {
             await doc.ref.update({
               status: novoStatus,
-              ultimoStatusMP: statusMP,
-              ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp()
+              ultimoStatusMP: subscription.status,
+              ultimaAtualizacaoWebhook: admin.firestore.FieldValue.serverTimestamp(),
             });
           }
         } catch (error) {
+          functions.logger.error("Erro ao processar webhook:", error);
           return res.status(500).send("Erro interno");
         }
       }
@@ -202,7 +201,10 @@ exports.receberWebhookMercadoPago = onRequest(
 // ============================================================================
 function getMercadoPagoClient() {
   const mpToken = process.env.MERCADOPAGO_TOKEN;
-  if (!mpToken) return null;
+  if (!mpToken) {
+    functions.logger.error("FATAL: O secret MERCADOPAGO_TOKEN não está configurado ou acessível!");
+    return null;
+  }
   return new MercadoPagoConfig({ accessToken: mpToken });
 }
 
@@ -212,19 +214,20 @@ function calcularPreco(totalFuncionarios) {
     funcionariosInclusos: 2,
     faixasDePrecoExtra: [
       { de: 3, ate: 10, valor: 29.9 },
-      { de: 11, ate: 50, valor: 24.9 }
-    ]
+      { de: 11, ate: 50, valor: 24.9 },
+    ],
   };
   if (totalFuncionarios <= 0) return 0;
   if (totalFuncionarios <= configuracaoPrecos.funcionariosInclusos) return configuracaoPrecos.precoBase;
-
   let precoTotal = configuracaoPrecos.precoBase;
   const funcionariosExtras = totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
   let funcionariosJaPrecificados = 0;
-
   for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
     const funcionariosNaFaixa = faixa.ate - faixa.de + 1;
-    const extrasNestaFaixa = Math.min(funcionariosExtras - funcionariosJaPrecificados, funcionariosNaFaixa);
+    const extrasNestaFaixa = Math.min(
+      funcionariosExtras - funcionariosJaPrecificados,
+      funcionariosNaFaixa
+    );
     if (extrasNestaFaixa > 0) {
       precoTotal += extrasNestaFaixa * faixa.valor;
       funcionariosJaPrecificados += extrasNestaFaixa;
@@ -235,51 +238,84 @@ function calcularPreco(totalFuncionarios) {
 }
 
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO (Validação de status removida, banco corrigido)
+// FUNÇÃO DE NOTIFICAÇÃO (Versão Única e Corrigida)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    database: "pronti-app",
+    // ✅ CORREÇÃO DEFINITIVA: Especifica o banco de dados '(default)' para resolver o erro 404.
+    database: "(default)",
     region: "southamerica-east1",
   },
   async (event) => {
     const snap = event.data;
-    if (!snap) return null;
+    if (!snap) {
+        functions.logger.error("[FCM] Evento de criação sem dados.");
+        return null;
+    }
 
     const bilhete = snap.data();
     const bilheteId = event.params.bilheteId;
+    functions.logger.info(`[FCM] Processando bilhete: ${bilheteId}`, { bilhete });
+    
+    if (!bilhete || !bilhete.paraDonoId) {
+      functions.logger.warn(`[FCM] Bilhete inválido: ${bilheteId}`);
+      await snap.ref.update({ 
+        status: 'falha', 
+        motivo: 'paraDonoId ausente',
+        processadoEm: admin.firestore.FieldValue.serverTimestamp()
+      });
+      return null;
+    }
 
     try {
+      // Usa a variável 'db' que é consistente com o resto do seu código
       const tokenDoc = await db.collection('mensagensTokens').doc(bilhete.paraDonoId).get();
+      
       if (!tokenDoc.exists || !tokenDoc.data()?.fcmToken) {
-        await snap.ref.update({
-          status: 'falha',
+        functions.logger.warn(`[FCM] Token não encontrado: ${bilhete.paraDonoId}`);
+        await snap.ref.update({ 
+          status: 'falha', 
           motivo: 'Token FCM não encontrado',
           processadoEm: admin.firestore.FieldValue.serverTimestamp()
         });
         return null;
       }
-
+      
       const fcmToken = tokenDoc.data().fcmToken;
+
       const message = {
         token: fcmToken,
         notification: {
           title: bilhete.titulo || 'Nova Notificação',
           body: bilhete.mensagem || 'Você recebeu uma nova mensagem',
         },
-        data: { bilheteId: bilheteId, tipo: bilhete.tipo || 'geral' },
+        data: {
+          bilheteId: bilheteId,
+          tipo: bilhete.tipo || 'geral',
+        },
       };
 
       await fcm.send(message);
-      await snap.ref.update({
-        status: 'enviado',
-        enviadoEm: admin.firestore.FieldValue.serverTimestamp()
+      functions.logger.info(`[FCM] Notificação enviada: ${bilheteId}`);
+
+      await snap.ref.update({ 
+        status: 'enviado', 
+        enviadoEm: admin.firestore.FieldValue.serverTimestamp() 
       });
 
+      return null;
+
     } catch (error) {
-      await snap.ref.update({
-        status: 'erro',
+      functions.logger.error(`[FCM] Erro: ${bilheteId}`, { error: error.message });
+      
+      await snap.ref.update({ 
+        status: 'erro', 
         motivo: error.message,
         erroEm: admin.firestore.FieldValue.serverTimestamp()
-      }).catch(e =>
+      }).catch(e => functions.logger.error("[FCM] Falha ao atualizar status de erro", e));
+      
+      return null;
+    }
+  }
+);
