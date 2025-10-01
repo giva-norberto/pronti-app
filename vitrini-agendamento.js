@@ -157,7 +157,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
                 await addDoc(filaRef, {
-                    paraDonoId: agendamento.empresa.donoId,
+                    paraDonoId: agendamento.empresa.donoId, // <-- GARANTIDO: usa o padrão do Pronti (uid do dono)
                     titulo: "🎉 Novo Agendamento!",
                     mensagem: `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`,
                     criadoEm: new Date(),
