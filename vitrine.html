@@ -19,7 +19,7 @@
     <meta property="og:type" content="website">
     -->
 
-    <!-- Estilos do modal -->
+    <!-- Estilos do modal (sem alterações ) -->
     <style>
         .modal-overlay {
             display: none; /* Começa oculto */
@@ -147,6 +147,7 @@
 
 </head>
 <body>
+    <!-- Todo o conteúdo HTML do body permanece idêntico -->
     <div id="vitrine-loader">
         <p style="text-align: center; width: 100%; margin-top: 50px;">A carregar informações do negócio...</p>
     </div>
@@ -170,7 +171,7 @@
             
             <div class="header-vitrine-mobile" style="display: none;">
                 <img id="logo-publico-mobile" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">
-                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
+                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED );-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
             </div>
             
             <div id="menu-agendamento" class="menu-content ativo">
@@ -295,7 +296,7 @@
                     <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
                     <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
                     <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
-                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required>
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>
                     <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
                 </form>
                 <div style="text-align:center;margin-top:16px;">
@@ -308,13 +309,14 @@
     <script type="module" src="./vitrine.js"></script>
     <!-- Adicione aqui os outros scripts que você tem -->
 
-    <!-- ✅ SCRIPT FINAL REVISADO E COMPLETO -->
+    <!-- SCRIPT DO MODAL DE LOGIN (REVISADO) -->
     <script type="module">
-        import { auth } from './firebase-config.js';
-        // ✅ ADICIONADO: Precisamos da função que observa o status do login
+        // ✅ CORREÇÃO: Aponta para a configuração da vitrine.
+        import { auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        document.addEventListener('DOMContentLoaded', () => {
+        // A lógica interna deste script permanece idêntica.
+        document.addEventListener('DOMContentLoaded', ( ) => {
             const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
             const modalAuth = document.getElementById('modal-auth-janela');
             const btnCloseModal = document.getElementById('modal-auth-close-btn');
@@ -325,28 +327,17 @@
                     modalAuth.style.display = 'none';
                 };
 
-                // Adiciona o "porteiro" ao botão de confirmar.
                 btnConfirmarAgendamento.addEventListener('click', (event) => {
                     if (!auth.currentUser) {
                         event.preventDefault(); 
                         event.stopImmediatePropagation();
                         modalAuth.style.display = 'flex';
 
-                        // ✅ LÓGICA "SUPERVISORA" ADICIONADA AQUI
-                        // Esta função fica "escutando" por uma mudança no login
                         const unsubscribe = onAuthStateChanged(auth, (user) => {
                             if (user) {
-                                // O usuário acabou de fazer login com sucesso!
                                 console.log('Login detectado! Fechando modal e continuando agendamento.');
-                                
-                                // 1. Para de escutar para não ser chamada de novo
                                 unsubscribe();
-                                
-                                // 2. Fecha o modal de login
                                 fecharModal();
-                                
-                                // 3. Clica novamente no botão de confirmar para o usuário
-                                //    Damos um pequeno tempo para a UI se atualizar
                                 setTimeout(() => {
                                     btnConfirmarAgendamento.click();
                                 }, 150);
@@ -355,7 +346,6 @@
                     }
                 }, true);
 
-                // Lógica para fechar o modal (sem alterações)
                 btnCloseModal.addEventListener('click', fecharModal);
                 modalAuth.addEventListener('click', (event) => {
                     if (event.target === modalAuth) {
@@ -366,17 +356,17 @@
         });
     </script>
 
-    <!-- SCRIPT PARA DESCONTO NA VITRINE -->
+    <!-- SCRIPT PARA DESCONTO NA VITRINE (REVISADO) -->
     <script type="module">
-        import { db } from './firebase-config.js';
+        // ✅ CORREÇÃO: Aponta para a configuração da vitrine.
+        import { db } from './vitrini-firebase.js';
         import { collection, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // Função utilitária para descobrir dia da semana (0=Dom, 1=Seg, ...)
-        function getHojeDiaSemana() {
+        // A lógica interna deste script permanece idêntica.
+        function getHojeDiaSemana( ) {
             return new Date().getDay();
         }
 
-        // Busca e aplica promoções nos serviços exibidos na vitrine
         async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
             if (!empresaId) return;
 
@@ -388,24 +378,20 @@
 
             snapshot.forEach(doc => {
                 const promo = doc.data();
-                // Só promoções ativas E para o dia de hoje
                 if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) {
                     promocoesAtivas.push({ id: doc.id, ...promo });
                 }
             });
 
-            // Para cada serviço, tente aplicar a promoção mais relevante
             listaServicos.forEach(servico => {
                 let melhorPromocao = null;
 
-                // 1. Promo específica para o serviço
                 for (let promo of promocoesAtivas) {
                     if (promo.servicoIds && promo.servicoIds.includes(servico.id)) {
                         melhorPromocao = promo;
                         break;
                     }
                 }
-                // 2. Promoção para todos os serviços (corrigido!)
                 if (!melhorPromocao) {
                     melhorPromocao = promocoesAtivas.find(
                         promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
@@ -420,7 +406,6 @@
                     } else if (melhorPromocao.tipoDesconto === "valorFixo") {
                         precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
                     }
-                    // Adiciona info no objeto do serviço (para quem exibe saber)
                     servico.promocao = {
                         nome: melhorPromocao.nome,
                         precoOriginal: precoAntigo,
@@ -432,10 +417,7 @@
             });
         }
 
-        // Função para renderizar a lista de serviços na vitrine
-        // Você pode já ter sua função própria; adapte o uso desta lógica
         async function renderizarServicosVitrine(empresaId) {
-            // Exemplo: buscar serviços cadastrados no Firestore
             const servicosRef = collection(db, "empresarios", empresaId, "servicos");
             const snapshot = await getDocs(servicosRef);
             const listaServicos = [];
@@ -443,10 +425,8 @@
                 listaServicos.push({ id: doc.id, ...doc.data() });
             });
 
-            // Busca e aplica promoções
             await aplicarPromocoesNaVitrine(listaServicos, empresaId);
 
-            // Renderiza os serviços já com promoções aplicadas
             const listaServicosDiv = document.getElementById("lista-servicos");
             if (!listaServicosDiv) return;
             listaServicosDiv.innerHTML = "";
@@ -475,11 +455,8 @@
             });
         }
 
-        // Descobre empresaId da mesma forma que as outras telas
         let empresaId = localStorage.getItem("empresaAtivaId") || null;
         if (empresaId) {
-            // Chame a função de renderização quando apropriado na sua lógica
-            // Exemplo: após carregar profissionais, agendamento, etc.
             renderizarServicosVitrine(empresaId);
         }
     </script>
