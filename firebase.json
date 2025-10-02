@@ -1,12 +1,20 @@
 {
   "hosting": {
-    "public": "public", // ✅ CORREÇÃO: Aponta para a pasta correta.
+    "public": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [] // Garanta que os rewrites estão vazios.
+    "rewrites": [
+      {
+        "source": "/:slug",
+        "destination": "/vitrine.html"
+      }
+    ]
   },
-  // ...
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  }
 }
