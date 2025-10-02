@@ -1,9 +1,9 @@
 // ======================================================================
-// vitrini-agendamento.js (VERSÃO ORIGINAL)
-// ✅ ADICIONADA A CRIAÇÃO DO "BILHETE" DE NOTIFICAÇÃO DENTRO DE salvarAgendamento
+// vitrini-agendamento.js (REVISADO PARA ISOLAMENTO)
 // ======================================================================
 
-import { db } from './firebase-config.js';
+// ✅ CORREÇÃO: Aponta para a conexão de DB correta da vitrine.
+import { db } from './vitrini-firebase.js';
 import {
     collection,
     query,
@@ -16,8 +16,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { limparUIAgendamento } from './vitrini-ui.js';
 
-// --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr  ) {
+// --- Funções Auxiliares de Tempo (LÓGICA 100% PRESERVADA ) ---
+function timeStringToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 }
@@ -28,14 +28,8 @@ function minutesToTimeString(totalMinutes) {
     return `${hours}:${minutes}`;
 }
 
-// --- Funções Principais de Agendamento ---
+// --- Funções Principais de Agendamento (LÓGICA 100% PRESERVADA) ---
 
-/**
- * Busca todos os agendamentos de uma empresa em uma data específica.
- * @param {string} empresaId - O ID da empresa.
- * @param {string} data - A data no formato "AAAA-MM-DD".
- * @returns {Promise<Array>} Lista de agendamentos do dia.
- */
 export async function buscarAgendamentosDoDia(empresaId, data) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
@@ -48,18 +42,13 @@ export async function buscarAgendamentosDoDia(empresaId, data) {
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         console.error("Erro ao buscar agendamentos do dia:", error);
-        // Lança o erro para que a função que chamou possa tratá-lo
         throw new Error("Não foi possível buscar os agendamentos do dia.");
     }
 }
 
-/**
- * Calcula os horários (slots) disponíveis para um agendamento.
- * REFINADO: Não mostra horários passados se a data for hoje.
- */
 export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
     const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    const dataObj = new Date(`${data}T12:00:00Z`); // Usar Z para tratar como UTC
+    const dataObj = new Date(`${data}T12:00:00Z`);
     const nomeDia = diaDaSemana[dataObj.getUTCDay()];
 
     const diaDeTrabalho = horariosTrabalho?.[nomeDia];
@@ -98,19 +87,15 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
             ) {
                 slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
             }
-            // Garante que o loop avance mesmo sem intervalo
             slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico;
         }
     }
     return slotsDisponiveis;
 }
 
-/**
- * Tenta encontrar a próxima data com horários disponíveis, a partir de hoje.
- */
 export async function encontrarPrimeiraDataComSlots(empresaId, profissional, duracaoServico) {
     const hoje = new Date();
-    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
+    for (let i = 0; i < 90; i++) {
         const dataAtual = new Date(hoje);
         dataAtual.setDate(hoje.getDate() + i);
         const dataString = dataAtual.toISOString().split('T')[0];
@@ -121,18 +106,14 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
         const slots = calcularSlotsDisponiveis(dataString, agendamentosProfissional, profissional.horarios, duracaoServico);
 
         if (slots.length > 0) {
-            return dataString; // Encontrou! Retorna a data.
+            return dataString;
         }
     }
-    return null; // Não encontrou nenhuma data nos próximos 90 dias
+    return null;
 }
 
-/**
- * Salva um novo agendamento e cria o "bilhete" de notificação na fila.
- */
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
-        // --- PASSO 1: Salva o agendamento principal (lógica original intacta) ---
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
         await addDoc(agendamentosRef, {
             empresaId: empresaId,
@@ -151,7 +132,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        // ✅ --- PASSO 2: Cria o "bilhete" na fila de notificações (usando donoId) ---
         if (agendamento.empresa && agendamento.empresa.donoId) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
@@ -164,15 +144,12 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                 });
                 console.log("✅ Bilhete de notificação adicionado à fila.");
             } catch (error) {
-                // O erro de permissão acontecerá aqui. Vamos resolvê-lo com as Regras do Firestore.
                 console.error("❌ Erro ao adicionar notificação à fila:", error);
             }
         } else {
-            // Este aviso ajuda a depurar se o 'donoId' não for passado para salvarAgendamento. O bilhete de notificação não foi criado.
             console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação não foi criado.");
         }
 
-        // --- PASSO 3: Limpa a UI (lógica original intacta) ---
         if (typeof limparUIAgendamento === "function") {
             limparUIAgendamento();
         }
@@ -183,9 +160,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     }
 }
 
-/**
- * Busca os agendamentos de um cliente específico.
- */
 export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) {
     if (!currentUser) return [];
     try {
@@ -200,7 +174,7 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
                 where("status", "==", "ativo"),
                 where("data", ">=", hoje)
             );
-        } else { // historico
+        } else {
             q = query(
                 agendamentosRef,
                 where("clienteId", "==", currentUser.uid),
@@ -219,9 +193,6 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
     }
 }
 
-/**
- * Cancela um agendamento (muda o status para 'cancelado'). (REVISADO: SILENCIOSO)
- */
 export async function cancelarAgendamento(empresaId, agendamentoId) {
     try {
         const agendamentoRef = doc(db, 'empresarios', empresaId, 'agendamentos', agendamentoId);
@@ -229,7 +200,6 @@ export async function cancelarAgendamento(empresaId, agendamentoId) {
             status: 'cancelado_pelo_cliente',
             canceladoEm: serverTimestamp()
         });
-        // Mensagem removida para ser controlada pelo vitrine.js
     } catch (error) {
         console.error("Erro ao cancelar agendamento:", error);
         throw new Error("Ocorreu um erro ao cancelar o agendamento.");
