@@ -831,19 +831,65 @@ input[type="date"]:focus {
     justify-content: center;
 }
 
+/* =================================================================== */
+/*  ✅ AJUSTES FINAIS PARA O LAYOUT DE CARDS (VERSÃO CORRIGIDA)         */
+/* =================================================================== */
+
 /* 
-   Ajusta o tamanho do ícone DENTRO dos cards do menu principal.
+   Define o layout base do conteúdo da vitrine como grid.
+   Isso substitui o estilo inline que estava no vitrini-ui.js.
 */
-#vitrine-cards-grid .menu-card i {
-    font-size: 2rem; /* Diminui o tamanho do ícone */
+#vitrine-content {
+    display: grid;
+    place-items: center; /* Centraliza o conteúdo (vertical e horizontal) */
+    padding: 20px;
 }
 
 /* 
-   Garante que o cabeçalho mobile (logo e nome) fique bem alinhado
-   com o novo layout de cards.
+   Regras para o grid de cards do menu principal.
 */
-.header-vitrine-mobile {
-    text-align: center;
+#vitrine-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Sempre 2 colunas */
+    gap: 20px;
     width: 100%;
-    margin-bottom: 30px; /* Aumenta o espaço entre o cabeçalho e os cards */
+    max-width: 450px;
+    margin: 20px auto 0 auto;
+}
+
+/* Ajusta o tamanho dos cards e do conteúdo interno */
+#vitrine-cards-grid .menu-card {
+    padding: 20px 10px;
+    font-size: 0.9rem;
+    gap: 12px;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#vitrine-cards-grid .menu-card i {
+    font-size: 2rem;
+}
+
+/* 
+   CORREÇÃO DO CONFLITO RESPONSIVO:
+   Sobrescreve a regra que estava quebrando o layout em telas menores.
+*/
+@media (max-width: 900px) {
+    /* 
+       Garante que o container principal NÃO use 'display: block',
+       permitindo que o nosso grid de cards funcione.
+    */
+    .vitrine-container {
+        display: block; /* Mantém o comportamento original para o container geral */
+    }
+
+    /* Garante que o conteúdo principal ocupe o espaço e centralize os itens */
+    .main-content-vitrine {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 }
