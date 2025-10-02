@@ -1,7 +1,7 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
 // ✅ REVISADO E CONFIRMADO: USA A CONFIGURAÇÃO DO PAINEL ('firebase-config.js')
-// ======================================================================
+// =====================================================================
 
 // --- PASSO 1: Importar instâncias centrais do PAINEL ---
 // Esta linha está CORRETA. Este script pertence ao painel e deve usar a configuração principal.
