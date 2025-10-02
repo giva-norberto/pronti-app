@@ -9,7 +9,8 @@
     "rewrites": [
       {
         "source": "/:slug",
-        "destination": "/vitrine.html"
+        // ✅ CORREÇÃO: O destino agora é o seu redirecionador inteligente.
+        "destination": "/r.html" 
       }
     ]
   },
