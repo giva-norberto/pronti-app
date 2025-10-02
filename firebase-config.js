@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: firebase-config.js (VERSÃO ORIGINAL RESTAURADA)
+// ARQUIVO: firebase-config.js (PAINEL - VERSÃO COM A CHAVE CORRETA)
 // =====================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -7,22 +7,22 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebas
 import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-// Configuração do seu projeto Firebase.
+// ✅ SUA CONFIGURAÇÃO FINAL E CORRETA
 const firebaseConfig = {
-  apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // A CHAVE QUE VOCÊ FORNECEU
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // Usando o padrão que funciona
+  storageBucket: "pronti-app-37c6e.appspot.com",
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Sua função Singleton original. Garante que o app seja inicializado apenas uma vez.
+// Sua função Singleton original, que sabemos que funciona para o painel.
 const getFirebaseApp = ( ) => {
   return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 };
 
-// Inicializa e exporta tudo a partir da instância única
+// O resto do seu código original, 100% preservado.
 const app = getFirebaseApp();
 const auth = getAuth(app);
 const storage = getStorage(app);
@@ -32,12 +32,8 @@ provider.setCustomParameters({
   prompt: 'select_account'
 });
 
-// Conecta ao banco de dados
 const db = getFirestore(app);
 
-// Define a persistência do login
 setPersistence(auth, browserLocalPersistence);
 
-// Exporta as instâncias para serem usadas em outros arquivos
 export { app, db, auth, storage, provider };
-
