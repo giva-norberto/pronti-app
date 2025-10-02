@@ -151,12 +151,12 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        // ✅ --- PASSO 2: Cria o "bilhete" na fila de notificações (ajustado para donoId) ---
+        // ✅ --- PASSO 2: Cria o "bilhete" na fila de notificações (usando donoId) ---
         if (agendamento.empresa && agendamento.empresa.donoId) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
                 await addDoc(filaRef, {
-                    donoId: agendamento.empresa.donoId, // <-- agora utiliza o padrão correto do Pronti!
+                    donoId: agendamento.empresa.donoId,
                     titulo: "🎉 Novo Agendamento!",
                     mensagem: `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`,
                     criadoEm: new Date(),
