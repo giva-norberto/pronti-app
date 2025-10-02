@@ -1,5 +1,5 @@
 // ======================================================================
-//          VITRINI-UI.JS - UI da Vitrine com suporte Multiempresa
+//          VITRINI-UI.JS - UI da Vitrine com suporte Multiempresa (REVISADO E COMPLETO)
 // ======================================================================
 
 /**
@@ -18,30 +18,31 @@ export function toggleLoader(mostrar, mensagem = 'A carregar informações do ne
  * ALTERAÇÃO: Serviços agrupados por categoria, visual centralizado, sem botões.
  */
 export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
-    document.getElementById('logo-publico').src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
-    document.getElementById('nome-negocio-publico').textContent = dadosEmpresa.nomeFantasia || "Nome do Negócio";
-    // Preenche nome/logo do mobile também, se existir
-    if (document.getElementById('logo-publico-mobile')) {
-        document.getElementById('logo-publico-mobile').src = document.getElementById('logo-publico').src;
+    // ✅ CORREÇÃO: Preenche diretamente os elementos do cabeçalho mobile, que sabemos que existem.
+    // As referências aos IDs 'logo-publico' e 'nome-negocio-publico' foram removidas para evitar o erro.
+    const logoMobile = document.getElementById('logo-publico-mobile');
+    if (logoMobile) {
+        logoMobile.src = dadosEmpresa.logoUrl || "https://placehold.co/100x100/e0e7ff/6366f1?text=Logo";
     }
-    if (document.getElementById('nome-negocio-publico-mobile')) {
-        document.getElementById('nome-negocio-publico-mobile').textContent = document.getElementById('nome-negocio-publico').textContent;
+
+    const nomeMobile = document.getElementById('nome-negocio-publico-mobile' );
+    if (nomeMobile) {
+        nomeMobile.textContent = dadosEmpresa.nomeFantasia || "Nome do Negócio";
     }
+    
+    // A lógica para preencher a descrição e o resto da função permanece 100% idêntica.
     document.getElementById('info-negocio').innerHTML = `<p>${dadosEmpresa.descricao || "Descrição não informada."}</p>`;
 
-    // ----------- SERVIÇOS AGRUPADOS POR CATEGORIA (ALTERAÇÃO AQUI) -----------
+    // ----------- SERVIÇOS AGRUPADOS POR CATEGORIA (LÓGICA 100% PRESERVADA) -----------
     const servicosContainer = document.getElementById('info-servicos');
     if (todosOsServicos && todosOsServicos.length > 0) {
-        // Agrupa por categoria
         const agrupados = {};
         todosOsServicos.forEach(s => {
             const cat = (s.categoria && s.categoria.trim()) ? s.categoria.trim() : "Sem Categoria";
             if (!agrupados[cat]) agrupados[cat] = [];
             agrupados[cat].push(s);
         });
-        // Ordena categorias
         const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-        // Monta HTML agrupado, centralizado, sem botões
         servicosContainer.innerHTML = categoriasOrdenadas.map(cat =>
             `<div class="info-categoria-bloco">
                 <div class="info-categoria-titulo">${cat}</div>
@@ -75,7 +76,7 @@ export function renderizarDadosIniciaisEmpresa(dadosEmpresa, todosOsServicos) {
     const contatoContainer = document.getElementById('info-contato');
     let htmlContato = '';
     if (dadosEmpresa.localizacao) {
-        htmlContato += `<div class="info-item"><strong>Endereço:</strong><p>${dadosEmpresa.localizacao}</p></div><div class="info-item"><strong>Localização:</strong><div id="map-container" style="width: 100%; height: 250px; border-radius: 12px; background-color: #eef2ff; margin-top: 10px; overflow: hidden; border: 1px solid #e0e7ff;"><iframe src="https://maps.google.com/maps?q=${encodeURIComponent(dadosEmpresa.localizacao)}&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div></div>`;
+        htmlContato += `<div class="info-item"><strong>Endereço:</strong><p>${dadosEmpresa.localizacao}</p></div><div class="info-item"><strong>Localização:</strong><div id="map-container" style="width: 100%; height: 250px; border-radius: 12px; background-color: #eef2ff; margin-top: 10px; overflow: hidden; border: 1px solid #e0e7ff;"><iframe src="https://maps.google.com/maps?q=${encodeURIComponent(dadosEmpresa.localizacao )}&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div></div>`;
     }
     if (dadosEmpresa.horarioFuncionamento) {
         htmlContato += `<div class="info-item"><strong>Horário de Atendimento:</strong><p style="white-space: pre-wrap;">${dadosEmpresa.horarioFuncionamento}</p></div>`;
@@ -101,7 +102,7 @@ export function renderizarProfissionais(profissionais) {
     }
     profissionais.forEach(p => {
         container.innerHTML += `<div class="card-profissional" data-id="${p.id}"><img src="${p.fotoUrl || 'https://placehold.co/80x80/eef2ff/4f46e5?text=P'}" alt="${p.nome}"><span>${p.nome}</span></div>`;
-    });
+    } );
 }
 
 /**
@@ -118,7 +119,6 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
     }
 
     // ---- AGRUPAMENTO POR CATEGORIA ----
-    // Agrupa por categoria
     const agrupados = {};
     servicos.forEach(s => {
         const cat = (s.categoria && s.categoria.trim()) ? s.categoria.trim() : "Sem Categoria";
@@ -126,10 +126,8 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
         agrupados[cat].push(s);
     });
 
-    // Ordena categorias
     const categoriasOrdenadas = Object.keys(agrupados).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-    // Renderiza categorias como botões/lista
     let htmlCategorias = `<div class="categorias-lista" style="margin-bottom:22px; display:flex; gap:8px; flex-wrap:wrap;">`;
     categoriasOrdenadas.forEach((cat, idx) => {
         htmlCategorias += `
@@ -140,7 +138,6 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
 
     container.innerHTML = htmlCategorias;
 
-    // Função para renderizar serviços de uma categoria
     function renderizarServicosDaCategoria(catAtual) {
         const servicosCat = agrupados[catAtual];
         document.getElementById('servicos-por-categoria').innerHTML = servicosCat.map(s => {
@@ -176,7 +173,6 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
         }).join('');
     }
 
-    // Eventos nos botões de categoria
     container.querySelectorAll('.categoria-btn').forEach((btn, idx) => {
         btn.onclick = () => {
             container.querySelectorAll('.categoria-btn').forEach((b, i) => {
@@ -189,7 +185,6 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
         };
     });
 
-    // Inicializa mostrando a primeira categoria
     if (categoriasOrdenadas.length > 0) {
         renderizarServicosDaCategoria(categoriasOrdenadas[0]);
     }
@@ -227,7 +222,7 @@ export function atualizarUIdeAuth(user) {
         if(userInfo) userInfo.style.display = 'block';
         if(loginContainer) loginContainer.style.display = 'none';
         document.getElementById('user-photo').src = user.photoURL || 'https://placehold.co/80x80/eef2ff/4f46e5?text=User';
-        document.getElementById('user-name').textContent = user.displayName || 'Usuário';
+        document.getElementById('user-name' ).textContent = user.displayName || 'Usuário';
     } else {
         if(agendamentosContainer) agendamentosContainer.style.display = 'none';
         if(userInfo) userInfo.style.display = 'none';
@@ -480,9 +475,12 @@ export function atualizarResumoAgendamentoFinal() {
     const duracao = servicos.reduce((soma, s) => soma + (s.duracao || 0), 0);
     el.innerHTML = `
         <div class="resumo-agendamento">
-            <strong>Serviços:</strong> ${servicos.map(s => s.nome).join(" + ")}<br>
-            <strong>Duração:</strong> ${duracao} min<br>
-            <strong>Total:</strong> R$ ${total.toFixed(2)}<br>
+            <strong>Serviços:</strong> ${servicos.map(s => s.nome).join(" + ")}  
+
+            <strong>Duração:</strong> ${duracao} min  
+
+            <strong>Total:</strong> R$ ${total.toFixed(2)}  
+
             <strong>Data:</strong> ${data} <strong>Horário:</strong> ${horario}
         </div>
         <hr>
