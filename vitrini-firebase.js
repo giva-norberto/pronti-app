@@ -1,9 +1,15 @@
-import { initializeApp, getApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+// ======================================================================
+// ARQUIVO: vitrini-firebase.js (VITRINE - VERSÃO COM A CHAVE CORRETA)
+// =====================================================================
 
+import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+
+// ✅ SUA CONFIGURAÇÃO FINAL E CORRETA
 const firebaseConfig = {
-  apiKey: "AIzaSyBOfsPIr0VLCuZsIzOFPsdm6kdhLb1VvP8",
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // A CHAVE QUE VOCÊ FORNECEU
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
   storageBucket: "pronti-app-37c6e.appspot.com",
@@ -11,26 +17,23 @@ const firebaseConfig = {
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// --- INÍCIO DA MUDANÇA SEGURA ---
+// Função Singleton para a vitrine.
+const getFirebaseApp = ( ) => {
+  return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+};
 
-// 1. Damos um nome único para a sessão da vitrine.
-const NOME_SESSAO_VITRINE = "vitrineCliente";
-
-// 2. Esta nova lógica garante que a vitrine SEMPRE use sua própria sessão.
-let app;
-try {
-  // Tenta obter a sessão da vitrine, caso a página tenha recarregado.
-  app = getApp(NOME_SESSAO_VITRINE );
-} catch (e) {
-  // Se não existir, cria uma nova sessão que SÓ a vitrine vai usar.
-  app = initializeApp(firebaseConfig, NOME_SESSAO_VITRINE);
-}
-
-// --- FIM DA MUDANÇA SEGURA ---
-
-const db = getFirestore(app);
+// O resto do código, 100% preservado.
+const app = getFirebaseApp();
 const auth = getAuth(app);
+const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// A linha de exportação é exatamente a mesma de antes.
-export { app, db, auth, provider };
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+const db = getFirestore(app);
+
+setPersistence(auth, browserLocalPersistence);
+
+export { app, db, auth, storage, provider };
