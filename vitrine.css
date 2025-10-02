@@ -889,10 +889,10 @@ input[type="date"]:focus {
     margin: 20px auto 0 auto;
 }
 
-/* 
-   ✅ CORREÇÃO PRINCIPAL: Usa a classe correta '.data-menu-card'
-   para estilizar os cards e garante que fiquem responsivos.
-*/
+/* =================================================================== */
+/*  LAYOUT FINAL E FUNCIONAL PARA CARDS DO MENU DA VITRINE            */
+/* =================================================================== */
+
 #vitrine-cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -900,30 +900,26 @@ input[type="date"]:focus {
     width: 100%;
     max-width: 900px;
     margin: 20px auto 0 auto;
+    place-items: center; /* centraliza o conteúdo dentro do grid */
 }
 
 #vitrine-cards-grid .data-menu-card {
-    padding: 20px 10px;
-    font-size: 0.9rem;
-    gap: 12px;
-
-    /* Responsivo e centralizado */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-
-    /* Aparência */
+    padding: 20px 10px;
+    gap: 12px;
+    aspect-ratio: 1 / 1; /* mantém o card quadrado */
     color: #fff;
-    border-radius: 16px;
     font-weight: 600;
+    border-radius: 16px;
     text-decoration: none;
     box-shadow: 0 6px 15px rgba(0,0,0,0.1);
     transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
 }
 
-/* Efeito hover moderno */
 #vitrine-cards-grid .data-menu-card:hover {
     transform: translateY(-5px) scale(1.03);
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
@@ -931,7 +927,6 @@ input[type="date"]:focus {
     cursor: pointer;
 }
 
-/* Ajusta o ícone dentro do card correto */
 #vitrine-cards-grid .data-menu-card i {
     font-size: 2rem;
 }
