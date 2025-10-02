@@ -1,5 +1,5 @@
 // ======================================================================
-//          VITRINE.JS - O Maestro da Aplicação (REVISADO FINAL)
+//          VITRINE.JS - O Maestro da Aplicação (REVISADO E CORRIGIDO)
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -10,8 +10,9 @@ import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES ---
-import { db } from './vitrini-firebase.js'; // Assumindo que o caminho já está correto
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+// ✅ 1. CORREÇÃO: Caminho da importação ajustado para remover a barra dupla.
+import { db } from './vitrini-firebase.js'; 
+import { collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO (LÓGICA 100% PRESERVADA ) ---
 function parseDataISO(dateStr) {
@@ -26,20 +27,52 @@ function parseDataISO(dateStr) {
     return new Date(dateStr);
 }
 
-// --- INICIALIZAÇÃO DA PÁGINA (LÓGICA 100% PRESERVADA) ---
+// --- INICIALIZAÇÃO DA PÁGINA ---
+// ✅ 2. CORREÇÃO: Lógica de inicialização tornada "inteligente" para lidar com URLs bonitas.
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
-        const empresaId = getEmpresaIdFromURL();
-        if (!empresaId) throw new Error("ID da Empresa não encontrado na URL.");
 
+        const params = new URLSearchParams(window.location.search);
+        let empresaId = params.get('empresa');
+        
+        // Pega o caminho da URL (ex: "/givas-salao-2") e remove a primeira barra.
+        const slug = window.location.pathname.substring(1);
+
+        // Se não veio um ID de empresa, mas veio um slug no caminho...
+        // A verificação `slug !== 'vitrine.html'` previne que ele tente buscar quando a URL é a do arquivo direto.
+        if (!empresaId && slug && slug !== 'vitrine.html' && slug !== 'index.html' && !slug.startsWith('r.html')) {
+            console.log(`[Vitrine] ID não encontrado. Buscando empresa pelo slug: ${slug}`);
+            
+            // Busca no Firestore pelo slug
+            const q = query(collection(db, "empresarios"), where("slug", "==", slug), limit(1));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                empresaId = snapshot.docs[0].id;
+                console.log(`[Vitrine] Empresa encontrada pelo slug. ID: ${empresaId}`);
+            }
+        }
+
+        // Se, depois de tudo, ainda não temos um ID, então é um erro.
+        if (!empresaId) {
+            // A função getEmpresaIdFromURL() ainda é útil como uma última tentativa.
+            empresaId = getEmpresaIdFromURL(); 
+            if (!empresaId) {
+                throw new Error("ID da Empresa não pôde ser determinado a partir da URL.");
+            }
+        }
+
+        // --- A PARTIR DAQUI, O CÓDIGO É O MESMO DE ANTES ---
         const [dados, profissionais, todosServicos] = await Promise.all([
             getDadosEmpresa(empresaId),
             getProfissionaisDaEmpresa(empresaId),
             getTodosServicosDaEmpresa(empresaId)
         ]);
 
-        if (!dados) throw new Error("Empresa não encontrada.");
+        if (!dados) {
+            throw new Error("Empresa não encontrada.");
+        }
 
         setEmpresa(empresaId, dados);
         setProfissionais(profissionais);
@@ -60,8 +93,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+
 // --- O RESTANTE DO CÓDIGO PERMANECE COM A LÓGICA 100% IDÊNTICA ---
-// A única outra mudança é na função 'handleConfirmarAgendamento' mais abaixo.
 
 async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null, forceNoPromo = false) {
     if (!empresaId) return;
@@ -119,7 +152,6 @@ function configurarEventosGerais() {
             element.addEventListener(event, handler);
         }
     };
-    // A função handleMenuClick ainda é necessária para os cliques REAIS do usuário nos menus
     addSafeListener('.sidebar-menu', 'click', handleMenuClick, true);
     addSafeListener('.bottom-nav-vitrine', 'click', handleMenuClick, true);
     addSafeListener('lista-profissionais', 'click', handleProfissionalClick);
@@ -336,9 +368,8 @@ async function handleConfirmarAgendamento() {
         await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
         resetarAgendamento();
 
-        // ✅ CORREÇÃO: Chamamos diretamente as funções que fazem o trabalho, em vez de simular um clique.
-        UI.trocarAba('menu-visualizacao'); // 1. Troca para a aba de visualização.
-        handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') }); // 2. Busca e exibe os agendamentos ativos.
+        UI.trocarAba('menu-visualizacao');
+        handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
 
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
@@ -385,4 +416,3 @@ async function handleCancelarClick(e) {
         }
     }
 }
-
