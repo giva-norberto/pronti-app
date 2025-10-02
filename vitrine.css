@@ -874,44 +874,42 @@ input[type="date"]:focus {
 }
 
 /* =================================================================== */
-/*  ✅ AJUSTES FORÇA BRUTA PARA O LAYOUT DE CARDS DA VITRINE           */
+/*  ✅ CORREÇÃO FINAL E DEFINITIVA PARA O LAYOUT DE CARDS DA VITRINE   */
 /* =================================================================== */
 
 /* 
-   Força o container principal a se comportar como um grid,
-   ignorando qualquer outra regra que o force a ser 'block'.
-*/
-#vitrine-content {
-    display: grid !important;
-    place-items: center !important;
-    padding: 20px !important;
-}
-
-/* 
-   Força o grid de cards a ter 2 colunas.
-   O !important garante que esta regra vença qualquer outra.
+   Aplica o grid de 2 colunas ao container.
 */
 #vitrine-cards-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important; 
-    gap: 20px !important;
-    width: 100% !important;
-    max-width: 450px !important;
-    margin: 20px auto 0 auto !important;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 20px;
+    width: 100%;
+    max-width: 450px;
+    margin: 20px auto 0 auto;
 }
 
 /* 
-   Regras para os cards internos. Geralmente não precisam de !important,
-   mas vamos manter a consistência.
+   ✅ CORREÇÃO PRINCIPAL: Usa a classe correta '.data-menu-card'
+   para estilizar os cards.
 */
-#vitrine-cards-grid .menu-card {
+#vitrine-cards-grid .data-menu-card {
     padding: 20px 10px !important;
     font-size: 0.9rem !important;
     gap: 12px !important;
     aspect-ratio: 1 / 1 !important;
+    
+    /* Adiciona estas propriedades para garantir o alinhamento do conteúdo interno */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
 }
 
-#vitrine-cards-grid .menu-card i {
+/* 
+   Ajusta o ícone dentro do card correto.
+*/
+#vitrine-cards-grid .data-menu-card i {
     font-size: 2rem !important;
 }
-
