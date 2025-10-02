@@ -12,7 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // Padrão que funciona
+  storageBucket: "pronti-app-37c6e.appspot.com", // Usando o padrão que funciona
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
@@ -40,4 +40,4 @@ setPersistence(auth, browserLocalPersistence);
 
 // Exporta as instâncias para serem usadas em outros arquivos
 export { app, db, auth, storage, provider };
-;
+
