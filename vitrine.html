@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
+    <!-- Metatags OG (Preservadas ) -->
     <!-- 
     <meta property="og:title" content="Perfil de Negócio no Pronti App">
     <meta property="og:description" content="Clique para ver os serviços e fazer seu agendamento.">
@@ -19,132 +20,39 @@
     <meta property="og:type" content="website">
     -->
 
-    <!-- Estilos do modal -->
+    <!-- Estilos (Preservados e com Adições) -->
     <style>
-        .modal-overlay {
-            display: none; /* Começa oculto */
-            position: fixed;
-            z-index: 9999;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(4px);
-            align-items: center;
-            justify-content: center;
-            animation: modalFadeIn 0.3s ease-out;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .modal-auth-container {
-            background: white;
-            padding: 2rem 1.5rem;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            position: relative; /* Para o botão de fechar */
-        }
-        #modal-auth-close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #f1f5f9;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            color: #64748b;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        #modal-auth-close-btn:hover {
-            background: #e2e8f0;
-            transform: rotate(90deg);
-        }
-        .modal-auth-step h2 {
-            font-size: 1.5rem;
-            color: #1e293b;
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: 24px;
-        }
-        .modal-auth-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 1px solid #d1d5db;
-        }
-        #modal-auth-btn-google {
-            background-color: #ffffff;
-            color: #374151;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        #modal-auth-btn-google:hover {
-             background-color: #f9fafb;
-             border-color: #adb5bd;
-        }
-        .modal-auth-btn-submit {
-             background-color: #4f46e5;
-             color: white;
-             border: none;
-        }
-        .modal-auth-btn-submit:hover {
-            opacity: 0.9;
-        }
-        .modal-auth-step input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 1rem;
-            margin-bottom: 10px;
-        }
-        .modal-auth-step a {
-            color: #4f46e5;
-            text-decoration: none;
-            font-weight: 600;
-        }
-         .modal-auth-step a:hover {
-            text-decoration: underline;
-        }
-        /* Desconto na vitrine */
-        .preco-original {
-            text-decoration: line-through;
-            color: #888;
-            margin-right: 6px;
-            font-size: 1em;
-        }
-        .preco-promocional {
-            color: #10b981;
-            font-weight: 700;
-            font-size: 1.18em;
-        }
-        .badge-promocao {
-            background: #facc15;
-            color: #b45309;
-            border-radius: 4px;
-            font-size: 0.85em;
-            font-weight: 700;
-            padding: 2px 7px;
-            margin-left: 8px;
-        }
-    </style>
+        /* Estilos do Modal (100% Preservados) */
+        .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; animation: modalFadeIn 0.3s ease-out; }
+        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-auth-container { background: white; padding: 2rem 1.5rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; }
+        #modal-auth-close-btn { position: absolute; top: 10px; right: 10px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+        #modal-auth-close-btn:hover { background: #e2e8f0; transform: rotate(90deg); }
+        .modal-auth-step h2 { font-size: 1.5rem; color: #1e293b; text-align: center; margin-top: 0; margin-bottom: 24px; }
+        .modal-auth-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; border: 1px solid #d1d5db; }
+        #modal-auth-btn-google { background-color: #ffffff; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        #modal-auth-btn-google:hover { background-color: #f9fafb; border-color: #adb5bd; }
+        .modal-auth-btn-submit { background-color: #4f46e5; color: white; border: none; }
+        .modal-auth-btn-submit:hover { opacity: 0.9; }
+        .modal-auth-step input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 1rem; margin-bottom: 10px; }
+        .modal-auth-step a { color: #4f46e5; text-decoration: none; font-weight: 600; }
+        .modal-auth-step a:hover { text-decoration: underline; }
+        
+        /* Estilos de Desconto (100% Preservados) */
+        .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
+        .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
+        .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
 
+        /* ✅ NOVO: Estilos dos Cards (copiados do seu painel) */
+        .dashboard-welcome-center { text-align: left; margin-bottom: 30px; width: 100%; color: #374151; }
+        .dashboard-welcome-center h1 { font-size: clamp(1.8rem, 5vw, 2.2rem); color: #1f2937; margin: 0 0 5px 0; }
+        .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.1rem); font-weight: 400; color: #4b5563; margin: 0; }
+        .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
+        .menu-card { color: #fff; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; font-weight: 600; font-size: 0.9rem; text-decoration: none; box-shadow: 0 6px 15px rgba(0,0,0,0.1); transition: transform 0.25s, box-shadow 0.25s, filter 0.25s; border: none; aspect-ratio: 1 / 1; }
+        .menu-card:hover { transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2); filter: brightness(1.1); cursor: pointer; }
+        .menu-card i { font-size: 2rem; }
+        .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
+    </style>
 </head>
 <body>
     <div id="vitrine-loader">
@@ -153,119 +61,70 @@
 
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
         
-        <aside class="sidebar-vitrine">
-            <div class="header-vitrine">
-                <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
-                <h1 id="nome-negocio-publico">Nome do Negócio</h1>
-            </div>
-            <nav class="sidebar-menu">
-                <button class="menu-btn ativo" data-menu="agendamento">Agendar</button>
-                <button class="menu-btn" data-menu="informacoes">Informações</button>
-                <button class="menu-btn" data-menu="visualizacao">Reservas</button>
-                <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
-            </nav>
-        </aside>
+        <!-- O menu lateral <aside> foi removido -->
 
         <main class="main-content-vitrine">
             
             <div class="header-vitrine-mobile" style="display: none;">
                 <img id="logo-publico-mobile" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">
-                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
+                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED );-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
             </div>
             
-            <div id="menu-agendamento" class="menu-content ativo">
+            <!-- ✅ NOVO: Container Principal que mostra os cards ou o conteúdo -->
+            <div id="main-navigation-container">
+                <div class="dashboard-welcome-center">
+                    <h1 id="vitrine-welcome-title">Bem-vindo(a)!</h1>
+                    <p>O que você gostaria de fazer?</p>
+                </div>
+                <div class="dashboard-grid-cards" id="vitrine-grid-cards">
+                    <a href="#" class="menu-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);"><i class="fa-solid fa-calendar-check"></i><span>Agendar</span></a>
+                    <a href="#" class="menu-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"><i class="fa-solid fa-list-check"></i><span>Minhas Reservas</span></a>
+                    <a href="#" class="menu-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #f59e42, #ff5858);"><i class="fa-solid fa-circle-info"></i><span>Sobre o Local</span></a>
+                    <a href="#" class="menu-card" data-menu-card="perfil" style="background: linear-gradient(135deg, #374151, #111827);"><i class="fa-solid fa-user-circle"></i><span id="card-perfil-texto">Perfil</span></a>
+                </div>
+            </div>
+
+            <!-- Conteúdos das abas, agora começam escondidos -->
+            <div id="menu-agendamento" class="menu-content" style="display: none;">
+                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                <!-- Seu conteúdo de agendamento original vai aqui -->
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
-                    <div id="agendamento-login-prompt" style="display: none;">
-                        <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
-                    </div>
-                    <div class="form-group">
-                        <label>1. Escolha um profissional</label>
-                        <div id="lista-profissionais" class="profissionais-container"></div>
-                    </div>
-                    
+                    <div id="agendamento-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p></div>
+                    <div class="form-group"><label>1. Escolha um profissional</label><div id="lista-profissionais" class="profissionais-container"></div></div>
                     <div id="agendamento-form-container" style="display: none;">
-                        <div class="form-group">
-                            <label id="label-servicos">2. Escolha o(s) serviço(s)</label>
-                            <div id="lista-servicos" class="servicos-container-cards"></div>
-                            <div id="servicos-resumo-container" style="display: none; margin-top: 20px;">
-                                <div class="servicos-resumo">
-                                    <p id="resumo-texto"></p>
-                                </div>
-                                <button id="btn-prosseguir-data" class="btn-prosseguir">Escolher Data e Horário</button>
-                            </div>
-                        </div>
-                        
-                        <div id="data-e-horario-container" style="display:none;">
-                            <div class="form-group">
-                                <label for="data-agendamento">3. Escolha uma data</label>
-                                <input type="date" id="data-agendamento" required disabled>
-                            </div>
-                            <div class="form-group">
-                                <label>4. Escolha um horário</label>
-                                <div id="grade-horarios" class="horarios-container-grid">
-                                    <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
-                                </div>
-                            </div>
-                            <div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div>
-                            <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
-                        </div>
+                        <div class="form-group"><label id="label-servicos">2. Escolha o(s) serviço(s)</label><div id="lista-servicos" class="servicos-container-cards"></div><div id="servicos-resumo-container" style="display: none; margin-top: 20px;"><div class="servicos-resumo"><p id="resumo-texto"></p></div><button id="btn-prosseguir-data" class="btn-prosseguir">Escolher Data e Horário</button></div></div>
+                        <div id="data-e-horario-container" style="display:none;"><div class="form-group"><label for="data-agendamento">3. Escolha uma data</label><input type="date" id="data-agendamento" required disabled></div><div class="form-group"><label>4. Escolha um horário</label><div id="grade-horarios" class="horarios-container-grid"><p class="aviso-horarios">Selecione um profissional e um serviço.</p></div></div><div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div><button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button></div>
                     </div>
                 </div>
             </div>
 
-            <div id="menu-informacoes" class="menu-content">
-                <div class="card">
-                    <h2>Sobre o Negócio</h2>
-                    <div id="info-negocio"></div>
-                </div>
-                <div class="card">
-                    <h2>Serviços Oferecidos</h2>
-                    <div id="info-servicos"></div>
-                </div>
-                <div class="card">
-                    <h2>Contato e Localização</h2>
-                    <div id="info-contato"></div>
-                </div>
+            <div id="menu-informacoes" class="menu-content" style="display: none;">
+                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                <!-- Seu conteúdo de informações original vai aqui -->
+                <div class="card"><h2>Sobre o Negócio</h2><div id="info-negocio"></div></div>
+                <div class="card"><h2>Serviços Oferecidos</h2><div id="info-servicos"></div></div>
+                <div class="card"><h2>Contato e Localização</h2><div id="info-contato"></div></div>
             </div>
             
-            <div id="menu-visualizacao" class="menu-content">
-                <div class="card">
-                    <h2>Reservas</h2>
-                    <div id="agendamentos-login-prompt" style="display: none;">
-                        <p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p>
-                    </div>
-                    <div id="botoes-agendamento" class="botoes-agendamento" style="display: none;">
-                        <button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button>
-                        <button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button>
-                    </div>
-                </div>
+            <div id="menu-visualizacao" class="menu-content" style="display: none;">
+                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                <!-- Seu conteúdo de visualização original vai aqui -->
+                <div class="card"><h2>Reservas</h2><div id="agendamentos-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p></div><div id="botoes-agendamento" class="botoes-agendamento" style="display: none;"><button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button><button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button></div></div>
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             
-            <div id="menu-perfil" class="menu-content">
-                <div class="card">
-                    <h2>Meu Perfil</h2>
-                    <div id="user-info" style="display: none;">
-                        <img id="user-photo" src="" alt="Foto do Utilizador" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
-                        <p id="user-name" style="font-weight: 600; font-size: 1.2rem;"></p>
-                        <button id="btn-logout" class="btn-secondary">Sair</button>
-                    </div>
-                    <div id="btn-login-container">
-                        <button id="btn-login" class="btn-submit">Fazer Login com Google</button>
-                    </div>
-                </div>
+            <div id="menu-perfil" class="menu-content" style="display: none;">
+                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                <!-- Seu conteúdo de perfil original vai aqui -->
+                <div class="card"><h2>Meu Perfil</h2><div id="user-info" style="display: none;"><img id="user-photo" src="" alt="Foto do Utilizador" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;"><p id="user-name" style="font-weight: 600; font-size: 1.2rem;"></p><button id="btn-logout" class="btn-secondary">Sair</button></div><div id="btn-login-container"><button id="btn-login" class="btn-submit">Fazer Login com Google</button></div></div>
             </div>
         </main>
     </div>
 
-    <nav class="bottom-nav-vitrine">
-        <button class="ativo" data-menu="agendamento">📅<span>Agendar</span></button>
-        <button data-menu="informacoes">📋<span>Info</span></button>
-        <button data-menu="visualizacao">📋<span>Meus</span></button>
-        <button data-menu="perfil">👤<span>Perfil</span></button>
-    </nav>
+    <!-- O menu inferior <nav> foi removido -->
 
+    <!-- Modais (custom-confirm-modal e modal-auth-janela) 100% Preservados -->
     <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
     
     <div id="modal-auth-janela" class="modal-overlay">
@@ -295,7 +154,7 @@
                     <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
                     <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
                     <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
-                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required>
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>
                     <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
                 </form>
                 <div style="text-align:center;margin-top:16px;">
@@ -305,113 +164,72 @@
         </div>
     </div>
     
+    <!-- Seus scripts originais -->
     <script type="module" src="./vitrine.js"></script>
     <!-- Adicione aqui os outros scripts que você tem -->
 
-    <!-- ✅ SCRIPT FINAL REVISADO E COMPLETO -->
+    <!-- Script do Modal de Login (100% Preservado) -->
     <script type="module">
-        import { auth } from './firebase-config.js';
-        // ✅ ADICIONADO: Precisamos da função que observa o status do login
+        import { auth } from './vitrini-firebase.js'; // ✅ CORRIGIDO para apontar para o arquivo da vitrine
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', ( ) => {
             const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
             const modalAuth = document.getElementById('modal-auth-janela');
             const btnCloseModal = document.getElementById('modal-auth-close-btn');
 
             if (btnConfirmarAgendamento && modalAuth && btnCloseModal) {
-                
-                const fecharModal = () => {
-                    modalAuth.style.display = 'none';
-                };
-
-                // Adiciona o "porteiro" ao botão de confirmar.
+                const fecharModal = () => { modalAuth.style.display = 'none'; };
                 btnConfirmarAgendamento.addEventListener('click', (event) => {
                     if (!auth.currentUser) {
                         event.preventDefault(); 
                         event.stopImmediatePropagation();
                         modalAuth.style.display = 'flex';
-
-                        // ✅ LÓGICA "SUPERVISORA" ADICIONADA AQUI
-                        // Esta função fica "escutando" por uma mudança no login
                         const unsubscribe = onAuthStateChanged(auth, (user) => {
                             if (user) {
-                                // O usuário acabou de fazer login com sucesso!
                                 console.log('Login detectado! Fechando modal e continuando agendamento.');
-                                
-                                // 1. Para de escutar para não ser chamada de novo
                                 unsubscribe();
-                                
-                                // 2. Fecha o modal de login
                                 fecharModal();
-                                
-                                // 3. Clica novamente no botão de confirmar para o usuário
-                                //    Damos um pequeno tempo para a UI se atualizar
-                                setTimeout(() => {
-                                    btnConfirmarAgendamento.click();
-                                }, 150);
+                                setTimeout(() => { btnConfirmarAgendamento.click(); }, 150);
                             }
                         });
                     }
                 }, true);
-
-                // Lógica para fechar o modal (sem alterações)
                 btnCloseModal.addEventListener('click', fecharModal);
-                modalAuth.addEventListener('click', (event) => {
-                    if (event.target === modalAuth) {
-                        fecharModal();
-                    }
-                });
+                modalAuth.addEventListener('click', (event) => { if (event.target === modalAuth) { fecharModal(); } });
             }
         });
     </script>
 
-    <!-- SCRIPT PARA DESCONTO NA VITRINE -->
+    <!-- Script de Desconto (100% Preservado) -->
     <script type="module">
-        import { db } from './firebase-config.js';
+        import { db } from './vitrini-firebase.js'; // ✅ CORRIGIDO para apontar para o arquivo da vitrine
         import { collection, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // Função utilitária para descobrir dia da semana (0=Dom, 1=Seg, ...)
-        function getHojeDiaSemana() {
-            return new Date().getDay();
-        }
-
-        // Busca e aplica promoções nos serviços exibidos na vitrine
+        function getHojeDiaSemana( ) { return new Date().getDay(); }
         async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
             if (!empresaId) return;
-
             const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
             const snapshot = await getDocs(promocoesRef);
-
             const promocoesAtivas = [];
             const hoje = getHojeDiaSemana();
-
             snapshot.forEach(doc => {
                 const promo = doc.data();
-                // Só promoções ativas E para o dia de hoje
                 if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) {
                     promocoesAtivas.push({ id: doc.id, ...promo });
                 }
             });
-
-            // Para cada serviço, tente aplicar a promoção mais relevante
             listaServicos.forEach(servico => {
                 let melhorPromocao = null;
-
-                // 1. Promo específica para o serviço
                 for (let promo of promocoesAtivas) {
                     if (promo.servicoIds && promo.servicoIds.includes(servico.id)) {
                         melhorPromocao = promo;
                         break;
                     }
                 }
-                // 2. Promoção para todos os serviços (corrigido!)
                 if (!melhorPromocao) {
-                    melhorPromocao = promocoesAtivas.find(
-                        promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)
-                    );
+                    melhorPromocao = promocoesAtivas.find(promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0));
                 }
-
                 if (melhorPromocao) {
                     let precoAntigo = servico.preco;
                     let precoNovo = precoAntigo;
@@ -420,68 +238,96 @@
                     } else if (melhorPromocao.tipoDesconto === "valorFixo") {
                         precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0);
                     }
-                    // Adiciona info no objeto do serviço (para quem exibe saber)
-                    servico.promocao = {
-                        nome: melhorPromocao.nome,
-                        precoOriginal: precoAntigo,
-                        precoComDesconto: precoNovo,
-                        tipoDesconto: melhorPromocao.tipoDesconto,
-                        valorDesconto: melhorPromocao.valor
-                    };
+                    servico.promocao = { nome: melhorPromocao.nome, precoOriginal: precoAntigo, precoComDesconto: precoNovo, tipoDesconto: melhorPromocao.tipoDesconto, valorDesconto: melhorPromocao.valor };
                 }
             });
         }
-
-        // Função para renderizar a lista de serviços na vitrine
-        // Você pode já ter sua função própria; adapte o uso desta lógica
         async function renderizarServicosVitrine(empresaId) {
-            // Exemplo: buscar serviços cadastrados no Firestore
             const servicosRef = collection(db, "empresarios", empresaId, "servicos");
             const snapshot = await getDocs(servicosRef);
             const listaServicos = [];
-            snapshot.forEach(doc => {
-                listaServicos.push({ id: doc.id, ...doc.data() });
-            });
-
-            // Busca e aplica promoções
+            snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
             await aplicarPromocoesNaVitrine(listaServicos, empresaId);
-
-            // Renderiza os serviços já com promoções aplicadas
             const listaServicosDiv = document.getElementById("lista-servicos");
             if (!listaServicosDiv) return;
             listaServicosDiv.innerHTML = "";
-
             listaServicos.forEach(servico => {
                 const div = document.createElement("div");
                 div.classList.add("servico-card");
-                
                 let precoHtml = "";
                 if (servico.promocao) {
-                    precoHtml = `
-                        <span class="preco-original">R$ ${servico.promocao.precoOriginal.toFixed(2)}</span>
-                        <span class="preco-promocional">R$ ${servico.promocao.precoComDesconto.toFixed(2)}</span>
-                        <span class="badge-promocao">PROMO</span>
-                    `;
+                    precoHtml = `<span class="preco-original">R$ ${servico.promocao.precoOriginal.toFixed(2)}</span> <span class="preco-promocional">R$ ${servico.promocao.precoComDesconto.toFixed(2)}</span> <span class="badge-promocao">PROMO</span>`;
                 } else {
                     precoHtml = `<span class="preco-promocional">R$ ${servico.preco.toFixed(2)}</span>`;
                 }
-
-                div.innerHTML = `
-                    <h4>${servico.nome}</h4>
-                    <p>${servico.descricao || ""}</p>
-                    <div>${precoHtml}</div>
-                `;
+                div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
                 listaServicosDiv.appendChild(div);
             });
         }
-
-        // Descobre empresaId da mesma forma que as outras telas
         let empresaId = localStorage.getItem("empresaAtivaId") || null;
         if (empresaId) {
-            // Chame a função de renderização quando apropriado na sua lógica
-            // Exemplo: após carregar profissionais, agendamento, etc.
             renderizarServicosVitrine(empresaId);
         }
     </script>
+
+    <!-- ✅ NOVO: Script para controlar a navegação por cards -->
+    <script type="module">
+        import { state } from './vitrini-state.js';
+        import { fazerLogin } from './vitrini-auth.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainNavigationContainer = document.getElementById('main-navigation-container');
+            const contentSections = document.querySelectorAll('.main-content-vitrine > .menu-content');
+
+            function showMainMenu() {
+                contentSections.forEach(section => section.style.display = 'none');
+                mainNavigationContainer.style.display = 'block';
+            }
+
+            function showContentSection(menuId) {
+                mainNavigationContainer.style.display = 'none';
+                contentSections.forEach(section => {
+                    section.style.display = section.id === menuId ? 'block' : 'none';
+                });
+            }
+
+            mainNavigationContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.menu-card');
+                if (!card) return;
+                e.preventDefault();
+
+                const menuKey = card.dataset.menuCard;
+
+                if (menuKey === 'perfil' && !state.currentUser) {
+                    fazerLogin();
+                    return;
+                }
+                
+                showContentSection(`menu-${menuKey}`);
+            });
+
+            document.querySelectorAll('.btn-voltar').forEach(button => {
+                button.addEventListener('click', showMainMenu);
+            });
+
+            // Bônus: Atualiza o texto do card de perfil dinamicamente
+            const cardPerfilTexto = document.getElementById('card-perfil-texto');
+            if (cardPerfilTexto) {
+                // Observador para mudar o texto do card quando o usuário logar/deslogar
+                const observer = new MutationObserver(() => {
+                    cardPerfilTexto.textContent = state.currentUser ? 'Meu Perfil' : 'Login';
+                });
+                // Assumindo que seu 'vitrini-state' tem um elemento que muda com o login,
+                // ou podemos observar o body para qualquer mudança.
+                // Para ser mais específico, você pode criar um evento customizado.
+                // Por agora, vamos usar uma forma simples que observa o user-info.
+                const userInfoDiv = document.getElementById('user-info');
+                if(userInfoDiv) {
+                    observer.observe(userInfoDiv, { attributes: true, childList: true, subtree: true });
+                }
+            }
+        });
+    </script>
 </body>
 </html>
+
