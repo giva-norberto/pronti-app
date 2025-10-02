@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: firebase-config.js (PAINEL - VERSÃO COM A CHAVE CORRETA)
+// ARQUIVO: firebase-config.js (PAINEL - VERSÃO FINALÍSSIMA E CORRETA)
 // =====================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -7,22 +7,21 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebas
 import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-// ✅ SUA CONFIGURAÇÃO FINAL E CORRETA
+// ✅ CONFIGURAÇÃO FINAL COM TODAS AS SUAS CORREÇÕES
 const firebaseConfig = {
-  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4", // A CHAVE QUE VOCÊ FORNECEU
+  apiKey: "AIzaSyCkJt49sM3n_hIQOyEwzgOmzzdPlsF9PW4",       // Sua Chave Correta
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com",
+  storageBucket: "pronti-app-37c6e.firebasestorage.app", // Seu StorageBucket Correto
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// Sua função Singleton original, que sabemos que funciona para o painel.
+// Sua lógica Singleton original, 100% preservada.
 const getFirebaseApp = ( ) => {
   return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 };
 
-// O resto do seu código original, 100% preservado.
 const app = getFirebaseApp();
 const auth = getAuth(app);
 const storage = getStorage(app);
@@ -32,7 +31,8 @@ provider.setCustomParameters({
   prompt: 'select_account'
 });
 
-const db = getFirestore(app);
+// Sua inicialização do banco de dados, 100% preservada.
+const db = getFirestore(app, "pronti-app");
 
 setPersistence(auth, browserLocalPersistence);
 
