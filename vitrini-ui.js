@@ -10,7 +10,8 @@ export function toggleLoader(mostrar, mensagem = 'A carregar informações do ne
     if (loader && loader.querySelector('p')) loader.querySelector('p').textContent = mensagem;
     if (loader) loader.style.display = mostrar ? 'block' : 'none';
     const content = document.getElementById('vitrine-content');
-    if(content) content.style.display = mostrar ? 'none' : 'grid';
+   if(content) content.style.display = mostrar ? 'none' : ''; // Apenas remove o 'display: none'
+
 }
 
 /**
