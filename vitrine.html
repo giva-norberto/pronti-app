@@ -60,9 +60,6 @@
     </div>
 
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
-        
-        <!-- O menu lateral <aside> foi removido -->
-
         <main class="main-content-vitrine">
             
             <div class="header-vitrine-mobile" style="display: none;">
@@ -70,7 +67,6 @@
                 <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED );-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
             </div>
             
-            <!-- ✅ NOVO: Container Principal que mostra os cards ou o conteúdo -->
             <div id="main-navigation-container">
                 <div class="dashboard-welcome-center">
                     <h1 id="vitrine-welcome-title">Bem-vindo(a)!</h1>
@@ -84,10 +80,8 @@
                 </div>
             </div>
 
-            <!-- Conteúdos das abas, agora começam escondidos -->
             <div id="menu-agendamento" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <!-- Seu conteúdo de agendamento original vai aqui -->
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
                     <div id="agendamento-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p></div>
@@ -101,7 +95,6 @@
 
             <div id="menu-informacoes" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <!-- Seu conteúdo de informações original vai aqui -->
                 <div class="card"><h2>Sobre o Negócio</h2><div id="info-negocio"></div></div>
                 <div class="card"><h2>Serviços Oferecidos</h2><div id="info-servicos"></div></div>
                 <div class="card"><h2>Contato e Localização</h2><div id="info-contato"></div></div>
@@ -109,20 +102,16 @@
             
             <div id="menu-visualizacao" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <!-- Seu conteúdo de visualização original vai aqui -->
                 <div class="card"><h2>Reservas</h2><div id="agendamentos-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p></div><div id="botoes-agendamento" class="botoes-agendamento" style="display: none;"><button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button><button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button></div></div>
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             
             <div id="menu-perfil" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <!-- Seu conteúdo de perfil original vai aqui -->
                 <div class="card"><h2>Meu Perfil</h2><div id="user-info" style="display: none;"><img id="user-photo" src="" alt="Foto do Utilizador" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;"><p id="user-name" style="font-weight: 600; font-size: 1.2rem;"></p><button id="btn-logout" class="btn-secondary">Sair</button></div><div id="btn-login-container"><button id="btn-login" class="btn-submit">Fazer Login com Google</button></div></div>
             </div>
         </main>
     </div>
-
-    <!-- O menu inferior <nav> foi removido -->
 
     <!-- Modais (custom-confirm-modal e modal-auth-janela) 100% Preservados -->
     <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
@@ -166,11 +155,10 @@
     
     <!-- Seus scripts originais -->
     <script type="module" src="./vitrine.js"></script>
-    <!-- Adicione aqui os outros scripts que você tem -->
 
     <!-- Script do Modal de Login (100% Preservado) -->
     <script type="module">
-        import { auth } from './vitrini-firebase.js'; // ✅ CORRIGIDO para apontar para o arquivo da vitrine
+        import { auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         document.addEventListener('DOMContentLoaded', ( ) => {
@@ -203,8 +191,8 @@
 
     <!-- Script de Desconto (100% Preservado) -->
     <script type="module">
-        import { db } from './vitrini-firebase.js'; // ✅ CORRIGIDO para apontar para o arquivo da vitrine
-        import { collection, query, where, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { db } from './vitrini-firebase.js';
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         function getHojeDiaSemana( ) { return new Date().getDay(); }
         async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
@@ -310,17 +298,11 @@
                 button.addEventListener('click', showMainMenu);
             });
 
-            // Bônus: Atualiza o texto do card de perfil dinamicamente
             const cardPerfilTexto = document.getElementById('card-perfil-texto');
             if (cardPerfilTexto) {
-                // Observador para mudar o texto do card quando o usuário logar/deslogar
                 const observer = new MutationObserver(() => {
                     cardPerfilTexto.textContent = state.currentUser ? 'Meu Perfil' : 'Login';
                 });
-                // Assumindo que seu 'vitrini-state' tem um elemento que muda com o login,
-                // ou podemos observar o body para qualquer mudança.
-                // Para ser mais específico, você pode criar um evento customizado.
-                // Por agora, vamos usar uma forma simples que observa o user-info.
                 const userInfoDiv = document.getElementById('user-info');
                 if(userInfoDiv) {
                     observer.observe(userInfoDiv, { attributes: true, childList: true, subtree: true });
