@@ -1,5 +1,5 @@
 // ======================================================================
-//          VITRINE.JS - O Maestro da Aplicação (REVISADO)
+//          VITRINE.JS - O Maestro da Aplicação (REVISADO FINAL)
 // ======================================================================
 
 // --- MÓDulos IMPORTADOS ---
@@ -10,8 +10,7 @@ import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES ---
-// ✅ 1. CORREÇÃO: Caminho da importação ajustado.
-import { db } from './vitrini-firebase.js';
+import { db } from './vitrini-firebase.js'; // Assumindo que o caminho já está correto
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // --- Função utilitária para corrigir data no formato brasileiro ou ISO (LÓGICA 100% PRESERVADA ) ---
@@ -62,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- O RESTANTE DO CÓDIGO PERMANECE COM A LÓGICA 100% IDÊNTICA ---
-// A única outra mudança é na chamada de 'salvarAgendamento' mais abaixo.
+// A única outra mudança é na função 'handleConfirmarAgendamento' mais abaixo.
 
 async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSelecionadaISO = null, forceNoPromo = false) {
     if (!empresaId) return;
@@ -120,6 +119,7 @@ function configurarEventosGerais() {
             element.addEventListener(event, handler);
         }
     };
+    // A função handleMenuClick ainda é necessária para os cliques REAIS do usuário nos menus
     addSafeListener('.sidebar-menu', 'click', handleMenuClick, true);
     addSafeListener('.bottom-nav-vitrine', 'click', handleMenuClick, true);
     addSafeListener('lista-profissionais', 'click', handleProfissionalClick);
@@ -327,18 +327,19 @@ async function handleConfirmarAgendamento() {
             data: state.agendamento.data,
             horario: state.agendamento.horario,
             servico: servicoParaSalvar,
-            // ✅ 2. CORREÇÃO LÓGICA: Anexamos os dados da empresa ao objeto.
-            // A função 'salvarAgendamento' agora terá acesso a 'agendamento.empresa.donoId'.
             empresa: state.dadosEmpresa 
         };
 
-        // A chamada da função permanece a mesma, mas o objeto 'agendamentoParaSalvar' agora está completo.
         await salvarAgendamento(state.empresaId, state.currentUser, agendamentoParaSalvar);
         
         const nomeEmpresa = state.dadosEmpresa.nomeFantasia || "A empresa";
         await UI.mostrarAlerta("Agendamento Confirmado!", `${nomeEmpresa} agradece pelo seu agendamento.`);
         resetarAgendamento();
-        handleMenuClick({ target: document.querySelector('[data-menu="visualizacao"]') });
+
+        // ✅ CORREÇÃO: Chamamos diretamente as funções que fazem o trabalho, em vez de simular um clique.
+        UI.trocarAba('menu-visualizacao'); // 1. Troca para a aba de visualização.
+        handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') }); // 2. Busca e exibe os agendamentos ativos.
+
     } catch (error) {
         console.error("Erro ao salvar agendamento:", error);
         await UI.mostrarAlerta("Erro", `Não foi possível confirmar o agendamento. ${error.message}`);
