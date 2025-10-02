@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: firebase-config.js (VERSÃO FINAL, CORRIGIDA E SEGURA)
+// ARQUIVO: firebase-config.js (VERSÃO ÚNICA E CENTRAL)
 // =====================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -7,57 +7,42 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebas
 import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-// Configuração do seu projeto Firebase (sem alterações ).
+// Configuração do seu projeto Firebase. Use esta em todo o app.
 const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // Usando o padrão que funciona
+  storageBucket: "pronti-app-37c6e.firebasestorage.app", // ✅ CORRIGIDO
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
 
-// ======================================================================
-//           ✨ LÓGICA DE ISOLAMENTO APLICADA AQUI ✨
-// ======================================================================
-
-// 1. Função que decide qual "bolha" de sessão usar.
-const getAppName = () => {
-  const pathname = window.location.pathname;
-  // Se a URL for da vitrine ou do redirecionador, usa a sessão 'vitrineCliente'.
-  const isVitrine = pathname.includes('/vitrine.html') || pathname.includes('/r.html');
-  return isVitrine ? 'vitrineCliente' : 'painelDono';
-};
-
-// 2. Sua função Singleton, adaptada para usar a "bolha" correta.
+// Função Singleton: Garante que o app seja inicializado apenas uma vez.
 const getFirebaseApp = () => {
-  const appName = getAppName();
-  const existingApp = getApps().find(app => app.name === appName);
-  if (existingApp) {
-    return existingApp;
-  }
-  // Se não existir, cria uma nova com o nome correto.
-  return initializeApp(firebaseConfig, appName);
+  return getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 };
 
-// ======================================================================
-// O RESTANTE DO SEU ARQUIVO PERMANECE 100% IDÊNTICO
-// ======================================================================
-
-// Inicializa e exporta tudo a partir da instância única e correta
+// Inicializa e exporta tudo a partir da instância única
 const app = getFirebaseApp();
 const auth = getAuth(app);
+
+// ✅ Agora basta chamar getStorage(app), não precisa forçar gs://
 const storage = getStorage(app);
+
 const provider = new GoogleAuthProvider();
 
+// ==================================================
+// ✨ CORREÇÃO IMPORTANTE ABAIXO ✨
+// Adiciona o parâmetro que força a tela de seleção de conta do Google
 provider.setCustomParameters({
   prompt: 'select_account'
 });
+// ==================================================
 
-// Conecta ao banco de dados. O segundo argumento não é mais necessário nas versões recentes.
-const db = getFirestore(app);
+// Conecta ao banco de dados com nome "pronti-app"
+const db = getFirestore(app, "pronti-app");
 
-// ✅ SUA LINHA CRUCIAL, AGORA APLICADA À INSTÂNCIA CORRETA
+// Define a persistência do login
 setPersistence(auth, browserLocalPersistence);
 
 // Exporta as instâncias para serem usadas em outros arquivos
