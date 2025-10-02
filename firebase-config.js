@@ -1,5 +1,5 @@
 // ======================================================================
-// ARQUIVO: firebase-config.js (VERSÃO FINAL, SEGURA E ISOLADA)
+// ARQUIVO: firebase-config.js (VERSÃO FINAL, CORRIGIDA E SEGURA)
 // =====================================================================
 
 import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -12,7 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyA1CL5SbSWXe9843dgiopnmahCsrsF--us",
   authDomain: "pronti-app-37c6e.firebaseapp.com",
   projectId: "pronti-app-37c6e",
-  storageBucket: "pronti-app-37c6e.appspot.com", // Corrigido para o padrão
+  storageBucket: "pronti-app-37c6e.appspot.com", // Usando o padrão que funciona
   messagingSenderId: "736700619274",
   appId: "1:736700619274:web:557aa247905e56fa7e5df3"
 };
@@ -22,35 +22,20 @@ const firebaseConfig = {
 // ======================================================================
 
 // 1. Função que decide qual "bolha" de sessão usar.
-//    Se a URL for da vitrine, usa a sessão 'vitrineCliente'.
-//    Caso contrário, usa a sessão 'painelDono'.
 const getAppName = () => {
-  const hostname = window.location.hostname;
   const pathname = window.location.pathname;
-
-  // Defina aqui as condições que identificam a vitrine.
-  // Ex: se o arquivo for 'vitrine.html' ou 'r.html'.
+  // Se a URL for da vitrine ou do redirecionador, usa a sessão 'vitrineCliente'.
   const isVitrine = pathname.includes('/vitrine.html') || pathname.includes('/r.html');
-
-  if (isVitrine) {
-    console.log("[Firebase Config] Usando sessão da VITRINE.");
-    return 'vitrineCliente';
-  } else {
-    console.log("[Firebase Config] Usando sessão do PAINEL.");
-    return 'painelDono';
-  }
+  return isVitrine ? 'vitrineCliente' : 'painelDono';
 };
 
-// 2. Sua função Singleton, agora adaptada para usar a "bolha" correta.
+// 2. Sua função Singleton, adaptada para usar a "bolha" correta.
 const getFirebaseApp = () => {
   const appName = getAppName();
-  
-  // Procura por uma instância JÁ CRIADA com esse nome.
   const existingApp = getApps().find(app => app.name === appName);
   if (existingApp) {
     return existingApp;
   }
-  
   // Se não existir, cria uma nova com o nome correto.
   return initializeApp(firebaseConfig, appName);
 };
@@ -69,9 +54,10 @@ provider.setCustomParameters({
   prompt: 'select_account'
 });
 
-const db = getFirestore(app); // Não precisa mais do segundo argumento "pronti-app"
+// Conecta ao banco de dados. O segundo argumento não é mais necessário nas versões recentes.
+const db = getFirestore(app);
 
-// Define a persistência do login
+// ✅ SUA LINHA CRUCIAL, AGORA APLICADA À INSTÂNCIA CORRETA
 setPersistence(auth, browserLocalPersistence);
 
 // Exporta as instâncias para serem usadas em outros arquivos
