@@ -873,23 +873,45 @@ input[type="date"]:focus {
     font-size: 2rem;
 }
 
-/* 
-   CORREÇÃO DO CONFLITO RESPONSIVO:
-   Sobrescreve a regra que estava quebrando o layout em telas menores.
-*/
-@media (max-width: 900px) {
-    /* 
-       Garante que o container principal NÃO use 'display: block',
-       permitindo que o nosso grid de cards funcione.
-    */
-    .vitrine-container {
-        display: block; /* Mantém o comportamento original para o container geral */
-    }
+/* =================================================================== */
+/*  ✅ AJUSTES FORÇA BRUTA PARA O LAYOUT DE CARDS DA VITRINE           */
+/* =================================================================== */
 
-    /* Garante que o conteúdo principal ocupe o espaço e centralize os itens */
-    .main-content-vitrine {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+/* 
+   Força o container principal a se comportar como um grid,
+   ignorando qualquer outra regra que o force a ser 'block'.
+*/
+#vitrine-content {
+    display: grid !important;
+    place-items: center !important;
+    padding: 20px !important;
 }
+
+/* 
+   Força o grid de cards a ter 2 colunas.
+   O !important garante que esta regra vença qualquer outra.
+*/
+#vitrine-cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; 
+    gap: 20px !important;
+    width: 100% !important;
+    max-width: 450px !important;
+    margin: 20px auto 0 auto !important;
+}
+
+/* 
+   Regras para os cards internos. Geralmente não precisam de !important,
+   mas vamos manter a consistência.
+*/
+#vitrine-cards-grid .menu-card {
+    padding: 20px 10px !important;
+    font-size: 0.9rem !important;
+    gap: 12px !important;
+    aspect-ratio: 1 / 1 !important;
+}
+
+#vitrine-cards-grid .menu-card i {
+    font-size: 2rem !important;
+}
+
