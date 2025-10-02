@@ -1,237 +1,248 @@
 // ======================================================================
-// vitrini-agendamento.js (VERSÃO ORIGINAL)
-// ✅ ADICIONADA A CRIAÇÃO DO "BILHETE" DE NOTIFICAÇÃO DENTRO DE salvarAgendamento
+// messaging.js - Serviço de notificações Firebase
+// ✅ REVISADO E CONFIRMADO: USA A CONFIGURAÇÃO DO PAINEL ('firebase-config.js')
 // ======================================================================
 
-import { db } from './firebase-config.js';
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    addDoc,
-    doc,
-    updateDoc,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { limparUIAgendamento } from './vitrini-ui.js';
+// --- PASSO 1: Importar instâncias centrais do PAINEL ---
+// Esta linha está CORRETA. Este script pertence ao painel e deve usar a configuração principal.
+import { app, db } from './firebase-config.js';
 
-// --- Funções Auxiliares de Tempo ---
-function timeStringToMinutes(timeStr  ) {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
-}
+// --- PASSO 2: Importar apenas as funções necessárias dos módulos (LÓGICA 100% PRESERVADA) ---
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
+import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { verificarAcesso } from './userService.js';
 
-function minutesToTimeString(totalMinutes) {
-    const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
-    const minutes = (totalMinutes % 60).toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
+// --- PASSO 3: Inicializar o serviço de Messaging (LÓGICA 100% PRESERVADA ) ---
+const messaging = getMessaging(app);
 
-// --- Funções Principais de Agendamento ---
+console.log('[DEBUG][messaging.js] Módulo carregado, usando instância central do Firebase.');
 
-/**
- * Busca todos os agendamentos de uma empresa em uma data específica.
- * @param {string} empresaId - O ID da empresa.
- * @param {string} data - A data no formato "AAAA-MM-DD".
- * @returns {Promise<Array>} Lista de agendamentos do dia.
- */
-export async function buscarAgendamentosDoDia(empresaId, data) {
+class MessagingService {
+  constructor() {
+    this.token = null;
+    this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
+    this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
+  }
+
+  async initialize() {
+    if (!this.isSupported) {
+      console.warn('[messaging.js] Notificações não são suportadas neste navegador.');
+      return false;
+    }
     try {
-        const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
-        const q = query(
-            agendamentosRef,
-            where("data", "==", data),
-            where("status", "==", "ativo")
-        );
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const permission = await Notification.requestPermission();
+      console.log('[DEBUG][messaging.js] Permissão de notificação:', permission);
+      if (permission !== 'granted') {
+        console.warn('[messaging.js] Permissão de notificação foi negada pelo usuário.');
+        return false;
+      }
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+      console.log('[DEBUG][messaging.js] Service Worker registrado com sucesso:', registration);
+      await this.waitForServiceWorker(registration);
+      await this.getMessagingToken(registration);
+      this.setupForegroundMessageListener();
+      console.log('[DEBUG][messaging.js] Serviço de Messaging inicializado com sucesso!');
+      return true;
     } catch (error) {
-        console.error("Erro ao buscar agendamentos do dia:", error);
-        // Lança o erro para que a função que chamou possa tratá-lo
-        throw new Error("Não foi possível buscar os agendamentos do dia.");
+      console.error('[messaging.js] Erro crítico ao inicializar o serviço de Messaging:', error);
+      return false;
     }
-}
+  }
 
-/**
- * Calcula os horários (slots) disponíveis para um agendamento.
- * REFINADO: Não mostra horários passados se a data for hoje.
- */
-export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
-    const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-    const dataObj = new Date(`${data}T12:00:00Z`); // Usar Z para tratar como UTC
-    const nomeDia = diaDaSemana[dataObj.getUTCDay()];
-
-    const diaDeTrabalho = horariosTrabalho?.[nomeDia];
-    if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos || diaDeTrabalho.blocos.length === 0) {
-        return [];
-    }
-
-    const intervaloEntreSessoes = horariosTrabalho.intervalo || 0;
-    const slotsDisponiveis = [];
-
-    const horariosOcupados = agendamentosDoDia.map(ag => {
-        const inicio = timeStringToMinutes(ag.horario);
-        const fim = inicio + ag.servicoDuracao;
-        return { inicio, fim };
+  async waitForServiceWorker(registration) {
+    return new Promise((resolve) => {
+      if (registration.active) return resolve();
+      const worker = registration.installing || registration.waiting;
+      if (worker) {
+        const timeout = setTimeout(() => resolve(), 5000);
+        worker.addEventListener('statechange', () => {
+          if (worker.state === 'activated') {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+      } else {
+        resolve();
+      }
     });
+  }
 
-    const hoje = new Date();
-    const ehHoje = hoje.toISOString().split('T')[0] === data;
-    const minutosAgora = timeStringToMinutes(
-        `${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`
+  async getMessagingToken(registration) {
+    try {
+      const currentToken = await getToken(messaging, {
+        vapidKey: this.vapidKey,
+        serviceWorkerRegistration: registration
+      });
+      if (currentToken) {
+        this.token = currentToken;
+        localStorage.setItem('fcm_token', currentToken);
+        console.log('[DEBUG][messaging.js] Token FCM obtido:', currentToken);
+        return currentToken;
+      } else {
+        console.warn('[DEBUG][messaging.js] Não foi possível obter o token FCM.');
+        return null;
+      }
+    } catch (error) {
+      console.error('[messaging.js] Erro ao obter o token FCM:', error);
+      return null;
+    }
+  }
+
+  setupForegroundMessageListener() {
+    onMessage(messaging, (payload) => {
+      console.log('[messaging.js] Mensagem PUSH recebida em primeiro plano:', payload);
+      this.showForegroundNotification(payload);
+    });
+  }
+
+  showForegroundNotification(payload) {
+    const title = payload.notification?.title || payload.data?.title || 'Nova Notificação';
+    const body = payload.notification?.body || payload.data?.body || 'Você recebeu uma nova mensagem.';
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: body,
+        icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
+        badge: '/badge.png',
+        tag: 'prontiapp-notification'
+      });
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    }
+  }
+
+  async sendTokenToServer(userId, empresaId) {
+    if (!this.token) {
+      console.warn('[messaging.js] Token não disponível para ser salvo no servidor.');
+      return false;
+    }
+    if (!userId || !empresaId) {
+      console.error('[messaging.js] Erro: userId ou empresaId não foram fornecidos para salvar o token.');
+      return false;
+    }
+    try {
+      const ref = doc(db, "mensagensTokens", userId);
+      await setDoc(ref, {
+        empresaId: empresaId,
+        userId: userId,
+        fcmToken: this.token,
+        updatedAt: new Date(),
+        ativo: true,
+        tipo: "web",
+        navegador: navigator.userAgent || "Não identificado",
+      }, { merge: true });
+      console.log('[messaging.js] Token salvo/atualizado no Firestore com sucesso!');
+      return true;
+    } catch (err) {
+      console.error('[messaging.js] ERRO CRÍTICO ao salvar token no Firestore:', err);
+      return false;
+    }
+  }
+
+  async saveAlert(empresaId, clienteNome, servico, horario) {
+    try {
+      const alertsRef = collection(db, "alerts");
+      await addDoc(alertsRef, {
+        empresaId,
+        clienteNome,
+        servico,
+        horario,
+        createdAt: new Date(),
+        status: "novo"
+      });
+      console.log('[messaging.js] Alerta de agendamento salvo no Firestore.');
+      return true;
+    } catch (err) {
+      console.error('[messaging.js] Erro ao salvar alerta no Firestore:', err);
+      return false;
+    }
+  }
+
+  getCurrentToken() {
+    return this.token || localStorage.getItem('fcm_token');
+  }
+}
+
+// --- LÓGICA GLOBAL (LÓGICA 100% PRESERVADA) ---
+window.messagingService = new MessagingService();
+
+window.solicitarPermissaoParaNotificacoes = async function() {
+  const ok = await window.messagingService.initialize();
+  if (ok) {
+    try {
+      const sessionProfile = await verificarAcesso();
+      if (!sessionProfile || !sessionProfile.user || !sessionProfile.empresaId) {
+          console.error('[messaging.js] Perfil de sessão inválido. Não foi possível salvar o token.');
+          return;
+      }
+      const userId = sessionProfile.user.uid;
+      const empresaId = sessionProfile.empresaId;
+      
+      console.log('[DEBUG][messaging.js] Chamando sendTokenToServer com:', { userId, empresaId });
+      await window.messagingService.sendTokenToServer(userId, empresaId);
+    } catch (e) {
+      console.error('[messaging.js] Erro ao obter o perfil de sessão para salvar o token:', e);
+    }
+  }
+};
+
+let unsubscribeDeFila = null;
+
+function iniciarOuvinteDeNotificacoes(donoId) {
+    if (unsubscribeDeFila) {
+        unsubscribeDeFila();
+    }
+    if (!donoId) {
+        console.warn('[Ouvinte] donoId não fornecido. O ouvinte não será iniciado.');
+        return;
+    }
+    const q = query(
+        collection(db, "filaDeNotificacoes"),
+        where("paraDonoId", "==", donoId),
+        where("status", "==", "pendente")
     );
-
-    for (const bloco of diaDeTrabalho.blocos) {
-        let slotAtualEmMinutos = timeStringToMinutes(bloco.inicio);
-        const fimDoBlocoEmMinutos = timeStringToMinutes(bloco.fim);
-
-        while (slotAtualEmMinutos + duracaoServico <= fimDoBlocoEmMinutos) {
-            const fimDoSlotProposto = slotAtualEmMinutos + duracaoServico;
-            let temConflito = horariosOcupados.some(ocupado =>
-                slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio
-            );
-
-            if (
-                !temConflito &&
-                (!ehHoje || slotAtualEmMinutos > minutosAgora)
-            ) {
-                slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
+    unsubscribeDeFila = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                const bilhete = change.doc.data();
+                const bilheteId = change.doc.id;
+                console.log("✅ [Ouvinte] Novo bilhete de notificação recebido:", bilhete);
+                if (window.messagingService) {
+                    const payload = {
+                        data: {
+                            title: bilhete.titulo,
+                            body: bilhete.mensagem
+                        }
+                    };
+                    window.messagingService.showForegroundNotification(payload);
+                    console.log("✅ [Ouvinte] A função para mostrar a notificação na tela foi chamada.");
+                } else {
+                    console.error("❌ [Ouvinte] Erro: 'window.messagingService' não está definido. Não foi possível mostrar a notificação.");
+                }
+                const docRef = doc(db, "filaDeNotificacoes", bilheteId);
+                updateDoc(docRef, { status: "processado" })
+                    .then(() => {
+                        console.log(`✅ [Ouvinte] Status do bilhete ${bilheteId} atualizado para 'processado'.`);
+                    })
+                    .catch(err => {
+                        console.error(`[Ouvinte] Erro ao atualizar status do bilhete ${bilheteId}:`, err);
+                    });
             }
-            // Garante que o loop avance mesmo sem intervalo
-            slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico;
-        }
-    }
-    return slotsDisponiveis;
-}
-
-/**
- * Tenta encontrar a próxima data com horários disponíveis, a partir de hoje.
- */
-export async function encontrarPrimeiraDataComSlots(empresaId, profissional, duracaoServico) {
-    const hoje = new Date();
-    for (let i = 0; i < 90; i++) { // Procura nos próximos 90 dias
-        const dataAtual = new Date(hoje);
-        dataAtual.setDate(hoje.getDate() + i);
-        const dataString = dataAtual.toISOString().split('T')[0];
-
-        const agendamentos = await buscarAgendamentosDoDia(empresaId, dataString);
-        const agendamentosProfissional = agendamentos.filter(ag => ag.profissionalId === profissional.id);
-
-        const slots = calcularSlotsDisponiveis(dataString, agendamentosProfissional, profissional.horarios, duracaoServico);
-
-        if (slots.length > 0) {
-            return dataString; // Encontrou! Retorna a data.
-        }
-    }
-    return null; // Não encontrou nenhuma data nos próximos 90 dias
-}
-
-/**
- * Salva um novo agendamento e cria o "bilhete" de notificação na fila.
- */
-export async function salvarAgendamento(empresaId, currentUser, agendamento) {
-    try {
-        // --- PASSO 1: Salva o agendamento principal (lógica original intacta) ---
-        const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
-        await addDoc(agendamentosRef, {
-            empresaId: empresaId,
-            clienteId: currentUser.uid,
-            clienteNome: currentUser.displayName,
-            clienteFoto: currentUser.photoURL,
-            profissionalId: agendamento.profissional.id,
-            profissionalNome: agendamento.profissional.nome,
-            servicoId: agendamento.servico.id,
-            servicoNome: agendamento.servico.nome,
-            servicoDuracao: agendamento.servico.duracao,
-            servicoPreco: agendamento.servico.preco,
-            data: agendamento.data,
-            horario: agendamento.horario,
-            status: 'ativo',
-            criadoEm: serverTimestamp()
         });
+    }, (error) => {
+        console.error("❌ [Ouvinte] Erro fatal no listener da fila de notificações:", error);
+    });
+    console.log(`✅ [Ouvinte] Ouvinte de notificações em tempo real iniciado para o dono: ${donoId}`);
+}
 
-        // ✅ --- PASSO 2: Cria o "bilhete" na fila de notificações (ajustado para donoId) ---
-        if (agendamento.empresa && agendamento.empresa.donoId) {
-            try {
-                const filaRef = collection(db, "filaDeNotificacoes");
-                await addDoc(filaRef, {
-                    donoId: agendamento.empresa.donoId, // <-- agora utiliza o padrão correto do Pronti!
-                    titulo: "🎉 Novo Agendamento!",
-                    mensagem: `${currentUser.displayName} agendou ${agendamento.servico.nome} com ${agendamento.profissional.nome} às ${agendamento.horario}.`,
-                    criadoEm: new Date(),
-                    status: "pendente"
-                });
-                console.log("✅ Bilhete de notificação adicionado à fila.");
-            } catch (error) {
-                // O erro de permissão acontecerá aqui. Vamos resolvê-lo com as Regras do Firestore.
-                console.error("❌ Erro ao adicionar notificação à fila:", error);
-            }
-        } else {
-            // Este aviso ajuda a depurar se o 'donoId' não for passado para salvarAgendamento. O bilhete de notificação não foi criado.
-            console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação não foi criado.");
-        }
-
-        // --- PASSO 3: Limpa a UI (lógica original intacta) ---
-        if (typeof limparUIAgendamento === "function") {
-            limparUIAgendamento();
-        }
-        
-    } catch (error) {
-        console.error("Erro principal ao salvar agendamento:", error);
-        throw new Error('Ocorreu um erro ao confirmar seu agendamento.');
+function pararOuvinteDeNotificacoes() {
+    if (unsubscribeDeFila) {
+        unsubscribeDeFila();
+        unsubscribeDeFila = null;
+        console.log("🛑 [Ouvinte] Ouvinte de notificações parado.");
     }
 }
 
-/**
- * Busca os agendamentos de um cliente específico.
- */
-export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) {
-    if (!currentUser) return [];
-    try {
-        const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
-        const hoje = new Date().toISOString().split('T')[0];
-
-        let q;
-        if (modo === 'ativos') {
-            q = query(
-                agendamentosRef,
-                where("clienteId", "==", currentUser.uid),
-                where("status", "==", "ativo"),
-                where("data", ">=", hoje)
-            );
-        } else { // historico
-            q = query(
-                agendamentosRef,
-                where("clienteId", "==", currentUser.uid),
-                where("data", "<", hoje)
-            );
-        }
-
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.error("Erro ao buscar agendamentos do cliente:", error);
-        if (error.code === 'failed-precondition' && error.message.includes("The query requires an index")) {
-             throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
-        }
-        throw error;
-    }
-}
-
-/**
- * Cancela um agendamento (muda o status para 'cancelado'). (REVISADO: SILENCIOSO)
- */
-export async function cancelarAgendamento(empresaId, agendamentoId) {
-    try {
-        const agendamentoRef = doc(db, 'empresarios', empresaId, 'agendamentos', agendamentoId);
-        await updateDoc(agendamentoRef, {
-            status: 'cancelado_pelo_cliente',
-            canceladoEm: serverTimestamp()
-        });
-        // Mensagem removida para ser controlada pelo vitrine.js
-    } catch (error) {
-        console.error("Erro ao cancelar agendamento:", error);
-        throw new Error("Ocorreu um erro ao cancelar o agendamento.");
-    }
-}
+window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
+window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
