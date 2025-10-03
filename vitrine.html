@@ -20,7 +20,7 @@
     <meta property="og:type" content="website">
     -->
 
-    <!-- Estilos (Preservados e com Adições) -->
+    <!-- Estilos (Preservados e com a Correção) -->
     <style>
         /* Estilos do Modal (100% Preservados) */
         .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; animation: modalFadeIn 0.3s ease-out; }
@@ -43,14 +43,41 @@
         .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
         .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
 
-        /* ✅ NOVO: Estilos dos Cards (copiados do seu painel) */
+        /* Estilos dos Cards (copiados do seu painel) */
         .dashboard-welcome-center { text-align: left; margin-bottom: 30px; width: 100%; color: #374151; }
         .dashboard-welcome-center h1 { font-size: clamp(1.8rem, 5vw, 2.2rem); color: #1f2937; margin: 0 0 5px 0; }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.1rem); font-weight: 400; color: #4b5563; margin: 0; }
         .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
-        .menu-card { color: #fff; border-radius: 16px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; font-weight: 600; font-size: 0.9rem; text-decoration: none; box-shadow: 0 6px 15px rgba(0,0,0,0.1); transition: transform 0.25s, box-shadow 0.25s, filter 0.25s; border: none; aspect-ratio: 1 / 1; }
-        .menu-card:hover { transform: translateY(-5px) scale(1.03); box-shadow: 0 10px 25px rgba(0,0,0,0.2); filter: brightness(1.1); cursor: pointer; }
-        .menu-card i { font-size: 2rem; }
+        
+        /* ✅ CORREÇÃO: Renomeado de '.menu-card' para '.vitrine-card' para evitar conflito */
+        .vitrine-card { 
+            color: #fff; 
+            border-radius: 16px; 
+            padding: 20px 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            gap: 12px; 
+            font-weight: 600; 
+            font-size: 0.9rem; 
+            text-decoration: none; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1); 
+            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s; 
+            border: none; 
+            aspect-ratio: 1 / 1; 
+        }
+        .vitrine-card:hover { 
+            transform: translateY(-5px) scale(1.03); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            filter: brightness(1.1); 
+            cursor: pointer; 
+        }
+        .vitrine-card i { 
+            font-size: 2rem; 
+        }
+        
         .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
     </style>
 </head>
@@ -64,7 +91,7 @@
             
             <div class="header-vitrine-mobile" style="display: none;">
                 <img id="logo-publico-mobile" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">
-                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED );-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
+                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED  );-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
             </div>
             
             <div id="main-navigation-container">
@@ -73,13 +100,15 @@
                     <p>O que você gostaria de fazer?</p>
                 </div>
                 <div class="dashboard-grid-cards" id="vitrine-grid-cards">
-                    <a href="#" class="menu-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);"><i class="fa-solid fa-calendar-check"></i><span>Agendar</span></a>
-                    <a href="#" class="menu-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"><i class="fa-solid fa-list-check"></i><span>Minhas Reservas</span></a>
-                    <a href="#" class="menu-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #f59e42, #ff5858);"><i class="fa-solid fa-circle-info"></i><span>Sobre o Local</span></a>
-                    <a href="#" class="menu-card" data-menu-card="perfil" style="background: linear-gradient(135deg, #374151, #111827);"><i class="fa-solid fa-user-circle"></i><span id="card-perfil-texto">Perfil</span></a>
+                    <!-- ✅ CORREÇÃO: Renomeado de 'menu-card' para 'vitrine-card' -->
+                    <a href="#" class="vitrine-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);"><i class="fa-solid fa-calendar-check"></i><span>Agendar</span></a>
+                    <a href="#" class="vitrine-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"><i class="fa-solid fa-list-check"></i><span>Minhas Reservas</span></a>
+                    <a href="#" class="vitrine-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #f59e42, #ff5858);"><i class="fa-solid fa-circle-info"></i><span>Sobre o Local</span></a>
+                    <a href="#" class="vitrine-card" data-menu-card="perfil" style="background: linear-gradient(135deg, #374151, #111827);"><i class="fa-solid fa-user-circle"></i><span id="card-perfil-texto">Perfil</span></a>
                 </div>
             </div>
 
+            <!-- O restante do seu HTML (seções de conteúdo, modais, scripts) permanece 100% idêntico -->
             <div id="menu-agendamento" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card">
@@ -113,7 +142,6 @@
         </main>
     </div>
 
-    <!-- Modais (custom-confirm-modal e modal-auth-janela) 100% Preservados -->
     <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
     
     <div id="modal-auth-janela" class="modal-overlay">
@@ -143,7 +171,7 @@
                     <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
                     <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
                     <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
-                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp  )" required>
                     <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
                 </form>
                 <div style="text-align:center;margin-top:16px;">
@@ -153,15 +181,13 @@
         </div>
     </div>
     
-    <!-- Seus scripts originais -->
     <script type="module" src="./vitrine.js"></script>
 
-    <!-- Script do Modal de Login (100% Preservado) -->
     <script type="module">
         import { auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
-        document.addEventListener('DOMContentLoaded', ( ) => {
+        document.addEventListener('DOMContentLoaded', (  ) => {
             const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
             const modalAuth = document.getElementById('modal-auth-janela');
             const btnCloseModal = document.getElementById('modal-auth-close-btn');
@@ -189,12 +215,11 @@
         });
     </script>
 
-    <!-- Script de Desconto (100% Preservado) -->
     <script type="module">
         import { db } from './vitrini-firebase.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        function getHojeDiaSemana( ) { return new Date().getDay(); }
+        function getHojeDiaSemana(  ) { return new Date().getDay(); }
         async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
             if (!empresaId) return;
             const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
@@ -258,7 +283,6 @@
         }
     </script>
 
-    <!-- ✅ NOVO: Script para controlar a navegação por cards -->
     <script type="module">
         import { state } from './vitrini-state.js';
         import { fazerLogin } from './vitrini-auth.js';
@@ -280,7 +304,7 @@
             }
 
             mainNavigationContainer.addEventListener('click', (e) => {
-                const card = e.target.closest('.menu-card');
+                const card = e.target.closest('.vitrine-card'); // ✅ CORREÇÃO: Usa a nova classe '.vitrine-card'
                 if (!card) return;
                 e.preventDefault();
 
@@ -312,4 +336,5 @@
     </script>
 </body>
 </html>
+
 
