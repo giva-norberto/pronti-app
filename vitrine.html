@@ -42,23 +42,32 @@
         .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
         .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
         
-        /* ✅ CARDS CENTRALIZADOS E RESPONSIVOS */
+        /* ✅ CARDS CENTRALIZADOS E RESPONSIVOS COM !important */
         .dashboard-grid-cards { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 20px; 
-            justify-content: center; 
-            width: 100%; 
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 0 20px;
+            display: flex !important; 
+            flex-wrap: wrap !important; 
+            gap: 20px !important; 
+            justify-content: center !important; 
+            align-items: flex-start !important;
+            width: 100% !important; 
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            padding: 0 20px !important;
+        }
+        
+        #vitrine-cards-grid {
+            display: flex !important; 
+            flex-wrap: wrap !important; 
+            gap: 20px !important; 
+            justify-content: center !important; 
+            align-items: flex-start !important;
         }
         
         /* Para telas de celular */
         @media (max-width: 640px) {
             .dashboard-grid-cards {
-                gap: 15px;
-                padding: 0 15px;
+                gap: 15px !important;
+                padding: 0 15px !important;
             }
         }
         
@@ -322,7 +331,7 @@
         });
     </script>
     <script type="module">
-        import { db, auth } from './vitrini-firebase.js'; // Verifique o caminho do seu arquivo firebase
+        import { db, auth } from './vitrini-firebase.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         function atualizarHeaderCard(dadosEmpresa, usuario) {
