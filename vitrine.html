@@ -6,165 +6,102 @@
     <title>Agendamento Online</title>
     
     <link rel="stylesheet" href="vitrine.css">
+    <link rel="stylesheet" href="menu-principal.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
-        /* ESTILO BASE PRONTI */
+        /* ✅ ESTILO BASE (COR DE FUNDO E TEXTO) ATUALIZADO */
         body {
             font-family: 'Poppins', sans-serif;
             margin: 0;
+            /* O mesmo gradiente da tela de admin */
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
-            color: #fff;
+            color: #fff; /* Cor de texto padrão para branco */
             min-height: 100vh;
         }
 
-        /* ✅ AJUSTE DE CENTRALIZAÇÃO */
-        #main-navigation-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Isso vai centralizar o header-card e o grid de cards */
-            width: 100%;
-        }
-
-        /* --- ESTILOS DO CSS QUE VOCÊ FORNECEU, INTEGRADOS E AJUSTADOS --- */
+        /* Estilos gerais e de modais (sem alterações) */
+        .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; animation: modalFadeIn 0.3s ease-out; }
+        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-auth-container { background: white; padding: 2rem 1.5rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; color: #333; /* Cor de texto para o conteúdo do modal */ }
+        #modal-auth-close-btn { position: absolute; top: 10px; right: 10px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+        #modal-auth-close-btn:hover { background: #e2e8f0; transform: rotate(90deg); }
+        .modal-auth-step h2 { font-size: 1.5rem; color: #1e293b; text-align: center; margin-top: 0; margin-bottom: 24px; }
+        .modal-auth-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; border: 1px solid #d1d5db; }
+        #modal-auth-btn-google { background-color: #ffffff; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        #modal-auth-btn-google:hover { background-color: #f9fafb; border-color: #adb5bd; }
+        .modal-auth-btn-submit { background-color: #4f46e5; color: white; border: none; }
+        .modal-auth-btn-submit:hover { opacity: 0.9; }
+        .modal-auth-step input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 1rem; margin-bottom: 10px; }
+        .modal-auth-step a { color: #4f46e5; text-decoration: none; font-weight: 600; }
+        .modal-auth-step a:hover { text-decoration: underline; }
+        .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
+        .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
+        .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
+        .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
+        .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
         
-        /* Container do grid do menu principal */
-        #vitrine-cards-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 2 colunas */
-            gap: 24px; /* Levemente reduzido */
-            width: 100%;
-            max-width: 340px; /* Ajustado para o novo tamanho dos cards */
-            margin: 0 auto; /* Mantém a centralização do grid em si */
-        }
-
-        /* ✅ Card do menu principal — TAMANHO REDUZIDO */
-        #vitrine-cards-grid .vitrine-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 18px;
-            gap: 8px;
-            width: 150px;  /* Reduzido de 180px */
-            height: 150px; /* Reduzido de 180px */
-            aspect-ratio: 1 / 1;
-            color: #fff;
-            font-weight: 700;
-            border-radius: 22px;
-            text-decoration: none;
-            box-shadow: 0 4px 24px rgba(50,50,93,0.13);
-            transition: transform 0.19s, box-shadow 0.19s, filter 0.19s;
-            font-size: 1.1rem; /* Reduzido */
-            border: none;
-        }
-        #vitrine-cards-grid .vitrine-card:hover {
-            transform: translateY(-8px) scale(1.07);
-            box-shadow: 0 14px 38px rgba(50,50,93,0.22);
-            filter: brightness(1.17);
-            cursor: pointer;
-        }
-        #vitrine-cards-grid .vitrine-card i {
-            font-size: 2.2rem; /* Reduzido */
-            margin-bottom: 5px;
-            text-shadow: 0 2px 12px #2226;
-        }
-        #vitrine-cards-grid .vitrine-card span {
-            font-size: 1em; /* Reduzido */
-            font-weight: 800;
-            text-shadow: 0 2px 10px #2226, 0 1px 1px #0002;
-            color: #fff;
-            line-height: 1.2;
-        }
-
-        /* Cores individuais (mantidas) */
-        .vitrine-card[data-menu-card="agendamento"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
-        .vitrine-card[data-menu-card="visualizacao"] { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-        .vitrine-card[data-menu-card="informacoes"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
-        .vitrine-card[data-menu-card="perfil"] { background: linear-gradient(135deg, #374151, #111827); }
-
-        /* ✅ CABEÇALHO COM O NOVO ESTILO QUE VOCÊ MANDOU */
+        /* ✅ CABEÇALHO ATUALIZADO PARA ESTILO "GLASS" (VIDRO) */
         .header-vitrine-card {
-            background: linear-gradient(135deg, #6366f1 60%, #4facfe 100%);
-            box-shadow: 0 8px 32px #6366f122, 0 1.5px 6px #0001;
-            border-radius: 26px;
-            padding: 32px 28px 22px 28px;
+            /* Efeito de vidro semi-transparente */
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); /* Para Safari */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+
+            border-radius: 22px;
+            padding: 32px 28px 20px 28px;
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 420px;
-            margin: 0 auto 32px auto; /* Centraliza */
-            border: 2px solid rgba(255,255,255,0.8);
+            max-width: 380px;
+            margin: 0 auto 32px auto; /* Centraliza horizontalmente */
         }
         .header-vitrine-card #logo-publico {
-            width: 90px;
-            height: 90px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 16px;
-            border: 4px solid #fff;
-            box-shadow: 0 4px 26px #4f46e540;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
             background: #fff;
         }
         .header-vitrine-card #nome-negocio-publico {
-            font-size: 1.6rem;
-            font-weight: 900;
-            margin: 0 0 8px 0;
-            color: #fff;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.3);
-            text-align: center;
-            line-height: 1.2;
-        }
-        .header-vitrine-card #boas-vindas-usuario {
-            font-size: 1rem;
-            font-weight: 500;
-            color: #e0e7ff;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        }
-        .header-vitrine-card #usuario-logado-nome {
-            font-size: 1rem;
+            font-size: 1.5rem;
             font-weight: 700;
+            margin: 0 0 6px 0;
+            color: #fff; /* Garante texto branco */
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .header-vitrine-card .boas-vindas-usuario {
+            font-size: 1.05rem;
+            color: #e0e7ff; /* Cor de contraste suave */
+            font-weight: 400;
+            text-align: center;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .header-vitrine-card .usuario-logado-nome {
+            font-size: 1.02rem;
             color: #fff;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.2); /* Fundo sutil para o nome */
             padding: 4px 14px;
             border-radius: 12px;
-            margin-top: 10px;
-            display: none;
+            font-weight: 600;
+            margin-top: 8px;
+            display: none; /* Só mostra ao logar */
         }
-
-        /* Responsividade (ajustada) */
-        @media (max-width: 600px) {
-            #vitrine-cards-grid {
-                gap: 16px;
-                max-width: 95vw;
-            }
-            #vitrine-cards-grid .vitrine-card {
-                width: 100%; /* Deixa o grid controlar o tamanho */
-                height: 140px; /* Altura fixa para manter proporção */
-                padding: 10px;
-                font-size: 1rem;
-            }
-             .header-vitrine-card {
-                padding: 24px 18px 18px 18px;
-                max-width: 95vw;
-            }
-            .header-vitrine-card #logo-publico {
-                width: 70px;
-                height: 70px;
-            }
-            .header-vitrine-card #nome-negocio-publico {
-                font-size: 1.4rem;
-            }
+        /* ✅ GARANTE CONTRASTE NOS CARDS INTERNOS */
+        .card {
+            background-color: #fff;
+            color: #374151; /* Cor escura para o texto dentro dos cards */
         }
-        
-        /* Estilos gerais preservados */
-        .card { background-color: #fff; color: #374151; }
-        .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
@@ -185,10 +122,22 @@
                 </div>
 
                 <div class="dashboard-grid-cards" id="vitrine-cards-grid">
-                    <a href="#" class="vitrine-card" data-menu-card="agendamento"><i class="fa-solid fa-calendar-check"></i><span>Agendar</span></a>
-                    <a href="#" class="vitrine-card" data-menu-card="visualizacao"><i class="fa-solid fa-list-check"></i><span>Minhas Reservas</span></a>
-                    <a href="#" class="vitrine-card" data-menu-card="informacoes"><i class="fa-solid fa-circle-info"></i><span>Sobre o Local</span></a>
-                    <a href="#" class="vitrine-card" data-menu-card="perfil"><i class="fa-solid fa-user-circle"></i><span id="card-perfil-texto">Perfil</span></a>
+                    <a href="#" class="vitrine-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Agendar</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Minhas Reservas</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #f59e42, #ff5858);">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Sobre o Local</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="perfil" style="background: linear-gradient(135deg, #374151, #111827);">
+                        <i class="fa-solid fa-user-circle"></i>
+                        <span id="card-perfil-texto">Perfil</span>
+                    </a>
                 </div>
             </div>
 
@@ -225,12 +174,43 @@
     <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
     <div id="modal-auth-janela" class="modal-overlay">
         <div class="modal-auth-container">
+            <button id="modal-auth-close-btn" title="Fechar">&times;</button>
+            <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
+            <div id="modal-auth-login" class="modal-auth-step">
+                <h2>Faça seu Login</h2>
+                <p style="text-align:center; margin-top: -15px; margin-bottom: 24px; color: #64748b;">para continuar com o agendamento.</p>
+                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" style="width: 18px; height: 18px;">
+                    <span>Entrar com Google</span>
+                </button>
+                <div style="text-align:center;color:#9ca3af;margin:16px 0;">ou</div>
+                <form id="modal-auth-form-login">
+                    <input id="modal-auth-login-email" type="email" placeholder="E-mail" required>
+                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>
+                    <button class="modal-auth-btn modal-auth-btn-submit">Entrar</button>
+                </form>
+                <div style="text-align:center;margin-top:16px;">
+                    <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
+                </div>
             </div>
+            <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
+                <h2>Crie sua Conta</h2>
+                <form id="modal-auth-form-cadastro">
+                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
+                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
+                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>
+                    <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
+                </form>
+                <div style="text-align:center;margin-top:16px;">
+                    <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script type="module" src="./vitrine.js"></script>
     <script type="module">
-        // Script do modal de confirmação (sem alterações)
         import { auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         document.addEventListener('DOMContentLoaded', ( ) => {
@@ -245,6 +225,7 @@
                         modalAuth.style.display = 'flex';
                         const unsubscribe = onAuthStateChanged(auth, (user) => {
                             if (user) {
+                                console.log('Login detectado! Fechando modal e continuando agendamento.');
                                 unsubscribe(); fecharModal();
                                 setTimeout(() => { btnConfirmarAgendamento.click(); }, 150);
                             }
@@ -257,22 +238,71 @@
         });
     </script>
     <script type="module">
-        // Script de promoções (sem alterações)
         import { db } from './vitrini-firebase.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        async function renderizarServicosVitrine(empresaId) { /* ...código de renderizar serviços... */ }
+        function getHojeDiaSemana( ) { return new Date().getDay(); }
+        async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
+            if (!empresaId) return;
+            const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
+            const snapshot = await getDocs(promocoesRef);
+            const promocoesAtivas = []; const hoje = getHojeDiaSemana();
+            snapshot.forEach(doc => { const promo = doc.data(); if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) { promocoesAtivas.push({ id: doc.id, ...promo }); } });
+            listaServicos.forEach(servico => {
+                let melhorPromocao = null;
+                for (let promo of promocoesAtivas) { if (promo.servicoIds && promo.servicoIds.includes(servico.id)) { melhorPromocao = promo; break; } }
+                if (!melhorPromocao) { melhorPromocao = promocoesAtivas.find(promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)); }
+                if (melhorPromocao) {
+                    let precoAntigo = servico.preco; let precoNovo = precoAntigo;
+                    if (melhorPromocao.tipoDesconto === "percentual") { precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100); } else if (melhorPromocao.tipoDesconto === "valorFixo") { precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0); }
+                    servico.promocao = { nome: melhorPromocao.nome, precoOriginal: precoAntigo, precoComDesconto: precoNovo, tipoDesconto: melhorPromocao.tipoDesconto, valorDesconto: melhorPromocao.valor };
+                }
+            });
+        }
+        async function renderizarServicosVitrine(empresaId) {
+            const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+            const snapshot = await getDocs(servicosRef);
+            const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
+            await aplicarPromocoesNaVitrine(listaServicos, empresaId);
+            const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
+            listaServicosDiv.innerHTML = "";
+            listaServicos.forEach(servico => {
+                const div = document.createElement("div"); div.classList.add("servico-card"); let precoHtml = "";
+                if (servico.promocao) { precoHtml = `<span class="preco-original">R$ ${servico.promocao.precoOriginal.toFixed(2)}</span> <span class="preco-promocional">R$ ${servico.promocao.precoComDesconto.toFixed(2)}</span> <span class="badge-promocao">PROMO</span>`; } else { precoHtml = `<span class="preco-promocional">R$ ${servico.preco.toFixed(2)}</span>`; }
+                div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
+                listaServicosDiv.appendChild(div);
+            });
+        }
         let empresaId = localStorage.getItem("empresaAtivaId") || null;
         if (empresaId) { renderizarServicosVitrine(empresaId); }
     </script>
     <script type="module">
-        // Script de navegação (sem alterações)
         import { state } from './vitrini-state.js';
         import { fazerLogin } from './vitrini-auth.js';
-        document.addEventListener('DOMContentLoaded', () => { /* ...código de navegação... */ });
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainNavigationContainer = document.getElementById('main-navigation-container');
+            const contentSections = document.querySelectorAll('.main-content-vitrine > .menu-content');
+            function showMainMenu() { contentSections.forEach(section => section.style.display = 'none'); mainNavigationContainer.style.display = 'block'; }
+            function showContentSection(menuId) {
+                mainNavigationContainer.style.display = 'none';
+                contentSections.forEach(section => { section.style.display = section.id === menuId ? 'block' : 'none'; });
+            }
+            mainNavigationContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.vitrine-card'); if (!card) return; e.preventDefault();
+                const menuKey = card.dataset.menuCard;
+                if (menuKey === 'perfil' && !state.currentUser) { fazerLogin(); return; }
+                showContentSection(`menu-${menuKey}`);
+            });
+            document.querySelectorAll('.btn-voltar').forEach(button => { button.addEventListener('click', showMainMenu); });
+            const cardPerfilTexto = document.getElementById('card-perfil-texto');
+            if (cardPerfilTexto) {
+                const observer = new MutationObserver(() => { cardPerfilTexto.textContent = state.currentUser ? 'Meu Perfil' : 'Login'; });
+                const userInfoDiv = document.getElementById('user-info');
+                if(userInfoDiv) { observer.observe(userInfoDiv, { attributes: true, childList: true, subtree: true }); }
+            }
+        });
     </script>
     <script type="module">
-        // Script final de carregamento (sem alterações na lógica)
-        import { db, auth } from './vitrini-firebase.js'; 
+        import { db, auth } from './vitrini-firebase.js'; // Verifique o caminho do seu arquivo firebase
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         function atualizarHeaderCard(dadosEmpresa, usuario) {
@@ -310,12 +340,18 @@
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
                         dadosEmpresa = docSnap.data();
-                    } else { console.error("Empresa não encontrada:", empresaId); }
-                } catch (error) { console.error("Erro ao buscar dados da empresa:", error); }
-            } else { console.error("ID da empresa não encontrado no localStorage."); }
+                    } else {
+                        console.error("Empresa não encontrada:", empresaId);
+                    }
+                } catch (error) {
+                    console.error("Erro ao buscar dados da empresa:", error);
+                }
+            } else {
+                console.error("ID da empresa não encontrado no localStorage.");
+            }
             onAuthStateChanged(auth, (usuario) => {
                 atualizarHeaderCard(dadosEmpresa, usuario);
-            });
+});
             loader.style.display = 'none';
             content.style.display = 'block';
         }
