@@ -6,7 +6,8 @@
     <title>Agendamento Online</title>
     
     <link rel="stylesheet" href="vitrine.css">
-    
+    <link rel="stylesheet" href="menu-principal.css"><!-- CSS EXCLUSIVO PARA OS CARDS DO MENU PRINCIPAL -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -20,9 +21,9 @@
     <meta property="og:type" content="website">
     -->
 
-    <!-- Estilos (Preservados e com a Correção) -->
+    <!-- Estilos do Modal e outros (não alterados) -->
     <style>
-        /* Estilos do Modal (100% Preservados) */
+        /* ... (restante do CSS inline preservado, igual ao seu exemplo anterior) ... */
         .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; animation: modalFadeIn 0.3s ease-out; }
         @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
         .modal-auth-container { background: white; padding: 2rem 1.5rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; }
@@ -37,48 +38,15 @@
         .modal-auth-step input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 1rem; margin-bottom: 10px; }
         .modal-auth-step a { color: #4f46e5; text-decoration: none; font-weight: 600; }
         .modal-auth-step a:hover { text-decoration: underline; }
-        
-        /* Estilos de Desconto (100% Preservados) */
         .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
         .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
         .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
-
-        /* Estilos dos Cards (copiados do seu painel) */
         .dashboard-welcome-center { text-align: left; margin-bottom: 30px; width: 100%; color: #374151; }
         .dashboard-welcome-center h1 { font-size: clamp(1.8rem, 5vw, 2.2rem); color: #1f2937; margin: 0 0 5px 0; }
         .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.1rem); font-weight: 400; color: #4b5563; margin: 0; }
         .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
-        
-        /* ✅ CORREÇÃO: Renomeado de '.menu-card' para '.vitrine-card' para evitar conflito */
-        .vitrine-card { 
-            color: #fff; 
-            border-radius: 16px; 
-            padding: 20px 10px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            text-align: center; 
-            gap: 12px; 
-            font-weight: 600; 
-            font-size: 0.9rem; 
-            text-decoration: none; 
-            box-shadow: 0 6px 15px rgba(0,0,0,0.1); 
-            transition: transform 0.25s, box-shadow 0.25s, filter 0.25s; 
-            border: none; 
-            aspect-ratio: 1 / 1; 
-        }
-        .vitrine-card:hover { 
-            transform: translateY(-5px) scale(1.03); 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-            filter: brightness(1.1); 
-            cursor: pointer; 
-        }
-        .vitrine-card i { 
-            font-size: 2rem; 
-        }
-        
         .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
+        /* ... (outros estilos preservados) ... */
     </style>
 </head>
 <body>
@@ -100,15 +68,26 @@
                     <p>O que você gostaria de fazer?</p>
                 </div>
                 <div class="dashboard-grid-cards" id="vitrine-grid-cards">
-                    <!-- ✅ CORREÇÃO: Renomeado de 'menu-card' para 'vitrine-card' -->
-                    <a href="#" class="vitrine-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);"><i class="fa-solid fa-calendar-check"></i><span>Agendar</span></a>
-                    <a href="#" class="vitrine-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"><i class="fa-solid fa-list-check"></i><span>Minhas Reservas</span></a>
-                    <a href="#" class="vitrine-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #f59e42, #ff5858);"><i class="fa-solid fa-circle-info"></i><span>Sobre o Local</span></a>
-                    <a href="#" class="vitrine-card" data-menu-card="perfil" style="background: linear-gradient(135deg, #374151, #111827);"><i class="fa-solid fa-user-circle"></i><span id="card-perfil-texto">Perfil</span></a>
+                    <a href="#" class="vitrine-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Agendar</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Minhas Reservas</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #f59e42, #ff5858);">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Sobre o Local</span>
+                    </a>
+                    <a href="#" class="vitrine-card" data-menu-card="perfil" style="background: linear-gradient(135deg, #374151, #111827);">
+                        <i class="fa-solid fa-user-circle"></i>
+                        <span id="card-perfil-texto">Perfil</span>
+                    </a>
                 </div>
             </div>
 
-            <!-- O restante do seu HTML (seções de conteúdo, modais, scripts) permanece 100% idêntico -->
+            <!-- Demais seções permanecem idênticas -->
             <div id="menu-agendamento" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card">
@@ -304,7 +283,7 @@
             }
 
             mainNavigationContainer.addEventListener('click', (e) => {
-                const card = e.target.closest('.vitrine-card'); // ✅ CORREÇÃO: Usa a nova classe '.vitrine-card'
+                const card = e.target.closest('.vitrine-card');
                 if (!card) return;
                 e.preventDefault();
 
