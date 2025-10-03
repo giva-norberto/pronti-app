@@ -13,10 +13,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
+        /* ✅ ESTILO BASE (COR DE FUNDO E TEXTO) ATUALIZADO */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            /* O mesmo gradiente da tela de admin */
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
+            color: #fff; /* Cor de texto padrão para branco */
+            min-height: 100vh;
+        }
+
         /* Estilos gerais e de modais (sem alterações) */
         .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; animation: modalFadeIn 0.3s ease-out; }
         @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .modal-auth-container { background: white; padding: 2rem 1.5rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; }
+        .modal-auth-container { background: white; padding: 2rem 1.5rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; color: #333; /* Cor de texto para o conteúdo do modal */ }
         #modal-auth-close-btn { position: absolute; top: 10px; right: 10px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
         #modal-auth-close-btn:hover { background: #e2e8f0; transform: rotate(90deg); }
         .modal-auth-step h2 { font-size: 1.5rem; color: #1e293b; text-align: center; margin-top: 0; margin-bottom: 24px; }
@@ -34,19 +44,23 @@
         .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
         .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
         
-        /* ✅ ESTILOS DO CARD DO CABEÇALHO (RESTAURADOS) */
+        /* ✅ CABEÇALHO ATUALIZADO PARA ESTILO "GLASS" (VIDRO) */
         .header-vitrine-card {
-            background: linear-gradient(135deg, #6366f1 60%, #4facfe 100%);
-            box-shadow: 0 8px 32px #6366f122, 0 1.5px 6px #0001;
+            /* Efeito de vidro semi-transparente */
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); /* Para Safari */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+
             border-radius: 22px;
             padding: 32px 28px 20px 28px;
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 380px; /* Aumentado um pouco para melhor visualização */
+            max-width: 380px;
             margin: 0 auto 32px auto; /* Centraliza horizontalmente */
-            border: none;
         }
         .header-vitrine-card #logo-publico {
             width: 80px;
@@ -55,34 +69,38 @@
             object-fit: cover;
             margin-bottom: 16px;
             border: 3px solid #fff;
-            box-shadow: 0 2px 12px #2222;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
             background: #fff;
         }
         .header-vitrine-card #nome-negocio-publico {
             font-size: 1.5rem;
-            font-weight: 900;
+            font-weight: 700;
             margin: 0 0 6px 0;
-            color: #fff;
-            text-shadow: 0 2px 8px #00000088;
+            color: #fff; /* Garante texto branco */
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
             text-align: center;
         }
         .header-vitrine-card .boas-vindas-usuario {
             font-size: 1.05rem;
-            color: #e0e7ff;
-            font-weight: 500;
+            color: #e0e7ff; /* Cor de contraste suave */
+            font-weight: 400;
             text-align: center;
-            text-shadow: 0 1px 4px #00000066;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         .header-vitrine-card .usuario-logado-nome {
             font-size: 1.02rem;
             color: #fff;
-            background: rgba(0,0,0,0.15);
+            background: rgba(0,0,0,0.2); /* Fundo sutil para o nome */
             padding: 4px 14px;
             border-radius: 12px;
-            font-weight: 700;
+            font-weight: 600;
             margin-top: 8px;
-            box-shadow: inset 0 1px 2px #00000033;
             display: none; /* Só mostra ao logar */
+        }
+        /* ✅ GARANTE CONTRASTE NOS CARDS INTERNOS */
+        .card {
+            background-color: #fff;
+            color: #374151; /* Cor escura para o texto dentro dos cards */
         }
     </style>
 </head>
@@ -165,7 +183,7 @@
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" style="width: 18px; height: 18px;">
                     <span>Entrar com Google</span>
                 </button>
-                <div style="text-align:center;color:#ca3af;margin:16px 0;">ou</div>
+                <div style="text-align:center;color:#9ca3af;margin:16px 0;">ou</div>
                 <form id="modal-auth-form-login">
                     <input id="modal-auth-login-email" type="email" placeholder="E-mail" required>
                     <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>
@@ -283,53 +301,39 @@
             }
         });
     </script>
-    
     <script type="module">
         import { db, auth } from './vitrini-firebase.js'; // Verifique o caminho do seu arquivo firebase
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-
-        // Função para atualizar a interface do card do cabeçalho
         function atualizarHeaderCard(dadosEmpresa, usuario) {
             const logoEl = document.getElementById('logo-publico');
             const nomeNegocioEl = document.getElementById('nome-negocio-publico');
             const boasVindasEl = document.getElementById('boas-vindas-usuario');
             const nomeUsuarioEl = document.getElementById('usuario-logado-nome');
-
-            // 1. Atualiza dados da Empresa
             const nomeDaEmpresa = dadosEmpresa ? dadosEmpresa.nomeFantasia : "Negócio";
             const logoDaEmpresa = dadosEmpresa ? dadosEmpresa.logoUrl : null;
-
             nomeNegocioEl.textContent = nomeDaEmpresa;
-            document.title = nomeDaEmpresa; // Atualiza o título da aba do navegador
-
+            document.title = nomeDaEmpresa; 
             if (logoDaEmpresa) {
                 logoEl.src = logoDaEmpresa;
                 logoEl.alt = `Logo de ${nomeDaEmpresa}`;
             }
-
-            // 2. Atualiza dados do Usuário Logado
             if (usuario) {
-                // Se o usuário está logado
-                boasVindasEl.textContent = `Olá, seja bem-vindo(a)!`; // Mensagem de boas-vindas
+                boasVindasEl.textContent = `Olá, seja bem-vindo(a)!`; 
                 const primeiroNome = usuario.displayName ? usuario.displayName.split(' ')[0] : 'Cliente';
                 nomeUsuarioEl.textContent = primeiroNome;
-                nomeUsuarioEl.style.display = 'inline-block'; // Mostra o nome do usuário
+                nomeUsuarioEl.style.display = 'inline-block'; 
             } else {
-                // Se o usuário NÃO está logado
                 boasVindasEl.textContent = "Faça seu agendamento!";
-                nomeUsuarioEl.style.display = 'none'; // Esconde o campo do nome
+                nomeUsuarioEl.style.display = 'none'; 
                 nomeUsuarioEl.textContent = '';
             }
         }
-
         async function inicializarPagina() {
             const loader = document.getElementById('vitrine-loader');
             const content = document.getElementById('vitrine-content');
             const empresaId = localStorage.getItem("empresaAtivaId");
-            
             let dadosEmpresa = null;
-
             if (empresaId) {
                 try {
                     const docRef = doc(db, "empresarios", empresaId);
@@ -345,20 +349,12 @@
             } else {
                 console.error("ID da empresa não encontrado no localStorage.");
             }
-
-            // Observador de autenticação: Fica "escutando" se o usuário faz login ou logout
             onAuthStateChanged(auth, (usuario) => {
-                // Toda vez que o status do usuário mudar (ou na primeira vez que a página carregar),
-                // chama a função para atualizar o card do cabeçalho
                 atualizarHeaderCard(dadosEmpresa, usuario);
-            });
-            
-            // No final, esconde o loader e mostra o conteúdo principal
+});
             loader.style.display = 'none';
             content.style.display = 'block';
         }
-
-        // Inicia todo o processo quando a página estiver pronta
         document.addEventListener('DOMContentLoaded', inicializarPagina);
     </script>
 </body>
