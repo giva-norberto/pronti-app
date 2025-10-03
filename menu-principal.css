@@ -60,11 +60,19 @@
     margin-top: 3px;
 }
 
-/* Cores individuais (opcional, para dar contraste diferente em cada card) */
-.vitrine-card[data-menu-card="agendamento"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
-.vitrine-card[data-menu-card="visualizacao"] { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-.vitrine-card[data-menu-card="informacoes"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
-.vitrine-card[data-menu-card="perfil"] { background: linear-gradient(135deg, #374151, #111827); }
+/* Cores individuais para cada card */
+.vitrine-card[data-menu-card="agendamento"] {
+    background: linear-gradient(135deg, #6366f1, #4facfe);
+}
+.vitrine-card[data-menu-card="visualizacao"] {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+.vitrine-card[data-menu-card="informacoes"] {
+    background: linear-gradient(135deg, #f59e42, #ff5858);
+}
+.vitrine-card[data-menu-card="perfil"] {
+    background: linear-gradient(135deg, #374151, #111827);
+}
 
 /* Centralização e destaque do logo do negócio */
 .header-vitrine-mobile,
