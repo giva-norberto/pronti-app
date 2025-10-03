@@ -6,65 +6,145 @@
 #vitrine-cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 16px;
+    gap: 18px;
     width: 100%;
-    max-width: 400px;
-    margin: 32px auto 0 auto;
+    max-width: 430px;
+    margin: 38px auto 0 auto;
     place-items: center;
+    justify-content: center;
 }
 
-/* Card do menu principal (compacto, proporcional) */
+/* Card do menu principal (compacto, quadrado, centralizado) */
 #vitrine-cards-grid .vitrine-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 16px 8px;
-    gap: 10px;
-    width: 100%;
-    max-width: 160px;
-    max-height: 160px;
+    padding: 15px 8px;
+    gap: 9px;
+    width: 110px;
+    height: 110px;
+    min-width: 90px;
+    min-height: 90px;
+    max-width: 140px;
+    max-height: 140px;
     aspect-ratio: 1 / 1;
     color: #fff;
     font-weight: 600;
-    border-radius: 14px;
+    border-radius: 16px;
     text-decoration: none;
-    box-shadow: 0 4px 16px rgba(50,50,93,0.08);
+    box-shadow: 0 4px 16px rgba(50,50,93,0.11);
     background: linear-gradient(135deg, #6366f1, #4facfe);
-    transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
-    font-size: 1rem;
+    transition: transform 0.17s, box-shadow 0.17s, filter 0.17s;
+    font-size: 1.04rem;
+    border: none;
 }
 #vitrine-cards-grid .vitrine-card:hover {
-    transform: translateY(-4px) scale(1.04);
-    box-shadow: 0 8px 24px rgba(50,50,93,0.13);
-    filter: brightness(1.09);
+    transform: translateY(-5px) scale(1.045);
+    box-shadow: 0 10px 28px rgba(50,50,93,0.17);
+    filter: brightness(1.13);
     cursor: pointer;
 }
 #vitrine-cards-grid .vitrine-card i {
-    font-size: 2rem;
+    font-size: 1.8rem;
     margin-bottom: 5px;
 }
 #vitrine-cards-grid .vitrine-card span {
-    font-size: 1.08em;
-    font-weight: 600;
+    font-size: 1.07em;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 5px #3332, 0 1px 1px #0003;
+    color: #fff;
+    line-height: 1.18;
+    margin-top: 3px;
+}
+
+/* Cores individuais (opcional, para dar contraste diferente em cada card) */
+.vitrine-card[data-menu-card="agendamento"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
+.vitrine-card[data-menu-card="visualizacao"] { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.vitrine-card[data-menu-card="informacoes"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
+.vitrine-card[data-menu-card="perfil"] { background: linear-gradient(135deg, #374151, #111827); }
+
+/* Centralização e destaque do logo do negócio */
+.header-vitrine-mobile,
+.header-vitrine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    margin-top: 18px;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+}
+
+#logo-publico-mobile,
+#logo-publico {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 12px;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 20px #4f46e540;
+    transition: transform 0.25s;
+    background: #fff;
+}
+#logo-publico-mobile:hover,
+#logo-publico:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 32px #4f46e588;
+}
+
+/* Nome da empresa com contraste e destaque */
+#nome-negocio-publico-mobile,
+#nome-negocio-publico {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0 0 10px 0;
+    letter-spacing: 0.01em;
+    color: #fff;
+    text-shadow: 0 2px 12px #6366f1cc, 0 1px 0 #0005;
+    background: linear-gradient(92deg, #fff 60%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    word-break: break-word;
+    max-width: 95vw;
+    padding: 0 12px;
+    line-height: 1.21;
 }
 
 /* Responsividade para mobile */
 @media (max-width: 600px) {
     #vitrine-cards-grid {
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 10px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 11px;
         max-width: 98vw;
-        margin: 18px auto 0 auto;
+        margin: 12px auto 0 auto;
     }
     #vitrine-cards-grid .vitrine-card {
-        padding: 11px 4px;
-        max-width: 110px;
-        max-height: 110px;
-        font-size: 0.97rem;
+        padding: 8px 2px;
+        width: 84px;
+        height: 84px;
+        max-width: 88px;
+        max-height: 88px;
+        font-size: 0.95rem;
     }
     #vitrine-cards-grid .vitrine-card i {
-        font-size: 1.5rem;
+        font-size: 1.15rem;
+    }
+    #logo-publico-mobile,
+    #logo-publico {
+        width: 70px;
+        height: 70px;
+    }
+    #nome-negocio-publico-mobile,
+    #nome-negocio-publico {
+        font-size: 1.02rem;
+        padding: 0 3vw;
     }
 }
