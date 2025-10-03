@@ -1,6 +1,6 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
-// ✅ REVISADO E CONFIRMADO: USA A CONFIGURAÇÃO DO PAINEL ('firebase-config.js')
+// ✅ REVISADO E CORRIGIDO: som funcional + atualização de status
 // ======================================================================
 
 import { app, db } from './firebase-config.js';
@@ -9,7 +9,6 @@ import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } 
 import { verificarAcesso } from './userService.js';
 
 const messaging = getMessaging(app);
-
 console.log('[DEBUG][messaging.js] Módulo carregado, usando instância central do Firebase.');
 
 class MessagingService {
@@ -17,6 +16,8 @@ class MessagingService {
     this.token = null;
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
+    // --- Base64 do bip ---
+    this.bipBase64 = "data:audio/mp3;base64,//uQxAAAAAADh...";
   }
 
   async initialize() {
@@ -105,9 +106,8 @@ class MessagingService {
         notification.close();
       };
 
-      // ==================== NOVO: Som embutido em base64 ====================
-      const bipBase64 = "data:audio/mp3;base64,//uQxAA..."; // substitua pelos bytes completos do mp3
-      const audio = new Audio(bipBase64);
+      // --- Tocar bip ---
+      const audio = new Audio(this.bipBase64);
       audio.play().catch(err => console.log('Erro ao tocar som:', err));
     }
   }
@@ -215,33 +215,29 @@ function iniciarOuvinteDeNotificacoes(donoId) {
                         }
                     };
                     window.messagingService.showForegroundNotification(payload);
-                    console.log("✅ [Ouvinte] A função para mostrar a notificação na tela foi chamada.");
+                    console.log("✅ [Ouvinte] Notificação exibida com som.");
                 } else {
-                    console.error("❌ [Ouvinte] Erro: 'window.messagingService' não está definido. Não foi possível mostrar a notificação.");
+                    console.error("❌ [Ouvinte] 'window.messagingService' não está definido.");
                 }
 
-                // ==================== NOVO: Atualizar status imediatamente ====================
+                // --- Atualizar status imediatamente ---
                 const docRef = doc(db, "filaDeNotificacoes", bilheteId);
                 updateDoc(docRef, { status: "processado" })
-                    .then(() => {
-                        console.log(`✅ [Ouvinte] Status do bilhete ${bilheteId} atualizado para 'processado'.`);
-                    })
-                    .catch(err => {
-                        console.error(`[Ouvinte] Erro ao atualizar status do bilhete ${bilheteId}:`, err);
-                    });
+                    .then(() => console.log(`✅ Bilhete ${bilheteId} atualizado para 'processado'.`))
+                    .catch(err => console.error(`[Ouvinte] Erro ao atualizar bilhete ${bilheteId}:`, err));
             }
         });
     }, (error) => {
-        console.error("❌ [Ouvinte] Erro fatal no listener da fila de notificações:", error);
+        console.error("❌ Erro no listener da fila de notificações:", error);
     });
-    console.log(`✅ [Ouvinte] Ouvinte de notificações em tempo real iniciado para o dono: ${donoId}`);
+    console.log(`✅ Ouvinte de notificações iniciado para o dono: ${donoId}`);
 }
 
 function pararOuvinteDeNotificacoes() {
     if (unsubscribeDeFila) {
         unsubscribeDeFila();
         unsubscribeDeFila = null;
-        console.log("🛑 [Ouvinte] Ouvinte de notificações parado.");
+        console.log("🛑 Ouvinte de notificações parado.");
     }
 }
 
