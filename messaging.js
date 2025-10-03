@@ -17,7 +17,7 @@ class MessagingService {
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
     // --- Base64 do bip ---
-    this.bipBase64 = "data:audio/mp3;base64,//uQxAAAAAADh...";
+    this.bipBase64 = "data:audio/mp3;base64,//uQxAABAAAAAABAAABAAABAAAAnQCAHAAABAAABAAABAAABAAABAAgAZGF0YYAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAAE=";
   }
 
   async initialize() {
