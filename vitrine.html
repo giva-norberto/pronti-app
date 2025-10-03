@@ -41,36 +41,7 @@
         .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
         .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
         .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
-        
-        /* ✅ CARDS CENTRALIZADOS E RESPONSIVOS COM !important */
-        .dashboard-grid-cards { 
-            display: flex !important; 
-            flex-wrap: wrap !important; 
-            gap: 20px !important; 
-            justify-content: center !important; 
-            align-items: flex-start !important;
-            width: 100% !important; 
-            max-width: 100% !important;
-            margin: 0 auto !important;
-            padding: 0 20px !important;
-        }
-        
-        #vitrine-cards-grid {
-            display: flex !important; 
-            flex-wrap: wrap !important; 
-            gap: 20px !important; 
-            justify-content: center !important; 
-            align-items: flex-start !important;
-        }
-        
-        /* Para telas de celular */
-        @media (max-width: 640px) {
-            .dashboard-grid-cards {
-                gap: 15px !important;
-                padding: 0 15px !important;
-            }
-        }
-        
+        .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
         .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
         
         /* ✅ CABEÇALHO ATUALIZADO PARA ESTILO "GLASS" (VIDRO) */
@@ -331,7 +302,7 @@
         });
     </script>
     <script type="module">
-        import { db, auth } from './vitrini-firebase.js';
+        import { db, auth } from './vitrini-firebase.js'; // Verifique o caminho do seu arquivo firebase
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         function atualizarHeaderCard(dadosEmpresa, usuario) {
@@ -380,7 +351,7 @@
             }
             onAuthStateChanged(auth, (usuario) => {
                 atualizarHeaderCard(dadosEmpresa, usuario);
-            });
+});
             loader.style.display = 'none';
             content.style.display = 'block';
         }
