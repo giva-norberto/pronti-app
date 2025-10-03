@@ -198,7 +198,7 @@ function iniciarOuvinteDeNotificacoes(donoId) {
     }
     const q = query(
         collection(db, "filaDeNotificacoes"),
-        where("paraDonoId", "==", donoId),
+        where("donoId", "==", donoId),   // <-- Corrigido aqui
         where("status", "==", "pendente")
     );
     unsubscribeDeFila = onSnapshot(q, (snapshot) => {
