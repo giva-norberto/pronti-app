@@ -175,6 +175,11 @@
         async function inicializarPagina() {
             try {
                 const sessao = await verificarAcesso();
+                // === INÍCIO DA AUTOMATIZAÇÃO DO OUVINTE DE NOTIFICAÇÕES ===
+                if (sessao && sessao.user && sessao.user.uid && window.iniciarOuvinteDeNotificacoes) {
+                    window.iniciarOuvinteDeNotificacoes(sessao.user.uid);
+                }
+                // === FIM DA AUTOMATIZAÇÃO ===
                 let papelUsuario = sessao.papel;
                 if (sessao.papeis && Array.isArray(sessao.papeis) && sessao.papeis.length > 0) {
                     papelUsuario = sessao.papeis;
