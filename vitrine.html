@@ -13,40 +13,94 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <!-- Metatags OG (Preservadas ) -->
-    <!-- 
-    <meta property="og:title" content="Perfil de Negócio no Pronti App">
-    <meta property="og:description" content="Clique para ver os serviços e fazer seu agendamento.">
-    <meta property="og:image" content="URL_DA_SUA_IMAGEM_PRONTI_AQUI">
-    <meta property="og:type" content="website">
-    -->
-
-    <!-- Estilos do Modal e outros (não alterados) -->
     <style>
-        /* ... (restante do CSS inline preservado, igual ao seu exemplo anterior) ... */
-        .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; animation: modalFadeIn 0.3s ease-out; }
-        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .modal-auth-container { background: white; padding: 2rem 1.5rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; }
-        #modal-auth-close-btn { position: absolute; top: 10px; right: 10px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
-        #modal-auth-close-btn:hover { background: #e2e8f0; transform: rotate(90deg); }
-        .modal-auth-step h2 { font-size: 1.5rem; color: #1e293b; text-align: center; margin-top: 0; margin-bottom: 24px; }
-        .modal-auth-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; border: 1px solid #d1d5db; }
-        #modal-auth-btn-google { background-color: #ffffff; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        #modal-auth-btn-google:hover { background-color: #f9fafb; border-color: #adb5bd; }
-        .modal-auth-btn-submit { background-color: #4f46e5; color: white; border: none; }
-        .modal-auth-btn-submit:hover { opacity: 0.9; }
-        .modal-auth-step input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 1rem; margin-bottom: 10px; }
-        .modal-auth-step a { color: #4f46e5; text-decoration: none; font-weight: 600; }
-        .modal-auth-step a:hover { text-decoration: underline; }
-        .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
-        .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
-        .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
-        .dashboard-welcome-center { text-align: left; margin-bottom: 30px; width: 100%; color: #374151; }
-        .dashboard-welcome-center h1 { font-size: clamp(1.8rem, 5vw, 2.2rem); color: #1f2937; margin: 0 0 5px 0; }
-        .dashboard-welcome-center p { font-size: clamp(1rem, 2.5vw, 1.1rem); font-weight: 400; color: #4b5563; margin: 0; }
-        .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
-        .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
-        /* ... (outros estilos preservados) ... */
+        /* ... seu CSS inline já existente ... */
+
+        /* NOVO: Aparência profissional para o cabeçalho tipo card */
+        .header-vitrine-card {
+            background: linear-gradient(135deg, #6366f1 60%, #4facfe 100%);
+            box-shadow: 0 8px 32px #6366f122, 0 1.5px 6px #0001;
+            border-radius: 22px;
+            padding: 32px 28px 20px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto 32px auto;
+            border: none;
+        }
+        .header-vitrine-card #logo-publico {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 16px;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 12px #2222;
+            background: #fff;
+            transition: transform 0.18s;
+        }
+        .header-vitrine-card #logo-publico:hover {
+            transform: scale(1.08);
+            box-shadow: 0 4px 24px #6366f166;
+        }
+        .header-vitrine-card #nome-negocio-publico {
+            font-size: 1.42rem;
+            font-weight: 900;
+            margin: 0 0 6px 0;
+            letter-spacing: 0.03em;
+            color: #fff;
+            text-shadow: 0 4px 16px #2227, 0 1px 0 #0007;
+            background: none;
+            text-align: center;
+            word-break: break-word;
+            max-width: 92vw;
+            line-height: 1.16;
+        }
+        .header-vitrine-card .boas-vindas-usuario {
+            font-size: 1.04rem;
+            color: #e0e7ff;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 2px;
+            margin-bottom: 0;
+            text-shadow: 0 2px 8px #2225;
+        }
+        .header-vitrine-card .usuario-logado-nome {
+            font-size: 1.02rem;
+            color: #fff;
+            background: rgba(79,70,229,0.13);
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            margin-top: 7px;
+            margin-bottom: 0;
+            box-shadow: 0 1px 4px #2222;
+            letter-spacing: 0.01em;
+            display: none; /* Só mostra ao logar */
+        }
+        /* Responsivo */
+        @media (max-width: 600px) {
+            .header-vitrine-card {
+                max-width: 96vw;
+                padding: 18px 4vw 16px 4vw;
+            }
+            .header-vitrine-card #logo-publico {
+                width: 54px;
+                height: 54px;
+            }
+            .header-vitrine-card #nome-negocio-publico {
+                font-size: 1.08rem;
+            }
+            .header-vitrine-card .boas-vindas-usuario {
+                font-size: 0.96rem;
+            }
+            .header-vitrine-card .usuario-logado-nome {
+                font-size: 0.92rem;
+                padding: 3px 9px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -62,14 +116,10 @@
                 <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logo do Negócio">
                 <h1 id="nome-negocio-publico">Nome do Negócio</h1>
                 <div id="boas-vindas-usuario" class="boas-vindas-usuario">Bem-vindo(a)!</div>
+                <div id="usuario-logado-nome" class="usuario-logado-nome"></div>
             </div>
             
             <div id="main-navigation-container">
-                <!-- Se desejar, pode remover o bloco abaixo, pois o cabeçalho já está no card acima -->
-                <!-- <div class="dashboard-welcome-center">
-                    <h1 id="vitrine-welcome-title">Bem-vindo(a)!</h1>
-                    <p>O que você gostaria de fazer?</p>
-                </div> -->
                 <div class="dashboard-grid-cards" id="vitrine-cards-grid">
                     <a href="#" class="vitrine-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);">
                         <i class="fa-solid fa-calendar-check"></i>
@@ -271,11 +321,17 @@
 
         function atualizarBoasVindas() {
             const boasVindas = document.getElementById('boas-vindas-usuario');
-            if (!boasVindas) return;
+            const nomeUsuario = document.getElementById('usuario-logado-nome');
+            if (!boasVindas || !nomeUsuario) return;
+
             if (state.currentUser && state.currentUser.displayName) {
-                boasVindas.textContent = `Bem-vindo(a), ${state.currentUser.displayName}!`;
+                boasVindas.textContent = `Bem-vindo(a)!`;
+                nomeUsuario.textContent = state.currentUser.displayName;
+                nomeUsuario.style.display = 'inline-block';
             } else {
                 boasVindas.textContent = "Bem-vindo(a)!";
+                nomeUsuario.textContent = "";
+                nomeUsuario.style.display = 'none';
             }
         }
 
@@ -320,6 +376,7 @@
             if (cardPerfilTexto) {
                 const observer = new MutationObserver(() => {
                     cardPerfilTexto.textContent = state.currentUser ? 'Meu Perfil' : 'Login';
+                    atualizarBoasVindas();
                 });
                 const userInfoDiv = document.getElementById('user-info');
                 if(userInfoDiv) {
