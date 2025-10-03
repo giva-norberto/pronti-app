@@ -1,18 +1,13 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
 // ✅ REVISADO E CONFIRMADO: USA A CONFIGURAÇÃO DO PAINEL ('firebase-config.js')
-// =====================================================================
+// ======================================================================
 
-// --- PASSO 1: Importar instâncias centrais do PAINEL ---
-// Esta linha está CORRETA. Este script pertence ao painel e deve usar a configuração principal.
 import { app, db } from './firebase-config.js';
-
-// --- PASSO 2: Importar apenas as funções necessárias dos módulos (LÓGICA 100% PRESERVADA) ---
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging.js";
 import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { verificarAcesso } from './userService.js';
 
-// --- PASSO 3: Inicializar o serviço de Messaging (LÓGICA 100% PRESERVADA ) ---
 const messaging = getMessaging(app);
 
 console.log('[DEBUG][messaging.js] Módulo carregado, usando instância central do Firebase.');
@@ -109,6 +104,11 @@ class MessagingService {
         window.focus();
         notification.close();
       };
+
+      // ==================== NOVO: Som embutido em base64 ====================
+      const bipBase64 = "data:audio/mp3;base64,//uQxAA..."; // substitua pelos bytes completos do mp3
+      const audio = new Audio(bipBase64);
+      audio.play().catch(err => console.log('Erro ao tocar som:', err));
     }
   }
 
@@ -164,7 +164,6 @@ class MessagingService {
   }
 }
 
-// --- LÓGICA GLOBAL (LÓGICA 100% PRESERVADA) ---
 window.messagingService = new MessagingService();
 
 window.solicitarPermissaoParaNotificacoes = async function() {
@@ -220,6 +219,8 @@ function iniciarOuvinteDeNotificacoes(donoId) {
                 } else {
                     console.error("❌ [Ouvinte] Erro: 'window.messagingService' não está definido. Não foi possível mostrar a notificação.");
                 }
+
+                // ==================== NOVO: Atualizar status imediatamente ====================
                 const docRef = doc(db, "filaDeNotificacoes", bilheteId);
                 updateDoc(docRef, { status: "processado" })
                     .then(() => {
