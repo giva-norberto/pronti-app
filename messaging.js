@@ -8,6 +8,37 @@ import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/fireb
 import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { verificarAcesso } from './userService.js';
 
+// --- INÍCIO DA MELHORIA DE ÁUDIO ---
+// Variável para garantir que o áudio seja desbloqueado apenas uma vez.
+let audioUnlocked = false;
+
+/**
+ * Desbloqueia o contexto de áudio do navegador para permitir a reprodução automática
+ * de sons iniciados por eventos não diretos (como notificações push ).
+ * Deve ser chamada após uma interação do usuário (ex: um clique).
+ */
+function unlockAudio() {
+  if (audioUnlocked) return; // Executa apenas uma vez
+
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioContext = new AudioContext();
+    
+    // Cria um buffer de som silencioso para "acordar" o áudio do navegador.
+    const buffer = audioContext.createBuffer(1, 1, 22050);
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContext.destination);
+    source.start(0);
+
+    audioUnlocked = true;
+    console.log('[Audio] Contexto de áudio desbloqueado por interação do usuário.');
+  } catch (error) {
+    console.error('[Audio] Falha ao tentar desbloquear o contexto de áudio:', error);
+  }
+}
+// --- FIM DA MELHORIA DE ÁUDIO ---
+
 const messaging = getMessaging(app);
 console.log('[DEBUG][messaging.js] Módulo carregado, usando instância central do Firebase.');
 
@@ -17,7 +48,7 @@ class MessagingService {
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
     // --- Base64 do bip ---
-    this.bipBase64 = "data:audio/mp3;base64,//uQxAABAAAAAABAAABAAABAAAAnQCAHAAABAAABAAABAAABAAABAAgAZGF0YYAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAAE=";
+    this.bipBase64 = "data:audio/mp3;base64,//uQxAABAAAAAABAAABAAABAAAAnQCAHAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAAE=";
   }
 
   async initialize() {
@@ -106,9 +137,15 @@ class MessagingService {
         notification.close();
       };
 
-      // --- Tocar bip ---
+      // --- Tocar bip (Forma mais robusta) ---
       const audio = new Audio(this.bipBase64);
-      audio.play().catch(err => console.log('Erro ao tocar som:', err));
+      const playPromise = audio.play();
+
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error('[Audio] Falha ao tocar o bip da notificação. O navegador pode ter bloqueado o som.', error);
+        });
+      }
     }
   }
 
@@ -167,9 +204,16 @@ class MessagingService {
 window.messagingService = new MessagingService();
 
 window.solicitarPermissaoParaNotificacoes = async function() {
+  // --- PASSO CHAVE: Desbloqueia o áudio com a interação do usuário no botão.
+  unlockAudio();
+
   const ok = await window.messagingService.initialize();
   if (ok) {
     try {
+      // Feedback visual para o usuário pode ser adicionado aqui.
+      if (window.mostrarMensagemNotificacao) {
+        window.mostrarMensagemNotificacao('Ótimo! As notificações estão ativas.', 'success');
+      }
       const sessionProfile = await verificarAcesso();
       if (!sessionProfile || !sessionProfile.user || !sessionProfile.empresaId) {
           console.error('[messaging.js] Perfil de sessão inválido. Não foi possível salvar o token.');
@@ -182,6 +226,11 @@ window.solicitarPermissaoParaNotificacoes = async function() {
       await window.messagingService.sendTokenToServer(userId, empresaId);
     } catch (e) {
       console.error('[messaging.js] Erro ao obter o perfil de sessão para salvar o token:', e);
+    }
+  } else {
+    // Feedback de erro se a permissão for negada.
+    if (window.mostrarMensagemNotificacao) {
+        window.mostrarMensagemNotificacao('Você precisa permitir as notificações no seu navegador.', 'error');
     }
   }
 };
@@ -198,7 +247,7 @@ function iniciarOuvinteDeNotificacoes(donoId) {
     }
     const q = query(
         collection(db, "filaDeNotificacoes"),
-        where("donoId", "==", donoId),   // <-- Corrigido aqui
+        where("donoId", "==", donoId),
         where("status", "==", "pendente")
     );
     unsubscribeDeFila = onSnapshot(q, (snapshot) => {
@@ -243,3 +292,4 @@ function pararOuvinteDeNotificacoes() {
 
 window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
 window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
+
