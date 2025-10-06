@@ -44,8 +44,8 @@ class MessagingService {
     this.token = null;
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
-    // OBS: substituído Base64 inválido por um WAV curto e válido (evita SyntaxError / NotSupportedError)
-    this.bipBase64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YYQAAACAgICAgICAgICAgICAgA==";
+    // Substituído Base64 por um bip curto mais audível
+    this.bipBase64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YagAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg==";
   }
 
   async initialize() {
@@ -135,6 +135,7 @@ class MessagingService {
       };
 
       const audio = new Audio(this.bipBase64);
+      audio.volume = 1.0; // aumenta o volume
       const playPromise = audio.play();
 
       if (playPromise !== undefined) {
