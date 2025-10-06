@@ -1,6 +1,6 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
-// ✅ REVISADO E CORRIGIDO: som funcional + usabilidade aprimorada
+// ✅ REVISADO E CORRIGIDO: Exportação de módulos para garantir a ordem de carregamento.
 // ======================================================================
 
 import { app, db } from './firebase-config.js';
@@ -9,22 +9,19 @@ import { doc, setDoc, collection, addDoc, query, where, onSnapshot, updateDoc } 
 import { verificarAcesso } from './userService.js';
 
 // --- INÍCIO DA MELHORIA DE ÁUDIO ---
-// Variável para garantir que o áudio seja desbloqueado apenas uma vez.
 let audioUnlocked = false;
 
 /**
- * Desbloqueia o contexto de áudio do navegador para permitir a reprodução automática
- * de sons iniciados por eventos não diretos (como notificações push ).
- * Deve ser chamada após uma interação do usuário (ex: um clique).
+ * Desbloqueia o contexto de áudio do navegador.
+ * A palavra-chave 'export' torna esta função importável em outros arquivos.
  */
-function unlockAudio() {
-  if (audioUnlocked) return; // Executa apenas uma vez
+export function unlockAudio( ) {
+  if (audioUnlocked) return;
 
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioContext = new AudioContext();
     
-    // Cria um buffer de som silencioso para "acordar" o áudio do navegador.
     const buffer = audioContext.createBuffer(1, 1, 22050);
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
@@ -37,27 +34,6 @@ function unlockAudio() {
     console.error('[Audio] Falha ao tentar desbloquear o contexto de áudio:', error);
   }
 }
-
-/**
- * Adiciona um ouvinte de evento que desbloqueia o áudio na primeira
- * interação do usuário com a página (clique, toque, etc.).
- * Isso é crucial para quando a permissão de notificação já foi dada em visitas anteriores.
- */
-function setupAudioUnlockListener() {
-    const unlockHandler = () => {
-        unlockAudio();
-        // Remove o ouvinte após a primeira execução para otimizar.
-        window.removeEventListener('click', unlockHandler);
-        window.removeEventListener('touchstart', unlockHandler);
-        console.log('[Audio] Ouvinte de desbloqueio de áudio removido após primeira interação.');
-    };
-
-    window.addEventListener('click', unlockHandler);
-    window.addEventListener('touchstart', unlockHandler);
-}
-
-// Exporta a função para que o index.html possa chamá-la.
-window.setupAudioUnlockListener = setupAudioUnlockListener;
 // --- FIM DA MELHORIA DE ÁUDIO ---
 
 const messaging = getMessaging(app);
@@ -68,7 +44,6 @@ class MessagingService {
     this.token = null;
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
-    // --- Base64 do bip ---
     this.bipBase64 = "data:audio/mp3;base64,//uQxAABAAAAAABAAABAAABAAAAnQCAHAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAAE=";
   }
 
@@ -158,7 +133,6 @@ class MessagingService {
         notification.close();
       };
 
-      // --- Tocar bip (Forma mais robusta) ---
       const audio = new Audio(this.bipBase64);
       const playPromise = audio.play();
 
@@ -222,10 +196,11 @@ class MessagingService {
   }
 }
 
+// A instância do serviço e a função do botão continuam no escopo global (window)
+// porque são chamadas diretamente pelo HTML (onclick) e por outros scripts.
 window.messagingService = new MessagingService();
 
 window.solicitarPermissaoParaNotificacoes = async function() {
-  // PASSO CHAVE: Desbloqueia o áudio imediatamente com a interação do usuário no botão.
   unlockAudio();
 
   const ok = await window.messagingService.initialize();
@@ -233,7 +208,6 @@ window.solicitarPermissaoParaNotificacoes = async function() {
     try {
       if (window.mostrarMensagemNotificacao) {
         window.mostrarMensagemNotificacao('Ótimo! As notificações estão ativas.', 'success');
-        // Esconde o botão após o sucesso para uma UI mais limpa.
         document.querySelector('.notification-button').style.display = 'none';
       }
       const sessionProfile = await verificarAcesso();
@@ -247,9 +221,7 @@ window.solicitarPermissaoParaNotificacoes = async function() {
       await window.messagingService.sendTokenToServer(userId, empresaId);
 
       // Inicia o ouvinte de notificações logo após o usuário dar o aceite.
-      if (window.iniciarOuvinteDeNotificacoes) {
-        window.iniciarOuvinteDeNotificacoes(userId);
-      }
+      iniciarOuvinteDeNotificacoes(userId);
 
     } catch (e) {
       console.error('[messaging.js] Erro ao configurar notificações após permissão:', e);
@@ -263,7 +235,11 @@ window.solicitarPermissaoParaNotificacoes = async function() {
 
 let unsubscribeDeFila = null;
 
-function iniciarOuvinteDeNotificacoes(donoId) {
+/**
+ * Inicia o ouvinte de notificações do Firestore.
+ * A palavra-chave 'export' torna esta função importável em outros arquivos.
+ */
+export function iniciarOuvinteDeNotificacoes(donoId) {
     if (unsubscribeDeFila) {
         unsubscribeDeFila();
     }
@@ -295,7 +271,6 @@ function iniciarOuvinteDeNotificacoes(donoId) {
                     console.error("❌ [Ouvinte] 'window.messagingService' não está definido.");
                 }
 
-                // --- Atualizar status imediatamente ---
                 const docRef = doc(db, "filaDeNotificacoes", bilheteId);
                 updateDoc(docRef, { status: "processado" })
                     .then(() => console.log(`✅ Bilhete ${bilheteId} atualizado para 'processado'.`))
@@ -308,7 +283,11 @@ function iniciarOuvinteDeNotificacoes(donoId) {
     console.log(`✅ Ouvinte de notificações iniciado para o dono: ${donoId}`);
 }
 
-function pararOuvinteDeNotificacoes() {
+/**
+ * Para o ouvinte de notificações.
+ * A palavra-chave 'export' torna esta função importável em outros arquivos.
+ */
+export function pararOuvinteDeNotificacoes() {
     if (unsubscribeDeFila) {
         unsubscribeDeFila();
         unsubscribeDeFila = null;
@@ -316,6 +295,5 @@ function pararOuvinteDeNotificacoes() {
     }
 }
 
-window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
-window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
-
+// As atribuições explícitas ao 'window' não são mais necessárias para as funções exportadas.
+// O sistema de módulos cuida disso.
