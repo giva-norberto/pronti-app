@@ -15,7 +15,7 @@ let audioUnlocked = false;
  * Desbloqueia o contexto de áudio do navegador.
  * A palavra-chave 'export' torna esta função importável em outros arquivos.
  */
-export function unlockAudio( ) {
+export function unlockAudio() {
   if (audioUnlocked) return;
 
   try {
@@ -44,8 +44,6 @@ class MessagingService {
     this.token = null;
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
-    // Substituído Base64 por um bip curto mais audível
-    this.bipBase64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YagAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg==";
   }
 
   async initialize() {
@@ -134,14 +132,18 @@ class MessagingService {
         notification.close();
       };
 
-      const audio = new Audio(this.bipBase64);
-      audio.volume = 1.0; // aumenta o volume
-      const playPromise = audio.play();
-
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error('[Audio] Falha ao tocar o bip da notificação. O navegador pode ter bloqueado o som.', error);
-        });
+      try {
+        // --- Gera bip curto via AudioContext (mais audível) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const oscillator = ctx.createOscillator();
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime); // 880Hz
+        oscillator.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.15); // 150ms
+      } catch (err) {
+        console.error('[Audio] Falha ao tocar bip da notificação:', err);
       }
     }
   }
@@ -198,8 +200,6 @@ class MessagingService {
   }
 }
 
-// A instância do serviço e a função do botão continuam no escopo global (window)
-// porque são chamadas diretamente pelo HTML (onclick) e por outros scripts.
 window.messagingService = new MessagingService();
 
 window.solicitarPermissaoParaNotificacoes = async function() {
@@ -222,7 +222,6 @@ window.solicitarPermissaoParaNotificacoes = async function() {
       
       await window.messagingService.sendTokenToServer(userId, empresaId);
 
-      // Inicia o ouvinte de notificações logo após o usuário dar o aceite.
       iniciarOuvinteDeNotificacoes(userId);
 
     } catch (e) {
@@ -237,10 +236,6 @@ window.solicitarPermissaoParaNotificacoes = async function() {
 
 let unsubscribeDeFila = null;
 
-/**
- * Inicia o ouvinte de notificações do Firestore.
- * A palavra-chave 'export' torna esta função importável em outros arquivos.
- */
 export function iniciarOuvinteDeNotificacoes(donoId) {
     if (unsubscribeDeFila) {
         unsubscribeDeFila();
@@ -285,10 +280,6 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
     console.log(`✅ Ouvinte de notificações iniciado para o dono: ${donoId}`);
 }
 
-/**
- * Para o ouvinte de notificações.
- * A palavra-chave 'export' torna esta função importável em outros arquivos.
- */
 export function pararOuvinteDeNotificacoes() {
     if (unsubscribeDeFila) {
         unsubscribeDeFila();
@@ -296,6 +287,3 @@ export function pararOuvinteDeNotificacoes() {
         console.log("🛑 Ouvinte de notificações parado.");
     }
 }
-
-// As atribuições explícitas ao 'window' não são mais necessárias para as funções exportadas.
-// O sistema de módulos cuida disso.
