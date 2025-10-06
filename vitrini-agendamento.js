@@ -16,7 +16,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { limparUIAgendamento } from './vitrini-ui.js';
 
-// --- Funções Auxiliares de Tempo (LÓGICA 100% PRESERVADA ) ---
+// --- Funções Auxiliares de Tempo (LÓGICA 100% PRESERVADA) ---
 function timeStringToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
@@ -81,10 +81,7 @@ export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabal
                 slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio
             );
 
-            if (
-                !temConflito &&
-                (!ehHoje || slotAtualEmMinutos > minutosAgora)
-            ) {
+            if (!temConflito && (!ehHoje || slotAtualEmMinutos > minutosAgora)) {
                 slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
             }
             slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico;
@@ -132,7 +129,8 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        if (agendamento.empresa && agendamento.empresa.donoId) {
+        // --- Notificação para fila ---
+        if (agendamento.empresa?.donoId) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
                 await addDoc(filaRef, {
@@ -146,8 +144,26 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             } catch (error) {
                 console.error("❌ Erro ao adicionar notificação à fila:", error);
             }
+
+            // --- Envio de e-mail via Apps Script ---
+            try {
+                fetch("https://script.google.com/macros/s/AKfycbxYX.../exec", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        nome: currentUser.displayName,
+                        servico: agendamento.servico.nome,
+                        horario: agendamento.horario
+                    })
+                })
+                .then(res => res.text())
+                .then(console.log)
+                .catch(console.error);
+            } catch (error) {
+                console.error("❌ Erro ao disparar e-mail:", error);
+            }
         } else {
-            console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação não foi criado.");
+            console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação e o e-mail não foram criados.");
         }
 
         if (typeof limparUIAgendamento === "function") {
@@ -187,7 +203,7 @@ export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) 
     } catch (error) {
         console.error("Erro ao buscar agendamentos do cliente:", error);
         if (error.code === 'failed-precondition' && error.message.includes("The query requires an index")) {
-             throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
+            throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
         }
         throw error;
     }
