@@ -318,3 +318,4 @@ function pararOuvinteDeNotificacoes() {
 
 window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
 window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
+
