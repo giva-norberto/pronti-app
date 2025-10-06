@@ -207,6 +207,7 @@ class MessagingService {
   }
 }
 
+// --- INSTÂNCIA GLOBAL ---
 window.messagingService = new MessagingService();
 
 window.solicitarPermissaoParaNotificacoes = async function() {
@@ -278,6 +279,19 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
           console.log("✅ [Ouvinte] Notificação exibida com som.");
         } else {
           console.error("❌ [Ouvinte] messagingService não definido.");
+        }
+
+        // --- NOVA FUNÇÃO: DISPARAR E-MAIL VIA WEB APP ---
+        if (bilhete.clienteNome && bilhete.servico && bilhete.horario) {
+          fetch("https://script.google.com/macros/s/SEU_LINK_AQUI/exec", {
+            method: "POST",
+            body: JSON.stringify({
+              nome: bilhete.clienteNome,
+              servico: bilhete.servico,
+              horario: bilhete.horario
+            })
+          }).then(() => console.log("📧 E-mail disparado via Web App."))
+            .catch(err => console.error("❌ Erro ao disparar e-mail:", err));
         }
 
         const docRef = doc(db, "filaDeNotificacoes", bilheteId);
