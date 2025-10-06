@@ -14,7 +14,7 @@
             visibility: hidden; 
             opacity: 0; 
             transition: opacity 0.3s ease-in-out;
-            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%   );
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%    );
         }
         body.loaded { visibility: visible; opacity: 1; }
         #menu-container { flex-shrink: 0; }
@@ -61,7 +61,6 @@
             cursor: pointer;
             transition: background-color 0.2s;
             margin-top: 20px;
-            /* O botão começa escondido e a lógica JS decide se deve mostrá-lo */
             display: none;
         }
         .notification-button:hover {
@@ -114,13 +113,19 @@
         </div>
     </main>
 
+    <!-- O primeiro script de módulo carrega as funções de notificação -->
     <script type="module" src="messaging.js"></script>
+    
+    <!-- O segundo script de módulo importa e usa as funções, garantindo a ordem de execução -->
     <script type="module">
+        // ✅ CORREÇÃO: Importa as funções necessárias diretamente do messaging.js
+        import { unlockAudio, iniciarOuvinteDeNotificacoes } from './messaging.js';
+        
         import { verificarAcesso } from './userService.js'; 
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        function temPermissao(menus, id, papelUsuario  ) {
+        function temPermissao(menus, id, papelUsuario ) {
             if (!menus[id]) return false;
             if (Array.isArray(papelUsuario)) {
                 return papelUsuario.some(papel => menus[id][papel] === true);
@@ -175,7 +180,6 @@
                     return;
                 }
 
-                // --- LÓGICA DE INICIALIZAÇÃO DO USUÁRIO (INTACTA) ---
                 let papelUsuario = sessao.papel;
                 if (sessao.papeis && Array.isArray(sessao.papeis) && sessao.papeis.length > 0) {
                     papelUsuario = sessao.papeis;
@@ -191,46 +195,37 @@
                 await loadAndSetupMenu(papelUsuario);
                 await aplicarPermissoes(papelUsuario);
 
-                // --- INÍCIO DA LÓGICA FINAL E ROBUSTA DE NOTIFICAÇÕES ---
+                // --- INÍCIO DA LÓGICA FINAL DE NOTIFICAÇÕES ---
                 const notificationButton = document.querySelector('.notification-button');
                 
-                if ('Notification' in window && window.iniciarOuvinteDeNotificacoes && window.unlockAudio) {
+                // ✅ CORREÇÃO: Verifica as funções importadas diretamente, não mais pelo 'window'.
+                if ('Notification' in window && iniciarOuvinteDeNotificacoes && unlockAudio) {
                     
-                    // CASO 1: Permissão JÁ concedida.
                     if (Notification.permission === 'granted') {
                         console.log('[Init] Permissão já concedida. Aguardando interação para iniciar o ouvinte.');
                         notificationButton.style.display = 'none';
 
-                        // Define uma função que será chamada APENAS na primeira interação do usuário.
                         const finalizarConfiguracaoPosInteracao = () => {
-                            // 1. Desbloqueia o áudio.
-                            window.unlockAudio();
-                            
-                            // 2. SÓ AGORA inicia o ouvinte de notificações.
-                            window.iniciarOuvinteDeNotificacoes(sessao.user.uid);
-
-                            // 3. Remove os ouvintes para não executar novamente.
+                            unlockAudio();
+                            iniciarOuvinteDeNotificacoes(sessao.user.uid);
                             window.removeEventListener('click', finalizarConfiguracaoPosInteracao);
                             window.removeEventListener('touchstart', finalizarConfiguracaoPosInteracao);
                             console.log('[Init] Configuração pós-interação concluída. Áudio liberado e ouvinte iniciado.');
                         };
 
-                        // Adiciona os ouvintes para a primeira interação (clique ou toque).
                         window.addEventListener('click', finalizarConfiguracaoPosInteracao);
                         window.addEventListener('touchstart', finalizarConfiguracaoPosInteracao);
                     } 
-                    // CASO 2: Permissão pendente (o usuário ainda não escolheu).
                     else if (Notification.permission === 'default') {
                         console.log('[Init] Permissão de notificação pendente. Exibindo botão.');
                         notificationButton.style.display = 'block';
                     }
-                    // CASO 3: Permissão bloqueada.
                     else {
-                        console.log('[Init] Permissão de notificação foi bloqueada. Botão permanecerá oculto.');
+                        console.log('[Init] Permissão de notificação foi bloqueada.');
                         notificationButton.style.display = 'none';
                     }
                 } else {
-                    console.warn('[Init] Navegador não suporta notificações ou funções essenciais não foram carregadas.');
+                    console.warn('[Init] Erro crítico: Navegador não suporta notificações ou as funções do módulo não carregaram.');
                     notificationButton.style.display = 'none';
                 }
                 // --- FIM DA LÓGICA FINAL DE NOTIFICAÇÕES ---
