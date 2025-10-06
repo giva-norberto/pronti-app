@@ -140,8 +140,8 @@ async function enviarEmailNotificacao(agendamento, currentUser) {
             horario: agendamento.horario
         };
 
-        // 👉 substitua pelo SEU link de implantação Apps Script
-        const scriptURL = "https://script.google.com/macros/s/AKfycbyyxJ1oVBcoRCw7fZfvoTG6ak1X4XA84ogDj0gwvX31FvldOYzectROpookJl5Wo646/exec";
+        // 👉 Atualizado para o link que você passou
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzwmXQnLOaT_zdpT2M93FezSyz8D_90mZgIWhbag20sOwk1q6IAC_jwg5EicOeGNFE_/exec";
 
         const response = await fetch(scriptURL, {
             method: "POST",
@@ -255,4 +255,3 @@ export async function cancelarAgendamento(empresaId, agendamentoId) {
         throw new Error("Ocorreu um erro ao cancelar o agendamento.");
     }
 }
-
