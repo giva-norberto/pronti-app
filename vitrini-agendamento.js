@@ -255,3 +255,4 @@ export async function cancelarAgendamento(empresaId, agendamentoId) {
         throw new Error("Ocorreu um erro ao cancelar o agendamento.");
     }
 }
+
