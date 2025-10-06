@@ -1,6 +1,6 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
-// ✅ REVISADO E CORRIGIDO: som funcional + atualização de status
+// ✅ REVISADO E CORRIGIDO: som funcional + usabilidade aprimorada
 // ======================================================================
 
 import { app, db } from './firebase-config.js';
@@ -37,6 +37,27 @@ function unlockAudio() {
     console.error('[Audio] Falha ao tentar desbloquear o contexto de áudio:', error);
   }
 }
+
+/**
+ * Adiciona um ouvinte de evento que desbloqueia o áudio na primeira
+ * interação do usuário com a página (clique, toque, etc.).
+ * Isso é crucial para quando a permissão de notificação já foi dada em visitas anteriores.
+ */
+function setupAudioUnlockListener() {
+    const unlockHandler = () => {
+        unlockAudio();
+        // Remove o ouvinte após a primeira execução para otimizar.
+        window.removeEventListener('click', unlockHandler);
+        window.removeEventListener('touchstart', unlockHandler);
+        console.log('[Audio] Ouvinte de desbloqueio de áudio removido após primeira interação.');
+    };
+
+    window.addEventListener('click', unlockHandler);
+    window.addEventListener('touchstart', unlockHandler);
+}
+
+// Exporta a função para que o index.html possa chamá-la.
+window.setupAudioUnlockListener = setupAudioUnlockListener;
 // --- FIM DA MELHORIA DE ÁUDIO ---
 
 const messaging = getMessaging(app);
@@ -204,15 +225,16 @@ class MessagingService {
 window.messagingService = new MessagingService();
 
 window.solicitarPermissaoParaNotificacoes = async function() {
-  // --- PASSO CHAVE: Desbloqueia o áudio com a interação do usuário no botão.
+  // PASSO CHAVE: Desbloqueia o áudio imediatamente com a interação do usuário no botão.
   unlockAudio();
 
   const ok = await window.messagingService.initialize();
   if (ok) {
     try {
-      // Feedback visual para o usuário pode ser adicionado aqui.
       if (window.mostrarMensagemNotificacao) {
         window.mostrarMensagemNotificacao('Ótimo! As notificações estão ativas.', 'success');
+        // Esconde o botão após o sucesso para uma UI mais limpa.
+        document.querySelector('.notification-button').style.display = 'none';
       }
       const sessionProfile = await verificarAcesso();
       if (!sessionProfile || !sessionProfile.user || !sessionProfile.empresaId) {
@@ -222,13 +244,17 @@ window.solicitarPermissaoParaNotificacoes = async function() {
       const userId = sessionProfile.user.uid;
       const empresaId = sessionProfile.empresaId;
       
-      console.log('[DEBUG][messaging.js] Chamando sendTokenToServer com:', { userId, empresaId });
       await window.messagingService.sendTokenToServer(userId, empresaId);
+
+      // Inicia o ouvinte de notificações logo após o usuário dar o aceite.
+      if (window.iniciarOuvinteDeNotificacoes) {
+        window.iniciarOuvinteDeNotificacoes(userId);
+      }
+
     } catch (e) {
-      console.error('[messaging.js] Erro ao obter o perfil de sessão para salvar o token:', e);
+      console.error('[messaging.js] Erro ao configurar notificações após permissão:', e);
     }
   } else {
-    // Feedback de erro se a permissão for negada.
     if (window.mostrarMensagemNotificacao) {
         window.mostrarMensagemNotificacao('Você precisa permitir as notificações no seu navegador.', 'error');
     }
@@ -292,4 +318,3 @@ function pararOuvinteDeNotificacoes() {
 
 window.iniciarOuvinteDeNotificacoes = iniciarOuvinteDeNotificacoes;
 window.pararOuvinteDeNotificacoes = pararOuvinteDeNotificacoes;
-
