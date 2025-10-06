@@ -141,7 +141,7 @@ async function enviarEmailNotificacao(agendamento, currentUser) {
         };
 
         // 👉 Atualizado para o link que você passou
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzwmXQnLOaT_zdpT2M93FezSyz8D_90mZgIWhbag20sOwk1q6IAC_jwg5EicOeGNFE_/exec";
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxZnP9b1fS6I-o4ore-P0OPVXnctLBvMRGiroVt7XPdLViPsqgA8ZY98dBeabz-lSju/exec";
 
         const response = await fetch(scriptURL, {
             method: "POST",
