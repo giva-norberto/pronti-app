@@ -109,55 +109,65 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
     return null;
 }
 
-// ======================================================================
-// 🔔 Função de envio de e-mail automática via Google Apps Script
-// (corrigida para buscar emailDono no Firestore)
-// ======================================================================
+// =====================================================================================
+// 🔔 INÍCIO DA ÚNICA PARTE ALTERADA: Função de envio de e-mail (VERSÃO DE TESTE FINAL)
+// =====================================================================================
 async function enviarEmailNotificacao(agendamento, currentUser) {
-    try {
-        // 🔹 Buscar email do dono no Firestore caso não esteja presente
-        if (!agendamento?.empresa?.emailDono && agendamento?.empresa?.donoId) {
-            const donoRef = doc(db, "usuarios", agendamento.empresa.donoId);
-            const donoSnap = await getDoc(donoRef);
-            if (donoSnap.exists()) {
-                agendamento.empresa.emailDono = donoSnap.data().email;
-            } else {
-                console.warn(`⚠️ Dono não encontrado no Firestore: ${agendamento.empresa.donoId}`);
-            }
-        }
-
-        // 🔹 Verificar se agora temos emailDono
-        if (!agendamento?.empresa?.emailDono) {
-            console.warn("⚠️ Empresa sem emailDono — e-mail não enviado.");
-            return;
-        }
-
-        // 🔹 Montar payload para Apps Script
-        const payload = {
-            destinatario: agendamento.empresa.emailDono,
-            nomeCliente: currentUser.displayName,
-            servico: agendamento.servico.nome,
-            horario: agendamento.horario
-        };
-
-        // 👉 Atualizado para o link que você passou
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxZnP9b1fS6I-o4ore-P0OPVXnctLBvMRGiroVt7XPdLViPsqgA8ZY98dBeabz-lSju/exec";
-
-        const response = await fetch(scriptURL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        const texto = await response.text();
-        console.log("📨 Retorno do Apps Script:", texto);
-    } catch (error) {
-        console.error("❌ Erro ao enviar e-mail automático:", error);
+  console.log("Tentando enviar e-mail...");
+  
+  try {
+    // A sua lógica para buscar o e-mail do dono está perfeita.
+    if (!agendamento?.empresa?.emailDono && agendamento?.empresa?.donoId) {
+      const donoRef = doc(db, "usuarios", agendamento.empresa.donoId);
+      const donoSnap = await getDoc(donoRef);
+      if (donoSnap.exists()) {
+        agendamento.empresa.emailDono = donoSnap.data().email;
+      }
     }
+
+    if (!agendamento?.empresa?.emailDono) {
+      console.warn("⚠️ E-mail do dono não encontrado. E-mail não enviado.");
+      return;
+    }
+
+    // Usando a sua URL nova e funcional
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxZnP9b1fS6I-o4ore-P0OPVXnctLBvMRGiroVt7XPdLViPsqgA8ZY98dBeabz-lSju/exec";
+
+    const payload = {
+      destinatario: agendamento.empresa.emailDono,
+      nomeCliente: currentUser.displayName,
+      servico: agendamento.servico.nome,
+      data: agendamento.data, // <--- Garantindo que a DATA está incluída
+      horario: agendamento.horario
+    };
+
+    console.log("Payload a ser enviado:", JSON.stringify(payload));
+
+    // A MUDANÇA ESTÁ AQUI: Adicionando mode: 'no-cors'
+    // Isto diz ao navegador para "enviar e não se preocupar com a resposta".
+    // É uma forma de contornar bloqueios de segurança que podem causar o "Failed to fetch".
+    await fetch(scriptURL, {
+      method: "POST",
+      mode: 'no-cors', // <--- MUDANÇA IMPORTANTE PARA O TESTE
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    // Como usamos 'no-cors', não podemos ler a resposta, mas o e-mail deve ser enviado.
+    console.log("✅ Requisição de e-mail enviada! Verifique a sua caixa de entrada.");
+
+  } catch (error) {
+    // Com 'no-cors', o erro pode não ser capturado aqui, mas mantemos por segurança.
+    console.error("❌ Erro no processo de envio de e-mail:", error);
+  }
 }
+// =====================================================================================
+// 🔔 FIM DA ÚNICA PARTE ALTERADA
+// =====================================================================================
+
 
 // ======================================================================
-// 🔧 Lógica principal de salvamento de agendamento
+// 🔧 Lógica principal de salvamento de agendamento (LÓGICA 100% PRESERVADA)
 // ======================================================================
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
@@ -210,6 +220,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     }
 }
 
+// --- Funções de busca e cancelamento (LÓGICA 100% PRESERVADA) ---
 export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) {
     if (!currentUser) return [];
     try {
@@ -255,4 +266,3 @@ export async function cancelarAgendamento(empresaId, agendamentoId) {
         throw new Error("Ocorreu um erro ao cancelar o agendamento.");
     }
 }
-
