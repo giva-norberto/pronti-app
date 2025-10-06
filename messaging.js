@@ -138,16 +138,15 @@ class MessagingService {
       };
 
       try {
-        // --- BIP curto usando AudioContext (funciona em iOS/Android/Desktop) ---
         if (audioUnlocked) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           const ctx = new AudioContext();
           const oscillator = ctx.createOscillator();
           oscillator.type = 'square';
-          oscillator.frequency.setValueAtTime(880, ctx.currentTime); // 880Hz
+          oscillator.frequency.setValueAtTime(880, ctx.currentTime); 
           oscillator.connect(ctx.destination);
           oscillator.start();
-          oscillator.stop(ctx.currentTime + 0.15); // 150ms
+          oscillator.stop(ctx.currentTime + 0.15); 
         }
       } catch (err) {
         console.error('[Audio] Falha ao tocar som da notificação:', err);
@@ -281,9 +280,9 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
           console.error("❌ [Ouvinte] messagingService não definido.");
         }
 
-        // --- NOVA FUNÇÃO: DISPARAR E-MAIL VIA WEB APP ---
+        // --- DISPARO AUTOMÁTICO DE E-MAIL PARA O DONO ---
         if (bilhete.clienteNome && bilhete.servico && bilhete.horario) {
-          fetch("https://script.google.com/macros/s/SEU_LINK_AQUI/exec", {
+          fetch("https://script.google.com/macros/s/AKfycby_Va3ads-umFvz2PpKmSS4-yp1y7riOdsow06nY7pfIvQvZ2mwnnOloszlxuwgEn3L/exec", {
             method: "POST",
             body: JSON.stringify({
               nome: bilhete.clienteNome,
