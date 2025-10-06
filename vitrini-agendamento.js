@@ -12,7 +12,8 @@ import {
     addDoc,
     doc,
     updateDoc,
-    serverTimestamp
+    serverTimestamp,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { limparUIAgendamento } from './vitrini-ui.js';
 
@@ -29,7 +30,6 @@ function minutesToTimeString(totalMinutes) {
 }
 
 // --- Funções Principais de Agendamento (LÓGICA 100% PRESERVADA) ---
-
 export async function buscarAgendamentosDoDia(empresaId, data) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
@@ -111,16 +111,28 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 
 // ======================================================================
 // 🔔 Função de envio de e-mail automática via Google Apps Script
-// (sem alterar lógica existente)
+// (corrigida para buscar emailDono no Firestore)
 // ======================================================================
-
 async function enviarEmailNotificacao(agendamento, currentUser) {
     try {
+        // 🔹 Buscar email do dono no Firestore caso não esteja presente
+        if (!agendamento?.empresa?.emailDono && agendamento?.empresa?.donoId) {
+            const donoRef = doc(db, "usuarios", agendamento.empresa.donoId);
+            const donoSnap = await getDoc(donoRef);
+            if (donoSnap.exists()) {
+                agendamento.empresa.emailDono = donoSnap.data().email;
+            } else {
+                console.warn(`⚠️ Dono não encontrado no Firestore: ${agendamento.empresa.donoId}`);
+            }
+        }
+
+        // 🔹 Verificar se agora temos emailDono
         if (!agendamento?.empresa?.emailDono) {
             console.warn("⚠️ Empresa sem emailDono — e-mail não enviado.");
             return;
         }
 
+        // 🔹 Montar payload para Apps Script
         const payload = {
             destinatario: agendamento.empresa.emailDono,
             nomeCliente: currentUser.displayName,
@@ -147,7 +159,6 @@ async function enviarEmailNotificacao(agendamento, currentUser) {
 // ======================================================================
 // 🔧 Lógica principal de salvamento de agendamento
 // ======================================================================
-
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
@@ -244,4 +255,3 @@ export async function cancelarAgendamento(empresaId, agendamentoId) {
         throw new Error("Ocorreu um erro ao cancelar o agendamento.");
     }
 }
-
