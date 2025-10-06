@@ -135,7 +135,7 @@ class MessagingService {
       };
 
       try {
-        // --- BIP usando Audio Base64 compatível com iOS ---
+        // --- BIP compatível com iOS, Android e Desktop ---
         if (audioUnlocked) {
           const audio = new Audio(this.bipBase64);
           audio.volume = 1.0;
