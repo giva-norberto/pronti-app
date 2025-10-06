@@ -1,6 +1,6 @@
 // ======================================================================
 // messaging.js - Serviço de notificações Firebase
-// ✅ REVISADO E CORRIGIDO: Exportação de módulos para garantir a ordem de carregamento.
+// ✅ REVISADO E CORRIGIDO PARA iOS/Android/Desktop
 // ======================================================================
 
 import { app, db } from './firebase-config.js';
@@ -44,6 +44,8 @@ class MessagingService {
     this.token = null;
     this.isSupported = 'serviceWorker' in navigator && 'Notification' in window;
     this.vapidKey = 'BAdbSkQO73zQ0hz3lOeyXjSSGO78NhJaLYYjKtzmfMxmnEL8u_7tvYkrQUYotGD5_qv0S5Bfkn3YI6E9ccGMB4w';
+    // Base64 para bip curto compatível com iOS
+    this.bipBase64 = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YagAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg==";
   }
 
   async initialize() {
@@ -133,15 +135,17 @@ class MessagingService {
       };
 
       try {
-        // --- Gera bip curto via AudioContext (mais audível) ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContext();
-        const oscillator = ctx.createOscillator();
-        oscillator.type = 'square';
-        oscillator.frequency.setValueAtTime(880, ctx.currentTime); // 880Hz
-        oscillator.connect(ctx.destination);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.15); // 150ms
+        // --- BIP usando Audio Base64 compatível com iOS ---
+        if (audioUnlocked) {
+          const audio = new Audio(this.bipBase64);
+          audio.volume = 1.0;
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.error('[Audio] Falha ao tocar o bip da notificação:', error);
+            });
+          }
+        }
       } catch (err) {
         console.error('[Audio] Falha ao tocar bip da notificação:', err);
       }
