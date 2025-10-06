@@ -1,8 +1,7 @@
 // ======================================================================
-// vitrini-agendamento.js (REVISADO PARA ISOLAMENTO)
+// vitrini-agendamento.js (FINAL — REVISADO E PRONTO)
 // ======================================================================
 
-// ✅ CORREÇÃO: Aponta para a conexão de DB correta da vitrine.
 import { db } from './vitrini-firebase.js';
 import {
     collection,
@@ -16,7 +15,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { limparUIAgendamento } from './vitrini-ui.js';
 
-// --- Funções Auxiliares de Tempo (LÓGICA 100% PRESERVADA) ---
+// =========================================================
+// 🔹 Funções auxiliares de tempo
+// =========================================================
 function timeStringToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
@@ -28,8 +29,9 @@ function minutesToTimeString(totalMinutes) {
     return `${hours}:${minutes}`;
 }
 
-// --- Funções Principais de Agendamento (LÓGICA 100% PRESERVADA) ---
-
+// =========================================================
+// 🔹 Busca de agendamentos
+// =========================================================
 export async function buscarAgendamentosDoDia(empresaId, data) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
@@ -46,50 +48,49 @@ export async function buscarAgendamentosDoDia(empresaId, data) {
     }
 }
 
+// =========================================================
+// 🔹 Cálculo de horários disponíveis
+// =========================================================
 export function calcularSlotsDisponiveis(data, agendamentosDoDia, horariosTrabalho, duracaoServico) {
-    const diaDaSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     const dataObj = new Date(`${data}T12:00:00Z`);
-    const nomeDia = diaDaSemana[dataObj.getUTCDay()];
-
+    const nomeDia = dias[dataObj.getUTCDay()];
     const diaDeTrabalho = horariosTrabalho?.[nomeDia];
-    if (!diaDeTrabalho || !diaDeTrabalho.ativo || !diaDeTrabalho.blocos || diaDeTrabalho.blocos.length === 0) {
-        return [];
-    }
 
-    const intervaloEntreSessoes = horariosTrabalho.intervalo || 0;
-    const slotsDisponiveis = [];
+    if (!diaDeTrabalho?.ativo || !diaDeTrabalho?.blocos?.length) return [];
 
-    const horariosOcupados = agendamentosDoDia.map(ag => {
-        const inicio = timeStringToMinutes(ag.horario);
-        const fim = inicio + ag.servicoDuracao;
-        return { inicio, fim };
-    });
+    const intervalo = horariosTrabalho.intervalo || 0;
+    const slots = [];
+    const ocupados = agendamentosDoDia.map(ag => ({
+        inicio: timeStringToMinutes(ag.horario),
+        fim: timeStringToMinutes(ag.horario) + ag.servicoDuracao
+    }));
 
     const hoje = new Date();
     const ehHoje = hoje.toISOString().split('T')[0] === data;
-    const minutosAgora = timeStringToMinutes(
-        `${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`
-    );
+    const agora = timeStringToMinutes(`${hoje.getHours().toString().padStart(2, '0')}:${hoje.getMinutes().toString().padStart(2, '0')}`);
 
     for (const bloco of diaDeTrabalho.blocos) {
-        let slotAtualEmMinutos = timeStringToMinutes(bloco.inicio);
-        const fimDoBlocoEmMinutos = timeStringToMinutes(bloco.fim);
+        let atual = timeStringToMinutes(bloco.inicio);
+        const fim = timeStringToMinutes(bloco.fim);
 
-        while (slotAtualEmMinutos + duracaoServico <= fimDoBlocoEmMinutos) {
-            const fimDoSlotProposto = slotAtualEmMinutos + duracaoServico;
-            let temConflito = horariosOcupados.some(ocupado =>
-                slotAtualEmMinutos < ocupado.fim && fimDoSlotProposto > ocupado.inicio
-            );
+        while (atual + duracaoServico <= fim) {
+            const fimProposto = atual + duracaoServico;
+            const conflito = ocupados.some(o => atual < o.fim && fimProposto > o.inicio);
 
-            if (!temConflito && (!ehHoje || slotAtualEmMinutos > minutosAgora)) {
-                slotsDisponiveis.push(minutesToTimeString(slotAtualEmMinutos));
+            if (!conflito && (!ehHoje || atual > agora)) {
+                slots.push(minutesToTimeString(atual));
             }
-            slotAtualEmMinutos += intervaloEntreSessoes || duracaoServico;
+            atual += intervalo || duracaoServico;
         }
     }
-    return slotsDisponiveis;
+
+    return slots;
 }
 
+// =========================================================
+// 🔹 Encontrar próxima data com horários
+// =========================================================
 export async function encontrarPrimeiraDataComSlots(empresaId, profissional, duracaoServico) {
     const hoje = new Date();
     for (let i = 0; i < 90; i++) {
@@ -98,22 +99,23 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
         const dataString = dataAtual.toISOString().split('T')[0];
 
         const agendamentos = await buscarAgendamentosDoDia(empresaId, dataString);
-        const agendamentosProfissional = agendamentos.filter(ag => ag.profissionalId === profissional.id);
+        const doProfissional = agendamentos.filter(a => a.profissionalId === profissional.id);
 
-        const slots = calcularSlotsDisponiveis(dataString, agendamentosProfissional, profissional.horarios, duracaoServico);
-
-        if (slots.length > 0) {
-            return dataString;
-        }
+        const slots = calcularSlotsDisponiveis(dataString, doProfissional, profissional.horarios, duracaoServico);
+        if (slots.length > 0) return dataString;
     }
     return null;
 }
 
+// =========================================================
+// 🔹 Salvar agendamento e enviar notificação
+// =========================================================
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
+
         await addDoc(agendamentosRef, {
-            empresaId: empresaId,
+            empresaId,
             clienteId: currentUser.uid,
             clienteNome: currentUser.displayName,
             clienteFoto: currentUser.photoURL,
@@ -129,8 +131,10 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         });
 
-        // --- Notificação para fila ---
-        if (agendamento.empresa?.donoId) {
+        // =====================================================
+        // 🔔 Notificação interna + envio de e-mail
+        // =====================================================
+        if (agendamento.empresa?.donoId && agendamento.empresa?.emailDono) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
                 await addDoc(filaRef, {
@@ -140,18 +144,16 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                     criadoEm: new Date(),
                     status: "pendente"
                 });
-                console.log("✅ Bilhete de notificação adicionado à fila.");
-            } catch (error) {
-                console.error("❌ Erro ao adicionar notificação à fila:", error);
-            }
 
-            // --- Envio de e-mail via Apps Script ---
-            try {
-                fetch("https://script.google.com/macros/s/AKfycbxYX.../exec", {
+                // --- Envio de e-mail via Google Apps Script ---
+                const scriptURL = "https://script.google.com/macros/s/AKfycbyyxJ1oVBcoRCw7fZfvoTG6ak1X4XA84ogDj0gwvX31FvldOYzectROpookJl5Wo646/exec";
+
+                fetch(scriptURL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        nome: currentUser.displayName,
+                        destinatario: agendamento.empresa.emailDono,
+                        nomeCliente: currentUser.displayName,
                         servico: agendamento.servico.nome,
                         horario: agendamento.horario
                     })
@@ -159,56 +161,58 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                 .then(res => res.text())
                 .then(console.log)
                 .catch(console.error);
+
+                console.log("✅ Notificação e e-mail enviados.");
             } catch (error) {
-                console.error("❌ Erro ao disparar e-mail:", error);
+                console.error("❌ Erro ao adicionar notificação:", error);
             }
         } else {
-            console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação e o e-mail não foram criados.");
+            console.warn("⚠️ Nenhum e-mail de dono encontrado; notificação não enviada.");
         }
 
-        if (typeof limparUIAgendamento === "function") {
-            limparUIAgendamento();
-        }
-        
+        if (typeof limparUIAgendamento === "function") limparUIAgendamento();
+
     } catch (error) {
         console.error("Erro principal ao salvar agendamento:", error);
         throw new Error('Ocorreu um erro ao confirmar seu agendamento.');
     }
 }
 
+// =========================================================
+// 🔹 Buscar agendamentos do cliente
+// =========================================================
 export async function buscarAgendamentosDoCliente(empresaId, currentUser, modo) {
     if (!currentUser) return [];
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
         const hoje = new Date().toISOString().split('T')[0];
 
-        let q;
-        if (modo === 'ativos') {
-            q = query(
+        let q = modo === 'ativos'
+            ? query(
                 agendamentosRef,
                 where("clienteId", "==", currentUser.uid),
                 where("status", "==", "ativo"),
                 where("data", ">=", hoje)
-            );
-        } else {
-            q = query(
+            )
+            : query(
                 agendamentosRef,
                 where("clienteId", "==", currentUser.uid),
                 where("data", "<", hoje)
             );
-        }
 
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-        console.error("Erro ao buscar agendamentos do cliente:", error);
-        if (error.code === 'failed-precondition' && error.message.includes("The query requires an index")) {
-            throw new Error("Ocorreu um erro ao buscar seus agendamentos. A configuração do banco de dados pode estar incompleta (índice composto).");
-        }
+        console.error("Erro ao buscar agendamentos:", error);
+        if (error.code === 'failed-precondition' && error.message.includes("index"))
+            throw new Error("A configuração do banco (índice composto) está incompleta.");
         throw error;
     }
 }
 
+// =========================================================
+// 🔹 Cancelar agendamento
+// =========================================================
 export async function cancelarAgendamento(empresaId, agendamentoId) {
     try {
         const agendamentoRef = doc(db, 'empresarios', empresaId, 'agendamentos', agendamentoId);
