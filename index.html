@@ -14,7 +14,7 @@
             visibility: hidden; 
             opacity: 0; 
             transition: opacity 0.3s ease-in-out;
-            background: linear-gradient(135deg, #4f46e5 0%, #222664 100% );
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%  );
         }
         body.loaded { visibility: visible; opacity: 1; }
         #menu-container { flex-shrink: 0; }
@@ -50,7 +50,6 @@
         [data-card-id="relatorios"] { background: linear-gradient(135deg, #374151, #111827); }
         [data-card-id="administracao"], [data-card-id="permissoes"] { background: linear-gradient(135deg, #111827, #374151); }
         
-        /* Estilo para o novo botão de notificação */
         .notification-button {
             background-color: #ff5858;
             color: white;
@@ -62,12 +61,13 @@
             cursor: pointer;
             transition: background-color 0.2s;
             margin-top: 20px;
+            /* O botão começa escondido e a lógica JS decide se deve mostrá-lo */
+            display: none;
         }
         .notification-button:hover {
             background-color: #f59e42;
         }
 
-        /* Mensagens customizadas de ativação de notificações */
         .notification-message {
             margin: 18px auto 0 auto;
             padding: 12px 24px;
@@ -95,16 +95,13 @@
             <h1><span id="saudacao"></span>, <span id="nome-usuario">Usuário</span>!</h1>
             <p>Pronto para gerenciar seu dia?</p>
             
-            <!-- Botão para ativar notificações -->
             <button class="notification-button" onclick="solicitarPermissaoParaNotificacoes()">
                 <i class="fa-solid fa-bell"></i> Ativar Notificações
             </button>
-            <!-- Mensagem customizada de ativação de notificações -->
             <div id="notification-message" class="notification-message info"></div>
         </div>
         
         <div class="dashboard-grid-cards" id="dashboard-grid-cards">
-            <!-- Os cards são todos inseridos no HTML, mas serão mostrados ou ocultados conforme as permissões -->
             <a href="dashboard.html" class="menu-card" data-card-id="dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
             <a href="agenda.html" class="menu-card" data-card-id="agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a>
             <a href="servicos.html" class="menu-card" data-card-id="servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a>
@@ -123,8 +120,7 @@
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // Função auxiliar para checar permissão para 1 ou mais papéis
-        function temPermissao(menus, id, papelUsuario) {
+        function temPermissao(menus, id, papelUsuario ) {
             if (!menus[id]) return false;
             if (Array.isArray(papelUsuario)) {
                 return papelUsuario.some(papel => menus[id][papel] === true);
@@ -175,11 +171,13 @@
         async function inicializarPagina() {
             try {
                 const sessao = await verificarAcesso();
-                // === INÍCIO DA AUTOMATIZAÇÃO DO OUVINTE DE NOTIFICAÇÕES ===
-                if (sessao && sessao.user && sessao.user.uid && window.iniciarOuvinteDeNotificacoes) {
-                    window.iniciarOuvinteDeNotificacoes(sessao.user.uid);
+                if (!sessao || !sessao.user) {
+                    // Se não há sessão, não faz nada relacionado ao usuário e sai.
+                    // A função verificarAcesso já deve ter redirecionado.
+                    return;
                 }
-                // === FIM DA AUTOMATIZAÇÃO ===
+
+                // --- LÓGICA DE INICIALIZAÇÃO DO USUÁRIO (EXISTENTE) ---
                 let papelUsuario = sessao.papel;
                 if (sessao.papeis && Array.isArray(sessao.papeis) && sessao.papeis.length > 0) {
                     papelUsuario = sessao.papeis;
@@ -190,18 +188,55 @@
                     if (sessao.isOwner) papelUsuario.push('dono');
                 }
                 if (!papelUsuario || (Array.isArray(papelUsuario) && papelUsuario.length === 0)) throw new Error("O papel do usuário não foi definido na sessão.");
+                
                 popularCabecalho(sessao);
                 await loadAndSetupMenu(papelUsuario);
                 await aplicarPermissoes(papelUsuario);
+
+                // --- INÍCIO DA LÓGICA INTELIGENTE DE NOTIFICAÇÕES ---
+                const notificationButton = document.querySelector('.notification-button');
+                
+                if ('Notification' in window && window.iniciarOuvinteDeNotificacoes) {
+                    
+                    // CASO 1: Permissão JÁ concedida em uma visita anterior.
+                    if (Notification.permission === 'granted') {
+                        console.log('[Init] Permissão de notificação já concedida. Ativando automaticamente.');
+                        notificationButton.style.display = 'none'; // Garante que o botão fique escondido.
+
+                        // Inicia o ouvinte de notificações da fila do Firestore.
+                        window.iniciarOuvinteDeNotificacoes(sessao.user.uid);
+
+                        // Prepara o desbloqueio de áudio para a primeira interação do usuário na página.
+                        if (window.setupAudioUnlockListener) {
+                            window.setupAudioUnlockListener();
+                        }
+                    } 
+                    // CASO 2: Permissão ainda NÃO foi solicitada (estado padrão).
+                    else if (Notification.permission === 'default') {
+                        console.log('[Init] Permissão de notificação pendente. Exibindo botão.');
+                        notificationButton.style.display = 'block'; // Mostra o botão para o usuário.
+                    }
+                    // CASO 3: Permissão foi bloqueada pelo usuário.
+                    else {
+                        console.log('[Init] Permissão de notificação foi bloqueada. Botão permanecerá oculto.');
+                        notificationButton.style.display = 'none';
+                    }
+                } else {
+                    console.warn('[Init] Navegador não suporta notificações. Botão permanecerá oculto.');
+                    notificationButton.style.display = 'none';
+                }
+                // --- FIM DA LÓGICA INTELIGENTE DE NOTIFICAÇÕES ---
+
             } catch (error) {
-                // Se erro de acesso, já redireciona
+                console.error("Erro crítico ao inicializar a página:", error);
+                // A função verificarAcesso já deve tratar o redirecionamento em caso de falha de autenticação.
             } finally {
                 document.body.classList.add('loaded');
             }
         }
+        
         inicializarPagina();
 
-        // ================= MENSAGEM CUSTOMIZADA PARA NOTIFICAÇÕES ================
         window.mostrarMensagemNotificacao = function (texto, tipo = 'info') {
             const el = document.getElementById('notification-message');
             el.textContent = texto;
@@ -209,7 +244,6 @@
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 3500);
         }
-        // ========================================================================
     </script>
 </body>
 </html>
