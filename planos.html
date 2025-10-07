@@ -9,7 +9,6 @@
     <!-- Inclua o CSS global da Pronti -->
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Fundo padrão Pronti para a tela de planos */
         body {
             font-family: 'Poppins', sans-serif;
             margin: 0;
@@ -18,27 +17,21 @@
             min-height: 100vh;
             display: flex;
         }
-
-        /* Evita que o menu lateral atropelhe o conteúdo principal em desktop */
         #menu-container {
             width: 250px;
             min-width: 250px;
             flex-shrink: 0;
-            /* Para menu lateral fixo, remova position absolute/fixed do aside dentro do menu-lateral.html */
         }
-
         main {
             flex-grow: 1;
             padding: 40px;
             margin-left: 0;
             min-height: 100vh;
             box-sizing: border-box;
-            /* Fundo do card centralizado em desktop */
             background: transparent;
             display: flex;
             flex-direction: column;
         }
-
         .header-pagina {
             display: flex;
             justify-content: space-between;
@@ -63,7 +56,6 @@
             box-shadow: 0 2px 8px 0 rgba(79, 172, 254, 0.08);
         }
         .btn-novo:hover { background: linear-gradient(135deg, #2795e6, #00d8ff); }
-
         #lista-de-planos {
             display: grid;
             gap: 20px;
@@ -90,8 +82,6 @@
         .metodo-manual { background-color: #f59e0b; }
         .erro { color: #b91c1c; font-weight: 500; margin: 2rem 0; }
         .info { color: #1e40af; font-weight: 500; margin: 2rem 0; }
-
-        /* Responsivo: em telas menores, menu lateral some, conteúdo ocupa toda largura */
         @media (max-width: 992px) {
             #menu-container {
                 display: none;
@@ -185,7 +175,13 @@
                 // Exibe botão só para dono/admin
                 if (btnNovoPlano) btnNovoPlano.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
 
-                await carregarMenu(isAdmin ? 'admin' : (isDono ? 'dono' : 'funcionario'));
+                // CORREÇÃO: Monte array de papéis do usuário para passar ao menu lateral!
+                let papelUsuario = [];
+                if (isAdmin) papelUsuario.push('admin');
+                if (isDono) papelUsuario.push('dono');
+                if (papelUsuario.length === 0) papelUsuario.push('funcionario'); // fallback opcional
+
+                await carregarMenu(papelUsuario);
                 await carregarPlanos(empresaId);
 
             } catch (error) {
@@ -199,8 +195,7 @@
                 const response = await fetch('menu-lateral.html');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 const menuModule = await import('./menu-lateral.js');
-                if (menuModule.aplicarPermissoesMenuLateral) await menuModule.aplicarPermissoesMenuLateral(papelUsuario);
-                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
+                if (menuModule.ativarMenuLateral) await menuModule.ativarMenuLateral(papelUsuario);
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
             }
