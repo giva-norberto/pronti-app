@@ -14,7 +14,7 @@
             visibility: hidden; 
             opacity: 0; 
             transition: opacity 0.3s ease-in-out;
-            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%    );
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
         }
         body.loaded { visibility: visible; opacity: 1; }
         #menu-container { flex-shrink: 0; }
@@ -44,6 +44,10 @@
         [data-card-id="dashboard"] { background: linear-gradient(135deg, #43e97b, #38f9d7); }
         [data-card-id="agenda"] { background: linear-gradient(135deg, #6366f1, #4facfe); }
         [data-card-id="servicos"] { background: linear-gradient(135deg, #f59e42, #ff5858); }
+        
+        /* ✅ NOVO ESTILO PARA O CARTÃO DE PLANOS */
+        [data-card-id="planos"] { background: linear-gradient(135deg, #a855f7, #d946ef); }
+        
         [data-card-id="clientes"] { background: linear-gradient(135deg, #4facfe, #6366f1); }
         [data-card-id="equipe"] { background: linear-gradient(135deg, #00f2fe, #6366f1); }
         [data-card-id="perfil"] { background: linear-gradient(135deg, #ff5858, #a18cd1); }
@@ -104,6 +108,8 @@
             <a href="dashboard.html" class="menu-card" data-card-id="dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
             <a href="agenda.html" class="menu-card" data-card-id="agenda"><i class="fa-solid fa-calendar-check"></i><span>Agenda</span></a>
             <a href="servicos.html" class="menu-card" data-card-id="servicos"><i class="fa-solid fa-concierge-bell"></i><span>Serviços</span></a>
+            
+            <a href="planos.html" class="menu-card" data-card-id="planos"><i class="fa-solid fa-file-invoice-dollar"></i><span>Planos</span></a>
             <a href="clientes.html" class="menu-card" data-card-id="clientes"><i class="fa-solid fa-user-group"></i><span>Clientes</span></a>
             <a href="equipe.html" class="menu-card" data-card-id="equipe"><i class="fa-solid fa-users"></i><span>Equipe</span></a>
             <a href="perfil.html" class="menu-card" data-card-id="perfil"><i class="fa-solid fa-user-gear"></i><span>Empresa</span></a>
@@ -113,12 +119,10 @@
         </div>
     </main>
 
-    <!-- O primeiro script de módulo carrega as funções de notificação -->
     <script type="module" src="messaging.js"></script>
     
-    <!-- O segundo script de módulo importa e usa as funções, garantindo a ordem de execução -->
     <script type="module">
-        // ✅ CORREÇÃO: Importa as funções necessárias diretamente do messaging.js
+        // SEU JAVASCRIPT ORIGINAL - MANTIDO 100%
         import { unlockAudio, iniciarOuvinteDeNotificacoes } from './messaging.js';
         
         import { verificarAcesso } from './userService.js'; 
@@ -198,7 +202,6 @@
                 // --- INÍCIO DA LÓGICA FINAL DE NOTIFICAÇÕES ---
                 const notificationButton = document.querySelector('.notification-button');
                 
-                // ✅ CORREÇÃO: Verifica as funções importadas diretamente, não mais pelo 'window'.
                 if ('Notification' in window && iniciarOuvinteDeNotificacoes && unlockAudio) {
                     
                     if (Notification.permission === 'granted') {
