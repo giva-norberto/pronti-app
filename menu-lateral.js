@@ -51,8 +51,12 @@ function temPermissao(menus, id, papelUsuario) {
  */
 async function aplicarPermissoesMenuLateral(papelUsuario) {
     // Validação crucial para evitar erros. Se o papel não for informado, a função para.
-    if (!papelUsuario || papelUsuario.length === 0) {
+    if (!papelUsuario || (Array.isArray(papelUsuario) && papelUsuario.length === 0)) {
         console.error("Papel do usuário não informado para aplicarPermissoesMenuLateral. O menu não será exibido corretamente.");
+        // Nova validação: Esconde todos os menus caso o papel não esteja definido
+        document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
+            link.style.display = "none";
+        });
         return;
     }
 
@@ -77,6 +81,10 @@ async function aplicarPermissoesMenuLateral(papelUsuario) {
 
     } catch (error) {
         console.error("Erro crítico ao buscar ou aplicar permissões no menu lateral:", error);
+        // Nova validação: Esconde todos os menus caso a busca falhe
+        document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
+            link.style.display = "none";
+        });
     }
 }
 
