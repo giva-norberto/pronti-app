@@ -31,55 +31,77 @@
         </div>
         
         <div id="lista-de-planos">
-            <p>A carregar planos...</p>
+            <p>A validar acesso e carregar planos...</p>
         </div>
     </main>
 
     <script type="module">
-        import { db, auth } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        // Importa as dependências do Firebase e do seu sistema
+        import { db } from './firebase-config.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        
+        // ✅ PASSO 1: Importa a SUA função verificarAcesso, que já contém toda a lógica de segurança.
         import { verificarAcesso } from './userService.js'; 
 
         const listaContainer = document.getElementById('lista-de-planos');
         let empresaId = null;
+        let papelUsuario = null;
 
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
+        // ✅ PASSO 2: Criamos uma função principal 'inicializar' para organizar o código.
+        async function inicializar() {
             try {
+                // Chama a sua função. Se algo estiver errado (login, empresa, assinatura),
+                // ela irá fazer o redirecionamento AUTOMATICAMENTE, como você programou.
                 const sessao = await verificarAcesso();
-                if (!sessao || !sessao.isPremium) {
-                    window.location.href = 'assinatura-expirada.html';
-                    return;
-                }
+
+                // Se o código chegou até aqui, significa que o acesso foi permitido.
+                console.log("Acesso permitido pela função verificarAcesso. Carregando conteúdo da página...");
                 
-                empresaId = sessao.empresaAtivaId;
-                await carregarMenu(sessao.papel);
+                // Guardamos os dados importantes da sessão para usar nas outras funções
+                empresaId = sessao.empresaId;
+                papelUsuario = sessao.papel;
+
+                // Agora, com a certeza de que o usuário tem acesso, carregamos o menu e os planos.
+                await carregarMenu();
                 await carregarPlanos();
 
             } catch (error) {
-                console.error("Erro na verificação de acesso:", error);
-                window.location.href = 'login.html';
+                // O 'catch' aqui é uma segurança extra. A sua função 'verificarAcesso' já trata
+                // dos redirecionamentos, então este bloco pode nem ser executado.
+                console.error("Um erro impediu o carregamento da página:", error.message);
+                if (error.message.includes("Utilizador não autenticado")) {
+                    window.location.replace('login.html');
+                }
             }
-        });
+        }
 
-        async function carregarMenu(papelUsuario) {
-            // Seu código para carregar o menu lateral dinamicamente
-            const response = await fetch('menu-lateral.html');
-            document.getElementById('menu-container').innerHTML = await response.text();
-            const menuModule = await import('./menu-lateral.js');
-            if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
-            if (menuModule.aplicarPermissoesMenuLateral) await menuModule.aplicarPermissoesMenuLateral(papelUsuario);
+        async function carregarMenu() {
+            if (!document.getElementById('menu-container')) return;
+            try {
+                const response = await fetch('menu-lateral.html');
+                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                document.getElementById('menu-container').innerHTML = await response.text();
+
+                const menuModule = await import('./menu-lateral.js');
+                
+                // Passamos o 'papelUsuario' obtido da sua função 'verificarAcesso'
+                if (menuModule.aplicarPermissoesMenuLateral) {
+                    await menuModule.aplicarPermissoesMenuLateral(papelUsuario);
+                }
+                if (menuModule.ativarMenuLateral) {
+                    menuModule.ativarMenuLateral();
+                }
+            } catch (error) {
+                console.error("Falha ao carregar o menu lateral:", error);
+            }
         }
         
         async function carregarPlanos() {
             if (!empresaId) {
-                listaContainer.innerHTML = '<p>Erro: Empresa não selecionada.</p>';
+                listaContainer.innerHTML = '<p style="color: red;">Erro: ID da empresa não foi encontrado.</p>';
                 return;
             }
+
             try {
                 const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
                 const snapshot = await getDocs(planosRef);
@@ -88,14 +110,16 @@
                     listaContainer.innerHTML = '<p>Nenhum plano criado ainda. Clique em "Criar Novo Plano" para começar!</p>';
                     return;
                 }
+
                 listaContainer.innerHTML = '';
                 snapshot.docs.forEach(doc => {
                     const plano = { id: doc.id, ...doc.data() };
                     const card = document.createElement('a');
-                    // O link do cartão aponta para a página de edição, passando o ID do plano
                     card.href = `criar-plano.html?id=${plano.id}`; 
                     card.className = 'card-plano-item';
+                    
                     const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
                     card.innerHTML = `
                         <h3>${plano.nome}</h3>
                         <p class="preco">${precoFormatado} /mês</p>
@@ -105,9 +129,13 @@
                 });
             } catch (error) {
                 console.error("Erro ao carregar planos:", error);
-                listaContainer.innerHTML = '<p>Ocorreu um erro ao carregar os planos.</p>';
+                listaContainer.innerHTML = '<p style="color: red;">Ocorreu um erro ao carregar os planos.</p>';
             }
         }
+
+        // ✅ PASSO 3: Chama a função principal para iniciar a página.
+        inicializar();
+
     </script>
 </body>
 </html>
