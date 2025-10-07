@@ -9,6 +9,7 @@ const btnNovoPlano = document.querySelector('.btn-novo');
 // Variáveis de estado
 let empresaId = null;
 let isDono = false;
+let isAdmin = false;
 
 // Função para pegar empresa ativa do localStorage
 function getEmpresaIdAtiva() {
@@ -29,15 +30,16 @@ onAuthStateChanged(auth, async (user) => {
             const empresaSnap = await getDoc(empresaRef);
             if (empresaSnap.exists()) {
                 const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                isDono = (empresaSnap.data().donoId === user.uid) || (user.uid === adminUID);
+                isAdmin = (user.uid === adminUID);
+                isDono = (empresaSnap.data().donoId === user.uid);
+
+                // Controle de botão
+                if (btnNovoPlano) {
+                    btnNovoPlano.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+                }
             } else {
                 listaPlanosDiv.innerHTML = '<p style="color:red;">Empresa ativa não encontrada.</p>';
                 return;
-            }
-
-            // Aqui você pode controlar visibilidade de botões se necessário
-            if (btnNovoPlano) {
-                btnNovoPlano.style.display = isDono ? 'inline-flex' : 'none';
             }
 
             // Inicie carregamento dos planos normalmente
