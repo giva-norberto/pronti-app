@@ -25,7 +25,7 @@ export async function ativarMenu() {
     // mesmo que a verificação de acesso posterior cause um redirecionamento.
     
     // --- BOTÃO SAIR ---
-    const btnLogout = sidebar.querySelector('#btn-logout');
+    const btnLogout = document.getElementById('btn-logout');
     if (btnLogout && !btnLogout.dataset.listenerAttached) {
         btnLogout.dataset.listenerAttached = 'true'; // Previne múltiplos listeners
         btnLogout.addEventListener('click', async () => {
