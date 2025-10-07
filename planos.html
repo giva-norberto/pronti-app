@@ -10,7 +10,8 @@
         body { display: flex; margin: 0; font-family: 'Poppins', sans-serif; background-color: #f0f2f5; }
         main { flex-grow: 1; padding: 30px; }
         .header-pagina { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .btn-novo { background-color: #4f46e5; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+        .btn-novo { background-color: #4f46e5; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; transition: background 0.2s;}
+        .btn-novo:hover { background-color: #3730a3;}
         #lista-de-planos { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
         .card-plano-item { display: block; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-decoration: none; color: #333; transition: transform 0.2s, box-shadow 0.2s; }
         .card-plano-item:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
@@ -19,60 +20,69 @@
         .metodo { font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block; margin-top: 10px; }
         .metodo-automatico { background-color: #3b82f6; }
         .metodo-manual { background-color: #f59e0b; }
+        .erro { color: #b91c1c; font-weight: 500; margin: 2rem 0; }
+        .info { color: #1e40af; font-weight: 500; margin: 2rem 0; }
     </style>
 </head>
 <body>
     <aside id="menu-container"></aside>
-
     <main>
         <div class="header-pagina">
             <h1>Meus Planos de Assinatura</h1>
-            <a href="criar-plano.html" class="btn-novo">+ Criar Novo Plano</a>
+            <a href="criar-plano.html" class="btn-novo" id="btnNovoPlano">+ Criar Novo Plano</a>
         </div>
-        
         <div id="lista-de-planos">
-            <p>A carregar...</p>
+            <p class="info">A carregar...</p>
         </div>
     </main>
-
     <script type="module">
         import { db, auth } from './firebase-config.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         const listaContainer = document.getElementById('lista-de-planos');
-        
-        // --- PONTO DE ENTRADA ---
+        const btnNovoPlano = document.getElementById('btnNovoPlano');
+        let empresaId = null;
+        let isDono = false;
+        let isAdmin = false;
+
+        function getEmpresaIdAtiva() {
+            return localStorage.getItem("empresaAtivaId") || null;
+        }
+
         onAuthStateChanged(auth, async (user) => {
-            // REGRA 1: Se não há usuário, vai para o login.
             if (!user) {
                 window.location.href = 'login.html';
                 return;
             }
-
-            // REGRA 2: Se não há empresa selecionada, vai para a seleção.
-            const empresaId = localStorage.getItem('empresaAtivaId');
+            empresaId = getEmpresaIdAtiva();
             if (!empresaId) {
-                window.location.href = 'selecionar-empresa.html';
+                if (listaContainer) listaContainer.innerHTML = '<p class="erro">Nenhuma empresa ativa selecionada.</p>';
                 return;
             }
-            
-            // Se passou pelas 2 regras, o acesso é PERMITIDO.
-            // O código agora carrega a página sem mais verificações de redirecionamento.
+
             try {
-                // Pega o papel do usuário para o menu (baseado no dono da empresa)
-                const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
-                const isDono = empresaSnap.exists() && empresaSnap.data().donoId === user.uid;
-                const isAdmin = user.uid === "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                const papelUsuario = isAdmin ? 'admin' : (isDono ? 'dono' : 'funcionario');
-                
-                // Carrega o menu e o conteúdo da página
-                await carregarMenu(papelUsuario);
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaRef);
+
+                if (!empresaSnap.exists()) {
+                    listaContainer.innerHTML = '<p class="erro">Empresa ativa não encontrada.</p>';
+                    return;
+                }
+
+                const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                isDono = empresaSnap.data().donoId === user.uid;
+                isAdmin = user.uid === adminUID;
+
+                // Exibe botão só para dono/admin
+                if (btnNovoPlano) btnNovoPlano.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+
+                await carregarMenu(isAdmin ? 'admin' : (isDono ? 'dono' : 'funcionario'));
                 await carregarPlanos(empresaId);
 
-            } catch(error) {
+            } catch (error) {
                 console.error("Erro ao carregar dados da página:", error);
-                listaContainer.innerHTML = '<p>Ocorreu um erro ao carregar os dados. Tente novamente.</p>';
+                listaContainer.innerHTML = '<p class="erro">Ocorreu um erro ao carregar os dados. Tente novamente.</p>';
             }
         });
 
@@ -87,14 +97,14 @@
                 console.error("Falha ao carregar o menu lateral:", error);
             }
         }
-        
+
         async function carregarPlanos(empresaId) {
             try {
                 const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
                 const snapshot = await getDocs(planosRef);
 
                 if (snapshot.empty) {
-                    listaContainer.innerHTML = '<p>Nenhum plano criado ainda. Clique em "Criar Novo Plano" para começar!</p>';
+                    listaContainer.innerHTML = '<p class="info">Nenhum plano criado ainda. Clique em "Criar Novo Plano" para começar!</p>';
                     return;
                 }
                 listaContainer.innerHTML = '';
@@ -105,7 +115,7 @@
                     card.className = 'card-plano-item';
                     const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     card.innerHTML = `
-                        <h3>${plano.nome}</h3>
+                        <h3>${sanitizeHTML(plano.nome)}</h3>
                         <p class="preco">${precoFormatado} /mês</p>
                         <span class="metodo metodo-${plano.metodo}">${plano.metodo === 'automatico' ? 'Automático (MP)' : 'Manual (PIX)'}</span>
                     `;
@@ -113,8 +123,15 @@
                 });
             } catch (error) {
                 console.error("Erro ao carregar planos:", error);
-                listaContainer.innerHTML = '<p>Ocorreu um erro ao carregar os planos.</p>';
+                listaContainer.innerHTML = '<p class="erro">Ocorreu um erro ao carregar os planos.</p>';
             }
+        }
+
+        function sanitizeHTML(str) {
+            if (!str) return "";
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
         }
     </script>
 </body>
