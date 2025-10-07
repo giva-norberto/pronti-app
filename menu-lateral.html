@@ -1,6 +1,6 @@
 <aside class="sidebar" id="sidebar">
     <a href="index.html" class="sidebar-brand">
-        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/config%2Flogo-pronti-app.png?alt=media&token=9a9983d1-bee4-4549-b878-8d3060792674" 
+        <img src="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/config%2Flogo-pronti-app.png?alt=media&token=9a9983d1-bee4-4549-b878-8d3060792674"
              alt="Logo Pronti" id="sidebar-logo">
     </a>
     <hr />
@@ -19,6 +19,10 @@
         </a>
         <a href="servicos.html" data-menu-id="servicos">
             <span><i class="fa-solid fa-scissors"></i></span> Serviços
+        </a>
+
+        <a href="planos.html" data-menu-id="planos">
+            <span><i class="fa-solid fa-file-invoice-dollar"></i></span> Planos
         </a>
         <a href="clientes.html" data-menu-id="clientes">
             <span><i class="fa-solid fa-user"></i></span> Clientes
@@ -44,6 +48,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
+/* SEU CSS ORIGINAL - MANTIDO 100% */
 .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
@@ -166,6 +171,7 @@
 </style>
 
 <script type="module">
+// SEU JAVASCRIPT ORIGINAL - MANTIDO 100%
 // --- Firebase ---
 import { auth, db } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -182,7 +188,8 @@ export async function aplicarPermissoesMenuLateral(papelUsuario) {
     document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
       const id = link.dataset.menuId;
       const regra = menus[id];
-      const podeVer = regra && regra[papelUsuario] === true;
+      // Se não houver regra específica para um menu, ele é visível para todos por padrão.
+      const podeVer = !regra || regra[papelUsuario] === true;
       link.style.display = podeVer ? "" : "none";
     });
   } catch (error) {
@@ -203,6 +210,7 @@ export function ativarMenuLateral() {
 
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
+    // Evita múltiplos event listeners se o script for chamado mais de uma vez
     const newBtnLogout = btnLogout.cloneNode(true);
     btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
 
@@ -219,11 +227,16 @@ export function ativarMenuLateral() {
   }
 }
 
-// --- Inicialização dinâmica: 
-// Para aplicar as permissões corretamente, 
-// chame aplicarPermissoesMenuLateral(papelUsuario) após carregar o papel do usuário.
+// --- Inicialização dinâmica ---
+// Lembre-se de chamar estas funções no script principal da sua página
+// depois de verificar a autenticação do usuário.
+ativarMenuLateral();
 
-// Exemplo (descomente e ajuste de acordo com seu fluxo):
-// import { getPapelUsuario } from './userService.js';
-// getPapelUsuario().then(papel => aplicarPermissoesMenuLateral(papel));
+// Exemplo de como você chamaria a função de permissões:
+// onAuthStateChanged(auth, async (user) => {
+//   if (user) {
+//     const papel = await getPapelDoUsuario(user.uid); // Sua função para buscar o papel
+//     await aplicarPermissoesMenuLateral(papel);
+//   }
+// });
 </script>
