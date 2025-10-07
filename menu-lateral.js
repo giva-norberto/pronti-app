@@ -1,11 +1,15 @@
 // ======================================================================
-// menu-lateral.js (CORREÇÃO FINAL DO BOTÃO SAIR)
+// menu-lateral.js (VERSÃO FINAL - BOTÃO SAIR 100% FUNCIONAL)
 // ======================================================================
 
 import { auth, db } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
+// ======================================================================
+// Função: aplicarPermissoesMenuLateral
+// Controla visibilidade dos itens do menu conforme papel do usuário
+// ======================================================================
 export async function aplicarPermissoesMenuLateral(papelUsuario) {
   try {
     const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
@@ -24,53 +28,72 @@ export async function aplicarPermissoesMenuLateral(papelUsuario) {
   }
 }
 
+// ======================================================================
+// Função: ativarMenuLateral
+// Destaca a página ativa e configura o botão de logout
+// ======================================================================
 export function ativarMenuLateral(papelUsuario) {
-  // Destaca o menu atual
-  const nomePaginaAtual = window.location.pathname.split('/').pop().split('?')[0].split('#')[0];
-  document.querySelectorAll('.sidebar-links a').forEach(link => {
-    link.classList.remove('active');
-    const linkPagina = link.getAttribute('href').split('/').pop().split('?')[0].split('#')[0];
-    if (linkPagina === nomePaginaAtual || (nomePaginaAtual === '' && linkPagina === 'index.html')) {
-      link.classList.add('active');
-    }
-  });
-
-  // Espera o botão existir no DOM
-  const observarBotaoLogout = () => {
-    const btnLogout = document.getElementById("btn-logout");
-    if (btnLogout) {
-      // Remove listeners antigos (clonagem)
-      const newBtnLogout = btnLogout.cloneNode(true);
-      btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
-
-      newBtnLogout.addEventListener("click", async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          await signOut(auth);
-          localStorage.clear();
-          sessionStorage.clear();
-          window.location.href = "login.html";
-        } catch (erro) {
-          console.error("Erro ao tentar fazer logout:", erro);
-          alert("Erro ao sair: " + erro.message);
-        }
-      });
-
-      console.log("✅ Botão sair ativado com sucesso.");
-      return true;
-    }
-    return false;
-  };
-
-  // Se não existir ainda, aguarda via MutationObserver
-  if (!observarBotaoLogout()) {
-    const observer = new MutationObserver(() => {
-      if (observarBotaoLogout()) observer.disconnect();
+  try {
+    // ------------------------------
+    // 1️⃣ Destacar o menu atual
+    // ------------------------------
+    const nomePaginaAtual = window.location.pathname.split("/").pop().split("?")[0].split("#")[0];
+    document.querySelectorAll(".sidebar-links a").forEach(link => {
+      link.classList.remove("active");
+      const linkPagina = link.getAttribute("href").split("/").pop().split("?")[0].split("#")[0];
+      if (linkPagina === nomePaginaAtual || (nomePaginaAtual === "" && linkPagina === "index.html")) {
+        link.classList.add("active");
+      }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
 
-  // Aplica permissões
-  if (papelUsuario) aplicarPermissoesMenuLateral(papelUsuario);
+    // ------------------------------
+    // 2️⃣ Configurar botão "Sair" (Logout)
+    // ------------------------------
+    if (!window.__logoutHandlerPronti) {
+      window.__logoutHandlerPronti = true;
+
+      document.addEventListener(
+        "click",
+        async (e) => {
+          const btn = e.target.closest("#btn-logout");
+          if (!btn) return; // clique não é no botão sair
+
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("[menu-lateral] Clique em sair detectado.");
+
+          try {
+            if (!auth) {
+              console.error("[menu-lateral] auth não está disponível.");
+              alert("Erro interno: autenticação não disponível.");
+              return;
+            }
+
+            console.log("[menu-lateral] Fazendo signOut...", auth.currentUser);
+            await signOut(auth);
+
+            // Limpa caches locais
+            localStorage.clear();
+            sessionStorage.clear();
+
+            console.log("[menu-lateral] Logout concluído. Redirecionando para login...");
+            window.location.replace("login.html");
+          } catch (erro) {
+            console.error("[menu-lateral] Erro ao tentar sair:", erro);
+            alert("Erro ao sair: " + erro.message);
+          }
+        },
+        true // captura o evento cedo (mais confiável)
+      );
+    }
+
+    // ------------------------------
+    // 3️⃣ Aplicar permissões do menu
+    // ------------------------------
+    if (papelUsuario) {
+      aplicarPermissoesMenuLateral(papelUsuario);
+    }
+  } catch (erro) {
+    console.error("Erro ao ativar menu lateral:", erro);
+  }
 }
