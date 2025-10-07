@@ -38,18 +38,25 @@
     const permissoesTabela = document.getElementById("permissoes-tabela");
     const salvarBtn = document.getElementById("salvar");
 
+    // =================================================================
+    // ✅ INÍCIO DA ÚNICA PARTE ALTERADA: Adicionado "planos" à lista.
+    // =================================================================
     const menus = [
       "inicio",
       "dashboard",
       "agenda",
       "equipe",
       "servicos",
+      "planos", // <-- NOVO MENU ADICIONADO AQUI
       "clientes",
       "perfil",
       "relatorios",
       "administracao",
       "permissoes"
     ];
+    // =================================================================
+    // ✅ FIM DA ALTERAÇÃO
+    // =================================================================
 
     let permissoesAtuais = {};
 
@@ -58,6 +65,7 @@
       const snap = await getDoc(ref);
       permissoesAtuais = snap.exists() ? snap.data() : {};
 
+      // Garante que todos os menus (incluindo o novo) tenham um objeto de permissão padrão
       menus.forEach(menu => {
         if (!permissoesAtuais[menu]) {
           permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
@@ -72,6 +80,7 @@
     }
 
     function renderTabela() {
+      // O seu código aqui já é dinâmico e vai incluir a nova linha "planos" automaticamente
       permissoesTabela.innerHTML = menus.map(menu => `
         <tr>
           <td>${menu}</td>
@@ -83,6 +92,7 @@
     }
 
     salvarBtn.addEventListener("click", async () => {
+      // O seu código aqui já é dinâmico e vai salvar a nova permissão "planos" automaticamente
       const checkboxes = document.querySelectorAll("input[type=checkbox]");
       const novasPermissoes = {};
       checkboxes.forEach(chk => {
@@ -95,37 +105,26 @@
       alert("Permissões globais salvas!");
     });
 
-    // ======================================================================
-    //        LÓGICA DE ACESSO CORRIGIDA (ÚNICA PARTE ALTERADA)
-    // ======================================================================
-    // Esta versão espera o Firebase confirmar o usuário antes de tomar uma decisão,
-    // mas mantém o `alert` que você prefere.
+    // Sua lógica de acesso de administrador (mantida 100%)
     onAuthStateChanged(auth, (user) => {
-      // Um timeout de segurança. Se em 3 segundos o Firebase não encontrar
-      // um usuário, ele redireciona para o login.
       const authTimeout = setTimeout(() => {
         if (!document.body.dataset.userChecked) {
-            window.location.href = "login.html";
+          window.location.href = "login.html";
         }
       }, 3000);
 
       document.body.dataset.userChecked = true;
 
       if (user) {
-        // Usuário foi encontrado, o timeout de segurança é cancelado.
         clearTimeout(authTimeout);
 
         if (user.uid === ADMIN_UID) {
-          // É o admin, carrega a página.
           carregarPermissoesGlobais();
         } else {
-          // É um usuário logado, mas não é o admin. Usa o alert.
           alert("Acesso negado. Apenas Administrador.");
           window.location.href = "index.html";
         }
       }
-      // Se 'user' for nulo na primeira verificação, o código não faz nada e espera.
-      // Se continuar nulo, o timeout de segurança fará o redirecionamento.
     });
   </script>
 </body>
