@@ -1,3 +1,4 @@
+
 // ======================================================================
 // MENU-LATERAL.JS
 // Gerencia o menu lateral, logout e permissões
@@ -7,9 +8,6 @@ import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { verificarAcesso } from './userService.js';
 
-/**
- * Ativa e configura o menu lateral, incluindo logout, destaque de página e permissões.
- */
 export async function ativarMenu() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
@@ -33,12 +31,11 @@ export async function ativarMenu() {
     const links = sidebar.querySelectorAll('.sidebar-links a');
     const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
     links.forEach(link => {
-        link.classList.remove('active');
         const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
         if (linkPage === currentPage) link.classList.add('active');
     });
 
-    // --- PERMISSÕES POR PAPEL ---
+    // --- PERMISSÕES ---
     try {
         const sessao = await verificarAcesso();
         const papel = sessao.perfil.papel; // 'admin', 'dono', 'funcionario'
@@ -47,27 +44,18 @@ export async function ativarMenu() {
             const menuId = link.dataset.menuId;
             if (!menuId) return;
 
-            // Funcionário: vê apenas menus básicos (Início, Dashboard, Agenda, Equipe, Planos)
-            if (papel === 'funcionario') {
-                // Menus restritos para funcionário
-                if (['servicos','clientes','perfil','relatorios','administracao','permissoes'].includes(menuId)) {
-                    link.style.display = 'none';
-                } else {
-                    link.style.display = '';
-                }
+            // Funcionario: só vê menus gerais
+            if (papel === 'funcionario' && ['servicos','clientes','perfil','relatorios','administracao','permissoes'].includes(menuId)) {
+                link.style.display = 'none';
             }
 
-            // Dono: não vê menus exclusivos de admin
-            else if (papel === 'dono') {
-                if (['administracao','permissoes'].includes(menuId)) {
-                    link.style.display = 'none';
-                } else {
-                    link.style.display = '';
-                }
+            // Dono: não vê menus admin
+            if (papel === 'dono' && ['administracao','permissoes'].includes(menuId)) {
+                link.style.display = 'none';
             }
 
             // Admin: vê todos os menus
-            else if (papel === 'admin') {
+            if (papel === 'admin') {
                 link.style.display = '';
             }
         });
