@@ -1,5 +1,6 @@
 // ======================================================================
-// menu-lateral.js (REVISADO PARA GARANTIR O FUNCIONAMENTO DO BOTÃO 'SAIR')
+// menu.js (REVISADO PARA GARANTIR O FUNCIONAMENTO DO BOTÃO 'SAIR')
+// Gerencia o menu lateral, logout e permissões
 // ======================================================================
 
 import { auth } from "./firebase-config.js";
@@ -9,27 +10,33 @@ import { verificarAcesso } from './userService.js';
 /**
  * Esta é a função principal que as suas páginas devem chamar.
  * Ela foi dividida em duas partes para garantir que o botão 'Sair'
- * e o link ativo funcionem imediatamente, antes de qualquer verificação.
+ * e o link ativo funcionem imediatamente, antes de qualquer verificação assíncrona.
  */
 export async function ativarMenu() {
     const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
+    if (!sidebar) {
+        console.warn("Elemento #sidebar não encontrado. A inicialização do menu foi cancelada.");
+        return;
+    }
 
     // --- PASSO 1: CONFIGURAÇÃO IMEDIATA (SÍNCRONA) ---
     // Esta parte do código é executada instantaneamente, sem esperas.
-    // Isso garante que o botão 'Sair' e o link ativo SEMPRE funcionem.
+    // Isso garante que o botão 'Sair' e o link ativo SEMPRE funcionem,
+    // mesmo que a verificação de acesso posterior cause um redirecionamento.
     
     // --- BOTÃO SAIR ---
     const btnLogout = sidebar.querySelector('#btn-logout');
     if (btnLogout && !btnLogout.dataset.listenerAttached) {
-        btnLogout.dataset.listenerAttached = 'true';
+        btnLogout.dataset.listenerAttached = 'true'; // Previne múltiplos listeners
         btnLogout.addEventListener('click', async () => {
             try {
                 await signOut(auth);
                 localStorage.clear();
+                sessionStorage.clear(); // Garante que a sessão seja limpa também
                 window.location.href = 'login.html';
-            } catch {
-                alert('Erro ao sair');
+            } catch (error) {
+                console.error("Erro ao fazer logout:", error);
+                alert('Erro ao sair da conta.');
             }
         });
     }
@@ -49,12 +56,12 @@ export async function ativarMenu() {
     // --- PASSO 2: APLICAÇÃO DE PERMISSÕES (ASSÍNCRONA) ---
     // Esta parte, que pode causar redirecionamentos, é executada por último.
     // Mesmo que 'verificarAcesso' redirecione a página, o botão 'Sair'
-    // já foi configurado e funcionará.
+    // já foi configurado e estará funcional no breve momento em que a página é visível.
     
     try {
         const sessao = await verificarAcesso();
         
-        // Se a sessão for inválida, 'verificarAcesso' já terá redirecionado.
+        // Se a sessão for inválida, 'verificarAcesso' já terá redirecionado a página.
         // Se o código continuar, significa que o acesso foi validado.
         const papel = sessao.papel || (sessao.isOwner ? 'dono' : 'indefinido');
 
@@ -73,14 +80,14 @@ export async function ativarMenu() {
                 link.style.display = 'none';
             }
             
-            // (O seu código original não tem esta condição, mas ela pode ser útil)
+            // Lógica para Admin (se um dia precisar)
             // if (papel === 'admin') {
-            //     link.style.display = '';
+            //     link.style.display = ''; // Garante que o admin vê tudo
             // }
         });
     } catch(e) {
         // O erro de redirecionamento do verificarAcesso será capturado aqui,
         // mas a página já estará a ser redirecionada. O importante é que não quebra a execução.
-        console.error('Acesso negado ou erro ao aplicar permissões do menu:', e.message);
+        console.warn('Acesso negado ou erro ao aplicar permissões do menu:', e.message);
     }
 }
