@@ -6,15 +6,83 @@
     <title>Meus Planos - Pronti</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:400,600,700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Inclua o CSS global da Pronti -->
+    <link rel="stylesheet" href="style.css">
     <style>
-        body { display: flex; margin: 0; font-family: 'Poppins', sans-serif; background-color: #f0f2f5; }
-        main { flex-grow: 1; padding: 30px; }
-        .header-pagina { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .btn-novo { background-color: #4f46e5; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; transition: background 0.2s;}
-        .btn-novo:hover { background-color: #3730a3;}
-        #lista-de-planos { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-        .card-plano-item { display: block; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-decoration: none; color: #333; transition: transform 0.2s, box-shadow 0.2s; }
-        .card-plano-item:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        /* Fundo padrão Pronti para a tela de planos */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            color: var(--cor-texto-escuro, #22223b);
+            background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Evita que o menu lateral atropelhe o conteúdo principal em desktop */
+        #menu-container {
+            width: 250px;
+            min-width: 250px;
+            flex-shrink: 0;
+            /* Para menu lateral fixo, remova position absolute/fixed do aside dentro do menu-lateral.html */
+        }
+
+        main {
+            flex-grow: 1;
+            padding: 40px;
+            margin-left: 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+            /* Fundo do card centralizado em desktop */
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-pagina {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header-pagina h1 {
+            color: #fff;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .btn-novo {
+            background: linear-gradient(135deg, var(--cor-primaria, #4facfe) 0%, var(--cor-secundaria, #00f2fe) 100%);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px 0 rgba(79, 172, 254, 0.08);
+        }
+        .btn-novo:hover { background: linear-gradient(135deg, #2795e6, #00d8ff); }
+
+        #lista-de-planos {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .card-plano-item {
+            display: block;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-plano-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
         .card-plano-item h3 { margin-top: 0; color: #1e3a8a; }
         .card-plano-item .preco { font-size: 1.5rem; font-weight: 600; color: #10b981; }
         .metodo { font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block; margin-top: 10px; }
@@ -22,6 +90,46 @@
         .metodo-manual { background-color: #f59e0b; }
         .erro { color: #b91c1c; font-weight: 500; margin: 2rem 0; }
         .info { color: #1e40af; font-weight: 500; margin: 2rem 0; }
+
+        /* Responsivo: em telas menores, menu lateral some, conteúdo ocupa toda largura */
+        @media (max-width: 992px) {
+            #menu-container {
+                display: none;
+            }
+            main {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+        @media (max-width: 768px) {
+            main {
+                padding: 16px;
+                padding-top: 70px;
+            }
+            .header-pagina h1 {
+                font-size: 1.3rem;
+            }
+        }
+        @media (max-width: 700px) {
+            .header-pagina {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .header-pagina h1 {
+                font-size: 1.1rem;
+                text-align: left;
+            }
+            #lista-de-planos {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .card-plano-item {
+                min-width: 0;
+                max-width: 100%;
+                font-size: 0.95rem;
+            }
+        }
     </style>
 </head>
 <body>
