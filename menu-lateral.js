@@ -63,8 +63,8 @@ async function aplicarPermissoesMenuLateral(papelUsuario) {
         const permissoesSnap = await getDoc(permissoesRef);
         // Se o documento existir, pega os dados. Senão, usa um objeto vazio.
         const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-        // CORREÇÃO: Lê permissões direto do topo do documento (não existe .menus!)
-        const menus = regras.menus || regras;
+        // CORREÇÃO: Lê permissões DIRETO do topo (não existe .menus!)
+        const menus = regras;
 
         // Seleciona todos os elementos do menu que têm o atributo 'data-menu-id'.
         document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
