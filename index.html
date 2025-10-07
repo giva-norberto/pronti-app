@@ -178,19 +178,27 @@
                 popularCabecalho(sessao);
                 await loadAndSetupMenu(papelUsuario);
                 await aplicarPermissoes(papelUsuario);
-                // --- INÍCIO DA LÓGICA FINAL DE NOTIFICAÇÕES ---
+                // --- INÍCIO DA LÓGICA FINAL DE NOTIFICAÇÕES (CORRIGIDA) ---
                 const notificationButton = document.querySelector('.notification-button');
                 if ('Notification' in window && iniciarOuvinteDeNotificacoes && unlockAudio) {
                     if (Notification.permission === 'granted') {
                         console.log('[Init] Permissão já concedida. Aguardando interação para iniciar o ouvinte.');
                         notificationButton.style.display = 'none';
-                        const finalizarConfiguracaoPosInteracao = () => {
+                        
+                        // CORREÇÃO: Listener mais específico que não interfere com o botão logout
+                        const finalizarConfiguracaoPosInteracao = (e) => {
+                            // Ignora cliques no botão de logout
+                            if (e.target && (e.target.id === 'btn-logout' || e.target.closest('#btn-logout'))) {
+                                return;
+                            }
+                            
                             unlockAudio();
                             iniciarOuvinteDeNotificacoes(sessao.user.uid);
                             window.removeEventListener('click', finalizarConfiguracaoPosInteracao);
                             window.removeEventListener('touchstart', finalizarConfiguracaoPosInteracao);
                             console.log('[Init] Configuração pós-interação concluída. Áudio liberado e ouvinte iniciado.');
                         };
+                        
                         window.addEventListener('click', finalizarConfiguracaoPosInteracao);
                         window.addEventListener('touchstart', finalizarConfiguracaoPosInteracao);
                     } 
