@@ -61,7 +61,6 @@
             margin-right: 20px; 
             font-weight: 400; 
         }
-        /* Serviços Inclusos */
         .servicos-titulo {
             font-weight: 600;
             margin-bottom: 6px;
@@ -123,8 +122,6 @@
         .btn-danger { background-color: #ef4444; color: white; }
         .btn-excluir { width:100%; background-color: #dc2626; color:white; margin-top: 15px; }
         .btn-excluir:hover { background-color: #b91c1c; }
-
-        /* Responsivo */
         @media (max-width: 900px) {
             main.content { padding: 10px; }
             .container { padding: 10px; }
@@ -253,8 +250,12 @@
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 const menuModule = await import('./menu-lateral.js');
-                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
-                if (menuModule.aplicarPermissoesMenuLateral) await menuModule.aplicarPermissoesMenuLateral(papelUsuario);
+                // CORREÇÃO: Passe array de papéis do usuário!
+                let papelArray = [];
+                if (papelUsuario === 'admin') papelArray.push('admin');
+                if (papelUsuario === 'dono') papelArray.push('dono');
+                if (papelUsuario === 'funcionario') papelArray.push('funcionario');
+                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral(papelArray);
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
             }
@@ -329,7 +330,6 @@
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = 'login.html'; return; }
             isAdmin = user.uid === ADMIN_UID;
-            
             empresaId = getEmpresaIdAtiva();
             if (!empresaId) { 
                 prontiAlert("Nenhuma empresa ativa selecionada. A redirecionar...", () => { window.location.href = 'selecionar-empresa.html'; });
@@ -343,7 +343,8 @@
             }
             isDono = empresaSnap.data().donoId === user.uid;
             
-            const papelUsuario = isDono ? 'dono' : (isAdmin ? 'admin' : 'funcionario');
+            // CORREÇÃO: Passe papel do usuário corretamente para menu lateral
+            const papelUsuario = isAdmin ? 'admin' : (isDono ? 'dono' : 'funcionario');
             await carregarMenu(papelUsuario);
             await carregarServicosDisponiveis();
 
