@@ -9,9 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
-        /* Cole aqui o mesmo CSS da resposta anterior para a tela de criação de plano */
         body { display: flex; font-family: 'Poppins', sans-serif; background-color: #f0f2f5; margin: 0; }
-        main.content { flex-grow: 1; padding: 20px; } /* ✅ Adicionado para layout com menu lateral */
+        main.content { flex-grow: 1; padding: 20px; }
         .container { max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
         h1 { color: #1e3a8a; text-align: center; margin-bottom: 30px; }
         .form-group { margin-bottom: 20px; }
@@ -83,7 +82,7 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { db, auth } from "./firebase-config.js";
 
-        // --- LÓGICA DE SERVIÇO ADAPTADA PARA PLANOS ---
+        // --- Variáveis Globais e Elementos do DOM ---
         const form = document.getElementById('form-plano');
         const btnExcluir = document.getElementById('btn-excluir-plano');
         let empresaId = null;
@@ -93,7 +92,6 @@
         let isAdmin = false;
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-        // --- ELEMENTOS ESPECÍFICOS DESTA TELA ---
         const servicosContainer = document.getElementById('servicos-container');
         const btnAdicionarServico = document.getElementById('btn-adicionar-servico');
         const campoLinkMP = document.getElementById('campo-link-mp');
@@ -101,7 +99,7 @@
         const radiosMetodo = document.querySelectorAll('input[name="metodo"]');
         let listaDeServicos = [];
 
-        // ===== SEU SISTEMA DE MODAL PRONTI (INCLUÍDO AQUI) =====
+        // ===== SEU SISTEMA DE MODAL PRONTI (Reutilizado do seu código de serviços) =====
         function showProntiModal(msg, actions) {
             let modal = document.getElementById('pronti-modal');
             if (!modal) {
@@ -118,22 +116,18 @@
                 document.body.appendChild(modal);
                 modal.querySelector('.pronti-modal-close').onclick = () => { modal.style.display = 'none'; };
             }
-            
             const msgDiv = modal.querySelector('#pronti-modal-message');
             const actionsDiv = modal.querySelector('#pronti-modal-actions');
             msgDiv.innerHTML = msg;
             actionsDiv.innerHTML = '';
-
             actions.forEach(act => {
                 const btn = document.createElement('button');
                 btn.textContent = act.text;
                 btn.style.cssText = 'border:none; border-radius:6px; padding:9px 22px; font-weight:bold; cursor:pointer; font-size:16px;';
                 if (act.className === 'pronti-btn-ok') {
-                    btn.style.background = '#4f46e5';
-                    btn.style.color = '#fff';
+                    btn.style.background = '#4f46e5'; btn.style.color = '#fff';
                 } else {
-                    btn.style.background = '#e53e3e';
-                    btn.style.color = '#fff';
+                    btn.style.background = '#e53e3e'; btn.style.color = '#fff';
                 }
                 btn.onclick = () => {
                     modal.style.display = 'none';
@@ -146,11 +140,10 @@
         function prontiAlert(msg, callback) { showProntiModal(msg, [{ text: "OK", className: "pronti-btn-ok", onClick: callback }]); }
         function prontiConfirm(msg, onOk, onCancel) { showProntiModal(msg, [{ text: "Cancelar", className: "pronti-btn-cancel", onClick: onCancel }, { text: "Confirmar", className: "pronti-btn-ok", onClick: onOk }]); }
 
-        // ===== FUNÇÕES DE AUTENTICAÇÃO E UTILITÁRIOS =====
+        // ===== Funções Utilitárias =====
         function getEmpresaIdAtiva() { return localStorage.getItem("empresaAtivaId") || null; }
         function getIdFromUrl() { const p = new URLSearchParams(window.location.search); return p.get('id'); }
         
-        // ✅ FUNÇÃO PARA CARREGAR O MENU LATERAL DINAMICAMENTE
         async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -164,14 +157,13 @@
             }
         }
 
-        // --- FUNÇÕES ADAPTADAS PARA PLANOS ---
         async function carregarServicosDisponiveis() {
             try {
                 const servicosRef = collection(db, `empresarios/${empresaId}/servicos`);
                 const snapshot = await getDocs(servicosRef);
                 listaDeServicos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 if (listaDeServicos.length === 0) {
-                     prontiAlert("Atenção: Nenhum serviço cadastrado. Você precisa cadastrar serviços antes de poder adicioná-los a um plano.");
+                     prontiAlert("Atenção: Cadastre serviços antes de criar um plano.");
                 }
             } catch (error) {
                 console.error("Erro ao carregar serviços:", error);
@@ -182,7 +174,6 @@
         function adicionarLinhaServico(servicoParaAdicionar = { servicoId: '', quantidade: 1 }) {
             const div = document.createElement('div');
             div.className = 'servico-item';
-            
             const select = document.createElement('select');
             select.required = true;
             let optionsHTML = '<option value="">Selecione um serviço</option>';
@@ -191,19 +182,16 @@
                 optionsHTML += `<option value="${servico.id}" data-nome="${servico.nome}" ${isSelected}>${servico.nome}</option>`;
             });
             select.innerHTML = optionsHTML;
-
             const input = document.createElement('input');
             input.type = 'number';
             input.value = servicoParaAdicionar.quantidade;
             input.min = 1;
             input.required = true;
-
             const btnRemover = document.createElement('button');
             btnRemover.type = 'button';
             btnRemover.className = 'btn btn-danger';
             btnRemover.textContent = 'X';
             btnRemover.onclick = () => div.remove();
-
             div.appendChild(select);
             div.appendChild(input);
             div.appendChild(btnRemover);
@@ -223,13 +211,10 @@
             document.getElementById('nome-plano').value = plano.nome || '';
             document.getElementById('descricao-plano').value = plano.descricao || '';
             document.getElementById('preco-plano').value = plano.preco !== undefined ? plano.preco : '';
-
             document.querySelector(`input[name="metodo"][value="${plano.metodo}"]`).checked = true;
             radiosMetodo[0].dispatchEvent(new Event('change'));
-
             document.getElementById('mercadoPagoLink').value = plano.mercadoPagoLink || '';
             document.getElementById('instrucoesPagamento').value = plano.instrucoesPagamento || '';
-
             servicosContainer.innerHTML = '';
             if (plano.servicosInclusos && plano.servicosInclusos.length > 0) {
                 plano.servicosInclusos.forEach(servico => adicionarLinhaServico(servico));
@@ -238,20 +223,16 @@
             }
         }
 
-        // --- LÓGICA PRINCIPAL (ADAPTADA DE SERVIÇOS) ---
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = 'login.html'; return; }
             isAdmin = user.uid === ADMIN_UID;
             
             empresaId = getEmpresaIdAtiva();
             if (!empresaId) { 
-                prontiAlert("Nenhuma empresa ativa selecionada. A redirecionar...", () => {
-                    window.location.href = 'selecionar-empresa.html';
-                });
+                prontiAlert("Nenhuma empresa ativa selecionada. A redirecionar...", () => { window.location.href = 'selecionar-empresa.html'; });
                 return;
             }
             
-            // ✅ CORREÇÃO: As funções de carregamento devem ser chamadas após a verificação do usuário
             const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
             if (!empresaSnap.exists()) {
                 prontiAlert("Erro: Empresa ativa não encontrada.", () => { window.location.href = 'selecionar-empresa.html'; });
@@ -259,10 +240,8 @@
             }
             isDono = empresaSnap.data().donoId === user.uid;
             
-            // ✅ CORREÇÃO: O papel do usuário é necessário para carregar o menu corretamente
-            const papelUsuario = isDono ? 'dono' : (isAdmin ? 'admin' : 'funcionario'); // Simplificação, ajuste se tiver papéis mais complexos
+            const papelUsuario = isDono ? 'dono' : (isAdmin ? 'admin' : 'funcionario');
             await carregarMenu(papelUsuario);
-            
             await carregarServicosDisponiveis();
 
             planoId = getIdFromUrl();
@@ -291,8 +270,7 @@
         async function handleFormSubmit(e) {
             e.preventDefault();
             if (!empresaId || (!isDono && !isAdmin)) {
-                prontiAlert("Acesso negado.");
-                return;
+                prontiAlert("Acesso negado."); return;
             }
 
             const btnSalvar = form.querySelector('button[type="submit"]');
@@ -332,11 +310,11 @@
                 }
 
                 if (planoEditando) {
-                    planoData.atualizadoEm = new Date(); // Boa prática
+                    planoData.atualizadoEm = new Date();
                     const planoRef = doc(db, "empresarios", empresaId, "planosDeAssinatura", planoId);
                     await updateDoc(planoRef, planoData);
                 } else {
-                    planoData.criadoEm = new Date(); // Boa prática
+                    planoData.criadoEm = new Date();
                     const planosCol = collection(db, "empresarios", empresaId, "planosDeAssinatura");
                     await addDoc(planosCol, planoData);
                 }
