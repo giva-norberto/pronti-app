@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Planos - Pronti</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:400,600,700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { display: flex; margin: 0; font-family: 'Poppins', sans-serif; background-color: #f0f2f5; }
+        main { flex-grow: 1; padding: 30px; }
+        .header-pagina { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .btn-novo { background-color: #4f46e5; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+        #lista-de-planos { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        .card-plano-item { display: block; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-decoration: none; color: #333; transition: transform 0.2s, box-shadow 0.2s; }
+        .card-plano-item:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        .card-plano-item h3 { margin-top: 0; color: #1e3a8a; }
+        .card-plano-item .preco { font-size: 1.5rem; font-weight: 600; color: #10b981; }
+        .metodo { font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block; margin-top: 10px; }
+        .metodo-automatico { background-color: #3b82f6; }
+        .metodo-manual { background-color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <aside id="menu-container"></aside>
+
+    <main>
+        <div class="header-pagina">
+            <h1>Meus Planos de Assinatura</h1>
+            <a href="criar-plano.html" class="btn-novo">+ Criar Novo Plano</a>
+        </div>
+        
+        <div id="lista-de-planos">
+            <p>A carregar planos...</p>
+        </div>
+    </main>
+
+    <script type="module">
+        import { db, auth } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { verificarAcesso } from './userService.js'; 
+
+        const listaContainer = document.getElementById('lista-de-planos');
+        let empresaId = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            try {
+                const sessao = await verificarAcesso();
+                if (!sessao || !sessao.isPremium) {
+                    window.location.href = 'assinatura-expirada.html';
+                    return;
+                }
+                
+                empresaId = sessao.empresaAtivaId;
+                await carregarMenu(sessao.papel);
+                await carregarPlanos();
+
+            } catch (error) {
+                console.error("Erro na verificação de acesso:", error);
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function carregarMenu(papelUsuario) {
+            // Seu código para carregar o menu lateral dinamicamente
+            const response = await fetch('menu-lateral.html');
+            document.getElementById('menu-container').innerHTML = await response.text();
+            const menuModule = await import('./menu-lateral.js');
+            if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
+            if (menuModule.aplicarPermissoesMenuLateral) await menuModule.aplicarPermissoesMenuLateral(papelUsuario);
+        }
+        
+        async function carregarPlanos() {
+            if (!empresaId) {
+                listaContainer.innerHTML = '<p>Erro: Empresa não selecionada.</p>';
+                return;
+            }
+            try {
+                const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
+                const snapshot = await getDocs(planosRef);
+
+                if (snapshot.empty) {
+                    listaContainer.innerHTML = '<p>Nenhum plano criado ainda. Clique em "Criar Novo Plano" para começar!</p>';
+                    return;
+                }
+                listaContainer.innerHTML = '';
+                snapshot.docs.forEach(doc => {
+                    const plano = { id: doc.id, ...doc.data() };
+                    const card = document.createElement('a');
+                    // O link do cartão aponta para a página de edição, passando o ID do plano
+                    card.href = `criar-plano.html?id=${plano.id}`; 
+                    card.className = 'card-plano-item';
+                    const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    card.innerHTML = `
+                        <h3>${plano.nome}</h3>
+                        <p class="preco">${precoFormatado} /mês</p>
+                        <span class="metodo metodo-${plano.metodo}">${plano.metodo === 'automatico' ? 'Automático (MP)' : 'Manual (PIX)'}</span>
+                    `;
+                    listaContainer.appendChild(card);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar planos:", error);
+                listaContainer.innerHTML = '<p>Ocorreu um erro ao carregar os planos.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
