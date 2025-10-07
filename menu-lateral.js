@@ -1,111 +1,77 @@
 // ======================================================================
-// ARQUIVO: menu-lateral.js
-// FUNÇÃO: Controla o menu lateral, permissões de acesso e logout.
+// MENU-LATERAL.JS
+// Gerencia o menu lateral, logout e permissões
 // ======================================================================
 
-// --- 1. Importações Essenciais ---
-import { auth, db } from "./firebase-config.js";
+import { auth } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-
-// --- 2. Função Principal de Ativação ---
-/**
- * Inicializa o menu lateral.
- * @param {string|string[]} papelUsuario - Papel do usuário logado ('dono', 'admin', etc).
- */
-export async function ativarMenuLateral(papelUsuario) {
-    await aplicarPermissoesMenuLateral(papelUsuario); // Aplica regras de permissões do Firestore
-    marcarLinkAtivo();                                // Destaca o link da página atual
-    configurarBotaoLogout();                          // Configura botão de logout
-}
-
-// --- 3. Lógica de Permissões ---
-/**
- * Checa se o usuário tem permissão para ver um item do menu.
- * @param {object} menus - Regras de permissão do Firestore.
- * @param {string} id - O 'data-menu-id' do link.
- * @param {string|string[]} papelUsuario - Papel do usuário.
- * @returns {boolean}
- */
-function temPermissao(menus, id, papelUsuario) {
-    // Se não existir uma regra para este menu, bloqueia por segurança.
-    if (!menus[id]) return false;
-    // Para múltiplos papéis, autoriza se ao menos um tiver permissão
-    if (Array.isArray(papelUsuario)) {
-        return papelUsuario.some(papel => menus[id][papel] === true);
-    }
-    // Para único papel
-    return menus[id][papelUsuario] === true;
-}
+import { verificarAcesso } from './userService.js';
 
 /**
- * Busca regras no Firestore e aplica visibilidade nos links do menu.
- * @param {string|string[]} papelUsuario
+ * Ativa e configura o menu lateral, incluindo logout, destaque de página e permissões.
  */
-async function aplicarPermissoesMenuLateral(papelUsuario) {
-    // Validação para evitar erros. Aceita string ou array com itens.
-    if (!papelUsuario || (Array.isArray(papelUsuario) && papelUsuario.length === 0) || (typeof papelUsuario === "string" && papelUsuario.trim() === "")) {
-        console.error("Papel do usuário não informado para aplicarPermissoesMenuLateral. O menu não será exibido corretamente.");
-        return;
-    }
-    try {
-        const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
-        const permissoesSnap = await getDoc(permissoesRef);
-        const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-        const menus = regras.menus || {};
+export async function ativarMenu() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
 
-        // DEBUG: log de permissões e papel
-        console.log("[DEBUG] Permissões menus:", menus);
-        console.log("[DEBUG] Papel usuário:", papelUsuario);
-
-        document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
-            const id = link.dataset.menuId;
-            const podeVer = temPermissao(menus, id, papelUsuario);
-            // DEBUG: cada item do menu
-            console.log(`[DEBUG] Menu: ${id}, Permissão:`, menus[id], "Papel:", papelUsuario, "Pode ver?", podeVer);
-            link.style.display = podeVer ? "" : "none";
+    // --- BOTÃO SAIR ---
+    const btnLogout = sidebar.querySelector('#btn-logout');
+    if (btnLogout && !btnLogout.dataset.listenerAttached) {
+        btnLogout.dataset.listenerAttached = 'true';
+        btnLogout.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                localStorage.clear();
+                window.location.href = 'login.html';
+            } catch {
+                alert('Erro ao sair');
+            }
         });
-    } catch (error) {
-        console.error("Erro crítico ao buscar ou aplicar permissões no menu lateral:", error);
     }
-}
 
-// --- 4. Funções de Interface do Usuário (UI) ---
-/**
- * Destaca o link do menu da página atual.
- */
-function marcarLinkAtivo() {
-    const urlAtual = window.location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.sidebar-links a').forEach(link => {
+    // --- DESTAQUE DA PÁGINA ATUAL ---
+    const links = sidebar.querySelectorAll('.sidebar-links a');
+    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
+    links.forEach(link => {
         link.classList.remove('active');
-        const linkHref = link.getAttribute('href').split('/').pop();
-        if (linkHref === urlAtual) {
-            link.classList.add('active');
-        }
+        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
+        if (linkPage === currentPage) link.classList.add('active');
     });
-}
 
-/**
- * Configura o botão de logout.
- */
-function configurarBotaoLogout() {
-    const btnLogout = document.getElementById("btn-logout");
-    if (!btnLogout) {
-        console.error("Botão de logout com id='btn-logout' não foi encontrado no HTML.");
-        return;
+    // --- PERMISSÕES POR PAPEL ---
+    try {
+        const sessao = await verificarAcesso();
+        const papel = sessao.perfil.papel; // 'admin', 'dono', 'funcionario'
+
+        links.forEach(link => {
+            const menuId = link.dataset.menuId;
+            if (!menuId) return;
+
+            // Funcionário: vê apenas menus básicos (Início, Dashboard, Agenda, Equipe, Planos)
+            if (papel === 'funcionario') {
+                // Menus restritos para funcionário
+                if (['servicos','clientes','perfil','relatorios','administracao','permissoes'].includes(menuId)) {
+                    link.style.display = 'none';
+                } else {
+                    link.style.display = '';
+                }
+            }
+
+            // Dono: não vê menus exclusivos de admin
+            else if (papel === 'dono') {
+                if (['administracao','permissoes'].includes(menuId)) {
+                    link.style.display = 'none';
+                } else {
+                    link.style.display = '';
+                }
+            }
+
+            // Admin: vê todos os menus
+            else if (papel === 'admin') {
+                link.style.display = '';
+            }
+        });
+    } catch(e) {
+        console.error('Erro ao aplicar permissões do menu:', e);
     }
-    // Remove event listeners antigos e adiciona o novo
-    const btnClone = btnLogout.cloneNode(true);
-    btnLogout.parentNode.replaceChild(btnClone, btnLogout);
-    btnClone.addEventListener("click", async () => {
-        try {
-            await signOut(auth);
-            localStorage.clear();
-            sessionStorage?.clear?.();
-            window.location.href = "login.html";
-        } catch (err) {
-            console.error("❌ Erro ao tentar fazer logout:", err);
-            alert("Não foi possível sair. Por favor, tente novamente.");
-        }
-    });
 }
