@@ -1,93 +1,82 @@
 // ======================================================================
-// menu.js (REVISADO PARA GARANTIR O FUNCIONAMENTO DO BOTÃO 'SAIR')
-// Gerencia o menu lateral, logout e permissões
+// menu-lateral.js (CORREÇÃO PARA O BOTÃO SAIR FUNCIONAR)
+// Este é o arquivo que está sendo usado na prática
 // ======================================================================
 
-import { auth } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { verificarAcesso } from './userService.js';
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-/**
- * Esta é a função principal que as suas páginas devem chamar.
- * Ela foi dividida em duas partes para garantir que o botão 'Sair'
- * e o link ativo funcionem imediatamente, antes de qualquer verificação assíncrona.
- */
-export async function ativarMenu() {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) {
-        console.warn("Elemento #sidebar não encontrado. A inicialização do menu foi cancelada.");
-        return;
-    }
+// Função para aplicar permissões do menu lateral
+export async function aplicarPermissoesMenuLateral(papelUsuario) {
+  try {
+    const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
+    const permissoesSnap = await getDoc(permissoesRef);
+    const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
+    const menus = regras.menus || {};
 
-    // --- PASSO 1: CONFIGURAÇÃO IMEDIATA (SÍNCRONA) ---
-    // Esta parte do código é executada instantaneamente, sem esperas.
-    // Isso garante que o botão 'Sair' e o link ativo SEMPRE funcionem,
-    // mesmo que a verificação de acesso posterior cause um redirecionamento.
-    
-    // --- BOTÃO SAIR ---
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout && !btnLogout.dataset.listenerAttached) {
-        btnLogout.dataset.listenerAttached = 'true'; // Previne múltiplos listeners
-        btnLogout.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                localStorage.clear();
-                sessionStorage.clear(); // Garante que a sessão seja limpa também
-                window.location.href = 'login.html';
-            } catch (error) {
-                console.error("Erro ao fazer logout:", error);
-                alert('Erro ao sair da conta.');
-            }
-        });
-    }
-
-    // --- DESTAQUE DA PÁGINA ATUAL ---
-    const links = sidebar.querySelectorAll('.sidebar-links a');
-    const currentPage = window.location.pathname.split('/').pop().split('?')[0] || 'index.html';
-    links.forEach(link => {
-        link.classList.remove('active'); // Garante que a classe é removida antes de adicionar
-        const linkPage = link.getAttribute('href').split('/').pop().split('?')[0];
-        if (linkPage === currentPage) {
-            link.classList.add('active');
-        }
+    document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
+      const id = link.dataset.menuId;
+      const regra = menus[id];
+      // Se não houver regra específica para um menu, ele é visível para todos por padrão.
+      const podeVer = !regra || regra[papelUsuario] === true;
+      link.style.display = podeVer ? "" : "none";
     });
+  } catch (error) {
+    console.error("Erro ao aplicar permissões no menu lateral:", error);
+  }
+}
 
-
-    // --- PASSO 2: APLICAÇÃO DE PERMISSÕES (ASSÍNCRONA) ---
-    // Esta parte, que pode causar redirecionamentos, é executada por último.
-    // Mesmo que 'verificarAcesso' redirecione a página, o botão 'Sair'
-    // já foi configurado e estará funcional no breve momento em que a página é visível.
-    
-    try {
-        const sessao = await verificarAcesso();
-        
-        // Se a sessão for inválida, 'verificarAcesso' já terá redirecionado a página.
-        // Se o código continuar, significa que o acesso foi validado.
-        const papel = sessao.papel || (sessao.isOwner ? 'dono' : 'indefinido');
-
-        links.forEach(link => {
-            const menuId = link.dataset.menuId;
-            if (!menuId) return;
-
-            // Sua lógica de permissões original - 100% MANTIDA
-            // Funcionario: só vê menus gerais
-            if (papel === 'funcionario' && ['servicos','clientes','perfil','relatorios','administracao','permissoes', 'planos'].includes(menuId)) {
-                link.style.display = 'none';
-            }
-
-            // Dono: não vê menus admin
-            if (papel === 'dono' && ['administracao','permissoes'].includes(menuId)) {
-                link.style.display = 'none';
-            }
-            
-            // Lógica para Admin (se um dia precisar)
-            // if (papel === 'admin') {
-            //     link.style.display = ''; // Garante que o admin vê tudo
-            // }
-        });
-    } catch(e) {
-        // O erro de redirecionamento do verificarAcesso será capturado aqui,
-        // mas a página já estará a ser redirecionada. O importante é que não quebra a execução.
-        console.warn('Acesso negado ou erro ao aplicar permissões do menu:', e.message);
+// --- Ativa menu lateral (VERSÃO CORRIGIDA) ---
+export function ativarMenuLateral(papelUsuario) {
+  const nomePaginaAtual = window.location.pathname.split('/').pop().split('?')[0].split('#')[0];
+  document.querySelectorAll('.sidebar-links a').forEach(link => {
+    link.classList.remove('active');
+    const linkPagina = link.getAttribute('href').split('/').pop().split('?')[0].split('#')[0];
+    if (linkPagina === nomePaginaAtual || (nomePaginaAtual === '' && linkPagina === 'index.html')) {
+      link.classList.add('active');
     }
+  });
+
+  // CORREÇÃO DO BOTÃO LOGOUT
+  const btnLogout = document.getElementById("btn-logout");
+  if (btnLogout) {
+    console.log("Botão logout encontrado, configurando event listener...");
+    
+    // Remove qualquer listener existente
+    const newBtnLogout = btnLogout.cloneNode(true);
+    btnLogout.parentNode.replaceChild(newBtnLogout, btnLogout);
+
+    // Adiciona o event listener
+    newBtnLogout.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log("Botão logout clicado, iniciando processo...");
+      
+      try {
+        console.log("Fazendo signOut...");
+        await signOut(auth);
+        
+        console.log("Limpando storage...");
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        console.log("Redirecionando para login...");
+        window.location.href = "login.html";
+      } catch (erro) {
+        console.error("Erro ao tentar fazer logout:", erro);
+        alert("Erro ao sair da conta: " + erro.message);
+      }
+    });
+    
+    console.log("Event listener do logout configurado com sucesso!");
+  } else {
+    console.error("ERRO: Botão logout não encontrado!");
+  }
+
+  // Aplicar permissões se o papel foi fornecido
+  if (papelUsuario) {
+    aplicarPermissoesMenuLateral(papelUsuario);
+  }
 }
