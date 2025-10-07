@@ -8,36 +8,134 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <!-- Inclua o CSS global da Pronti -->
+    <link rel="stylesheet" href="style.css" />
     <style>
-        body { display: flex; font-family: 'Poppins', sans-serif; background-color: #f0f2f5; margin: 0; }
-        main.content { flex-grow: 1; padding: 20px; }
-        .container { max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-        h1 { color: #1e3a8a; text-align: center; margin-bottom: 30px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; color: #374151; }
-        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        textarea { resize: vertical; min-height: 80px; }
-        .radio-group label { display: inline-block; margin-right: 20px; font-weight: 400; }
-        .servico-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background-color: #f9fafb; border-radius: 6px; }
+        body { 
+            display: flex; 
+            font-family: 'Poppins', sans-serif; 
+            margin: 0; 
+            min-height: 100vh;
+            background: linear-gradient(135deg, #4a90e2 0%, #6366f1 100%);
+        }
+        main.content { 
+            flex-grow: 1; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 20px auto; 
+            background-color: #fff; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+        }
+        h1 { 
+            color: #1e3a8a; 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+            color: #374151; 
+        }
+        input[type="text"], input[type="number"], textarea, select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #d1d5db; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-family: 'Poppins', sans-serif; 
+        }
+        textarea { 
+            resize: vertical; 
+            min-height: 80px; 
+        }
+        .radio-group label { 
+            display: inline-block; 
+            margin-right: 20px; 
+            font-weight: 400; 
+        }
+        /* Serviços Inclusos */
+        .servicos-titulo {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1e3a8a;
+        }
+        .servicos-explicacao {
+            font-size: 0.97em;
+            color: #44446a;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .servico-header-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 4px;
+            font-size: 0.99em;
+            color: #22223b;
+        }
+        .servico-header-row .titulo-servico { flex: 3; }
+        .servico-header-row .titulo-quantidade { flex: 1; text-align: left; color: #6366f1; }
+        .servico-header-row .titulo-remover { flex: 0 0 auto; }
+        .servico-item { 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            margin-bottom: 10px; 
+            padding: 10px; 
+            background-color: #f9fafb; 
+            border-radius: 6px; 
+        }
         .servico-item select { flex: 3; }
         .servico-item input { flex: 1; }
         .servico-item button { flex: 0 0 auto; }
-        .btn { display: inline-block; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background-color 0.2s; }
-        .btn-primary { background-color: #2563eb; color: white; width: 100%; padding: 15px; font-size: 1rem; }
-        .btn-primary:hover { background-color: #1d4ed8; }
-        .btn-secondary { background-color: #e5e7eb; color: #374151; }
+        .btn { 
+            display: inline-block; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: background-color 0.2s; 
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--cor-primaria, #4facfe) 0%, var(--cor-secundaria, #00f2fe) 100%);
+            color: #fff;
+            width: 100%; 
+            padding: 15px; 
+            font-size: 1rem; 
+            box-shadow: 0 2px 8px 0 rgba(79,172,254,0.08);
+        }
+        .btn-primary:hover { background: linear-gradient(135deg, #2795e6, #00d8ff); }
+        .btn-secondary { 
+            background: linear-gradient(135deg, var(--cor-primaria, #4facfe) 0%, var(--cor-secundaria, #00f2fe) 100%);
+            color: #fff; 
+            font-size: 1rem;
+        }
+        .btn-secondary:hover { background: linear-gradient(135deg, #2795e6, #00d8ff); }
         .btn-danger { background-color: #ef4444; color: white; }
         .btn-excluir { width:100%; background-color: #dc2626; color:white; margin-top: 15px; }
         .btn-excluir:hover { background-color: #b91c1c; }
+
+        /* Responsivo */
+        @media (max-width: 900px) {
+            main.content { padding: 10px; }
+            .container { padding: 10px; }
+        }
     </style>
 </head>
 <body>
     <aside id="menu-container"></aside>
-    
     <main class="content">
         <div class="container">
             <h1>Criar Plano de Assinatura</h1>
-
             <form id="form-plano">
                 <div class="form-group">
                     <label for="nome-plano">Nome do Plano</label>
@@ -52,9 +150,15 @@
                     <input type="number" id="preco-plano" step="0.01" placeholder="Ex: 99.90" required>
                 </div>
                 <div class="form-group">
-                    <label>Serviços Inclusos no Plano</label>
+                    <span class="servicos-titulo">Serviços Inclusos no Plano</span>
+                    <span class="servicos-explicacao">Informe abaixo os serviços que o cliente poderá usar no plano.<br>Cada serviço pode ser utilizado o número de vezes informado <b>por mês</b>.</span>
+                    <div class="servico-header-row">
+                        <span class="titulo-servico">Serviço</span>
+                        <span class="titulo-quantidade">Quantas vezes no mês</span>
+                        <span class="titulo-remover"></span>
+                    </div>
                     <div id="servicos-container"></div>
-                    <button type="button" id="btn-adicionar-servico" class="btn btn-secondary">Adicionar Serviço</button>
+                    <button type="button" id="btn-adicionar-servico" class="btn btn-secondary"><i class="fa fa-plus"></i> Adicionar Serviço</button>
                 </div>
                 <div class="form-group">
                     <label>Método de Cobrança</label>
@@ -76,7 +180,6 @@
             <button id="btn-excluir-plano" class="btn btn-excluir" style="display:none;">Excluir Plano</button>
         </div>
     </main>
-    
     <script type="module">
         import { doc, getDoc, updateDoc, deleteDoc, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
