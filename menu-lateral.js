@@ -1,14 +1,13 @@
 // ======================================================================
-// menu-lateral.js (VERSÃO FINAL - BOTÃO SAIR 100% FUNCIONAL)
+// menu-lateral.js (VERSÃO FINAL - FORÇA LOGOUT EM TODAS INSTÂNCIAS + DEBUG)
 // ======================================================================
 
 import { auth, db } from "./firebase-config.js";
-import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { signOut as signOutSingle } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // ======================================================================
-// Função: aplicarPermissoesMenuLateral
-// Controla visibilidade dos itens do menu conforme papel do usuário
+// aplicarPermissoesMenuLateral
 // ======================================================================
 export async function aplicarPermissoesMenuLateral(papelUsuario) {
   try {
@@ -29,13 +28,12 @@ export async function aplicarPermissoesMenuLateral(papelUsuario) {
 }
 
 // ======================================================================
-// Função: ativarMenuLateral
-// Destaca a página ativa e configura o botão de logout
+// ativarMenuLateral
 // ======================================================================
 export function ativarMenuLateral(papelUsuario) {
   try {
     // ------------------------------
-    // 1️⃣ Destacar o menu atual
+    // 1. Destacar menu atual
     // ------------------------------
     const nomePaginaAtual = window.location.pathname.split("/").pop().split("?")[0].split("#")[0];
     document.querySelectorAll(".sidebar-links a").forEach(link => {
@@ -47,7 +45,7 @@ export function ativarMenuLateral(papelUsuario) {
     });
 
     // ------------------------------
-    // 2️⃣ Configurar botão "Sair" (Logout)
+    // 2. Logout: Delegation e signOut em todas as instâncias de Firebase
     // ------------------------------
     if (!window.__logoutHandlerPronti) {
       window.__logoutHandlerPronti = true;
@@ -55,40 +53,97 @@ export function ativarMenuLateral(papelUsuario) {
       document.addEventListener(
         "click",
         async (e) => {
-          const btn = e.target.closest("#btn-logout");
-          if (!btn) return; // clique não é no botão sair
+          const btn = e.target && e.target.closest ? e.target.closest("#btn-logout") : null;
+          if (!btn) return; // não é clique no logout
 
           e.preventDefault();
           e.stopPropagation();
-          console.log("[menu-lateral] Clique em sair detectado.");
+          console.log("[menu-lateral] Clique em sair detectado. Iniciando fluxo de logout...");
 
           try {
-            if (!auth) {
-              console.error("[menu-lateral] auth não está disponível.");
-              alert("Erro interno: autenticação não disponível.");
+            // dynamic import para inspecionar todas as apps/auths ativas nesta página
+            const appMod = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js");
+            const authMod = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js");
+
+            const apps = appMod.getApps();
+            console.log("[menu-lateral] Apps detectados:", apps.map(a => a.name));
+
+            // Adiciona observers que logam quando houver mudança de estado (útil para detectar re-login automático)
+            apps.forEach((a) => {
+              try {
+                const aAuth = authMod.getAuth(a);
+                authMod.onAuthStateChanged(aAuth, (user) => {
+                  console.log(`[menu-lateral][onAuthStateChanged] app=${a.name}`, user);
+                  if (user) {
+                    // Quando um re-login automático ocorrer, imprime stack trace para ajudar a localizar
+                    console.trace(`[menu-lateral] Re-auth detected for app=${a.name}`);
+                  }
+                });
+              } catch (errObs) {
+                console.warn("[menu-lateral] Não foi possível anexar observer em app", a.name, errObs);
+              }
+            });
+
+            // Tenta signOut em cada instância encontrada
+            for (const a of apps) {
+              try {
+                const aAuth = authMod.getAuth(a);
+                console.log("[menu-lateral] Fazendo signOut() em app:", a.name, aAuth.currentUser);
+                await authMod.signOut(aAuth).catch(err => {
+                  console.warn("[menu-lateral] signOut falhou para app:", a.name, err);
+                });
+                console.log("[menu-lateral] signOut completado para app:", a.name);
+              } catch (errSign) {
+                console.warn("[menu-lateral] Erro ao realizar signOut em app:", a.name, errSign);
+              }
+            }
+
+            // Tenta também o signOut na instância importada diretamente (fallback)
+            try {
+              await signOutSingle(auth).catch(() => {});
+            } catch (_) {
+              // noop
+            }
+
+            // Pequena espera para permitir que onAuthStateChanged propague e revele re-logins automáticos
+            await new Promise(resolve => setTimeout(resolve, 700));
+
+            // Re-checa se qualquer instância ainda tem usuário
+            const stillSignedIn = apps.some((a) => {
+              try {
+                const aAuth = authMod.getAuth(a);
+                return !!aAuth.currentUser;
+              } catch (_) {
+                return false;
+              }
+            });
+
+            if (stillSignedIn) {
+              console.warn("[menu-lateral] Após tentativas de signOut, ainda existe usuário autenticado. Pode haver um script que re-autentica automaticamente (ex.: signInAnonymously).");
+              // Força limpeza local e redirecionamento mesmo assim
+              try { localStorage.clear(); } catch(_) {}
+              try { sessionStorage.clear(); } catch(_) {}
+              window.location.replace("login.html");
               return;
             }
 
-            console.log("[menu-lateral] Fazendo signOut...", auth.currentUser);
-            await signOut(auth);
-
-            // Limpa caches locais
-            localStorage.clear();
-            sessionStorage.clear();
-
-            console.log("[menu-lateral] Logout concluído. Redirecionando para login...");
+            // Se chegou aqui, logout aparenta ter ocorrido com sucesso
+            try { localStorage.clear(); } catch(_) {}
+            try { sessionStorage.clear(); } catch(_) {}
+            console.log("[menu-lateral] Logout concluído com sucesso. Redirecionando para login.html");
             window.location.replace("login.html");
+
           } catch (erro) {
-            console.error("[menu-lateral] Erro ao tentar sair:", erro);
-            alert("Erro ao sair: " + erro.message);
+            console.error("[menu-lateral] Falha no processo de logout:", erro);
+            alert("Erro ao sair da conta: " + (erro && erro.message ? erro.message : erro));
           }
         },
-        true // captura o evento cedo (mais confiável)
+        true // capture
       );
     }
 
     // ------------------------------
-    // 3️⃣ Aplicar permissões do menu
+    // 3. Aplicar permissões do menu
     // ------------------------------
     if (papelUsuario) {
       aplicarPermissoesMenuLateral(papelUsuario);
