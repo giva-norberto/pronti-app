@@ -4,8 +4,6 @@
 // ======================================================================
 
 // --- 1. Importações Essenciais ---
-// Importa as configurações e ferramentas necessárias do Firebase.
-// A variável 'auth' é importada daqui e usada em todo o arquivo.
 import { auth, db } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
@@ -65,7 +63,8 @@ async function aplicarPermissoesMenuLateral(papelUsuario) {
         const permissoesSnap = await getDoc(permissoesRef);
         // Se o documento existir, pega os dados. Senão, usa um objeto vazio.
         const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-        const menus = regras.menus || {}; // Pega a seção 'menus' dentro das regras.
+        // CORREÇÃO: Lê permissões direto do topo do documento (não existe .menus!)
+        const menus = regras.menus || regras;
 
         // Seleciona todos os elementos do menu que têm o atributo 'data-menu-id'.
         document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
