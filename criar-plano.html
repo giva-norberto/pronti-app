@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8" />
     <title>Criar/Editar Plano de Assinatura - Pronti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
         /* Cole aqui o mesmo CSS da resposta anterior para a tela de criação de plano */
-        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        body { display: flex; font-family: 'Poppins', sans-serif; background-color: #f0f2f5; margin: 0; }
+        main.content { flex-grow: 1; padding: 20px; } /* ✅ Adicionado para layout com menu lateral */
         .container { max-width: 800px; margin: 20px auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
         h1 { color: #1e3a8a; text-align: center; margin-bottom: 30px; }
         .form-group { margin-bottom: 20px; }
@@ -27,47 +33,51 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Criar Plano de Assinatura</h1>
+    <aside id="menu-container"></aside>
+    
+    <main class="content">
+        <div class="container">
+            <h1>Criar Plano de Assinatura</h1>
 
-        <form id="form-plano">
-            <div class="form-group">
-                <label for="nome-plano">Nome do Plano</label>
-                <input type="text" id="nome-plano" placeholder="Ex: Clube da Barba Ouro" required>
-            </div>
-            <div class="form-group">
-                <label for="descricao-plano">Descrição do Plano</label>
-                <textarea id="descricao-plano" placeholder="Ex: 4 barbas e 1 corte por mês." required></textarea>
-            </div>
-            <div class="form-group">
-                <label for="preco-plano">Preço Mensal (R$)</label>
-                <input type="number" id="preco-plano" step="0.01" placeholder="Ex: 99.90" required>
-            </div>
-            <div class="form-group">
-                <label>Serviços Inclusos no Plano</label>
-                <div id="servicos-container"></div>
-                <button type="button" id="btn-adicionar-servico" class="btn btn-secondary">Adicionar Serviço</button>
-            </div>
-            <div class="form-group">
-                <label>Método de Cobrança</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="metodo" value="automatico" checked> Automático (Link do Mercado Pago)</label>
-                    <label><input type="radio" name="metodo" value="manual"> Manual (PIX / Outro)</label>
+            <form id="form-plano">
+                <div class="form-group">
+                    <label for="nome-plano">Nome do Plano</label>
+                    <input type="text" id="nome-plano" placeholder="Ex: Clube da Barba Ouro" required>
                 </div>
-            </div>
-            <div id="campo-link-mp" class="form-group">
-                <label for="mercadoPagoLink">Link de Pagamento do Mercado Pago</label>
-                <input type="text" id="mercadoPagoLink" placeholder="Cole aqui o link do plano de assinatura gerado no seu Mercado Pago">
-            </div>
-            <div id="campo-instrucoes-pix" class="form-group" style="display:none;">
-                <label for="instrucoesPagamento">Instruções de Pagamento Manual</label>
-                <textarea id="instrucoesPagamento" placeholder="Ex: Chave PIX: (31) 99999-8888."></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Salvar Plano</button>
-        </form>
-        <button id="btn-excluir-plano" class="btn btn-excluir" style="display:none;">Excluir Plano</button>
-    </div>
-
+                <div class="form-group">
+                    <label for="descricao-plano">Descrição do Plano</label>
+                    <textarea id="descricao-plano" placeholder="Ex: 4 barbas e 1 corte por mês." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="preco-plano">Preço Mensal (R$)</label>
+                    <input type="number" id="preco-plano" step="0.01" placeholder="Ex: 99.90" required>
+                </div>
+                <div class="form-group">
+                    <label>Serviços Inclusos no Plano</label>
+                    <div id="servicos-container"></div>
+                    <button type="button" id="btn-adicionar-servico" class="btn btn-secondary">Adicionar Serviço</button>
+                </div>
+                <div class="form-group">
+                    <label>Método de Cobrança</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="metodo" value="automatico" checked> Automático (Link do Mercado Pago)</label>
+                        <label><input type="radio" name="metodo" value="manual"> Manual (PIX / Outro)</label>
+                    </div>
+                </div>
+                <div id="campo-link-mp" class="form-group">
+                    <label for="mercadoPagoLink">Link de Pagamento do Mercado Pago</label>
+                    <input type="text" id="mercadoPagoLink" placeholder="Cole aqui o link do plano de assinatura gerado no seu Mercado Pago">
+                </div>
+                <div id="campo-instrucoes-pix" class="form-group" style="display:none;">
+                    <label for="instrucoesPagamento">Instruções de Pagamento Manual</label>
+                    <textarea id="instrucoesPagamento" placeholder="Ex: Chave PIX: (31) 99999-8888."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Plano</button>
+            </form>
+            <button id="btn-excluir-plano" class="btn btn-excluir" style="display:none;">Excluir Plano</button>
+        </div>
+    </main>
+    
     <script type="module">
         import { doc, getDoc, updateDoc, deleteDoc, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -77,8 +87,8 @@
         const form = document.getElementById('form-plano');
         const btnExcluir = document.getElementById('btn-excluir-plano');
         let empresaId = null;
-        let planoId = null; // Antes era 'servicoId'
-        let planoEditando = null; // Antes era 'servicoEditando'
+        let planoId = null;
+        let planoEditando = null;
         let isDono = false;
         let isAdmin = false;
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
@@ -91,23 +101,81 @@
         const radiosMetodo = document.querySelectorAll('input[name="metodo"]');
         let listaDeServicos = [];
 
-        // ===== SEU SISTEMA DE MODAL PRONTI (100% REUTILIZADO) =====
-        function prontiAlert(msg, callback) { /* ... seu código ... */ }
-        function prontiConfirm(msg, onOk, onCancel) { /* ... seu código ... */ }
-        function showProntiModal(msg, actions) { /* ... seu código ... */ }
+        // ===== SEU SISTEMA DE MODAL PRONTI (INCLUÍDO AQUI) =====
+        function showProntiModal(msg, actions) {
+            let modal = document.getElementById('pronti-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'pronti-modal';
+                modal.className = 'pronti-modal';
+                modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(44,54,80,0.25); display:none; align-items:center; justify-content:center; z-index:9999;';
+                modal.innerHTML = `
+                    <div class="pronti-modal-content" style="background:#fff; border-radius:10px; padding:32px; text-align:center; max-width:350px; box-shadow:0 6px 24px #0002; position:relative;">
+                        <span class="pronti-modal-close" style="position:absolute; right:16px; top:12px; font-size:22px; cursor:pointer; color:#666;">&times;</span>
+                        <div id="pronti-modal-message"></div>
+                        <div id="pronti-modal-actions" style="margin-top:28px; display:flex; gap:16px; justify-content:center;"></div>
+                    </div>`;
+                document.body.appendChild(modal);
+                modal.querySelector('.pronti-modal-close').onclick = () => { modal.style.display = 'none'; };
+            }
+            
+            const msgDiv = modal.querySelector('#pronti-modal-message');
+            const actionsDiv = modal.querySelector('#pronti-modal-actions');
+            msgDiv.innerHTML = msg;
+            actionsDiv.innerHTML = '';
 
-        // ===== SUAS FUNÇÕES DE AUTENTICAÇÃO (100% REUTILIZADAS) =====
+            actions.forEach(act => {
+                const btn = document.createElement('button');
+                btn.textContent = act.text;
+                btn.style.cssText = 'border:none; border-radius:6px; padding:9px 22px; font-weight:bold; cursor:pointer; font-size:16px;';
+                if (act.className === 'pronti-btn-ok') {
+                    btn.style.background = '#4f46e5';
+                    btn.style.color = '#fff';
+                } else {
+                    btn.style.background = '#e53e3e';
+                    btn.style.color = '#fff';
+                }
+                btn.onclick = () => {
+                    modal.style.display = 'none';
+                    if (act.onClick) setTimeout(act.onClick, 100);
+                };
+                actionsDiv.appendChild(btn);
+            });
+            modal.style.display = 'flex';
+        }
+        function prontiAlert(msg, callback) { showProntiModal(msg, [{ text: "OK", className: "pronti-btn-ok", onClick: callback }]); }
+        function prontiConfirm(msg, onOk, onCancel) { showProntiModal(msg, [{ text: "Cancelar", className: "pronti-btn-cancel", onClick: onCancel }, { text: "Confirmar", className: "pronti-btn-ok", onClick: onOk }]); }
+
+        // ===== FUNÇÕES DE AUTENTICAÇÃO E UTILITÁRIOS =====
         function getEmpresaIdAtiva() { return localStorage.getItem("empresaAtivaId") || null; }
         function getIdFromUrl() { const p = new URLSearchParams(window.location.search); return p.get('id'); }
         
-        // --- FUNÇÕES ADAPTADAS PARA PLANOS ---
+        // ✅ FUNÇÃO PARA CARREGAR O MENU LATERAL DINAMICAMENTE
+        async function carregarMenu(papelUsuario) {
+            try {
+                const response = await fetch('menu-lateral.html');
+                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                document.getElementById('menu-container').innerHTML = await response.text();
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
+                if (menuModule.aplicarPermissoesMenuLateral) await menuModule.aplicarPermissoesMenuLateral(papelUsuario);
+            } catch (error) {
+                console.error("Falha ao carregar o menu lateral:", error);
+            }
+        }
 
+        // --- FUNÇÕES ADAPTADAS PARA PLANOS ---
         async function carregarServicosDisponiveis() {
-            const servicosRef = collection(db, `empresarios/${empresaId}/servicos`);
-            const snapshot = await getDocs(servicosRef);
-            listaDeServicos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            if (listaDeServicos.length === 0) {
-                 prontiAlert("Atenção: Cadastre serviços antes de criar um plano.");
+            try {
+                const servicosRef = collection(db, `empresarios/${empresaId}/servicos`);
+                const snapshot = await getDocs(servicosRef);
+                listaDeServicos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (listaDeServicos.length === 0) {
+                     prontiAlert("Atenção: Nenhum serviço cadastrado. Você precisa cadastrar serviços antes de poder adicioná-los a um plano.");
+                }
+            } catch (error) {
+                console.error("Erro ao carregar serviços:", error);
+                prontiAlert("Não foi possível carregar os seus serviços. Tente recarregar a página.");
             }
         }
 
@@ -156,14 +224,12 @@
             document.getElementById('descricao-plano').value = plano.descricao || '';
             document.getElementById('preco-plano').value = plano.preco !== undefined ? plano.preco : '';
 
-            // Preenche o método de pagamento
             document.querySelector(`input[name="metodo"][value="${plano.metodo}"]`).checked = true;
-            radiosMetodo[0].dispatchEvent(new Event('change')); // Força a atualização da UI
+            radiosMetodo[0].dispatchEvent(new Event('change'));
 
             document.getElementById('mercadoPagoLink').value = plano.mercadoPagoLink || '';
             document.getElementById('instrucoesPagamento').value = plano.instrucoesPagamento || '';
 
-            // Limpa e recria as linhas de serviço
             servicosContainer.innerHTML = '';
             if (plano.servicosInclusos && plano.servicosInclusos.length > 0) {
                 plano.servicosInclusos.forEach(servico => adicionarLinhaServico(servico));
@@ -178,12 +244,26 @@
             isAdmin = user.uid === ADMIN_UID;
             
             empresaId = getEmpresaIdAtiva();
-            if (!empresaId) { /* ...sua lógica de redirecionamento... */ return; }
+            if (!empresaId) { 
+                prontiAlert("Nenhuma empresa ativa selecionada. A redirecionar...", () => {
+                    window.location.href = 'selecionar-empresa.html';
+                });
+                return;
+            }
+            
+            // ✅ CORREÇÃO: As funções de carregamento devem ser chamadas após a verificação do usuário
+            const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
+            if (!empresaSnap.exists()) {
+                prontiAlert("Erro: Empresa ativa não encontrada.", () => { window.location.href = 'selecionar-empresa.html'; });
+                return;
+            }
+            isDono = empresaSnap.data().donoId === user.uid;
+            
+            // ✅ CORREÇÃO: O papel do usuário é necessário para carregar o menu corretamente
+            const papelUsuario = isDono ? 'dono' : (isAdmin ? 'admin' : 'funcionario'); // Simplificação, ajuste se tiver papéis mais complexos
+            await carregarMenu(papelUsuario);
             
             await carregarServicosDisponiveis();
-
-            const empresaSnap = await getDoc(doc(db, "empresarios", empresaId));
-            isDono = empresaSnap.exists() && empresaSnap.data().donoId === user.uid;
 
             planoId = getIdFromUrl();
             if (planoId) {
@@ -194,10 +274,10 @@
                     planoEditando = { id: planoSnap.id, ...planoSnap.data() };
                     preencherFormulario(planoEditando);
                 } else {
-                    prontiAlert("Plano não encontrado!");
+                    prontiAlert("Plano não encontrado!", () => { window.location.href = 'planos.html'; });
                 }
             } else {
-                adicionarLinhaServico(); // Adiciona uma linha vazia para novos planos
+                adicionarLinhaServico();
             }
 
             if(btnExcluir) {
@@ -206,7 +286,7 @@
         });
 
         form.addEventListener('submit', handleFormSubmit);
-        if (btnExcluir) btnExcluir.addEventListener('click', handlePlanoExcluir);
+        btnExcluir.addEventListener('click', handlePlanoExcluir);
 
         async function handleFormSubmit(e) {
             e.preventDefault();
@@ -220,7 +300,6 @@
             btnSalvar.textContent = "Salvando...";
 
             try {
-                // Coleta dos dados do formulário (adaptado para planos)
                 const nome = document.getElementById('nome-plano').value.trim();
                 const descricao = document.getElementById('descricao-plano').value.trim();
                 const preco = parseFloat(document.getElementById('preco-plano').value);
@@ -252,20 +331,22 @@
                     planoData.instrucoesPagamento = document.getElementById('instrucoesPagamento').value.trim();
                 }
 
-                if (planoEditando) { // Atualiza o plano
+                if (planoEditando) {
+                    planoData.atualizadoEm = new Date(); // Boa prática
                     const planoRef = doc(db, "empresarios", empresaId, "planosDeAssinatura", planoId);
                     await updateDoc(planoRef, planoData);
-                } else { // Cria um novo plano
+                } else {
+                    planoData.criadoEm = new Date(); // Boa prática
                     const planosCol = collection(db, "empresarios", empresaId, "planosDeAssinatura");
                     await addDoc(planosCol, planoData);
                 }
                 
-                prontiAlert(planoEditando ? "Plano atualizado!" : "Plano criado!", () => {
-                    window.location.href = 'planos.html'; // Redireciona para a lista de planos
+                prontiAlert(planoEditando ? "Plano atualizado com sucesso!" : "Plano criado com sucesso!", () => {
+                    window.location.href = 'planos.html';
                 });
 
             } catch (err) {
-                prontiAlert(`Erro: ${err.message}`);
+                prontiAlert(`Erro ao salvar: ${err.message}`);
             } finally {
                 btnSalvar.disabled = false;
                 btnSalvar.textContent = "Salvar Plano";
@@ -280,7 +361,7 @@
                 try {
                     const planoRef = doc(db, "empresarios", empresaId, "planosDeAssinatura", planoId);
                     await deleteDoc(planoRef);
-                    prontiAlert("Plano excluído.", () => { window.location.href = 'planos.html'; });
+                    prontiAlert("Plano excluído com sucesso.", () => { window.location.href = 'planos.html'; });
                 } catch (err) {
                     prontiAlert(`Erro ao excluir: ${err.message}`);
                 }
