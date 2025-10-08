@@ -16,7 +16,7 @@
         .card-plano .preco span { font-size: 1rem; font-weight: 400; color: #666; }
         .card-plano .descricao { color: #444; font-size: 0.95rem; flex-grow: 1; margin-bottom: 20px; }
         .servicos-lista { list-style: '✓ '; padding-left: 20px; color: #333; }
-        .btn-assinar { background-color: #10b981; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; text-align: center; transition: background-color 0.2s; }
+        .btn-assinar { background-color: #10b981; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; text-align: center; cursor: pointer; border: none; font-family: 'Poppins', sans-serif; font-size: 1rem; }
         .btn-assinar:hover { background-color: #0f9e70; }
     </style>
 </head>
@@ -37,15 +37,9 @@
         const nomeSalaoH1 = document.getElementById('nome-salao');
         let currentUser = null;
 
-        // Fica a "ouvir" se o usuário está logado ou não
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                console.log("Cliente logado:", user.uid);
-            } else {
-                currentUser = null;
-                console.log("Nenhum cliente logado.");
-            }
+            currentUser = user;
+            console.log(user ? `Cliente logado: ${user.uid}` : "Nenhum cliente logado.");
         });
 
         async function carregarTudo() {
@@ -57,14 +51,12 @@
                 return;
             }
             
-            // Carrega o nome do salão para o título da página
             const empresaRef = doc(db, 'empresarios', empresaId);
             const empresaSnap = await getDoc(empresaRef);
             if (empresaSnap.exists()) {
                 nomeSalaoH1.textContent = `Planos de Assinatura de ${empresaSnap.data().nomeFantasia}`;
             }
 
-            // Carrega os planos da empresa
             try {
                 const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
                 const snapshot = await getDocs(planosRef);
@@ -77,7 +69,7 @@
                 planosGrid.innerHTML = '';
                 snapshot.docs.forEach(doc => {
                     const plano = { id: doc.id, ...doc.data() };
-                    if (plano.ativo) { // Mostra apenas planos ativos
+                    if (plano.ativo) {
                         const card = document.createElement('div');
                         card.className = 'card-plano';
 
@@ -85,21 +77,23 @@
                             ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
                             : '';
 
+                        // =============================================================
+                        // ✅ ALTERAÇÃO: Usamos um <button> em vez de <a> e adicionamos data-attributes
+                        // =============================================================
                         card.innerHTML = `
                             <h2>${plano.nome}</h2>
                             <p class="preco">${(plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <span>/mês</span></p>
                             <p class="descricao">${plano.descricao || ""}</p>
                             <ul class="servicos-lista">${servicosHTML}</ul>
-                            <a href="#" class="btn-assinar">Assinar Agora</a>
+                            <button class="btn-assinar"
+                                    data-plano-id="${plano.id}"
+                                    data-plano-nome="${plano.nome}"
+                                    data-metodo="${plano.metodo}"
+                                    data-link="${plano.mercadoPagoLink || ''}"
+                                    data-instrucoes="${plano.instrucoesPagamento || ''}">
+                                Assinar Agora
+                            </button>
                         `;
-
-                        // Adiciona a lógica de clique ao botão "Assinar Agora"
-                        const btnAssinar = card.querySelector('.btn-assinar');
-                        btnAssinar.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            handleAssinatura(plano, empresaId);
-                        });
-
                         planosGrid.appendChild(card);
                     }
                 });
@@ -110,17 +104,33 @@
             }
         }
         
-        async function handleAssinatura(plano, empresaId) {
+        // =============================================================
+        // ✅ ALTERAÇÃO: Adicionamos um único event listener ao container dos planos
+        // =============================================================
+        planosGrid.addEventListener('click', (e) => {
+            // Verifica se o elemento clicado (ou um dos seus pais) é um botão de assinar
+            if (e.target && e.target.classList.contains('btn-assinar')) {
+                const botao = e.target;
+                handleAssinatura(botao);
+            }
+        });
+
+        async function handleAssinatura(botao) {
             if (!currentUser) {
-                alert("Você precisa de fazer login para assinar um plano. A redirecionar para a página de login...");
+                alert("Você precisa de fazer login para assinar um plano. A redirecionar...");
                 sessionStorage.setItem('redirectAfterLogin', window.location.href);
                 window.location.href = 'login.html';
                 return;
             }
 
-            if (plano.metodo === 'automatico') {
-                if (plano.mercadoPagoLink) {
-                    let linkFinal = plano.mercadoPagoLink;
+            // Pega os dados diretamente do botão que foi clicado
+            const { planoId, planoNome, metodo, link, instrucoes } = botao.dataset;
+            const urlParams = new URLSearchParams(window.location.search);
+            const empresaId = urlParams.get('empresaId');
+
+            if (metodo === 'automatico') {
+                if (link && link.startsWith('http')) {
+                    let linkFinal = link;
                     const externalReference = `${empresaId}_${currentUser.uid}`;
                     linkFinal += `&external_reference=${externalReference}`;
                     window.location.href = linkFinal;
@@ -128,24 +138,28 @@
                     alert("Link de pagamento não configurado. Por favor, contacte o salão.");
                 }
             } 
-            else if (plano.metodo === 'manual') {
+            else if (metodo === 'manual') {
                 try {
+                    botao.disabled = true;
+                    botao.textContent = 'A registar...';
                     const assinaturasClienteRef = collection(db, `empresarios/${empresaId}/clientes/${currentUser.uid}/assinaturasAtivas`);
                     await addDoc(assinaturasClienteRef, {
-                        planoId: plano.id,
-                        planoNome: plano.nome,
+                        planoId: planoId,
+                        planoNome: planoNome,
                         status: "pendente",
                         dataSolicitacao: serverTimestamp()
                     });
-                    alert(`Interesse registado com sucesso!\n\nPara ativar o seu plano, siga as instruções:\n\n${plano.instrucoesPagamento || ''}`);
+                    alert(`Interesse registado com sucesso!\n\nPara ativar o seu plano, siga as instruções:\n\n${instrucoes}`);
                 } catch(error) {
                     console.error("Erro ao registrar interesse:", error);
                     alert("Ocorreu um erro ao registrar o seu interesse. Tente novamente.");
+                } finally {
+                    botao.disabled = false;
+                    botao.textContent = 'Assinar Agora';
                 }
             }
         }
 
-        // Inicia o carregamento da página
         carregarTudo();
     </script>
 </body>
