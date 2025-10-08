@@ -6,7 +6,6 @@
     <title>Painel Inteligente - Pronti</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         :root {
             --primary: #6366f1; 
@@ -24,6 +23,12 @@
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             color: var(--text-main); 
             display: flex;
+        }
+
+        #menu-container {
+            width: 250px;
+            min-width: 250px;
+            flex-shrink: 0;
         }
 
         .dashboard-main {
@@ -143,7 +148,6 @@
     </style>
 </head>
 <body>
-    
     <div id="menu-container"></div>
 
     <main class="dashboard-main">
@@ -230,7 +234,7 @@
                 isDono = empresaSnap.data().donoId === user.uid;
                 isAdmin = user.uid === adminUID;
 
-                // CORREÇÃO: Passe array de papéis sempre para o menu lateral!
+                // Exatamente igual ao Planos: array de papéis para o menu lateral!
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
