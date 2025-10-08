@@ -3,14 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <title>Permissões Globais</title>
-  <!-- Adicionei um link para o menu-lateral.css, se você tiver um, para consistência visual -->
-  <!-- <link rel="stylesheet" href="menu-lateral.css"> -->
   <style>
+    /* ======================================================================
+                    SEU CSS ORIGINAL - NENHUMA ALTERAÇÃO FOI FEITA AQUI
+       ====================================================================== */
     body { 
       font-family: Arial, sans-serif; 
-      display: flex; /* Necessário para o menu lateral funcionar corretamente */
-      margin: 0;
+      /* ✅ ALTERAÇÃO MÍNIMA: Adicionado 'display: flex' para o menu funcionar */
+      display: flex;
+      margin: 0; 
     }
+    /* ✅ ADIÇÃO: Container para o conteúdo principal */
     .content-wrapper {
       flex-grow: 1;
       padding: 20px;
@@ -23,50 +26,43 @@
   </style>
 </head>
 <body>
-  <!-- Container para o menu lateral -->
+  <!-- ✅ ADIÇÃO: Container para o menu lateral -->
   <div id="menu-container"></div>
 
-  <!-- Conteúdo principal da página -->
+  <!-- ✅ ADIÇÃO: Container para o conteúdo principal -->
   <div class="content-wrapper">
     <h2>Permissões Globais de Menu</h2>
     <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
-    
-    <div id="main-content">
-      <table>
-        <thead>
-          <tr>
-            <th>Menu</th>
-            <th>Funcionário</th>
-            <th>Dono</th>
-            <th>Admin</th>
-          </tr>
-        </thead>
-        <tbody id="permissoes-tabela"></tbody>
-      </table>
-      <button id="salvar">Salvar</button>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Menu</th>
+          <th>Funcionário</th>
+          <th>Dono</th>
+          <th>Admin</th>
+        </tr>
+      </thead>
+      <tbody id="permissoes-tabela"></tbody>
+    </table>
+    <button id="salvar">Salvar</button>
   </div>
 
+  <!-- ================================================================== -->
+  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
+  <!-- ================================================================== -->
   <script type="module">
-    // =================================================================
-    // ✅ INÍCIO DAS ALTERAÇÕES: Implementação da validação de acesso
-    // =================================================================
-    
+    // Importações necessárias
     import { db } from "./firebase-config.js";
     import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-    // Importa as funções necessárias do seu userService
     import { verificarAcesso } from './userService.js';
 
+    // Suas constantes e variáveis originais
     const permissoesTabela = document.getElementById("permissoes-tabela" );
     const salvarBtn = document.getElementById("salvar");
-    const mainContent = document.getElementById("main-content");
-
     const menus = [
-      "inicio", "dashboard", "agenda", "equipe", "servicos", 
-      "planos", "clientes", "perfil", "relatorios", 
-      "administracao", "permissoes"
+      "inicio", "dashboard", "agenda", "equipe", "servicos", "planos", 
+      "clientes", "perfil", "relatorios", "administracao", "permissoes"
     ];
-
     let permissoesAtuais = {};
 
     /**
@@ -87,11 +83,11 @@
         }
     }
 
+    // Suas funções de negócio originais (sem alterações)
     async function carregarPermissoesGlobais() {
       const ref = doc(db, "configuracoesGlobais", "permissoes");
       const snap = await getDoc(ref);
       permissoesAtuais = snap.exists() ? snap.data() : {};
-
       menus.forEach(menu => {
         if (!permissoesAtuais[menu]) {
           permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
@@ -101,7 +97,6 @@
           permissoesAtuais[menu].admin ??= true;
         }
       });
-
       renderTabela();
     }
 
@@ -130,36 +125,34 @@
     });
 
     /**
-     * Ponto de entrada principal que orquestra a inicialização da página.
+     * Ponto de entrada único que orquestra a inicialização da página.
      */
     async function inicializarPagina() {
         try {
             // 1. Garante que o usuário está logado e obtém a sessão.
             const sessao = await verificarAcesso();
             if (!sessao || !sessao.user) {
-                return; // verificarAcesso já redireciona, então apenas paramos aqui.
+                return; // verificarAcesso já redireciona.
             }
 
             // 2. Define os papéis do usuário a partir da sessão.
-            const papelUsuario = sessao.papeis || [];
-            if (papelUsuario.length === 0) { // Fallback para garantir que sempre haja um papel
+            let papelUsuario = sessao.papeis || [];
+            if (papelUsuario.length === 0) {
                 if(sessao.isAdmin) papelUsuario.push('admin');
                 if(sessao.isOwner) papelUsuario.push('dono');
                 if(papelUsuario.length === 0) papelUsuario.push('funcionario');
             }
 
-            // 3. Carrega o menu lateral com os papéis corretos.
+            // 3. Carrega o menu lateral e aplica as permissões.
             await carregarMenu(papelUsuario);
 
-            // 4. VALIDAÇÃO DE ACESSO: Verifica se o usuário tem o papel 'admin'.
-            if (!papelUsuario.includes('admin')) {
-                // Se não for admin, esconde o conteúdo e mostra uma mensagem de erro.
+            // 4. VALIDAÇÃO DE ACESSO: Verifica se o usuário é um administrador.
+            if (!sessao.isAdmin) {
                 document.querySelector('.content-wrapper').innerHTML = `
                     <h1>Acesso Negado</h1>
                     <p>Você não tem permissão para acessar esta página. Apenas administradores podem modificar as permissões globais.</p>
                 `;
-                // Interrompe a execução para não carregar a tabela de permissões.
-                return; 
+                return; // Interrompe a execução se não for admin.
             }
 
             // 5. Se for admin, carrega a tabela de permissões.
@@ -171,12 +164,8 @@
         }
     }
 
-    // Inicia todo o processo.
+    // Inicia todo o processo de inicialização da página.
     inicializarPagina();
-
-    // =================================================================
-    // ✅ FIM DAS ALTERAÇÕES
-    // =================================================================
   </script>
 </body>
 </html>
