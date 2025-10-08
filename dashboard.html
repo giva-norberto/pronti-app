@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Estilos CSS permanecem os mesmos */
         :root {
             --primary: #6366f1; 
             --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  ); 
@@ -16,28 +17,26 @@
             --border: #e0e7ff;
             --shadow: 0 6px 32px 0 rgba(99,102,241,0.05), 0 1.5px 6px 0 rgba(99,102,241,0.06);
         }
-
         body {
             margin: 0; 
             font-family: 'Inter', Arial, sans-serif; 
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             color: var(--text-main); 
             display: flex;
+            /* Efeito para evitar piscar da página inteira */
+            visibility: hidden; 
+            opacity: 0; 
+            transition: opacity 0.3s ease-in-out;
         }
-
+        body.loaded {
+            visibility: visible;
+            opacity: 1;
+        }
         #menu-container {
             width: 250px;
             min-width: 250px;
             flex-shrink: 0;
-            /* Adicionado para evitar o "pisca-pisca" */
-            transition: opacity 0.2s ease-in-out;
-            opacity: 0;
         }
-
-        #menu-container.loaded {
-            opacity: 1;
-        }
-
         .dashboard-main {
             flex-grow: 1; 
             max-width: 1200px; 
@@ -45,7 +44,6 @@
             padding: 32px 18px;
             box-sizing: border-box;
         }
-
         .dashboard-header {
             display: flex; 
             align-items: center; 
@@ -58,7 +56,6 @@
             border-radius: 14px;
             box-shadow: var(--shadow);
         }
-
         .dashboard-header h1 {
             font-size: 2.1rem; 
             font-weight: 800; 
@@ -68,7 +65,6 @@
             -webkit-text-fill-color: transparent; 
             margin: 0;
         }
-
         .date-filter input[type="date"] {
             padding: 10px 14px; 
             border-radius: 9px; 
@@ -77,25 +73,21 @@
             background: var(--card-bg); 
             color: var(--text-main);
         }
-
         .dashboard-grid { 
             display: grid; 
             grid-template-columns: 2fr 1fr; 
             gap: 30px; 
         }
-
         .main-cards, .side-cards { 
             display: flex; 
             flex-direction: column; 
             gap: 24px; 
         }
-        
         .kpi-row { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
             gap: 22px; 
         }
-
         .card {
             background: var(--card-bg); 
             border-radius: 18px; 
@@ -103,7 +95,6 @@
             padding: 28px 22px 23px 22px; 
             border: 2px solid var(--primary);
         }
-
         .card-title {
             margin: 0 0 13px 0; 
             font-size: 1.13rem; 
@@ -113,7 +104,6 @@
             align-items: center; 
             gap: 10px;
         }
-
         .card-main-value { 
             font-size: 2.45rem; 
             font-weight: 800; 
@@ -121,20 +111,17 @@
             margin: 0; 
             min-height: 44px; 
         }
-
         .card-sub-value { 
             font-size: 1.03rem; 
             color: var(--text-secondary); 
             margin-top: 8px; 
         }
-
         .resumo-card { 
             border: 2px solid var(--primary);
         }
         .resumo-card .card-title { 
             color: var(--primary); 
         }
-
         .loading-spinner {
             display: inline-block; 
             width: 28px; 
@@ -145,7 +132,6 @@
             animation: spin 1s ease-in-out infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .erro {
             background-color: #fff;
             padding: 2rem;
@@ -153,7 +139,6 @@
             color: #c00;
             font-weight: 600;
         }
-
         @media (max-width: 1000px) { 
             .dashboard-grid { grid-template-columns: 1fr; } 
         }
@@ -166,6 +151,7 @@
     <div id="menu-container"></div>
 
     <main class="dashboard-main">
+        <!-- Conteúdo do dashboard -->
         <div class="dashboard-header">
             <h1>Painel Inteligente</h1>
             <div class="dashboard-actions">
@@ -213,101 +199,66 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module">
-        import { db, auth } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        // Importações necessárias
+        import { verificarAcesso } from './userService.js'; 
+        import { inicializarDashboard } from './dashboard.js';
 
-        // Função para obter o ID da empresa ativa do localStorage
-        function getEmpresaIdAtiva( ) {
-            return localStorage.getItem("empresaAtivaId") || null;
-        }
-
-        // Função centralizada para carregar e ativar o menu
-        async function carregarMenu(papelUsuario) {
-            const menuContainer = document.getElementById('menu-container');
+        /**
+         * Carrega o HTML do menu lateral e chama sua função de ativação.
+         */
+        async function carregarMenu(papelUsuario ) {
             try {
-                // Validação para garantir que temos um papel de usuário válido
-                if (!Array.isArray(papelUsuario) || papelUsuario.length === 0) {
-                    throw new Error("Menu lateral não pode ser ativado: papel do usuário é inválido ou vazio.");
-                }
-
-                // 1. Carrega o HTML do menu
                 const response = await fetch('menu-lateral.html');
-                if (!response.ok) throw new Error(`Falha ao buscar menu-lateral.html (status: ${response.status})`);
-                menuContainer.innerHTML = await response.text();
-
-                // 2. Importa o módulo do menu
-                const menuModule = await import('./menu-lateral.js');
+                if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                document.getElementById('menu-container').innerHTML = await response.text();
                 
-                // 3. Chama a função de ativação, passando os papéis do usuário
+                const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
-                    // A função ativarMenuLateral agora é responsável por buscar suas próprias permissões
                     await menuModule.ativarMenuLateral(papelUsuario);
-                    // Adiciona a classe 'loaded' para exibir o menu suavemente após a configuração
-                    menuContainer.classList.add('loaded');
-                } else {
-                    throw new Error("A função 'ativarMenuLateral' não foi encontrada no módulo do menu.");
                 }
             } catch (error) {
-                console.error("Falha crítica ao carregar o menu lateral:", error);
-                menuContainer.innerHTML = '<p style="color: white; padding: 1rem; font-family: sans-serif;">Erro no menu</p>';
-                // Esconde o menu em caso de erro para não exibir um componente quebrado
-                menuContainer.style.opacity = '0';
+                console.error("Falha ao carregar o menu lateral:", error);
             }
         }
 
-        // Ponto de entrada principal quando o estado de autenticação muda
-        onAuthStateChanged(auth, async (user) => {
-            const mainContent = document.querySelector('.dashboard-main');
-
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const empresaId = getEmpresaIdAtiva();
-            if (!empresaId) {
-                mainContent.innerHTML = '<p class="erro">Nenhuma empresa ativa selecionada. Por favor, selecione uma empresa para continuar.</p>';
-                // Esconde o menu se não há empresa, pois não há contexto de permissão
-                document.getElementById('menu-container').style.display = 'none';
-                return;
-            }
-
+        /**
+         * Ponto de entrada único que orquestra a inicialização da página.
+         */
+        async function inicializarPagina() {
             try {
-                // Busca apenas os dados da empresa, que é a única dependência desta página
-                const empresaRef = doc(db, "empresarios", empresaId);
-                const empresaSnap = await getDoc(empresaRef);
-
-                if (!empresaSnap.exists()) {
-                    mainContent.innerHTML = '<p class="erro">Empresa ativa não encontrada no banco de dados.</p>';
-                    document.getElementById('menu-container').style.display = 'none';
-                    return;
+                // 1. Garante que o usuário está logado e obtém a sessão.
+                const sessao = await verificarAcesso();
+                if (!sessao || !sessao.user) {
+                    // verificarAcesso já redireciona, mas paramos a execução aqui por segurança.
+                    return; 
                 }
 
-                // Determina os papéis do usuário
-                const empresaData = empresaSnap.data();
-                const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                const isDono = empresaData.donoId === user.uid;
-                const isAdmin = user.uid === adminUID;
+                // 2. Define os papéis do usuário a partir da sessão.
+                let papelUsuario = sessao.papeis || [];
+                if (papelUsuario.length === 0) { // Fallback para garantir que sempre haja um papel
+                    if(sessao.isAdmin) papelUsuario.push('admin');
+                    if(sessao.isOwner) papelUsuario.push('dono');
+                    if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+                }
 
-                let papelUsuario = [];
-                if (isAdmin) papelUsuario.push('admin');
-                if (isDono) papelUsuario.push('dono');
-                // Se não for admin nem dono, assume-se que é funcionário
-                if (papelUsuario.length === 0) papelUsuario.push('funcionario');
-
-                // AGORA, com os papéis definidos, chamamos a função para carregar o menu.
-                // Esta é a única chamada para a função do menu.
+                // 3. Carrega o menu lateral com os papéis corretos.
                 await carregarMenu(papelUsuario);
 
+                // 4. Inicializa o conteúdo específico do dashboard.
+                await inicializarDashboard(sessao);
+
             } catch (error) {
-                console.error("Erro ao carregar dados iniciais do dashboard:", error);
-                mainContent.innerHTML = '<p class="erro">Ocorreu um erro crítico ao carregar os dados do painel. Tente recarregar a página.</p>';
-                document.getElementById('menu-container').style.display = 'none';
+                console.error("Erro crítico ao inicializar a página do dashboard:", error);
+                // Mostra uma mensagem de erro no corpo da página, se possível.
+                document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Ocorreu um erro crítico. Tente recarregar a página.</p>';
+            } finally {
+                // 5. Torna a página visível após tudo estar carregado, evitando "pisca-pisca".
+                document.body.classList.add('loaded');
             }
-        });
+        }
+
+        // Inicia todo o processo.
+        inicializarPagina();
     </script>
-    <!-- O script do dashboard.js é carregado por último para garantir que o DOM está pronto -->
-    <script type="module" src="dashboard.js"></script>
 </body>
 </html>
