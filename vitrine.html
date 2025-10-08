@@ -156,7 +156,6 @@
                 <div class="card">
                     <h2>Planos de Assinatura</h2>
                     <div id="cards-planos-vitrine">
-                        <!-- Cards de planos serão carregados via JS -->
                         <p class="info">A carregar planos disponíveis...</p>
                     </div>
                 </div>
@@ -233,7 +232,8 @@
     <!-- JS do card de assinatura/vitrine de planos -->
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
-        import { collection, getDocs, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         // Função para renderizar os planos na vitrine
         async function renderizarPlanosVitrine(empresaId) {
             const container = document.getElementById('cards-planos-vitrine');
@@ -443,7 +443,7 @@
             }
             onAuthStateChanged(auth, (usuario) => {
                 atualizarHeaderCard(dadosEmpresa, usuario);
-});
+            });
             loader.style.display = 'none';
             content.style.display = 'block';
         }
