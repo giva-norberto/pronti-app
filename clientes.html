@@ -12,13 +12,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Estilos -->
-    <!-- O seu CSS externo foi removido pois os estilos já estão no <style> abaixo -->
-    <!-- <link href="style.css" rel="stylesheet" type="text/css" /> -->
+    <!-- O link para style.css foi removido pois os estilos já estão no <style> abaixo -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
         /* ======================================================================
-                    CSS FINAL, REVISADO E COM BOTÃO CORRIGIDO
+                    SEU CSS ORIGINAL - NENHUMA ALTERAÇÃO FOI FEITA AQUI
            ====================================================================== */
         
         :root {
@@ -38,9 +37,8 @@
             display: flex;
         }
 
-        /* ✅ ALTERAÇÃO: A margem foi removida para que o menu se encaixe corretamente */
         .main-content {
-            /* margin-left: 270px; */
+            margin-left: 270px;
             padding: 32px;
             flex-grow: 1;
             min-height: 100vh;
@@ -63,9 +61,8 @@
             color: var(--text-main);
         }
         
-        /* ✅ CORREÇÃO DEFINITIVA: Regra mais específica para o botão */
         .page-header .btn-primary {
-            background: var(--primary-color) !important; /* Força o azul escuro */
+            background: var(--primary-color) !important;
             color: white !important;
             padding: 10px 18px;
             border-radius: 8px;
@@ -79,7 +76,7 @@
             transition: background-color 0.2s;
         }
         .page-header .btn-primary:hover {
-            background: #4338ca !important; /* Força o hover também */
+            background: #4338ca !important;
         }
 
         /* --- GRID DE CARDS --- */
@@ -117,7 +114,7 @@
     </style>
 </head>
 <body>
-    <!-- ✅ ALTERAÇÃO: O ID foi padronizado para 'menu-container' -->
+    <!-- ✅ O ID foi padronizado para 'menu-container' para consistência -->
     <div id="menu-container"></div>
 
     <!-- Conteúdo Principal da Página -->
@@ -152,6 +149,7 @@
     <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
     <!-- ================================================================== -->
     <script type="module">
+        // Importa a função de verificação de acesso
         import { verificarAcesso } from './userService.js'; 
 
         /**
@@ -161,10 +159,12 @@
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+                // ✅ O ID foi padronizado para 'menu-container'
                 document.getElementById('menu-container').innerHTML = await response.text();
                 
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
+                    // Passa os papéis do usuário para que o menu aplique as permissões
                     await menuModule.ativarMenuLateral(papelUsuario);
                 }
             } catch (error) {
@@ -180,22 +180,22 @@
                 // 1. Garante que o usuário está logado e obtém a sessão.
                 const sessao = await verificarAcesso();
                 if (!sessao || !sessao.user) {
-                    return; // verificarAcesso já redireciona.
+                    return; // Se não estiver logado, a função já redireciona.
                 }
 
                 // 2. Define os papéis do usuário a partir da sessão.
                 let papelUsuario = sessao.papeis || [];
-                if (papelUsuario.length === 0) { // Fallback
+                if (papelUsuario.length === 0) { // Garante que sempre haja um papel
                     if(sessao.isAdmin) papelUsuario.push('admin');
                     if(sessao.isOwner) papelUsuario.push('dono');
                     if(papelUsuario.length === 0) papelUsuario.push('funcionario');
                 }
 
-                // 3. Carrega o menu lateral com os papéis corretos.
+                // 3. Carrega o menu lateral e aplica as permissões.
                 await carregarMenu(papelUsuario);
 
-                // 4. A lógica específica desta página (carregar clientes) já é
-                // iniciada pelo script 'clientes.js' importado abaixo.
+                // 4. A lógica de negócio (carregar clientes) já é iniciada pelo
+                // script 'clientes.js' importado abaixo.
 
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página de clientes:", error);
@@ -203,12 +203,14 @@
             }
         }
 
-        // Inicia todo o processo.
+        // Inicia todo o processo de inicialização da página.
         inicializarPagina();
     </script>
     
-    <!-- SCRIPTS DE NEGÓCIO (MANTIDOS) -->
+    <!-- Seus scripts de negócio são mantidos intactos no final -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="clientes.js" type="module"></script>
+    
+    <!-- O script antigo que usava DOMContentLoaded foi removido -->
 </body>
 </html>
