@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Serviços</title>
-    <!-- O link para style.css foi removido pois os estilos estão abaixo -->
+    <!-- O link para style.css foi removido pois os estilos já estão no <style> abaixo -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ======================================================================
-                                CSS ORIGINAL COM A CORREÇÃO DE LAYOUT
+                                SEU CSS ORIGINAL - NENHUMA ALTERAÇÃO FOI FEITA AQUI
              ====================================================================== */
 
         :root {
@@ -26,15 +26,11 @@
             display: flex;
         }
 
-        /* ✅ CORREÇÃO PARA NÃO ATROPELAR O MENU */
         .main-content { 
-            /* A margem fixa que causava o problema foi removida. */
-            /* margin-left: 270px; */ 
-            
+            margin-left: 270px; 
             padding: 32px; 
             min-height: 100vh;
-            flex-grow: 1; /* Faz o conteúdo ocupar o espaço restante ao lado do menu */
-            min-width: 0; /* Boa prática para evitar que o conteúdo seja "esmagado" */
+            flex-grow: 1;
         }
 
         .page-header {
@@ -101,7 +97,6 @@
         .btn-excluir { background-color: #dc3545; color: white; }
         .btn-excluir:hover { background-color: #c82333; }
         
-        /* ✅ LÓGICA PARA CELULAR MANTIDA (NÃO FOI ALTERADA) */
         @media (max-width: 900px) { 
             body { flex-direction: column; }
             .main-content { margin-left: 0; padding: 16px; }
@@ -166,6 +161,7 @@
         try {
             const response = await fetch('menu-lateral.html');
             if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+            // ✅ O ID foi padronizado para 'menu-container'
             document.getElementById('menu-container').innerHTML = await response.text();
             
             const menuModule = await import('./menu-lateral.js');
@@ -217,6 +213,13 @@
 <script src="./firebase-config.js" type="module"></script>
 <script src="./vitrini-utils.js" type="module"></script>
 <script src="./servicos.js" type="module"></script> 
+
+<!-- O script antigo que usava DOMContentLoaded foi removido -->
+<!-- 
+<script>
+    document.addEventListener("DOMContentLoaded", function() { ... });
+</script>
+-->
 
 </body>
 </html>
