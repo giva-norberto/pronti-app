@@ -230,7 +230,7 @@
                 isDono = empresaSnap.data().donoId === user.uid;
                 isAdmin = user.uid === adminUID;
 
-                // CORREÇÃO: Monte array de papéis para o menu lateral
+                // CORREÇÃO: Passe array de papéis sempre para o menu lateral!
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
