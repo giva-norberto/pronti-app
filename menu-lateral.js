@@ -15,12 +15,16 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase
  * @param {string|string[]} papelUsuario - O papel (ou papéis) do usuário logado. Ex: 'dono' ou ['dono', 'admin'].
  */
 export async function ativarMenuLateral(papelUsuario) {
-    // NOVO: Garante que SEMPRE trabalha com array de papéis
+    // CORREÇÃO: Sempre converte para array (e nunca array vazio)
     if (typeof papelUsuario === "string") {
         papelUsuario = [papelUsuario];
     }
-    if (!Array.isArray(papelUsuario) || papelUsuario.length === 0) {
-        console.error("Papel do usuário não informado para aplicarPermissoesMenuLateral. O menu não será exibido corretamente.");
+    if (!Array.isArray(papelUsuario)) {
+        papelUsuario = [];
+    }
+    // Se o array está vazio, não faça nada e esconda todos os menus
+    if (papelUsuario.length === 0) {
+        console.error("Papel do usuário NÃO informado para aplicarPermissoesMenuLateral. O menu não será exibido corretamente.");
         document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
             link.style.display = "none";
         });
@@ -52,8 +56,8 @@ function temPermissao(menus, id, papelUsuario) {
  * @param {string[]} papelUsuario - O array de papéis do usuário.
  */
 async function aplicarPermissoesMenuLateral(papelUsuario) {
-    if (!papelUsuario || !Array.isArray(papelUsuario) || papelUsuario.length === 0) {
-        console.error("Papel do usuário não informado para aplicarPermissoesMenuLateral. O menu não será exibido corretamente.");
+    if (!Array.isArray(papelUsuario) || papelUsuario.length === 0) {
+        console.error("Papel do usuário NÃO informado para aplicarPermissoesMenuLateral. O menu não será exibido corretamente.");
         document.querySelectorAll('.sidebar-links [data-menu-id]').forEach(link => {
             link.style.display = "none";
         });
