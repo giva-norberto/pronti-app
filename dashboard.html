@@ -8,14 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* =====================================================================
-                    CSS FINAL, REVISADO E COM FUNDO CORRIGIDO
-           ====================================================================== */
-
         :root {
             --primary: #6366f1; 
             --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100% ); 
-            /* A variável --background não será mais usada no body */
             --card-bg: #fff; 
             --text-main: #21243d; 
             --text-secondary: #71717a; 
@@ -26,7 +21,6 @@
         body {
             margin: 0; 
             font-family: 'Inter', Arial, sans-serif; 
-            /* ✅ CORREÇÃO DEFINITIVA: Gradiente aplicado diretamente, removendo a variável conflitante. */
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             color: var(--text-main); 
             display: flex;
@@ -47,7 +41,6 @@
             gap: 16px;
             flex-wrap: wrap; 
             margin-bottom: 32px;
-            /* Adicionado um fundo branco ao header para melhor leitura sobre o fundo azul */
             background-color: rgba(255, 255, 255, 0.95);
             padding: 16px 24px;
             border-radius: 14px;
@@ -96,7 +89,6 @@
             border-radius: 18px; 
             box-shadow: var(--shadow);
             padding: 28px 22px 23px 22px; 
-            /* ✅ BORDA AZUL APLICADA AQUI */
             border: 2px solid var(--primary);
         }
 
@@ -124,9 +116,8 @@
             margin-top: 8px; 
         }
 
-        /* Card do Resumo Inteligente com destaque */
         .resumo-card { 
-            border: 2px solid var(--primary); /* Garante a borda azul também */
+            border: 2px solid var(--primary);
         }
         .resumo-card .card-title { 
             color: var(--primary); 
@@ -143,7 +134,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- RESPONSIVIDADE --- */
         @media (max-width: 1000px) { 
             .dashboard-grid { grid-template-columns: 1fr; } 
         }
@@ -202,6 +192,70 @@
         </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import { db, auth } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        // Adição da correção do papel do usuário para o menu lateral!
+        function getEmpresaIdAtiva() {
+            return localStorage.getItem("empresaAtivaId") || null;
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            let empresaId = getEmpresaIdAtiva();
+            let isDono = false;
+            let isAdmin = false;
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (!empresaId) {
+                // O painel sempre requer empresa ativa
+                document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Nenhuma empresa ativa selecionada.</p>';
+                return;
+            }
+
+            try {
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const empresaSnap = await getDoc(empresaRef);
+
+                if (!empresaSnap.exists()) {
+                    document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Empresa ativa não encontrada.</p>';
+                    return;
+                }
+
+                const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+                isDono = empresaSnap.data().donoId === user.uid;
+                isAdmin = user.uid === adminUID;
+
+                // Monte array de papéis para o menu lateral
+                let papelUsuario = [];
+                if (isAdmin) papelUsuario.push('admin');
+                if (isDono) papelUsuario.push('dono');
+                if (papelUsuario.length === 0) papelUsuario.push('funcionario'); // fallback opcional
+
+                await carregarMenu(papelUsuario);
+
+            } catch (error) {
+                document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Ocorreu um erro ao carregar os dados.</p>';
+            }
+        });
+
+        async function carregarMenu(papelUsuario) {
+            try {
+                const response = await fetch('menu-lateral.html');
+                document.getElementById('menu-container').innerHTML = await response.text();
+                const menuModule = await import('./menu-lateral.js');
+                if (menuModule.ativarMenuLateral) await menuModule.ativarMenuLateral(papelUsuario);
+            } catch (error) {
+                console.error("Falha ao carregar o menu lateral:", error);
+            }
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="dashboard.js"></script>
 </body>
