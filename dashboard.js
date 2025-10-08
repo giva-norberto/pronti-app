@@ -242,3 +242,4 @@ async function inicializarPagina() {
 
 // Inicia todo o processo quando o DOM da página estiver pronto.
 window.addEventListener('DOMContentLoaded', inicializarPagina);
+
