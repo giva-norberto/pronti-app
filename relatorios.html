@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Relatórios - Pronti</title>
-  <link rel="stylesheet" href="styles.css">
+  <!-- O seu CSS externo foi removido pois os estilos já estão no <style> abaixo -->
+  <!-- <link rel="stylesheet" href="styles.css"> -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -19,11 +20,16 @@
       margin: 0;
       padding: 0;
       font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
       min-height: 100vh;
+      /* ✅ ALTERAÇÃO: Adicionado para centralizar o conteúdo ou a mensagem de erro */
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
     }
     .main-relatorios {
       max-width: 1100px;
+      width: 100%; /* Garante que ocupe a largura disponível */
       margin: 28px auto 0 auto;
       padding: 0;
       min-height: 90vh;
@@ -262,69 +268,126 @@
   </style>
 </head>
 <body>
-  <main class="main-relatorios">
-    <div class="top-actions">
-      <button id="btn-voltar" class="btn-voltar"><i class="fa fa-arrow-left"></i> Voltar</button>
-      <nav class="abas-container">
-        <button class="aba active" data-aba="servicos"><i class="fa-solid fa-gears"></i> Serviços</button>
-        <button class="aba" data-aba="profissionais"><i class="fa-solid fa-user-tie"></i> Profissionais</button>
-        <button class="aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> Faturamento</button>
-        <button class="aba" data-aba="clientes"><i class="fa-solid fa-user-group"></i> Clientes</button>
-        <button class="aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
-      </nav>
-    </div>
-    <!-- Filtros -->
-    <header class="filtros-relatorios">
-      <label for="filtro-data-inicio">Data Início:</label>
-      <input type="date" id="filtro-data-inicio">
+  <!-- O conteúdo será inserido aqui pelo script de inicialização -->
+  <div id="page-content">
+    <main class="main-relatorios">
+      <div class="top-actions">
+        <button id="btn-voltar" class="btn-voltar"><i class="fa fa-arrow-left"></i> Voltar</button>
+        <nav class="abas-container">
+          <button class="aba active" data-aba="servicos"><i class="fa-solid fa-gears"></i> Serviços</button>
+          <button class="aba" data-aba="profissionais"><i class="fa-solid fa-user-tie"></i> Profissionais</button>
+          <button class="aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> Faturamento</button>
+          <button class="aba" data-aba="clientes"><i class="fa-solid fa-user-group"></i> Clientes</button>
+          <button class="aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
+        </nav>
+      </div>
+      <!-- Filtros -->
+      <header class="filtros-relatorios">
+        <label for="filtro-data-inicio">Data Início:</label>
+        <input type="date" id="filtro-data-inicio">
 
-      <label for="filtro-data-fim">Data Fim:</label>
-      <input type="date" id="filtro-data-fim">
+        <label for="filtro-data-fim">Data Fim:</label>
+        <input type="date" id="filtro-data-fim">
 
-      <label for="filtro-profissional">Profissional:</label>
-      <select id="filtro-profissional">
-        <option value="todos">Todos</option>
-        <!-- Populado via JS -->
-      </select>
+        <label for="filtro-profissional">Profissional:</label>
+        <select id="filtro-profissional">
+          <option value="todos">Todos</option>
+          <!-- Populado via JS -->
+        </select>
 
-      <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
-    </header>
-    <!-- Conteúdo das abas -->
-    <section class="conteudo-abas">
-      <div class="aba-conteudo active" id="servicos"></div>
-      <div class="aba-conteudo" id="profissionais"></div>
-      <div class="aba-conteudo" id="faturamento"></div>
-      <div class="aba-conteudo" id="clientes"></div>
-      <div class="aba-conteudo" id="agenda"></div>
-    </section>
-  </main>
+        <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
+      </header>
+      <!-- Conteúdo das abas -->
+      <section class="conteudo-abas">
+        <div class="aba-conteudo active" id="servicos"></div>
+        <div class="aba-conteudo" id="profissionais"></div>
+        <div class="aba-conteudo" id="faturamento"></div>
+        <div class="aba-conteudo" id="clientes"></div>
+        <div class="aba-conteudo" id="agenda"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
+  <!-- ================================================================== -->
+  <script type="module">
+    import { verificarAcesso } from './userService.js';
+    import { db } from './firebase-config.js';
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    /**
+     * Ponto de entrada único que orquestra a inicialização da página.
+     */
+    async function inicializarPagina( ) {
+      try {
+        // 1. Garante que o usuário está logado e obtém a sessão.
+        const sessao = await verificarAcesso();
+        if (!sessao || !sessao.user) {
+          return; // verificarAcesso já redireciona.
+        }
+
+        // 2. Define os papéis do usuário a partir da sessão.
+        let papelUsuario = sessao.papeis || [];
+        if (papelUsuario.length === 0) { // Fallback
+          if(sessao.isAdmin) papelUsuario.push('admin');
+          if(sessao.isOwner) papelUsuario.push('dono');
+          if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+        }
+
+        // 3. Busca as regras de permissão do Firestore.
+        const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
+        const permissoesSnap = await getDoc(permissoesRef);
+        const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
+
+        // 4. VALIDAÇÃO DE ACESSO: Verifica se algum dos papéis do usuário tem permissão para ver 'relatorios'.
+        const podeVer = papelUsuario.some(papel => regras.relatorios && regras.relatorios[papel] === true);
+
+        if (!podeVer) {
+          // Se não tiver permissão, esconde o conteúdo e mostra uma mensagem de erro.
+          document.getElementById('page-content').innerHTML = `
+            <div style="background: #fff; padding: 40px; border-radius: 12px; text-align: center; margin-top: 50px;">
+              <h1>Acesso Negado</h1>
+              <p>Você não tem permissão para acessar esta página.</p>
+              <button onclick="window.history.back()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">Voltar</button>
+            </div>
+          `;
+          return; // Interrompe a execução.
+        }
+
+        // 5. Se tiver permissão, a página continua a carregar normalmente.
+        // A lógica do 'relatorios.js' será executada.
+
+      } catch (error) {
+        console.error("Erro crítico ao inicializar a página de relatórios:", error);
+        document.getElementById('page-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
+      }
+    }
+
+    // Inicia todo o processo.
+    inicializarPagina();
+  </script>
+
+  <!-- Seus scripts de negócio são mantidos -->
+  <script src="relatorios.js" type="module"></script>
+
+  <!-- O script do botão voltar e do histórico foi mantido -->
   <script>
-    // O botão de voltar interno da página agora usa history.back()
-    // para se comportar exatamente como o botão do navegador.
     const btnVoltar = document.getElementById("btn-voltar");
     if (btnVoltar) {
       btnVoltar.addEventListener("click", () => {
         window.history.back();
       });
     }
-  </script>
-  <script src="relatorios.js" type="module"></script>
 
-  <!-- ✅ INÍCIO DA MODIFICAÇÃO FINAL E CORRETA -->
-  <script>
-    // 1. Adiciona uma entrada "falsa" no histórico. Isso é necessário para
-    //    garantir que o evento 'popstate' sempre dispare na primeira vez que o usuário voltar.
-    window.history.pushState({ "page": "relatorios" }, "");
-
-    // 2. Ouve o evento 'popstate', que é o clique no botão "Voltar" do navegador.
+    // Lógica do histórico para o botão voltar do navegador
+    if (window.history.state === null || window.history.state.page !== "relatorios") {
+        window.history.pushState({ "page": "relatorios" }, "");
+    }
     window.addEventListener('popstate', function() {
-      // 3. Quando o evento é capturado, IGNORA o histórico e força o redirecionamento
-      //    para a 'index.html'. 'location.replace' é usado para não adicionar
-      //    a página anterior ao histórico, evitando qualquer tipo de loop.
       window.location.replace('index.html');
     });
   </script>
-  <!-- ✅ FIM DA MODIFICAÇÃO FINAL E CORRETA -->
 
 </body>
 </html>
