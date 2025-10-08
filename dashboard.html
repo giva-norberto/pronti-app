@@ -9,7 +9,7 @@
     <style>
         :root {
             --primary: #6366f1; 
-            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100% ); 
+            --gradient: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%  ); 
             --card-bg: #fff; 
             --text-main: #21243d; 
             --text-secondary: #71717a; 
@@ -29,6 +29,13 @@
             width: 250px;
             min-width: 250px;
             flex-shrink: 0;
+            /* Adicionado para evitar o "pisca-pisca" */
+            transition: opacity 0.2s ease-in-out;
+            opacity: 0;
+        }
+
+        #menu-container.loaded {
+            opacity: 1;
         }
 
         .dashboard-main {
@@ -139,6 +146,14 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        .erro {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 14px;
+            color: #c00;
+            font-weight: 600;
+        }
+
         @media (max-width: 1000px) { 
             .dashboard-grid { grid-template-columns: 1fr; } 
         }
@@ -202,72 +217,97 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        function getEmpresaIdAtiva() {
+        // Função para obter o ID da empresa ativa do localStorage
+        function getEmpresaIdAtiva( ) {
             return localStorage.getItem("empresaAtivaId") || null;
         }
 
+        // Função centralizada para carregar e ativar o menu
         async function carregarMenu(papelUsuario) {
+            const menuContainer = document.getElementById('menu-container');
             try {
-                // Só carrega se array válido e não vazio
+                // Validação para garantir que temos um papel de usuário válido
                 if (!Array.isArray(papelUsuario) || papelUsuario.length === 0) {
-                    console.error("Menu lateral não ativado: array de papéis vazio ou inválido.", papelUsuario);
-                    return;
+                    throw new Error("Menu lateral não pode ser ativado: papel do usuário é inválido ou vazio.");
                 }
+
+                // 1. Carrega o HTML do menu
                 const response = await fetch('menu-lateral.html');
-                document.getElementById('menu-container').innerHTML = await response.text();
+                if (!response.ok) throw new Error(`Falha ao buscar menu-lateral.html (status: ${response.status})`);
+                menuContainer.innerHTML = await response.text();
+
+                // 2. Importa o módulo do menu
                 const menuModule = await import('./menu-lateral.js');
-                console.log("Menu lateral recebido papéis:", papelUsuario);
-                if (menuModule.ativarMenuLateral) await menuModule.ativarMenuLateral(papelUsuario);
+                
+                // 3. Chama a função de ativação, passando os papéis do usuário
+                if (menuModule.ativarMenuLateral) {
+                    // A função ativarMenuLateral agora é responsável por buscar suas próprias permissões
+                    await menuModule.ativarMenuLateral(papelUsuario);
+                    // Adiciona a classe 'loaded' para exibir o menu suavemente após a configuração
+                    menuContainer.classList.add('loaded');
+                } else {
+                    throw new Error("A função 'ativarMenuLateral' não foi encontrada no módulo do menu.");
+                }
             } catch (error) {
-                console.error("Falha ao carregar o menu lateral:", error);
+                console.error("Falha crítica ao carregar o menu lateral:", error);
+                menuContainer.innerHTML = '<p style="color: white; padding: 1rem; font-family: sans-serif;">Erro no menu</p>';
+                // Esconde o menu em caso de erro para não exibir um componente quebrado
+                menuContainer.style.opacity = '0';
             }
         }
 
+        // Ponto de entrada principal quando o estado de autenticação muda
         onAuthStateChanged(auth, async (user) => {
-            let empresaId = getEmpresaIdAtiva();
-            let isDono = false;
-            let isAdmin = false;
+            const mainContent = document.querySelector('.dashboard-main');
 
             if (!user) {
                 window.location.href = 'login.html';
                 return;
             }
 
+            const empresaId = getEmpresaIdAtiva();
             if (!empresaId) {
-                document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Nenhuma empresa ativa selecionada.</p>';
+                mainContent.innerHTML = '<p class="erro">Nenhuma empresa ativa selecionada. Por favor, selecione uma empresa para continuar.</p>';
+                // Esconde o menu se não há empresa, pois não há contexto de permissão
+                document.getElementById('menu-container').style.display = 'none';
                 return;
             }
 
             try {
+                // Busca apenas os dados da empresa, que é a única dependência desta página
                 const empresaRef = doc(db, "empresarios", empresaId);
                 const empresaSnap = await getDoc(empresaRef);
 
                 if (!empresaSnap.exists()) {
-                    document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Empresa ativa não encontrada.</p>';
+                    mainContent.innerHTML = '<p class="erro">Empresa ativa não encontrada no banco de dados.</p>';
+                    document.getElementById('menu-container').style.display = 'none';
                     return;
                 }
 
+                // Determina os papéis do usuário
+                const empresaData = empresaSnap.data();
                 const adminUID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-                isDono = empresaSnap.data().donoId === user.uid;
-                isAdmin = user.uid === adminUID;
+                const isDono = empresaData.donoId === user.uid;
+                const isAdmin = user.uid === adminUID;
 
-                // Array de papéis para o menu lateral
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
-                if (papelUsuario.length === 0) papelUsuario.push('funcionario'); // fallback opcional
+                // Se não for admin nem dono, assume-se que é funcionário
+                if (papelUsuario.length === 0) papelUsuario.push('funcionario');
 
-                console.log("Menu lateral será ativado para papéis:", papelUsuario);
-
-                // Chama o menu lateral SOMENTE com array válido e uma única vez
+                // AGORA, com os papéis definidos, chamamos a função para carregar o menu.
+                // Esta é a única chamada para a função do menu.
                 await carregarMenu(papelUsuario);
 
             } catch (error) {
-                document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Ocorreu um erro ao carregar os dados.</p>';
+                console.error("Erro ao carregar dados iniciais do dashboard:", error);
+                mainContent.innerHTML = '<p class="erro">Ocorreu um erro crítico ao carregar os dados do painel. Tente recarregar a página.</p>';
+                document.getElementById('menu-container').style.display = 'none';
             }
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- O script do dashboard.js é carregado por último para garantir que o DOM está pronto -->
     <script type="module" src="dashboard.js"></script>
 </body>
 </html>
