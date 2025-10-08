@@ -4,18 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Serviços</title>
-    <!-- O seu CSS externo foi removido pois os estilos já estão no <style> abaixo -->
-    <!-- <link href="style.css" rel="stylesheet" type="text/css" /> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ======================================================================
-                                CSS FINAL, REVISADO E COM TODOS OS AJUSTES
+                                CSS FINAL, REVISADO E COM LAYOUT CORRIGIDO
              ====================================================================== */
 
         :root {
-            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
+            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
             --primary-color: #4f46e5;
-            /* ✅ ADIÇÃO: Nova cor para o botão de promoções */
             --special-color: #16a34a; 
         }
 
@@ -28,12 +25,13 @@
             display: flex;
         }
 
-        /* ✅ ALTERAÇÃO: A margem foi removida para que o menu se encaixe corretamente */
+        /* ✅ CORREÇÃO DE LAYOUT: A margem fixa foi removida. */
         .main-content { 
-            /* margin-left: 270px; */ 
+            /* margin-left: 270px; */ /* REMOVIDO */
             padding: 32px; 
             min-height: 100vh;
-            flex-grow: 1;
+            flex-grow: 1; /* Faz o conteúdo ocupar o espaço restante */
+            min-width: 0; /* Impede que o conteúdo flexível encolha demais */
         }
 
         .page-header {
@@ -47,10 +45,9 @@
             margin-bottom: 24px;
         }
         
-        /* ✅ ADIÇÃO: Container para os botões do header */
         .header-actions {
             display: flex;
-            gap: 12px; /* Espaçamento entre os botões */
+            gap: 12px;
         }
 
         .page-header h1 {
@@ -59,15 +56,15 @@
             color: #1e293b;
         }
 
-        .btn-new, .btn-special { /* ✅ MODIFICAÇÃO: Aplicando estilo base para ambos */
+        .btn-new, .btn-special {
             color: white; 
             padding: 12px 20px; 
             border-radius: 8px; 
             text-decoration: none; 
             font-weight: bold; 
-            display: inline-flex; /* Para alinhar ícone e texto */
+            display: inline-flex;
             align-items: center;
-            gap: 8px; /* Espaço entre ícone e texto */
+            gap: 8px;
             transition: background-color 0.2s;
         }
 
@@ -78,7 +75,6 @@
             background-color: #4338ca;
         }
 
-        /* ✅ ADIÇÃO: Estilo específico para o novo botão */
         .btn-special {
             background-color: var(--special-color);
         }
@@ -86,7 +82,6 @@
             background-color: #15803d;
         }
 
-        /* O restante do seu CSS permanece exatamente igual */
         .categoria-titulo { font-size: 1.6rem; font-weight: 800; color: #FFFFFF; margin-top: 24px; margin-bottom: 16px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
         .servico-card { background: white; border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
         .servico-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.12); }
@@ -103,9 +98,13 @@
         .btn-excluir { background-color: #dc3545; color: white; }
         .btn-excluir:hover { background-color: #c82333; }
         
+        /* ✅ LÓGICA PARA CELULAR MANTIDA: Quando a tela é estreita, o body vira uma coluna e o menu fica em cima. */
         @media (max-width: 900px) { 
             body { flex-direction: column; }
-            .main-content { margin-left: 0; padding: 16px; }
+            .main-content { 
+                margin-left: 0; /* Garante que não há margem em telas pequenas */
+                padding: 16px; 
+            }
             .page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
         }
 
@@ -123,7 +122,6 @@
 
 <div id="loader" style="display: none;">Carregando...</div>
 
-<!-- ✅ ALTERAÇÃO: O ID foi padronizado para 'menu-container' -->
 <div id="menu-container"></div>
 
 <main class="main-content">
@@ -154,14 +152,11 @@
 </div>
 
 <!-- ================================================================== -->
-<!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
+<!-- SCRIPT DE INICIALIZAÇÃO PADRÃO (JÁ ESTAVA CORRETO) -->
 <!-- ================================================================== -->
 <script type="module">
     import { verificarAcesso } from './userService.js'; 
 
-    /**
-     * Carrega o menu lateral e o ativa com os papéis do usuário.
-     */
     async function carregarMenu(papelUsuario) {
         try {
             const response = await fetch('menu-lateral.html');
@@ -177,43 +172,33 @@
         }
     }
 
-    /**
-     * Ponto de entrada único que orquestra a inicialização da página.
-     */
     async function inicializarPagina() {
         try {
-            // 1. Garante que o usuário está logado e obtém a sessão.
             const sessao = await verificarAcesso();
             if (!sessao || !sessao.user) {
-                return; // verificarAcesso já redireciona.
+                return;
             }
 
-            // 2. Define os papéis do usuário a partir da sessão.
             let papelUsuario = sessao.papeis || [];
-            if (papelUsuario.length === 0) { // Fallback
+            if (papelUsuario.length === 0) {
                 if(sessao.isAdmin) papelUsuario.push('admin');
                 if(sessao.isOwner) papelUsuario.push('dono');
                 if(papelUsuario.length === 0) papelUsuario.push('funcionario');
             }
 
-            // 3. Carrega o menu lateral com os papéis corretos.
             await carregarMenu(papelUsuario);
 
-            // 4. A lógica específica desta página (carregar serviços) já é
-            // iniciada pelos scripts importados abaixo, então não precisamos
-            // chamar nada extra aqui.
-
-        } catch (error) {
+        } catch (error)
+        {
             console.error("Erro crítico ao inicializar a página de serviços:", error);
             document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
         }
     }
 
-    // Inicia todo o processo.
     inicializarPagina();
 </script>
 
-<!-- Seus scripts de negócio são mantidos, eles serão executados após a inicialização. -->
+<!-- SCRIPTS DE NEGÓCIO (MANTIDOS) -->
 <script src="./firebase-config.js" type="module"></script>
 <script src="./vitrini-utils.js" type="module"></script>
 <script src="./servicos.js" type="module"></script> 
