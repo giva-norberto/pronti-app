@@ -122,6 +122,54 @@
         .btn-danger { background-color: #ef4444; color: white; }
         .btn-excluir { width:100%; background-color: #dc2626; color:white; margin-top: 15px; }
         .btn-excluir:hover { background-color: #b91c1c; }
+
+        /* Card vazio Pronti para lista de planos */
+        .card-plano-vazio {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border-radius: 14px;
+            padding: 48px 24px;
+            box-shadow: 0 6px 24px rgba(44,54,80,0.07);
+            text-align: center;
+            margin: 32px auto;
+            max-width: 420px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+        }
+        .card-vazio-content i {
+            font-size: 2.5rem;
+            margin-bottom: 18px;
+            color: #ffd700;
+            display: block;
+        }
+        .card-vazio-content h2 {
+            font-size: 1.32rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+        .card-vazio-content p {
+            color: #e0e7ff;
+            font-size: 1.07rem;
+            margin-bottom: 22px;
+        }
+        .btn-novo-card {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: #fff;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 14px 32px;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(14,165,233,0.15);
+            font-size: 1.05em;
+            transition: background 0.2s;
+            display: inline-block;
+        }
+        .btn-novo-card:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+        }
         @media (max-width: 900px) {
             main.content { padding: 10px; }
             .container { padding: 10px; }
@@ -175,6 +223,17 @@
                 <button type="submit" class="btn btn-primary">Salvar Plano</button>
             </form>
             <button id="btn-excluir-plano" class="btn btn-excluir" style="display:none;">Excluir Plano</button>
+            <!-- Card vazio Pronti para quando não houver plano cadastrado -->
+            <div id="card-plano-vazio-container" style="display:none;">
+                <div class="card-plano-vazio">
+                    <div class="card-vazio-content">
+                        <i class="fa-solid fa-crown"></i>
+                        <h2>Você ainda não criou nenhum plano!</h2>
+                        <p>Os planos de assinatura são uma ótima forma de fidelizar seus clientes.<br>Crie seu primeiro plano agora para começar!</p>
+                        <a href="criar-plano.html" class="btn-novo-card">+ Criar Novo Plano</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
     <script type="module">
@@ -185,6 +244,7 @@
         // --- Variáveis Globais e Elementos do DOM ---
         const form = document.getElementById('form-plano');
         const btnExcluir = document.getElementById('btn-excluir-plano');
+        const cardVazioContainer = document.getElementById('card-plano-vazio-container');
         let empresaId = null;
         let planoId = null;
         let planoEditando = null;
@@ -250,7 +310,6 @@
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 const menuModule = await import('./menu-lateral.js');
-                // CORREÇÃO: Passe array de papéis do usuário!
                 let papelArray = [];
                 if (papelUsuario === 'admin') papelArray.push('admin');
                 if (papelUsuario === 'dono') papelArray.push('dono');
@@ -266,6 +325,12 @@
                 const servicosRef = collection(db, `empresarios/${empresaId}/servicos`);
                 const snapshot = await getDocs(servicosRef);
                 listaDeServicos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // MELHORIA: Exibir card vazio Pronti se não houver nenhum serviço cadastrado
+                if (listaDeServicos.length === 0) {
+                    cardVazioContainer.style.display = '';
+                } else {
+                    cardVazioContainer.style.display = 'none';
+                }
                 if (listaDeServicos.length === 0) {
                      prontiAlert("Atenção: Cadastre serviços antes de criar um plano.");
                 }
@@ -343,7 +408,6 @@
             }
             isDono = empresaSnap.data().donoId === user.uid;
             
-            // CORREÇÃO: Passe papel do usuário corretamente para menu lateral
             const papelUsuario = isAdmin ? 'admin' : (isDono ? 'dono' : 'funcionario');
             await carregarMenu(papelUsuario);
             await carregarServicosDisponiveis();
