@@ -2,7 +2,8 @@
 //          DASHBOARD.JS (VERSÃO FINAL, COMPLETA E REVISADA)
 // =====================================================================
 
-import { verificarAcesso } from "./userService.js";
+// A importação de 'verificarAcesso' é a fonte dos dados do usuário e empresa.
+import { verificarAcesso } from "./userService.js"; 
 import { db } from "./firebase-config.js";
 import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { gerarResumoDiarioInteligente } from "./inteligencia.js";
@@ -12,7 +13,7 @@ let servicosChart;
 const STATUS_VALIDOS = ["ativo", "realizado"];
 
 // --- FUNÇÕES DE UTILIDADE ---
-function timeStringToMinutes(timeStr ) {
+function timeStringToMinutes(timeStr  ) {
     if (!timeStr) return 0;
     const [h, m] = timeStr.split(":").map(Number);
     return h * 60 + m;
@@ -101,7 +102,7 @@ function preencherPainel(resumoDia, resumoMes, servicosSemana) {
     });
 }
 
-// --- FUNÇÕES DE BUSCA DE DADOS ---
+// --- FUNÇÕES DE BUSCA DE DADOS (LÓGICA DE NEGÓCIO INALTERADA) ---
 
 async function buscarDadosDoDia(empresaId, data) {
     const agRef = collection(db, "empresarios", empresaId, "agendamentos");
@@ -194,23 +195,35 @@ async function carregarDashboard(empresaId, data) {
     }
 }
 
-// --- INICIALIZAÇÃO DA PÁGINA ---
+// --- INICIALIZAÇÃO DA PÁGINA (LÓGICA CORRIGIDA) ---
 
 async function inicializarPagina() {
     try {
+        // 1. 'verificarAcesso' já garante que o usuário está logado e tem um perfil.
+        // Ele também redireciona se necessário, então não precisamos nos preocupar com isso aqui.
         const perfil = await verificarAcesso();
         const empresaId = perfil.empresaId;
 
-        const response = await fetch('menu-lateral.html');
-        document.getElementById('menu-container').innerHTML = await response.text();
-        const menuModule = await import('./menu-lateral.js');
-        if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
+        // =================================================================================
+        // CORREÇÃO PRINCIPAL: As linhas abaixo, que tentavam carregar e ativar o menu,
+        // foram removidas. Essa responsabilidade agora é 100% do 'dashboard.html',
+        // que já faz isso da maneira correta usando 'onAuthStateChanged'.
+        //
+        // LINHAS REMOVIDAS:
+        // const response = await fetch('menu-lateral.html');
+        // document.getElementById('menu-container').innerHTML = await response.text();
+        // const menuModule = await import('./menu-lateral.js');
+        // if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral();
+        // =================================================================================
 
+        // 2. Configura o filtro de data com o valor padrão.
         const filtroDataEl = document.getElementById('filtro-data');
         filtroDataEl.value = new Date().toISOString().split('T')[0];
         
+        // 3. Carrega os dados do dashboard com a empresa e data corretas.
         await carregarDashboard(empresaId, filtroDataEl.value);
 
+        // 4. Adiciona os listeners para interatividade da página.
         filtroDataEl.addEventListener('change', debounce(() => {
             carregarDashboard(empresaId, filtroDataEl.value);
         }, 300));
@@ -220,10 +233,12 @@ async function inicializarPagina() {
         });
 
     } catch (error) {
+        // 'verificarAcesso' já trata o redirecionamento, então só logamos outros erros.
         if (error && !error.message.includes("Redirecionando")) {
             console.error("Falha crítica na inicialização do dashboard:", error);
         }
     }
 }
 
+// Inicia todo o processo quando o DOM da página estiver pronto.
 window.addEventListener('DOMContentLoaded', inicializarPagina);
