@@ -234,11 +234,14 @@
                 isDono = empresaSnap.data().donoId === user.uid;
                 isAdmin = user.uid === adminUID;
 
-                // Exatamente igual ao Planos: array de papéis para o menu lateral!
+                // CORREÇÃO: Array de papéis para o menu lateral, igual à página de planos!
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
                 if (papelUsuario.length === 0) papelUsuario.push('funcionario'); // fallback opcional
+
+                // Debug para garantir que o array está correto
+                console.log("Menu lateral será ativado para papéis:", papelUsuario);
 
                 await carregarMenu(papelUsuario);
 
@@ -252,6 +255,8 @@
                 const response = await fetch('menu-lateral.html');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 const menuModule = await import('./menu-lateral.js');
+                // Debug para garantir que o array chega correto
+                console.log("Menu lateral recebeu papéis:", papelUsuario);
                 if (menuModule.ativarMenuLateral) await menuModule.ativarMenuLateral(papelUsuario);
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
