@@ -3,8 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Permissões Globais</title>
+  <!-- Adicionei um link para o menu-lateral.css, se você tiver um, para consistência visual -->
+  <!-- <link rel="stylesheet" href="menu-lateral.css"> -->
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      display: flex; /* Necessário para o menu lateral funcionar corretamente */
+      margin: 0;
+    }
+    .content-wrapper {
+      flex-grow: 1;
+      padding: 20px;
+    }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background: #f4f4f4; }
@@ -13,59 +23,75 @@
   </style>
 </head>
 <body>
-  <h2>Permissões Globais de Menu</h2>
-  <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
-  <table>
-    <thead>
-      <tr>
-        <th>Menu</th>
-        <th>Funcionário</th>
-        <th>Dono</th>
-        <th>Admin</th>
-      </tr>
-    </thead>
-    <tbody id="permissoes-tabela"></tbody>
-  </table>
-  <button id="salvar">Salvar</button>
+  <!-- Container para o menu lateral -->
+  <div id="menu-container"></div>
+
+  <!-- Conteúdo principal da página -->
+  <div class="content-wrapper">
+    <h2>Permissões Globais de Menu</h2>
+    <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
+    
+    <div id="main-content">
+      <table>
+        <thead>
+          <tr>
+            <th>Menu</th>
+            <th>Funcionário</th>
+            <th>Dono</th>
+            <th>Admin</th>
+          </tr>
+        </thead>
+        <tbody id="permissoes-tabela"></tbody>
+      </table>
+      <button id="salvar">Salvar</button>
+    </div>
+  </div>
 
   <script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    // =================================================================
+    // ✅ INÍCIO DAS ALTERAÇÕES: Implementação da validação de acesso
+    // =================================================================
+    
+    import { db } from "./firebase-config.js";
     import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    // Importa as funções necessárias do seu userService
+    import { verificarAcesso } from './userService.js';
 
-    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
-
-    const permissoesTabela = document.getElementById("permissoes-tabela");
+    const permissoesTabela = document.getElementById("permissoes-tabela" );
     const salvarBtn = document.getElementById("salvar");
+    const mainContent = document.getElementById("main-content");
 
-    // =================================================================
-    // ✅ INÍCIO DA ÚNICA PARTE ALTERADA: Adicionado "planos" à lista.
-    // =================================================================
     const menus = [
-      "inicio",
-      "dashboard",
-      "agenda",
-      "equipe",
-      "servicos",
-      "planos", // <-- NOVO MENU ADICIONADO AQUI
-      "clientes",
-      "perfil",
-      "relatorios",
-      "administracao",
-      "permissoes"
+      "inicio", "dashboard", "agenda", "equipe", "servicos", 
+      "planos", "clientes", "perfil", "relatorios", 
+      "administracao", "permissoes"
     ];
-    // =================================================================
-    // ✅ FIM DA ALTERAÇÃO
-    // =================================================================
 
     let permissoesAtuais = {};
+
+    /**
+     * Carrega o menu lateral e o ativa com os papéis do usuário.
+     */
+    async function carregarMenu(papelUsuario) {
+        try {
+            const response = await fetch('menu-lateral.html');
+            if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+            document.getElementById('menu-container').innerHTML = await response.text();
+            
+            const menuModule = await import('./menu-lateral.js');
+            if (menuModule.ativarMenuLateral) {
+                await menuModule.ativarMenuLateral(papelUsuario);
+            }
+        } catch (error) {
+            console.error("Falha ao carregar o menu lateral:", error);
+        }
+    }
 
     async function carregarPermissoesGlobais() {
       const ref = doc(db, "configuracoesGlobais", "permissoes");
       const snap = await getDoc(ref);
       permissoesAtuais = snap.exists() ? snap.data() : {};
 
-      // Garante que todos os menus (incluindo o novo) tenham um objeto de permissão padrão
       menus.forEach(menu => {
         if (!permissoesAtuais[menu]) {
           permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
@@ -80,7 +106,6 @@
     }
 
     function renderTabela() {
-      // O seu código aqui já é dinâmico e vai incluir a nova linha "planos" automaticamente
       permissoesTabela.innerHTML = menus.map(menu => `
         <tr>
           <td>${menu}</td>
@@ -92,7 +117,6 @@
     }
 
     salvarBtn.addEventListener("click", async () => {
-      // O seu código aqui já é dinâmico e vai salvar a nova permissão "planos" automaticamente
       const checkboxes = document.querySelectorAll("input[type=checkbox]");
       const novasPermissoes = {};
       checkboxes.forEach(chk => {
@@ -105,27 +129,54 @@
       alert("Permissões globais salvas!");
     });
 
-    // Sua lógica de acesso de administrador (mantida 100%)
-    onAuthStateChanged(auth, (user) => {
-      const authTimeout = setTimeout(() => {
-        if (!document.body.dataset.userChecked) {
-          window.location.href = "login.html";
+    /**
+     * Ponto de entrada principal que orquestra a inicialização da página.
+     */
+    async function inicializarPagina() {
+        try {
+            // 1. Garante que o usuário está logado e obtém a sessão.
+            const sessao = await verificarAcesso();
+            if (!sessao || !sessao.user) {
+                return; // verificarAcesso já redireciona, então apenas paramos aqui.
+            }
+
+            // 2. Define os papéis do usuário a partir da sessão.
+            const papelUsuario = sessao.papeis || [];
+            if (papelUsuario.length === 0) { // Fallback para garantir que sempre haja um papel
+                if(sessao.isAdmin) papelUsuario.push('admin');
+                if(sessao.isOwner) papelUsuario.push('dono');
+                if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+            }
+
+            // 3. Carrega o menu lateral com os papéis corretos.
+            await carregarMenu(papelUsuario);
+
+            // 4. VALIDAÇÃO DE ACESSO: Verifica se o usuário tem o papel 'admin'.
+            if (!papelUsuario.includes('admin')) {
+                // Se não for admin, esconde o conteúdo e mostra uma mensagem de erro.
+                document.querySelector('.content-wrapper').innerHTML = `
+                    <h1>Acesso Negado</h1>
+                    <p>Você não tem permissão para acessar esta página. Apenas administradores podem modificar as permissões globais.</p>
+                `;
+                // Interrompe a execução para não carregar a tabela de permissões.
+                return; 
+            }
+
+            // 5. Se for admin, carrega a tabela de permissões.
+            await carregarPermissoesGlobais();
+
+        } catch (error) {
+            console.error("Erro crítico ao inicializar a página de permissões:", error);
+            document.querySelector('.content-wrapper').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
         }
-      }, 3000);
+    }
 
-      document.body.dataset.userChecked = true;
+    // Inicia todo o processo.
+    inicializarPagina();
 
-      if (user) {
-        clearTimeout(authTimeout);
-
-        if (user.uid === ADMIN_UID) {
-          carregarPermissoesGlobais();
-        } else {
-          alert("Acesso negado. Apenas Administrador.");
-          window.location.href = "index.html";
-        }
-      }
-    });
+    // =================================================================
+    // ✅ FIM DAS ALTERAÇÕES
+    // =================================================================
   </script>
 </body>
 </html>
