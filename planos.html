@@ -82,6 +82,53 @@
         .metodo-manual { background-color: #f59e0b; }
         .erro { color: #b91c1c; font-weight: 500; margin: 2rem 0; }
         .info { color: #1e40af; font-weight: 500; margin: 2rem 0; }
+        /* Card vazio Pronti para lista de planos */
+        .card-plano-vazio {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border-radius: 14px;
+            padding: 48px 24px;
+            box-shadow: 0 6px 24px rgba(44,54,80,0.07);
+            text-align: center;
+            margin: 32px auto;
+            max-width: 420px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 320px;
+        }
+        .card-vazio-content i {
+            font-size: 2.5rem;
+            margin-bottom: 18px;
+            color: #ffd700;
+            display: block;
+        }
+        .card-vazio-content h2 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+        .card-vazio-content p {
+            color: #e0e7ff;
+            font-size: 1.07rem;
+            margin-bottom: 22px;
+        }
+        .btn-novo-card {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: #fff;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 14px 32px;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(14,165,233,0.15);
+            font-size: 1.05em;
+            transition: background 0.2s;
+            display: inline-block;
+        }
+        .btn-novo-card:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+        }
         @media (max-width: 992px) {
             #menu-container {
                 display: none;
@@ -175,7 +222,6 @@
                 // Exibe botão só para dono/admin
                 if (btnNovoPlano) btnNovoPlano.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
 
-                // CORREÇÃO: Monte array de papéis do usuário para passar ao menu lateral!
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
@@ -207,7 +253,16 @@
                 const snapshot = await getDocs(planosRef);
 
                 if (snapshot.empty) {
-                    listaContainer.innerHTML = '<p class="info">Nenhum plano criado ainda. Clique em "Criar Novo Plano" para começar!</p>';
+                    listaContainer.innerHTML = `
+                        <div class="card-plano-vazio">
+                            <div class="card-vazio-content">
+                                <i class="fa-solid fa-crown"></i>
+                                <h2>Você ainda não criou nenhum plano!</h2>
+                                <p>Os planos de assinatura são uma ótima forma de fidelizar seus clientes.<br>Crie seu primeiro plano agora para começar!</p>
+                                <a href="criar-plano.html" class="btn-novo-card">+ Criar Novo Plano</a>
+                            </div>
+                        </div>
+                    `;
                     return;
                 }
                 listaContainer.innerHTML = '';
