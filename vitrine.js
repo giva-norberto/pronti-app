@@ -10,7 +10,6 @@ import { setupAuthListener, fazerLogin, fazerLogout } from './vitrini-auth.js';
 import * as UI from './vitrini-ui.js';
 
 // --- IMPORTS PARA PROMOÇÕES ---
-// ✅ 1. CORREÇÃO: Caminho da importação ajustado para remover a barra dupla.
 import { db } from './vitrini-firebase.js'; 
 import { collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
@@ -28,7 +27,6 @@ function parseDataISO(dateStr) {
 }
 
 // --- INICIALIZAÇÃO DA PÁGINA ---
-// ✅ 2. CORREÇÃO: Lógica de inicialização tornada "inteligente" para lidar com URLs bonitas.
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         UI.toggleLoader(true);
@@ -39,8 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Pega o caminho da URL (ex: "/givas-salao-2") e remove a primeira barra.
         const slug = window.location.pathname.substring(1);
 
-        // Se não veio um ID de empresa, mas veio um slug no caminho...
-        // A verificação `slug !== 'vitrine.html'` previne que ele tente buscar quando a URL é a do arquivo direto.
         if (!empresaId && slug && slug !== 'vitrine.html' && slug !== 'index.html' && !slug.startsWith('r.html')) {
             console.log(`[Vitrine] ID não encontrado. Buscando empresa pelo slug: ${slug}`);
             
@@ -54,16 +50,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Se, depois de tudo, ainda não temos um ID, então é um erro.
         if (!empresaId) {
-            // A função getEmpresaIdFromURL() ainda é útil como uma última tentativa.
             empresaId = getEmpresaIdFromURL(); 
             if (!empresaId) {
                 throw new Error("ID da Empresa não pôde ser determinado a partir da URL.");
             }
         }
 
-        // --- A PARTIR DAQUI, O CÓDIGO É O MESMO DE ANTES ---
+        // --- O CÓDIGO É O MESMO DE ANTES ---
         const [dados, profissionais, todosServicos] = await Promise.all([
             getDadosEmpresa(empresaId),
             getProfissionaisDaEmpresa(empresaId),
@@ -83,6 +77,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         UI.renderizarDadosIniciaisEmpresa(state.dadosEmpresa, state.todosOsServicos);
         UI.renderizarProfissionais(state.listaProfissionais);
 
+        // =============== INCLUSÃO: Renderizar Planos de Assinatura e Botão Assinar =================
+        await renderizarPlanosDeAssinatura(empresaId);
+
         configurarEventosGerais();
         setupAuthListener(handleUserAuthStateChange);
         UI.toggleLoader(false);
@@ -92,7 +89,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById("vitrine-loader").innerHTML = `<p style="text-align: center; color:red; padding: 20px;">${error.message}</p>`;
     }
 });
-
 
 // --- O RESTANTE DO CÓDIGO PERMANECE COM A LÓGICA 100% IDÊNTICA ---
 
@@ -144,6 +140,51 @@ async function aplicarPromocoesNaVitrine(listaServicos, empresaId, dataSeleciona
         }
     });
 }
+
+// =============== INCLUSÃO: Função para Renderizar Planos de Assinatura e Botão Assinar ==============
+async function renderizarPlanosDeAssinatura(empresaId) {
+    const planosDiv = document.getElementById('lista-de-planos');
+    if (!planosDiv) return;
+    planosDiv.innerHTML = '<p style="text-align: center;">Carregando planos...</p>';
+    try {
+        const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
+        const snapshot = await getDocs(planosRef);
+        if (snapshot.empty) {
+            planosDiv.innerHTML = '<p>Nenhum plano disponível no momento.</p>';
+            return;
+        }
+        planosDiv.innerHTML = '';
+        snapshot.forEach(doc => {
+            const plano = doc.data();
+            const planoId = doc.id;
+            if (plano.ativo) {
+                const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const servicosHTML = Array.isArray(plano.servicosInclusos)
+                    ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
+                    : '';
+                // Card do plano
+                const card = document.createElement('div');
+                card.className = 'card-plano-vitrine';
+                card.style = 'background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(99,102,241,0.06);margin:18px 0;padding:22px;text-align:center;';
+                card.innerHTML = `
+                    <h3 style="color:#4f46e5;">${plano.nome}</h3>
+                    <p class="preco" style="color:#6366f1;font-weight:bold;font-size:1.2em;">${precoFormatado} / mês</p>
+                    <p>${plano.descricao || ''}</p>
+                    <ul style="list-style: '✓ ';padding-left: 20px;color: #333;">${servicosHTML}</ul>
+                    <button class="btn-assinar-plano" style="background:linear-gradient(90deg,#6366f1 0%,#4f46e5 100%);color:#fff;border:none;border-radius:8px;padding:8px 22px;margin-top:14px;font-size:1em;cursor:pointer;">Assinar</button>
+                `;
+                // INCLUSÃO DO REDIRECIONAMENTO PARA TELA DE PAGAMENTO
+                card.querySelector('.btn-assinar-plano').addEventListener('click', () => {
+                    window.location.href = `vitrine-assinatura.html?empresaId=${empresaId}&planoId=${planoId}`;
+                });
+                planosDiv.appendChild(card);
+            }
+        });
+    } catch (err) {
+        planosDiv.innerHTML = '<p style="color:red;">Ocorreu um erro ao carregar os planos.</p>';
+    }
+}
+// ==========================================================================================
 
 function configurarEventosGerais() {
     const addSafeListener = (selector, event, handler, isQuerySelector = false) => {
