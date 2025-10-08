@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Serviços</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
+    <!-- O seu CSS externo foi removido pois os estilos já estão no <style> abaixo -->
+    <!-- <link href="style.css" rel="stylesheet" type="text/css" /> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ======================================================================
@@ -12,7 +13,7 @@
              ====================================================================== */
 
         :root {
-            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
             --primary-color: #4f46e5;
             /* ✅ ADIÇÃO: Nova cor para o botão de promoções */
             --special-color: #16a34a; 
@@ -27,8 +28,9 @@
             display: flex;
         }
 
+        /* ✅ ALTERAÇÃO: A margem foi removida para que o menu se encaixe corretamente */
         .main-content { 
-            margin-left: 270px; 
+            /* margin-left: 270px; */ 
             padding: 32px; 
             min-height: 100vh;
             flex-grow: 1;
@@ -121,7 +123,8 @@
 
 <div id="loader" style="display: none;">Carregando...</div>
 
-<div id="sidebar-placeholder"></div>
+<!-- ✅ ALTERAÇÃO: O ID foi padronizado para 'menu-container' -->
+<div id="menu-container"></div>
 
 <main class="main-content">
     <div class="page-header">
@@ -135,7 +138,8 @@
     </div>
     
     <div id="lista-servicos">
-        </div>
+        <!-- O conteúdo desta div será preenchido pelo servicos.js -->
+    </div>
 </main>
 
 <div id="custom-confirm-modal" class="modal-overlay">
@@ -149,23 +153,67 @@
     </div>
 </div>
 
-<script>
-    // Script do menu lateral mantido intacto
-    document.addEventListener("DOMContentLoaded", function() {
-        fetch('menu-lateral.html')
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById('sidebar-placeholder').innerHTML = html;
-                const links = document.querySelectorAll('.sidebar-links a');
-                links.forEach(link => link.classList.remove('active'));
-                const servicosLink = document.querySelector('.sidebar-links a[href="servicos.html"]');
-                if (servicosLink) {
-                    servicosLink.classList.add('active');
-                }
-            });
-    });
+<!-- ================================================================== -->
+<!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
+<!-- ================================================================== -->
+<script type="module">
+    import { verificarAcesso } from './userService.js'; 
+
+    /**
+     * Carrega o menu lateral e o ativa com os papéis do usuário.
+     */
+    async function carregarMenu(papelUsuario) {
+        try {
+            const response = await fetch('menu-lateral.html');
+            if (!response.ok) throw new Error('menu-lateral.html não encontrado');
+            document.getElementById('menu-container').innerHTML = await response.text();
+            
+            const menuModule = await import('./menu-lateral.js');
+            if (menuModule.ativarMenuLateral) {
+                await menuModule.ativarMenuLateral(papelUsuario);
+            }
+        } catch (error) {
+            console.error("Falha ao carregar o menu lateral:", error);
+        }
+    }
+
+    /**
+     * Ponto de entrada único que orquestra a inicialização da página.
+     */
+    async function inicializarPagina() {
+        try {
+            // 1. Garante que o usuário está logado e obtém a sessão.
+            const sessao = await verificarAcesso();
+            if (!sessao || !sessao.user) {
+                return; // verificarAcesso já redireciona.
+            }
+
+            // 2. Define os papéis do usuário a partir da sessão.
+            let papelUsuario = sessao.papeis || [];
+            if (papelUsuario.length === 0) { // Fallback
+                if(sessao.isAdmin) papelUsuario.push('admin');
+                if(sessao.isOwner) papelUsuario.push('dono');
+                if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+            }
+
+            // 3. Carrega o menu lateral com os papéis corretos.
+            await carregarMenu(papelUsuario);
+
+            // 4. A lógica específica desta página (carregar serviços) já é
+            // iniciada pelos scripts importados abaixo, então não precisamos
+            // chamar nada extra aqui.
+
+        } catch (error) {
+            console.error("Erro crítico ao inicializar a página de serviços:", error);
+            document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
+        }
+    }
+
+    // Inicia todo o processo.
+    inicializarPagina();
 </script>
 
+<!-- Seus scripts de negócio são mantidos, eles serão executados após a inicialização. -->
 <script src="./firebase-config.js" type="module"></script>
 <script src="./vitrini-utils.js" type="module"></script>
 <script src="./servicos.js" type="module"></script> 
