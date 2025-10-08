@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pagamento de Assinatura - Pronti</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 20px;
+      box-sizing: border-box;
+      color: #ffffff;
+    }
+    .container-pagamento {
+      background: transparent;
+      text-align: center;
+      width: 100%;
+      max-width: 600px;
+    }
+    h1 { color: #ffffff; font-size: clamp(2rem, 5vw, 2.8rem); text-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-bottom: 25px; }
+    #plano-card { background: #fff; color: #222664; border-radius: 16px; padding: 28px 22px; max-width: 400px; margin: 0 auto 30px auto; box-shadow: 0 6px 22px rgba(44,54,80,0.10); }
+    #plano-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #4f46e5; }
+    #plano-card .preco { font-size: 2rem; font-weight: 700; margin: 10px 0 5px 0; color: #6366f1; }
+    #plano-card .descricao { color: #444; margin: 12px 0; font-size: 1.05em; }
+    #plano-card ul { list-style: '✓ '; padding-left: 20px; color: #333; margin: 16px 0; text-align:left;}
+    #btn-pagar { width: 100%; background: #10b981; color: #fff; font-weight: 700; border: none; border-radius: 12px; padding: 18px 0; font-size: 1.2rem; cursor: pointer; transition: background 0.2s, transform 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);}
+    #btn-pagar:hover:not(:disabled) { background: #0f9e70; transform: translateY(-2px);}
+    #btn-pagar:disabled { background: #374151; cursor: not-allowed; box-shadow: none;}
+    #instrucoes-pix { margin: 28px auto 0 auto; background: #f1f5f9; border-radius: 12px; color: #222; padding: 18px 26px; max-width: 400px; font-size: 1.08em; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container-pagamento">
+    <h1>Pagamento de Assinatura</h1>
+    <div id="plano-card"></div>
+    <button id="btn-pagar" class="btn-pagar">Assinar</button>
+    <div id="instrucoes-pix"></div>
+  </div>
+  <script type="module">
+    import { db } from './firebase-config.js';
+    import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const empresaId = urlParams.get("empresaId");
+    const planoId = urlParams.get("planoId");
+
+    const planoCard = document.getElementById('plano-card');
+    const btnPagar = document.getElementById('btn-pagar');
+    const instrucoesPix = document.getElementById('instrucoes-pix');
+    let planoSelecionado = null;
+
+    async function carregarPlano() {
+      if (!empresaId || !planoId) {
+        planoCard.innerHTML = "<p style='color:red;'>Erro: Plano ou empresa não identificado.</p>";
+        btnPagar.disabled = true;
+        return;
+      }
+      try {
+        const planoRef = doc(db, `empresarios/${empresaId}/planosDeAssinatura/${planoId}`);
+        const planoSnap = await getDoc(planoRef);
+        if (!planoSnap.exists()) {
+          planoCard.innerHTML = "<p style='color:red;'>Plano não encontrado.</p>";
+          btnPagar.disabled = true;
+          return;
+        }
+        planoSelecionado = planoSnap.data();
+        planoSelecionado.id = planoSnap.id;
+
+        // Renderiza card do plano
+        planoCard.innerHTML = `
+          <h2>${planoSelecionado.nome}</h2>
+          <p class="preco">R$ ${planoSelecionado.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span>/ mês</span></p>
+          <p class="descricao">${planoSelecionado.descricao || ''}</p>
+          <ul>
+            ${Array.isArray(planoSelecionado.servicosInclusos) ? planoSelecionado.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('') : ''}
+          </ul>
+        `;
+        btnPagar.textContent = planoSelecionado.metodo === 'automatico' ? 'Pagar com Mercado Pago' : 'Solicitar via PIX';
+        btnPagar.disabled = false;
+      } catch (err) {
+        planoCard.innerHTML = "<p style='color:red;'>Erro ao carregar plano.</p>";
+        btnPagar.disabled = true;
+      }
+    }
+
+    btnPagar.addEventListener('click', async () => {
+      if (!planoSelecionado) return;
+      if (planoSelecionado.metodo === 'automatico') {
+        // Mercado Pago: Redireciona para o link
+        if (planoSelecionado.mercadoPagoLink && empresaId) {
+          let link = planoSelecionado.mercadoPagoLink;
+          link += `&external_reference=${empresaId}`;
+          window.location.href = link;
+        } else {
+          alert('Link de pagamento não configurado.');
+        }
+      } else if (planoSelecionado.metodo === 'manual') {
+        // PIX: Mostra instruções
+        instrucoesPix.style.display = 'block';
+        instrucoesPix.innerHTML = `<strong>Instruções de Pagamento PIX:</strong><br>${planoSelecionado.instrucoesPagamento || 'Instruções não fornecidas.'}`;
+        btnPagar.disabled = true;
+      }
+    });
+
+    carregarPlano();
+  </script>
+</body>
+</html>
