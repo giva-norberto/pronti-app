@@ -198,7 +198,6 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        // Adição da correção do papel do usuário para o menu lateral!
         function getEmpresaIdAtiva() {
             return localStorage.getItem("empresaAtivaId") || null;
         }
@@ -214,7 +213,6 @@
             }
 
             if (!empresaId) {
-                // O painel sempre requer empresa ativa
                 document.querySelector('.dashboard-main').innerHTML = '<p class="erro">Nenhuma empresa ativa selecionada.</p>';
                 return;
             }
@@ -232,7 +230,7 @@
                 isDono = empresaSnap.data().donoId === user.uid;
                 isAdmin = user.uid === adminUID;
 
-                // Monte array de papéis para o menu lateral
+                // CORREÇÃO: Monte array de papéis para o menu lateral
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
