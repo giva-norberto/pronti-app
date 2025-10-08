@@ -208,15 +208,16 @@
 
         async function carregarMenu(papelUsuario) {
             try {
+                // Só carrega se array válido e não vazio
+                if (!Array.isArray(papelUsuario) || papelUsuario.length === 0) {
+                    console.error("Menu lateral não ativado: array de papéis vazio ou inválido.", papelUsuario);
+                    return;
+                }
                 const response = await fetch('menu-lateral.html');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 const menuModule = await import('./menu-lateral.js');
-                // Debug para garantir que o array chega correto
                 console.log("Menu lateral recebido papéis:", papelUsuario);
-                // GARANTIA: só chama se array de papéis está correto
-                if (menuModule.ativarMenuLateral && Array.isArray(papelUsuario) && papelUsuario.length > 0) {
-                    await menuModule.ativarMenuLateral(papelUsuario);
-                }
+                if (menuModule.ativarMenuLateral) await menuModule.ativarMenuLateral(papelUsuario);
             } catch (error) {
                 console.error("Falha ao carregar o menu lateral:", error);
             }
@@ -250,16 +251,15 @@
                 isDono = empresaSnap.data().donoId === user.uid;
                 isAdmin = user.uid === adminUID;
 
-                // Array de papéis para o menu lateral, igual à página de planos!
+                // Array de papéis para o menu lateral
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
                 if (papelUsuario.length === 0) papelUsuario.push('funcionario'); // fallback opcional
 
-                // Debug para garantir que o array está correto
                 console.log("Menu lateral será ativado para papéis:", papelUsuario);
 
-                // Chama o menu lateral SOMENTE com array válido
+                // Chama o menu lateral SOMENTE com array válido e uma única vez
                 await carregarMenu(papelUsuario);
 
             } catch (error) {
