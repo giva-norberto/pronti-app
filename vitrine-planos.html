@@ -81,12 +81,14 @@
                         const card = document.createElement('div');
                         card.className = 'card-plano';
 
-                        const servicosHTML = plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('');
+                        const servicosHTML = Array.isArray(plano.servicosInclusos)
+                            ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
+                            : '';
 
                         card.innerHTML = `
                             <h2>${plano.nome}</h2>
                             <p class="preco">${(plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <span>/mês</span></p>
-                            <p class="descricao">${plano.descricao}</p>
+                            <p class="descricao">${plano.descricao || ""}</p>
                             <ul class="servicos-lista">${servicosHTML}</ul>
                             <a href="#" class="btn-assinar">Assinar Agora</a>
                         `;
@@ -111,16 +113,14 @@
         async function handleAssinatura(plano, empresaId) {
             if (!currentUser) {
                 alert("Você precisa de fazer login para assinar um plano. A redirecionar para a página de login...");
-                // Guarda a página atual para redirecionar de volta após o login
                 sessionStorage.setItem('redirectAfterLogin', window.location.href);
-                window.location.href = 'login.html'; // Mude para a sua página de login
+                window.location.href = 'login.html';
                 return;
             }
 
             if (plano.metodo === 'automatico') {
                 if (plano.mercadoPagoLink) {
                     let linkFinal = plano.mercadoPagoLink;
-                    // A referência externa é crucial para o webhook saber quem pagou
                     const externalReference = `${empresaId}_${currentUser.uid}`;
                     linkFinal += `&external_reference=${externalReference}`;
                     window.location.href = linkFinal;
@@ -129,7 +129,6 @@
                 }
             } 
             else if (plano.metodo === 'manual') {
-                // Para planos manuais, regista o interesse e mostra as instruções
                 try {
                     const assinaturasClienteRef = collection(db, `empresarios/${empresaId}/clientes/${currentUser.uid}/assinaturasAtivas`);
                     await addDoc(assinaturasClienteRef, {
@@ -138,7 +137,7 @@
                         status: "pendente",
                         dataSolicitacao: serverTimestamp()
                     });
-                    alert(`Interesse registado com sucesso!\n\nPara ativar o seu plano, siga as instruções:\n\n${plano.instrucoesPagamento}`);
+                    alert(`Interesse registado com sucesso!\n\nPara ativar o seu plano, siga as instruções:\n\n${plano.instrucoesPagamento || ''}`);
                 } catch(error) {
                     console.error("Erro ao registrar interesse:", error);
                     alert("Ocorreu um erro ao registrar o seu interesse. Tente novamente.");
