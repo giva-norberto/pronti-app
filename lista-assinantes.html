@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Clientes Assinantes - Pronti</title>
+    <title>Aprovação de Pagamentos - Pronti</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,7 +32,7 @@
             color: #1e293b; 
             margin-bottom: 30px; 
         }
-        .lista-clientes .cliente-item { 
+        .lista-pagamentos .item { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
@@ -41,42 +41,39 @@
             flex-wrap: wrap; 
             gap: 15px; 
         }
-        .lista-clientes .cliente-item:last-child {
+        .lista-pagamentos .item:last-child {
             border-bottom: none;
         }
-        .info-cliente p { margin: 0; line-height: 1.5; }
-        .info-cliente .nome { font-weight: 600; color: #334155; }
-        .info-cliente .email { font-size: 0.9em; color: #64748b; }
-        
-        .status-assinatura .badge {
-            font-size: 0.8em; 
+        .info p { margin: 0; line-height: 1.5; }
+        .info .nome { font-weight: 600; color: #334155; }
+        .info .plano { font-size: 0.9em; color: #64748b; }
+        .info .metodo { 
+            font-size: 0.75em; 
             font-weight: 700; 
-            padding: 4px 10px; 
+            padding: 3px 8px; 
             border-radius: 12px; 
-            text-transform: uppercase;
-            background-color: #dcfce7;
-            color: #166534;
+            margin-left: 8px; 
+            text-transform: uppercase; 
+            vertical-align: middle;
         }
-        .detalhes-plano {
-            font-size: 0.85em;
-            color: #475569;
-            text-align: right;
+        .metodo.pix { background-color: #e0fdf4; color: #059669; }
+        .metodo.mercado_pago { background-color: #dbeafe; color: #2563eb; }
+        .acoes button { 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: all 0.2s; 
+            font-size: 0.9em;
         }
+        .btn-aprovar { background-color: #10b981; color: #fff; }
+        .btn-aprovar:hover:not(:disabled) { background-color: #0f9e70; }
+        .btn-aprovar:disabled { background-color: #9ca3af; cursor: not-allowed; }
         #loading-message, #empty-message {
             text-align: center;
             padding: 40px;
             color: #64748b;
-        }
-        .error-message {
-            color: #b91c1c;
-            background-color: #fee2e2;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #fecaca;
-        }
-        .error-message a {
-            color: #b91c1c;
-            font-weight: bold;
         }
     </style>
 </head>
@@ -84,21 +81,22 @@
     <aside id="menu-container"></aside>
     <main class="content">
         <div class="container">
-            <h1>Clientes Assinantes</h1>
-            <div id="lista-clientes" class="lista-clientes">
-                <p id="loading-message">Carregando assinantes...</p>
+            <h1>Pagamentos Pendentes de Aprovação</h1>
+            <div id="lista-pagamentos" class="lista-pagamentos">
+                <p id="loading-message">Carregando pagamentos...</p>
             </div>
         </div>
     </main>
 
     <script type="module">
         import { db, auth } from './vitrini-firebase.js'; 
-        import { collection, query, where, getDocs, Timestamp, collectionGroup, getDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { collection, query, where, onSnapshot, doc, runTransaction, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
-        const listaClientesDiv = document.getElementById('lista-clientes');
+        const listaPagamentosDiv = document.getElementById('lista-pagamentos');
         const loadingMessage = document.getElementById('loading-message');
-        
+        let unsubscribe = null;
+
         async function carregarMenu() {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -116,91 +114,112 @@
             if (user) {
                 const empresaAtivaId = localStorage.getItem("empresaAtivaId");
                 if (empresaAtivaId) {
-                     carregarAssinantesAtivos(empresaAtivaId);
+                     ouvirPagamentosPendentes(empresaAtivaId);
                 } else {
-                    listaClientesDiv.innerHTML = '<p id="empty-message">Nenhuma empresa ativa selecionada.</p>';
+                    listaPagamentosDiv.innerHTML = '<p id="empty-message">Nenhuma empresa ativa selecionada. Por favor, selecione uma empresa no seu painel.</p>';
                 }
             } else {
-                listaClientesDiv.innerHTML = '<p id="empty-message">Você precisa estar logado para ver esta página.</p>';
+                if (unsubscribe) unsubscribe();
+                listaPagamentosDiv.innerHTML = '<p id="empty-message">Você precisa estar logado para ver esta página.</p>';
             }
         });
 
-        // ##### LÓGICA DE BUSCA TOTALMENTE REFEITA #####
-        async function carregarAssinantesAtivos(empresaId) {
-            try {
-                // 1. Cria uma consulta em grupo para buscar em TODAS as subcoleções 'assinaturas'
-                const assinaturasGroupRef = collectionGroup(db, 'assinaturas');
+        function ouvirPagamentosPendentes(empresaId) {
+            const pagamentosRef = collection(db, 'pagamentosPendentes');
+            const q = query(pagamentosRef, 
+                where('empresaId', '==', empresaId), 
+                where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp'])
+            );
 
-                // 2. Filtra por assinaturas ativas e que ainda não venceram
-                const q = query(assinaturasGroupRef, 
-                    where('status', '==', 'ativo'),
-                    where('dataFim', '>', Timestamp.now())
-                );
-                
-                const querySnapshot = await getDocs(q);
-
-                const promises = querySnapshot.docs
-                    // 3. Filtra no código apenas as assinaturas que pertencem à empresa ativa
-                    .filter(doc => doc.ref.path.startsWith(`empresarios/${empresaId}/`))
-                    // 4. Para cada assinatura encontrada, busca os dados do documento do cliente pai
-                    .map(async (doc) => {
-                        const assinatura = doc.data();
-                        const clienteRef = doc.ref.parent.parent; // Referência para o documento do cliente
-                        const clienteSnap = await getDoc(clienteRef);
-                        
-                        if (clienteSnap.exists()) {
-                            return { ...clienteSnap.data(), assinatura: assinatura };
-                        }
-                        return null; // Caso o documento do cliente não exista por algum motivo
-                    });
-
-                const assinantes = (await Promise.all(promises)).filter(a => a !== null);
-                
+            unsubscribe = onSnapshot(q, (snapshot) => {
                 loadingMessage.style.display = 'none';
-
-                if (assinantes.length === 0) {
-                    listaClientesDiv.innerHTML = '<p id="empty-message">Nenhum cliente com assinatura ativa no momento.</p>';
+                if (snapshot.empty) {
+                    listaPagamentosDiv.innerHTML = '<p id="empty-message">Nenhum pagamento pendente no momento.</p>';
                     return;
                 }
                 
-                listaClientesDiv.innerHTML = '';
-                assinantes.forEach(cliente => {
+                listaPagamentosDiv.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const pagamento = { id: doc.id, ...doc.data() };
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = 'cliente-item';
-
-                    const dataFim = cliente.assinatura.dataFim.toDate().toLocaleDateString('pt-BR');
+                    itemDiv.className = 'item';
+                    
+                    const metodoTag = `<span class="metodo ${pagamento.metodo}">${pagamento.metodo.replace('_', ' ')}</span>`;
+                    const dataFormatada = pagamento.dataCriacao?.toDate().toLocaleDateString('pt-BR') || 'Data indisponível';
 
                     itemDiv.innerHTML = `
-                        <div class="info-cliente">
-                            <p class="nome">${cliente.nome}</p>
-                            <p class="email">${cliente.email || 'E-mail não informado'}</p>
+                        <div class="info">
+                            <p class="nome">${pagamento.clienteNome}</p>
+                            <p class="plano">${pagamento.planoNome} - R$ ${pagamento.valor.toFixed(2)} ${metodoTag} - ${dataFormatada}</p>
                         </div>
-                        <div class="status-assinatura">
-                            <span class="badge ativo">Assinante Ativo</span>
-                            <p class="detalhes-plano">${cliente.assinatura.planoNome}<br>Vence em: ${dataFim}</p>
+                        <div class="acoes">
+                            <button class="btn-aprovar" data-id="${pagamento.id}">Aprovar</button>
                         </div>
                     `;
-                    listaClientesDiv.appendChild(itemDiv);
+                    listaPagamentosDiv.appendChild(itemDiv);
                 });
+            });
+        }
 
-            } catch (error) {
-                console.error("Erro ao carregar assinantes:", error);
-                loadingMessage.style.display = 'none';
+        listaPagamentosDiv.addEventListener('click', async (e) => {
+            if (e.target && e.target.classList.contains('btn-aprovar')) {
+                const pagamentoId = e.target.dataset.id;
+                if (!confirm(`Tem certeza de que deseja aprovar este pagamento? Esta ação é irreversível.`)) return;
+                
+                e.target.disabled = true;
+                e.target.textContent = 'Aprovando...';
 
-                // Trata o erro de índice faltando e mostra uma mensagem útil
-                if (error.code === 'failed-precondition') {
-                    const linkIndex = error.message.match(/https:\/\/[^\s]+/);
-                    listaClientesDiv.innerHTML = `
-                        <div class="error-message">
-                            <p><strong>Ação necessária:</strong> O banco de dados precisa de um índice para realizar esta busca.</p>
-                            <p>É um processo simples e rápido. Por favor, <a href="${linkIndex}" target="_blank">clique neste link</a> e depois no botão "Criar" na página do Firebase.</p>
-                        </div>
-                    `;
-                } else {
-                    listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro ao carregar os assinantes.</p>';
+                try {
+                    // ##### LÓGICA DE APROVAÇÃO ATUALIZADA #####
+                    await runTransaction(db, async (transaction) => {
+                        const pagRef = doc(db, "pagamentosPendentes", pagamentoId);
+                        const pagDoc = await transaction.get(pagRef);
+
+                        if (!pagDoc.exists()) throw new Error("Documento do pagamento não existe mais.");
+                        
+                        const dadosPagamento = pagDoc.data();
+                        
+                        // 1. Define a referência para o documento do cliente
+                        const clienteRef = doc(db, `empresarios/${dadosPagamento.empresaId}/clientes/${dadosPagamento.clienteId}`);
+                        
+                        // 2. VERIFICA SE O CLIENTE EXISTE. SE NÃO, CRIA O DOCUMENTO DELE.
+                        const clienteSnap = await transaction.get(clienteRef);
+                        if (!clienteSnap.exists()) {
+                            transaction.set(clienteRef, {
+                                nome: dadosPagamento.clienteNome,
+                                dataCadastro: serverTimestamp(),
+                                // Adicione outros campos padrão do cliente se houver (ex: email, telefone)
+                            });
+                        }
+                        
+                        // 3. Prossegue com a criação da assinatura
+                        const dataInicio = new Date();
+                        const dataFim = new Date();
+                        dataFim.setMonth(dataFim.getMonth() + 1);
+
+                        const novaAssinaturaRef = doc(collection(clienteRef, "assinaturas"));
+                        
+                        transaction.set(novaAssinaturaRef, {
+                            planoId: dadosPagamento.planoId,
+                            planoNome: dadosPagamento.planoNome,
+                            status: "ativo",
+                            dataInicio: Timestamp.fromDate(dataInicio),
+                            dataFim: Timestamp.fromDate(dataFim),
+                            pagamentoId: pagamentoId,
+                            dataCriacao: serverTimestamp()
+                        });
+
+                        // 4. Atualiza o status do pagamento para 'aprovado'
+                        transaction.update(pagRef, { status: "aprovado" });
+                    });
+                } catch (error) {
+                    console.error("Erro ao aprovar pagamento:", error);
+                    alert('Falha ao aprovar o pagamento: ' + error.message);
+                    e.target.disabled = false;
+                    e.target.textContent = 'Aprovar';
                 }
             }
-        }
+        });
     </script>
 </body>
 </html>
