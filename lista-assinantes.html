@@ -128,17 +128,26 @@
                 const promises = clientesSnapshot.docs.map(async (clienteDoc) => {
                     const cliente = { id: clienteDoc.id, ...clienteDoc.data() };
                     
+                    // ##### INÍCIO DA CORREÇÃO #####
+                    // 1. Busca apenas por assinaturas com status 'ativo'.
                     const assinaturasRef = collection(db, `empresarios/${empresaId}/clientes/${cliente.id}/assinaturas`);
-                    const q = query(assinaturasRef, 
-                        where('status', '==', 'ativo'),
-                        where('dataFim', '>', Timestamp.now())
-                    );
+                    const q = query(assinaturasRef, where('status', '==', 'ativo'));
                     const assinaturaSnapshot = await getDocs(q);
                     
                     let assinaturaAtiva = null;
                     if (!assinaturaSnapshot.empty) {
-                        assinaturaAtiva = assinaturaSnapshot.docs[0].data();
+                        // 2. Filtra no código para pegar a que ainda não venceu.
+                        // Isso evita a necessidade de um índice composto no Firestore.
+                        const docAtivo = assinaturaSnapshot.docs.find(doc => {
+                            const dataFim = doc.data().dataFim;
+                            return dataFim && dataFim.toDate() > new Date();
+                        });
+                        
+                        if (docAtivo) {
+                            assinaturaAtiva = docAtivo.data();
+                        }
                     }
+                    // ##### FIM DA CORREÇÃO #####
                     
                     return { ...cliente, assinatura: assinaturaAtiva };
                 });
