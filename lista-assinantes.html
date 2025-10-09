@@ -89,7 +89,7 @@
 
     <script type="module">
         import { db, auth } from './vitrini-firebase.js'; 
-        import { collection, query, where, getDocs, Timestamp, getDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { collection, query, where, getDocs, Timestamp, getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
         const listaClientesDiv = document.getElementById('lista-clientes');
@@ -135,6 +135,7 @@
                 const promises = clientesSnapshot.docs.map(async (clienteDoc) => {
                     const cliente = { id: clienteDoc.id, ...clienteDoc.data() };
                     
+                    // Busca assinatura ativa
                     const assinaturasRef = collection(db, `empresarios/${empresaId}/clientes/${cliente.id}/assinaturas`);
                     const q = query(assinaturasRef, where('status', '==', 'ativo'));
                     const assinaturaSnapshot = await getDocs(q);
@@ -151,7 +152,19 @@
                         }
                     }
                     
-                    return { ...cliente, assinatura: assinaturaAtiva };
+                    // Busca e-mail do usuário na coleção 'usuarios' pelo id do cliente
+                    let emailUsuario = null;
+                    try {
+                        const usuarioRef = doc(db, 'usuarios', cliente.id);
+                        const usuarioSnap = await getDoc(usuarioRef);
+                        if (usuarioSnap.exists()) {
+                            emailUsuario = usuarioSnap.data().email;
+                        }
+                    } catch (e) {
+                        console.error("Erro ao buscar e-mail do usuário:", e);
+                    }
+                    
+                    return { ...cliente, assinatura: assinaturaAtiva, emailUsuario };
                 });
 
                 const clientesComAssinatura = await Promise.all(promises);
@@ -170,7 +183,7 @@
                     itemDiv.innerHTML = `
                         <div class="info-cliente">
                             <p class="nome">${cliente.nome}</p>
-                            <p class="email">${cliente.email || 'E-mail não informado'}</p>
+                            <p class="email">${cliente.emailUsuario || 'E-mail não informado'}</p>
                         </div>
                         <div class="status-assinatura">
                             <span class="badge ativo">Assinante Ativo</span>
