@@ -37,6 +37,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
+            flex-wrap: wrap; /* Para responsividade */
+            gap: 15px;
         }
         .header-pagina h1 {
             color: #fff;
@@ -44,18 +46,38 @@
             font-weight: 700;
             margin: 0;
         }
-        .btn-novo {
-            background: linear-gradient(135deg, var(--cor-primaria, #4facfe) 0%, var(--cor-secundaria, #00f2fe) 100%);
-            color: #fff;
+        /* Container para os botões do header */
+        .header-botoes {
+            display: flex;
+            gap: 15px;
+        }
+        .btn-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border: none;
-            transition: background 0.2s;
-            box-shadow: 0 2px 8px 0 rgba(79, 172, 254, 0.08);
+            cursor: pointer;
         }
-        .btn-novo:hover { background: linear-gradient(135deg, #2795e6, #00d8ff); }
+        .btn-dashboard {
+            background-color: #f59e0b; /* Amarelo/Laranja */
+            color: #fff;
+        }
+        .btn-dashboard:hover {
+            background-color: #d97706;
+        }
+        .btn-novo {
+            background-color: #10b981; /* Verde */
+            color: #fff;
+        }
+        .btn-novo:hover {
+            background-color: #059669;
+        }
         #lista-de-planos {
             display: grid;
             gap: 20px;
@@ -77,12 +99,11 @@
         }
         .card-plano-item h3 { margin-top: 0; color: #1e3a8a; }
         .card-plano-item .preco { font-size: 1.5rem; font-weight: 600; color: #10b981; }
-        .metodo { font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block; margin-top: 10px; }
+        .metodo { font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block; margin-top: 10px; font-size: 0.8em; text-transform: uppercase;}
         .metodo-automatico { background-color: #3b82f6; }
         .metodo-manual { background-color: #f59e0b; }
-        .erro { color: #b91c1c; font-weight: 500; margin: 2rem 0; }
-        .info { color: #1e40af; font-weight: 500; margin: 2rem 0; }
-        /* Card vazio Pronti para lista de planos - AGORA DESTACADO */
+        .erro { color: #fff; background-color: #ef4444; padding: 15px; border-radius: 8px; font-weight: 500; margin: 2rem 0; }
+        .info { color: #e0e7ff; font-weight: 500; margin: 2rem 0; text-align: center; }
         .card-plano-vazio {
             background: #fff;
             border-radius: 18px;
@@ -97,97 +118,46 @@
             min-height: 320px;
             border: 1px solid #ececec;
         }
-        .card-vazio-content i {
-            font-size: 2.5rem;
-            margin-bottom: 18px;
-            color: #ffd700;
-            display: block;
-        }
-        .card-vazio-content h2 {
-            font-size: 1.15rem;
-            font-weight: 700;
-            margin-bottom: 12px;
-            color: #22223b;
-        }
-        .card-vazio-content p {
-            color: #6366f1;
-            font-size: 1.07rem;
-            margin-bottom: 22px;
-        }
-        .btn-novo-card {
-            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-            color: #fff;
-            font-weight: bold;
-            border-radius: 8px;
-            padding: 14px 32px;
-            text-decoration: none;
-            box-shadow: 0 2px 8px rgba(14,165,233,0.15);
-            font-size: 1.05em;
-            transition: background 0.2s;
-            display: inline-block;
-            border: none;
-        }
-        .btn-novo-card:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
-        }
+        .card-vazio-content i { font-size: 2.5rem; margin-bottom: 18px; color: #ffd700; display: block; }
+        .card-vazio-content h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; color: #22223b; }
+        .card-vazio-content p { color: #6366f1; font-size: 1.07rem; margin-bottom: 22px; }
+        .btn-novo-card { background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); color: #fff; font-weight: bold; border-radius: 8px; padding: 14px 32px; text-decoration: none; box-shadow: 0 2px 8px rgba(14,165,233,0.15); font-size: 1.05em; transition: background 0.2s; display: inline-block; border: none; }
+        .btn-novo-card:hover { background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%); }
+
         @media (max-width: 992px) {
-            #menu-container {
-                display: none;
-            }
-            main {
-                margin-left: 0;
-                padding: 20px;
-            }
+            #menu-container { display: none; }
+            main { margin-left: 0; padding: 20px; }
         }
         @media (max-width: 768px) {
-            main {
-                padding: 16px;
-                padding-top: 70px;
-            }
-            .header-pagina h1 {
-                font-size: 1.3rem;
-            }
-        }
-        @media (max-width: 700px) {
-            .header-pagina {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-            }
-            .header-pagina h1 {
-                font-size: 1.1rem;
-                text-align: left;
-            }
-            #lista-de-planos {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            .card-plano-item {
-                min-width: 0;
-                max-width: 100%;
-                font-size: 0.95rem;
-            }
+            main { padding: 16px; padding-top: 70px; }
+            .header-pagina h1 { font-size: 1.3rem; }
         }
     </style>
 </head>
 <body>
     <aside id="menu-container"></aside>
     <main>
+        <!-- ##### CABEÇALHO ATUALIZADO COM O NOVO BOTÃO ##### -->
         <div class="header-pagina">
             <h1>Meus Planos de Assinatura</h1>
-            <a href="criar-plano.html" class="btn-novo" id="btnNovoPlano">+ Criar Novo Plano</a>
+            <div class="header-botoes">
+                <a href="dashboard-pagamentos.html" class="btn-header btn-dashboard" id="btnDashboard"><i class="fa-solid fa-check-to-slot"></i> Painel de Aprovações</a>
+                <a href="criar-plano.html" class="btn-header btn-novo" id="btnNovoPlano">+ Criar Novo Plano</a>
+            </div>
         </div>
         <div id="lista-de-planos">
             <p class="info">A carregar...</p>
         </div>
     </main>
+
     <script type="module">
-        import { db, auth } from './firebase-config.js';
+        import { db, auth } from './vitrini-firebase.js'; // Atenção ao caminho do seu firebase-config
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         const listaContainer = document.getElementById('lista-de-planos');
         const btnNovoPlano = document.getElementById('btnNovoPlano');
+        const btnDashboard = document.getElementById('btnDashboard'); // Botão do dashboard
         let empresaId = null;
         let isDono = false;
         let isAdmin = false;
@@ -220,13 +190,16 @@
                 isDono = empresaSnap.data().donoId === user.uid;
                 isAdmin = user.uid === adminUID;
 
-                // Exibe botão só para dono/admin
-                if (btnNovoPlano) btnNovoPlano.style.display = (isDono || isAdmin) ? 'inline-flex' : 'none';
+                // Exibe botões apenas para dono/admin
+                const showButtons = isDono || isAdmin;
+                if (btnNovoPlano) btnNovoPlano.style.display = showButtons ? 'inline-flex' : 'none';
+                if (btnDashboard) btnDashboard.style.display = showButtons ? 'inline-flex' : 'none';
+
 
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
                 if (isDono) papelUsuario.push('dono');
-                if (papelUsuario.length === 0) papelUsuario.push('funcionario'); // fallback opcional
+                if (papelUsuario.length === 0) papelUsuario.push('funcionario');
 
                 await carregarMenu(papelUsuario);
                 await carregarPlanos(empresaId);
@@ -259,7 +232,7 @@
                             <div class="card-vazio-content">
                                 <i class="fa-solid fa-crown"></i>
                                 <h2>Você ainda não criou nenhum plano!</h2>
-                                <p>Os planos de assinatura são uma ótima forma de fidelizar seus clientes.<br>Crie seu primeiro plano agora para começar!</p>
+                                <p>Crie seu primeiro plano para começar a fidelizar seus clientes.</p>
                                 <a href="criar-plano.html" class="btn-novo-card">+ Criar Novo Plano</a>
                             </div>
                         </div>
