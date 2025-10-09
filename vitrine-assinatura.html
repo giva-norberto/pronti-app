@@ -54,7 +54,7 @@
         const instrucoesContainerDiv = document.getElementById('instrucoes-container');
         
         let planoSelecionado = null;
-        let empresaData = null; // Armazenará os dados da empresa
+        let empresaData = null;
         let currentUser = null;
 
         onAuthStateChanged(auth, (user) => {
@@ -75,7 +75,6 @@
                 return;
             }
             try {
-                // Busca dados do plano e da empresa em paralelo
                 const planoRef = doc(db, `empresarios/${empresaId}/planosDeAssinatura/${planoId}`);
                 const empresaRef = doc(db, `empresarios/${empresaId}`);
                 
@@ -88,14 +87,12 @@
                 planoSelecionado = { id: planoSnap.id, ...planoSnap.data() };
                 empresaData = empresaSnap.data();
 
-                // Renderiza o card do plano
                 planoCardDiv.innerHTML = `
                     <h2>${planoSelecionado.nome}</h2>
                     <p class="preco">R$ ${planoSelecionado.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span>/ mês</span></p>
                     <ul>${(planoSelecionado.servicosInclusos || []).map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')}</ul>
                 `;
                 
-                // NOVO FLUXO: Decide a interface com base no método de pagamento
                 if (planoSelecionado.metodo === 'automatico') {
                     areaAcaoDiv.innerHTML = `<button id="btn-pagar-mp" class="btn-acao">Pagar com Mercado Pago</button>`;
                     document.getElementById('btn-pagar-mp').addEventListener('click', handleMercadoPago);
@@ -115,16 +112,46 @@
         }
 
         async function handleMercadoPago() {
-            // ... (código mantido igual, sem alterações)
+            const btn = document.getElementById('btn-pagar-mp');
+            btn.disabled = true;
+            btn.textContent = 'Aguarde...';
+
+            try {
+                await addDoc(collection(db, "pagamentosPendentes"), {
+                    empresaId: empresaId, 
+                    planoId: planoSelecionado.id, 
+                    planoNome: planoSelecionado.nome,
+                    clienteId: currentUser.uid, 
+                    clienteNome: currentUser.displayName || currentUser.email,
+                    valor: planoSelecionado.preco, 
+                    status: 'aguardando_pagamento_mp', 
+                    metodo: 'mercado_pago',
+                    dataCriacao: serverTimestamp()
+                });
+
+                let link = planoSelecionado.mercadoPagoLink;
+                if (link) {
+                    link += `&external_reference=${empresaId}`;
+                    window.location.href = link;
+                } else {
+                    throw new Error("Link de pagamento do Mercado Pago não está configurado para este plano.");
+                }
+            } catch (error) {
+                console.error("Erro ao iniciar pagamento com Mercado Pago:", error);
+                alert("Ocorreu um erro ao tentar processar o pagamento: " + error.message);
+                btn.textContent = "Tentar Novamente";
+                btn.disabled = false;
+            }
         }
 
+        // ##### INÍCIO DA CORREÇÃO #####
         async function handleConfirmacaoPix() {
             const btn = document.getElementById('btn-confirma-pagamento');
             btn.disabled = true;
             btn.textContent = 'Enviando notificação...';
 
             try {
-                // Cria o registro pendente no Firestore
+                // 1. Cria o registro de pagamento pendente. Esta é a etapa principal.
                 await addDoc(collection(db, "pagamentosPendentes"), {
                     empresaId: empresaId, planoId: planoSelecionado.id, planoNome: planoSelecionado.nome,
                     clienteId: currentUser.uid, clienteNome: currentUser.displayName || currentUser.email,
@@ -132,16 +159,27 @@
                     dataCriacao: serverTimestamp()
                 });
                 
-                // Dispara o e-mail para o dono
-                await addDoc(collection(db, "mail"), {
-                    to: [empresaData.email], // Usa o e-mail da empresa cadastrado
-                    message: {
-                        subject: '🎉 Pagamento PIX Realizado - Pronti',
-                        html: `O cliente <strong>${currentUser.displayName || currentUser.email}</strong> informou que realizou o pagamento para o plano <strong>${planoSelecionado.nome}</strong>.<br><br>Acesse seu painel para aprovar a assinatura.`,
-                    },
-                });
+                // 2. Tenta enviar o e-mail, mas não quebra se o e-mail não existir.
+                // A coleção 'mail' é usada pela Extensão 'Trigger Email', que são functions pré-configuradas.
+                if (empresaData && empresaData.email) {
+                    try {
+                         await addDoc(collection(db, "mail"), {
+                            to: [empresaData.email],
+                            message: {
+                                subject: '🎉 Pagamento PIX Realizado - Pronti',
+                                html: `O cliente <strong>${currentUser.displayName || currentUser.email}</strong> informou que realizou o pagamento para o plano <strong>${planoSelecionado.nome}</strong>.<br><br>Acesse seu painel para aprovar a assinatura.`,
+                            },
+                        });
+                    } catch (emailError) {
+                        // Se o envio do e-mail falhar (ex: por regras de segurança na coleção 'mail'),
+                        // o erro é registrado no console, mas o cliente ainda vê a mensagem de sucesso.
+                        console.warn("A notificação de pagamento foi registrada, mas o envio do e-mail falhou:", emailError);
+                    }
+                } else {
+                    console.warn("A notificação de pagamento foi registrada, mas o e-mail do dono não foi encontrado para enviar a notificação.");
+                }
 
-                // NOVA MENSAGEM DE SUCESSO
+                // 3. Mostra a mensagem de sucesso para o cliente.
                 tituloPrincipal.textContent = "Notificação Enviada!";
                 planoCardDiv.innerHTML = `
                     <div class="card-sucesso">
@@ -154,12 +192,14 @@
                 areaAcaoDiv.style.display = 'none';
 
             } catch (error) {
-                console.error("Erro ao confirmar pagamento PIX:", error);
-                alert("Ocorreu um erro ao enviar a notificação. Verifique sua conexão e tente novamente.");
+                // Este erro agora só acontece se a escrita em 'pagamentosPendentes' falhar.
+                console.error("Erro ao registrar a confirmação de pagamento PIX:", error);
+                alert("Ocorreu um erro ao registrar a notificação. Verifique suas regras de segurança do Firestore para a coleção 'pagamentosPendentes'.");
                 btn.textContent = 'Tentar Novamente';
                 btn.disabled = false;
             }
         }
+        // ##### FIM DA CORREÇÃO #####
     </script>
 </body>
 </html>
