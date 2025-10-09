@@ -50,6 +50,7 @@
         .header-botoes {
             display: flex;
             gap: 15px;
+            flex-wrap: wrap;
         }
         .btn-header {
             display: inline-flex;
@@ -63,6 +64,14 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border: none;
             cursor: pointer;
+        }
+        /* NOVO BOTÃO DE ASSINANTES */
+        .btn-assinantes {
+            background-color: #0891b2; /* Cor Ciano/Verde Água */
+            color: #fff;
+        }
+        .btn-assinantes:hover {
+            background-color: #0e7490;
         }
         .btn-dashboard {
             background-color: #f59e0b; /* Amarelo/Laranja */
@@ -137,10 +146,11 @@
 <body>
     <aside id="menu-container"></aside>
     <main>
-        <!-- ##### CABEÇALHO ATUALIZADO COM O NOVO BOTÃO ##### -->
         <div class="header-pagina">
             <h1>Meus Planos de Assinatura</h1>
             <div class="header-botoes">
+                 <!-- BOTÃO ADICIONADO AQUI -->
+                <a href="assinantes.html" class="btn-header btn-assinantes" id="btnAssinantes"><i class="fa-solid fa-crown"></i> Clientes Assinantes</a>
                 <a href="dashboard-pagamentos.html" class="btn-header btn-dashboard" id="btnDashboard"><i class="fa-solid fa-check-to-slot"></i> Painel de Aprovações</a>
                 <a href="criar-plano.html" class="btn-header btn-novo" id="btnNovoPlano">+ Criar Novo Plano</a>
             </div>
@@ -157,7 +167,8 @@
 
         const listaContainer = document.getElementById('lista-de-planos');
         const btnNovoPlano = document.getElementById('btnNovoPlano');
-        const btnDashboard = document.getElementById('btnDashboard'); // Botão do dashboard
+        const btnDashboard = document.getElementById('btnDashboard');
+        const btnAssinantes = document.getElementById('btnAssinantes'); // Novo botão
         let empresaId = null;
         let isDono = false;
         let isAdmin = false;
@@ -194,6 +205,7 @@
                 const showButtons = isDono || isAdmin;
                 if (btnNovoPlano) btnNovoPlano.style.display = showButtons ? 'inline-flex' : 'none';
                 if (btnDashboard) btnDashboard.style.display = showButtons ? 'inline-flex' : 'none';
+                if (btnAssinantes) btnAssinantes.style.display = showButtons ? 'inline-flex' : 'none'; // Mostra/oculta o novo botão
 
 
                 let papelUsuario = [];
