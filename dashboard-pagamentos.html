@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,6 @@
             display: flex; 
             font-family: 'Poppins', sans-serif; 
             margin: 0; 
-            /* FUNDO PADRÃO PRONTI APLICADO */
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
         }
         main.content { 
@@ -98,14 +97,13 @@
         const loadingMessage = document.getElementById('loading-message');
         let unsubscribe = null;
 
-        // Carrega o menu lateral padrão Pronti
         async function carregarMenu() {
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html not found');
                 document.getElementById('menu-container').innerHTML = await response.text();
                 const menuModule = await import('./menu-lateral.js');
-                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral(['dono']); // Ativa como 'dono'
+                if (menuModule.ativarMenuLateral) menuModule.ativarMenuLateral(['dono']);
             } catch (error) {
                 console.error("Failed to load sidebar:", error);
             }
@@ -128,7 +126,6 @@
 
         function ouvirPagamentosPendentes(empresaId) {
             const pagamentosRef = collection(db, 'pagamentosPendentes');
-            // A query busca todos os pagamentos da empresa ativa que precisam de ação manual
             const q = query(pagamentosRef, 
                 where('empresaId', '==', empresaId), 
                 where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp'])
@@ -180,27 +177,37 @@
                         if (!pagDoc.exists()) throw new Error("Documento do pagamento não existe mais.");
                         
                         const dadosPagamento = pagDoc.data();
+                        
+                        const clienteRef = doc(db, `empresarios/${dadosPagamento.empresaId}/clientes/${dadosPagamento.clienteId}`);
+                        
+                        const clienteSnap = await transaction.get(clienteRef);
+                        if (!clienteSnap.exists()) {
+                            transaction.set(clienteRef, {
+                                nome: dadosPagamento.clienteNome,
+                                dataCadastro: serverTimestamp(),
+                            });
+                        }
+                        
                         const dataInicio = new Date();
                         const dataFim = new Date();
                         dataFim.setMonth(dataFim.getMonth() + 1);
 
-                        // Cria a assinatura na subcoleção do cliente DENTRO da empresa
-                        const novaAssinaturaRef = doc(collection(db, `empresarios/${dadosPagamento.empresaId}/clientes/${dadosPagamento.clienteId}/assinaturas`));
+                        const novaAssinaturaRef = doc(collection(clienteRef, "assinaturas"));
                         
+                        // ##### CORREÇÃO CRÍTICA AQUI #####
+                        // Garante que o documento da assinatura seja criado com 'status: "ativo"'
                         transaction.set(novaAssinaturaRef, {
                             planoId: dadosPagamento.planoId,
                             planoNome: dadosPagamento.planoNome,
-                            status: "ativo",
+                            status: "ativo", // ESTE É O CAMPO QUE A TELA DE ASSINANTES PROCURA
                             dataInicio: Timestamp.fromDate(dataInicio),
                             dataFim: Timestamp.fromDate(dataFim),
                             pagamentoId: pagamentoId,
                             dataCriacao: serverTimestamp()
                         });
 
-                        // Atualiza o status do pagamento para 'aprovado'
                         transaction.update(pagRef, { status: "aprovado" });
                     });
-                    // O item aprovado sumirá da lista automaticamente por causa do onSnapshot
                 } catch (error) {
                     console.error("Erro ao aprovar pagamento:", error);
                     alert('Falha ao aprovar o pagamento: ' + error.message);
@@ -212,4 +219,3 @@
     </script>
 </body>
 </html>
-
