@@ -14,7 +14,7 @@
             display: flex; 
             font-family: 'Poppins', sans-serif; 
             margin: 0; 
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
             min-height: 100vh;
         }
         main.content { 
@@ -151,10 +151,10 @@
 
     <script type="module">
         import { db, auth } from './vitrini-firebase.js'; 
-        import { collection, query, where, getDocs, Timestamp, getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { collection, query, where, getDocs, Timestamp, getDoc, doc, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
-        const listaClientesDiv = document.getElementById('lista-clientes');
+        const listaClientesDiv = document.getElementById('lista-clientes' );
         const loadingMessage = document.getElementById('loading-message');
         
         async function carregarMenu() {
@@ -184,22 +184,23 @@
         });
 
         async function buscarPagamentoDoCliente(clienteId) {
-            // Busca o pagamento aprovado mais recente do cliente
+            // Busca o pagamento APROVADO mais recente do cliente na coleção 'pagamentosPendentes'
             const pagamentosRef = collection(db, 'pagamentosPendentes');
-            const pagamentosQ = query(pagamentosRef, where('clienteId', '==', clienteId), where('status', '==', 'aprovado'));
+            const pagamentosQ = query(
+                pagamentosRef, 
+                where('clienteId', '==', clienteId), 
+                where('status', '==', 'aprovado'),
+                orderBy('dataCriacao', 'desc'), // Ordena pela data para pegar o mais recente
+                limit(1) // Pega apenas o primeiro (mais recente)
+            );
             const pagamentosSnap = await getDocs(pagamentosQ);
-            if (pagamentosSnap.empty) return null;
+            
+            if (pagamentosSnap.empty) {
+                return null; // Retorna nulo se nenhum pagamento aprovado for encontrado
+            }
 
-            // Pega o mais recente
-            let pagamento = pagamentosSnap.docs[0].data();
-            pagamentosSnap.docs.forEach(doc => {
-                const docData = doc.data();
-                if (docData.dataCriacao && (!pagamento.dataCriacao || docData.dataCriacao.seconds > pagamento.dataCriacao.seconds)) {
-                    pagamento = docData;
-                }
-            });
-
-            return pagamento;
+            // Retorna os dados do único documento encontrado
+            return pagamentosSnap.docs[0].data();
         }
 
         async function carregarAssinantesAtivos(empresaId) {
@@ -232,6 +233,11 @@
                         }
                     }
                     
+                    // Se não tiver assinatura ativa, não precisamos nem continuar para este cliente
+                    if (!assinaturaAtiva) {
+                        return null;
+                    }
+
                     // Busca e-mail do usuário na coleção 'usuarios' pelo id do cliente
                     let emailUsuario = null;
                     try {
@@ -244,7 +250,7 @@
                         console.error("Erro ao buscar e-mail do usuário:", e);
                     }
 
-                    // Busca pagamento aprovado mais recente do cliente
+                    // Busca o pagamento aprovado mais recente do cliente
                     let pagamentoInfo = null;
                     try {
                         pagamentoInfo = await buscarPagamentoDoCliente(cliente.id);
@@ -255,29 +261,32 @@
                     return { ...cliente, assinatura: assinaturaAtiva, emailUsuario, pagamentoInfo };
                 });
 
-                const clientesComAssinatura = await Promise.all(promises);
-                const assinantesAtivos = clientesComAssinatura.filter(c => c.assinatura !== null);
+                const clientesComAssinatura = (await Promise.all(promises)).filter(c => c !== null);
 
-                if (assinantesAtivos.length === 0) {
+                if (clientesComAssinatura.length === 0) {
                     listaClientesDiv.innerHTML = '<p id="empty-message">Nenhum cliente com assinatura ativa no momento.</p>';
                     return;
                 }
                 
                 listaClientesDiv.innerHTML = '';
-                assinantesAtivos.forEach(cliente => {
+                clientesComAssinatura.forEach(cliente => {
                     const dataFim = cliente.assinatura.dataFim.toDate().toLocaleDateString('pt-BR');
                     const pagamento = cliente.pagamentoInfo;
                     let pagamentoHtml = '';
+                    
                     if (pagamento) {
-                        const valorFormatado = pagamento.valor ? `R$ ${Number(pagamento.valor).toFixed(2)}` : '';
+                        const valorFormatado = pagamento.valor ? `R$ ${Number(pagamento.valor).toFixed(2)}` : 'Valor não informado';
+                        const dataPagamento = pagamento.dataCriacao && pagamento.dataCriacao.toDate ? pagamento.dataCriacao.toDate().toLocaleDateString('pt-BR') : 'Data não informada';
                         pagamentoHtml = `
                             <div class="pagamento-info">
-                                <span><strong>Pagamento:</strong> ${pagamento.metodo ? pagamento.metodo.toUpperCase() : '---'} ${valorFormatado}</span>
+                                <span><strong>Último Pagamento:</strong> ${pagamento.metodo ? pagamento.metodo.toUpperCase() : '---'} ${valorFormatado}</span>
                                 <span><strong>Status:</strong> ${pagamento.status || '---'}</span>
-                                <span><strong>Plano:</strong> ${pagamento.planoNome || '---'}</span>
-                                <span><strong>Data:</strong> ${pagamento.dataCriacao && pagamento.dataCriacao.toDate ? pagamento.dataCriacao.toDate().toLocaleDateString('pt-BR') : '---'}</span>
+                                <span><strong>Plano Pago:</strong> ${pagamento.planoNome || '---'}</span>
+                                <span><strong>Data do Pagamento:</strong> ${dataPagamento}</span>
                             </div>
                         `;
+                    } else {
+                        pagamentoHtml = '<div class="pagamento-info"><span>Nenhum pagamento aprovado encontrado.</span></div>';
                     }
 
                     const itemDiv = document.createElement('div');
@@ -289,7 +298,8 @@
                         </div>
                         <div class="status-assinatura">
                             <span class="badge ativo">ASSINANTE ATIVO</span>
-                            <p class="detalhes-plano">${cliente.assinatura.planoNome}<br>Vence em: ${dataFim}</p>
+                            <p class="detalhes-plano">${cliente.assinatura.planoNome}  
+Vence em: ${dataFim}</p>
                         </div>
                         ${pagamentoHtml}
                     `;
@@ -305,3 +315,4 @@
     </script>
 </body>
 </html>
+
