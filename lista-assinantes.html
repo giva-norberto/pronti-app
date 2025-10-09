@@ -73,12 +73,6 @@
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #fecaca;
-            text-align: left;
-        }
-        .error-message a {
-            color: #b91c1c;
-            font-weight: bold;
-            text-decoration: underline;
         }
     </style>
 </head>
@@ -95,7 +89,7 @@
 
     <script type="module">
         import { db, auth } from './vitrini-firebase.js'; 
-        import { collection, query, where, getDocs, Timestamp, getDoc, collectionGroup } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { collection, query, where, getDocs, Timestamp, getDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
         const listaClientesDiv = document.getElementById('lista-clientes');
@@ -129,50 +123,50 @@
 
         async function carregarAssinantesAtivos(empresaId) {
             try {
-                // Esta é a consulta correta que depende do índice do Firebase.
-                // Depois de criar o índice uma vez, esta função funcionará permanentemente.
-                const assinaturasGroupRef = collectionGroup(db, 'assinaturas');
-                const q = query(assinaturasGroupRef, where('empresaId', '==', empresaId));
-                
-                const querySnapshot = await getDocs(q);
+                const clientesRef = collection(db, `empresarios/${empresaId}/clientes`);
+                const clientesSnapshot = await getDocs(clientesRef);
 
-                const promises = querySnapshot.docs.map(async (doc) => {
-                    const assinatura = doc.data();
+                loadingMessage.style.display = 'none';
+                if (clientesSnapshot.empty) {
+                    listaClientesDiv.innerHTML = '<p id="empty-message">Você ainda não tem clientes cadastrados.</p>';
+                    return;
+                }
+
+                const promises = clientesSnapshot.docs.map(async (clienteDoc) => {
+                    const cliente = { id: clienteDoc.id, ...clienteDoc.data() };
                     
-                    const isAtiva = assinatura.status === 'ativo';
-                    const dataFim = assinatura.dataFim;
-                    const naoVenceu = dataFim && dataFim.toDate() > new Date();
-
-                    if (isAtiva && naoVenceu) {
-                        const clienteRef = doc.ref.parent.parent;
-                        const clienteSnap = await getDoc(clienteRef);
+                    const assinaturasRef = collection(db, `empresarios/${empresaId}/clientes/${cliente.id}/assinaturas`);
+                    const q = query(assinaturasRef, where('status', '==', 'ativo'));
+                    const assinaturaSnapshot = await getDocs(q);
+                    
+                    let assinaturaAtiva = null;
+                    if (!assinaturaSnapshot.empty) {
+                        const docAtivo = assinaturaSnapshot.docs.find(doc => {
+                            const dataFim = doc.data().dataFim;
+                            return dataFim && dataFim.toDate() > new Date();
+                        });
                         
-                        if (clienteSnap.exists()) {
-                            return { 
-                                ...clienteSnap.data(),
-                                assinatura: assinatura 
-                            };
+                        if (docAtivo) {
+                            assinaturaAtiva = docAtivo.data();
                         }
                     }
-                    return null;
+                    
+                    return { ...cliente, assinatura: assinaturaAtiva };
                 });
 
-                const assinantes = (await Promise.all(promises)).filter(a => a !== null);
-                
-                loadingMessage.style.display = 'none';
+                const clientesComAssinatura = await Promise.all(promises);
+                const assinantesAtivos = clientesComAssinatura.filter(c => c.assinatura !== null);
 
-                if (assinantes.length === 0) {
+                if (assinantesAtivos.length === 0) {
                     listaClientesDiv.innerHTML = '<p id="empty-message">Nenhum cliente com assinatura ativa no momento.</p>';
                     return;
                 }
                 
                 listaClientesDiv.innerHTML = '';
-                assinantes.forEach(cliente => {
+                assinantesAtivos.forEach(cliente => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'cliente-item';
-
-                    const dataFimFormatada = cliente.assinatura.dataFim.toDate().toLocaleDateString('pt-BR');
-
+                    const dataFim = cliente.assinatura.dataFim.toDate().toLocaleDateString('pt-BR');
                     itemDiv.innerHTML = `
                         <div class="info-cliente">
                             <p class="nome">${cliente.nome}</p>
@@ -180,7 +174,7 @@
                         </div>
                         <div class="status-assinatura">
                             <span class="badge ativo">Assinante Ativo</span>
-                            <p class="detalhes-plano">${cliente.assinatura.planoNome}<br>Vence em: ${dataFimFormatada}</p>
+                            <p class="detalhes-plano">${cliente.assinatura.planoNome}<br>Vence em: ${dataFim}</p>
                         </div>
                     `;
                     listaClientesDiv.appendChild(itemDiv);
@@ -189,18 +183,7 @@
             } catch (error) {
                 console.error("Erro ao carregar assinantes:", error);
                 loadingMessage.style.display = 'none';
-                
-                if (error.code === 'failed-precondition') {
-                    const linkIndex = error.message.match(/https:\/\/[^\s]+/);
-                    listaClientesDiv.innerHTML = `
-                        <div class="error-message">
-                            <p><strong>Ação final necessária:</strong> O banco de dados precisa de uma regra (índice) para fazer esta busca.</p>
-                            <p>É um processo de um clique. Por favor, <a href="${linkIndex ? linkIndex[0] : '#'}" target="_blank" rel="noopener noreferrer"><strong>CLIQUE NESTE LINK</strong></a>, aguarde a página do Firebase carregar e clique no botão "Criar Índice". Após alguns minutos, recarregue esta página.</p>
-                        </div>
-                    `;
-                } else {
-                    listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro inesperado ao carregar os assinantes. Verifique o console para mais detalhes.</p>';
-                }
+                listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro ao carregar os assinantes.</p>';
             }
         }
     </script>
