@@ -143,14 +143,12 @@
                         <i class="fa-solid fa-user-circle"></i>
                         <span id="card-perfil-texto">Perfil</span>
                     </a>
-                    <!-- NOVO CARD DE ASSINATURA -->
                     <a href="#" class="vitrine-card" data-menu-card="assinatura" style="background: linear-gradient(135deg, #10b981 0%, #4f46e5 100%);">
                         <i class="fa-solid fa-crown"></i>
                         <span>Assinatura</span>
                     </a>
                 </div>
             </div>
-            <!-- NOVO MENU DE ASSINATURA / VITRINE DE PLANOS -->
             <div id="menu-assinatura" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card">
@@ -229,11 +227,12 @@
     </div>
     
     <script type="module" src="./vitrine.js"></script>
-    <!-- JS do card de assinatura/vitrine de planos -->
+    
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
         // Função para renderizar os planos na vitrine
         async function renderizarPlanosVitrine(empresaId) {
             const container = document.getElementById('cards-planos-vitrine');
@@ -256,31 +255,44 @@
                             : '';
                         const card = document.createElement('div');
                         card.className = 'card-plano-vitrine';
-                        card.style = 'background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(99,102,241,0.06);margin:18px 0;padding:22px;text-align:center;';
+                        card.style = 'background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(99,102,241,0.06);margin:18px 0;padding:22px;text-align:center;color:#333;';
                         card.innerHTML = `
                             <h3 style="color:#4f46e5;">${plano.nome}</h3>
                             <p class="preco" style="color:#6366f1;font-weight:bold;font-size:1.2em;">${precoFormatado} / mês</p>
                             <p>${plano.descricao || ''}</p>
-                            <ul style="list-style: '✓ ';padding-left: 20px;color: #333;">${servicosHTML}</ul>
+                            <ul style="list-style: '✓ ';padding-left: 20px; text-align: left;">${servicosHTML}</ul>
                             <button class="btn-assinar-plano" style="background:linear-gradient(90deg,#6366f1 0%,#4f46e5 100%);color:#fff;border:none;border-radius:8px;padding:8px 22px;margin-top:14px;font-size:1em;cursor:pointer;">Assinar</button>
                         `;
+
+                        // ###################### INÍCIO DA ALTERAÇÃO ######################
+                        // Adiciona o evento de clique para redirecionar o usuário para a tela de pagamento
                         card.querySelector('.btn-assinar-plano').addEventListener('click', () => {
-                            alert('Cliquei em Assinar para o plano: ' + plano.nome);
-                            // Aqui pode chamar modal ou redirecionamento
+                            if (plano.id && empresaId) {
+                                // Esta linha redireciona para a página de pagamento
+                                window.location.href = `vitrine-assinatura.html?planoId=${plano.id}&empresaId=${empresaId}`;
+                            } else {
+                                console.error('ID do plano ou da empresa não encontrado.');
+                                alert('Ocorreu um erro ao selecionar o plano.');
+                            }
                         });
+                        // ####################### FIM DA ALTERAÇÃO #######################
+
                         container.appendChild(card);
                     }
                 });
             } catch (err) {
+                console.error("Erro ao carregar planos:", err);
                 container.innerHTML = '<p>Ocorreu um erro ao carregar os planos.</p>';
             }
         }
+
         // Navegação para o card de assinatura
         document.addEventListener('DOMContentLoaded', () => {
             const cardsGrid = document.getElementById('vitrine-cards-grid');
             const menuAssinatura = document.getElementById('menu-assinatura');
             const mainNavigationContainer = document.getElementById('main-navigation-container');
             const empresaId = localStorage.getItem("empresaAtivaId");
+
             if (cardsGrid && menuAssinatura) {
                 cardsGrid.addEventListener('click', (e) => {
                     const card = e.target.closest('.vitrine-card');
@@ -289,19 +301,25 @@
                         e.preventDefault();
                         mainNavigationContainer.style.display = 'none';
                         menuAssinatura.style.display = 'block';
-                        if (empresaId) renderizarPlanosVitrine(empresaId);
+                        if (empresaId) {
+                            renderizarPlanosVitrine(empresaId);
+                        } else {
+                            document.getElementById('cards-planos-vitrine').innerHTML = '<p>Erro: ID da empresa não encontrado.</p>';
+                        }
                     }
                 });
             }
-            // Botão voltar
-            const btnVoltarAssinatura = menuAssinatura.querySelector('.btn-voltar');
-            btnVoltarAssinatura.addEventListener('click', () => {
-                menuAssinatura.style.display = 'none';
-                mainNavigationContainer.style.display = 'block';
-            });
+
+            if (menuAssinatura) {
+                 const btnVoltarAssinatura = menuAssinatura.querySelector('.btn-voltar');
+                btnVoltarAssinatura.addEventListener('click', () => {
+                    menuAssinatura.style.display = 'none';
+                    mainNavigationContainer.style.display = 'block';
+                });
+            }
         });
     </script>
-    <!-- RESTANTE DOS SCRIPTS DO SEU PROJETO ABAIXO (SEM ALTERAÇÃO) -->
+
     <script type="module">
         import { auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
