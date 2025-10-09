@@ -75,6 +75,11 @@
             border: 1px solid #fecaca;
             text-align: left;
         }
+        .error-message a {
+            color: #b91c1c;
+            font-weight: bold;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -124,11 +129,9 @@
 
         async function carregarAssinantesAtivos(empresaId) {
             try {
-                // ##### LÓGICA DE BUSCA FINAL E SIMPLIFICADA #####
+                // Esta é a consulta correta que depende do índice do Firebase.
+                // Depois de criar o índice uma vez, esta função funcionará permanentemente.
                 const assinaturasGroupRef = collectionGroup(db, 'assinaturas');
-
-                // 1. Busca TODAS as assinaturas que pertencem à sua empresa.
-                // Esta é a consulta mais simples e não vai exigir índices complexos.
                 const q = query(assinaturasGroupRef, where('empresaId', '==', empresaId));
                 
                 const querySnapshot = await getDocs(q);
@@ -136,29 +139,24 @@
                 const promises = querySnapshot.docs.map(async (doc) => {
                     const assinatura = doc.data();
                     
-                    // 2. Filtra no CÓDIGO para pegar apenas as ativas e que não venceram.
                     const isAtiva = assinatura.status === 'ativo';
                     const dataFim = assinatura.dataFim;
                     const naoVenceu = dataFim && dataFim.toDate() > new Date();
 
                     if (isAtiva && naoVenceu) {
-                        // 3. Apenas para assinaturas válidas, busca os dados do cliente.
-                        const clienteRef = doc.ref.parent.parent; // Navega da subcoleção 'assinaturas' para o documento 'cliente'.
+                        const clienteRef = doc.ref.parent.parent;
                         const clienteSnap = await getDoc(clienteRef);
                         
                         if (clienteSnap.exists()) {
-                            // Retorna o objeto combinado com os dados do cliente e da assinatura.
                             return { 
-                                nome: clienteSnap.data().nome,
-                                email: clienteSnap.data().email, // Garante que o email seja pego aqui.
+                                ...clienteSnap.data(),
                                 assinatura: assinatura 
                             };
                         }
                     }
-                    return null; // Descarta assinaturas inválidas ou sem cliente.
+                    return null;
                 });
 
-                // Espera todas as buscas de cliente terminarem e filtra os nulos.
                 const assinantes = (await Promise.all(promises)).filter(a => a !== null);
                 
                 loadingMessage.style.display = 'none';
@@ -191,8 +189,18 @@
             } catch (error) {
                 console.error("Erro ao carregar assinantes:", error);
                 loadingMessage.style.display = 'none';
-                // Remove a mensagem de erro sobre índice para evitar mais confusão.
-                listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro inesperado ao carregar os assinantes.</p>';
+                
+                if (error.code === 'failed-precondition') {
+                    const linkIndex = error.message.match(/https:\/\/[^\s]+/);
+                    listaClientesDiv.innerHTML = `
+                        <div class="error-message">
+                            <p><strong>Ação final necessária:</strong> O banco de dados precisa de uma regra (índice) para fazer esta busca.</p>
+                            <p>É um processo de um clique. Por favor, <a href="${linkIndex ? linkIndex[0] : '#'}" target="_blank" rel="noopener noreferrer"><strong>CLIQUE NESTE LINK</strong></a>, aguarde a página do Firebase carregar e clique no botão "Criar Índice". Após alguns minutos, recarregue esta página.</p>
+                        </div>
+                    `;
+                } else {
+                    listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro inesperado ao carregar os assinantes. Verifique o console para mais detalhes.</p>';
+                }
             }
         }
     </script>
