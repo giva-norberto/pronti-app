@@ -67,6 +67,17 @@
             padding: 40px;
             color: #64748b;
         }
+        .error-message {
+            color: #b91c1c;
+            background-color: #fee2e2;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+        }
+        .error-message a {
+            color: #b91c1c;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -82,7 +93,7 @@
 
     <script type="module">
         import { db, auth } from './vitrini-firebase.js'; 
-        import { collection, query, where, getDocs, Timestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { collection, query, where, getDocs, Timestamp, collectionGroup, getDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
         const listaClientesDiv = document.getElementById('lista-clientes');
@@ -105,7 +116,7 @@
             if (user) {
                 const empresaAtivaId = localStorage.getItem("empresaAtivaId");
                 if (empresaAtivaId) {
-                     carregarClientesEAssinaturas(empresaAtivaId);
+                     carregarAssinantesAtivos(empresaAtivaId);
                 } else {
                     listaClientesDiv.innerHTML = '<p id="empty-message">Nenhuma empresa ativa selecionada.</p>';
                 }
@@ -114,55 +125,46 @@
             }
         });
 
-        async function carregarClientesEAssinaturas(empresaId) {
+        // ##### LÓGICA DE BUSCA TOTALMENTE REFEITA #####
+        async function carregarAssinantesAtivos(empresaId) {
             try {
-                const clientesRef = collection(db, `empresarios/${empresaId}/clientes`);
-                const clientesSnapshot = await getDocs(clientesRef);
+                // 1. Cria uma consulta em grupo para buscar em TODAS as subcoleções 'assinaturas'
+                const assinaturasGroupRef = collectionGroup(db, 'assinaturas');
 
-                loadingMessage.style.display = 'none';
-                if (clientesSnapshot.empty) {
-                    listaClientesDiv.innerHTML = '<p id="empty-message">Você ainda não tem clientes cadastrados.</p>';
-                    return;
-                }
-
-                const promises = clientesSnapshot.docs.map(async (clienteDoc) => {
-                    const cliente = { id: clienteDoc.id, ...clienteDoc.data() };
-                    
-                    // ##### INÍCIO DA CORREÇÃO #####
-                    // 1. Busca apenas por assinaturas com status 'ativo'.
-                    const assinaturasRef = collection(db, `empresarios/${empresaId}/clientes/${cliente.id}/assinaturas`);
-                    const q = query(assinaturasRef, where('status', '==', 'ativo'));
-                    const assinaturaSnapshot = await getDocs(q);
-                    
-                    let assinaturaAtiva = null;
-                    if (!assinaturaSnapshot.empty) {
-                        // 2. Filtra no código para pegar a que ainda não venceu.
-                        // Isso evita a necessidade de um índice composto no Firestore.
-                        const docAtivo = assinaturaSnapshot.docs.find(doc => {
-                            const dataFim = doc.data().dataFim;
-                            return dataFim && dataFim.toDate() > new Date();
-                        });
-                        
-                        if (docAtivo) {
-                            assinaturaAtiva = docAtivo.data();
-                        }
-                    }
-                    // ##### FIM DA CORREÇÃO #####
-                    
-                    return { ...cliente, assinatura: assinaturaAtiva };
-                });
-
-                const clientesComAssinatura = await Promise.all(promises);
+                // 2. Filtra por assinaturas ativas e que ainda não venceram
+                const q = query(assinaturasGroupRef, 
+                    where('status', '==', 'ativo'),
+                    where('dataFim', '>', Timestamp.now())
+                );
                 
-                const assinantesAtivos = clientesComAssinatura.filter(c => c.assinatura !== null);
+                const querySnapshot = await getDocs(q);
 
-                if (assinantesAtivos.length === 0) {
+                const promises = querySnapshot.docs
+                    // 3. Filtra no código apenas as assinaturas que pertencem à empresa ativa
+                    .filter(doc => doc.ref.path.startsWith(`empresarios/${empresaId}/`))
+                    // 4. Para cada assinatura encontrada, busca os dados do documento do cliente pai
+                    .map(async (doc) => {
+                        const assinatura = doc.data();
+                        const clienteRef = doc.ref.parent.parent; // Referência para o documento do cliente
+                        const clienteSnap = await getDoc(clienteRef);
+                        
+                        if (clienteSnap.exists()) {
+                            return { ...clienteSnap.data(), assinatura: assinatura };
+                        }
+                        return null; // Caso o documento do cliente não exista por algum motivo
+                    });
+
+                const assinantes = (await Promise.all(promises)).filter(a => a !== null);
+                
+                loadingMessage.style.display = 'none';
+
+                if (assinantes.length === 0) {
                     listaClientesDiv.innerHTML = '<p id="empty-message">Nenhum cliente com assinatura ativa no momento.</p>';
                     return;
                 }
                 
                 listaClientesDiv.innerHTML = '';
-                assinantesAtivos.forEach(cliente => {
+                assinantes.forEach(cliente => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'cliente-item';
 
@@ -184,7 +186,19 @@
             } catch (error) {
                 console.error("Erro ao carregar assinantes:", error);
                 loadingMessage.style.display = 'none';
-                listaClientesDiv.innerHTML = '<p id="empty-message" style="color: #ef4444;">Ocorreu um erro ao carregar os assinantes.</p>';
+
+                // Trata o erro de índice faltando e mostra uma mensagem útil
+                if (error.code === 'failed-precondition') {
+                    const linkIndex = error.message.match(/https:\/\/[^\s]+/);
+                    listaClientesDiv.innerHTML = `
+                        <div class="error-message">
+                            <p><strong>Ação necessária:</strong> O banco de dados precisa de um índice para realizar esta busca.</p>
+                            <p>É um processo simples e rápido. Por favor, <a href="${linkIndex}" target="_blank">clique neste link</a> e depois no botão "Criar" na página do Firebase.</p>
+                        </div>
+                    `;
+                } else {
+                    listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro ao carregar os assinantes.</p>';
+                }
             }
         }
     </script>
