@@ -27,7 +27,7 @@
             background-color: #fff; 
             padding: 30px 10px; 
             border-radius: 16px; 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+            box-shadow: 0 4px 20px rgba(99,102,241,0.09); 
         }
         h1 { 
             color: #1e293b; 
@@ -38,45 +38,48 @@
         .lista-clientes {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 18px;
         }
         .card-cliente {
-            background: #f6f8fa;
-            border-radius: 14px;
-            box-shadow: 0 2px 8px rgba(99,102,241,0.07);
-            padding: 18px 14px;
+            background: #f9fafb;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.04);
+            padding: 20px 24px;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            border: 1px solid #e3e9f6;
             transition: box-shadow 0.2s;
         }
         .card-cliente:hover {
-            box-shadow: 0 6px 18px rgba(99,102,241,0.15);
+            box-shadow: 0 6px 18px rgba(99,102,241,0.10);
+            border-color: #cdd5ea;
         }
         .info-cliente {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
         }
         .info-cliente .nome {
             font-weight: 700; 
             color: #334155;
-            font-size: 1.15rem;
+            font-size: 1.12rem;
             letter-spacing: 0.01em;
         }
         .info-cliente .email {
-            font-size: 0.98em; 
+            font-size: 0.97em; 
             color: #64748b;
             font-weight: 400;
         }
         .status-assinatura {
             display: flex;
             align-items: center;
-            gap: 13px;
+            gap: 14px;
             flex-wrap: wrap;
+            margin-top: 4px;
         }
         .badge.ativo {
-            font-size: 0.85em; 
+            font-size: 0.88em; 
             font-weight: 700; 
             padding: 5px 16px; 
             border-radius: 13px; 
@@ -84,6 +87,7 @@
             background-color: #dcfce7;
             color: #166534;
             letter-spacing: 0.05em;
+            box-shadow: 0 1px 4px #dcfce7;
         }
         .detalhes-plano {
             font-size: 0.98em;
@@ -92,27 +96,32 @@
             font-weight: 500;
         }
         .pagamento-info {
-            margin-top: 8px;
-            background: #e0e7ff;
+            margin-top: 7px;
+            background: #f3f6fd;
             border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 0.95em;
-            color: #312e81;
-            box-shadow: 0 1px 4px rgba(99,102,241,0.08);
+            padding: 8px 12px;
+            font-size: 0.97em;
+            color: #333;
+            box-shadow: 0 1px 4px rgba(99,102,241,0.04);
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 1px;
+            font-weight: 400;
+        }
+        .pagamento-info span {
+            margin-bottom: 2px;
         }
         .pagamento-info strong {
-            color: #4338ca;
+            color: #4f46e5;
             font-weight: 600;
+            margin-right: 4px;
         }
         @media (max-width: 600px) {
             .container {
-                padding: 10px 2px;
+                padding: 10px 0;
             }
             .card-cliente {
-                padding: 12px 6px;
+                padding: 14px 7px;
             }
         }
         #loading-message, #empty-message {
