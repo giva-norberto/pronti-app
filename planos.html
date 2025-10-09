@@ -65,7 +65,7 @@
             border: none;
             cursor: pointer;
         }
-        /* NOVO BOTÃO DE ASSINANTES */
+        /* BOTÃO DE ASSINANTES */
         .btn-assinantes {
             background-color: #0891b2; /* Cor Ciano/Verde Água */
             color: #fff;
@@ -149,7 +149,6 @@
         <div class="header-pagina">
             <h1>Meus Planos de Assinatura</h1>
             <div class="header-botoes">
-                 <!-- BOTÃO ADICIONADO AQUI -->
                 <a href="assinantes.html" class="btn-header btn-assinantes" id="btnAssinantes"><i class="fa-solid fa-crown"></i> Clientes Assinantes</a>
                 <a href="dashboard-pagamentos.html" class="btn-header btn-dashboard" id="btnDashboard"><i class="fa-solid fa-check-to-slot"></i> Painel de Aprovações</a>
                 <a href="criar-plano.html" class="btn-header btn-novo" id="btnNovoPlano">+ Criar Novo Plano</a>
@@ -168,7 +167,7 @@
         const listaContainer = document.getElementById('lista-de-planos');
         const btnNovoPlano = document.getElementById('btnNovoPlano');
         const btnDashboard = document.getElementById('btnDashboard');
-        const btnAssinantes = document.getElementById('btnAssinantes'); // Novo botão
+        const btnAssinantes = document.getElementById('btnAssinantes');
         let empresaId = null;
         let isDono = false;
         let isAdmin = false;
@@ -201,12 +200,10 @@
                 isDono = empresaSnap.data().donoId === user.uid;
                 isAdmin = user.uid === adminUID;
 
-                // Exibe botões apenas para dono/admin
                 const showButtons = isDono || isAdmin;
                 if (btnNovoPlano) btnNovoPlano.style.display = showButtons ? 'inline-flex' : 'none';
                 if (btnDashboard) btnDashboard.style.display = showButtons ? 'inline-flex' : 'none';
-                if (btnAssinantes) btnAssinantes.style.display = showButtons ? 'inline-flex' : 'none'; // Mostra/oculta o novo botão
-
+                if (btnAssinantes) btnAssinantes.style.display = showButtons ? 'inline-flex' : 'none';
 
                 let papelUsuario = [];
                 if (isAdmin) papelUsuario.push('admin');
@@ -280,3 +277,4 @@
     </script>
 </body>
 </html>
+
