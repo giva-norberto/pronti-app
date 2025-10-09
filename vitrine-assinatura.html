@@ -144,14 +144,13 @@
             }
         }
 
-        // ##### INÍCIO DA CORREÇÃO #####
         async function handleConfirmacaoPix() {
             const btn = document.getElementById('btn-confirma-pagamento');
             btn.disabled = true;
             btn.textContent = 'Enviando notificação...';
 
             try {
-                // 1. Cria o registro de pagamento pendente. Esta é a etapa principal.
+                // 1. Cria o registro de pagamento pendente.
                 await addDoc(collection(db, "pagamentosPendentes"), {
                     empresaId: empresaId, planoId: planoSelecionado.id, planoNome: planoSelecionado.nome,
                     clienteId: currentUser.uid, clienteNome: currentUser.displayName || currentUser.email,
@@ -159,25 +158,25 @@
                     dataCriacao: serverTimestamp()
                 });
                 
-                // 2. Tenta enviar o e-mail, mas não quebra se o e-mail não existir.
-                // A coleção 'mail' é usada pela Extensão 'Trigger Email', que são functions pré-configuradas.
-                if (empresaData && empresaData.email) {
+                // ##### INÍCIO DA CORREÇÃO #####
+                // 2. Adiciona a notificação na 'filaDeNotificacoes' usando o ID do dono da empresa.
+                if (empresaData && empresaData.donoId) {
                     try {
-                         await addDoc(collection(db, "mail"), {
-                            to: [empresaData.email],
-                            message: {
-                                subject: '🎉 Pagamento PIX Realizado - Pronti',
-                                html: `O cliente <strong>${currentUser.displayName || currentUser.email}</strong> informou que realizou o pagamento para o plano <strong>${planoSelecionado.nome}</strong>.<br><br>Acesse seu painel para aprovar a assinatura.`,
-                            },
+                        await addDoc(collection(db, "filaDeNotificacoes"), {
+                            donoId: empresaData.donoId, // CORRIGIDO: Usa o ID do dono, não da empresa
+                            tipo: 'PAGAMENTO_PIX_RECEBIDO',
+                            titulo: 'Pagamento PIX Confirmado',
+                            mensagem: `O cliente ${currentUser.displayName || currentUser.email} confirmou o pagamento do plano "${planoSelecionado.nome}".`,
+                            lido: false,
+                            dataCriacao: serverTimestamp()
                         });
-                    } catch (emailError) {
-                        // Se o envio do e-mail falhar (ex: por regras de segurança na coleção 'mail'),
-                        // o erro é registrado no console, mas o cliente ainda vê a mensagem de sucesso.
-                        console.warn("A notificação de pagamento foi registrada, mas o envio do e-mail falhou:", emailError);
+                    } catch (notificationError) {
+                        console.warn("A notificação de pagamento foi registrada, mas a criação do alerta na fila de notificações falhou:", notificationError);
                     }
                 } else {
-                    console.warn("A notificação de pagamento foi registrada, mas o e-mail do dono não foi encontrado para enviar a notificação.");
+                    console.warn("A notificação de pagamento foi registrada, mas o 'donoId' da empresa não foi encontrado para criar a notificação.");
                 }
+                // ##### FIM DA CORREÇÃO #####
 
                 // 3. Mostra a mensagem de sucesso para o cliente.
                 tituloPrincipal.textContent = "Notificação Enviada!";
@@ -192,14 +191,12 @@
                 areaAcaoDiv.style.display = 'none';
 
             } catch (error) {
-                // Este erro agora só acontece se a escrita em 'pagamentosPendentes' falhar.
                 console.error("Erro ao registrar a confirmação de pagamento PIX:", error);
-                alert("Ocorreu um erro ao registrar a notificação. Verifique suas regras de segurança do Firestore para a coleção 'pagamentosPendentes'.");
+                alert("Ocorreu um erro ao registrar a notificação. Verifique sua conexão e tente novamente.");
                 btn.textContent = 'Tentar Novamente';
                 btn.disabled = false;
             }
         }
-        // ##### FIM DA CORREÇÃO #####
     </script>
 </body>
 </html>
