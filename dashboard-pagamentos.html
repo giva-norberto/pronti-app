@@ -46,7 +46,14 @@
         }
         .info p { margin: 0; line-height: 1.5; }
         .info .nome { font-weight: 600; color: #334155; }
-        .info .plano { font-size: 0.9em; color: #64748b; }
+        /* NOVO ESTILO PARA O ID DO DOCUMENTO */
+        .info .doc-id {
+            font-size: 0.75em;
+            color: #94a3b8;
+            font-family: monospace;
+            margin-top: 2px;
+        }
+        .info .plano { font-size: 0.9em; color: #64748b; margin-top: 5px; }
         .info .metodo { 
             font-size: 0.75em; 
             font-weight: 700; 
@@ -147,9 +154,11 @@
                     const metodoTag = `<span class="metodo ${pagamento.metodo}">${pagamento.metodo.replace('_', ' ')}</span>`;
                     const dataFormatada = pagamento.dataCriacao?.toDate().toLocaleDateString('pt-BR') || 'Data indisponível';
 
+                    // ##### ALTERAÇÃO AQUI: Adicionado o ID do documento #####
                     itemDiv.innerHTML = `
                         <div class="info">
                             <p class="nome">${pagamento.clienteNome}</p>
+                            <p class="doc-id">ID: ${pagamento.id}</p>
                             <p class="plano">${pagamento.planoNome} - R$ ${pagamento.valor.toFixed(2)} ${metodoTag} - ${dataFormatada}</p>
                         </div>
                         <div class="acoes">
@@ -194,7 +203,7 @@
                         const novaAssinaturaRef = doc(collection(clienteRef, "assinaturas"));
                         
                         transaction.set(novaAssinaturaRef, {
-                            empresaId: dadosPagamento.empresaId, // ##### CAMPO ADICIONADO AQUI #####
+                            empresaId: dadosPagamento.empresaId,
                             planoId: dadosPagamento.planoId,
                             planoNome: dadosPagamento.planoNome,
                             status: "ativo",
