@@ -90,7 +90,7 @@
 
     <script type="module">
         import { db, auth } from './vitrini-firebase.js'; 
-        import { collection, query, where, getDocs, Timestamp, collectionGroup, getDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { collection, query, where, getDocs, Timestamp, getDoc, collectionGroup } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
         const listaClientesDiv = document.getElementById('lista-clientes');
@@ -127,8 +127,8 @@
                 // ##### LÓGICA DE BUSCA FINAL E SIMPLIFICADA #####
                 const assinaturasGroupRef = collectionGroup(db, 'assinaturas');
 
-                // 1. Busca TODAS as assinaturas que pertencem à empresa, sem outras condições.
-                // Esta consulta não requer nenhum índice complexo.
+                // 1. Busca TODAS as assinaturas que pertencem à sua empresa.
+                // Esta é a consulta mais simples e não vai exigir índices complexos.
                 const q = query(assinaturasGroupRef, where('empresaId', '==', empresaId));
                 
                 const querySnapshot = await getDocs(q);
@@ -136,23 +136,29 @@
                 const promises = querySnapshot.docs.map(async (doc) => {
                     const assinatura = doc.data();
                     
-                    // 2. Filtra no CÓDIGO para pegar apenas as ativas e que não venceram
+                    // 2. Filtra no CÓDIGO para pegar apenas as ativas e que não venceram.
                     const isAtiva = assinatura.status === 'ativo';
                     const dataFim = assinatura.dataFim;
                     const naoVenceu = dataFim && dataFim.toDate() > new Date();
 
                     if (isAtiva && naoVenceu) {
-                        // 3. Apenas para as assinaturas válidas, busca os dados do cliente
-                        const clienteRef = doc.ref.parent.parent;
+                        // 3. Apenas para assinaturas válidas, busca os dados do cliente.
+                        const clienteRef = doc.ref.parent.parent; // Navega da subcoleção 'assinaturas' para o documento 'cliente'.
                         const clienteSnap = await getDoc(clienteRef);
                         
                         if (clienteSnap.exists()) {
-                            return { ...clienteSnap.data(), assinatura: assinatura };
+                            // Retorna o objeto combinado com os dados do cliente e da assinatura.
+                            return { 
+                                nome: clienteSnap.data().nome,
+                                email: clienteSnap.data().email, // Garante que o email seja pego aqui.
+                                assinatura: assinatura 
+                            };
                         }
                     }
-                    return null; // Descarta as que não correspondem
+                    return null; // Descarta assinaturas inválidas ou sem cliente.
                 });
 
+                // Espera todas as buscas de cliente terminarem e filtra os nulos.
                 const assinantes = (await Promise.all(promises)).filter(a => a !== null);
                 
                 loadingMessage.style.display = 'none';
@@ -185,6 +191,7 @@
             } catch (error) {
                 console.error("Erro ao carregar assinantes:", error);
                 loadingMessage.style.display = 'none';
+                // Remove a mensagem de erro sobre índice para evitar mais confusão.
                 listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro inesperado ao carregar os assinantes.</p>';
             }
         }
