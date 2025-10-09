@@ -184,23 +184,24 @@
         });
 
         async function buscarPagamentoDoCliente(clienteId) {
-            // Busca o pagamento APROVADO mais recente do cliente na coleção 'pagamentosPendentes'
+            // O caminho utilizado é a coleção raiz 'pagamentosPendentes'
             const pagamentosRef = collection(db, 'pagamentosPendentes');
+            
+            // A consulta busca pelo documento mais recente com status 'aprovado' para o clienteId fornecido
             const pagamentosQ = query(
                 pagamentosRef, 
                 where('clienteId', '==', clienteId), 
                 where('status', '==', 'aprovado'),
-                orderBy('dataCriacao', 'desc'), // Ordena pela data para pegar o mais recente
-                limit(1) // Pega apenas o primeiro (mais recente)
+                orderBy('dataCriacao', 'desc'),
+                limit(1)
             );
             const pagamentosSnap = await getDocs(pagamentosQ);
             
             if (pagamentosSnap.empty) {
-                return null; // Retorna nulo se nenhum pagamento aprovado for encontrado
+                return null; // Nenhum pagamento aprovado encontrado
             }
 
-            // Retorna os dados do único documento encontrado
-            return pagamentosSnap.docs[0].data();
+            return pagamentosSnap.docs[0].data(); // Retorna os dados do documento encontrado
         }
 
         async function carregarAssinantesAtivos(empresaId) {
@@ -217,28 +218,21 @@
                 const promises = clientesSnapshot.docs.map(async (clienteDoc) => {
                     const cliente = { id: clienteDoc.id, ...clienteDoc.data() };
                     
-                    // Busca assinatura ativa
                     const assinaturasRef = collection(db, `empresarios/${empresaId}/clientes/${cliente.id}/assinaturas`);
                     const q = query(assinaturasRef, where('status', '==', 'ativo'));
                     const assinaturaSnapshot = await getDocs(q);
                     
-                    let assinaturaAtiva = null;
-                    if (!assinaturaSnapshot.empty) {
-                        const docAtivo = assinaturaSnapshot.docs.find(doc => {
-                            const dataFim = doc.data().dataFim;
-                            return dataFim && dataFim.toDate() > new Date();
-                        });
-                        if (docAtivo) {
-                            assinaturaAtiva = docAtivo.data();
-                        }
-                    }
-                    
-                    // Se não tiver assinatura ativa, não precisamos nem continuar para este cliente
-                    if (!assinaturaAtiva) {
-                        return null;
-                    }
+                    if (assinaturaSnapshot.empty) return null;
 
-                    // Busca e-mail do usuário na coleção 'usuarios' pelo id do cliente
+                    const docAtivo = assinaturaSnapshot.docs.find(doc => {
+                        const dataFim = doc.data().dataFim;
+                        return dataFim && dataFim.toDate() > new Date();
+                    });
+
+                    if (!docAtivo) return null;
+                    
+                    const assinaturaAtiva = docAtivo.data();
+
                     let emailUsuario = null;
                     try {
                         const usuarioRef = doc(db, 'usuarios', cliente.id);
@@ -247,29 +241,28 @@
                             emailUsuario = usuarioSnap.data().email;
                         }
                     } catch (e) {
-                        console.error("Erro ao buscar e-mail do usuário:", e);
+                        console.error(`Erro ao buscar e-mail do usuário ${cliente.id}:`, e);
                     }
 
-                    // Busca o pagamento aprovado mais recente do cliente
                     let pagamentoInfo = null;
                     try {
                         pagamentoInfo = await buscarPagamentoDoCliente(cliente.id);
                     } catch (e) {
-                        console.error("Erro ao buscar pagamento do cliente:", e);
+                        console.error(`Erro ao buscar pagamento do cliente ${cliente.id}:`, e);
                     }
                     
                     return { ...cliente, assinatura: assinaturaAtiva, emailUsuario, pagamentoInfo };
                 });
 
-                const clientesComAssinatura = (await Promise.all(promises)).filter(c => c !== null);
+                const assinantesAtivos = (await Promise.all(promises)).filter(c => c !== null);
 
-                if (clientesComAssinatura.length === 0) {
+                if (assinantesAtivos.length === 0) {
                     listaClientesDiv.innerHTML = '<p id="empty-message">Nenhum cliente com assinatura ativa no momento.</p>';
                     return;
                 }
                 
                 listaClientesDiv.innerHTML = '';
-                clientesComAssinatura.forEach(cliente => {
+                assinantesAtivos.forEach(cliente => {
                     const dataFim = cliente.assinatura.dataFim.toDate().toLocaleDateString('pt-BR');
                     const pagamento = cliente.pagamentoInfo;
                     let pagamentoHtml = '';
@@ -286,7 +279,7 @@
                             </div>
                         `;
                     } else {
-                        pagamentoHtml = '<div class="pagamento-info"><span>Nenhum pagamento aprovado encontrado.</span></div>';
+                        pagamentoHtml = '<div class="pagamento-info"><span>Nenhum pagamento aprovado encontrado para este assinante.</span></div>';
                     }
 
                     const itemDiv = document.createElement('div');
@@ -307,7 +300,7 @@ Vence em: ${dataFim}</p>
                 });
 
             } catch (error) {
-                console.error("Erro ao carregar assinantes:", error);
+                console.error("Erro geral ao carregar assinantes:", error);
                 loadingMessage.style.display = 'none';
                 listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro ao carregar os assinantes.</p>';
             }
@@ -315,4 +308,5 @@ Vence em: ${dataFim}</p>
     </script>
 </body>
 </html>
+
 
