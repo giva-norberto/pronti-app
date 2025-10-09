@@ -14,7 +14,7 @@
             display: flex; 
             font-family: 'Poppins', sans-serif; 
             margin: 0; 
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
             min-height: 100vh;
         }
         main.content { 
@@ -184,10 +184,8 @@
         });
 
         async function buscarPagamentoDoCliente(clienteId) {
-            // O caminho utilizado é a coleção raiz 'pagamentosPendentes'
             const pagamentosRef = collection(db, 'pagamentosPendentes');
             
-            // A consulta busca pelo documento mais recente com status 'aprovado' para o clienteId fornecido
             const pagamentosQ = query(
                 pagamentosRef, 
                 where('clienteId', '==', clienteId), 
@@ -195,13 +193,19 @@
                 orderBy('dataCriacao', 'desc'),
                 limit(1)
             );
-            const pagamentosSnap = await getDocs(pagamentosQ);
             
-            if (pagamentosSnap.empty) {
-                return null; // Nenhum pagamento aprovado encontrado
+            try {
+                const pagamentosSnap = await getDocs(pagamentosQ);
+                if (pagamentosSnap.empty) {
+                    return null; // Nenhum pagamento aprovado encontrado
+                }
+                return pagamentosSnap.docs[0].data(); // Retorna os dados do documento encontrado
+            } catch (error) {
+                // Este erro é quase sempre causado pela falta de um índice no Firestore.
+                console.error(`FALHA AO BUSCAR PAGAMENTO para o cliente ${clienteId}. Verifique se o índice composto do Firestore foi criado. Erro:`, error);
+                // O erro no console do navegador terá um link para criar o índice.
+                return null;
             }
-
-            return pagamentosSnap.docs[0].data(); // Retorna os dados do documento encontrado
         }
 
         async function carregarAssinantesAtivos(empresaId) {
@@ -244,12 +248,8 @@
                         console.error(`Erro ao buscar e-mail do usuário ${cliente.id}:`, e);
                     }
 
-                    let pagamentoInfo = null;
-                    try {
-                        pagamentoInfo = await buscarPagamentoDoCliente(cliente.id);
-                    } catch (e) {
-                        console.error(`Erro ao buscar pagamento do cliente ${cliente.id}:`, e);
-                    }
+                    // A função para buscar o pagamento é chamada aqui
+                    const pagamentoInfo = await buscarPagamentoDoCliente(cliente.id);
                     
                     return { ...cliente, assinatura: assinaturaAtiva, emailUsuario, pagamentoInfo };
                 });
@@ -308,5 +308,6 @@ Vence em: ${dataFim}</p>
     </script>
 </body>
 </html>
+
 
 
