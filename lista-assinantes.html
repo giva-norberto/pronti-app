@@ -129,20 +129,27 @@
 
         async function carregarAssinantesAtivos(empresaId) {
             try {
+                // ##### LÓGICA DE BUSCA SIMPLIFICADA E CORRIGIDA #####
                 const assinaturasGroupRef = collectionGroup(db, 'assinaturas');
 
-                // ##### LÓGICA DE BUSCA FINAL E CORRETA #####
-                // Esta consulta é a mais segura e eficiente, mas requer a criação de um índice no Firebase.
+                // 1. Busca TODAS as assinaturas da empresa que estão com status "ativo"
                 const q = query(assinaturasGroupRef, 
                     where('empresaId', '==', empresaId),
-                    where('status', '==', 'ativo'),
-                    where('dataFim', '>', Timestamp.now())
+                    where('status', '==', 'ativo')
                 );
                 
                 const querySnapshot = await getDocs(q);
 
                 const promises = querySnapshot.docs.map(async (doc) => {
                     const assinatura = doc.data();
+                    
+                    // 2. Filtra no CÓDIGO para garantir que a data de fim ainda não passou
+                    const dataFim = assinatura.dataFim;
+                    if (!dataFim || dataFim.toDate() < new Date()) {
+                        return null; // Descarta assinaturas vencidas
+                    }
+
+                    // 3. Busca os dados do cliente para cada assinatura válida
                     const clienteRef = doc.ref.parent.parent;
                     const clienteSnap = await getDoc(clienteRef);
                     
@@ -166,7 +173,7 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'cliente-item';
 
-                    const dataFim = cliente.assinatura.dataFim.toDate().toLocaleDateString('pt-BR');
+                    const dataFimFormatada = cliente.assinatura.dataFim.toDate().toLocaleDateString('pt-BR');
 
                     itemDiv.innerHTML = `
                         <div class="info-cliente">
@@ -175,7 +182,7 @@
                         </div>
                         <div class="status-assinatura">
                             <span class="badge ativo">Assinante Ativo</span>
-                            <p class="detalhes-plano">${cliente.assinatura.planoNome}<br>Vence em: ${dataFim}</p>
+                            <p class="detalhes-plano">${cliente.assinatura.planoNome}<br>Vence em: ${dataFimFormatada}</p>
                         </div>
                     `;
                     listaClientesDiv.appendChild(itemDiv);
@@ -184,14 +191,13 @@
             } catch (error) {
                 console.error("Erro ao carregar assinantes:", error);
                 loadingMessage.style.display = 'none';
-
-                // ESTA MENSAGEM IRÁ APARECER COM O LINK PARA CORRIGIR O PROBLEMA
+                
                 if (error.code === 'failed-precondition') {
                     const linkIndex = error.message.match(/https:\/\/[^\s]+/);
                     listaClientesDiv.innerHTML = `
                         <div class="error-message">
-                            <p><strong>Ação final necessária:</strong> O banco de dados precisa de uma regra (índice) para fazer esta busca de forma otimizada.</p>
-                            <p>É um processo de um clique. Por favor, <a href="${linkIndex ? linkIndex[0] : '#'}" target="_blank" rel="noopener noreferrer"><strong>CLIQUE NESTE LINK</strong></a>, aguarde a página do Firebase carregar e clique no botão "Criar Índice". Após alguns minutos, recarregue esta página.</p>
+                            <p><strong>Ação necessária:</strong> O banco de dados precisa de um índice para esta busca.</p>
+                            <p>Por favor, <a href="${linkIndex ? linkIndex[0] : '#'}" target="_blank" rel="noopener noreferrer"><strong>CLIQUE NESTE LINK</strong></a> e, na página do Firebase, clique em "Criar Índice".</p>
                         </div>
                     `;
                 } else {
