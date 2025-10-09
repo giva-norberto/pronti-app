@@ -73,6 +73,12 @@
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #fecaca;
+            text-align: left;
+        }
+        .error-message a {
+            color: #b91c1c;
+            font-weight: bold;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -121,36 +127,30 @@
             }
         });
 
-        // ##### LÓGICA DE BUSCA ATUALIZADA #####
         async function carregarAssinantesAtivos(empresaId) {
             try {
-                // 1. Cria uma consulta em grupo para buscar em TODAS as subcoleções 'assinaturas'
                 const assinaturasGroupRef = collectionGroup(db, 'assinaturas');
 
-                // 2. Filtra APENAS por status 'ativo'. Isso evita a necessidade de um índice composto.
-                const q = query(assinaturasGroupRef, where('status', '==', 'ativo'));
+                // ##### LÓGICA DE BUSCA FINAL E CORRETA #####
+                // Esta consulta é a mais segura e eficiente, mas requer a criação de um índice no Firebase.
+                const q = query(assinaturasGroupRef, 
+                    where('empresaId', '==', empresaId),
+                    where('status', '==', 'ativo'),
+                    where('dataFim', '>', Timestamp.now())
+                );
                 
                 const querySnapshot = await getDocs(q);
 
-                const promises = querySnapshot.docs
-                    // 3. Filtra no CÓDIGO para pegar apenas as assinaturas da empresa ativa e que não venceram
-                    .filter(doc => {
-                        const dataFim = doc.data().dataFim;
-                        const pathCheck = doc.ref.path.startsWith(`empresarios/${empresaId}/`);
-                        const dateCheck = dataFim && dataFim.toDate() > new Date();
-                        return pathCheck && dateCheck;
-                    })
-                    // 4. Para cada assinatura válida, busca os dados do cliente
-                    .map(async (doc) => {
-                        const assinatura = doc.data();
-                        const clienteRef = doc.ref.parent.parent;
-                        const clienteSnap = await getDoc(clienteRef);
-                        
-                        if (clienteSnap.exists()) {
-                            return { ...clienteSnap.data(), assinatura: assinatura };
-                        }
-                        return null;
-                    });
+                const promises = querySnapshot.docs.map(async (doc) => {
+                    const assinatura = doc.data();
+                    const clienteRef = doc.ref.parent.parent;
+                    const clienteSnap = await getDoc(clienteRef);
+                    
+                    if (clienteSnap.exists()) {
+                        return { ...clienteSnap.data(), assinatura: assinatura };
+                    }
+                    return null;
+                });
 
                 const assinantes = (await Promise.all(promises)).filter(a => a !== null);
                 
@@ -184,7 +184,19 @@
             } catch (error) {
                 console.error("Erro ao carregar assinantes:", error);
                 loadingMessage.style.display = 'none';
-                listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro ao carregar os assinantes.</p>';
+
+                // ESTA MENSAGEM IRÁ APARECER COM O LINK PARA CORRIGIR O PROBLEMA
+                if (error.code === 'failed-precondition') {
+                    const linkIndex = error.message.match(/https:\/\/[^\s]+/);
+                    listaClientesDiv.innerHTML = `
+                        <div class="error-message">
+                            <p><strong>Ação final necessária:</strong> O banco de dados precisa de uma regra (índice) para fazer esta busca de forma otimizada.</p>
+                            <p>É um processo de um clique. Por favor, <a href="${linkIndex ? linkIndex[0] : '#'}" target="_blank" rel="noopener noreferrer"><strong>CLIQUE NESTE LINK</strong></a>, aguarde a página do Firebase carregar e clique no botão "Criar Índice". Após alguns minutos, recarregue esta página.</p>
+                        </div>
+                    `;
+                } else {
+                    listaClientesDiv.innerHTML = '<p id="empty-message" class="error-message">Ocorreu um erro ao carregar os assinantes.</p>';
+                }
             }
         }
     </script>
