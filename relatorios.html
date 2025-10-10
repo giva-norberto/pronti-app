@@ -219,24 +219,6 @@
     tr:nth-child(even) td {
       background: #f7f8fa;
     }
-    /* ESTILO PARA OS GRÁFICOS */
-    .grafico-container {
-      margin: 20px 10px;
-      padding: 20px;
-      background: #f7fafd;
-      border-radius: 10px;
-      border: 1px solid #e0e7ff;
-      min-height: 350px;
-    }
-    .grafico-container h3 {
-      color: var(--cor-primaria);
-      margin: 0 0 15px 0;
-      font-size: 1.1em;
-    }
-    /* Container para o conteúdo dinâmico (tabelas, etc) */
-    .conteudo-dinamico {
-      margin-top: 15px;
-    }
     @keyframes fadeIn {
       from { opacity: 0;}
       to { opacity: 1;}
@@ -282,9 +264,6 @@
         font-size: 0.93em;
         min-height: 24px;
       }
-      .grafico-container {
-        min-height: 250px;
-      }
     }
   </style>
 </head>
@@ -320,47 +299,14 @@
       </header>
       <!-- Conteúdo das abas -->
       <section class="conteudo-abas">
-        <div class="aba-conteudo active" id="servicos">
-          <div class="grafico-container">
-            <h3><i class="fa-solid fa-chart-bar"></i> Gráfico de Serviços</h3>
-            <canvas id="grafico-servicos"></canvas>
-          </div>
-          <div class="conteudo-dinamico" id="servicos-conteudo"></div>
-        </div>
-        <div class="aba-conteudo" id="profissionais">
-          <div class="grafico-container">
-            <h3><i class="fa-solid fa-chart-line"></i> Gráfico de Profissionais</h3>
-            <canvas id="grafico-profissionais"></canvas>
-          </div>
-          <div class="conteudo-dinamico" id="profissionais-conteudo"></div>
-        </div>
-        <div class="aba-conteudo" id="faturamento">
-          <div class="grafico-container">
-            <h3><i class="fa-solid fa-chart-bar"></i> Gráfico de Faturamento</h3>
-            <canvas id="grafico-faturamento"></canvas>
-          </div>
-          <div class="conteudo-dinamico" id="faturamento-conteudo"></div>
-        </div>
-        <div class="aba-conteudo" id="clientes">
-          <div class="grafico-container">
-            <h3><i class="fa-solid fa-chart-pie"></i> Gráfico de Clientes</h3>
-            <canvas id="grafico-clientes"></canvas>
-          </div>
-          <div class="conteudo-dinamico" id="clientes-conteudo"></div>
-        </div>
-        <div class="aba-conteudo" id="agenda">
-          <div class="grafico-container">
-            <h3><i class="fa-solid fa-chart-line"></i> Gráfico de Agenda</h3>
-            <canvas id="grafico-agenda"></canvas>
-          </div>
-          <div class="conteudo-dinamico" id="agenda-conteudo"></div>
-        </div>
+        <div class="aba-conteudo active" id="servicos"></div>
+        <div class="aba-conteudo" id="profissionais"></div>
+        <div class="aba-conteudo" id="faturamento"></div>
+        <div class="aba-conteudo" id="clientes"></div>
+        <div class="aba-conteudo" id="agenda"></div>
       </section>
     </main>
   </div>
-
-  <!-- Chart.js DEVE ser carregado ANTES dos outros scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 
   <!-- ================================================================== -->
   <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
@@ -422,151 +368,6 @@
     inicializarPagina();
   </script>
 
-  <!-- Script para inicializar os gráficos -->
-  <script>
-    // Armazena as instâncias dos gráficos
-    window.graficosInstancias = {};
-
-    function inicializarGraficos() {
-      if (typeof Chart === 'undefined') {
-        console.error('Chart.js não foi carregado!');
-        return;
-      }
-
-      const configs = {
-        servicos: {
-          type: 'bar',
-          data: {
-            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-            datasets: [{
-              label: 'Serviços Realizados',
-              data: [12, 19, 13, 15, 22, 18],
-              backgroundColor: 'rgba(79, 172, 254, 0.6)',
-              borderColor: 'rgba(79, 172, 254, 1)',
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: true, position: 'top' } },
-            scales: { y: { beginAtZero: true } }
-          }
-        },
-        profissionais: {
-          type: 'line',
-          data: {
-            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-            datasets: [{
-              label: 'Performance',
-              data: [65, 59, 80, 81, 56, 72],
-              fill: true,
-              backgroundColor: 'rgba(99, 102, 241, 0.2)',
-              borderColor: 'rgba(99, 102, 241, 1)',
-              tension: 0.4,
-              borderWidth: 3
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: true, position: 'top' } },
-            scales: { y: { beginAtZero: true } }
-          }
-        },
-        faturamento: {
-          type: 'bar',
-          data: {
-            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-            datasets: [{
-              label: 'Faturamento (R$)',
-              data: [1200, 1900, 3000, 5000, 2800, 4200],
-              backgroundColor: 'rgba(52, 211, 153, 0.6)',
-              borderColor: 'rgba(52, 211, 153, 1)',
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: true, position: 'top' } },
-            scales: { y: { beginAtZero: true } }
-          }
-        },
-        clientes: {
-          type: 'doughnut',
-          data: {
-            labels: ['Novos', 'Recorrentes', 'Inativos'],
-            datasets: [{
-              data: [30, 50, 20],
-              backgroundColor: [
-                'rgba(79, 172, 254, 0.8)',
-                'rgba(99, 102, 241, 0.8)',
-                'rgba(107, 114, 128, 0.8)'
-              ],
-              borderColor: [
-                'rgba(79, 172, 254, 1)',
-                'rgba(99, 102, 241, 1)',
-                'rgba(107, 114, 128, 1)'
-              ],
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: true, position: 'top' } }
-          }
-        },
-        agenda: {
-          type: 'line',
-          data: {
-            labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
-            datasets: [{
-              label: 'Agendamentos',
-              data: [12, 19, 15, 17, 14, 8],
-              fill: true,
-              backgroundColor: 'rgba(56, 189, 248, 0.2)',
-              borderColor: 'rgba(56, 189, 248, 1)',
-              tension: 0.4,
-              borderWidth: 3
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: true, position: 'top' } },
-            scales: { y: { beginAtZero: true } }
-          }
-        }
-      };
-
-      Object.keys(configs).forEach(abaId => {
-        const canvas = document.getElementById(`grafico-${abaId}`);
-        if (canvas && !window.graficosInstancias[abaId]) {
-          try {
-            window.graficosInstancias[abaId] = new Chart(canvas, configs[abaId]);
-            console.log(`Gráfico ${abaId} criado com sucesso`);
-          } catch (error) {
-            console.error(`Erro ao criar gráfico ${abaId}:`, error);
-          }
-        }
-      });
-    }
-
-    // Inicializa os gráficos quando o DOM estiver pronto
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(inicializarGraficos, 800);
-      });
-    } else {
-      setTimeout(inicializarGraficos, 800);
-    }
-
-    // Torna a função global
-    window.inicializarGraficos = inicializarGraficos;
-  </script>
-
   <!-- Seus scripts de negócio são mantidos -->
   <script src="relatorios.js" type="module"></script>
 
@@ -590,5 +391,3 @@
 
 </body>
 </html>
-
-
