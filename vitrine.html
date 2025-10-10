@@ -102,77 +102,6 @@
             color: #fff;
         }
         /* CARD DE PLANOS VITRINE */
-        .card-plano-vitrine {
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 4px 18px rgba(99,102,241,0.06);
-            padding: 22px;
-            text-align: center;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-        }
-        .card-plano-header {
-            margin-bottom: 15px;
-        }
-        .card-plano-nome {
-            color: #4f46e5;
-            font-size: 1.5em;
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-        .card-plano-preco {
-            color: #6366f1;
-            font-weight: bold;
-            font-size: 1.2em;
-            margin-bottom: 15px;
-        }
-        .card-plano-body {
-            flex-grow: 1;
-            margin-bottom: 20px;
-        }
-        .card-plano-descricao {
-            font-size: 0.95em;
-            color: #555;
-            margin-bottom: 15px;
-        }
-        .card-plano-servicos {
-            list-style: none;
-            padding-left: 0;
-            text-align: left;
-            margin-top: 15px;
-        }
-        .card-plano-servicos li {
-            margin-bottom: 8px;
-            color: #444;
-            font-size: 0.9em;
-        }
-        .card-plano-servicos li::before {
-            content: '✓ ';
-            color: #10b981;
-            font-weight: bold;
-            margin-right: 5px;
-        }
-        .card-plano-footer {
-            margin-top: auto;
-        }
-        .btn-assinar-plano {
-            background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 25px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-        .btn-assinar-plano:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
         #menu-assinatura {
             display: none;
             margin-top: 36px;
@@ -180,65 +109,6 @@
         #cards-planos-vitrine {
             margin: 0 auto;
             max-width: 900px;
-        }
-        .assinatura-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            color: #fff;
-        }
-        .assinatura-header h2 {
-            margin: 0;
-            font-size: 1.8em;
-            font-weight: 700;
-        }
-        .assinatura-cards-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Ajustado minmax para cards menores */
-            gap: 20px; /* Reduzido o gap */
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            justify-content: center; /* Centraliza os cards no container */
-            align-items: stretch; /* Garante que os cards tenham a mesma altura */
-        }
-        .card-plano-vitrine {
-            background: #fff;
-            border-radius: 14px;
-            box-shadow: 0 4px 18px rgba(99,102,241,0.06);
-            padding: 22px;
-            text-align: center;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%; /* Ocupa a altura total disponível no grid */
-            max-width: 100%; /* Garante que o card não exceda a largura da coluna do grid */
-            margin: 0; /* Remove margin auto para que o grid controle o espaçamento */
-        }
-        .card-plano-nome {
-            color: #4f46e5;
-            font-size: 1.3em; /* Reduzido o tamanho da fonte */
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-        .card-plano-preco {
-            color: #6366f1;
-            font-weight: bold;
-            font-size: 1.1em; /* Reduzido o tamanho da fonte */
-            margin-bottom: 15px;
-        }
-        .card-plano-descricao {
-            font-size: 0.85em; /* Reduzido o tamanho da fonte */
-            color: #555;
-            margin-bottom: 15px;
-        }
-        .card-plano-servicos li {
-            margin-bottom: 6px; /* Reduzido o espaçamento entre os itens da lista */
-            color: #444;
-            font-size: 0.8em; /* Reduzido o tamanho da fonte */
         }
     </style>
 </head>
@@ -280,12 +150,12 @@
                 </div>
             </div>
             <div id="menu-assinatura" class="menu-content" style="display: none;">
-                <div class="assinatura-header">
-                    <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                <div class="card">
                     <h2>Planos de Assinatura</h2>
-                </div>
-                <div id="cards-planos-vitrine" class="assinatura-cards-container">
-                    <p class="info">A carregar planos disponíveis...</p>
+                    <div id="cards-planos-vitrine">
+                        <p class="info">A carregar planos disponíveis...</p>
+                    </div>
                 </div>
             </div>
             <div id="menu-agendamento" class="menu-content" style="display: none;">
@@ -387,17 +257,11 @@
                         card.className = 'card-plano-vitrine';
                         card.style = 'background:#fff;border-radius:14px;box-shadow:0 4px 18px rgba(99,102,241,0.06);margin:18px 0;padding:22px;text-align:center;color:#333;';
                         card.innerHTML = `
-                            <div class="card-plano-header">
-                                <h3 class="card-plano-nome">${plano.nome}</h3>
-                                <p class="card-plano-preco">${precoFormatado} / mês</p>
-                            </div>
-                            <div class="card-plano-body">
-                                <p class="card-plano-descricao">${plano.descricao || ''}</p>
-                                <ul class="card-plano-servicos">${servicosHTML}</ul>
-                            </div>
-                            <div class="card-plano-footer">
-                                <button class="btn-assinar-plano">Assinar</button>
-                            </div>
+                            <h3 style="color:#4f46e5;">${plano.nome}</h3>
+                            <p class="preco" style="color:#6366f1;font-weight:bold;font-size:1.2em;">${precoFormatado} / mês</p>
+                            <p>${plano.descricao || ''}</p>
+                            <ul style="list-style: '✓ ';padding-left: 20px; text-align: left;">${servicosHTML}</ul>
+                            <button class="btn-assinar-plano" style="background:linear-gradient(90deg,#6366f1 0%,#4f46e5 100%);color:#fff;border:none;border-radius:8px;padding:8px 22px;margin-top:14px;font-size:1em;cursor:pointer;">Assinar</button>
                         `;
 
                         // ###################### INÍCIO DA ALTERAÇÃO ######################
