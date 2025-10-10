@@ -1,393 +1,580 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Relatórios - Pronti</title>
-  <!-- O seu CSS externo foi removido pois os estilos já estão no <style> abaixo -->
-  <!-- <link rel="stylesheet" href="styles.css"> -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    :root {
-      --cor-primaria: #4facfe;
-      --cor-sucesso: #34d399;
-      --cor-cinza: #6b7280;
-      --cor-texto-escuro: #22223b;
-      --cor-fundo-app: #f6f7fb;
-      --cor-azul-pronti: #4f46e5; /* azul padrão Pronti */
-    }
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
-      min-height: 100vh;
-      /* ✅ ALTERAÇÃO: Adicionado para centralizar o conteúdo ou a mensagem de erro */
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-    }
-    .main-relatorios {
-      max-width: 1100px;
-      width: 100%; /* Garante que ocupe a largura disponível */
-      margin: 28px auto 0 auto;
-      padding: 0;
-      min-height: 90vh;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 4px 28px #4f46e525;
-      overflow: hidden;
-    }
-    .top-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
-      padding: 18px 18px 10px 18px;
-      border-radius: 18px 18px 0 0;
-      color: #fff;
-    }
-    .btn-voltar {
-      background: #fff;
-      color: #6366f1;
-      border: none;
-      padding: 6px 16px 6px 10px;
-      border-radius: 8px;
-      font-size: 0.96em;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 2px 8px #4f46e51c;
-      transition: background 0.17s, color 0.18s;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 32px;
-      min-width: 64px;
-    }
-    .btn-voltar:hover {
-      background: #38bdf8;
-      color: #fff;
-    }
-    /* ABAS COMPACTAS */
-    .abas-container {
-      display: flex;
-      gap: 0;
-      overflow-x: auto;
-      border-bottom: 1.5px solid #e0e7ff;
-      background: transparent;
-      scrollbar-width: none;
-      align-items: flex-end;
-      flex: 1;
-      margin-left: 12px;
-    }
-    .abas-container::-webkit-scrollbar { display: none; }
-    .aba {
-      padding: 6px 14px;
-      font-size: 0.97em;
-      font-weight: 600;
-      border: none;
-      background: none;
-      color: #fff;
-      margin: 0;
-      border-radius: 7px 7px 0 0;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-      min-width: 60px;
-      white-space: nowrap;
-      flex-shrink: 0;
-      opacity: 0.87;
-      outline: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .aba:not(.active):hover {
-      background: #f1f4fa;
-      color: var(--cor-primaria);
-      opacity: 1;
-    }
-    .aba.active, .aba:focus {
-      background: #fff;
-      color: var(--cor-primaria);
-      font-weight: 800;
-      box-shadow: 0 -1px 9px #4f46e51a;
-      opacity: 1;
-      border-bottom: 2.5px solid var(--cor-primaria);
-    }
-    /* FILTROS COMPACTOS */
-    .filtros-relatorios {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      background: #f7fafd;
-      padding: 8px 14px;
-      border-radius: 0 0 13px 13px;
-      margin-bottom: 5px;
-      flex-wrap: wrap;
-      border-bottom: 1.3px solid #e0e7ff;
-    }
-    .filtros-relatorios label {
-      font-weight: 600;
-      color: var(--cor-primaria);
-      margin-right: 3px;
-      font-size: 0.96em;
-    }
-    .filtros-relatorios input, 
-    .filtros-relatorios select {
-      padding: 5px 8px;
-      border-radius: 6px;
-      border: 1.1px solid #b3bcf7;
-      font-size: 0.95em;
-      outline: none;
-      min-width: 85px;
-      background: #fff;
-      color: #3730a3;
-      font-weight: 500;
-      transition: border 0.14s;
-    }
-    .filtros-relatorios input:focus, 
-    .filtros-relatorios select:focus {
-      border: 1.3px solid var(--cor-primaria);
-      outline: none;
-    }
-    .filtros-relatorios button {
-      background: var(--cor-primaria);
-      color: #fff;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 7px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 0.95em;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      box-shadow: 0 1px 4px #38bdf812;
-      transition: background 0.18s;
-      min-height: 30px;
-    }
-    .filtros-relatorios button:hover {
-      background: #38bdf8;
-    }
-    .conteudo-abas {
-      margin-top: 0;
-      padding-bottom: 32px;
-      background: #f7f8fa;
-      border-radius: 0 0 18px 18px;
-    }
-    .aba-conteudo {
-      display: none;
-      animation: fadeIn .22s;
-      background: #fff;
-      border-radius: 14px;
-      margin: 24px 10px 0 10px;
-      padding: 22px 8px 18px 8px;
-      min-height: 240px;
-      box-shadow: 0 2px 10px #4f46e510;
-      border: 1.3px solid #e0e7ff;
-    }
-    .aba-conteudo.active {
-      display: block;
-    }
-    /* TABELA COMPACTA */
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 5px;
-      background: transparent;
-      font-size: 0.98em;
-    }
-    th, td {
-      text-align: left;
-      padding: 7px 6px;
-      font-size: 0.98em;
-      border: none;
-      background: #f3f4fc;
-    }
-    th {
-      background: #e0e7ff;
-      color: var(--cor-primaria);
-      font-weight: 700;
-      font-size: 1em;
-      border-radius: 7px 7px 0 0;
-      border-bottom: 2px solid #c7d2fe;
-    }
-    tr {
-      border-radius: 5px;
-      box-shadow: 0 1.2px 4px #4f46e508;
-    }
-    tr:nth-child(even) td {
-      background: #f7f8fa;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0;}
-      to { opacity: 1;}
-    }
-    @media (max-width: 900px) {
-      .main-relatorios {
-        margin: 10px 0 0 0;
-        padding: 0;
-        border-radius: 8px;
-      }
-      .top-actions, .filtros-relatorios {
-        padding: 7px 4px;
-      }
-      .conteudo-abas {
-        padding-bottom: 14px;
-      }
-      .aba-conteudo {
-        margin: 10px 2px 0 2px;
-        padding: 10px 2px;
-        border-radius: 8px;
-      }
-      .aba {
-        font-size: 0.94em;
-        padding: 4px 6px;
-        border-radius: 7px 7px 0 0;
-        min-width: 44px;
-      }
-      .filtros-relatorios {
-        gap: 5px;
-        font-size: 0.93em;
-      }
-      .filtros-relatorios label {
-        font-size: 0.93em;
-      }
-      .filtros-relatorios input, 
-      .filtros-relatorios select {
-        padding: 3px 4px;
-        min-width: 55px;
-        font-size: 0.92em;
-      }
-      .filtros-relatorios button {
-        padding: 4px 9px;
-        font-size: 0.93em;
-        min-height: 24px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatórios - Pronti</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+--cor-primaria: #4facfe;
+--cor-sucesso: #34d399;
+--cor-cinza: #6b7280;
+--cor-texto-escuro: #22223b;
+--cor-fundo-app: #f6f7fb;
+--cor-azul-pronti: #4f46e5; /* azul padrão Pronti /
+}
+body {
+margin: 0;
+padding: 0;
+font-family: 'Inter', Arial, sans-serif;
+background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
+min-height: 100vh;
+/ ✅ ALTERAÇÃO: Adicionado para centralizar o conteúdo ou a mensagem de erro /
+display: flex;
+justify-content: center;
+align-items: flex-start;
+}
+.main-relatorios {
+max-width: 1100px;
+width: 100%; / Garante que ocupe a largura disponível /
+margin: 28px auto 0 auto;
+padding: 0;
+min-height: 90vh;
+background: #fff;
+border-radius: 18px;
+box-shadow: 0 4px 28px #4f46e525;
+overflow: hidden;
+}
+.top-actions {
+display: flex;
+justify-content: space-between;
+align-items: center;
+background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
+padding: 18px 18px 10px 18px;
+border-radius: 18px 18px 0 0;
+color: #fff;
+}
+.btn-voltar {
+background: #fff;
+color: #6366f1;
+border: none;
+padding: 6px 16px 6px 10px;
+border-radius: 8px;
+font-size: 0.96em;
+font-weight: 600;
+cursor: pointer;
+box-shadow: 0 2px 8px #4f46e51c;
+transition: background 0.17s, color 0.18s;
+display: flex;
+align-items: center;
+gap: 7px;
+min-height: 32px;
+min-width: 64px;
+}
+.btn-voltar:hover {
+background: #38bdf8;
+color: #fff;
+}
+/ ABAS COMPACTAS /
+.abas-container {
+display: flex;
+gap: 0;
+overflow-x: auto;
+border-bottom: 1.5px solid #e0e7ff;
+background: transparent;
+scrollbar-width: none;
+align-items: flex-end;
+flex: 1;
+margin-left: 12px;
+}
+.abas-container::-webkit-scrollbar { display: none; }
+.aba {
+padding: 6px 14px;
+font-size: 0.97em;
+font-weight: 600;
+border: none;
+background: none;
+color: #fff;
+margin: 0;
+border-radius: 7px 7px 0 0;
+cursor: pointer;
+transition: background 0.15s, color 0.15s;
+min-width: 60px;
+white-space: nowrap;
+flex-shrink: 0;
+opacity: 0.87;
+outline: none;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.aba:not(.active):hover {
+background: #f1f4fa;
+color: var(--cor-primaria);
+opacity: 1;
+}
+.aba.active, .aba:focus {
+background: #fff;
+color: var(--cor-primaria);
+font-weight: 800;
+box-shadow: 0 -1px 9px #4f46e51a;
+opacity: 1;
+border-bottom: 2.5px solid var(--cor-primaria);
+}
+/ FILTROS COMPACTOS /
+.filtros-relatorios {
+display: flex;
+gap: 12px;
+align-items: center;
+background: #f7fafd;
+padding: 8px 14px;
+border-radius: 0 0 13px 13px;
+margin-bottom: 5px;
+flex-wrap: wrap;
+border-bottom: 1.3px solid #e0e7ff;
+}
+.filtros-relatorios label {
+font-weight: 600;
+color: var(--cor-primaria);
+margin-right: 3px;
+font-size: 0.96em;
+}
+.filtros-relatorios input,
+.filtros-relatorios select {
+padding: 5px 8px;
+border-radius: 6px;
+border: 1.1px solid #b3bcf7;
+font-size: 0.95em;
+outline: none;
+min-width: 85px;
+background: #fff;
+color: #3730a3;
+font-weight: 500;
+transition: border 0.14s;
+}
+.filtros-relatorios input:focus,
+.filtros-relatorios select:focus {
+border: 1.3px solid var(--cor-primaria);
+outline: none;
+}
+.filtros-relatorios button {
+background: var(--cor-primaria);
+color: #fff;
+border: none;
+padding: 6px 14px;
+border-radius: 7px;
+font-weight: bold;
+cursor: pointer;
+font-size: 0.95em;
+display: flex;
+align-items: center;
+gap: 7px;
+box-shadow: 0 1px 4px #38bdf812;
+transition: background 0.18s;
+min-height: 30px;
+}
+.filtros-relatorios button:hover {
+background: #38bdf8;
+}
+.conteudo-abas {
+margin-top: 0;
+padding-bottom: 32px;
+background: #f7f8fa;
+border-radius: 0 0 18px 18px;
+}
+.aba-conteudo {
+display: none;
+animation: fadeIn .22s;
+background: #fff;
+border-radius: 14px;
+margin: 24px 10px 0 10px;
+padding: 22px 8px 18px 8px;
+min-height: 240px;
+box-shadow: 0 2px 10px #4f46e510;
+border: 1.3px solid #e0e7ff;
+}
+.aba-conteudo.active {
+display: block;
+}
+/ TABELA COMPACTA */
+table {
+width: 100%;
+border-collapse: separate;
+border-spacing: 0 5px;
+background: transparent;
+font-size: 0.98em;
+}
+th, td {
+text-align: left;
+padding: 7px 6px;
+font-size: 0.98em;
+border: none;
+background: #f3f4fc;
+}
+th {
+background: #e0e7ff;
+color: var(--cor-primaria);
+font-weight: 700;
+font-size: 1em;
+border-radius: 7px 7px 0 0;
+border-bottom: 2px solid #c7d2fe;
+}
+tr {
+border-radius: 5px;
+box-shadow: 0 1.2px 4px #4f46e508;
+}
+tr:nth-child(even) td {
+background: #f7f8fa;
+}
+@keyframes fadeIn {
+from { opacity: 0;}
+to { opacity: 1;}
+}
+
+/* ✅ INÍCIO DA ALTERAÇÃO: Estilos para o contêiner do gráfico */
+.chart-container {
+    position: relative;
+    height: 350px;
+    width: 100%;
+    max-width: 95%;
+    margin: 30px auto 15px auto;
+}
+/* ✅ FIM DA ALTERAÇÃO */
+
+@media (max-width: 900px) {
+  .main-relatorios {
+    margin: 10px 0 0 0;
+    padding: 0;
+    border-radius: 8px;
+  }
+  .top-actions, .filtros-relatorios {
+    padding: 7px 4px;
+  }
+  .conteudo-abas {
+    padding-bottom: 14px;
+  }
+  .aba-conteudo {
+    margin: 10px 2px 0 2px;
+    padding: 10px 2px;
+    border-radius: 8px;
+  }
+  .aba {
+    font-size: 0.94em;
+    padding: 4px 6px;
+    border-radius: 7px 7px 0 0;
+    min-width: 44px;
+  }
+  .filtros-relatorios {
+    gap: 5px;
+    font-size: 0.93em;
+  }
+  .filtros-relatorios label {
+    font-size: 0.93em;
+  }
+  .filtros-relatorios input, 
+  .filtros-relatorios select {
+    padding: 3px 4px;
+    min-width: 55px;
+    font-size: 0.92em;
+  }
+  .filtros-relatorios button {
+    padding: 4px 9px;
+    font-size: 0.93em;
+    min-height: 24px;
+  }
+}
+</style>
 </head>
 <body>
-  <!-- O conteúdo será inserido aqui pelo script de inicialização -->
-  <div id="page-content">
-    <main class="main-relatorios">
-      <div class="top-actions">
-        <button id="btn-voltar" class="btn-voltar"><i class="fa fa-arrow-left"></i> Voltar</button>
-        <nav class="abas-container">
-          <button class="aba active" data-aba="servicos"><i class="fa-solid fa-gears"></i> Serviços</button>
-          <button class="aba" data-aba="profissionais"><i class="fa-solid fa-user-tie"></i> Profissionais</button>
-          <button class="aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> Faturamento</button>
-          <button class="aba" data-aba="clientes"><i class="fa-solid fa-user-group"></i> Clientes</button>
-          <button class="aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
-        </nav>
+<div id="page-content">
+<main class="main-relatorios">
+<div class="top-actions">
+<button id="btn-voltar" class="btn-voltar"><i class="fa fa-arrow-left"></i> Voltar</button>
+<nav class="abas-container">
+<button class="aba active" data-aba="servicos"><i class="fa-solid fa-gears"></i> Serviços</button>
+<button class="aba" data-aba="profissionais"><i class="fa-solid fa-user-tie"></i> Profissionais</button>
+<button class="aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> Faturamento</button>
+<button class="aba" data-aba="clientes"><i class="fa-solid fa-user-group"></i> Clientes</button>
+<button class="aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
+</nav>
+</div>
+<header class="filtros-relatorios">
+<label for="filtro-data-inicio">Data Início:</label>
+<input type="date" id="filtro-data-inicio">
+
+    <label for="filtro-data-fim">Data Fim:</label>
+    <input type="date" id="filtro-data-fim">
+
+    <label for="filtro-profissional">Profissional:</label>
+    <select id="filtro-profissional">
+      <option value="todos">Todos</option>
+      </select>
+
+    <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
+  </header>
+  <section class="conteudo-abas">
+    <div class="aba-conteudo active" id="servicos">
+      <div class="chart-container">
+        <canvas id="grafico-servicos"></canvas>
       </div>
-      <!-- Filtros -->
-      <header class="filtros-relatorios">
-        <label for="filtro-data-inicio">Data Início:</label>
-        <input type="date" id="filtro-data-inicio">
+    </div>
+    <div class="aba-conteudo" id="profissionais">
+       <div class="chart-container">
+        <canvas id="grafico-profissionais"></canvas>
+      </div>
+    </div>
+    <div class="aba-conteudo" id="faturamento">
+       <div class="chart-container">
+        <canvas id="grafico-faturamento"></canvas>
+      </div>
+    </div>
+    <div class="aba-conteudo" id="clientes">
+       <div class="chart-container">
+        <canvas id="grafico-clientes"></canvas>
+      </div>
+    </div>
+    <div class="aba-conteudo" id="agenda">
+       <div class="chart-container">
+        <canvas id="grafico-agenda"></canvas>
+      </div>
+    </div>
+    </section>
+</main>
+</div>
 
-        <label for="filtro-data-fim">Data Fim:</label>
-        <input type="date" id="filtro-data-fim">
+<script type="module">
+import { verificarAcesso } from './userService.js';
+import { db } from './firebase-config.js';
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        <label for="filtro-profissional">Profissional:</label>
-        <select id="filtro-profissional">
-          <option value="todos">Todos</option>
-          <!-- Populado via JS -->
-        </select>
+/**
+ * Ponto de entrada único que orquestra a inicialização da página.
+ */
+async function inicializarPagina( ) {
+  try {
+    // 1. Garante que o usuário está logado e obtém a sessão.
+    const sessao = await verificarAcesso();
+    if (!sessao || !sessao.user) {
+      return; // verificarAcesso já redireciona.
+    }
 
-        <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
-      </header>
-      <!-- Conteúdo das abas -->
-      <section class="conteudo-abas">
-        <div class="aba-conteudo active" id="servicos"></div>
-        <div class="aba-conteudo" id="profissionais"></div>
-        <div class="aba-conteudo" id="faturamento"></div>
-        <div class="aba-conteudo" id="clientes"></div>
-        <div class="aba-conteudo" id="agenda"></div>
-      </section>
-    </main>
-  </div>
+    // 2. Define os papéis do usuário a partir da sessão.
+    let papelUsuario = sessao.papeis || [];
+    if (papelUsuario.length === 0) { // Fallback
+      if(sessao.isAdmin) papelUsuario.push(&#39;admin&#39;);
+      if(sessao.isOwner) papelUsuario.push(&#39;dono&#39;);
+      if(papelUsuario.length === 0) papelUsuario.push(&#39;funcionario&#39;);
+    }
 
-  <!-- ================================================================== -->
-  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
-  <!-- ================================================================== -->
-  <script type="module">
-    import { verificarAcesso } from './userService.js';
-    import { db } from './firebase-config.js';
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    // 3. Busca as regras de permissão do Firestore.
+    const permissoesRef = doc(db, &quot;configuracoesGlobais&quot;, &quot;permissoes&quot;);
+    const permissoesSnap = await getDoc(permissoesRef);
+    const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
-    /**
-     * Ponto de entrada único que orquestra a inicialização da página.
-     */
-    async function inicializarPagina( ) {
-      try {
-        // 1. Garante que o usuário está logado e obtém a sessão.
-        const sessao = await verificarAcesso();
-        if (!sessao || !sessao.user) {
-          return; // verificarAcesso já redireciona.
+    // 4. VALIDAÇÃO DE ACESSO: Verifica se algum dos papéis do usuário tem permissão para ver &#39;relatorios&#39;.
+    const podeVer = papelUsuario.some(papel =&gt; regras.relatorios &amp;&amp; regras.relatorios[papel] === true);
+
+    if (!podeVer) {
+      // Se não tiver permissão, esconde o conteúdo e mostra uma mensagem de erro.
+      document.getElementById(&#39;page-content&#39;).innerHTML = `
+        &lt;div style=&quot;background: #fff; padding: 40px; border-radius: 12px; text-align: center; margin-top: 50px;&quot;&gt;
+          &lt;h1&gt;Acesso Negado&lt;/h1&gt;
+          &lt;p&gt;Você não tem permissão para acessar esta página.&lt;/p&gt;
+          &lt;button onclick=&quot;window.history.back()&quot; style=&quot;margin-top: 20px; padding: 10px 20px; cursor: pointer;&quot;&gt;Voltar&lt;/button&gt;
+        &lt;/div&gt;
+      `;
+      return; // Interrompe a execução.
+    }
+
+    // 5. Se tiver permissão, a página continua a carregar normalmente.
+    // A lógica do &#39;relatorios.js&#39; será executada.
+
+  } catch (error) {
+    console.error(&quot;Erro crítico ao inicializar a página de relatórios:&quot;, error);
+    document.getElementById(&#39;page-content&#39;).innerHTML = &#39;&lt;h1&gt;Ocorreu um erro&lt;/h1&gt;&lt;p&gt;Não foi possível carregar a página. Tente novamente.&lt;/p&gt;&#39;;
+  }
+}
+
+// Inicia todo o processo.
+inicializarPagina();
+</script>
+
+<script src="relatorios.js" type="module"></script>
+
+<script>
+const btnVoltar = document.getElementById("btn-voltar");
+if (btnVoltar) {
+btnVoltar.addEventListener("click", () => {
+window.history.back();
+});
+}
+
+// Lógica do histórico para o botão voltar do navegador
+if (window.history.state === null || window.history.state.page !== &quot;relatorios&quot;) {
+    window.history.pushState({ &quot;page&quot;: &quot;relatorios&quot; }, &quot;&quot;);
+}
+window.addEventListener(&#39;popstate&#39;, function() {
+  window.location.replace(&#39;index.html&#39;);
+});
+</script>
+
+<script>
+// Objeto para armazenar as instâncias dos gráficos ativos para que possam ser destruídos antes de recriar
+const activeCharts = {};
+
+/**
+ * Função para renderizar ou atualizar um gráfico em um canvas específico.
+ * @param {string} canvasId - O ID do elemento &lt;canvas&gt; onde o gráfico será desenhado.
+ * @param {string} tipo - O tipo de gráfico (ex: &#39;bar&#39;, &#39;line&#39;, &#39;pie&#39;, &#39;doughnut&#39;).
+ * @param {string[]} labels - As etiquetas para o eixo X (ex: nomes de serviços, profissionais).
+ * @param {number[]} data - Os valores numéricos para o eixo Y.
+ * @param {string} label - O rótulo para o conjunto de dados (ex: &#39;Quantidade&#39;, &#39;Valor R$&#39;).
+ * @param {string} titulo - O título a ser exibido acima do gráfico.
+ */
+function renderizarGrafico(canvasId, tipo, labels, data, label, titulo) {
+  const ctx = document.getElementById(canvasId)?.getContext(&#39;2d&#39;);
+  if (!ctx) return;
+
+  // Se já existe um gráfico neste canvas, ele é destruído para evitar sobreposição
+  if (activeCharts[canvasId]) {
+    activeCharts[canvasId].destroy();
+  }
+
+  // Cria o novo gráfico
+  activeCharts[canvasId] = new Chart(ctx, {
+    type: tipo,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: data,
+        backgroundColor: [
+          &#39;rgba(79, 70, 229, 0.7)&#39;, &#39;rgba(99, 102, 241, 0.7)&#39;,
+          &#39;rgba(56, 189, 248, 0.7)&#39;, &#39;rgba(34, 211, 238, 0.7)&#39;,
+          &#39;rgba(165, 180, 252, 0.7)&#39;, &#39;rgba(191, 219, 254, 0.7)&#39;
+        ],
+        borderColor: [
+          &#39;rgba(79, 70, 229, 1)&#39;, &#39;rgba(99, 102, 241, 1)&#39;,
+          &#39;rgba(56, 189, 248, 1)&#39;, &#39;rgba(34, 211, 238, 1)&#39;,
+          &#39;rgba(165, 180, 252, 1)&#39;, &#39;rgba(191, 219, 254, 1)&#39;
+        ],
+        borderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: &#39;top&#39;,
+        },
+        title: {
+          display: true,
+          text: titulo,
+          font: { size: 16 },
+          color: &#39;#3730a3&#39;
         }
-
-        // 2. Define os papéis do usuário a partir da sessão.
-        let papelUsuario = sessao.papeis || [];
-        if (papelUsuario.length === 0) { // Fallback
-          if(sessao.isAdmin) papelUsuario.push('admin');
-          if(sessao.isOwner) papelUsuario.push('dono');
-          if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+      },
+      scales: {
+        y: {
+          beginAtZero: true
         }
-
-        // 3. Busca as regras de permissão do Firestore.
-        const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
-        const permissoesSnap = await getDoc(permissoesRef);
-        const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-
-        // 4. VALIDAÇÃO DE ACESSO: Verifica se algum dos papéis do usuário tem permissão para ver 'relatorios'.
-        const podeVer = papelUsuario.some(papel => regras.relatorios && regras.relatorios[papel] === true);
-
-        if (!podeVer) {
-          // Se não tiver permissão, esconde o conteúdo e mostra uma mensagem de erro.
-          document.getElementById('page-content').innerHTML = `
-            <div style="background: #fff; padding: 40px; border-radius: 12px; text-align: center; margin-top: 50px;">
-              <h1>Acesso Negado</h1>
-              <p>Você não tem permissão para acessar esta página.</p>
-              <button onclick="window.history.back()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">Voltar</button>
-            </div>
-          `;
-          return; // Interrompe a execução.
-        }
-
-        // 5. Se tiver permissão, a página continua a carregar normalmente.
-        // A lógica do 'relatorios.js' será executada.
-
-      } catch (error) {
-        console.error("Erro crítico ao inicializar a página de relatórios:", error);
-        document.getElementById('page-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
       }
     }
+  });
+}
 
-    // Inicia todo o processo.
-    inicializarPagina();
-  </script>
+/*
+ * IMPORTANTE: A função `renderizarGrafico` acima deve ser chamada de dentro do seu arquivo `relatorios.js`
+ * após você processar os dados para cada aba.
+ *
+ * Exemplo de como você faria dentro da sua função que gera o relatório de serviços:
+ *
+ * function gerarRelatorioServicos(dados) {
+ * // 1. Sua lógica atual para criar a tabela HTML...
+ * criarTabela(dados);
+ *
+ * // 2. Extrair os dados para o gráfico
+ * const labels = dados.map(item =&gt; item.nomeDoServico);
+ * const valores = dados.map(item =&gt; item.quantidade);
+ *
+ * // 3. Chamar a função para renderizar o gráfico
+ * renderizarGrafico(&#39;grafico-servicos&#39;, &#39;bar&#39;, labels, valores, &#39;Quantidade&#39;, &#39;Serviços Mais Realizados&#39;);
+ * }
+ *
+ * Como não temos acesso ao `relatorios.js`, o código abaixo é um EXEMPLO para demonstrar
+ * a funcionalidade. Ele será acionado quando o botão &quot;Aplicar&quot; ou uma aba for clicada.
+ * Adapte ou remova este bloco ao integrar com sua lógica real.
+*/
 
-  <!-- Seus scripts de negócio são mantidos -->
-  <script src="relatorios.js" type="module"></script>
+// Função de demonstração para gerar dados e renderizar o gráfico
+function demonstrarGrafico() {
+  const abaAtiva = document.querySelector(&#39;.aba-conteudo.active&#39;);
+  if (!abaAtiva) return;
+  const idAba = abaAtiva.id;
 
-  <!-- O script do botão voltar e do histórico foi mantido -->
-  <script>
-    const btnVoltar = document.getElementById("btn-voltar");
-    if (btnVoltar) {
-      btnVoltar.addEventListener("click", () => {
-        window.history.back();
-      });
+  // Simula dados diferentes para cada aba
+  switch (idAba) {
+    case &#39;servicos&#39;:
+      renderizarGrafico(&#39;grafico-servicos&#39;, &#39;bar&#39;,
+        [&#39;Corte&#39;, &#39;Escova&#39;, &#39;Manicure&#39;, &#39;Pedicure&#39;, &#39;Hidratação&#39;],
+        [Math.floor(Math.random() * 50), Math.floor(Math.random() * 40), Math.floor(Math.random() * 80), Math.floor(Math.random() * 70), Math.floor(Math.random() * 30)],
+        &#39;Quantidade&#39;, &#39;Serviços Mais Realizados no Período&#39;
+      );
+      break;
+    case &#39;profissionais&#39;:
+      renderizarGrafico(&#39;grafico-profissionais&#39;, &#39;pie&#39;,
+        [&#39;Ana&#39;, &#39;Beatriz&#39;, &#39;Carla&#39;, &#39;Daniela&#39;],
+        [Math.floor(Math.random() * 10), Math.floor(Math.random() * 15), Math.floor(Math.random() * 12), Math.floor(Math.random() * 20)],
+        &#39;Nº de Atendimentos&#39;, &#39;Atendimentos por Profissional&#39;
+      );
+      break;
+    case &#39;faturamento&#39;:
+      renderizarGrafico(&#39;grafico-faturamento&#39;, &#39;line&#39;,
+        [&#39;Seg&#39;, &#39;Ter&#39;, &#39;Qua&#39;, &#39;Qui&#39;, &#39;Sex&#39;, &#39;Sáb&#39;],
+        [Math.floor(Math.random() * 500), Math.floor(Math.random() * 700), Math.floor(Math.random() * 600), Math.floor(Math.random() * 900), Math.floor(Math.random() * 1200), Math.floor(Math.random() * 1500)],
+        &#39;Valor (R$)&#39;, &#39;Faturamento Diário na Semana&#39;
+      );
+      break;
+    case &#39;clientes&#39;:
+       renderizarGrafico(&#39;grafico-clientes&#39;, &#39;bar&#39;,
+        [&#39;Novos Clientes&#39;, &#39;Clientes Recorrentes&#39;],
+        [Math.floor(Math.random() * 30), Math.floor(Math.random() * 150)],
+        &#39;Quantidade&#39;, &#39;Perfil de Clientes no Período&#39;
+      );
+      break;
+    case &#39;agenda&#39;:
+      renderizarGrafico(&#39;grafico-agenda&#39;, &#39;doughnut&#39;,
+        [&#39;Confirmados&#39;, &#39;Cancelados&#39;, &#39;Não Compareceu&#39;, &#39;Aguardando&#39;],
+        [Math.floor(Math.random() * 100), Math.floor(Math.random() * 20), Math.floor(Math.random() * 10), Math.floor(Math.random() * 30)],
+        &#39;Status&#39;, &#39;Status dos Agendamentos&#39;
+      );
+      break;
+  }
+}
+
+// Gatilho de demonstração no botão de filtro
+document.getElementById(&#39;btn-aplicar-filtro&#39;).addEventListener(&#39;click&#39;, demonstrarGrafico);
+
+// Adiciona lógica para trocar abas e atualizar o gráfico de demonstração
+document.querySelectorAll(&#39;.aba&#39;).forEach(aba =&gt; {
+  aba.addEventListener(&#39;click&#39;, () =&gt; {
+    // A lógica de troca de abas real provavelmente está no relatorios.js.
+    // Isto é para garantir que a demonstração funcione.
+    document.querySelector(&#39;.aba.active&#39;)?.classList.remove(&#39;active&#39;);
+    aba.classList.add(&#39;active&#39;);
+
+    document.querySelector(&#39;.aba-conteudo.active&#39;)?.classList.remove(&#39;active&#39;);
+    const conteudoAba = document.getElementById(aba.dataset.aba);
+    if (conteudoAba) {
+        conteudoAba.classList.add(&#39;active&#39;);
     }
 
-    // Lógica do histórico para o botão voltar do navegador
-    if (window.history.state === null || window.history.state.page !== "relatorios") {
-        window.history.pushState({ "page": "relatorios" }, "");
-    }
-    window.addEventListener('popstate', function() {
-      window.location.replace('index.html');
-    });
-  </script>
+    // Gera o gráfico para a nova aba ativa
+    demonstrarGrafico();
+  });
+});
+
+// Simula um clique inicial para carregar o gráfico da primeira aba ao carregar a página
+window.addEventListener(&#39;load&#39;, () =&gt; {
+  setTimeout(() =&gt; {
+    demonstrarGrafico();
+  }, 500); // Um pequeno delay para garantir que tudo carregou
+});
+</script>
 
 </body>
 </html>
