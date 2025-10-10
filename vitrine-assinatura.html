@@ -8,36 +8,171 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css">
     <style>
-        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #4f46e5 0%, #222664 100%); margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 40px 20px; box-sizing: border-box; color: #ffffff; }
-        .container-pagamento { background: transparent; text-align: center; width: 100%; max-width: 600px; }
-        h1 { color: #ffffff; font-size: clamp(2rem, 5vw, 2.8rem); text-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-bottom: 25px; }
-        .card-display { background: #fff; color: #222664; border-radius: 16px; padding: 28px 22px; max-width: 400px; margin: 0 auto 30px auto; box-shadow: 0 6px 22px rgba(44,54,80,0.10); }
-        .card-display h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: #4f46e5; }
-        .card-display .preco { font-size: 2rem; font-weight: 700; margin: 10px 0 5px 0; color: #6366f1; }
-        .card-display ul { list-style: '✓ '; padding-left: 20px; color: #333; margin: 16px 0; text-align:left;}
-        .btn-acao { width: 100%; background: #10b981; color: #fff; font-weight: 700; border: none; border-radius: 12px; padding: 18px 0; font-size: 1.2rem; cursor: pointer; transition: background 0.2s, transform 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);}
-        .btn-acao:hover:not(:disabled) { background: #0f9e70; transform: translateY(-2px);}
-        .btn-acao:disabled { background: #374151; cursor: not-allowed; box-shadow: none;}
-        #instrucoes-container { margin-top: 0; margin-bottom: 30px; background: #f1f5f9; border-radius: 12px; color: #1e293b; padding: 20px 26px; max-width: 400px; font-size: 1.05em; text-align: left; margin-left: auto; margin-right: auto;}
-        #instrucoes-container strong { color: #4f46e5; display: block; margin-bottom: 10px; }
-        /* Estilo para a mensagem de sucesso */
-        .card-sucesso { text-align: center; }
-        .card-sucesso i { font-size: 3rem; color: #10b981; margin-bottom: 15px; }
-        .card-sucesso h2 { color: #10b981; }
-        .card-sucesso p { color: #444; font-size: 1.1rem; line-height: 1.6; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            color: #22223b;
+            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+        #menu-container {
+            width: 250px;
+            min-width: 250px;
+            flex-shrink: 0;
+        }
+        main {
+            flex-grow: 1;
+            box-sizing: border-box;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 0 0 0;
+        }
+        .header-pagina {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 0 20px;
+        }
+        .header-pagina h1 {
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .espaco-cards { height: 18px; }
+        .container-pagamento {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .card-display {
+            background: #fff;
+            color: #222664;
+            border-radius: 16px;
+            padding: 28px 22px;
+            max-width: 400px;
+            margin: 0 auto 30px auto;
+            box-shadow: 0 6px 22px rgba(44,54,80,0.10);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .card-display h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #4f46e5;
+        }
+        .card-display .preco {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0 5px 0;
+            color: #6366f1;
+        }
+        .card-display ul {
+            list-style: '✓ ';
+            padding-left: 20px;
+            color: #333;
+            margin: 16px 0;
+            text-align: left;
+        }
+        .btn-acao {
+            width: 100%;
+            background: #10b981;
+            color: #fff;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            padding: 18px 0;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            margin-top: 0;
+        }
+        .btn-acao:hover:not(:disabled) {
+            background: #0f9e70;
+            transform: translateY(-2px);
+        }
+        .btn-acao:disabled {
+            background: #374151;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #instrucoes-container {
+            margin-top: 0;
+            margin-bottom: 30px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            color: #1e293b;
+            padding: 20px 26px;
+            max-width: 400px;
+            font-size: 1.05em;
+            text-align: left;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #instrucoes-container strong {
+            color: #4f46e5;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .card-sucesso {
+            text-align: center;
+            width: 100%;
+        }
+        .card-sucesso i {
+            font-size: 3rem;
+            color: #10b981;
+            margin-bottom: 15px;
+        }
+        .card-sucesso h2 {
+            color: #10b981;
+            margin-bottom: 10px;
+        }
+        .card-sucesso p {
+            color: #444;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        @media (max-width: 700px) {
+            main { padding: 20px 0 0 0; }
+            .header-pagina { padding: 0 6px; }
+            .container-pagamento { padding: 0 6px; }
+            .card-display, #instrucoes-container { max-width: 95vw; padding: 14px 8px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container-pagamento">
-        <h1 id="titulo-principal">Pagamento de Assinatura</h1>
-        <div id="plano-card" class="card-display"></div>
-        <div id="instrucoes-container" style="display: none;"></div>
-        <div id="area-acao">
-             <!-- O botão será inserido dinamicamente pelo script -->
+    <aside id="menu-container"></aside>
+    <main>
+        <div class="header-pagina">
+            <h1 id="titulo-principal">Pagamento de Assinatura</h1>
         </div>
-    </div>
-
+        <div class="espaco-cards"></div>
+        <div class="container-pagamento">
+            <div id="plano-card" class="card-display"></div>
+            <div id="instrucoes-container" style="display: none;"></div>
+            <div id="area-acao">
+                <!-- O botão será inserido dinamicamente pelo script -->
+            </div>
+        </div>
+    </main>
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
         import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
@@ -47,7 +182,6 @@
         const empresaId = urlParams.get("empresaId");
         const planoId = urlParams.get("planoId");
 
-        const containerPagamento = document.querySelector('.container-pagamento');
         const tituloPrincipal = document.getElementById('titulo-principal');
         const planoCardDiv = document.getElementById('plano-card');
         const areaAcaoDiv = document.getElementById('area-acao');
@@ -158,12 +292,11 @@
                     dataCriacao: serverTimestamp()
                 });
                 
-                // ##### INÍCIO DA CORREÇÃO #####
                 // 2. Adiciona a notificação na 'filaDeNotificacoes' usando o ID do dono da empresa.
                 if (empresaData && empresaData.donoId) {
                     try {
                         await addDoc(collection(db, "filaDeNotificacoes"), {
-                            donoId: empresaData.donoId, // CORRIGIDO: Usa o ID do dono, não da empresa
+                            donoId: empresaData.donoId,
                             tipo: 'PAGAMENTO_PIX_RECEBIDO',
                             titulo: 'Pagamento PIX Confirmado',
                             mensagem: `O cliente ${currentUser.displayName || currentUser.email} confirmou o pagamento do plano "${planoSelecionado.nome}".`,
@@ -176,7 +309,6 @@
                 } else {
                     console.warn("A notificação de pagamento foi registrada, mas o 'donoId' da empresa não foi encontrado para criar a notificação.");
                 }
-                // ##### FIM DA CORREÇÃO #####
 
                 // 3. Mostra a mensagem de sucesso para o cliente.
                 tituloPrincipal.textContent = "Notificação Enviada!";
