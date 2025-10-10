@@ -14,7 +14,7 @@
 --cor-cinza: #6b7280;
 --cor-texto-escuro: #22223b;
 --cor-fundo-app: #f6f7fb;
---cor-azul-pronti: #4f46e5; /* azul padrão Pronti /
+--cor-azul-pronti: #4f46e5; /* azul padrão Pronti */
 }
 body {
 margin: 0;
@@ -22,14 +22,13 @@ padding: 0;
 font-family: 'Inter', Arial, sans-serif;
 background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
 min-height: 100vh;
-/ ✅ ALTERAÇÃO: Adicionado para centralizar o conteúdo ou a mensagem de erro /
 display: flex;
 justify-content: center;
 align-items: flex-start;
 }
 .main-relatorios {
 max-width: 1100px;
-width: 100%; / Garante que ocupe a largura disponível /
+width: 100%;
 margin: 28px auto 0 auto;
 padding: 0;
 min-height: 90vh;
@@ -68,7 +67,6 @@ min-width: 64px;
 background: #38bdf8;
 color: #fff;
 }
-/ ABAS COMPACTAS /
 .abas-container {
 display: flex;
 gap: 0;
@@ -114,7 +112,6 @@ box-shadow: 0 -1px 9px #4f46e51a;
 opacity: 1;
 border-bottom: 2.5px solid var(--cor-primaria);
 }
-/ FILTROS COMPACTOS /
 .filtros-relatorios {
 display: flex;
 gap: 12px;
@@ -189,7 +186,6 @@ border: 1.3px solid #e0e7ff;
 .aba-conteudo.active {
 display: block;
 }
-/ TABELA COMPACTA */
 table {
 width: 100%;
 border-collapse: separate;
@@ -223,58 +219,24 @@ background: #f7f8fa;
 from { opacity: 0;}
 to { opacity: 1;}
 }
-
-/* ✅ INÍCIO DA ALTERAÇÃO: Estilos para o contêiner do gráfico */
 .chart-container {
-    position: relative;
-    height: 350px;
-    width: 100%;
-    max-width: 95%;
-    margin: 30px auto 15px auto;
+position: relative;
+height: 350px;
+width: 100%;
+max-width: 95%;
+margin: 30px auto 15px auto;
 }
-/* ✅ FIM DA ALTERAÇÃO */
-
 @media (max-width: 900px) {
-  .main-relatorios {
-    margin: 10px 0 0 0;
-    padding: 0;
-    border-radius: 8px;
-  }
-  .top-actions, .filtros-relatorios {
-    padding: 7px 4px;
-  }
-  .conteudo-abas {
-    padding-bottom: 14px;
-  }
-  .aba-conteudo {
-    margin: 10px 2px 0 2px;
-    padding: 10px 2px;
-    border-radius: 8px;
-  }
-  .aba {
-    font-size: 0.94em;
-    padding: 4px 6px;
-    border-radius: 7px 7px 0 0;
-    min-width: 44px;
-  }
-  .filtros-relatorios {
-    gap: 5px;
-    font-size: 0.93em;
-  }
-  .filtros-relatorios label {
-    font-size: 0.93em;
-  }
-  .filtros-relatorios input, 
-  .filtros-relatorios select {
-    padding: 3px 4px;
-    min-width: 55px;
-    font-size: 0.92em;
-  }
-  .filtros-relatorios button {
-    padding: 4px 9px;
-    font-size: 0.93em;
-    min-height: 24px;
-  }
+.main-relatorios { margin: 10px 0 0 0; padding: 0; border-radius: 8px; }
+.top-actions, .filtros-relatorios { padding: 7px 4px; }
+.conteudo-abas { padding-bottom: 14px; }
+.aba-conteudo { margin: 10px 2px 0 2px; padding: 10px 2px; border-radius: 8px; }
+.aba { font-size: 0.94em; padding: 4px 6px; border-radius: 7px 7px 0 0; min-width: 44px; }
+.filtros-relatorios { gap: 5px; font-size: 0.93em; }
+.filtros-relatorios label { font-size: 0.93em; }
+.filtros-relatorios input,
+.filtros-relatorios select { padding: 3px 4px; min-width: 55px; font-size: 0.92em; }
+.filtros-relatorios button { padding: 4px 9px; font-size: 0.93em; min-height: 24px; }
 }
 </style>
 </head>
@@ -294,44 +256,41 @@ to { opacity: 1;}
 <header class="filtros-relatorios">
 <label for="filtro-data-inicio">Data Início:</label>
 <input type="date" id="filtro-data-inicio">
-
-    <label for="filtro-data-fim">Data Fim:</label>
-    <input type="date" id="filtro-data-fim">
-
-    <label for="filtro-profissional">Profissional:</label>
-    <select id="filtro-profissional">
-      <option value="todos">Todos</option>
-      </select>
-
-    <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
-  </header>
-  <section class="conteudo-abas">
-    <div class="aba-conteudo active" id="servicos">
-      <div class="chart-container">
-        <canvas id="grafico-servicos"></canvas>
-      </div>
-    </div>
-    <div class="aba-conteudo" id="profissionais">
-       <div class="chart-container">
-        <canvas id="grafico-profissionais"></canvas>
-      </div>
-    </div>
-    <div class="aba-conteudo" id="faturamento">
-       <div class="chart-container">
-        <canvas id="grafico-faturamento"></canvas>
-      </div>
-    </div>
-    <div class="aba-conteudo" id="clientes">
-       <div class="chart-container">
-        <canvas id="grafico-clientes"></canvas>
-      </div>
-    </div>
-    <div class="aba-conteudo" id="agenda">
-       <div class="chart-container">
-        <canvas id="grafico-agenda"></canvas>
-      </div>
-    </div>
-    </section>
+<label for="filtro-data-fim">Data Fim:</label>
+<input type="date" id="filtro-data-fim">
+<label for="filtro-profissional">Profissional:</label>
+<select id="filtro-profissional">
+<option value="todos">Todos</option>
+</select>
+<button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
+</header>
+<section class="conteudo-abas">
+<div class="aba-conteudo active" id="servicos">
+<div class="chart-container">
+<canvas id="grafico-servicos"></canvas>
+</div>
+</div>
+<div class="aba-conteudo" id="profissionais">
+<div class="chart-container">
+<canvas id="grafico-profissionais"></canvas>
+</div>
+</div>
+<div class="aba-conteudo" id="faturamento">
+<div class="chart-container">
+<canvas id="grafico-faturamento"></canvas>
+</div>
+</div>
+<div class="aba-conteudo" id="clientes">
+<div class="chart-container">
+<canvas id="grafico-clientes"></canvas>
+</div>
+</div>
+<div class="aba-conteudo" id="agenda">
+<div class="chart-container">
+<canvas id="grafico-agenda"></canvas>
+</div>
+</div>
+</section>
 </main>
 </div>
 
@@ -340,35 +299,28 @@ import { verificarAcesso } from './userService.js';
 import { db } from './firebase-config.js';
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-/**
- * Ponto de entrada único que orquestra a inicialização da página.
- */
-async function inicializarPagina( ) {
+async function inicializarPagina() {
   try {
-    // 1. Garante que o usuário está logado e obtém a sessão.
     const sessao = await verificarAcesso();
     if (!sessao || !sessao.user) {
-      return; // verificarAcesso já redireciona.
+      return;
     }
 
-    // 2. Define os papéis do usuário a partir da sessão.
     let papelUsuario = sessao.papeis || [];
-    if (papelUsuario.length === 0) { // Fallback
+    if (papelUsuario.length === 0) {
       if(sessao.isAdmin) papelUsuario.push(&#39;admin&#39;);
       if(sessao.isOwner) papelUsuario.push(&#39;dono&#39;);
       if(papelUsuario.length === 0) papelUsuario.push(&#39;funcionario&#39;);
     }
 
-    // 3. Busca as regras de permissão do Firestore.
     const permissoesRef = doc(db, &quot;configuracoesGlobais&quot;, &quot;permissoes&quot;);
     const permissoesSnap = await getDoc(permissoesRef);
     const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
-    // 4. VALIDAÇÃO DE ACESSO: Verifica se algum dos papéis do usuário tem permissão para ver &#39;relatorios&#39;.
-    const podeVer = papelUsuario.some(papel =&gt; regras.relatorios &amp;&amp; regras.relatorios[papel] === true);
+    // ✅ ALTERAÇÃO: Reescrevendo a lógica para evitar o operador &#39;&amp;&amp;&#39; que causou o erro.
+    const podeVer = papelUsuario.some(papel =&gt; (regras.relatorios ? regras.relatorios[papel] === true : false));
 
     if (!podeVer) {
-      // Se não tiver permissão, esconde o conteúdo e mostra uma mensagem de erro.
       document.getElementById(&#39;page-content&#39;).innerHTML = `
         &lt;div style=&quot;background: #fff; padding: 40px; border-radius: 12px; text-align: center; margin-top: 50px;&quot;&gt;
           &lt;h1&gt;Acesso Negado&lt;/h1&gt;
@@ -376,19 +328,13 @@ async function inicializarPagina( ) {
           &lt;button onclick=&quot;window.history.back()&quot; style=&quot;margin-top: 20px; padding: 10px 20px; cursor: pointer;&quot;&gt;Voltar&lt;/button&gt;
         &lt;/div&gt;
       `;
-      return; // Interrompe a execução.
+      return;
     }
-
-    // 5. Se tiver permissão, a página continua a carregar normalmente.
-    // A lógica do &#39;relatorios.js&#39; será executada.
-
   } catch (error) {
     console.error(&quot;Erro crítico ao inicializar a página de relatórios:&quot;, error);
     document.getElementById(&#39;page-content&#39;).innerHTML = &#39;&lt;h1&gt;Ocorreu um erro&lt;/h1&gt;&lt;p&gt;Não foi possível carregar a página. Tente novamente.&lt;/p&gt;&#39;;
   }
 }
-
-// Inicia todo o processo.
 inicializarPagina();
 </script>
 
@@ -402,7 +348,6 @@ window.history.back();
 });
 }
 
-// Lógica do histórico para o botão voltar do navegador
 if (window.history.state === null || window.history.state.page !== &quot;relatorios&quot;) {
     window.history.pushState({ &quot;page&quot;: &quot;relatorios&quot; }, &quot;&quot;);
 }
@@ -412,28 +357,21 @@ window.addEventListener(&#39;popstate&#39;, function() {
 </script>
 
 <script>
-// Objeto para armazenar as instâncias dos gráficos ativos para que possam ser destruídos antes de recriar
 const activeCharts = {};
 
-/**
- * Função para renderizar ou atualizar um gráfico em um canvas específico.
- * @param {string} canvasId - O ID do elemento &lt;canvas&gt; onde o gráfico será desenhado.
- * @param {string} tipo - O tipo de gráfico (ex: &#39;bar&#39;, &#39;line&#39;, &#39;pie&#39;, &#39;doughnut&#39;).
- * @param {string[]} labels - As etiquetas para o eixo X (ex: nomes de serviços, profissionais).
- * @param {number[]} data - Os valores numéricos para o eixo Y.
- * @param {string} label - O rótulo para o conjunto de dados (ex: &#39;Quantidade&#39;, &#39;Valor R$&#39;).
- * @param {string} titulo - O título a ser exibido acima do gráfico.
- */
 function renderizarGrafico(canvasId, tipo, labels, data, label, titulo) {
-  const ctx = document.getElementById(canvasId)?.getContext(&#39;2d&#39;);
-  if (!ctx) return;
+  // ✅ ALTERAÇÃO: Adicionada verificação explícita para garantir que o canvas existe
+  const canvasEl = document.getElementById(canvasId);
+  if (!canvasEl) {
+    console.error(`Elemento canvas com id &quot;${canvasId}&quot; não foi encontrado.`);
+    return;
+  }
+  const ctx = canvasEl.getContext(&#39;2d&#39;);
 
-  // Se já existe um gráfico neste canvas, ele é destruído para evitar sobreposição
   if (activeCharts[canvasId]) {
     activeCharts[canvasId].destroy();
   }
 
-  // Cria o novo gráfico
   activeCharts[canvasId] = new Chart(ctx, {
     type: tipo,
     data: {
@@ -458,121 +396,66 @@ function renderizarGrafico(canvasId, tipo, labels, data, label, titulo) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: &#39;top&#39;,
-        },
-        title: {
-          display: true,
-          text: titulo,
-          font: { size: 16 },
-          color: &#39;#3730a3&#39;
-        }
+        legend: { position: &#39;top&#39; },
+        title: { display: true, text: titulo, font: { size: 16 }, color: &#39;#3730a3&#39; }
       },
-      scales: {
-        y: {
-          beginAtZero: true
-        }
-      }
+      scales: { y: { beginAtZero: true } }
     }
   });
 }
 
-/*
- * IMPORTANTE: A função `renderizarGrafico` acima deve ser chamada de dentro do seu arquivo `relatorios.js`
- * após você processar os dados para cada aba.
- *
- * Exemplo de como você faria dentro da sua função que gera o relatório de serviços:
- *
- * function gerarRelatorioServicos(dados) {
- * // 1. Sua lógica atual para criar a tabela HTML...
- * criarTabela(dados);
- *
- * // 2. Extrair os dados para o gráfico
- * const labels = dados.map(item =&gt; item.nomeDoServico);
- * const valores = dados.map(item =&gt; item.quantidade);
- *
- * // 3. Chamar a função para renderizar o gráfico
- * renderizarGrafico(&#39;grafico-servicos&#39;, &#39;bar&#39;, labels, valores, &#39;Quantidade&#39;, &#39;Serviços Mais Realizados&#39;);
- * }
- *
- * Como não temos acesso ao `relatorios.js`, o código abaixo é um EXEMPLO para demonstrar
- * a funcionalidade. Ele será acionado quando o botão &quot;Aplicar&quot; ou uma aba for clicada.
- * Adapte ou remova este bloco ao integrar com sua lógica real.
-*/
-
-// Função de demonstração para gerar dados e renderizar o gráfico
 function demonstrarGrafico() {
   const abaAtiva = document.querySelector(&#39;.aba-conteudo.active&#39;);
   if (!abaAtiva) return;
   const idAba = abaAtiva.id;
 
-  // Simula dados diferentes para cada aba
   switch (idAba) {
     case &#39;servicos&#39;:
-      renderizarGrafico(&#39;grafico-servicos&#39;, &#39;bar&#39;,
-        [&#39;Corte&#39;, &#39;Escova&#39;, &#39;Manicure&#39;, &#39;Pedicure&#39;, &#39;Hidratação&#39;],
-        [Math.floor(Math.random() * 50), Math.floor(Math.random() * 40), Math.floor(Math.random() * 80), Math.floor(Math.random() * 70), Math.floor(Math.random() * 30)],
-        &#39;Quantidade&#39;, &#39;Serviços Mais Realizados no Período&#39;
-      );
+      renderizarGrafico(&#39;grafico-servicos&#39;, &#39;bar&#39;, [&#39;Corte&#39;, &#39;Escova&#39;, &#39;Manicure&#39;, &#39;Pedicure&#39;, &#39;Hidratação&#39;], [Math.floor(Math.random()*50), Math.floor(Math.random()*40), Math.floor(Math.random()*80), Math.floor(Math.random()*70), Math.floor(Math.random()*30)], &#39;Quantidade&#39;, &#39;Serviços Mais Realizados&#39;);
       break;
     case &#39;profissionais&#39;:
-      renderizarGrafico(&#39;grafico-profissionais&#39;, &#39;pie&#39;,
-        [&#39;Ana&#39;, &#39;Beatriz&#39;, &#39;Carla&#39;, &#39;Daniela&#39;],
-        [Math.floor(Math.random() * 10), Math.floor(Math.random() * 15), Math.floor(Math.random() * 12), Math.floor(Math.random() * 20)],
-        &#39;Nº de Atendimentos&#39;, &#39;Atendimentos por Profissional&#39;
-      );
+      renderizarGrafico(&#39;grafico-profissionais&#39;, &#39;pie&#39;, [&#39;Ana&#39;, &#39;Beatriz&#39;, &#39;Carla&#39;, &#39;Daniela&#39;], [Math.floor(Math.random()*10), Math.floor(Math.random()*15), Math.floor(Math.random()*12), Math.floor(Math.random()*20)], &#39;Nº de Atendimentos&#39;, &#39;Atendimentos por Profissional&#39;);
       break;
     case &#39;faturamento&#39;:
-      renderizarGrafico(&#39;grafico-faturamento&#39;, &#39;line&#39;,
-        [&#39;Seg&#39;, &#39;Ter&#39;, &#39;Qua&#39;, &#39;Qui&#39;, &#39;Sex&#39;, &#39;Sáb&#39;],
-        [Math.floor(Math.random() * 500), Math.floor(Math.random() * 700), Math.floor(Math.random() * 600), Math.floor(Math.random() * 900), Math.floor(Math.random() * 1200), Math.floor(Math.random() * 1500)],
-        &#39;Valor (R$)&#39;, &#39;Faturamento Diário na Semana&#39;
-      );
+      renderizarGrafico(&#39;grafico-faturamento&#39;, &#39;line&#39;, [&#39;Seg&#39;, &#39;Ter&#39;, &#39;Qua&#39;, &#39;Qui&#39;, &#39;Sex&#39;, &#39;Sáb&#39;], [Math.floor(Math.random()*500), Math.floor(Math.random()*700), Math.floor(Math.random()*600), Math.floor(Math.random()*900), Math.floor(Math.random()*1200), Math.floor(Math.random()*1500)], &#39;Valor (R$)&#39;, &#39;Faturamento Diário&#39;);
       break;
     case &#39;clientes&#39;:
-       renderizarGrafico(&#39;grafico-clientes&#39;, &#39;bar&#39;,
-        [&#39;Novos Clientes&#39;, &#39;Clientes Recorrentes&#39;],
-        [Math.floor(Math.random() * 30), Math.floor(Math.random() * 150)],
-        &#39;Quantidade&#39;, &#39;Perfil de Clientes no Período&#39;
-      );
+       renderizarGrafico(&#39;grafico-clientes&#39;, &#39;bar&#39;, [&#39;Novos Clientes&#39;, &#39;Clientes Recorrentes&#39;], [Math.floor(Math.random()*30), Math.floor(Math.random()*150)], &#39;Quantidade&#39;, &#39;Perfil de Clientes&#39;);
       break;
     case &#39;agenda&#39;:
-      renderizarGrafico(&#39;grafico-agenda&#39;, &#39;doughnut&#39;,
-        [&#39;Confirmados&#39;, &#39;Cancelados&#39;, &#39;Não Compareceu&#39;, &#39;Aguardando&#39;],
-        [Math.floor(Math.random() * 100), Math.floor(Math.random() * 20), Math.floor(Math.random() * 10), Math.floor(Math.random() * 30)],
-        &#39;Status&#39;, &#39;Status dos Agendamentos&#39;
-      );
+      renderizarGrafico(&#39;grafico-agenda&#39;, &#39;doughnut&#39;, [&#39;Confirmados&#39;, &#39;Cancelados&#39;, &#39;Não Compareceu&#39;, &#39;Aguardando&#39;], [Math.floor(Math.random()*100), Math.floor(Math.random()*20), Math.floor(Math.random()*10), Math.floor(Math.random()*30)], &#39;Status&#39;, &#39;Status dos Agendamentos&#39;);
       break;
   }
 }
 
-// Gatilho de demonstração no botão de filtro
 document.getElementById(&#39;btn-aplicar-filtro&#39;).addEventListener(&#39;click&#39;, demonstrarGrafico);
 
-// Adiciona lógica para trocar abas e atualizar o gráfico de demonstração
 document.querySelectorAll(&#39;.aba&#39;).forEach(aba =&gt; {
   aba.addEventListener(&#39;click&#39;, () =&gt; {
-    // A lógica de troca de abas real provavelmente está no relatorios.js.
-    // Isto é para garantir que a demonstração funcione.
-    document.querySelector(&#39;.aba.active&#39;)?.classList.remove(&#39;active&#39;);
+    // ✅ ALTERAÇÃO: Lógica de troca de abas reescrita para ser mais explícita e evitar erros
+    const abaAtivaAnterior = document.querySelector(&#39;.aba.active&#39;);
+    if (abaAtivaAnterior) {
+      abaAtivaAnterior.classList.remove(&#39;active&#39;);
+    }
     aba.classList.add(&#39;active&#39;);
 
-    document.querySelector(&#39;.aba-conteudo.active&#39;)?.classList.remove(&#39;active&#39;);
-    const conteudoAba = document.getElementById(aba.dataset.aba);
-    if (conteudoAba) {
-        conteudoAba.classList.add(&#39;active&#39;);
+    const conteudoAtivoAnterior = document.querySelector(&#39;.aba-conteudo.active&#39;);
+    if (conteudoAtivoAnterior) {
+      conteudoAtivoAnterior.classList.remove(&#39;active&#39;);
     }
 
-    // Gera o gráfico para a nova aba ativa
+    const conteudoAba = document.getElementById(aba.dataset.aba);
+    if (conteudoAba) {
+      conteudoAba.classList.add(&#39;active&#39;);
+    }
     demonstrarGrafico();
   });
 });
 
-// Simula um clique inicial para carregar o gráfico da primeira aba ao carregar a página
 window.addEventListener(&#39;load&#39;, () =&gt; {
   setTimeout(() =&gt; {
     demonstrarGrafico();
-  }, 500); // Um pequeno delay para garantir que tudo carregou
+  }, 500);
 });
 </script>
 
