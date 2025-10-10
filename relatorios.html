@@ -233,6 +233,10 @@
       margin: 0 0 15px 0;
       font-size: 1.1em;
     }
+    /* Container para o conteúdo dinâmico (tabelas, etc) */
+    .conteudo-dinamico {
+      margin-top: 15px;
+    }
     @keyframes fadeIn {
       from { opacity: 0;}
       to { opacity: 1;}
@@ -316,11 +320,41 @@
       </header>
       <!-- Conteúdo das abas -->
       <section class="conteudo-abas">
-        <div class="aba-conteudo active" id="servicos"></div>
-        <div class="aba-conteudo" id="profissionais"></div>
-        <div class="aba-conteudo" id="faturamento"></div>
-        <div class="aba-conteudo" id="clientes"></div>
-        <div class="aba-conteudo" id="agenda"></div>
+        <div class="aba-conteudo active" id="servicos">
+          <div class="grafico-container">
+            <h3><i class="fa-solid fa-chart-bar"></i> Gráfico de Serviços</h3>
+            <canvas id="grafico-servicos"></canvas>
+          </div>
+          <div class="conteudo-dinamico" id="servicos-conteudo"></div>
+        </div>
+        <div class="aba-conteudo" id="profissionais">
+          <div class="grafico-container">
+            <h3><i class="fa-solid fa-chart-line"></i> Gráfico de Profissionais</h3>
+            <canvas id="grafico-profissionais"></canvas>
+          </div>
+          <div class="conteudo-dinamico" id="profissionais-conteudo"></div>
+        </div>
+        <div class="aba-conteudo" id="faturamento">
+          <div class="grafico-container">
+            <h3><i class="fa-solid fa-chart-bar"></i> Gráfico de Faturamento</h3>
+            <canvas id="grafico-faturamento"></canvas>
+          </div>
+          <div class="conteudo-dinamico" id="faturamento-conteudo"></div>
+        </div>
+        <div class="aba-conteudo" id="clientes">
+          <div class="grafico-container">
+            <h3><i class="fa-solid fa-chart-pie"></i> Gráfico de Clientes</h3>
+            <canvas id="grafico-clientes"></canvas>
+          </div>
+          <div class="conteudo-dinamico" id="clientes-conteudo"></div>
+        </div>
+        <div class="aba-conteudo" id="agenda">
+          <div class="grafico-container">
+            <h3><i class="fa-solid fa-chart-line"></i> Gráfico de Agenda</h3>
+            <canvas id="grafico-agenda"></canvas>
+          </div>
+          <div class="conteudo-dinamico" id="agenda-conteudo"></div>
+        </div>
       </section>
     </main>
   </div>
@@ -388,48 +422,19 @@
     inicializarPagina();
   </script>
 
-  <!-- Seus scripts de negócio são mantidos -->
-  <script src="relatorios.js" type="module"></script>
-
-  <!-- Script para adicionar gráficos às abas -->
+  <!-- Script para inicializar os gráficos -->
   <script>
-    // Função para adicionar gráfico a uma aba específica
-    function adicionarGraficoNaAba(abaId, config) {
-      const aba = document.getElementById(abaId);
-      if (!aba) return;
+    // Armazena as instâncias dos gráficos
+    window.graficosInstancias = {};
 
-      // Cria o container do gráfico se não existir
-      let graficoContainer = aba.querySelector('.grafico-container');
-      if (!graficoContainer) {
-        graficoContainer = document.createElement('div');
-        graficoContainer.className = 'grafico-container';
-        
-        const titulo = document.createElement('h3');
-        titulo.innerHTML = `<i class="fa-solid fa-chart-${config.icon}"></i> ${config.titulo}`;
-        graficoContainer.appendChild(titulo);
-        
-        const canvas = document.createElement('canvas');
-        canvas.id = `grafico-${abaId}`;
-        graficoContainer.appendChild(canvas);
-        
-        // Adiciona no início da aba (antes do conteúdo existente)
-        aba.insertBefore(graficoContainer, aba.firstChild);
+    function inicializarGraficos() {
+      if (typeof Chart === 'undefined') {
+        console.error('Chart.js não foi carregado!');
+        return;
       }
 
-      // Cria o gráfico
-      const canvas = document.getElementById(`grafico-${abaId}`);
-      if (canvas && typeof Chart !== 'undefined') {
-        new Chart(canvas, config.chartConfig);
-        console.log(`Gráfico ${abaId} adicionado com sucesso`);
-      }
-    }
-
-    // Configurações dos gráficos
-    const graficosConfig = {
-      servicos: {
-        titulo: 'Gráfico de Serviços',
-        icon: 'bar',
-        chartConfig: {
+      const configs = {
+        servicos: {
           type: 'bar',
           data: {
             labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
@@ -447,12 +452,8 @@
             plugins: { legend: { display: true, position: 'top' } },
             scales: { y: { beginAtZero: true } }
           }
-        }
-      },
-      profissionais: {
-        titulo: 'Gráfico de Profissionais',
-        icon: 'line',
-        chartConfig: {
+        },
+        profissionais: {
           type: 'line',
           data: {
             labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
@@ -472,12 +473,8 @@
             plugins: { legend: { display: true, position: 'top' } },
             scales: { y: { beginAtZero: true } }
           }
-        }
-      },
-      faturamento: {
-        titulo: 'Gráfico de Faturamento',
-        icon: 'bar',
-        chartConfig: {
+        },
+        faturamento: {
           type: 'bar',
           data: {
             labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
@@ -495,12 +492,8 @@
             plugins: { legend: { display: true, position: 'top' } },
             scales: { y: { beginAtZero: true } }
           }
-        }
-      },
-      clientes: {
-        titulo: 'Gráfico de Clientes',
-        icon: 'pie',
-        chartConfig: {
+        },
+        clientes: {
           type: 'doughnut',
           data: {
             labels: ['Novos', 'Recorrentes', 'Inativos'],
@@ -524,12 +517,8 @@
             maintainAspectRatio: true,
             plugins: { legend: { display: true, position: 'top' } }
           }
-        }
-      },
-      agenda: {
-        titulo: 'Gráfico de Agenda',
-        icon: 'line',
-        chartConfig: {
+        },
+        agenda: {
           type: 'line',
           data: {
             labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
@@ -550,16 +539,36 @@
             scales: { y: { beginAtZero: true } }
           }
         }
-      }
-    };
+      };
 
-    // Aguarda o carregamento completo da página e do relatorios.js
-    setTimeout(() => {
-      Object.keys(graficosConfig).forEach(abaId => {
-        adicionarGraficoNaAba(abaId, graficosConfig[abaId]);
+      Object.keys(configs).forEach(abaId => {
+        const canvas = document.getElementById(`grafico-${abaId}`);
+        if (canvas && !window.graficosInstancias[abaId]) {
+          try {
+            window.graficosInstancias[abaId] = new Chart(canvas, configs[abaId]);
+            console.log(`Gráfico ${abaId} criado com sucesso`);
+          } catch (error) {
+            console.error(`Erro ao criar gráfico ${abaId}:`, error);
+          }
+        }
       });
-    }, 1500);
+    }
+
+    // Inicializa os gráficos quando o DOM estiver pronto
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(inicializarGraficos, 800);
+      });
+    } else {
+      setTimeout(inicializarGraficos, 800);
+    }
+
+    // Torna a função global
+    window.inicializarGraficos = inicializarGraficos;
   </script>
+
+  <!-- Seus scripts de negócio são mantidos -->
+  <script src="relatorios.js" type="module"></script>
 
   <!-- O script do botão voltar e do histórico foi mantido -->
   <script>
@@ -581,4 +590,5 @@
 
 </body>
 </html>
+
 
