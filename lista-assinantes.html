@@ -31,13 +31,13 @@
             display: flex;
             flex-direction: column;
         }
+        /* Espaço extra entre cabeçalho e cards */
+        .espaco-cards { height: 20px; }
         .header-pagina {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 15px;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 0;
         }
         .header-pagina h1 {
             color: #fff;
@@ -47,49 +47,53 @@
         }
         .header-botoes {
             display: flex;
-            gap: 15px;
+            gap: 18px;
             flex-wrap: wrap;
-        }
-        .btn-dashboard {
-            background-color: #f59e0b;
-            color: #fff;
-        }
-        .btn-dashboard:hover {
-            background-color: #d97706;
-        }
-        .btn-voltar {
-            background-color: #6366f1;
-            color: #fff;
-        }
-        .btn-voltar:hover {
-            background-color: #4f46e5;
         }
         .btn-header {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 20px;
+            padding: 12px 26px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            font-size: 1rem;
             border: none;
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.18s;
         }
+        .btn-assinantes {
+            background-color: #0891b2;
+            color: #fff;
+        }
+        .btn-assinantes:hover { background-color: #0e7490; }
+        .btn-dashboard {
+            background-color: #f59e0b;
+            color: #fff;
+        }
+        .btn-dashboard:hover { background-color: #d97706; }
+        .btn-novo {
+            background-color: #10b981;
+            color: #fff;
+        }
+        .btn-novo:hover { background-color: #059669; }
         #lista-clientes {
             display: grid;
             gap: 20px;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            margin-top: 0;
         }
         .card-cliente {
             background: #fff;
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.10);
             display: flex;
             flex-direction: column;
             gap: 12px;
+            margin-top: 0;
         }
         .card-cliente .nome {
             font-weight: 700;
@@ -166,6 +170,8 @@
         @media (max-width: 768px) {
             main { padding: 16px; padding-top: 70px; }
             .header-pagina h1 { font-size: 1.3rem; }
+            .btn-header { font-size: 0.95rem; padding: 10px 10px; }
+            #lista-clientes { gap: 12px; }
         }
     </style>
 </head>
@@ -175,10 +181,12 @@
         <div class="header-pagina">
             <h1>Clientes Assinantes</h1>
             <div class="header-botoes">
-                <a href="dashboard-pagamentos.html" class="btn-header btn-dashboard"><i class="fa-solid fa-check-to-slot"></i> Painel de Pagamentos</a>
-                <a href="meus-planos.html" class="btn-header btn-voltar"><i class="fa-solid fa-arrow-left"></i> Meus Planos</a>
+                <a href="lista-assinantes.html" class="btn-header btn-assinantes"><i class="fa-solid fa-crown"></i> Clientes Assinantes</a>
+                <a href="dashboard-pagamentos.html" class="btn-header btn-dashboard"><i class="fa-solid fa-check-to-slot"></i> Painel de Aprovações</a>
+                <a href="planos.html" class="btn-header btn-novo"><i class="fa-solid fa-plus"></i> Meus Planos</a>
             </div>
         </div>
+        <div class="espaco-cards"></div>
         <div id="lista-clientes">
             <p class="info">Carregando assinantes...</p>
         </div>
