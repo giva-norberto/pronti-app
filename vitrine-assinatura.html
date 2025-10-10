@@ -58,51 +58,85 @@
         .card-plano {
             background: #fff;
             color: #222664;
-            border-radius: 16px;
-            padding: 28px 22px;
-            max-width: 400px;
+            border-radius: 22px;
+            padding: 34px 22px 28px 22px;
+            max-width: 410px;
             margin: 0 auto 30px auto;
-            box-shadow: 0 6px 22px rgba(44,54,80,0.13);
+            box-shadow: 0 10px 34px rgba(44,54,80,0.13);
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            gap: 14px;
+            align-items: center;
+            gap: 13px;
+            position: relative;
+            transition: box-shadow 0.18s;
+        }
+        .card-plano::before {
+            content: "";
+            display: block;
+            position: absolute;
+            left: 24px;
+            top: 18px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4f46e5 40%, #10b981 100%);
+            opacity: 0.09;
+            border-radius: 50%;
+            z-index: 0;
         }
         .card-plano h2 {
-            font-size: 1.25rem;
+            font-size: 1.28rem;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 9px;
             color: #4f46e5;
+            z-index: 1;
+            text-align: center;
+            letter-spacing: 0.01em;
         }
         .card-plano .preco {
-            font-size: 2rem;
+            font-size: 2.1rem;
             font-weight: 700;
-            margin: 10px 0 5px 0;
+            color: #10b981;
+            margin: 7px 0 7px 0;
+            text-align: center;
+            z-index: 1;
+        }
+        .card-plano .preco span {
+            font-size: 1rem;
+            font-weight: 400;
             color: #6366f1;
         }
         .card-plano ul {
             list-style: '✓ ';
-            padding-left: 20px;
+            padding-left: 24px;
             color: #333;
-            margin: 16px 0;
+            margin: 16px 0 8px 0;
             text-align: left;
+            font-size: 1.05em;
+            z-index: 1;
+        }
+        .card-plano .descricao {
+            color: #444;
+            font-size: 1.04rem;
+            text-align: center;
+            z-index: 1;
         }
         .btn-acao {
             width: 100%;
-            background: #10b981;
+            background: linear-gradient(90deg, #6366f1 0%, #10b981 100%);
             color: #fff;
             font-weight: 700;
             border: none;
             border-radius: 12px;
             padding: 18px 0;
-            font-size: 1.2rem;
+            font-size: 1.12rem;
             cursor: pointer;
             transition: background 0.2s, transform 0.2s;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.13);
             margin-top: 0;
+            z-index: 1;
         }
         .btn-acao:hover:not(:disabled) {
-            background: #0f9e70;
+            background: linear-gradient(90deg, #10b981 0%, #6366f1 100%);
             transform: translateY(-2px);
         }
         .btn-acao:disabled {
@@ -150,7 +184,10 @@
             main { padding: 20px 0 0 0; }
             .header-pagina { padding: 0 6px; }
             .container-pagamento { padding: 0 6px; }
-            .card-plano, #instrucoes-container { max-width: 95vw; padding: 14px 8px; }
+            .card-plano, #instrucoes-container { max-width: 97vw; padding: 14px 8px; }
+            .card-plano h2 { font-size: 1.07rem; }
+            .card-plano .preco { font-size: 1.43rem; }
+            .btn-acao { font-size: 0.97rem; }
         }
     </style>
 </head>
@@ -218,7 +255,8 @@
 
                 planoCardDiv.innerHTML = `
                     <h2>${planoSelecionado.nome}</h2>
-                    <p class="preco">R$ ${planoSelecionado.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span>/ mês</span></p>
+                    <div class="preco">R$ ${planoSelecionado.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span>/ mês</span></div>
+                    <div class="descricao">${planoSelecionado.descricao || ""}</div>
                     <ul>${(planoSelecionado.servicosInclusos || []).map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')}</ul>
                 `;
                 
