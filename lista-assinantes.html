@@ -14,7 +14,7 @@
             display: flex; 
             font-family: 'Poppins', sans-serif; 
             margin: 0; 
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
+            background-color: #f1f5f9; /* Cor de fundo mais suave */
             min-height: 100vh;
         }
         main.content { 
@@ -24,14 +24,21 @@
         .container { 
             max-width: 900px; 
             margin: 20px auto; 
-            background-color: #fff; 
-            padding: 30px 10px; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 20px rgba(99,102,241,0.09); 
+            background-color: transparent; /* Container principal transparente */
+            padding: 0; 
+            border-radius: 0; 
+            box-shadow: none; /* Remove a sombra do container geral */
+        }
+        .page-header {
+            background-color: #fff;
+            padding: 20px 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(99,102,241,0.09 );
+            margin-bottom: 25px;
         }
         h1 { 
             color: #1e293b; 
-            margin-bottom: 30px; 
+            margin: 0; 
             font-size: 2rem;
             font-weight: 700;
         }
@@ -40,20 +47,25 @@
             flex-direction: column;
             gap: 18px;
         }
+        /* ESTILOS DO CARD ATUALIZADOS */
         .card-cliente {
-            background: #f9fafb;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(99,102,241,0.04);
-            padding: 20px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            border: 1px solid #e3e9f6;
-            transition: box-shadow 0.2s;
+            background: #fff; /* Fundo branco para o card */
+            border-radius: 16px; /* Bordas mais arredondadas */
+            box-shadow: 0 4px 20px rgba(99,102,241,0.07);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            overflow: hidden; /* Garante que os cantos arredondados sejam aplicados */
         }
         .card-cliente:hover {
-            box-shadow: 0 6px 18px rgba(99,102,241,0.10);
-            border-color: #cdd5ea;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(99,102,241,0.12);
+        }
+        .card-header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
         }
         .info-cliente {
             display: flex;
@@ -73,61 +85,66 @@
         }
         .status-assinatura {
             display: flex;
-            align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
-            margin-top: 4px;
+            flex-direction: column; /* Alinha o badge e o texto verticalmente */
+            align-items: flex-end; /* Alinha à direita */
+            gap: 8px;
+            flex-shrink: 0; /* Impede que o status encolha */
         }
         .badge.ativo {
-            font-size: 0.88em; 
+            font-size: 0.85em; 
             font-weight: 700; 
             padding: 5px 16px; 
-            border-radius: 13px; 
+            border-radius: 99px; /* Formato de pílula */
             text-transform: uppercase;
             background-color: #dcfce7;
             color: #166534;
             letter-spacing: 0.05em;
-            box-shadow: 0 1px 4px #dcfce7;
         }
         .detalhes-plano {
-            font-size: 0.98em;
+            font-size: 0.9em;
             color: #475569;
             text-align: right;
             font-weight: 500;
         }
+        .card-body {
+            background-color: #f8fafc; /* Fundo levemente diferente para o corpo */
+            padding: 15px 24px;
+            border-top: 1px solid #e2e8f0; /* Linha separadora */
+        }
         .pagamento-info {
-            margin-top: 7px;
-            background: #f3f6fd;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 0.97em;
+            font-size: 0.95em;
             color: #333;
-            box-shadow: 0 1px 4px rgba(99,102,241,0.04);
             display: flex;
             flex-direction: column;
-            gap: 1px;
+            gap: 4px;
             font-weight: 400;
         }
         .pagamento-info span {
-            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
         }
         .pagamento-info strong {
             color: #4f46e5;
             font-weight: 600;
-            margin-right: 4px;
+            margin-right: 8px;
         }
+        /* FIM DOS ESTILOS ATUALIZADOS */
         @media (max-width: 600px) {
-            .container {
-                padding: 10px 0;
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
-            .card-cliente {
-                padding: 14px 7px;
+            .status-assinatura {
+                align-items: flex-start;
+                margin-top: 10px;
             }
         }
         #loading-message, #empty-message {
             text-align: center;
             padding: 40px;
             color: #64748b;
+            background-color: #fff;
+            border-radius: 16px;
         }
         .error-message {
             color: #b91c1c;
@@ -142,7 +159,9 @@
     <aside id="menu-container"></aside>
     <main class="content">
         <div class="container">
-            <h1>Clientes Assinantes</h1>
+            <div class="page-header">
+                <h1>Clientes Assinantes</h1>
+            </div>
             <div id="lista-clientes" class="lista-clientes">
                 <p id="loading-message">Carregando assinantes...</p>
             </div>
@@ -185,7 +204,6 @@
 
         async function buscarPagamentoDoCliente(clienteId) {
             const pagamentosRef = collection(db, 'pagamentosPendentes');
-            
             const pagamentosQ = query(
                 pagamentosRef, 
                 where('clienteId', '==', clienteId), 
@@ -193,17 +211,12 @@
                 orderBy('dataCriacao', 'desc'),
                 limit(1)
             );
-            
             try {
                 const pagamentosSnap = await getDocs(pagamentosQ);
-                if (pagamentosSnap.empty) {
-                    return null; // Nenhum pagamento aprovado encontrado
-                }
-                return pagamentosSnap.docs[0].data(); // Retorna os dados do documento encontrado
+                if (pagamentosSnap.empty) return null;
+                return pagamentosSnap.docs[0].data();
             } catch (error) {
-                // Este erro é quase sempre causado pela falta de um índice no Firestore.
                 console.error(`FALHA AO BUSCAR PAGAMENTO para o cliente ${clienteId}. Verifique se o índice composto do Firestore foi criado. Erro:`, error);
-                // O erro no console do navegador terá um link para criar o índice.
                 return null;
             }
         }
@@ -221,36 +234,22 @@
 
                 const promises = clientesSnapshot.docs.map(async (clienteDoc) => {
                     const cliente = { id: clienteDoc.id, ...clienteDoc.data() };
-                    
                     const assinaturasRef = collection(db, `empresarios/${empresaId}/clientes/${cliente.id}/assinaturas`);
                     const q = query(assinaturasRef, where('status', '==', 'ativo'));
                     const assinaturaSnapshot = await getDocs(q);
-                    
                     if (assinaturaSnapshot.empty) return null;
-
-                    const docAtivo = assinaturaSnapshot.docs.find(doc => {
-                        const dataFim = doc.data().dataFim;
-                        return dataFim && dataFim.toDate() > new Date();
-                    });
-
+                    const docAtivo = assinaturaSnapshot.docs.find(doc => doc.data().dataFim && doc.data().dataFim.toDate() > new Date());
                     if (!docAtivo) return null;
                     
                     const assinaturaAtiva = docAtivo.data();
-
                     let emailUsuario = null;
                     try {
                         const usuarioRef = doc(db, 'usuarios', cliente.id);
                         const usuarioSnap = await getDoc(usuarioRef);
-                        if (usuarioSnap.exists()) {
-                            emailUsuario = usuarioSnap.data().email;
-                        }
-                    } catch (e) {
-                        console.error(`Erro ao buscar e-mail do usuário ${cliente.id}:`, e);
-                    }
+                        if (usuarioSnap.exists()) emailUsuario = usuarioSnap.data().email;
+                    } catch (e) { console.error(`Erro ao buscar e-mail do usuário ${cliente.id}:`, e); }
 
-                    // A função para buscar o pagamento é chamada aqui
                     const pagamentoInfo = await buscarPagamentoDoCliente(cliente.id);
-                    
                     return { ...cliente, assinatura: assinaturaAtiva, emailUsuario, pagamentoInfo };
                 });
 
@@ -268,33 +267,37 @@
                     let pagamentoHtml = '';
                     
                     if (pagamento) {
-                        const valorFormatado = pagamento.valor ? `R$ ${Number(pagamento.valor).toFixed(2)}` : 'Valor não informado';
-                        const dataPagamento = pagamento.dataCriacao && pagamento.dataCriacao.toDate ? pagamento.dataCriacao.toDate().toLocaleDateString('pt-BR') : 'Data não informada';
+                        const valorFormatado = pagamento.valor ? `R$ ${Number(pagamento.valor).toFixed(2)}` : '---';
+                        const dataPagamento = pagamento.dataCriacao && pagamento.dataCriacao.toDate ? pagamento.dataCriacao.toDate().toLocaleDateString('pt-BR') : '---';
                         pagamentoHtml = `
                             <div class="pagamento-info">
-                                <span><strong>Último Pagamento:</strong> ${pagamento.metodo ? pagamento.metodo.toUpperCase() : '---'} ${valorFormatado}</span>
-                                <span><strong>Status:</strong> ${pagamento.status || '---'}</span>
                                 <span><strong>Plano Pago:</strong> ${pagamento.planoNome || '---'}</span>
-                                <span><strong>Data do Pagamento:</strong> ${dataPagamento}</span>
+                                <span><strong>Valor:</strong> ${valorFormatado}</span>
+                                <span><strong>Data:</strong> ${dataPagamento}</span>
+                                <span><strong>Método:</strong> ${pagamento.metodo ? pagamento.metodo.toUpperCase() : '---'}</span>
                             </div>
                         `;
                     } else {
-                        pagamentoHtml = '<div class="pagamento-info"><span>Nenhum pagamento aprovado encontrado para este assinante.</span></div>';
+                        pagamentoHtml = '<div class="pagamento-info"><span>Nenhum pagamento aprovado encontrado.</span></div>';
                     }
 
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'card-cliente';
                     itemDiv.innerHTML = `
-                        <div class="info-cliente">
-                            <p class="nome">${cliente.nome}</p>
-                            <p class="email">${cliente.emailUsuario || 'E-mail não informado'}</p>
+                        <div class="card-header">
+                            <div class="info-cliente">
+                                <p class="nome">${cliente.nome}</p>
+                                <p class="email">${cliente.emailUsuario || 'E-mail não informado'}</p>
+                            </div>
+                            <div class="status-assinatura">
+                                <span class="badge ativo">Assinante Ativo</span>
+                                <span class="detalhes-plano">${cliente.assinatura.planoNome}  
+Vence em: ${dataFim}</span>
+                            </div>
                         </div>
-                        <div class="status-assinatura">
-                            <span class="badge ativo">ASSINANTE ATIVO</span>
-                            <p class="detalhes-plano">${cliente.assinatura.planoNome}  
-Vence em: ${dataFim}</p>
+                        <div class="card-body">
+                            ${pagamentoHtml}
                         </div>
-                        ${pagamentoHtml}
                     `;
                     listaClientesDiv.appendChild(itemDiv);
                 });
@@ -308,6 +311,3 @@ Vence em: ${dataFim}</p>
     </script>
 </body>
 </html>
-
-
-
