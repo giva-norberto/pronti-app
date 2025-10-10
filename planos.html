@@ -37,7 +37,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            flex-wrap: wrap; /* Para responsividade */
+            flex-wrap: wrap;
             gap: 15px;
         }
         .header-pagina h1 {
@@ -46,7 +46,6 @@
             font-weight: 700;
             margin: 0;
         }
-        /* Container para os botões do header */
         .header-botoes {
             display: flex;
             gap: 15px;
@@ -65,54 +64,93 @@
             border: none;
             cursor: pointer;
         }
-        /* BOTÃO DE ASSINANTES */
         .btn-assinantes {
-            background-color: #0891b2; /* Cor Ciano/Verde Água */
+            background-color: #0891b2;
             color: #fff;
         }
         .btn-assinantes:hover {
             background-color: #0e7490;
         }
         .btn-dashboard {
-            background-color: #f59e0b; /* Amarelo/Laranja */
+            background-color: #f59e0b;
             color: #fff;
         }
         .btn-dashboard:hover {
             background-color: #d97706;
         }
         .btn-novo {
-            background-color: #10b981; /* Verde */
+            background-color: #10b981;
             color: #fff;
         }
         .btn-novo:hover {
             background-color: #059669;
         }
+        /* --- Espaço entre o cabeçalho e os cards --- */
+        .espaco-cards {
+            height: 16px;
+        }
         #lista-de-planos {
             display: grid;
-            gap: 20px;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 26px;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            margin-top: 0;
         }
         .card-plano-item {
             display: block;
             background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+            padding: 28px 22px 22px 22px;
+            border-radius: 15px;
+            box-shadow: 0 6px 22px rgba(44,54,80,0.13);
             text-decoration: none;
-            color: #333;
+            color: #22223b;
             transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #ececec;
+            margin-top: 0;
         }
         .card-plano-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            transform: translateY(-7px) scale(1.02);
+            box-shadow: 0 14px 32px rgba(44,54,80,0.18);
+            border-color: #cdd5ea;
         }
-        .card-plano-item h3 { margin-top: 0; color: #1e3a8a; }
-        .card-plano-item .preco { font-size: 1.5rem; font-weight: 600; color: #10b981; }
-        .metodo { font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block; margin-top: 10px; font-size: 0.8em; text-transform: uppercase;}
+        .card-plano-item h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #1e3a8a;
+            font-size: 1.18rem;
+            font-weight: 700;
+        }
+        .card-plano-item .preco {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #10b981;
+            margin-bottom: 12px;
+        }
+        .metodo {
+            font-weight: bold;
+            padding: 5px 13px;
+            border-radius: 6px;
+            color: #fff;
+            display: inline-block;
+            font-size: 0.93em;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
         .metodo-automatico { background-color: #3b82f6; }
         .metodo-manual { background-color: #f59e0b; }
-        .erro { color: #fff; background-color: #ef4444; padding: 15px; border-radius: 8px; font-weight: 500; margin: 2rem 0; }
-        .info { color: #e0e7ff; font-weight: 500; margin: 2rem 0; text-align: center; }
+        .erro {
+            color: #fff;
+            background-color: #ef4444;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            margin: 2rem 0;
+        }
+        .info {
+            color: #e0e7ff;
+            font-weight: 500;
+            margin: 2rem 0;
+            text-align: center;
+        }
         .card-plano-vazio {
             background: #fff;
             border-radius: 18px;
@@ -130,9 +168,22 @@
         .card-vazio-content i { font-size: 2.5rem; margin-bottom: 18px; color: #ffd700; display: block; }
         .card-vazio-content h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; color: #22223b; }
         .card-vazio-content p { color: #6366f1; font-size: 1.07rem; margin-bottom: 22px; }
-        .btn-novo-card { background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); color: #fff; font-weight: bold; border-radius: 8px; padding: 14px 32px; text-decoration: none; box-shadow: 0 2px 8px rgba(14,165,233,0.15); font-size: 1.05em; transition: background 0.2s; display: inline-block; border: none; }
-        .btn-novo-card:hover { background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%); }
-
+        .btn-novo-card {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: #fff;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 14px 32px;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(14,165,233,0.15);
+            font-size: 1.05em;
+            transition: background 0.2s;
+            display: inline-block;
+            border: none;
+        }
+        .btn-novo-card:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #38bdf8 100%);
+        }
         @media (max-width: 992px) {
             #menu-container { display: none; }
             main { margin-left: 0; padding: 20px; }
@@ -140,6 +191,8 @@
         @media (max-width: 768px) {
             main { padding: 16px; padding-top: 70px; }
             .header-pagina h1 { font-size: 1.3rem; }
+            #lista-de-planos { gap: 16px; }
+            .card-plano-item { padding: 18px 8px; }
         }
     </style>
 </head>
@@ -149,19 +202,19 @@
         <div class="header-pagina">
             <h1>Meus Planos de Assinatura</h1>
             <div class="header-botoes">
-                <!-- ##### LINK CORRIGIDO AQUI ##### -->
                 <a href="lista-assinantes.html" class="btn-header btn-assinantes" id="btnAssinantes"><i class="fa-solid fa-crown"></i> Clientes Assinantes</a>
                 <a href="dashboard-pagamentos.html" class="btn-header btn-dashboard" id="btnDashboard"><i class="fa-solid fa-check-to-slot"></i> Painel de Aprovações</a>
                 <a href="criar-plano.html" class="btn-header btn-novo" id="btnNovoPlano">+ Criar Novo Plano</a>
             </div>
         </div>
+        <div class="espaco-cards"></div>
         <div id="lista-de-planos">
             <p class="info">A carregar...</p>
         </div>
     </main>
 
     <script type="module">
-        import { db, auth } from './vitrini-firebase.js'; // Atenção ao caminho do seu firebase-config
+        import { db, auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
@@ -253,7 +306,7 @@
                 snapshot.docs.forEach(doc => {
                     const plano = { id: doc.id, ...doc.data() };
                     const card = document.createElement('a');
-                    card.href = `criar-plano.html?id=${plano.id}`; 
+                    card.href = `criar-plano.html?id=${plano.id}`;
                     card.className = 'card-plano-item';
                     const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     card.innerHTML = `
