@@ -22,13 +22,14 @@
       font-family: 'Inter', Arial, sans-serif;
       background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100% );
       min-height: 100vh;
+      /* ✅ ALTERAÇÃO: Adicionado para centralizar o conteúdo ou a mensagem de erro */
       display: flex;
       justify-content: center;
       align-items: flex-start;
     }
     .main-relatorios {
       max-width: 1100px;
-      width: 100%;
+      width: 100%; /* Garante que ocupe a largura disponível */
       margin: 28px auto 0 auto;
       padding: 0;
       min-height: 90vh;
@@ -67,6 +68,7 @@
       background: #38bdf8;
       color: #fff;
     }
+    /* ABAS COMPACTAS */
     .abas-container {
       display: flex;
       gap: 0;
@@ -112,6 +114,7 @@
       opacity: 1;
       border-bottom: 2.5px solid var(--cor-primaria);
     }
+    /* FILTROS COMPACTOS */
     .filtros-relatorios {
       display: flex;
       gap: 12px;
@@ -186,6 +189,7 @@
     .aba-conteudo.active {
       display: block;
     }
+    /* TABELA COMPACTA */
     table {
       width: 100%;
       border-collapse: separate;
@@ -214,6 +218,17 @@
     }
     tr:nth-child(even) td {
       background: #f7f8fa;
+    }
+    /* ESTILO PARA OS GRÁFICOS */
+    .grafico-container {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f7fafd;
+      border-radius: 10px;
+      border: 1px solid #e0e7ff;
+    }
+    .grafico-container canvas {
+      max-height: 300px;
     }
     @keyframes fadeIn {
       from { opacity: 0;}
@@ -262,10 +277,9 @@
       }
     }
   </style>
-  <!-- Chart.js CDN para gráficos -->
-  <script id="chartjs-cdn" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <!-- O conteúdo será inserido aqui pelo script de inicialização -->
   <div id="page-content">
     <main class="main-relatorios">
       <div class="top-actions">
@@ -278,6 +292,7 @@
           <button class="aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
         </nav>
       </div>
+      <!-- Filtros -->
       <header class="filtros-relatorios">
         <label for="filtro-data-inicio">Data Início:</label>
         <input type="date" id="filtro-data-inicio">
@@ -288,48 +303,37 @@
         <label for="filtro-profissional">Profissional:</label>
         <select id="filtro-profissional">
           <option value="todos">Todos</option>
+          <!-- Populado via JS -->
         </select>
 
         <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
       </header>
+      <!-- Conteúdo das abas -->
       <section class="conteudo-abas">
         <div class="aba-conteudo active" id="servicos">
-          <!-- Tabela de Serviços (exemplo estático, o seu .js pode preencher dinamicamente) -->
-          <button style="margin-bottom:8px"><i class="fa fa-download"></i> Exportar CSV</button>
-          <table>
-            <thead>
-              <tr>
-                <th>Serviço</th>
-                <th>Qtd</th>
-                <th>Faturamento</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Coloração</td><td>24</td><td>R$ 2460.00</td></tr>
-              <tr><td>Corte Masculino</td><td>5</td><td>R$ 180.00</td></tr>
-              <tr><td>Design de Sobrancelhas com Henna</td><td>1</td><td>R$ 45.00</td></tr>
-              <tr><td>Corte Feminino</td><td>1</td><td>R$ 75.00</td></tr>
-              <tr><td>Barba Completa</td><td>1</td><td>R$ 30.00</td></tr>
-            </tbody>
-          </table>
-          <!-- O gráfico aparecerá aqui automaticamente -->
-          <div id="grafico-servicos"></div>
+          <div class="grafico-container">
+            <canvas id="grafico-servicos"></canvas>
+          </div>
         </div>
         <div class="aba-conteudo" id="profissionais">
-          <!-- Seu conteúdo/tabela de profissionais aqui -->
-          <div id="grafico-profissionais"></div>
+          <div class="grafico-container">
+            <canvas id="grafico-profissionais"></canvas>
+          </div>
         </div>
         <div class="aba-conteudo" id="faturamento">
-          <!-- Seu conteúdo/tabela de faturamento aqui -->
-          <div id="grafico-faturamento"></div>
+          <div class="grafico-container">
+            <canvas id="grafico-faturamento"></canvas>
+          </div>
         </div>
         <div class="aba-conteudo" id="clientes">
-          <!-- Seu conteúdo/tabela de clientes aqui -->
-          <div id="grafico-clientes"></div>
+          <div class="grafico-container">
+            <canvas id="grafico-clientes"></canvas>
+          </div>
         </div>
         <div class="aba-conteudo" id="agenda">
-          <!-- Seu conteúdo/tabela de agenda aqui -->
-          <div id="grafico-agenda"></div>
+          <div class="grafico-container">
+            <canvas id="grafico-agenda"></canvas>
+          </div>
         </div>
       </section>
     </main>
@@ -343,25 +347,35 @@
     import { db } from './firebase-config.js';
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
+    /**
+     * Ponto de entrada único que orquestra a inicialização da página.
+     */
     async function inicializarPagina( ) {
       try {
+        // 1. Garante que o usuário está logado e obtém a sessão.
         const sessao = await verificarAcesso();
         if (!sessao || !sessao.user) {
-          return;
+          return; // verificarAcesso já redireciona.
         }
+
+        // 2. Define os papéis do usuário a partir da sessão.
         let papelUsuario = sessao.papeis || [];
-        if (papelUsuario.length === 0) {
+        if (papelUsuario.length === 0) { // Fallback
           if(sessao.isAdmin) papelUsuario.push('admin');
           if(sessao.isOwner) papelUsuario.push('dono');
           if(papelUsuario.length === 0) papelUsuario.push('funcionario');
         }
+
+        // 3. Busca as regras de permissão do Firestore.
         const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
         const permissoesSnap = await getDoc(permissoesRef);
         const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
 
+        // 4. VALIDAÇÃO DE ACESSO: Verifica se algum dos papéis do usuário tem permissão para ver 'relatorios'.
         const podeVer = papelUsuario.some(papel => regras.relatorios && regras.relatorios[papel] === true);
 
         if (!podeVer) {
+          // Se não tiver permissão, esconde o conteúdo e mostra uma mensagem de erro.
           document.getElementById('page-content').innerHTML = `
             <div style="background: #fff; padding: 40px; border-radius: 12px; text-align: center; margin-top: 50px;">
               <h1>Acesso Negado</h1>
@@ -369,15 +383,144 @@
               <button onclick="window.history.back()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">Voltar</button>
             </div>
           `;
-          return;
+          return; // Interrompe a execução.
         }
-        // Se tiver permissão, a página continua a carregar normalmente.
+
+        // 5. Se tiver permissão, a página continua a carregar normalmente.
+        // A lógica do 'relatorios.js' será executada.
+
       } catch (error) {
         console.error("Erro crítico ao inicializar a página de relatórios:", error);
         document.getElementById('page-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
       }
     }
+
+    // Inicia todo o processo.
     inicializarPagina();
+  </script>
+
+  <!-- Chart.js para os gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Script para inicializar os gráficos -->
+  <script>
+    // Configuração dos gráficos
+    const configGraficos = {
+      servicos: {
+        type: 'bar',
+        data: {
+          labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+          datasets: [{
+            label: 'Serviços Realizados',
+            data: [12, 19, 3, 5, 2, 3],
+            backgroundColor: 'rgba(79, 172, 254, 0.5)',
+            borderColor: 'rgba(79, 172, 254, 1)',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true }
+          }
+        }
+      },
+      profissionais: {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+          datasets: [{
+            label: 'Performance',
+            data: [65, 59, 80, 81, 56, 55],
+            fill: true,
+            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true }
+          }
+        }
+      },
+      faturamento: {
+        type: 'bar',
+        data: {
+          labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+          datasets: [{
+            label: 'Faturamento (R$)',
+            data: [1200, 1900, 3000, 5000, 2000, 3000],
+            backgroundColor: 'rgba(52, 211, 153, 0.5)',
+            borderColor: 'rgba(52, 211, 153, 1)',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true }
+          }
+        }
+      },
+      clientes: {
+        type: 'doughnut',
+        data: {
+          labels: ['Novos', 'Recorrentes', 'Inativos'],
+          datasets: [{
+            data: [30, 50, 20],
+            backgroundColor: [
+              'rgba(79, 172, 254, 0.7)',
+              'rgba(99, 102, 241, 0.7)',
+              'rgba(107, 114, 128, 0.7)'
+            ],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true }
+          }
+        }
+      },
+      agenda: {
+        type: 'line',
+        data: {
+          labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+          datasets: [{
+            label: 'Agendamentos',
+            data: [12, 19, 15, 17, 14, 8],
+            fill: true,
+            backgroundColor: 'rgba(56, 189, 248, 0.2)',
+            borderColor: 'rgba(56, 189, 248, 1)',
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true }
+          }
+        }
+      }
+    };
+
+    // Inicializar os gráficos quando a página carregar
+    window.addEventListener('load', () => {
+      Object.keys(configGraficos).forEach(aba => {
+        const canvas = document.getElementById(`grafico-${aba}`);
+        if (canvas) {
+          new Chart(canvas, configGraficos[aba]);
+        }
+      });
+    });
   </script>
 
   <!-- Seus scripts de negócio são mantidos -->
@@ -391,6 +534,8 @@
         window.history.back();
       });
     }
+
+    // Lógica do histórico para o botão voltar do navegador
     if (window.history.state === null || window.history.state.page !== "relatorios") {
         window.history.pushState({ "page": "relatorios" }, "");
     }
@@ -399,90 +544,6 @@
     });
   </script>
 
-  <!-- SCRIPT DE GRÁFICO POR ABA: Adicione em relatorios.js ou aqui abaixo -->
-  <script>
-    // Função para criar gráfico por aba
-    function criarGraficoAba(abaId, tipo, labels, dataset, label, cor) {
-      let graficoContainer = document.getElementById('grafico-' + abaId);
-      if (!graficoContainer) return;
-      graficoContainer.innerHTML = '';
-      const canvas = document.createElement('canvas');
-      canvas.id = 'canvas-' + abaId;
-      canvas.style.maxWidth = '480px';
-      canvas.style.width = '100%';
-      canvas.style.height = '260px';
-      graficoContainer.appendChild(canvas);
-
-      function desenhar() {
-        new Chart(canvas, {
-          type: tipo,
-          data: {
-            labels: labels,
-            datasets: [{
-              label,
-              data: dataset,
-              backgroundColor: cor,
-              borderColor: cor,
-              borderWidth: 2,
-              tension: 0.32,
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-            },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#6366f1', font: { weight: 'bold' } } },
-              y: { grid: { color: '#e0e7ff' }, ticks: { color: '#6366f1', font: { weight: 'bold' } }, beginAtZero: true }
-            }
-          }
-        });
-      }
-      if (window.Chart) desenhar();
-      else {
-        const chartScript = document.getElementById('chartjs-cdn');
-        if (chartScript) chartScript.onload = desenhar;
-      }
-    }
-
-    // Exemplo para aba 'servicos'
-    function graficoServicos() {
-      const servicos = [
-        { nome: 'Coloração', qtd: 24, faturamento: 2460 },
-        { nome: 'Corte Masculino', qtd: 5, faturamento: 180 },
-        { nome: 'Design de Sobrancelhas com Henna', qtd: 1, faturamento: 45 },
-        { nome: 'Corte Feminino', qtd: 1, faturamento: 75 },
-        { nome: 'Barba Completa', qtd: 1, faturamento: 30 },
-      ];
-      criarGraficoAba(
-        'servicos', 
-        'bar', 
-        servicos.map(s => s.nome), 
-        servicos.map(s => s.qtd), 
-        'Quantidade por Serviço',
-        '#6366f1'
-      );
-    }
-    // Adapte para outras abas se quiser gráficos diferentes!
-    function atualizarGraficos() {
-      const abaActive = document.querySelector('.aba-conteudo.active');
-      if (!abaActive) return;
-      const abaId = abaActive.id;
-      if (abaId === 'servicos') graficoServicos();
-      // Adicione: if (abaId === 'profissionais') graficoProfissionais(), etc.
-    }
-    document.querySelectorAll('.aba').forEach(btn => {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.remove('active'));
-        document.getElementById(this.dataset.aba).classList.add('active');
-        atualizarGraficos();
-      });
-    });
-    window.addEventListener('DOMContentLoaded', atualizarGraficos);
-  </script>
 </body>
 </html>
+
