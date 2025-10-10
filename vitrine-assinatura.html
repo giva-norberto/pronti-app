@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="style.css">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -16,40 +15,32 @@
             color: #22223b;
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
             min-height: 100vh;
-            display: flex;
-        }
-        main {
-            flex-grow: 1;
-            box-sizing: border-box;
-            background: transparent;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 40px 0 0 0;
         }
         .header-pagina {
             width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
+            max-width: 500px;
+            margin: 40px auto 0 auto;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
             padding: 0 20px;
         }
         .header-pagina h1 {
-            color: #fff;
-            font-size: 2.2rem;
+            color: #4f46e5;
+            background: #fff;
+            font-size: 2rem;
             font-weight: 700;
-            margin: 0 0 8px 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            margin: 0 0 12px 0;
+            border-radius: 18px;
+            box-shadow: 0 4px 20px rgba(44,54,80,0.10);
+            padding: 24px 0;
+            width: 100%;
+            text-align: center;
         }
-        .espaco-cards { height: 18px; }
         .container-pagamento {
             width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            background: transparent;
+            max-width: 500px;
+            margin: 30px auto 0 auto;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -58,37 +49,22 @@
         .card-plano {
             background: #fff;
             color: #222664;
-            border-radius: 22px;
-            padding: 34px 22px 28px 22px;
-            max-width: 410px;
+            border-radius: 20px;
+            padding: 30px 22px 22px 22px;
+            max-width: 440px;
             margin: 0 auto 30px auto;
             box-shadow: 0 10px 34px rgba(44,54,80,0.13);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 13px;
+            gap: 12px;
             position: relative;
-            transition: box-shadow 0.18s;
-        }
-        .card-plano::before {
-            content: "";
-            display: block;
-            position: absolute;
-            left: 24px;
-            top: 18px;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #4f46e5 40%, #10b981 100%);
-            opacity: 0.09;
-            border-radius: 50%;
-            z-index: 0;
         }
         .card-plano h2 {
-            font-size: 1.28rem;
+            font-size: 1.23rem;
             font-weight: 700;
             margin-bottom: 9px;
             color: #4f46e5;
-            z-index: 1;
             text-align: center;
             letter-spacing: 0.01em;
         }
@@ -98,27 +74,24 @@
             color: #10b981;
             margin: 7px 0 7px 0;
             text-align: center;
-            z-index: 1;
         }
         .card-plano .preco span {
             font-size: 1rem;
             font-weight: 400;
             color: #6366f1;
         }
-        .card-plano ul {
-            list-style: '✓ ';
-            padding-left: 24px;
-            color: #333;
-            margin: 16px 0 8px 0;
-            text-align: left;
-            font-size: 1.05em;
-            z-index: 1;
-        }
         .card-plano .descricao {
             color: #444;
             font-size: 1.04rem;
             text-align: center;
-            z-index: 1;
+        }
+        .card-plano ul {
+            list-style: '✓ ';
+            padding-left: 24px;
+            color: #333;
+            margin: 10px 0 8px 0;
+            text-align: left;
+            font-size: 1.05em;
         }
         .btn-acao {
             width: 100%;
@@ -133,7 +106,6 @@
             transition: background 0.2s, transform 0.2s;
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.13);
             margin-top: 0;
-            z-index: 1;
         }
         .btn-acao:hover:not(:disabled) {
             background: linear-gradient(90deg, #10b981 0%, #6366f1 100%);
@@ -145,17 +117,14 @@
             box-shadow: none;
         }
         #instrucoes-container {
-            margin-top: 0;
             margin-bottom: 30px;
             background: #f1f5f9;
             border-radius: 12px;
             color: #1e293b;
             padding: 20px 26px;
-            max-width: 400px;
+            max-width: 440px;
             font-size: 1.05em;
             text-align: left;
-            margin-left: auto;
-            margin-right: auto;
         }
         #instrucoes-container strong {
             color: #4f46e5;
@@ -180,31 +149,27 @@
             font-size: 1.1rem;
             line-height: 1.6;
         }
-        @media (max-width: 700px) {
-            main { padding: 20px 0 0 0; }
-            .header-pagina { padding: 0 6px; }
-            .container-pagamento { padding: 0 6px; }
-            .card-plano, #instrucoes-container { max-width: 97vw; padding: 14px 8px; }
-            .card-plano h2 { font-size: 1.07rem; }
-            .card-plano .preco { font-size: 1.43rem; }
-            .btn-acao { font-size: 0.97rem; }
+        @media (max-width: 650px) {
+            .header-pagina, .container-pagamento { max-width: 98vw; padding: 0 4px; }
+            .header-pagina h1 { font-size: 1.3rem; padding: 12px 2px; }
+            .card-plano, #instrucoes-container { max-width: 99vw; padding: 13px 4px; }
+            .card-plano h2 { font-size: 1.02rem; }
+            .card-plano .preco { font-size: 1.35rem; }
+            .btn-acao { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
-    <main>
-        <div class="header-pagina">
-            <h1 id="titulo-principal">Pagamento de Assinatura</h1>
+    <div class="header-pagina">
+        <h1 id="titulo-principal">Pagamento de Assinatura</h1>
+    </div>
+    <div class="container-pagamento">
+        <div id="plano-card" class="card-plano"></div>
+        <div id="instrucoes-container" style="display: none;"></div>
+        <div id="area-acao">
+            <!-- O botão será inserido dinamicamente pelo script -->
         </div>
-        <div class="espaco-cards"></div>
-        <div class="container-pagamento">
-            <div id="plano-card" class="card-plano"></div>
-            <div id="instrucoes-container" style="display: none;"></div>
-            <div id="area-acao">
-                <!-- O botão será inserido dinamicamente pelo script -->
-            </div>
-        </div>
-    </main>
+    </div>
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
         import { doc, getDoc, addDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
