@@ -316,9 +316,18 @@ async function inicializarPagina() {
     const permissoesRef = doc(db, &quot;configuracoesGlobais&quot;, &quot;permissoes&quot;);
     const permissoesSnap = await getDoc(permissoesRef);
     const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-
-    // ✅ ALTERAÇÃO: Reescrevendo a lógica para evitar o operador &#39;&amp;&amp;&#39; que causou o erro.
-    const podeVer = papelUsuario.some(papel =&gt; (regras.relatorios ? regras.relatorios[papel] === true : false));
+    
+    // ✅ CORREÇÃO DEFINITIVA: A lógica de verificação foi movida para uma função explícita
+    // para garantir máxima compatibilidade e evitar erros de interpretação do navegador.
+    function checarPermissao(papel) {
+        if (regras &amp;&amp; regras.relatorios) {
+            if (regras.relatorios[papel] === true) {
+                return true;
+            }
+        }
+        return false;
+    }
+    const podeVer = papelUsuario.some(checarPermissao);
 
     if (!podeVer) {
       document.getElementById(&#39;page-content&#39;).innerHTML = `
@@ -357,13 +366,13 @@ window.addEventListener(&#39;popstate&#39;, function() {
 </script>
 
 <script>
+//<![CDATA[
 const activeCharts = {};
 
 function renderizarGrafico(canvasId, tipo, labels, data, label, titulo) {
-  // ✅ ALTERAÇÃO: Adicionada verificação explícita para garantir que o canvas existe
   const canvasEl = document.getElementById(canvasId);
   if (!canvasEl) {
-    console.error(`Elemento canvas com id &quot;${canvasId}&quot; não foi encontrado.`);
+    console.error(&quot;Elemento canvas com id &#39;&quot; + canvasId + &quot;&#39; não foi encontrado.&quot;);
     return;
   }
   const ctx = canvasEl.getContext(&#39;2d&#39;);
@@ -430,9 +439,8 @@ function demonstrarGrafico() {
 
 document.getElementById(&#39;btn-aplicar-filtro&#39;).addEventListener(&#39;click&#39;, demonstrarGrafico);
 
-document.querySelectorAll(&#39;.aba&#39;).forEach(aba =&gt; {
-  aba.addEventListener(&#39;click&#39;, () =&gt; {
-    // ✅ ALTERAÇÃO: Lógica de troca de abas reescrita para ser mais explícita e evitar erros
+document.querySelectorAll(&#39;.aba&#39;).forEach(function(aba) {
+  aba.addEventListener(&#39;click&#39;, function() {
     const abaAtivaAnterior = document.querySelector(&#39;.aba.active&#39;);
     if (abaAtivaAnterior) {
       abaAtivaAnterior.classList.remove(&#39;active&#39;);
@@ -452,11 +460,12 @@ document.querySelectorAll(&#39;.aba&#39;).forEach(aba =&gt; {
   });
 });
 
-window.addEventListener(&#39;load&#39;, () =&gt; {
-  setTimeout(() =&gt; {
+window.addEventListener(&#39;load&#39;, function() {
+  setTimeout(function() {
     demonstrarGrafico();
   }, 500);
 });
+//]]>
 </script>
 
 </body>
