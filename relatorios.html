@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Relatórios - Pronti</title>
+  <!-- O seu CSS externo foi removido pois os estilos já estão no <style> abaixo -->
+  <!-- <link rel="stylesheet" href="styles.css"> -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -12,7 +14,7 @@
       --cor-cinza: #6b7280;
       --cor-texto-escuro: #22223b;
       --cor-fundo-app: #f6f7fb;
-      --cor-azul-pronti: #4f46e5;
+      --cor-azul-pronti: #4f46e5; /* azul padrão Pronti */
     }
     body {
       margin: 0;
@@ -176,69 +178,92 @@
       background: #fff;
       border-radius: 14px;
       margin: 24px 10px 0 10px;
-      padding: 22px 18px 18px 18px;
-      min-height: 450px;
+      padding: 22px 8px 18px 8px;
+      min-height: 240px;
       box-shadow: 0 2px 10px #4f46e510;
       border: 1.3px solid #e0e7ff;
     }
     .aba-conteudo.active {
       display: block;
     }
-    .tabela-container {
-      margin-bottom: 30px; /* Aumentado para dar mais espaço */
-      overflow-x: auto;
-    }
-    .grafico-container {
-      height: 300px; /* Altura fixa para o gráfico */
-      position: relative;
-    }
-    canvas {
-      width: 100% !important;
-      height: 100% !important;
-    }
     table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 5px;
+      background: transparent;
+      font-size: 0.98em;
     }
     th, td {
       text-align: left;
-      padding: 10px 8px;
-      font-size: 0.95em;
-      border-bottom: 1px solid #e0e7ff;
+      padding: 7px 6px;
+      font-size: 0.98em;
+      border: none;
+      background: #f3f4fc;
     }
     th {
-      background-color: #f7fafd;
-      color: var(--cor-azul-pronti);
-      font-weight: 600;
+      background: #e0e7ff;
+      color: var(--cor-primaria);
+      font-weight: 700;
+      font-size: 1em;
+      border-radius: 7px 7px 0 0;
+      border-bottom: 2px solid #c7d2fe;
     }
-    tr:last-child td {
-        border-bottom: none;
+    tr {
+      border-radius: 5px;
+      box-shadow: 0 1.2px 4px #4f46e508;
     }
-    tr:hover td {
-        background-color: #f9fafb;
+    tr:nth-child(even) td {
+      background: #f7f8fa;
     }
-    .total-row td {
-        font-weight: bold;
-        background-color: #f0f2ff !important;
-    }
-    
     @keyframes fadeIn {
       from { opacity: 0;}
       to { opacity: 1;}
     }
     @media (max-width: 900px) {
-      .main-relatorios { margin: 10px 0 0 0; padding: 0; border-radius: 8px; }
-      .top-actions, .filtros-relatorios { padding: 7px 4px; }
-      .conteudo-abas { padding-bottom: 14px; }
-      .aba-conteudo { margin: 10px 2px 0 2px; padding: 10px; border-radius: 8px; }
-      .aba { font-size: 0.94em; padding: 4px 6px; border-radius: 7px 7px 0 0; min-width: 44px; }
-      .filtros-relatorios { gap: 5px; font-size: 0.93em; }
-      .filtros-relatorios label { font-size: 0.93em; }
-      .filtros-relatorios input, .filtros-relatorios select { padding: 3px 4px; min-width: 55px; font-size: 0.92em; }
-      .filtros-relatorios button { padding: 4px 9px; font-size: 0.93em; min-height: 24px; }
-      .grafico-container { height: 250px; }
+      .main-relatorios {
+        margin: 10px 0 0 0;
+        padding: 0;
+        border-radius: 8px;
+      }
+      .top-actions, .filtros-relatorios {
+        padding: 7px 4px;
+      }
+      .conteudo-abas {
+        padding-bottom: 14px;
+      }
+      .aba-conteudo {
+        margin: 10px 2px 0 2px;
+        padding: 10px 2px;
+        border-radius: 8px;
+      }
+      .aba {
+        font-size: 0.94em;
+        padding: 4px 6px;
+        border-radius: 7px 7px 0 0;
+        min-width: 44px;
+      }
+      .filtros-relatorios {
+        gap: 5px;
+        font-size: 0.93em;
+      }
+      .filtros-relatorios label {
+        font-size: 0.93em;
+      }
+      .filtros-relatorios input, 
+      .filtros-relatorios select {
+        padding: 3px 4px;
+        min-width: 55px;
+        font-size: 0.92em;
+      }
+      .filtros-relatorios button {
+        padding: 4px 9px;
+        font-size: 0.93em;
+        min-height: 24px;
+      }
     }
   </style>
+  <!-- Chart.js CDN para gráficos -->
+  <script id="chartjs-cdn" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div id="page-content">
@@ -256,128 +281,116 @@
       <header class="filtros-relatorios">
         <label for="filtro-data-inicio">Data Início:</label>
         <input type="date" id="filtro-data-inicio">
+
         <label for="filtro-data-fim">Data Fim:</label>
         <input type="date" id="filtro-data-fim">
+
         <label for="filtro-profissional">Profissional:</label>
         <select id="filtro-profissional">
           <option value="todos">Todos</option>
         </select>
+
         <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
       </header>
       <section class="conteudo-abas">
         <div class="aba-conteudo active" id="servicos">
-          <div class="tabela-container"></div>
-          <div class="grafico-container"><canvas id="grafico-servicos"></canvas></div>
+          <!-- Tabela de Serviços (exemplo estático, o seu .js pode preencher dinamicamente) -->
+          <button style="margin-bottom:8px"><i class="fa fa-download"></i> Exportar CSV</button>
+          <table>
+            <thead>
+              <tr>
+                <th>Serviço</th>
+                <th>Qtd</th>
+                <th>Faturamento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Coloração</td><td>24</td><td>R$ 2460.00</td></tr>
+              <tr><td>Corte Masculino</td><td>5</td><td>R$ 180.00</td></tr>
+              <tr><td>Design de Sobrancelhas com Henna</td><td>1</td><td>R$ 45.00</td></tr>
+              <tr><td>Corte Feminino</td><td>1</td><td>R$ 75.00</td></tr>
+              <tr><td>Barba Completa</td><td>1</td><td>R$ 30.00</td></tr>
+            </tbody>
+          </table>
+          <!-- O gráfico aparecerá aqui automaticamente -->
+          <div id="grafico-servicos"></div>
         </div>
         <div class="aba-conteudo" id="profissionais">
-          <div class="tabela-container"></div>
-          <div class="grafico-container"><canvas id="grafico-profissionais"></canvas></div>
+          <!-- Seu conteúdo/tabela de profissionais aqui -->
+          <div id="grafico-profissionais"></div>
         </div>
         <div class="aba-conteudo" id="faturamento">
-          <div class="tabela-container"></div>
-          <div class="grafico-container"><canvas id="grafico-faturamento"></canvas></div>
+          <!-- Seu conteúdo/tabela de faturamento aqui -->
+          <div id="grafico-faturamento"></div>
         </div>
         <div class="aba-conteudo" id="clientes">
-          <div class="tabela-container"></div>
-          <div class="grafico-container"><canvas id="grafico-clientes"></canvas></div>
+          <!-- Seu conteúdo/tabela de clientes aqui -->
+          <div id="grafico-clientes"></div>
         </div>
         <div class="aba-conteudo" id="agenda">
-          <div class="tabela-container"></div>
-          <div class="grafico-container"><canvas id="grafico-agenda"></canvas></div>
+          <!-- Seu conteúdo/tabela de agenda aqui -->
+          <div id="grafico-agenda"></div>
         </div>
       </section>
     </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- SCRIPT SEPARADO COM AS FUNÇÕES DE RENDERIZAÇÃO -->
-  <script>
-    const charts = {};
-    function formatarMoeda(valor) { return (valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-    function renderizarTabela(container, dados) {
-      if (!dados || dados.length === 0) { container.innerHTML = '<p style="text-align:center; color:#6b7280;">Nenhum dado encontrado para o período.</p>'; return; }
-      const cabecalhos = Object.keys(dados[0]);
-      let html = `<table><thead><tr>${cabecalhos.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
-      const totais = {};
-      const colunasNumericas = ['Qtd', 'Faturamento', 'Serviços', 'Total', 'Agendamentos'];
-      dados.forEach(linha => {
-        html += '<tr>';
-        cabecalhos.forEach(c => {
-          const valor = linha[c];
-          html += `<td>${c === 'Faturamento' ? formatarMoeda(valor) : valor}</td>`;
-          if (colunasNumericas.includes(c)) totais[c] = (totais[c] || 0) + valor;
-        });
-        html += '</tr>';
-      });
-      if (Object.keys(totais).length > 0) {
-        html += '<tr class="total-row">';
-        cabecalhos.forEach((c, i) => {
-          if (i === 0) html += '<td><strong>Total</strong></td>';
-          else if (totais[c] !== undefined) html += `<td><strong>${c === 'Faturamento' ? formatarMoeda(totais[c]) : totais[c]}</strong></td>`;
-          else html += '<td></td>';
-        });
-        html += '</tr>';
-      }
-      html += '</tbody></table>';
-      container.innerHTML = html;
-    }
-    function renderizarGrafico(canvasId, dados) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas || !dados || dados.length === 0) { if (charts[canvasId]) { charts[canvasId].destroy(); delete charts[canvasId]; } return; }
-      const configMap = {
-        'grafico-servicos': { type: 'bar', labels: dados.map(d => d.Serviço), data: dados.map(d => d.Qtd), color: '#4f46e5' },
-        'grafico-profissionais': { type: 'doughnut', labels: dados.map(d => d.Profissional), data: dados.map(d => d.Faturamento), color: ['#818cf8', '#6366f1', '#4f46e5', '#a78bfa'] },
-        'grafico-faturamento': { type: 'line', labels: dados.map(d => Object.values(d)[0]), data: dados.map(d => d.Faturamento), color: '#38bdf8' },
-        'grafico-clientes': { type: 'pie', labels: dados.map(d => d.Status), data: dados.map(d => d.Total), color: ['#34d399', '#f87171', '#fbbf24'] },
-        'grafico-agenda': { type: 'bar', labels: dados.map(d => d.Dia), data: dados.map(d => d.Agendamentos), color: '#ef4444' }
-      };
-      const cfg = configMap[canvasId];
-      if (!cfg) return;
-      if (charts[canvasId]) charts[canvasId].destroy();
-      charts[canvasId] = new Chart(canvas.getContext('2d'), {
-        type: cfg.type,
-        data: { labels: cfg.labels, datasets: [{ label: 'Total', data: cfg.data, backgroundColor: cfg.color, borderColor: cfg.color, borderWidth: 2, fill: cfg.type === 'line', tension: 0.3 }] },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: cfg.type === 'pie' || cfg.type === 'doughnut', position: 'bottom' }, title: { display: false } },
-          scales: (cfg.type === 'bar' || cfg.type === 'line') ? { y: { beginAtZero: true } } : {}
-        }
-      });
-    }
-    window.renderizarConteudoDaAba = function(abaId, dados) {
-        const aba = document.getElementById(abaId);
-        if(!aba) return;
-        renderizarTabela(aba.querySelector('.tabela-container'), dados);
-        renderizarGrafico(`grafico-${abaId}`, dados);
-    }
-  </script>
-
-  <!-- SEU SCRIPT DE INICIALIZAÇÃO ORIGINAL (INTACTO) -->
+  <!-- ================================================================== -->
+  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
+  <!-- ================================================================== -->
   <script type="module">
-    // import { verificarAcesso } from './userService.js';
-    // import { db } from './firebase-config.js';
-    // import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { verificarAcesso } from './userService.js';
+    import { db } from './firebase-config.js';
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
     async function inicializarPagina( ) {
       try {
-        // const sessao = await verificarAcesso();
-        // if (!sessao || !sessao.user) { return; }
-        // ... (seu código de verificação de permissão continua aqui, intacto)
+        const sessao = await verificarAcesso();
+        if (!sessao || !sessao.user) {
+          return;
+        }
+        let papelUsuario = sessao.papeis || [];
+        if (papelUsuario.length === 0) {
+          if(sessao.isAdmin) papelUsuario.push('admin');
+          if(sessao.isOwner) papelUsuario.push('dono');
+          if(papelUsuario.length === 0) papelUsuario.push('funcionario');
+        }
+        const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
+        const permissoesSnap = await getDoc(permissoesRef);
+        const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
+
+        const podeVer = papelUsuario.some(papel => regras.relatorios && regras.relatorios[papel] === true);
+
+        if (!podeVer) {
+          document.getElementById('page-content').innerHTML = `
+            <div style="background: #fff; padding: 40px; border-radius: 12px; text-align: center; margin-top: 50px;">
+              <h1>Acesso Negado</h1>
+              <p>Você não tem permissão para acessar esta página.</p>
+              <button onclick="window.history.back()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">Voltar</button>
+            </div>
+          `;
+          return;
+        }
+        // Se tiver permissão, a página continua a carregar normalmente.
       } catch (error) {
-        console.error("Erro ao inicializar página:", error);
-        document.getElementById('page-content').innerHTML = '<h1>Ocorreu um erro</h1>';
+        console.error("Erro crítico ao inicializar a página de relatórios:", error);
+        document.getElementById('page-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
       }
     }
-    document.addEventListener('DOMContentLoaded', inicializarPagina);
+    inicializarPagina();
   </script>
 
-  <!-- SEU SCRIPT DE NEGÓCIO ONDE ESTÁ A LÓGICA DOS FILTROS (INTACTO) -->
+  <!-- Seus scripts de negócio são mantidos -->
   <script src="relatorios.js" type="module"></script>
 
-  <!-- SEU SCRIPT DO BOTÃO VOLTAR E HISTÓRICO (INTACTO) -->
+  <!-- O script do botão voltar e do histórico foi mantido -->
   <script>
     const btnVoltar = document.getElementById("btn-voltar");
-    if (btnVoltar) { btnVoltar.addEventListener("click", () => { window.history.back(); }); }
+    if (btnVoltar) {
+      btnVoltar.addEventListener("click", () => {
+        window.history.back();
+      });
+    }
     if (window.history.state === null || window.history.state.page !== "relatorios") {
         window.history.pushState({ "page": "relatorios" }, "");
     }
@@ -386,5 +399,90 @@
     });
   </script>
 
+  <!-- SCRIPT DE GRÁFICO POR ABA: Adicione em relatorios.js ou aqui abaixo -->
+  <script>
+    // Função para criar gráfico por aba
+    function criarGraficoAba(abaId, tipo, labels, dataset, label, cor) {
+      let graficoContainer = document.getElementById('grafico-' + abaId);
+      if (!graficoContainer) return;
+      graficoContainer.innerHTML = '';
+      const canvas = document.createElement('canvas');
+      canvas.id = 'canvas-' + abaId;
+      canvas.style.maxWidth = '480px';
+      canvas.style.width = '100%';
+      canvas.style.height = '260px';
+      graficoContainer.appendChild(canvas);
+
+      function desenhar() {
+        new Chart(canvas, {
+          type: tipo,
+          data: {
+            labels: labels,
+            datasets: [{
+              label,
+              data: dataset,
+              backgroundColor: cor,
+              borderColor: cor,
+              borderWidth: 2,
+              tension: 0.32,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#6366f1', font: { weight: 'bold' } } },
+              y: { grid: { color: '#e0e7ff' }, ticks: { color: '#6366f1', font: { weight: 'bold' } }, beginAtZero: true }
+            }
+          }
+        });
+      }
+      if (window.Chart) desenhar();
+      else {
+        const chartScript = document.getElementById('chartjs-cdn');
+        if (chartScript) chartScript.onload = desenhar;
+      }
+    }
+
+    // Exemplo para aba 'servicos'
+    function graficoServicos() {
+      const servicos = [
+        { nome: 'Coloração', qtd: 24, faturamento: 2460 },
+        { nome: 'Corte Masculino', qtd: 5, faturamento: 180 },
+        { nome: 'Design de Sobrancelhas com Henna', qtd: 1, faturamento: 45 },
+        { nome: 'Corte Feminino', qtd: 1, faturamento: 75 },
+        { nome: 'Barba Completa', qtd: 1, faturamento: 30 },
+      ];
+      criarGraficoAba(
+        'servicos', 
+        'bar', 
+        servicos.map(s => s.nome), 
+        servicos.map(s => s.qtd), 
+        'Quantidade por Serviço',
+        '#6366f1'
+      );
+    }
+    // Adapte para outras abas se quiser gráficos diferentes!
+    function atualizarGraficos() {
+      const abaActive = document.querySelector('.aba-conteudo.active');
+      if (!abaActive) return;
+      const abaId = abaActive.id;
+      if (abaId === 'servicos') graficoServicos();
+      // Adicione: if (abaId === 'profissionais') graficoProfissionais(), etc.
+    }
+    document.querySelectorAll('.aba').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.aba').forEach(a => a.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.remove('active'));
+        document.getElementById(this.dataset.aba).classList.add('active');
+        atualizarGraficos();
+      });
+    });
+    window.addEventListener('DOMContentLoaded', atualizarGraficos);
+  </script>
 </body>
 </html>
