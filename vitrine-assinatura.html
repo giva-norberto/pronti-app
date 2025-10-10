@@ -14,10 +14,11 @@
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
             color: #22223b;
             margin: 0;
+            padding: 0 15px; /* Adicionado padding para evitar que o conteúdo toque nas bordas em telas pequenas */
             min-height: 100vh;
         }
         .voltar-btn {
-            margin: 34px auto 0 34px;
+            margin: 34px 0 0 0; /* Ajustado para alinhar com o contêiner */
             display: inline-block;
             background: #eef2ff;
             color: #4f46e5;
@@ -34,37 +35,42 @@
             margin-right: 7px;
             font-size: 1em;
         }
-        .header-card {
-            background: #fff;
-            border-radius: 22px;
-            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.13);
-            padding: 36px 20px 30px 20px;
+
+        /* NOVO: Contêiner principal para centralizar o conteúdo */
+        .container {
             max-width: 470px;
-            margin: 28px auto 38px auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            margin: 0 auto;
+            padding-bottom: 38px; /* Espaço no final da página */
         }
-        .header-card h1 {
-            color: #4f46e5;
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 0 0 8px 0;
+        
+        /* ALTERADO: Estilo do cabeçalho simplificado */
+        .page-header {
+            padding: 28px 0 10px 0;
             text-align: center;
+        }
+
+        /* ALTERADO: Cor do H1 para branco para ser legível */
+        .page-header h1 {
+            color: #eef2ff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0 0 12px 0;
             letter-spacing: 0.01em;
         }
         .linha-separador {
             width: 75%;
             margin: 0 auto 0 auto;
             border: none;
-            border-top: 1.5px solid #e2e8f0;
+            /* ALTERADO: Cor da linha para ser visível no fundo escuro */
+            border-top: 1.5px solid rgba(238, 242, 255, 0.3);
         }
+
+        /* ALTERADO: Removida a centralização, pois o .container já faz isso */
         .planos-lista {
-            max-width: 470px;
-            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 36px;
+            margin-top: 38px; /* Espaço entre a linha e o primeiro card */
         }
         .card-plano {
             background: #fff;
@@ -149,29 +155,40 @@
             transform: translateY(-2px);
         }
         .mensagem-info {
-            color: #64748b;
+            color: #cbd5e1; /* Cor mais clara para melhor contraste */
             text-align: center;
             font-size: 1.07rem;
             margin: 20px 0;
         }
+        
+        /* Pequenos ajustes para responsividade */
         @media (max-width: 520px) {
-            .header-card, .planos-lista { max-width: 99vw; padding: 0 2px; }
-            .header-card { padding: 14px 4px 12px 4px; }
-            .planos-lista { gap: 16px; }
-            .card-plano { padding: 9px 4px 7px 4px; }
+            .container {
+                max-width: 100%;
+            }
+            .page-header { padding: 14px 4px 12px 4px; }
+            .page-header h1 { font-size: 1.8rem; }
+            .planos-lista { gap: 16px; margin-top: 24px; }
+            .card-plano { padding: 18px 12px 15px 12px; }
             .btn-assinar { font-size: 0.97rem; padding: 9px 0; }
         }
     </style>
 </head>
 <body>
-    <button class="voltar-btn" onclick="window.history.back()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-    <div class="header-card">
-        <h1>Planos de Assinatura</h1>
-        <hr class="linha-separador">
-    </div>
-    <div id="planos-lista" class="planos-lista">
-        <p class="mensagem-info">A carregar planos disponíveis...</p>
-    </div>
+    
+    <main class="container">
+        <button class="voltar-btn" onclick="window.history.back()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+
+        <div class="page-header">
+            <h1>Planos de Assinatura</h1>
+            <hr class="linha-separador">
+        </div>
+
+        <div id="planos-lista" class="planos-lista">
+            <p class="mensagem-info">A carregar planos disponíveis...</p>
+        </div>
+    </main>
+
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
