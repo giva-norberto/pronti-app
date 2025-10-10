@@ -2,78 +2,111 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8" />
-    <title>Pagamento de Assinatura - Pronti</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <title>Planos de Assinatura - Pronti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            margin: 0;
-            color: #22223b;
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
+            color: #22223b;
+            margin: 0;
             min-height: 100vh;
         }
-        .header-pagina {
-            width: 100%;
-            max-width: 500px;
-            margin: 40px auto 0 auto;
+        .voltar-btn {
+            margin: 34px auto 0 34px;
+            display: inline-block;
+            background: #eef2ff;
+            color: #4f46e5;
+            border: none;
+            padding: 9px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(44,54,80,0.08);
+            transition: background 0.2s;
+        }
+        .voltar-btn i {
+            margin-right: 7px;
+            font-size: 1em;
+        }
+        .header-card {
+            background: #fff;
+            border-radius: 22px;
+            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.13);
+            padding: 36px 20px 30px 20px;
+            max-width: 470px;
+            margin: 28px auto 38px auto;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 0 20px;
         }
-        .header-pagina h1 {
+        .header-card h1 {
             color: #4f46e5;
-            background: #fff;
             font-size: 2rem;
             font-weight: 700;
-            margin: 0 0 12px 0;
-            border-radius: 18px;
-            box-shadow: 0 4px 20px rgba(44,54,80,0.10);
-            padding: 24px 0;
-            width: 100%;
-            text-align: center;
-        }
-        .container-pagamento {
-            width: 100%;
-            max-width: 500px;
-            margin: 30px auto 0 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 0 20px;
-        }
-        .card-plano {
-            background: #fff;
-            color: #222664;
-            border-radius: 20px;
-            padding: 30px 22px 22px 22px;
-            max-width: 440px;
-            margin: 0 auto 30px auto;
-            box-shadow: 0 10px 34px rgba(44,54,80,0.13);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            position: relative;
-        }
-        .card-plano h2 {
-            font-size: 1.23rem;
-            font-weight: 700;
-            margin-bottom: 9px;
-            color: #4f46e5;
+            margin: 0 0 8px 0;
             text-align: center;
             letter-spacing: 0.01em;
         }
+        .linha-separador {
+            width: 75%;
+            margin: 0 auto 0 auto;
+            border: none;
+            border-top: 1.5px solid #e2e8f0;
+        }
+        .planos-lista {
+            max-width: 470px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 36px;
+        }
+        .card-plano {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 28px rgba(44,54,80,0.13);
+            padding: 26px 18px 20px 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            transition: box-shadow 0.19s;
+        }
+        .card-plano::before {
+            content: "";
+            display: block;
+            position: absolute;
+            left: 18px;
+            top: 16px;
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, #4f46e5 40%, #10b981 100%);
+            opacity: 0.09;
+            border-radius: 50%;
+            z-index: 0;
+        }
+        .card-plano h2 {
+            font-size: 1.13rem;
+            font-weight: 700;
+            color: #4f46e5;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.01em;
+            z-index: 1;
+            text-align: center;
+        }
         .card-plano .preco {
-            font-size: 2.1rem;
+            font-size: 1.37rem;
             font-weight: 700;
             color: #10b981;
-            margin: 7px 0 7px 0;
+            margin: 0 0 7px 0;
             text-align: center;
+            z-index: 1;
         }
         .card-plano .preco span {
             font-size: 1rem;
@@ -82,248 +115,118 @@
         }
         .card-plano .descricao {
             color: #444;
-            font-size: 1.04rem;
+            font-size: 1.03rem;
             text-align: center;
+            margin: 0 0 8px 0;
+            z-index: 1;
         }
         .card-plano ul {
             list-style: '✓ ';
-            padding-left: 24px;
+            padding-left: 20px;
             color: #333;
-            margin: 10px 0 8px 0;
+            margin: 10px 0 10px 0;
             text-align: left;
-            font-size: 1.05em;
+            font-size: 1.01em;
+            z-index: 1;
         }
-        .btn-acao {
-            width: 100%;
+        .btn-assinar {
             background: linear-gradient(90deg, #6366f1 0%, #10b981 100%);
-            color: #fff;
-            font-weight: 700;
+            color: white;
+            font-weight: 600;
             border: none;
-            border-radius: 12px;
-            padding: 18px 0;
-            font-size: 1.12rem;
+            border-radius: 7px;
+            padding: 12px 0;
+            width: 100%;
+            font-size: 1.08rem;
             cursor: pointer;
-            transition: background 0.2s, transform 0.2s;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.13);
-            margin-top: 0;
+            margin-top: 12px;
+            transition: background 0.19s, transform 0.19s;
+            box-shadow: 0 2px 10px rgba(44,54,80,0.08);
+            z-index: 1;
         }
-        .btn-acao:hover:not(:disabled) {
+        .btn-assinar:hover:not(:disabled) {
             background: linear-gradient(90deg, #10b981 0%, #6366f1 100%);
             transform: translateY(-2px);
         }
-        .btn-acao:disabled {
-            background: #374151;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        #instrucoes-container {
-            margin-bottom: 30px;
-            background: #f1f5f9;
-            border-radius: 12px;
-            color: #1e293b;
-            padding: 20px 26px;
-            max-width: 440px;
-            font-size: 1.05em;
-            text-align: left;
-        }
-        #instrucoes-container strong {
-            color: #4f46e5;
-            display: block;
-            margin-bottom: 10px;
-        }
-        .card-sucesso {
+        .mensagem-info {
+            color: #64748b;
             text-align: center;
-            width: 100%;
+            font-size: 1.07rem;
+            margin: 20px 0;
         }
-        .card-sucesso i {
-            font-size: 3rem;
-            color: #10b981;
-            margin-bottom: 15px;
-        }
-        .card-sucesso h2 {
-            color: #10b981;
-            margin-bottom: 10px;
-        }
-        .card-sucesso p {
-            color: #444;
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-        @media (max-width: 650px) {
-            .header-pagina, .container-pagamento { max-width: 98vw; padding: 0 4px; }
-            .header-pagina h1 { font-size: 1.3rem; padding: 12px 2px; }
-            .card-plano, #instrucoes-container { max-width: 99vw; padding: 13px 4px; }
-            .card-plano h2 { font-size: 1.02rem; }
-            .card-plano .preco { font-size: 1.35rem; }
-            .btn-acao { font-size: 1rem; }
+        @media (max-width: 520px) {
+            .header-card, .planos-lista { max-width: 99vw; padding: 0 2px; }
+            .header-card { padding: 14px 4px 12px 4px; }
+            .planos-lista { gap: 16px; }
+            .card-plano { padding: 9px 4px 7px 4px; }
+            .btn-assinar { font-size: 0.97rem; padding: 9px 0; }
         }
     </style>
 </head>
 <body>
-    <div class="header-pagina">
-        <h1 id="titulo-principal">Pagamento de Assinatura</h1>
+    <button class="voltar-btn" onclick="window.history.back()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+    <div class="header-card">
+        <h1>Planos de Assinatura</h1>
+        <hr class="linha-separador">
     </div>
-    <div class="container-pagamento">
-        <div id="plano-card" class="card-plano"></div>
-        <div id="instrucoes-container" style="display: none;"></div>
-        <div id="area-acao">
-            <!-- O botão será inserido dinamicamente pelo script -->
-        </div>
+    <div id="planos-lista" class="planos-lista">
+        <p class="mensagem-info">A carregar planos disponíveis...</p>
     </div>
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
-        import { doc, getDoc, addDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const empresaId = urlParams.get("empresaId");
-        const planoId = urlParams.get("planoId");
-
-        const tituloPrincipal = document.getElementById('titulo-principal');
-        const planoCardDiv = document.getElementById('plano-card');
-        const areaAcaoDiv = document.getElementById('area-acao');
-        const instrucoesContainerDiv = document.getElementById('instrucoes-container');
-        
-        let planoSelecionado = null;
-        let empresaData = null;
+        const planosListaDiv = document.getElementById('planos-lista');
         let currentUser = null;
 
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                carregarDadosIniciais();
-            } else {
-                areaAcaoDiv.innerHTML = '';
-                planoCardDiv.innerHTML = `<p style='color:red;'>Você precisa estar logado para fazer um pagamento.</p>`;
-            }
+            currentUser = user;
         });
 
-        async function carregarDadosIniciais() {
-            areaAcaoDiv.innerHTML = `<button class="btn-acao" disabled>Carregando...</button>`;
-            if (!empresaId || !planoId) {
-                planoCardDiv.innerHTML = "<p style='color:red;'>Erro: Plano ou empresa não identificado.</p>";
-                areaAcaoDiv.innerHTML = '';
+        async function carregarPlanos() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const empresaId = urlParams.get('empresa');
+            if (!empresaId) {
+                planosListaDiv.innerHTML = '<p class="mensagem-info">Erro: ID da empresa não encontrado.</p>';
                 return;
             }
             try {
-                const planoRef = doc(db, `empresarios/${empresaId}/planosDeAssinatura/${planoId}`);
-                const empresaRef = doc(db, `empresarios/${empresaId}`);
-                
-                const [planoSnap, empresaSnap] = await Promise.all([getDoc(planoRef), getDoc(empresaRef)]);
+                const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
+                const snapshot = await getDocs(planosRef);
 
-                if (!planoSnap.exists() || !empresaSnap.exists()) {
-                    throw new Error("Plano ou empresa não encontrado.");
+                if (snapshot.empty) {
+                    planosListaDiv.innerHTML = '<p class="mensagem-info">Nenhum plano disponível no momento.</p>';
+                    return;
                 }
-
-                planoSelecionado = { id: planoSnap.id, ...planoSnap.data() };
-                empresaData = empresaSnap.data();
-
-                planoCardDiv.innerHTML = `
-                    <h2>${planoSelecionado.nome}</h2>
-                    <div class="preco">R$ ${planoSelecionado.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span>/ mês</span></div>
-                    <div class="descricao">${planoSelecionado.descricao || ""}</div>
-                    <ul>${(planoSelecionado.servicosInclusos || []).map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')}</ul>
-                `;
-                
-                if (planoSelecionado.metodo === 'automatico') {
-                    areaAcaoDiv.innerHTML = `<button id="btn-pagar-mp" class="btn-acao">Pagar com Mercado Pago</button>`;
-                    document.getElementById('btn-pagar-mp').addEventListener('click', handleMercadoPago);
-                } else { // PIX
-                    instrucoesContainerDiv.style.display = 'block';
-                    instrucoesContainerDiv.innerHTML = `<strong>Instruções para Pagamento PIX:</strong><p>${planoSelecionado.instrucoesPagamento || 'Instruções não fornecidas.'}</p>`;
-                    
-                    areaAcaoDiv.innerHTML = `<button id="btn-confirma-pagamento" class="btn-acao">Já Realizei o Pagamento</button>`;
-                    document.getElementById('btn-confirma-pagamento').addEventListener('click', handleConfirmacaoPix);
-                }
-
-            } catch (err) {
-                console.error("Erro ao carregar dados:", err);
-                planoCardDiv.innerHTML = `<p style='color:red;'>${err.message}</p>`;
-                areaAcaoDiv.innerHTML = '';
-            }
-        }
-
-        async function handleMercadoPago() {
-            const btn = document.getElementById('btn-pagar-mp');
-            btn.disabled = true;
-            btn.textContent = 'Aguarde...';
-
-            try {
-                await addDoc(collection(db, "pagamentosPendentes"), {
-                    empresaId: empresaId, 
-                    planoId: planoSelecionado.id, 
-                    planoNome: planoSelecionado.nome,
-                    clienteId: currentUser.uid, 
-                    clienteNome: currentUser.displayName || currentUser.email,
-                    valor: planoSelecionado.preco, 
-                    status: 'aguardando_pagamento_mp', 
-                    metodo: 'mercado_pago',
-                    dataCriacao: serverTimestamp()
-                });
-
-                let link = planoSelecionado.mercadoPagoLink;
-                if (link) {
-                    link += `&external_reference=${empresaId}`;
-                    window.location.href = link;
-                } else {
-                    throw new Error("Link de pagamento do Mercado Pago não está configurado para este plano.");
-                }
-            } catch (error) {
-                console.error("Erro ao iniciar pagamento com Mercado Pago:", error);
-                alert("Ocorreu um erro ao tentar processar o pagamento: " + error.message);
-                btn.textContent = "Tentar Novamente";
-                btn.disabled = false;
-            }
-        }
-
-        async function handleConfirmacaoPix() {
-            const btn = document.getElementById('btn-confirma-pagamento');
-            btn.disabled = true;
-            btn.textContent = 'Enviando notificação...';
-
-            try {
-                await addDoc(collection(db, "pagamentosPendentes"), {
-                    empresaId: empresaId, planoId: planoSelecionado.id, planoNome: planoSelecionado.nome,
-                    clienteId: currentUser.uid, clienteNome: currentUser.displayName || currentUser.email,
-                    valor: planoSelecionado.preco, status: "pendente_confirmacao", metodo: 'pix',
-                    dataCriacao: serverTimestamp()
-                });
-                
-                if (empresaData && empresaData.donoId) {
-                    try {
-                        await addDoc(collection(db, "filaDeNotificacoes"), {
-                            donoId: empresaData.donoId,
-                            tipo: 'PAGAMENTO_PIX_RECEBIDO',
-                            titulo: 'Pagamento PIX Confirmado',
-                            mensagem: `O cliente ${currentUser.displayName || currentUser.email} confirmou o pagamento do plano "${planoSelecionado.nome}".`,
-                            lido: false,
-                            dataCriacao: serverTimestamp()
+                planosListaDiv.innerHTML = '';
+                snapshot.docs.forEach(doc => {
+                    const plano = { id: doc.id, ...doc.data() };
+                    if (plano.ativo) {
+                        const card = document.createElement('div');
+                        card.className = 'card-plano';
+                        const servicosHTML = Array.isArray(plano.servicosInclusos)
+                            ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
+                            : '';
+                        card.innerHTML = `
+                            <h2>${plano.nome}</h2>
+                            <div class="preco">R$ ${plano.preco?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span>/ mês</span></div>
+                            <div class="descricao">${plano.descricao || ""}</div>
+                            <ul>${servicosHTML}</ul>
+                            <button class="btn-assinar" data-id="${plano.id}">Assinar</button>
+                        `;
+                        card.querySelector('.btn-assinar').addEventListener('click', () => {
+                            window.location.href = `pagamento-assinatura.html?empresaId=${empresaId}&planoId=${plano.id}`;
                         });
-                    } catch (notificationError) {
-                        console.warn("A notificação de pagamento foi registrada, mas a criação do alerta na fila de notificações falhou:", notificationError);
+                        planosListaDiv.appendChild(card);
                     }
-                } else {
-                    console.warn("A notificação de pagamento foi registrada, mas o 'donoId' da empresa não foi encontrado para criar a notificação.");
-                }
-
-                tituloPrincipal.textContent = "Notificação Enviada!";
-                planoCardDiv.innerHTML = `
-                    <div class="card-sucesso">
-                        <i class="fa-solid fa-circle-check"></i>
-                        <h2>Obrigado!</h2>
-                        <p>A <strong>${empresaData.nomeFantasia || 'empresa'}</strong> agradece pelo seu pagamento.<br>Sua assinatura será liberada assim que confirmarmos o recebimento.</p>
-                    </div>
-                `;
-                instrucoesContainerDiv.style.display = 'none';
-                areaAcaoDiv.style.display = 'none';
-
+                });
             } catch (error) {
-                console.error("Erro ao registrar a confirmação de pagamento PIX:", error);
-                alert("Ocorreu um erro ao registrar a notificação. Verifique sua conexão e tente novamente.");
-                btn.textContent = 'Tentar Novamente';
-                btn.disabled = false;
+                console.error("Erro ao carregar planos:", error);
+                planosListaDiv.innerHTML = '<p class="mensagem-info">Ocorreu um erro ao carregar os planos.</p>';
             }
         }
+        carregarPlanos();
     </script>
 </body>
 </html>
