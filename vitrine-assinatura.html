@@ -18,11 +18,6 @@
             min-height: 100vh;
             display: flex;
         }
-        #menu-container {
-            width: 250px;
-            min-width: 250px;
-            flex-shrink: 0;
-        }
         main {
             flex-grow: 1;
             box-sizing: border-box;
@@ -60,31 +55,32 @@
             align-items: center;
             padding: 0 20px;
         }
-        .card-display {
+        .card-plano {
             background: #fff;
             color: #222664;
             border-radius: 16px;
             padding: 28px 22px;
             max-width: 400px;
             margin: 0 auto 30px auto;
-            box-shadow: 0 6px 22px rgba(44,54,80,0.10);
+            box-shadow: 0 6px 22px rgba(44,54,80,0.13);
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+            gap: 14px;
         }
-        .card-display h2 {
+        .card-plano h2 {
             font-size: 1.25rem;
             font-weight: 700;
             margin-bottom: 12px;
             color: #4f46e5;
         }
-        .card-display .preco {
+        .card-plano .preco {
             font-size: 2rem;
             font-weight: 700;
             margin: 10px 0 5px 0;
             color: #6366f1;
         }
-        .card-display ul {
+        .card-plano ul {
             list-style: '✓ ';
             padding-left: 20px;
             color: #333;
@@ -154,19 +150,18 @@
             main { padding: 20px 0 0 0; }
             .header-pagina { padding: 0 6px; }
             .container-pagamento { padding: 0 6px; }
-            .card-display, #instrucoes-container { max-width: 95vw; padding: 14px 8px; }
+            .card-plano, #instrucoes-container { max-width: 95vw; padding: 14px 8px; }
         }
     </style>
 </head>
 <body>
-    <aside id="menu-container"></aside>
     <main>
         <div class="header-pagina">
             <h1 id="titulo-principal">Pagamento de Assinatura</h1>
         </div>
         <div class="espaco-cards"></div>
         <div class="container-pagamento">
-            <div id="plano-card" class="card-display"></div>
+            <div id="plano-card" class="card-plano"></div>
             <div id="instrucoes-container" style="display: none;"></div>
             <div id="area-acao">
                 <!-- O botão será inserido dinamicamente pelo script -->
@@ -175,7 +170,7 @@
     </main>
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
-        import { doc, getDoc, addDoc, collection, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { doc, getDoc, addDoc, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -284,7 +279,6 @@
             btn.textContent = 'Enviando notificação...';
 
             try {
-                // 1. Cria o registro de pagamento pendente.
                 await addDoc(collection(db, "pagamentosPendentes"), {
                     empresaId: empresaId, planoId: planoSelecionado.id, planoNome: planoSelecionado.nome,
                     clienteId: currentUser.uid, clienteNome: currentUser.displayName || currentUser.email,
@@ -292,7 +286,6 @@
                     dataCriacao: serverTimestamp()
                 });
                 
-                // 2. Adiciona a notificação na 'filaDeNotificacoes' usando o ID do dono da empresa.
                 if (empresaData && empresaData.donoId) {
                     try {
                         await addDoc(collection(db, "filaDeNotificacoes"), {
@@ -310,7 +303,6 @@
                     console.warn("A notificação de pagamento foi registrada, mas o 'donoId' da empresa não foi encontrado para criar a notificação.");
                 }
 
-                // 3. Mostra a mensagem de sucesso para o cliente.
                 tituloPrincipal.textContent = "Notificação Enviada!";
                 planoCardDiv.innerHTML = `
                     <div class="card-sucesso">
