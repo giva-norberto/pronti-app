@@ -195,14 +195,50 @@
         }
         .assinatura-cards-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Ajustado minmax para cards menores */
+            gap: 20px; /* Reduzido o gap */
             padding: 20px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            justify-content: center; /* Centraliza os cards no container */
+            align-items: stretch; /* Garante que os cards tenham a mesma altura */
+        }
+        .card-plano-vitrine {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(99,102,241,0.06);
+            padding: 22px;
+            text-align: center;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%; /* Ocupa a altura total disponível no grid */
+            max-width: 100%; /* Garante que o card não exceda a largura da coluna do grid */
+            margin: 0; /* Remove margin auto para que o grid controle o espaçamento */
+        }
+        .card-plano-nome {
+            color: #4f46e5;
+            font-size: 1.3em; /* Reduzido o tamanho da fonte */
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .card-plano-preco {
+            color: #6366f1;
+            font-weight: bold;
+            font-size: 1.1em; /* Reduzido o tamanho da fonte */
+            margin-bottom: 15px;
+        }
+        .card-plano-descricao {
+            font-size: 0.85em; /* Reduzido o tamanho da fonte */
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .card-plano-servicos li {
+            margin-bottom: 6px; /* Reduzido o espaçamento entre os itens da lista */
+            color: #444;
+            font-size: 0.8em; /* Reduzido o tamanho da fonte */
         }
     </style>
 </head>
