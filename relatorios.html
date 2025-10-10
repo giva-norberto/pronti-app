@@ -14,7 +14,7 @@
 --cor-cinza: #6b7280;
 --cor-texto-escuro: #22223b;
 --cor-fundo-app: #f6f7fb;
---cor-azul-pronti: #4f46e5; /* azul padrão Pronti */
+--cor-azul-pronti: #4f46e5; /* azul padrão Pronti /
 }
 body {
 margin: 0;
@@ -28,7 +28,7 @@ align-items: flex-start;
 }
 .main-relatorios {
 max-width: 1100px;
-width: 100%;
+width: 100%; / Garante que ocupe a largura disponível /
 margin: 28px auto 0 auto;
 padding: 0;
 min-height: 90vh;
@@ -67,6 +67,7 @@ min-width: 64px;
 background: #38bdf8;
 color: #fff;
 }
+/ ABAS COMPACTAS /
 .abas-container {
 display: flex;
 gap: 0;
@@ -112,6 +113,7 @@ box-shadow: 0 -1px 9px #4f46e51a;
 opacity: 1;
 border-bottom: 2.5px solid var(--cor-primaria);
 }
+/ FILTROS COMPACTOS /
 .filtros-relatorios {
 display: flex;
 gap: 12px;
@@ -186,6 +188,7 @@ border: 1.3px solid #e0e7ff;
 .aba-conteudo.active {
 display: block;
 }
+/ TABELA COMPACTA /
 table {
 width: 100%;
 border-collapse: separate;
@@ -219,6 +222,7 @@ background: #f7f8fa;
 from { opacity: 0;}
 to { opacity: 1;}
 }
+/ ✅ INÍCIO DA ALTERAÇÃO: Estilos para o contêiner do gráfico /
 .chart-container {
 position: relative;
 height: 350px;
@@ -226,17 +230,48 @@ width: 100%;
 max-width: 95%;
 margin: 30px auto 15px auto;
 }
+/ ✅ FIM DA ALTERAÇÃO */
 @media (max-width: 900px) {
-.main-relatorios { margin: 10px 0 0 0; padding: 0; border-radius: 8px; }
-.top-actions, .filtros-relatorios { padding: 7px 4px; }
-.conteudo-abas { padding-bottom: 14px; }
-.aba-conteudo { margin: 10px 2px 0 2px; padding: 10px 2px; border-radius: 8px; }
-.aba { font-size: 0.94em; padding: 4px 6px; border-radius: 7px 7px 0 0; min-width: 44px; }
-.filtros-relatorios { gap: 5px; font-size: 0.93em; }
-.filtros-relatorios label { font-size: 0.93em; }
+.main-relatorios {
+margin: 10px 0 0 0;
+padding: 0;
+border-radius: 8px;
+}
+.top-actions, .filtros-relatorios {
+padding: 7px 4px;
+}
+.conteudo-abas {
+padding-bottom: 14px;
+}
+.aba-conteudo {
+margin: 10px 2px 0 2px;
+padding: 10px 2px;
+border-radius: 8px;
+}
+.aba {
+font-size: 0.94em;
+padding: 4px 6px;
+border-radius: 7px 7px 0 0;
+min-width: 44px;
+}
+.filtros-relatorios {
+gap: 5px;
+font-size: 0.93em;
+}
+.filtros-relatorios label {
+font-size: 0.93em;
+}
 .filtros-relatorios input,
-.filtros-relatorios select { padding: 3px 4px; min-width: 55px; font-size: 0.92em; }
-.filtros-relatorios button { padding: 4px 9px; font-size: 0.93em; min-height: 24px; }
+.filtros-relatorios select {
+padding: 3px 4px;
+min-width: 55px;
+font-size: 0.92em;
+}
+.filtros-relatorios button {
+padding: 4px 9px;
+font-size: 0.93em;
+min-height: 24px;
+}
 }
 </style>
 </head>
@@ -256,42 +291,45 @@ margin: 30px auto 15px auto;
 <header class="filtros-relatorios">
 <label for="filtro-data-inicio">Data Início:</label>
 <input type="date" id="filtro-data-inicio">
-<label for="filtro-data-fim">Data Fim:</label>
-<input type="date" id="filtro-data-fim">
-<label for="filtro-profissional">Profissional:</label>
-<select id="filtro-profissional">
-<option value="todos">Todos</option>
-</select>
-<button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
-</header>
-<section class="conteudo-abas">
-<div class="aba-conteudo active" id="servicos">
-<div class="chart-container">
-<canvas id="grafico-servicos"></canvas>
-</div>
-</div>
-<div class="aba-conteudo" id="profissionais">
-<div class="chart-container">
-<canvas id="grafico-profissionais"></canvas>
-</div>
-</div>
-<div class="aba-conteudo" id="faturamento">
-<div class="chart-container">
-<canvas id="grafico-faturamento"></canvas>
-</div>
-</div>
-<div class="aba-conteudo" id="clientes">
-<div class="chart-container">
-<canvas id="grafico-clientes"></canvas>
-</div>
-</div>
-<div class="aba-conteudo" id="agenda">
-<div class="chart-container">
-<canvas id="grafico-agenda"></canvas>
-</div>
-</div>
-</section>
-</main>
+
+    <label for="filtro-data-fim">Data Fim:</label>
+    <input type="date" id="filtro-data-fim">
+
+    <label for="filtro-profissional">Profissional:</label>
+    <select id="filtro-profissional">
+      <option value="todos">Todos</option>
+    </select>
+
+    <button id="btn-aplicar-filtro"><i class="fa-solid fa-filter"></i> Aplicar</button>
+  </header>
+  <section class="conteudo-abas">
+    <div class="aba-conteudo active" id="servicos">
+      <div class="chart-container">
+        <canvas id="grafico-servicos"></canvas>
+      </div>
+    </div>
+    <div class="aba-conteudo" id="profissionais">
+      <div class="chart-container">
+        <canvas id="grafico-profissionais"></canvas>
+      </div>
+    </div>
+    <div class="aba-conteudo" id="faturamento">
+      <div class="chart-container">
+        <canvas id="grafico-faturamento"></canvas>
+      </div>
+    </div>
+    <div class="aba-conteudo" id="clientes">
+      <div class="chart-container">
+        <canvas id="grafico-clientes"></canvas>
+      </div>
+    </div>
+    <div class="aba-conteudo" id="agenda">
+      <div class="chart-container">
+        <canvas id="grafico-agenda"></canvas>
+      </div>
+    </div>
+  </section>
+   </main>
 </div>
 
 <script type="module">
@@ -299,15 +337,15 @@ import { verificarAcesso } from './userService.js';
 import { db } from './firebase-config.js';
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-async function inicializarPagina() {
+async function inicializarPagina( ) {
   try {
     const sessao = await verificarAcesso();
     if (!sessao || !sessao.user) {
-      return;
+      return; 
     }
 
     let papelUsuario = sessao.papeis || [];
-    if (papelUsuario.length === 0) {
+    if (papelUsuario.length === 0) { 
       if(sessao.isAdmin) papelUsuario.push(&#39;admin&#39;);
       if(sessao.isOwner) papelUsuario.push(&#39;dono&#39;);
       if(papelUsuario.length === 0) papelUsuario.push(&#39;funcionario&#39;);
@@ -316,18 +354,10 @@ async function inicializarPagina() {
     const permissoesRef = doc(db, &quot;configuracoesGlobais&quot;, &quot;permissoes&quot;);
     const permissoesSnap = await getDoc(permissoesRef);
     const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-    
-    // ✅ CORREÇÃO DEFINITIVA: A lógica de verificação foi movida para uma função explícita
-    // para garantir máxima compatibilidade e evitar erros de interpretação do navegador.
-    function checarPermissao(papel) {
-        if (regras &amp;&amp; regras.relatorios) {
-            if (regras.relatorios[papel] === true) {
-                return true;
-            }
-        }
-        return false;
-    }
-    const podeVer = papelUsuario.some(checarPermissao);
+
+    const podeVer = papelUsuario.some(function(papel) {
+      return regras.relatorios &amp;&amp; regras.relatorios[papel] === true;
+    });
 
     if (!podeVer) {
       document.getElementById(&#39;page-content&#39;).innerHTML = `
@@ -339,11 +369,13 @@ async function inicializarPagina() {
       `;
       return;
     }
+
   } catch (error) {
     console.error(&quot;Erro crítico ao inicializar a página de relatórios:&quot;, error);
     document.getElementById(&#39;page-content&#39;).innerHTML = &#39;&lt;h1&gt;Ocorreu um erro&lt;/h1&gt;&lt;p&gt;Não foi possível carregar a página. Tente novamente.&lt;/p&gt;&#39;;
   }
 }
+
 inicializarPagina();
 </script>
 
@@ -366,107 +398,92 @@ window.addEventListener(&#39;popstate&#39;, function() {
 </script>
 
 <script>
-//<![CDATA[
-const activeCharts = {};
+(function() {
+// O código completo do gráfico é colocado dentro de uma string
+const chartScriptCode = `
+var activeCharts = {};
 
-function renderizarGrafico(canvasId, tipo, labels, data, label, titulo) {
-  const canvasEl = document.getElementById(canvasId);
-  if (!canvasEl) {
-    console.error(&quot;Elemento canvas com id &#39;&quot; + canvasId + &quot;&#39; não foi encontrado.&quot;);
-    return;
-  }
-  const ctx = canvasEl.getContext(&#39;2d&#39;);
-
-  if (activeCharts[canvasId]) {
-    activeCharts[canvasId].destroy();
-  }
-
-  activeCharts[canvasId] = new Chart(ctx, {
-    type: tipo,
-    data: {
-      labels: labels,
-      datasets: [{
-        label: label,
-        data: data,
-        backgroundColor: [
-          &#39;rgba(79, 70, 229, 0.7)&#39;, &#39;rgba(99, 102, 241, 0.7)&#39;,
-          &#39;rgba(56, 189, 248, 0.7)&#39;, &#39;rgba(34, 211, 238, 0.7)&#39;,
-          &#39;rgba(165, 180, 252, 0.7)&#39;, &#39;rgba(191, 219, 254, 0.7)&#39;
-        ],
-        borderColor: [
-          &#39;rgba(79, 70, 229, 1)&#39;, &#39;rgba(99, 102, 241, 1)&#39;,
-          &#39;rgba(56, 189, 248, 1)&#39;, &#39;rgba(34, 211, 238, 1)&#39;,
-          &#39;rgba(165, 180, 252, 1)&#39;, &#39;rgba(191, 219, 254, 1)&#39;
-        ],
-        borderWidth: 1.5
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: &#39;top&#39; },
-        title: { display: true, text: titulo, font: { size: 16 }, color: &#39;#3730a3&#39; }
-      },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-}
-
-function demonstrarGrafico() {
-  const abaAtiva = document.querySelector(&#39;.aba-conteudo.active&#39;);
-  if (!abaAtiva) return;
-  const idAba = abaAtiva.id;
-
-  switch (idAba) {
-    case &#39;servicos&#39;:
-      renderizarGrafico(&#39;grafico-servicos&#39;, &#39;bar&#39;, [&#39;Corte&#39;, &#39;Escova&#39;, &#39;Manicure&#39;, &#39;Pedicure&#39;, &#39;Hidratação&#39;], [Math.floor(Math.random()*50), Math.floor(Math.random()*40), Math.floor(Math.random()*80), Math.floor(Math.random()*70), Math.floor(Math.random()*30)], &#39;Quantidade&#39;, &#39;Serviços Mais Realizados&#39;);
-      break;
-    case &#39;profissionais&#39;:
-      renderizarGrafico(&#39;grafico-profissionais&#39;, &#39;pie&#39;, [&#39;Ana&#39;, &#39;Beatriz&#39;, &#39;Carla&#39;, &#39;Daniela&#39;], [Math.floor(Math.random()*10), Math.floor(Math.random()*15), Math.floor(Math.random()*12), Math.floor(Math.random()*20)], &#39;Nº de Atendimentos&#39;, &#39;Atendimentos por Profissional&#39;);
-      break;
-    case &#39;faturamento&#39;:
-      renderizarGrafico(&#39;grafico-faturamento&#39;, &#39;line&#39;, [&#39;Seg&#39;, &#39;Ter&#39;, &#39;Qua&#39;, &#39;Qui&#39;, &#39;Sex&#39;, &#39;Sáb&#39;], [Math.floor(Math.random()*500), Math.floor(Math.random()*700), Math.floor(Math.random()*600), Math.floor(Math.random()*900), Math.floor(Math.random()*1200), Math.floor(Math.random()*1500)], &#39;Valor (R$)&#39;, &#39;Faturamento Diário&#39;);
-      break;
-    case &#39;clientes&#39;:
-       renderizarGrafico(&#39;grafico-clientes&#39;, &#39;bar&#39;, [&#39;Novos Clientes&#39;, &#39;Clientes Recorrentes&#39;], [Math.floor(Math.random()*30), Math.floor(Math.random()*150)], &#39;Quantidade&#39;, &#39;Perfil de Clientes&#39;);
-      break;
-    case &#39;agenda&#39;:
-      renderizarGrafico(&#39;grafico-agenda&#39;, &#39;doughnut&#39;, [&#39;Confirmados&#39;, &#39;Cancelados&#39;, &#39;Não Compareceu&#39;, &#39;Aguardando&#39;], [Math.floor(Math.random()*100), Math.floor(Math.random()*20), Math.floor(Math.random()*10), Math.floor(Math.random()*30)], &#39;Status&#39;, &#39;Status dos Agendamentos&#39;);
-      break;
-  }
-}
-
-document.getElementById(&#39;btn-aplicar-filtro&#39;).addEventListener(&#39;click&#39;, demonstrarGrafico);
-
-document.querySelectorAll(&#39;.aba&#39;).forEach(function(aba) {
-  aba.addEventListener(&#39;click&#39;, function() {
-    const abaAtivaAnterior = document.querySelector(&#39;.aba.active&#39;);
-    if (abaAtivaAnterior) {
-      abaAtivaAnterior.classList.remove(&#39;active&#39;);
-    }
-    aba.classList.add(&#39;active&#39;);
-
-    const conteudoAtivoAnterior = document.querySelector(&#39;.aba-conteudo.active&#39;);
-    if (conteudoAtivoAnterior) {
-      conteudoAtivoAnterior.classList.remove(&#39;active&#39;);
+    function renderizarGrafico(canvasId, tipo, labels, data, label, titulo) {
+      var canvasEl = document.getElementById(canvasId);
+      if (!canvasEl) {
+        console.error(&quot;Elemento canvas com id &#39;&quot; + canvasId + &quot;&#39; não foi encontrado.&quot;);
+        return;
+      }
+      var ctx = canvasEl.getContext(&#39;2d&#39;);
+      if (activeCharts[canvasId]) {
+        activeCharts[canvasId].destroy();
+      }
+      activeCharts[canvasId] = new Chart(ctx, {
+        type: tipo,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: label,
+            data: data,
+            backgroundColor: [&#39;rgba(79, 70, 229, 0.7)&#39;, &#39;rgba(99, 102, 241, 0.7)&#39;, &#39;rgba(56, 189, 248, 0.7)&#39;, &#39;rgba(34, 211, 238, 0.7)&#39;, &#39;rgba(165, 180, 252, 0.7)&#39;, &#39;rgba(191, 219, 254, 0.7)&#39;],
+            borderColor: [&#39;#4F46E5&#39;, &#39;#6366F1&#39;, &#39;#38BDF8&#39;, &#39;#22D3EE&#39;, &#39;#A5B4FC&#39;, &#39;#BFDBFE&#39;],
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: &#39;top&#39; },
+            title: { display: true, text: titulo, font: { size: 16 }, color: &#39;#3730a3&#39; }
+          },
+          scales: {
+              y: { beginAtZero: true }
+          }
+        }
+      });
     }
 
-    const conteudoAba = document.getElementById(aba.dataset.aba);
-    if (conteudoAba) {
-      conteudoAba.classList.add(&#39;active&#39;);
+    function demonstrarGrafico() {
+      var abaAtiva = document.querySelector(&#39;.aba-conteudo.active&#39;);
+      if (!abaAtiva) return;
+      var idAba = abaAtiva.id;
+      var R = function() { return Math.random(); };
+      switch (idAba) {
+        case &#39;servicos&#39;:
+          renderizarGrafico(&#39;grafico-servicos&#39;, &#39;bar&#39;, [&#39;Corte&#39;, &#39;Escova&#39;, &#39;Manicure&#39;, &#39;Pedicure&#39;, &#39;Hidratação&#39;], [Math.floor(R()*50), Math.floor(R()*40), Math.floor(R()*80), Math.floor(R()*70), Math.floor(R()*30)], &#39;Quantidade&#39;, &#39;Serviços Mais Realizados&#39;);
+          break;
+        case &#39;profissionais&#39;:
+          renderizarGrafico(&#39;grafico-profissionais&#39;, &#39;pie&#39;, [&#39;Ana&#39;, &#39;Beatriz&#39;, &#39;Carla&#39;, &#39;Daniela&#39;], [Math.floor(R()*10), Math.floor(R()*15), Math.floor(R()*12), Math.floor(R()*20)], &#39;Nº de Atendimentos&#39;, &#39;Atendimentos por Profissional&#39;);
+          break;
+        case &#39;faturamento&#39;:
+          renderizarGrafico(&#39;grafico-faturamento&#39;, &#39;line&#39;, [&#39;Seg&#39;, &#39;Ter&#39;, &#39;Qua&#39;, &#39;Qui&#39;, &#39;Sex&#39;, &#39;Sáb&#39;], [Math.floor(R()*500), Math.floor(R()*700), Math.floor(R()*600), Math.floor(R()*900), Math.floor(R()*1200), Math.floor(R()*1500)], &#39;Valor (R$)&#39;, &#39;Faturamento Diário&#39;);
+          break;
+        case &#39;clientes&#39;:
+          renderizarGrafico(&#39;grafico-clientes&#39;, &#39;bar&#39;, [&#39;Novos Clientes&#39;, &#39;Clientes Recorrentes&#39;], [Math.floor(R()*30), Math.floor(R()*150)], &#39;Quantidade&#39;, &#39;Perfil de Clientes&#39;);
+          break;
+        case &#39;agenda&#39;:
+          renderizarGrafico(&#39;grafico-agenda&#39;, &#39;doughnut&#39;, [&#39;Confirmados&#39;, &#39;Cancelados&#39;, &#39;Não Compareceu&#39;, &#39;Aguardando&#39;], [Math.floor(R()*100), Math.floor(R()*20), Math.floor(R()*10), Math.floor(R()*30)], &#39;Status&#39;, &#39;Status dos Agendamentos&#39;);
+          break;
+      }
     }
-    demonstrarGrafico();
-  });
-});
 
-window.addEventListener(&#39;load&#39;, function() {
-  setTimeout(function() {
-    demonstrarGrafico();
-  }, 500);
-});
-//]]>
-</script>
+    document.getElementById(&#39;btn-aplicar-filtro&#39;).addEventListener(&#39;click&#39;, demonstrarGrafico);
 
-</body>
-</html>
+    document.querySelectorAll(&#39;.aba&#39;).forEach(function(aba) {
+      aba.addEventListener(&#39;click&#39;, function() {
+        document.querySelector(&#39;.aba.active&#39;).classList.remove(&#39;active&#39;);
+        this.classList.add(&#39;active&#39;);
+        document.querySelector(&#39;.aba-conteudo.active&#39;).classList.remove(&#39;active&#39;);
+        document.getElementById(this.dataset.aba).classList.add(&#39;active&#39;);
+        demonstrarGrafico();
+      });
+    });
+
+    window.addEventListener(&#39;load&#39;, function() {
+      setTimeout(demonstrarGrafico, 500);
+    });
+  `;
+
+  // Um novo elemento &lt;script&gt; é criado dinamicamente
+  var scriptElement = document.createElement(&#39;script&#39;);
+  // O conteúdo da string é inserido nele
+  scriptElement.textContent = chartScriptCode;
+  // O script é adicionado ao corpo do documento e executado com segurança
+  document.body.appendChild(scriptElement);
+})();
