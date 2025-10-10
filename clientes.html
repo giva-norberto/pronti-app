@@ -10,16 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Estilos -->
-    <!-- O link para style.css foi removido pois os estilos já estão no <style> abaixo -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
-        /* ======================================================================
-                    SEU CSS ORIGINAL - NENHUMA ALTERAÇÃO FOI FEITA AQUI
-           ====================================================================== */
-        
         :root {
             --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
             --primary-color: #4f46e5;
@@ -29,22 +22,21 @@
             --border-color: #e2e8f0;
             --shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
-
         body {
             font-family: 'Inter', sans-serif;
             background: var(--gradient-primary);
             color: var(--text-main);
             display: flex;
         }
-
         .main-content {
             margin-left: 270px;
             padding: 32px;
             flex-grow: 1;
             min-height: 100vh;
+            max-width: 900px;
+            margin-right: auto;
+            margin-left: auto;
         }
-
-        /* --- HEADER DA PÁGINA --- */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -60,7 +52,6 @@
             font-weight: 800;
             color: var(--text-main);
         }
-        
         .page-header .btn-primary {
             background: var(--primary-color) !important;
             color: white !important;
@@ -78,18 +69,76 @@
         .page-header .btn-primary:hover {
             background: #4338ca !important;
         }
-
-        /* --- GRID DE CARDS --- */
+        /* CARD PADRÃO PRONTI */
         .dashboard-cards {
             margin-top: 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
         }
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
+        .card-cliente {
+            background: var(--card-bg);
+            border-radius: 14px;
             box-shadow: var(--shadow);
+            padding: 18px 18px 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            min-height: 110px;
+            position: relative;
+            transition: box-shadow 0.18s;
         }
-
-        /* --- MODAL --- */
+        .card-cliente:hover {
+            box-shadow: 0 6px 24px rgba(44,54,80,0.10);
+        }
+        .cliente-nome {
+            font-size: 1.17rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 3px;
+        }
+        .cliente-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.98rem;
+            color: var(--text-secondary);
+        }
+        .cliente-info i { font-size: 0.97rem; color: var(--primary-color); }
+        .card-botoes {
+            margin-top: 8px;
+            display: flex;
+            gap: 9px;
+        }
+        .btn-editar, .btn-excluir {
+            border: none;
+            border-radius: 7px;
+            font-weight: 600;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            transition: background 0.18s, color 0.18s;
+        }
+        .btn-editar {
+            background: #4f46e5;
+            color: #fff;
+        }
+        .btn-editar:hover {
+            background: #6366f1;
+            color: #fff;
+        }
+        .btn-excluir {
+            background: #ef4444;
+            color: #fff;
+        }
+        .btn-excluir:hover {
+            background: #dc2626;
+            color: #fff;
+        }
+        /* MODAL */
         .modal-overlay {
             position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.6); display: none; justify-content: center;
@@ -104,22 +153,31 @@
         .modal-botoes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
         .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; border: 1.5px solid var(--border-color); }
         .btn-remove { background-color: #ef4444; color: white; border: none; }
-
-        /* --- RESPONSIVIDADE --- */
+        /* RESPONSIVO */
         @media (max-width: 900px) {
             body { flex-direction: column; }
             .main-content { margin-left: 0; padding: 16px; }
             .page-header { flex-direction: column; align-items: stretch; }
         }
+        @media (max-width: 650px) {
+            .main-content { padding: 8px; }
+            .dashboard-cards { grid-template-columns: 1fr; gap: 13px; }
+            .card-cliente { padding: 11px 8px; min-height: 90px; }
+            .cliente-nome { font-size: 1.03rem; }
+            .card-botoes { gap: 6px; }
+            .btn-editar, .btn-excluir { font-size: 0.97rem; padding: 7px 10px;}
+        }
+        @media (max-width: 400px) {
+            .card-cliente { padding: 6px 3px; min-height: 60px; }
+            .cliente-nome { font-size: 0.97rem; }
+            .btn-editar, .btn-excluir { font-size: 0.93rem; padding: 6px 7px;}
+        }
     </style>
 </head>
 <body>
-    <!-- ✅ O ID foi padronizado para 'menu-container' para consistência -->
     <div id="menu-container"></div>
 
-    <!-- Conteúdo Principal da Página -->
     <main class="main-content">
-        
         <div class="page-header">
             <h1>Meus Clientes</h1>
             <a href="novo-cliente.html" class="btn btn-primary">
@@ -127,9 +185,8 @@
                 Cadastrar Novo Cliente
             </a>
         </div>
-        
         <div id="lista-clientes" class="dashboard-cards">
-            <!-- O script 'clientes.js' irá carregar os cards do banco de dados aqui. -->
+            <!-- Os cards dos clientes serão carregados aqui pelo clientes.js -->
         </div>
     </main>
 
@@ -145,26 +202,16 @@
         </div>
     </div>
 
-    <!-- ================================================================== -->
-    <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
-    <!-- ================================================================== -->
     <script type="module">
-        // Importa a função de verificação de acesso
         import { verificarAcesso } from './userService.js'; 
 
-        /**
-         * Carrega o menu lateral e o ativa com os papéis do usuário.
-         */
         async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
                 if (!response.ok) throw new Error('menu-lateral.html não encontrado');
-                // ✅ O ID foi padronizado para 'menu-container'
                 document.getElementById('menu-container').innerHTML = await response.text();
-                
                 const menuModule = await import('./menu-lateral.js');
                 if (menuModule.ativarMenuLateral) {
-                    // Passa os papéis do usuário para que o menu aplique as permissões
                     await menuModule.ativarMenuLateral(papelUsuario);
                 }
             } catch (error) {
@@ -172,45 +219,27 @@
             }
         }
 
-        /**
-         * Ponto de entrada único que orquestra a inicialização da página.
-         */
         async function inicializarPagina() {
             try {
-                // 1. Garante que o usuário está logado e obtém a sessão.
                 const sessao = await verificarAcesso();
                 if (!sessao || !sessao.user) {
-                    return; // Se não estiver logado, a função já redireciona.
+                    return;
                 }
-
-                // 2. Define os papéis do usuário a partir da sessão.
                 let papelUsuario = sessao.papeis || [];
-                if (papelUsuario.length === 0) { // Garante que sempre haja um papel
+                if (papelUsuario.length === 0) {
                     if(sessao.isAdmin) papelUsuario.push('admin');
                     if(sessao.isOwner) papelUsuario.push('dono');
                     if(papelUsuario.length === 0) papelUsuario.push('funcionario');
                 }
-
-                // 3. Carrega o menu lateral e aplica as permissões.
                 await carregarMenu(papelUsuario);
-
-                // 4. A lógica de negócio (carregar clientes) já é iniciada pelo
-                // script 'clientes.js' importado abaixo.
-
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página de clientes:", error);
                 document.querySelector('.main-content').innerHTML = '<h1>Ocorreu um erro</h1><p>Não foi possível carregar a página. Tente novamente.</p>';
             }
         }
-
-        // Inicia todo o processo de inicialização da página.
         inicializarPagina();
     </script>
-    
-    <!-- Seus scripts de negócio são mantidos intactos no final -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="clientes.js" type="module"></script>
-    
-    <!-- O script antigo que usava DOMContentLoaded foi removido -->
 </body>
 </html>
