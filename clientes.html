@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Meus Clientes</title>
-
     <!-- Fontes e Ícones -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
     <style>
         :root {
             --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%  );
@@ -20,7 +18,7 @@
             --text-main: #1e293b;
             --text-secondary: #64748b;
             --border-color: #e2e8f0;
-            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+            --shadow: 0 4px 20px rgba(0,0,0,0.10);
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -33,7 +31,7 @@
             padding: 32px;
             flex-grow: 1;
             min-height: 100vh;
-            max-width: 900px;
+            max-width: 960px;
             margin-right: auto;
             margin-left: auto;
         }
@@ -74,41 +72,44 @@
             margin-top: 24px;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 18px;
+            gap: 22px;
         }
         .card-cliente {
             background: var(--card-bg);
-            border-radius: 14px;
+            border-radius: 15px;
             box-shadow: var(--shadow);
-            padding: 18px 18px 14px 18px;
+            padding: 22px 20px 16px 20px;
             display: flex;
             flex-direction: column;
-            gap: 9px;
-            min-height: 110px;
+            gap: 11px;
+            min-height: 120px;
             position: relative;
             transition: box-shadow 0.18s;
+            border: 1.5px solid var(--border-color);
         }
         .card-cliente:hover {
-            box-shadow: 0 6px 24px rgba(44,54,80,0.10);
+            box-shadow: 0 8px 28px rgba(44,54,80,0.13);
+            border-color: #6366f1;
         }
         .cliente-nome {
             font-size: 1.17rem;
             font-weight: 700;
             color: #1e3a8a;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
+            letter-spacing: 0.01em;
         }
         .cliente-info {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
             font-size: 0.98rem;
             color: var(--text-secondary);
         }
-        .cliente-info i { font-size: 0.97rem; color: var(--primary-color); }
+        .cliente-info i { font-size: 1rem; color: var(--primary-color); }
         .card-botoes {
-            margin-top: 8px;
+            margin-top: 10px;
             display: flex;
-            gap: 9px;
+            gap: 11px;
         }
         .btn-editar, .btn-excluir {
             border: none;
@@ -119,7 +120,7 @@
             font-size: 1rem;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
             transition: background 0.18s, color 0.18s;
         }
         .btn-editar {
@@ -161,22 +162,21 @@
         }
         @media (max-width: 650px) {
             .main-content { padding: 8px; }
-            .dashboard-cards { grid-template-columns: 1fr; gap: 13px; }
-            .card-cliente { padding: 11px 8px; min-height: 90px; }
-            .cliente-nome { font-size: 1.03rem; }
+            .dashboard-cards { grid-template-columns: 1fr; gap: 15px; }
+            .card-cliente { padding: 13px 7px; min-height: 90px; }
+            .cliente-nome { font-size: 1rem; }
             .card-botoes { gap: 6px; }
             .btn-editar, .btn-excluir { font-size: 0.97rem; padding: 7px 10px;}
         }
         @media (max-width: 400px) {
             .card-cliente { padding: 6px 3px; min-height: 60px; }
-            .cliente-nome { font-size: 0.97rem; }
-            .btn-editar, .btn-excluir { font-size: 0.93rem; padding: 6px 7px;}
+            .cliente-nome { font-size: 0.93rem; }
+            .btn-editar, .btn-excluir { font-size: 0.89rem; padding: 6px 7px;}
         }
     </style>
 </head>
 <body>
     <div id="menu-container"></div>
-
     <main class="main-content">
         <div class="page-header">
             <h1>Meus Clientes</h1>
@@ -189,7 +189,6 @@
             <!-- Os cards dos clientes serão carregados aqui pelo clientes.js -->
         </div>
     </main>
-
     <!-- MODAL DE CONFIRMAÇÃO -->
     <div id="modal-confirmacao" class="modal-overlay">
         <div class="modal-card">
@@ -201,10 +200,8 @@
             </div>
         </div>
     </div>
-
     <script type="module">
         import { verificarAcesso } from './userService.js'; 
-
         async function carregarMenu(papelUsuario) {
             try {
                 const response = await fetch('menu-lateral.html');
@@ -218,7 +215,6 @@
                 console.error("Falha ao carregar o menu lateral:", error);
             }
         }
-
         async function inicializarPagina() {
             try {
                 const sessao = await verificarAcesso();
