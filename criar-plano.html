@@ -93,7 +93,7 @@
             border-radius: 6px; 
         }
         .servico-item select { flex: 3; }
-        .servico-item input { flex: 1; }
+        .servico-item input, .servico-item .select-quantidade-mes { flex: 1; }
         .servico-item button { flex: 0 0 auto; }
         .btn { 
             display: inline-block; 
@@ -340,7 +340,8 @@
             }
         }
 
-        function adicionarLinhaServico(servicoParaAdicionar = { servicoId: '', quantidade: 1 }) {
+        // ALTERAÇÃO: quantidade mês agora é um select (1 a 10 + Ilimitado)
+        function adicionarLinhaServico(servicoParaAdicionar = { servicoId: '', quantidade: 0 }) {
             const div = document.createElement('div');
             div.className = 'servico-item';
             const select = document.createElement('select');
@@ -351,18 +352,34 @@
                 optionsHTML += `<option value="${servico.id}" data-nome="${servico.nome}" ${isSelected}>${servico.nome}</option>`;
             });
             select.innerHTML = optionsHTML;
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.value = servicoParaAdicionar.quantidade;
-            input.min = 1;
-            input.required = true;
+
+            // Campo de quantidade mês como select
+            const selectQuantidade = document.createElement('select');
+            selectQuantidade.className = 'select-quantidade-mes';
+            selectQuantidade.required = true;
+
+            let optionsQtde = `<option value="0" selected>Ilimitado</option>`;
+            for (let i = 1; i <= 10; i++) {
+                optionsQtde += `<option value="${i}"${servicoParaAdicionar.quantidade == i ? ' selected' : ''}>${i}</option>`;
+            }
+            selectQuantidade.innerHTML = optionsQtde;
+
+            // Se estiver editando e o valor for diferente de zero, seleciona corretamente
+            if (servicoParaAdicionar.quantidade !== undefined && servicoParaAdicionar.quantidade !== 0) {
+                selectQuantidade.value = servicoParaAdicionar.quantidade;
+                selectQuantidade.querySelector('option[value="0"]').selected = false;
+            } else {
+                selectQuantidade.value = "0";
+            }
+
             const btnRemover = document.createElement('button');
             btnRemover.type = 'button';
             btnRemover.className = 'btn btn-danger';
             btnRemover.textContent = 'X';
             btnRemover.onclick = () => div.remove();
+
             div.appendChild(select);
-            div.appendChild(input);
+            div.appendChild(selectQuantidade);
             div.appendChild(btnRemover);
             servicosContainer.appendChild(div);
         }
@@ -454,12 +471,13 @@
                 const servicosInclusos = [];
                 servicosContainer.querySelectorAll('.servico-item').forEach(item => {
                     const select = item.querySelector('select');
-                    const input = item.querySelector('input');
+                    // ALTERAÇÃO: quantidade mês agora pelo .select-quantidade-mes
+                    const selectQuantidade = item.querySelector('.select-quantidade-mes');
                     if (select.value) {
                         servicosInclusos.push({
                             servicoId: select.value,
                             nomeServico: select.options[select.selectedIndex].dataset.nome,
-                            quantidade: parseInt(input.value)
+                            quantidade: parseInt(selectQuantidade.value) // 0 = ilimitado
                         });
                     }
                 });
