@@ -82,6 +82,32 @@
         .notification-message.success { color: #10b981; background: #f0fdf4; }
         .notification-message.error { color: #dc2626; background: #fef2f2; }
         .notification-message.info { color: #6366f1; background: #eef2ff; }
+        /* Botão Sair (Logout) apenas no celular */
+        #btn-logout {
+            display: none;
+            background: #374151;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            z-index: 1002;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #btn-logout i { margin-right: 8px; }
+        #btn-logout:hover { background: #111827; }
+        @media (max-width: 600px) {
+            #btn-logout {
+                display: block;
+            }
+        }
         @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
     </style>
 </head>
@@ -109,6 +135,8 @@
             <a href="permissoes.html" class="menu-card" data-card-id="permissoes"><i class="fa-solid fa-sliders"></i><span>Permissões</span></a>
         </div>
     </main>
+    <!-- Botão sair (logout) só aparece no celular -->
+    <button id="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
     <script type="module" src="messaging.js"></script>
     <script type="module">
         import { unlockAudio, iniciarOuvinteDeNotificacoes } from './messaging.js';
@@ -229,6 +257,24 @@
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 3500);
         }
+
+        // Botão sair (logout)
+        document.getElementById('btn-logout').addEventListener('click', async function() {
+            try {
+                // Adicione aqui sua lógica de logout, por exemplo, usando Firebase Auth:
+                // import { signOut } from "firebase/auth";
+                // import { auth } from "./firebase-config.js";
+                // await signOut(auth);
+                // window.location.href = "login.html";
+                // Exemplo genérico:
+                if (window.firebaseAuth && window.firebaseAuth.signOut) {
+                    await window.firebaseAuth.signOut();
+                }
+                window.location.href = "login.html";
+            } catch (error) {
+                mostrarMensagemNotificacao("Erro ao sair: " + error.message, "error");
+            }
+        });
     </script>
 </body>
 </html>
