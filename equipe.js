@@ -54,6 +54,9 @@ function mapearElementos() {
     elementos.inputIntervalo = document.getElementById('intervalo-atendimento');
     elementos.btnConvite = document.getElementById('btn-convite');
     elementos.permitirAgendamentoMultiplo = document.getElementById('permitir-agendamento-multiplo');
+    // NOVOS CAMPOS ABA COMISSÃO
+    elementos.comissaoPadrao = document.getElementById('comissao-padrao');
+    elementos.comissaoPorServico = document.getElementById('comissao-por-servico');
 }
 
 async function garantirPerfilDoDono() {
@@ -128,19 +131,22 @@ function setupPerfilTabs() {
     const tabServicos = document.getElementById('tab-servicos');
     const tabHorarios = document.getElementById('tab-horarios');
     const tabAgendaEspecial = document.getElementById('tab-agenda-especial');
+    const tabComissao = document.getElementById('tab-comissao');
     const contentServicos = document.getElementById('tab-content-servicos');
     const contentHorarios = document.getElementById('tab-content-horarios');
     const contentAgendaEspecial = document.getElementById('tab-content-agenda-especial');
-    if (!tabServicos || !tabHorarios || !tabAgendaEspecial) return;
+    const contentComissao = document.getElementById('tab-content-comissao');
+    if (!tabServicos || !tabHorarios || !tabAgendaEspecial || !tabComissao) return;
     const setActiveTab = (activeTab, activeContent) => {
-        [tabServicos, tabHorarios, tabAgendaEspecial].forEach(t => t.classList.remove('active'));
-        [contentServicos, contentHorarios, contentAgendaEspecial].forEach(c => c.classList.remove('active'));
+        [tabServicos, tabHorarios, tabAgendaEspecial, tabComissao].forEach(t => t.classList.remove('active'));
+        [contentServicos, contentHorarios, contentAgendaEspecial, contentComissao].forEach(c => c.classList.remove('active'));
         activeTab.classList.add('active');
         activeContent.classList.add('active');
     };
     tabServicos.onclick = () => setActiveTab(tabServicos, contentServicos);
     tabHorarios.onclick = () => setActiveTab(tabHorarios, contentHorarios);
     tabAgendaEspecial.onclick = () => setActiveTab(tabAgendaEspecial, contentAgendaEspecial);
+    tabComissao.onclick = () => setActiveTab(tabComissao, contentComissao);
     if (elementos.agendaTipo) {
         elementos.agendaTipo.onchange = function () {
             if(elementos.agendaMesArea) elementos.agendaMesArea.style.display = this.value === "mes" ? "block" : "none";
@@ -208,6 +214,13 @@ async function abrirPerfilProfissional(profissionalId) {
         renderizarServicosNoPerfil(profissional.servicos || []);
         agendaEspecial = profissional.agendaEspecial || [];
         renderizarAgendaEspecial();
+        // Preencher campos de comissão na aba Comissão
+        if (elementos.comissaoPadrao) {
+            elementos.comissaoPadrao.value = profissional.comissaoPadrao !== undefined ? profissional.comissaoPadrao : "";
+        }
+        if (elementos.comissaoPorServico) {
+            elementos.comissaoPorServico.value = profissional.comissaoPorServico !== undefined ? JSON.stringify(profissional.comissaoPorServico, null, 2) : "";
+        }
         elementos.modalPerfilProfissional.classList.add('show');
     } catch (error) {
         await showAlert("Erro", "Não foi possível abrir o perfil do profissional.");
@@ -368,12 +381,33 @@ async function adicionarAgendaEspecial() {
     renderizarAgendaEspecial();
 }
 
+// ======================
+// SALVAR PERFIL PROFISSIONAL COM COMISSÃO
+// ======================
 async function salvarPerfilProfissional() {
     try {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
         const horarios = coletarHorarios();
+
+        // Novos campos da aba Comissão
+        let comissaoPadrao = elementos.comissaoPadrao && elementos.comissaoPadrao.value !== "" ? Number(elementos.comissaoPadrao.value) : null;
+        let comissaoPorServico = {};
+        if (elementos.comissaoPorServico && elementos.comissaoPorServico.value.trim()) {
+            try {
+                comissaoPorServico = JSON.parse(elementos.comissaoPorServico.value);
+            } catch (e) {
+                await showAlert("Erro", "O campo Comissão por Serviço está com JSON inválido.");
+                return;
+            }
+        }
+
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
-        await updateDoc(profissionalRef, { servicos: servicosSelecionados, agendaEspecial: agendaEspecial });
+        await updateDoc(profissionalRef, {
+            servicos: servicosSelecionados,
+            agendaEspecial: agendaEspecial,
+            comissaoPadrao: comissaoPadrao,
+            comissaoPorServico: comissaoPorServico
+        });
         const horariosRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual, "configuracoes", "horarios");
         await setDoc(horariosRef, horarios, { merge: true });
         if(elementos.modalPerfilProfissional) elementos.modalPerfilProfissional.classList.remove('show');
