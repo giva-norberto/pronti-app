@@ -158,7 +158,7 @@
                 </div>
             </div>
 
-            <!-- NOVO CONTEÚDO DA ABA COMISSÃO -->
+            <!-- ABA COMISSÃO COM LISTAGEM DE SERVIÇOS -->
             <div id="tab-content-comissao" class="tab-content">
                 <h3>💰 Configuração de Comissão</h3>
                 <p style="color: #7f8c8d; margin-bottom: 10px;">
@@ -182,15 +182,10 @@
                 </div>
 
                 <div class="form-group" style="margin-top: 15px;">
-                    <label for="comissao-por-servico">Comissão por Serviço (JSON)</label>
-                    <textarea 
-                        id="comissao-por-servico" 
-                        name="comissao-por-servico" 
-                        class="form-control" 
-                        rows="4"
-                        placeholder='{ "Corte": 50, "Coloração": 30 }'></textarea>
+                    <label>Comissão por Serviço (%)</label>
+                    <div id="comissao-servicos-lista"></div>
                     <small style="color: #7f8c8d; margin-top: 4px; display: block;">
-                        Defina comissões específicas por nome de serviço (formato JSON válido).
+                        Preencha a comissão de cada serviço. Se deixar vazio, será usada a comissão padrão.
                     </small>
                 </div>
             </div>
