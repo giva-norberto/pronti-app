@@ -56,7 +56,7 @@ function mapearElementos() {
     elementos.permitirAgendamentoMultiplo = document.getElementById('permitir-agendamento-multiplo');
     // NOVOS CAMPOS ABA COMISSÃO
     elementos.comissaoPadrao = document.getElementById('comissao-padrao');
-    elementos.comissaoPorServico = document.getElementById('comissao-por-servico');
+    elementos.comissaoServicosLista = document.getElementById('comissao-servicos-lista'); // campo container da lista de comissões por serviço
 }
 
 async function garantirPerfilDoDono() {
@@ -214,17 +214,57 @@ async function abrirPerfilProfissional(profissionalId) {
         renderizarServicosNoPerfil(profissional.servicos || []);
         agendaEspecial = profissional.agendaEspecial || [];
         renderizarAgendaEspecial();
-        // Preencher campos de comissão na aba Comissão
+        // Preencher comissão padrão
         if (elementos.comissaoPadrao) {
             elementos.comissaoPadrao.value = profissional.comissaoPadrao !== undefined ? profissional.comissaoPadrao : "";
         }
-        if (elementos.comissaoPorServico) {
-            elementos.comissaoPorServico.value = profissional.comissaoPorServico !== undefined ? JSON.stringify(profissional.comissaoPorServico, null, 2) : "";
-        }
+        // Preencher lista de campos comissão por serviço
+        renderizarComissaoServicos(profissional);
         elementos.modalPerfilProfissional.classList.add('show');
     } catch (error) {
         await showAlert("Erro", "Não foi possível abrir o perfil do profissional.");
     }
+}
+
+function renderizarComissaoServicos(profissional) {
+    const container = elementos.comissaoServicosLista;
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!servicosDisponiveis || servicosDisponiveis.length === 0) {
+        container.innerHTML = '<div style="color:#aaa;">Nenhum serviço cadastrado.</div>';
+        return;
+    }
+
+    // Preenche valores já definidos pelo profissional
+    const comissoes = profissional?.comissaoPorServico || {};
+
+    servicosDisponiveis.forEach(servico => {
+        const linha = document.createElement('div');
+        linha.style.display = 'flex';
+        linha.style.alignItems = 'center';
+        linha.style.gap = '12px';
+        linha.style.marginBottom = '6px';
+
+        const label = document.createElement('span');
+        label.textContent = servico.nome;
+        label.style.flex = '1';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.max = '100';
+        input.step = '1';
+        input.style.width = '80px';
+        input.value = comissoes[servico.id] !== undefined ? comissoes[servico.id] : '';
+        input.className = 'input-comissao-servico';
+        input.setAttribute('data-servico-id', servico.id);
+
+        linha.appendChild(label);
+        linha.appendChild(input);
+        linha.appendChild(document.createTextNode('%'));
+        container.appendChild(linha);
+    });
 }
 
 async function carregarDadosProfissional(profissionalId) {
@@ -389,16 +429,18 @@ async function salvarPerfilProfissional() {
         const servicosSelecionados = Array.from(document.querySelectorAll('.servico-item.selected')).map(item => item.getAttribute('data-servico-id'));
         const horarios = coletarHorarios();
 
-        // Novos campos da aba Comissão
+        // Comissão padrão
         let comissaoPadrao = elementos.comissaoPadrao && elementos.comissaoPadrao.value !== "" ? Number(elementos.comissaoPadrao.value) : null;
+        // Comissão por serviço (via campos)
         let comissaoPorServico = {};
-        if (elementos.comissaoPorServico && elementos.comissaoPorServico.value.trim()) {
-            try {
-                comissaoPorServico = JSON.parse(elementos.comissaoPorServico.value);
-            } catch (e) {
-                await showAlert("Erro", "O campo Comissão por Serviço está com JSON inválido.");
-                return;
-            }
+        if (elementos.comissaoServicosLista) {
+            elementos.comissaoServicosLista.querySelectorAll('.input-comissao-servico').forEach(input => {
+                const servicoId = input.getAttribute('data-servico-id');
+                const valor = input.value.trim();
+                if (valor !== '') {
+                    comissaoPorServico[servicoId] = Number(valor);
+                }
+            });
         }
 
         const profissionalRef = doc(db, "empresarios", empresaId, "profissionais", profissionalAtual);
