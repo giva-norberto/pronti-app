@@ -89,12 +89,16 @@
                 <button id="tab-servicos" class="tab-btn active">Serviços</button>
                 <button id="tab-horarios" class="tab-btn">Horários & Intervalos</button>
                 <button id="tab-agenda-especial" class="tab-btn">Agenda Especial</button>
+                <!-- NOVA ABA -->
+                <button id="tab-comissao" class="tab-btn">Comissão</button>
             </div>
+
             <div id="tab-content-servicos" class="tab-content active">
                 <h3>🛠️ Serviços Disponíveis</h3>
                 <p style="color: #7f8c8d; margin-bottom: 15px;">Selecione os serviços que este profissional pode realizar:</p>
                 <div id="servicos-lista" class="servicos-grid"></div>
             </div>
+
             <div id="tab-content-horarios" class="tab-content">
                 <h3>🕐 Horários de Atendimento</h3>
                 <p style="color: #7f8c8d; margin-bottom: 12px;">Configure os horários e intervalos de trabalho para cada dia da semana:</p>
@@ -123,6 +127,7 @@
                     </small>
                 </div>
             </div>
+
             <div id="tab-content-agenda-especial" class="tab-content">
                 <h3>📅 Agenda Especial</h3>
                 <p style="color: #7f8c8d; margin-bottom: 10px;">
@@ -152,6 +157,44 @@
                     <div id="agenda-especial-lista" style="margin-top:18px;"></div>
                 </div>
             </div>
+
+            <!-- NOVO CONTEÚDO DA ABA COMISSÃO -->
+            <div id="tab-content-comissao" class="tab-content">
+                <h3>💰 Configuração de Comissão</h3>
+                <p style="color: #7f8c8d; margin-bottom: 10px;">
+                    Defina as comissões padrão e específicas por serviço para este profissional.
+                </p>
+
+                <div class="form-group">
+                    <label for="comissao-padrao">Comissão Padrão (%)</label>
+                    <input 
+                        type="number" 
+                        id="comissao-padrao" 
+                        name="comissao-padrao" 
+                        class="form-control" 
+                        placeholder="Ex: 40"
+                        min="0" 
+                        max="100"
+                    >
+                    <small style="color: #7f8c8d; margin-top: 4px; display: block;">
+                        Percentual aplicado em todos os serviços, caso não haja uma comissão específica.
+                    </small>
+                </div>
+
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="comissao-por-servico">Comissão por Serviço (JSON)</label>
+                    <textarea 
+                        id="comissao-por-servico" 
+                        name="comissao-por-servico" 
+                        class="form-control" 
+                        rows="4"
+                        placeholder='{ "Corte": 50, "Coloração": 30 }'></textarea>
+                    <small style="color: #7f8c8d; margin-top: 4px; display: block;">
+                        Defina comissões específicas por nome de serviço (formato JSON válido).
+                    </small>
+                </div>
+            </div>
+
             <div class="form-actions">
                 <button type="button" id="btn-cancelar-perfil" class="btn btn-secondary">
                     ❌ Cancelar
@@ -185,8 +228,9 @@
                 });
         });
     </script>
-    <!-- Removido o hook DEBUG de upload aqui, pois o fluxo de upload e atualização já está no equipe.js -->
+
     <script type="module" src="equipe.js"></script>
+
     <style>
     .modal-overlay {
       display: none;
@@ -214,12 +258,9 @@
     }
     .modal-botoes button#modal-btn-cancelar { background: #aaa; }
     </style>
+
     <script>
-    // Atualização da tela após salvar profissional (foto ou não)
     document.addEventListener("DOMContentLoaded", function() {
-        // O evento de submit do form já é tratado no equipe.js, então só precisamos garantir o reload após upload
-        // Vamos interceptar o evento customizado disparado após sucesso, ou sobrescrever a função para reload
-        // Você pode garantir isso assim (mas normalmente já está no equipe.js):
         window.addEventListener("profissionalSalvo", function() {
             window.location.reload();
         });
