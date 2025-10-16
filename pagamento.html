@@ -188,25 +188,25 @@
     import { db } from './firebase-config.js';
     import { doc, getDoc, collection, getDocs, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
+    // =====================================================================
+    // CORREÇÃO: Usando os seus links originais e válidos do primeiro arquivo
+    // =====================================================================
     const linksDosPlanos = {
-      1: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca1b_SEU_ID_AQUI_f13",
-      2: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=642a_SEU_ID_AQUI_aac",
-      3: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=7877_SEU_ID_AQUI_2cb",
-      5: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=3139_SEU_ID_AQUI_c35",
-      10: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=876b_SEU_ID_AQUI_9ba",
-      15: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=2abb_SEU_ID_AQUI_db4",
-      20: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cd27_SEU_ID_AQUI_42f",
+      1: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca1b0887e74842659651f9763f203f13",
+      2: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=642a8aead0404c9aae87499dd7795aac",
+      3: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=7877711c561b463bb7245ad1ad24e2cb",
+      5: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=31393e2a0c774b51ab5398220e380c35",
+      10: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=876be42a1f424af3b5fadcb4566a7b9a",
+      15: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=2abb49f271d54839b02da960943dedb4",
+      20: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cd27c2649a1f4262813cb2e44cf6842f",
     };
+
 
     const infoPlanoAtual = document.getElementById("info-plano-atual");
     const infoEquipeAtual = document.getElementById("info-equipe-atual");
     const listaPlanosContainer = document.querySelector(".lista-planos");
     const avisoSelecao = document.getElementById("aviso-selecao");
     const botoesAcaoContainer = document.getElementById("botoes-acao-container");
-    
-    // =====================================================================
-    // CORREÇÃO 1: Declarar a variável para o container de status aqui.
-    // =====================================================================
     const infoStatusContainer = document.getElementById("info-status-container");
 
 
@@ -327,13 +327,7 @@
       if (!planoSelecionado) return;
       
       listaPlanosContainer.style.display = 'none';
-      
-      // =====================================================================
-      // CORREÇÃO 2: Usar o nome de variável correto (camelCase) aqui.
-      // =====================================================================
-      infoStatusContainer.style.display = 'none'; // Esta era a linha 340 com erro.
-
-
+      infoStatusContainer.style.display = 'none';
       document.querySelector('h1').textContent = 'Confirmação de Pagamento Pix';
 
       botoesAcaoContainer.innerHTML = `
