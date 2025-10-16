@@ -101,8 +101,6 @@
         margin-top: -10px;
         margin-bottom: 20px;
     }
-
-    /* === NOVOS ESTILOS PARA OS BOTÕES DE PAGAMENTO === */
     #botoes-acao-container {
         display: grid;
         grid-template-columns: 1fr;
@@ -139,8 +137,6 @@
         background: #10b981;
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
     }
-
-    /* ESTILO PARA MODAL DE CONFIRMAÇÃO */
     .modal-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background-color: rgba(0, 0, 0, 0.7); display: none;
@@ -189,11 +185,9 @@
   <script type="module" src="./firebase-config.js"></script>
 
   <script type="module">
-    // NOVO: Adicionado 'updateDoc' e 'serverTimestamp'
     import { db } from './firebase-config.js';
     import { doc, getDoc, collection, getDocs, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    // LÓGICA ORIGINAL - MANTIDA 100%
     const linksDosPlanos = {
       1: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca1b_SEU_ID_AQUI_f13",
       2: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=642a_SEU_ID_AQUI_aac",
@@ -208,14 +202,18 @@
     const infoEquipeAtual = document.getElementById("info-equipe-atual");
     const listaPlanosContainer = document.querySelector(".lista-planos");
     const avisoSelecao = document.getElementById("aviso-selecao");
-    // NOVO: Referência ao novo container de botões
     const botoesAcaoContainer = document.getElementById("botoes-acao-container");
+    
+    // =====================================================================
+    // CORREÇÃO 1: Declarar a variável para o container de status aqui.
+    // =====================================================================
+    const infoStatusContainer = document.getElementById("info-status-container");
+
 
     let planoSelecionado = null;
-    let precoPlanoSelecionado = 0; // NOVO: Armazenar o preço
+    let precoPlanoSelecionado = 0;
     let licencasNecessarias = 1;
 
-    // ... (Sua função buscarDadosEmpresa original, sem alterações)
     async function buscarDadosEmpresa(empresaId) {
       if (!empresaId) {
           infoPlanoAtual.textContent = "Plano: Não identificado";
@@ -244,7 +242,6 @@
       }
     }
 
-    // ... (Sua função calcularPreco original, sem alterações)
     function calcularPreco(totalFuncionarios) {
       const configuracaoPrecos = {
           precoIndividual: 29.90, precoBase: 59.90, funcionariosInclusos: 2,
@@ -268,7 +265,6 @@
       return Number(precoTotal.toFixed(2));
     }
 
-    // === LÓGICA DE GERAÇÃO DE CARDS (MODIFICADA PARA ADICIONAR OS BOTÕES) ===
     function gerarCardsDePlano() {
       listaPlanosContainer.innerHTML = "";
       const planosOrdenados = Object.keys(linksDosPlanos).map(Number).sort((a, b) => a - b);
@@ -291,10 +287,9 @@
           document.querySelectorAll(".card-plano").forEach((c) => c.classList.remove("selecionado"));
           card.classList.add("selecionado");
           planoSelecionado = num;
-          precoPlanoSelecionado = preco; // Armazena o preço
+          precoPlanoSelecionado = preco;
           avisoSelecao.textContent = "";
 
-          // MODIFICAÇÃO PRINCIPAL: Insere os dois botões
           botoesAcaoContainer.innerHTML = `
             <button id="btn-pagar-mp" class="btn-pagar-opcao mercadopago">
                 <i class="fa-solid fa-credit-card"></i> Pagar com Mercado Pago
@@ -304,7 +299,6 @@
             </button>
           `;
 
-          // Adiciona os listeners para os novos botões
           document.getElementById('btn-pagar-mp').addEventListener('click', handleMercadoPago);
           document.getElementById('btn-pagar-pix').addEventListener('click', handlePix);
         });
@@ -312,7 +306,6 @@
       });
     }
 
-    // === FUNÇÃO ORIGINAL PARA MERCADO PAGO (ADAPTADA) ===
     function handleMercadoPago() {
       if (!planoSelecionado) return;
       botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Redirecionando...</button>`;
@@ -326,18 +319,21 @@
         window.location.href = linkDePagamento;
       } else {
         avisoSelecao.textContent = "Erro ao processar pagamento. Tente novamente.";
-        // Recria os botões em caso de erro
         document.querySelector('.card-plano.selecionado')?.click(); 
       }
     }
 
-    // === NOVA FUNÇÃO PARA O FLUXO PIX ===
     function handlePix() {
       if (!planoSelecionado) return;
       
-      // Simula a tela de instruções, substituindo os botões
-      listaPlanosContainer.style.display = 'none'; // Esconde os planos
-      info-status-container.style.display = 'none'; // Esconde as infos
+      listaPlanosContainer.style.display = 'none';
+      
+      // =====================================================================
+      // CORREÇÃO 2: Usar o nome de variável correto (camelCase) aqui.
+      // =====================================================================
+      infoStatusContainer.style.display = 'none'; // Esta era a linha 340 com erro.
+
+
       document.querySelector('h1').textContent = 'Confirmação de Pagamento Pix';
 
       botoesAcaoContainer.innerHTML = `
@@ -352,7 +348,6 @@
       document.getElementById('btn-confirmar-pix').addEventListener('click', confirmarPagamentoPix);
     }
 
-    // === NOVA FUNÇÃO PARA GRAVAR A CONFIRMAÇÃO NO FIREBASE ===
     async function confirmarPagamentoPix() {
       const btn = document.getElementById('btn-confirmar-pix');
       btn.disabled = true;
@@ -369,7 +364,6 @@
       try {
         const empresaRef = doc(db, "empresarios", empresaId);
         
-        // Atualiza o documento da EMPRESA com o status do pagamento pendente
         await updateDoc(empresaRef, {
             pagamentoPendente: {
               status: "aguardando_liberacao",
@@ -380,7 +374,6 @@
             }
         });
 
-        // Mostra a mensagem de sucesso e finaliza
         botoesAcaoContainer.innerHTML = '';
         document.getElementById('sucesso-modal').style.display = 'flex';
         
@@ -392,7 +385,6 @@
       }
     }
 
-    // === LÓGICA DE INICIALIZAÇÃO ORIGINAL ===
     document.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const empresaId = urlParams.get("empresaId");
