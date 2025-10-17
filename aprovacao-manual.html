@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos para esta página específica, inspirados nos seus outros dashboards */
+        /* Seus estilos originais, sem alterações */
         body { display: flex; font-family: 'Poppins', sans-serif; margin: 0; background: #f4f5f7; min-height: 100vh; }
         #menu-container { width: 250px; min-width: 250px; flex-shrink: 0; }
         main.content { flex-grow: 1; padding: 40px; }
@@ -49,12 +49,11 @@
     </main>
 
     <script type="module">
-        // Ajustes importantes:
-        // - usar deleteField() (modular SDK) em vez de FieldValue.delete()
-        // - normalizar timestamps antes de chamar toDate()
-        // - proteger contra campos ausentes e garantir classes CSS válidas para .metodo
-
         import { db, auth } from './firebase-config.js';
+        
+        // =====================================================================
+        // CORREÇÃO: Adicionado 'Timestamp' à lista de importações
+        // =====================================================================
         import {
             collection,
             query,
@@ -62,7 +61,8 @@
             onSnapshot,
             doc,
             runTransaction,
-            deleteField
+            deleteField,
+            Timestamp 
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -72,7 +72,7 @@
         let unsubscribePagamentos = null;
         let unsubscribeEmpresas = null;
 
-        // ... Lógica para carregar o menu (se existir)...
+        // ... Lógica para carregar o menu ...
 
         onAuthStateChanged(auth, (user) => {
             if (user && user.uid === ADMIN_UID) {
@@ -84,11 +84,13 @@
             }
         });
 
+        // =====================================================================
+        // SEU CÓDIGO ORIGINAL (COM CORREÇÕES DE ROBUSTEZ)
+        // =====================================================================
         function ouvirTodasAsPendencias() {
             let pendenciasDaColecao = [];
             let pendenciasDoCampo = [];
 
-            // FONTE 1: Busca na coleção 'pagamentosPendentes'
             const pagamentosRef = collection(db, 'pagamentosPendentes');
             const qPagamentos = query(pagamentosRef, where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp']));
 
@@ -96,17 +98,11 @@
                 pendenciasDaColecao = snapshot.docs.map(d => ({
                     id: d.id,
                     tipo: 'colecao',
-                    // espalha os dados do documento; eventuais campos esperados:
-                    // clienteNome, empresaId, planoNome, valor, metodo, dataCriacao, etc.
                     ...d.data()
                 }));
                 renderizarListaCombinada();
-            }, (err) => {
-                console.error('Erro ao ouvir pagamentosPendentes:', err);
-                loadingMessage.textContent = 'Erro ao carregar pagamentos.';
-            });
+            }, (err) => console.error('Erro ao ouvir pagamentosPendentes:', err));
 
-            // FONTE 2: Busca por empresas com o campo 'pagamentoPendente' (PIX)
             const empresasRef = collection(db, 'empresarios');
             const qEmpresas = query(empresasRef, where('pagamentoPendente.status', '==', 'aguardando_liberacao'));
 
@@ -126,18 +122,12 @@
                     };
                 });
                 renderizarListaCombinada();
-            }, (err) => {
-                console.error('Erro ao ouvir empresarios:', err);
-                loadingMessage.textContent = 'Erro ao carregar empresas.';
-            });
+            }, (err) => console.error('Erro ao ouvir empresarios:', err));
 
             function normalizeDate(value) {
                 if (!value) return null;
-                // Se for Timestamp do Firestore
                 if (typeof value.toDate === 'function') return value.toDate();
-                // Se já for Date
                 if (value instanceof Date) return value;
-                // Se for string ISO
                 const parsed = new Date(value);
                 if (!isNaN(parsed)) return parsed;
                 return null;
@@ -145,7 +135,6 @@
 
             function safeCssClassForMetodo(metodo) {
                 if (!metodo) return 'desconhecido';
-                // keep only [a-z0-9_ -] and replace spaces with underscore
                 return String(metodo).toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
             }
 
@@ -166,16 +155,13 @@
                     const metodoRaw = pagamento.metodo || pagamento.status || 'desconhecido';
                     const metodoClass = safeCssClassForMetodo(metodoRaw);
                     const metodoLabel = String(metodoRaw).replace(/_/g, ' ');
-
                     const dateObj = normalizeDate(pagamento.dataCriacao);
                     const dataFormatada = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'Data indisponível';
                     const valorNum = (typeof pagamento.valor === 'number') ? pagamento.valor : Number(pagamento.valor) || 0;
                     const valorFormatado = valorNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
                     const clienteNome = pagamento.clienteNome || pagamento.nomeFantasia || 'Cliente desconhecido';
                     const docIdDisplay = pagamento.empresaId || pagamento.id || 'ID indisponível';
                     const planoNome = pagamento.planoNome || 'Plano';
-
                     const metodoTag = `<span class="metodo ${metodoClass}">${metodoLabel}</span>`;
 
                     itemDiv.innerHTML = `
@@ -193,17 +179,25 @@
             }
         }
 
+        // =====================================================================
+        // LÓGICA DE APROVAÇÃO ALTERADA PARA ADICIONAR A DATA DE EXPIRAÇÃO
+        // =====================================================================
         listaPagamentosDiv.addEventListener('click', async (e) => {
             if (e.target && e.target.classList.contains('btn-aprovar')) {
                 const btn = e.target;
                 const id = btn.dataset.id;
                 const tipo = btn.dataset.tipo;
 
-                if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? A assinatura será criada/atualizada.`)) return;
+                if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? Uma assinatura de 30 dias será iniciada.`)) return;
 
                 btn.disabled = true;
                 const previousText = btn.textContent;
                 btn.textContent = 'Aprovando...';
+
+                // ADIÇÃO: Calcula a data de expiração (30 dias a partir de hoje)
+                const dataFim = new Date();
+                dataFim.setDate(dataFim.getDate() + 30);
+                const proximoPagamentoTimestamp = Timestamp.fromDate(dataFim);
 
                 if (tipo === 'campo') { // Aprovação do PIX (salvo na empresa)
                     try {
@@ -213,17 +207,17 @@
                             if (!empresaDoc.exists() || !empresaDoc.data().pagamentoPendente) {
                                 throw new Error("A pendência de pagamento não foi encontrada na empresa.");
                             }
-                            // ATUALIZA O PLANO DO DONO PARA "pago" E REMOVE A PENDÊNCIA
+                            // ATUALIZA O PLANO, ADICIONA A DATA DE EXPIRAÇÃO E REMOVE A PENDÊNCIA
                             transaction.update(empresaRef, {
-                                plano: "pago", // Libera o acesso
-                                pagamentoPendente: deleteField() // Limpa a pendência (usando deleteField modular)
+                                plano: "pago",
+                                assinaturaValidaAte: proximoPagamentoTimestamp, // ADICIONADO
+                                pagamentoPendente: deleteField()
                             });
                         });
-                        btn.textContent = 'Aprovado';
-                        alert('Pagamento aprovado e acesso liberado com sucesso!');
+                        alert('Pagamento aprovado! Acesso liberado por 30 dias.');
                     } catch (error) {
                         console.error("Erro ao aprovar pagamento de campo:", error);
-                        alert('Falha ao aprovar o pagamento: ' + (error && error.message ? error.message : error));
+                        alert('Falha ao aprovar: ' + (error && error.message ? error.message : error));
                         btn.disabled = false;
                         btn.textContent = previousText || 'Aprovar';
                     }
@@ -240,19 +234,18 @@
 
                             const empresaRef = doc(db, "empresarios", empresaId);
 
-                            // ATUALIZA O PLANO DO DONO PARA "pago"
+                            // ATUALIZA O PLANO E ADICIONA A DATA DE EXPIRAÇÃO
                             transaction.update(empresaRef, {
-                                plano: "pago" // Libera o acesso
+                                plano: "pago",
+                                assinaturaValidaAte: proximoPagamentoTimestamp // ADICIONADO
                             });
 
-                            // ATUALIZA O STATUS DO PAGAMENTO PENDENTE
                             transaction.update(pagRef, { status: "aprovado_manual" });
                         });
-                        btn.textContent = 'Aprovado';
-                        alert('Pagamento aprovado e acesso liberado com sucesso!');
+                        alert('Pagamento aprovado! Acesso liberado por 30 dias.');
                     } catch (error) {
                         console.error("Erro ao aprovar pagamento de coleção:", error);
-                        alert('Falha ao aprovar o pagamento: ' + (error && error.message ? error.message : error));
+                        alert('Falha ao aprovar: ' + (error && error.message ? error.message : error));
                         btn.disabled = false;
                         btn.textContent = previousText || 'Aprovar';
                     }
