@@ -2,7 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Configurações Globais - Pronti</title> <style>
+    <title>Configurações Globais - Pronti</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
@@ -10,7 +13,6 @@
         button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
         input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
 
-        /* === NOVOS ESTILOS PARA OS CAMPOS DE TEXTO === */
         .config-section {
             margin-top: 40px;
             padding-top: 20px;
@@ -33,8 +35,28 @@
             border-radius: 4px;
             font-size: 1rem;
         }
-        /* === FIM DOS NOVOS ESTILOS === */
-
+        
+        /* ================================================================= -->
+        #qrcode-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100px;
+        }
+        #qrcode-container canvas, #qrcode-container img {
+            margin: 0 auto; /* Centraliza o QR Code gerado */
+        }
+        #btn-gerar-qrcode {
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -65,7 +87,22 @@
             <label for="observacoes-input">Observações para a Tela de Pagamento:</label>
             <textarea id="observacoes-input" rows="4" placeholder="Ex: Após o pagamento, sua liberação ocorrerá em até X minutos."></textarea>
         </div>
-    </div>
+
+        <div class="form-group">
+            <label for="nome-beneficiario-input">Nome do Beneficiário (Exatamente como aparece no banco):</label>
+            <input type="text" id="nome-beneficiario-input" placeholder="Seu Nome Completo ou Razão Social" maxlength="25">
+        </div>
+        <div class="form-group">
+            <label for="cidade-beneficiario-input">Cidade do Beneficiário (Sem acentos):</label>
+            <input type="text" id="cidade-beneficiario-input" placeholder="SAO PAULO" maxlength="15">
+        </div>
+        
+        <button id="btn-gerar-qrcode" type="button">Gerar QR Code</button>
+
+        <div id="qrcode-container">
+            <p>O QR Code aparecerá aqui.</p>
+        </div>
+        </div>
     <button id="salvar">Salvar Todas as Configurações</button>
 
     <script type="module">
@@ -77,10 +114,14 @@
 
         const permissoesTabela = document.getElementById("permissoes-tabela");
         const salvarBtn = document.getElementById("salvar");
-
-        // NOVO: Seletores para os novos campos
         const chavePixInput = document.getElementById("chave-pix-input");
         const observacoesInput = document.getElementById("observacoes-input");
+        
+        // ================================================================= -->
+        const nomeBeneficiarioInput = document.getElementById("nome-beneficiario-input");
+        const cidadeBeneficiarioInput = document.getElementById("cidade-beneficiario-input");
+        const btnGerarQrCode = document.getElementById("btn-gerar-qrcode");
+        const qrcodeContainer = document.getElementById("qrcode-container");
 
         const menus = [
             "inicio", "dashboard", "agenda", "equipe", "servicos",
@@ -89,8 +130,8 @@
         
         let permissoesAtuais = {};
 
+        // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
         async function carregarPermissoesGlobais() {
-            // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
             const ref = doc(db, "configuracoesGlobais", "permissoes");
             const snap = await getDoc(ref);
             permissoesAtuais = snap.exists() ? snap.data() : {};
@@ -106,9 +147,7 @@
             renderTabela();
         }
 
-        // ================================================================= -->
-        // ✅ INÍCIO DA NOVA FUNÇÃO PARA CARREGAR OS DADOS DE PAGAMENTO       -->
-        // ================================================================= -->
+        // ALTERADO: Apenas para carregar os novos campos também
         async function carregarConfiguracoesPagamento() {
             const ref = doc(db, "configuracoesGlobais", "pagamentos");
             const snap = await getDoc(ref);
@@ -116,14 +155,14 @@
                 const data = snap.data();
                 chavePixInput.value = data.chavePixPlataforma || "";
                 observacoesInput.value = data.observacoesPagamento || "";
+                // Carrega os novos campos
+                nomeBeneficiarioInput.value = data.nomeBeneficiario || "";
+                cidadeBeneficiarioInput.value = data.cidadeBeneficiario || "";
             }
         }
-        // ================================================================= -->
-        // ✅ FIM DA NOVA FUNÇÃO                                              -->
-        // ================================================================= -->
 
+        // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
         function renderTabela() {
-            // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
             permissoesTabela.innerHTML = menus.map(menu => `
                 <tr>
                     <td>${menu}</td>
@@ -134,12 +173,13 @@
             `).join("");
         }
 
+        // ALTERADO: Apenas para salvar os novos campos também
         salvarBtn.addEventListener("click", async () => {
             salvarBtn.disabled = true;
             salvarBtn.textContent = "Salvando...";
             
             try {
-                // --- PARTE 1: SUA LÓGICA ORIGINAL PARA SALVAR PERMISSÕES (INALTERADA) ---
+                // SUA LÓGICA ORIGINAL DE SALVAR PERMISSÕES (INALTERADA)
                 const checkboxes = document.querySelectorAll("input[type=checkbox]");
                 const novasPermissoes = {};
                 checkboxes.forEach(chk => {
@@ -150,12 +190,14 @@
                 });
                 await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
 
-                // --- PARTE 2: NOVA LÓGICA PARA SALVAR AS CONFIGURAÇÕES DE PAGAMENTO ---
+                // SUA LÓGICA DE SALVAR PAGAMENTOS (AGORA INCLUI OS NOVOS CAMPOS)
                 const pagamentosRef = doc(db, "configuracoesGlobais", "pagamentos");
                 await setDoc(pagamentosRef, {
                     chavePixPlataforma: chavePixInput.value,
-                    observacoesPagamento: observacoesInput.value
-                }, { merge: true }); // Usar merge para não apagar outros campos que possam existir
+                    observacoesPagamento: observacoesInput.value,
+                    nomeBeneficiario: nomeBeneficiarioInput.value, // Salva o nome
+                    cidadeBeneficiario: cidadeBeneficiarioInput.value // Salva a cidade
+                }, { merge: true });
 
                 alert("Configurações globais salvas com sucesso!");
 
@@ -168,19 +210,70 @@
             }
         });
 
-        onAuthStateChanged(auth, (user) => {
-            // ... SUA LÓGICA ORIGINAL DE AUTENTICAÇÃO, COM UMA ADIÇÃO ...
+        // ================================================================= -->
+        // ✅ 5. NOVA FUNÇÃO PARA GERAR O QR CODE                             -->
+        // ================================================================= -->
+        btnGerarQrCode.addEventListener("click", () => {
+            const chave = chavePixInput.value.trim();
+            const nome = nomeBeneficiarioInput.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove acentos
+            const cidade = cidadeBeneficiarioInput.value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remove acentos
 
+            if (!chave || !nome || !cidade) {
+                alert("Para gerar um QR Code Pix válido, preencha os campos: Chave Pix, Nome do Beneficiário e Cidade.");
+                return;
+            }
+
+            const formatarCampo = (id, valor) => {
+                const len = valor.length.toString().padStart(2, '0');
+                return `${id}${len}${valor}`;
+            };
+            
+            let payload = "000201";
+            payload += "26" + formatarCampo("00", "BR.GOV.BCB.PIX").length + formatarCampo("00", "BR.GOV.BCB.PIX") + formatarCampo("01", chave);
+            payload += "52040000"; 
+            payload += "5303986"; 
+            payload += formatarCampo("58", "BR");
+            payload += formatarCampo("59", nome);
+            payload += formatarCampo("60", cidade);
+            payload += "62070503***";
+            payload += "6304"; 
+
+            const crc16 = (data) => {
+                let crc = 0xFFFF;
+                for (let i = 0; i < data.length; i++) {
+                    crc ^= data.charCodeAt(i) << 8;
+                    for (let j = 0; j < 8; j++) {
+                        crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+                    }
+                }
+                return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+            };
+
+            const checksum = crc16(payload);
+            const payloadCompleto = payload + checksum;
+            
+            qrcodeContainer.innerHTML = "";
+            new QRCode(qrcodeContainer, {
+                text: payloadCompleto,
+                width: 256,
+                height: 256,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        });
+
+        // ... SUA LÓGICA ORIGINAL DE AUTENTICAÇÃO, 100% INALTERADA ...
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 if (user.uid === ADMIN_UID) {
-                    carregarPermissoesGlobais(); // Sua função original
-                    carregarConfiguracoesPagamento(); // NOVA LINHA: Chama a nova função de carregamento
+                    carregarPermissoesGlobais();
+                    carregarConfiguracoesPagamento();
                 } else {
                     alert("Acesso negado. Apenas Administrador.");
                     window.location.href = "index.html";
                 }
             } else {
-                // Lógica de fallback se o usuário não for detectado
                 setTimeout(() => {
                     if (!auth.currentUser) {
                          window.location.href = "login.html";
