@@ -130,6 +130,7 @@
         const btnLogout = document.getElementById('btn-logout');
         const btnAssinar = document.getElementById('btn-assinar');
 
+        // converte Timestamp/Date/string para Date ou null
         function toDateOrNull(value) {
             if (!value) return null;
             if (typeof value.toDate === 'function') {
@@ -139,89 +140,11 @@
             return isNaN(d.getTime()) ? null : d;
         }
 
-        function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
-
-        // Verifica repetidas vezes (até N tentativas) para reduzir race conditions / leituras transitórias.
-        async function confirmarLeituraEstavel(empresaRef, predicate, attempts = 4, delayMs = 250) {
-            for (let i = 0; i < attempts; i++) {
-                const snap = await getDoc(empresaRef);
-                if (!snap.exists()) return false;
-                const data = snap.data() || {};
-                if (predicate(data)) return true;
-                await sleep(delayMs);
-            }
-            return false;
-        }
-
-        async function verificarAcessoParaEmpresa(empresaAtivaId, userUid) {
-            // prepara link de pagamento
-            btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
-
-            const empresaRef = doc(db, "empresarios", empresaAtivaId);
-            const empresaSnap = await getDoc(empresaRef);
-            if (!empresaSnap.exists()) {
-                // empresa removida -> voltar para selecionar
-                window.location.replace('selecionar-empresa.html');
-                return false;
-            }
-            const empresaData = empresaSnap.data() || {};
-
-            // predicate para considerar empresa liberada
-            const isEmpresaPagoPredicate = (data) => (
-                data.plano === 'pago' ||
-                data.plano === 'premium' ||
-                data.status === 'ativo' ||
-                data.assinaturaAtiva === true ||
-                data.pago === true
-            );
-
-            // 1) Se a administração já marcou como pago/ativo/assinaturaAtiva -> confirmar leitura estável e liberar
-            if (isEmpresaPagoPredicate(empresaData)) {
-                // confirmar leitura estável (evita condições em que index.html ainda lê valor antigo)
-                const ok = await confirmarLeituraEstavel(empresaRef, isEmpresaPagoPredicate, 5, 300);
-                return ok;
-            }
-
-            // 2) Se existir um pagamento pendente marcado explicitamente como aguardando, não liberar
-            if (empresaData.pagamentoPendente && empresaData.pagamentoPendente.status === 'aguardando_liberacao') {
-                return false;
-            }
-
-            // 3) Verifica o usuário/dono (isPremium)
-            const donoId = empresaData.donoId;
-            if (donoId) {
-                const userRef = doc(db, "usuarios", donoId);
-                const userSnap = await getDoc(userRef);
-                if (userSnap.exists() && userSnap.data().isPremium === true) {
-                    return true;
-                }
-
-                // 4) Checa trial configurado na empresa usando trialStart do usuário (se houver)
-                const trialDays = empresaData.freeEmDias ?? 0;
-                if (trialDays > 0) {
-                    const trialStartRaw = userSnap && userSnap.exists() ? userSnap.data().trialStart : null;
-                    const startDate = toDateOrNull(trialStartRaw);
-                    if (startDate) {
-                        const endDate = new Date(startDate);
-                        endDate.setDate(startDate.getDate() + Number(trialDays));
-                        const hoje = new Date();
-                        hoje.setHours(0, 0, 0, 0);
-                        return endDate >= hoje;
-                    }
-                }
-            }
-
-            // fallback: não liberado
-            return false;
-        }
-
-        // Único listener de auth (evita múltiplos listeners que podem causar redirecionamentos duplicados)
-        let authInitialized = false;
+        // lida com a lógica: apenas lê campos do Firestore e decide entrar (index) ou mostrar a tela
         onAuthStateChanged(auth, async (user) => {
-            if (authInitialized) return;
-            authInitialized = true;
-
+            // único listener: evita múltiplos redirecionamentos
             if (!user) {
+                // não autenticado
                 window.location.replace('login.html');
                 return;
             }
@@ -233,24 +156,80 @@
                     return;
                 }
 
-                // Verifica o status da empresa/usuário
-                const permitido = await verificarAcessoParaEmpresa(empresaAtivaId, user.uid);
+                // prepara link do botão de pagamento
+                btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
 
-                if (permitido) {
-                    // marca uma flag temporária (timestamp) para sinalizar que acabamos de confirmar o acesso
+                // busca empresa
+                const empresaRef = doc(db, "empresarios", empresaAtivaId);
+                const empresaSnap = await getDoc(empresaRef);
+                if (!empresaSnap.exists()) {
+                    window.location.replace('selecionar-empresa.html');
+                    return;
+                }
+                const empresa = empresaSnap.data() || {};
+
+                // 1) checagem direta de campos que o admin/fluxo de aprovação atualiza
+                const empresaLiberada = (
+                    empresa.plano === 'pago' ||
+                    empresa.plano === 'premium' ||
+                    empresa.status === 'ativo' ||
+                    empresa.assinaturaAtiva === true ||
+                    empresa.pago === true
+                );
+                if (empresaLiberada) {
+                    // marca flag temporária para evitar loops entre páginas
                     try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) { /* ignore */ }
-                    // usar replace para evitar empilhar histórico e reduzir piscadas
-                    // colocamos um pequeno delay extra para dar tempo ao index.html fazer sua leitura local (se necessário)
-                    setTimeout(() => {
-                        window.location.replace('index.html');
-                    }, 350);
-                } else {
+                    // usamos replace (não empilha histórico)
+                    window.location.replace('index.html');
+                    return;
+                }
+
+                // 2) se existe um pagamento pendente explicitamente aguardando, bloquear
+                if (empresa.pagamentoPendente && empresa.pagamentoPendente.status === 'aguardando_liberacao') {
                     loader.style.display = 'none';
                     container.style.display = 'block';
+                    return;
                 }
-            } catch (e) {
-                console.error("Erro ao verificar status:", e);
-                // Em caso de erro, mostramos a tela de assinatura (melhor do que redirecionar de forma errática)
+
+                // 3) verificar dono/isPremium e trial
+                let donoData = null;
+                if (empresa.donoId) {
+                    const donoRef = doc(db, "usuarios", empresa.donoId);
+                    const donoSnap = await getDoc(donoRef);
+                    if (donoSnap.exists()) donoData = donoSnap.data();
+                }
+
+                // se dono é premium, liberar
+                if (donoData && donoData.isPremium === true) {
+                    try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) {}
+                    window.location.replace('index.html');
+                    return;
+                }
+
+                // checar trial configurado na empresa (freeEmDias) usando trialStart do usuário
+                const trialDays = empresa.freeEmDias ?? 0;
+                if (trialDays > 0 && donoData) {
+                    const trialStart = donoData.trialStart;
+                    const startDate = toDateOrNull(trialStart);
+                    if (startDate) {
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + Number(trialDays));
+                        const hoje = new Date();
+                        hoje.setHours(0,0,0,0);
+                        if (endDate >= hoje) {
+                            try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) {}
+                            window.location.replace('index.html');
+                            return;
+                        }
+                    }
+                }
+
+                // se chegou aqui: não liberado
+                loader.style.display = 'none';
+                container.style.display = 'block';
+            } catch (err) {
+                console.error('Erro na verificação de assinatura:', err);
+                // se ocorrer erro, mostramos tela de assinatura ao invés de ficar redirecionando em loop
                 loader.style.display = 'none';
                 container.style.display = 'block';
             }
