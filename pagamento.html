@@ -14,7 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
     <style>
-        /* === SEU CSS ORIGINAL - COM ADIÇÕES PARA O MODAL PIX === */
+        /* === SEU CSS ORIGINAL - SEM ALTERAÇÕES === */
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
@@ -357,10 +357,6 @@
             }
         }
         
-        // =====================================================================
-        // ✅ INÍCIO DAS NOVAS FUNÇÕES E ALTERAÇÕES (SEM MUDAR O RESTO)
-        // =====================================================================
-
         async function carregarConfiguracoesPagamento() {
             try {
                 const configRef = doc(db, "configuracoesGlobais", "pagamentos");
@@ -375,7 +371,9 @@
             }
         }
         
-        // ALTERADO: A função handlePix agora abre um modal e gera o QR Code com VALOR
+        // =====================================================================
+        // ✅ ÚNICA FUNÇÃO ALTERADA PARA CORRIGIR A MONTAGEM DO CÓDIGO PIX
+        // =====================================================================
         function handlePix() {
             if (!planoSelecionado || !configPagamento) {
                 alert("Selecione um plano e aguarde as configurações de pagamento carregarem.");
@@ -399,23 +397,20 @@
                 return `${id}${len}${valor}`;
             };
             
-            // ==================================================
-            // CORREÇÃO DA LÓGICA DE MONTAGEM DO PAYLOAD
-            // ==================================================
+            // --- INÍCIO DA CORREÇÃO ---
+            let payload = "000201";
+            
             const gui = formatarCampo("00", "BR.GOV.BCB.PIX");
             const pixKey = formatarCampo("01", chave);
-            const merchantAccountInfo = formatarCampo("26", gui + pixKey);
+            payload += formatarCampo("26", gui + pixKey);
             
-            let payload = "000201";
-            payload += merchantAccountInfo; // Usa a variável corrigida
             payload += "52040000"; 
             payload += "5303986"; 
             payload += formatarCampo("54", precoPlanoSelecionado.toFixed(2));
             payload += formatarCampo("58", "BR");
             payload += formatarCampo("59", nome);
             payload += formatarCampo("60", cidade);
-            payload += "62070503***";
-            payload += "6304"; 
+            payload += formatarCampo("62", formatarCampo("05", "***")); // ID da Transação
 
             const crc16 = (data) => {
                 let crc = 0xFFFF;
@@ -428,17 +423,18 @@
                 return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
             };
 
-            const payloadCompleto = payload + crc16(payload);
+            const payloadComCRC = payload + "6304" + crc16(payload + "6304");
+            // --- FIM DA CORREÇÃO ---
 
             const qrcodeContainer = document.getElementById('pix-qrcode');
             qrcodeContainer.innerHTML = "";
             new QRCode(qrcodeContainer, {
-                text: payloadCompleto,
+                text: payloadComCRC,
                 width: 256,
                 height: 256,
             });
 
-            document.getElementById('pix-copia-cola-input').value = payloadCompleto;
+            document.getElementById('pix-copia-cola-input').value = payloadComCRC;
         }
 
         document.getElementById('btn-confirmar-pix').addEventListener('click', confirmarPagamentoPix);
