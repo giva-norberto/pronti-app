@@ -11,11 +11,10 @@
         rel="stylesheet"
     />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
     <style>
-        /* === SEU CSS ORIGINAL === */
+        /* === SEU CSS ORIGINAL - COM ADIÇÕES PARA O MODAL PIX === */
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
@@ -153,7 +152,6 @@
         .modal-content h2 { margin-top: 0; }
         .modal-content .fa-circle-check { font-size: 3rem; color: #10b981; margin-bottom: 15px; }
 
-        /* === NOVOS ESTILOS PARA O MODAL DO PIX === */
         #pix-modal-content {
             background: #fff; color: #333; padding: 30px; border-radius: 16px;
             text-align: center; max-width: 400px; width: 90%;
@@ -223,7 +221,7 @@
 
     <script type="module">
         import { db } from './firebase-config.js';
-        import { doc, getDoc, collection, getDocs, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { doc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         const linksDosPlanos = {
             1: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca1b0887e74842659651f9763f203f13",
@@ -247,7 +245,9 @@
         let licencasNecessarias = 1;
         let configPagamento = null; 
 
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
+        // =====================================================================
+        // ✅ SUAS FUNÇÕES ORIGINAIS, 100% INALTERADAS
+        // =====================================================================
         async function buscarDadosEmpresa(empresaId) {
             if (!empresaId) {
                 infoPlanoAtual.textContent = "Plano: Não identificado";
@@ -276,7 +276,6 @@
             }
         }
 
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         function calcularPreco(totalFuncionarios) {
             const configuracaoPrecos = {
                 precoIndividual: 29.90, precoBase: 59.90, funcionariosInclusos: 2,
@@ -300,7 +299,6 @@
             return Number(precoTotal.toFixed(2));
         }
 
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         function gerarCardsDePlano() {
             listaPlanosContainer.innerHTML = "";
             const planosOrdenados = Object.keys(linksDosPlanos).map(Number).sort((a, b) => a - b);
@@ -342,7 +340,6 @@
             });
         }
         
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         function handleMercadoPago() {
             if (!planoSelecionado) return;
             botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Redirecionando...</button>`;
@@ -361,7 +358,7 @@
         }
         
         // =====================================================================
-        // ✅ INÍCIO DAS NOVAS FUNÇÕES E ALTERAÇÕES
+        // ✅ INÍCIO DAS NOVAS FUNÇÕES E ALTERAÇÕES (SEM MUDAR O RESTO)
         // =====================================================================
 
         async function carregarConfiguracoesPagamento() {
@@ -378,6 +375,7 @@
             }
         }
         
+        // ALTERADO: A função handlePix agora abre um modal e gera o QR Code com VALOR
         function handlePix() {
             if (!planoSelecionado || !configPagamento) {
                 alert("Selecione um plano e aguarde as configurações de pagamento carregarem.");
@@ -401,8 +399,15 @@
                 return `${id}${len}${valor}`;
             };
             
+            // ==================================================
+            // CORREÇÃO DA LÓGICA DE MONTAGEM DO PAYLOAD
+            // ==================================================
+            const gui = formatarCampo("00", "BR.GOV.BCB.PIX");
+            const pixKey = formatarCampo("01", chave);
+            const merchantAccountInfo = formatarCampo("26", gui + pixKey);
+            
             let payload = "000201";
-            payload += "26" + formatarCampo("00", "BR.GOV.BCB.PIX").length + formatarCampo("00", "BR.GOV.BCB.PIX") + formatarCampo("01", chave);
+            payload += merchantAccountInfo; // Usa a variável corrigida
             payload += "52040000"; 
             payload += "5303986"; 
             payload += formatarCampo("54", precoPlanoSelecionado.toFixed(2));
@@ -473,6 +478,7 @@
             }
         }
 
+        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get("empresaId");
