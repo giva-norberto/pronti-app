@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Aprovação Manual de Pagamentos - Pronti ADM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css"> <style>
+        /* Estilos para esta página específica, inspirados nos seus outros dashboards */
+        body { display: flex; font-family: 'Poppins', sans-serif; margin: 0; background: #f4f5f7; min-height: 100vh; }
+        #menu-container { width: 250px; min-width: 250px; flex-shrink: 0; }
+        main.content { flex-grow: 1; padding: 40px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header-pagina { margin-bottom: 30px; }
+        .header-pagina h1 { color: #1e293b; font-size: 2rem; font-weight: 700; margin: 0 0 10px 0; }
+        .header-pagina p { color: #64748b; margin: 0; font-size: 1.1rem; }
+        .lista-pagamentos { display: flex; flex-direction: column; gap: 12px; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 8px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 15px; }
+        .info p { margin: 0; line-height: 1.5; }
+        .info .nome { font-weight: 600; color: #334155; font-size: 1.08em; }
+        .info .doc-id { font-size: 0.75em; color: #94a3b8; font-family: monospace; margin-top: 2px; }
+        .info .plano { font-size: 0.9em; color: #64748b; margin-top: 5px; }
+        .info .metodo { font-size: 0.75em; font-weight: 700; padding: 3px 8px; border-radius: 12px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; }
+        .metodo.pix, .metodo.aguardando_liberacao { background-color: #e0fdf4; color: #059669; }
+        .metodo.mercado_pago { background-color: #dbeafe; color: #2563eb; }
+        .acoes button { border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.9em; }
+        .btn-aprovar { background-color: #10b981; color: #fff; }
+        .btn-aprovar:hover:not(:disabled) { background-color: #0f9e70; }
+        .btn-aprovar:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        #loading-message, #empty-message { text-align: center; padding: 40px; color: #64748b; background: #fff; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <aside id="menu-container"></aside>
+    <main class="content">
+        <div class="container">
+            <div class="header-pagina">
+                <h1>Aprovação Manual de Pagamentos</h1>
+                <p>Libere o acesso para pagamentos de Pix ou Mercado Pago que precisam de intervenção.</p>
+            </div>
+            <div id="lista-pagamentos" class="lista-pagamentos">
+                <p id="loading-message">Carregando pagamentos pendentes...</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { db, auth } from './firebase-config.js';
+        import { collection, query, where, onSnapshot, doc, runTransaction, serverTimestamp, Timestamp, FieldValue, updateDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
+
+        const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+        const listaPagamentosDiv = document.getElementById('lista-pagamentos');
+        const loadingMessage = document.getElementById('loading-message');
+        let unsubscribePagamentos = null;
+        let unsubscribeEmpresas = null;
+
+        // ... Lógica para carregar o menu ...
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.uid === ADMIN_UID) {
+                ouvirTodasAsPendencias();
+            } else {
+                if (unsubscribePagamentos) unsubscribePagamentos();
+                if (unsubscribeEmpresas) unsubscribeEmpresas();
+                listaPagamentosDiv.innerHTML = '<p id="empty-message">Acesso restrito a administradores.</p>';
+            }
+        });
+        
+        function ouvirTodasAsPendencias() {
+            let pendenciasDaColecao = [];
+            let pendenciasDoCampo = [];
+
+            // FONTE 1: Busca na coleção 'pagamentosPendentes'
+            const pagamentosRef = collection(db, 'pagamentosPendentes');
+            const qPagamentos = query(pagamentosRef, where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp']));
+            
+            unsubscribePagamentos = onSnapshot(qPagamentos, (snapshot) => {
+                pendenciasDaColecao = snapshot.docs.map(doc => ({ 
+                    id: doc.id, tipo: 'colecao', ...doc.data() 
+                }));
+                renderizarListaCombinada();
+            });
+
+            // FONTE 2: Busca por empresas com o campo 'pagamentoPendente' (PIX)
+            const empresasRef = collection(db, 'empresarios');
+            const qEmpresas = query(empresasRef, where('pagamentoPendente.status', '==', 'aguardando_liberacao'));
+
+            unsubscribeEmpresas = onSnapshot(qEmpresas, (snapshot) => {
+                pendenciasDoCampo = snapshot.docs.map(doc => {
+                    const empresaData = doc.data();
+                    return {
+                        id: doc.id, tipo: 'campo',
+                        clienteNome: empresaData.nomeFantasia,
+                        planoNome: `Plano para ${empresaData.pagamentoPendente.plano} usuários`,
+                        valor: empresaData.pagamentoPendente.valor,
+                        metodo: empresaData.pagamentoPendente.metodo,
+                        dataCriacao: empresaData.pagamentoPendente.dataSolicitacao,
+                        donoId: empresaData.donoId
+                    };
+                });
+                renderizarListaCombinada();
+            });
+
+            function renderizarListaCombinada() {
+                const todasAsPendencias = [...pendenciasDaColecao, ...pendenciasDoCampo];
+                loadingMessage.style.display = 'none';
+
+                if (todasAsPendencias.length === 0) {
+                    listaPagamentosDiv.innerHTML = '<p id="empty-message">Nenhum pagamento pendente no momento.</p>';
+                    return;
+                }
+                
+                listaPagamentosDiv.innerHTML = '';
+                todasAsPendencias.forEach(pagamento => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'item';
+                    
+                    const metodoTag = `<span class="metodo ${pagamento.metodo}">${pagamento.metodo.replace('_', ' ')}</span>`;
+                    const dataFormatada = pagamento.dataCriacao?.toDate().toLocaleDateString('pt-BR') || 'Data indisponível';
+                    const valorFormatado = (pagamento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                    itemDiv.innerHTML = `
+                        <div class="info">
+                            <p class="nome">${pagamento.clienteNome}</p>
+                            <p class="doc-id">ID da Empresa: ${pagamento.empresaId || pagamento.id}</p>
+                            <p class="plano">${pagamento.planoNome} - ${valorFormatado} ${metodoTag} - ${dataFormatada}</p>
+                        </div>
+                        <div class="acoes">
+                            <button class="btn-aprovar" data-id="${pagamento.id}" data-tipo="${pagamento.tipo}">Aprovar</button>
+                        </div>
+                    `;
+                    listaPagamentosDiv.appendChild(itemDiv);
+                });
+            }
+        }
+
+        listaPagamentosDiv.addEventListener('click', async (e) => {
+            if (e.target && e.target.classList.contains('btn-aprovar')) {
+                const id = e.target.dataset.id;
+                const tipo = e.target.dataset.tipo;
+                
+                if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? A assinatura será criada/atualizada.`)) return;
+                
+                e.target.disabled = true;
+                e.target.textContent = 'Aprovando...';
+
+                if (tipo === 'campo') { // Aprovação do PIX (salvo na empresa)
+                    try {
+                        const empresaRef = doc(db, "empresarios", id);
+                        await runTransaction(db, async (transaction) => {
+                            const empresaDoc = await transaction.get(empresaRef);
+                            if (!empresaDoc.exists() || !empresaDoc.data().pagamentoPendente) {
+                                throw new Error("A pendência de pagamento não foi encontrada na empresa.");
+                            }
+                            // ATUALIZA O PLANO DO DONO PARA "pago" E REMOVE A PENDÊNCIA
+                            transaction.update(empresaRef, {
+                                plano: "pago", // Libera o acesso
+                                pagamentoPendente: FieldValue.delete() // Limpa a pendência
+                            });
+                        });
+                        alert('Pagamento aprovado e acesso liberado com sucesso!');
+                    } catch (error) {
+                         console.error("Erro ao aprovar pagamento de campo:", error);
+                         alert('Falha ao aprovar o pagamento: ' + error.message);
+                         e.target.disabled = false;
+                         e.target.textContent = 'Aprovar';
+                    }
+                } else { // Aprovação do Mercado Pago (salvo em pagamentosPendentes)
+                    try {
+                        await runTransaction(db, async (transaction) => {
+                            const pagRef = doc(db, "pagamentosPendentes", id);
+                            const pagDoc = await transaction.get(pagRef);
+                            if (!pagDoc.exists()) throw new Error("Documento do pagamento não existe mais.");
+                            
+                            const dadosPagamento = pagDoc.data();
+                            const empresaRef = doc(db, "empresarios", dadosPagamento.empresaId);
+                            
+                            // ATUALIZA O PLANO DO DONO PARA "pago"
+                            transaction.update(empresaRef, {
+                                plano: "pago" // Libera o acesso
+                            });
+
+                            // ATUALIZA O STATUS DO PAGAMENTO PENDENTE
+                            transaction.update(pagRef, { status: "aprovado_manual" });
+                        });
+                        alert('Pagamento aprovado e acesso liberado com sucesso!');
+                    } catch (error) {
+                        console.error("Erro ao aprovar pagamento de coleção:", error);
+                        alert('Falha ao aprovar o pagamento: ' + error.message);
+                        e.target.disabled = false;
+                        e.target.textContent = 'Aprovar';
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
