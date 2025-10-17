@@ -130,6 +130,17 @@
         const btnLogout = document.getElementById('btn-logout');
         const btnAssinar = document.getElementById('btn-assinar');
 
+        // Normaliza um possível Timestamp/Date/string para um objeto Date ou null
+        function toDateOrNull(value) {
+            if (!value) return null;
+            if (typeof value.toDate === 'function') {
+                try { return value.toDate(); } catch (e) { return null; }
+            }
+            const d = new Date(value);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        // Verifica se a empresa deve ser considerada com acesso liberado
         async function checkStatusRapido() {
             return new Promise((resolve) => {
                 onAuthStateChanged(auth, async (user) => {
@@ -144,32 +155,56 @@
                             return;
                         }
                         btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
+
+                        // Lê o documento da empresa
                         const empresaRef = doc(db, "empresarios", empresaAtivaId);
                         const empresaSnap = await getDoc(empresaRef);
                         if (!empresaSnap.exists()) {
                            window.location.href = 'selecionar-empresa.html';
                            return;
                         }
-                        const empresaData = empresaSnap.data();
-                        const userRef = doc(db, "usuarios", empresaData.donoId);
-                        const userSnap = await getDoc(userRef);
-                        if (!userSnap.exists() || userSnap.data().isPremium) {
+                        const empresaData = empresaSnap.data() || {};
+
+                        // 1) Se a aprovação manual definiu plano: "pago" ou status: "ativo" -> liberar imediatamente
+                        const isEmpresaPago = (
+                            empresaData.plano === 'pago' ||
+                            empresaData.plano === 'premium' ||
+                            empresaData.status === 'ativo' ||
+                            empresaData.pago === true ||
+                            empresaData.assinaturaAtiva === true
+                        );
+                        if (isEmpresaPago) {
                             resolve(true);
                             return;
                         }
-                        const trialDays = empresaData.freeEmDias ?? 0;
-                        if (trialDays > 0) {
-                            const trialStart = userSnap.data().trialStart;
-                            if (trialStart?.seconds) {
-                                const startDate = new Date(trialStart.seconds * 1000);
-                                const endDate = new Date(startDate);
-                                endDate.setDate(startDate.getDate() + trialDays);
-                                const hoje = new Date();
-                                hoje.setHours(0, 0, 0, 0);
-                                resolve(endDate >= hoje);
+
+                        // 2) Verifica o usuário/dono (isPremium)
+                        const donoId = empresaData.donoId;
+                        if (donoId) {
+                            const userRef = doc(db, "usuarios", donoId);
+                            const userSnap = await getDoc(userRef);
+                            if (userSnap.exists() && userSnap.data().isPremium) {
+                                resolve(true);
                                 return;
                             }
+
+                            // 3) Checa trial configurado na empresa usando trialStart do usuário (se houver)
+                            const trialDays = empresaData.freeEmDias ?? 0;
+                            if (trialDays > 0) {
+                                const trialStartRaw = userSnap.exists() ? userSnap.data().trialStart : null;
+                                const startDate = toDateOrNull(trialStartRaw);
+                                if (startDate) {
+                                    const endDate = new Date(startDate);
+                                    endDate.setDate(startDate.getDate() + Number(trialDays));
+                                    const hoje = new Date();
+                                    hoje.setHours(0, 0, 0, 0);
+                                    resolve(endDate >= hoje);
+                                    return;
+                                }
+                            }
                         }
+
+                        // 4) Se nenhuma das condições foi satisfeita -> sem acesso
                         resolve(false);
                     } catch (e) {
                         console.error("Erro ao verificar status:", e);
@@ -182,6 +217,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const isAtivo = await checkStatusRapido();
             if (isAtivo) {
+                // redireciona para a aplicação principal
                 window.location.href = 'index.html';
             } else {
                 loader.style.display = 'none';
