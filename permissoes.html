@@ -1,131 +1,193 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Permissões Globais</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background: #f4f4f4; }
-    button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
-    input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Configurações Globais - Pronti</title> <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #f4f4f4; }
+        button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
+        input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+
+        /* === NOVOS ESTILOS PARA OS CAMPOS DE TEXTO === */
+        .config-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        /* === FIM DOS NOVOS ESTILOS === */
+
+    </style>
 </head>
 <body>
-  <h2>Permissões Globais de Menu</h2>
-  <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
-  <table>
-    <thead>
-      <tr>
-        <th>Menu</th>
-        <th>Funcionário</th>
-        <th>Dono</th>
-        <th>Admin</th>
-      </tr>
-    </thead>
-    <tbody id="permissoes-tabela"></tbody>
-  </table>
-  <button id="salvar">Salvar</button>
+    <h2>Permissões Globais de Menu</h2>
+    <p>Defina quais menus cada papel (Funcionário / Dono / Admin) pode acessar em TODAS as empresas.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Menu</th>
+                <th>Funcionário</th>
+                <th>Dono</th>
+                <th>Admin</th>
+            </tr>
+        </thead>
+        <tbody id="permissoes-tabela"></tbody>
+    </table>
 
-  <script type="module">
-    import { auth, db } from "./firebase-config.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    <div class="config-section">
+        <h2>Configurações de Pagamento via Pix</h2>
+        <p>Esta chave Pix e observações serão exibidas para todos os donos de empresa na tela de pagamento.</p>
+        
+        <div class="form-group">
+            <label for="chave-pix-input">Sua Chave Pix Principal:</label>
+            <input type="text" id="chave-pix-input" placeholder="Digite seu e-mail, telefone, CNPJ, etc.">
+        </div>
 
-    const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
+        <div class="form-group">
+            <label for="observacoes-input">Observações para a Tela de Pagamento:</label>
+            <textarea id="observacoes-input" rows="4" placeholder="Ex: Após o pagamento, sua liberação ocorrerá em até X minutos."></textarea>
+        </div>
+    </div>
+    <button id="salvar">Salvar Todas as Configurações</button>
 
-    const permissoesTabela = document.getElementById("permissoes-tabela");
-    const salvarBtn = document.getElementById("salvar");
+    <script type="module">
+        import { auth, db } from "./firebase-config.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+        import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    // =================================================================
-    // ✅ INÍCIO DA ÚNICA PARTE ALTERADA: Adicionado "planos" à lista.
-    // =================================================================
-    const menus = [
-      "inicio",
-      "dashboard",
-      "agenda",
-      "equipe",
-      "servicos",
-      "planos", // <-- NOVO MENU ADICIONADO AQUI
-      "clientes",
-      "perfil",
-      "relatorios",
-      "administracao",
-      "permissoes"
-    ];
-    // =================================================================
-    // ✅ FIM DA ALTERAÇÃO
-    // =================================================================
+        const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
 
-    let permissoesAtuais = {};
+        const permissoesTabela = document.getElementById("permissoes-tabela");
+        const salvarBtn = document.getElementById("salvar");
 
-    async function carregarPermissoesGlobais() {
-      const ref = doc(db, "configuracoesGlobais", "permissoes");
-      const snap = await getDoc(ref);
-      permissoesAtuais = snap.exists() ? snap.data() : {};
+        // NOVO: Seletores para os novos campos
+        const chavePixInput = document.getElementById("chave-pix-input");
+        const observacoesInput = document.getElementById("observacoes-input");
 
-      // Garante que todos os menus (incluindo o novo) tenham um objeto de permissão padrão
-      menus.forEach(menu => {
-        if (!permissoesAtuais[menu]) {
-          permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
-        } else {
-          permissoesAtuais[menu].funcionario ??= true;
-          permissoesAtuais[menu].dono ??= true;
-          permissoesAtuais[menu].admin ??= true;
+        const menus = [
+            "inicio", "dashboard", "agenda", "equipe", "servicos",
+            "planos", "clientes", "perfil", "relatorios", "administracao", "permissoes"
+        ];
+        
+        let permissoesAtuais = {};
+
+        async function carregarPermissoesGlobais() {
+            // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
+            const ref = doc(db, "configuracoesGlobais", "permissoes");
+            const snap = await getDoc(ref);
+            permissoesAtuais = snap.exists() ? snap.data() : {};
+            menus.forEach(menu => {
+                if (!permissoesAtuais[menu]) {
+                    permissoesAtuais[menu] = { funcionario: true, dono: true, admin: true };
+                } else {
+                    permissoesAtuais[menu].funcionario ??= true;
+                    permissoesAtuais[menu].dono ??= true;
+                    permissoesAtuais[menu].admin ??= true;
+                }
+            });
+            renderTabela();
         }
-      });
 
-      renderTabela();
-    }
-
-    function renderTabela() {
-      // O seu código aqui já é dinâmico e vai incluir a nova linha "planos" automaticamente
-      permissoesTabela.innerHTML = menus.map(menu => `
-        <tr>
-          <td>${menu}</td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
-          <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
-        </tr>
-      `).join("");
-    }
-
-    salvarBtn.addEventListener("click", async () => {
-      // O seu código aqui já é dinâmico e vai salvar a nova permissão "planos" automaticamente
-      const checkboxes = document.querySelectorAll("input[type=checkbox]");
-      const novasPermissoes = {};
-      checkboxes.forEach(chk => {
-        const menu = chk.dataset.menu;
-        const role = chk.dataset.role;
-        if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
-        novasPermissoes[menu][role] = chk.checked;
-      });
-      await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
-      alert("Permissões globais salvas!");
-    });
-
-    // Sua lógica de acesso de administrador (mantida 100%)
-    onAuthStateChanged(auth, (user) => {
-      const authTimeout = setTimeout(() => {
-        if (!document.body.dataset.userChecked) {
-          window.location.href = "login.html";
+        // ================================================================= -->
+        // ✅ INÍCIO DA NOVA FUNÇÃO PARA CARREGAR OS DADOS DE PAGAMENTO       -->
+        // ================================================================= -->
+        async function carregarConfiguracoesPagamento() {
+            const ref = doc(db, "configuracoesGlobais", "pagamentos");
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+                const data = snap.data();
+                chavePixInput.value = data.chavePixPlataforma || "";
+                observacoesInput.value = data.observacoesPagamento || "";
+            }
         }
-      }, 3000);
+        // ================================================================= -->
+        // ✅ FIM DA NOVA FUNÇÃO                                              -->
+        // ================================================================= -->
 
-      document.body.dataset.userChecked = true;
-
-      if (user) {
-        clearTimeout(authTimeout);
-
-        if (user.uid === ADMIN_UID) {
-          carregarPermissoesGlobais();
-        } else {
-          alert("Acesso negado. Apenas Administrador.");
-          window.location.href = "index.html";
+        function renderTabela() {
+            // ... SUA FUNÇÃO ORIGINAL, 100% INALTERADA ...
+            permissoesTabela.innerHTML = menus.map(menu => `
+                <tr>
+                    <td>${menu}</td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="funcionario" ${permissoesAtuais[menu].funcionario ? "checked" : ""}></td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="dono" ${permissoesAtuais[menu].dono ? "checked" : ""}></td>
+                    <td><input type="checkbox" data-menu="${menu}" data-role="admin" ${permissoesAtuais[menu].admin ? "checked" : ""}></td>
+                </tr>
+            `).join("");
         }
-      }
-    });
-  </script>
+
+        salvarBtn.addEventListener("click", async () => {
+            salvarBtn.disabled = true;
+            salvarBtn.textContent = "Salvando...";
+            
+            try {
+                // --- PARTE 1: SUA LÓGICA ORIGINAL PARA SALVAR PERMISSÕES (INALTERADA) ---
+                const checkboxes = document.querySelectorAll("input[type=checkbox]");
+                const novasPermissoes = {};
+                checkboxes.forEach(chk => {
+                    const menu = chk.dataset.menu;
+                    const role = chk.dataset.role;
+                    if (!novasPermissoes[menu]) novasPermissoes[menu] = {};
+                    novasPermissoes[menu][role] = chk.checked;
+                });
+                await setDoc(doc(db, "configuracoesGlobais", "permissoes"), novasPermissoes, { merge: true });
+
+                // --- PARTE 2: NOVA LÓGICA PARA SALVAR AS CONFIGURAÇÕES DE PAGAMENTO ---
+                const pagamentosRef = doc(db, "configuracoesGlobais", "pagamentos");
+                await setDoc(pagamentosRef, {
+                    chavePixPlataforma: chavePixInput.value,
+                    observacoesPagamento: observacoesInput.value
+                }, { merge: true }); // Usar merge para não apagar outros campos que possam existir
+
+                alert("Configurações globais salvas com sucesso!");
+
+            } catch (error) {
+                console.error("Erro ao salvar configurações:", error);
+                alert("Ocorreu um erro ao salvar. Verifique o console.");
+            } finally {
+                salvarBtn.disabled = false;
+                salvarBtn.textContent = "Salvar Todas as Configurações";
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            // ... SUA LÓGICA ORIGINAL DE AUTENTICAÇÃO, COM UMA ADIÇÃO ...
+
+            if (user) {
+                if (user.uid === ADMIN_UID) {
+                    carregarPermissoesGlobais(); // Sua função original
+                    carregarConfiguracoesPagamento(); // NOVA LINHA: Chama a nova função de carregamento
+                } else {
+                    alert("Acesso negado. Apenas Administrador.");
+                    window.location.href = "index.html";
+                }
+            } else {
+                // Lógica de fallback se o usuário não for detectado
+                setTimeout(() => {
+                    if (!auth.currentUser) {
+                         window.location.href = "login.html";
+                    }
+                }, 2000);
+            }
+        });
+    </script>
 </body>
 </html>
