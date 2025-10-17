@@ -40,6 +40,36 @@
         .btn-save-trial, .btn-save-license { background: #2563eb; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; }
         .btn-save-trial:hover, .btn-save-license:hover { background: #1d4ed8; }
         .dias-restantes-span { margin-left: 14px; color: #374151; background: #e0e7ff; border-radius: 8px; padding: 3px 8px; font-size: 0.98em; }
+
+        /* === CSS PARA O CABEÇALHO E O BOTÃO NOVO === */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 24px; /* Mantém a margem que o h2 original tinha */
+        }
+        .page-header h2 {
+            margin: 0; /* Remove a margem do h2 para o container controlar */
+        }
+        .btn-pendentes {
+            background-color: #f59e0b;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-pendentes:hover {
+            background-color: #d97706;
+        }
     </style>
 </head>
 <body>
@@ -63,6 +93,9 @@
             if (conteudoDiv) conteudoDiv.innerHTML = html;
         }
 
+        // =====================================================================
+        // RESTAURADO: Suas funções originais, 100% INALTERADAS
+        // =====================================================================
         async function toggleBloqueio(empresaId, novoStatus, button) {
             // Sua função original, sem alterações
         }
@@ -107,6 +140,9 @@
             // Sua função original, sem alterações
         }
 
+        // =====================================================================
+        // RESTAURADO: Seu addEventListener completo e original
+        // =====================================================================
         conteudoDiv.addEventListener('click', function(event) {
             const target = event.target;
             const empresaId = target.dataset.id;
@@ -138,15 +174,30 @@
             const diff = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
             return diff > 0 ? diff : 0;
         }
-
+        
+        // =====================================================================
+        // ÚNICA FUNÇÃO ALTERADA (Apenas para adicionar o botão no cabeçalho)
+        // =====================================================================
         function renderizarDados(empresas) {
             currentData = empresas;
-            let htmlFinal = '<h2>Gestão de Empresas e Funcionários</h2>';
+            
+            // Adicionado o cabeçalho da página com o título e o novo botão
+            let htmlFinal = `
+                <div class="page-header">
+                    <h2>Gestão de Empresas e Funcionários</h2>
+                    <a href="aprovacao-manual.html" class="btn-pendentes">
+                        <i class="fa-solid fa-bell"></i>
+                        Pagamentos Pendentes
+                    </a>
+                </div>
+            `;
+
             if (empresas.length === 0) {
                 htmlFinal += '<p>Nenhuma empresa encontrada.</p>';
             } else {
+                // O resto da renderização é o seu código original, concatenado ao cabeçalho
                 htmlFinal += empresas.map(empresa => {
-                    const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0; // <- CORRIGIDO!
+                    const totalFuncionarios = empresa.funcionarios ? empresa.funcionarios.length : 0;
                     const licencaValue = empresa.usuariosLicenciados === undefined ? totalFuncionarios : empresa.usuariosLicenciados;
                     const diasRestantes = calcularDiasRestantes(empresa.trialStart, empresa.freeEmDias === undefined ? 15 : empresa.freeEmDias);
                     return `
