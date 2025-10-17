@@ -145,18 +145,23 @@
             return new Promise((resolve) => {
                 onAuthStateChanged(auth, async (user) => {
                     if (!user) {
+                        // não logado -> vai para login
                         window.location.href = 'login.html';
                         return;
                     }
+
                     try {
                         const empresaAtivaId = localStorage.getItem('empresaAtivaId');
                         if (!empresaAtivaId) {
+                            // sem empresa ativa -> selecionar
                             window.location.href = 'selecionar-empresa.html';
                             return;
                         }
+
+                        // configura link de pagamento
                         btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
 
-                        // Lê o documento da empresa
+                        // carrega empresa do Firestore
                         const empresaRef = doc(db, "empresarios", empresaAtivaId);
                         const empresaSnap = await getDoc(empresaRef);
                         if (!empresaSnap.exists()) {
@@ -165,46 +170,54 @@
                         }
                         const empresaData = empresaSnap.data() || {};
 
-                        // 1) Se a aprovação manual definiu plano: "pago" ou status: "ativo" -> liberar imediatamente
+                        // 1) Se a administração já marcou como pago/ativo/assinaturaAtiva -> liberar
                         const isEmpresaPago = (
                             empresaData.plano === 'pago' ||
                             empresaData.plano === 'premium' ||
                             empresaData.status === 'ativo' ||
-                            empresaData.pago === true ||
-                            empresaData.assinaturaAtiva === true
+                            empresaData.assinaturaAtiva === true ||
+                            empresaData.pago === true
                         );
                         if (isEmpresaPago) {
                             resolve(true);
                             return;
                         }
 
-                        // 2) Verifica o usuário/dono (isPremium)
+                        // 2) Se houver pagamentoPendente explícito (aguardando), não liberar
+                        // (se admin removeu o pagamentoPendente, a checagem acima já cobre)
+                        if (empresaData.pagamentoPendente && empresaData.pagamentoPendente.status === 'aguardando_liberacao') {
+                            resolve(false);
+                            return;
+                        }
+
+                        // 3) Verifica o usuário/dono (isPremium)
                         const donoId = empresaData.donoId;
+                        let userSnap = null;
                         if (donoId) {
                             const userRef = doc(db, "usuarios", donoId);
-                            const userSnap = await getDoc(userRef);
-                            if (userSnap.exists() && userSnap.data().isPremium) {
+                            userSnap = await getDoc(userRef);
+                            if (userSnap.exists() && userSnap.data().isPremium === true) {
                                 resolve(true);
                                 return;
                             }
+                        }
 
-                            // 3) Checa trial configurado na empresa usando trialStart do usuário (se houver)
-                            const trialDays = empresaData.freeEmDias ?? 0;
-                            if (trialDays > 0) {
-                                const trialStartRaw = userSnap.exists() ? userSnap.data().trialStart : null;
-                                const startDate = toDateOrNull(trialStartRaw);
-                                if (startDate) {
-                                    const endDate = new Date(startDate);
-                                    endDate.setDate(startDate.getDate() + Number(trialDays));
-                                    const hoje = new Date();
-                                    hoje.setHours(0, 0, 0, 0);
-                                    resolve(endDate >= hoje);
-                                    return;
-                                }
+                        // 4) Checa trial configurado na empresa usando trialStart do usuário (se houver)
+                        const trialDays = empresaData.freeEmDias ?? 0;
+                        if (trialDays > 0) {
+                            const trialStartRaw = (userSnap && userSnap.exists()) ? userSnap.data().trialStart : null;
+                            const startDate = toDateOrNull(trialStartRaw);
+                            if (startDate) {
+                                const endDate = new Date(startDate);
+                                endDate.setDate(startDate.getDate() + Number(trialDays));
+                                const hoje = new Date();
+                                hoje.setHours(0, 0, 0, 0);
+                                resolve(endDate >= hoje);
+                                return;
                             }
                         }
 
-                        // 4) Se nenhuma das condições foi satisfeita -> sem acesso
+                        // 5) fallback: sem condição satisfeita -> sem acesso
                         resolve(false);
                     } catch (e) {
                         console.error("Erro ao verificar status:", e);
