@@ -12,7 +12,7 @@
     />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
-        /* === SEU CSS ORIGINAL === */
+        /* === SEU CSS ORIGINAL - COM ADIÇÕES PARA OS NOVOS BOTÕES === */
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
@@ -149,8 +149,6 @@
         }
         .modal-content h2 { margin-top: 0; }
         .modal-content .fa-circle-check { font-size: 3rem; color: #10b981; margin-bottom: 15px; }
-        
-        /* === NOVOS ESTILOS PARA A TELA DE PIX === */
         .pix-info-box {
             background: rgba(0,0,0,0.15); 
             padding: 20px; 
@@ -246,15 +244,122 @@
         let planoSelecionado = null;
         let precoPlanoSelecionado = 0;
         let licencasNecessarias = 1;
-        
-        // NOVO: Variável para guardar as configurações de pagamento
         let configPagamento = null; 
 
-        // ... Suas funções originais buscarDadosEmpresa, calcularPreco, gerarCardsDePlano e handleMercadoPago permanecem 100% INALTERADAS ...
-        async function buscarDadosEmpresa(empresaId) { /* Sua lógica original */ }
-        function calcularPreco(totalFuncionarios) { /* Sua lógica original */ return 0; }
-        function gerarCardsDePlano() { /* Sua lógica original */ }
-        function handleMercadoPago() { /* Sua lógica original */ }
+        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
+        async function buscarDadosEmpresa(empresaId) {
+            if (!empresaId) {
+                infoPlanoAtual.textContent = "Plano: Não identificado";
+                infoEquipeAtual.textContent = "Equipe: Não identificada";
+                return;
+            }
+            try {
+                const empresaRef = doc(db, "empresarios", empresaId);
+                const profissionaisRef = collection(db, "empresarios", empresaId, "profissionais");
+                const [empresaSnap, profissionaisSnap] = await Promise.all([ getDoc(empresaRef), getDocs(profissionaisRef) ]);
+                if (empresaSnap.exists()) {
+                    const empresaData = empresaSnap.data();
+                    const planoAtualRaw = empresaData.plano || "free";
+                    const planoAtual = planoAtualRaw.charAt(0).toUpperCase() + planoAtualRaw.slice(1);
+                    licencasNecessarias = profissionaisSnap.size;
+                    infoPlanoAtual.textContent = `Plano Atual: ${planoAtual}`;
+                    infoEquipeAtual.textContent = `Equipe: ${licencasNecessarias} Membro${licencasNecessarias > 1 ? 's' : ''}`;
+                } else {
+                    infoPlanoAtual.textContent = "Plano: Empresa não encontrada";
+                    infoEquipeAtual.textContent = "Equipe: Não identificada";
+                }
+            } catch (error) {
+                console.error("Erro ao buscar dados da empresa:", error);
+                infoPlanoAtual.textContent = "Plano: Erro ao carregar";
+                infoEquipeAtual.textContent = "Equipe: Erro ao carregar";
+            }
+        }
+
+        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
+        function calcularPreco(totalFuncionarios) {
+            const configuracaoPrecos = {
+                precoIndividual: 29.90, precoBase: 59.90, funcionariosInclusos: 2,
+                faixasDePrecoExtra: [ { de: 3, ate: 10, valor: 29.90 }, { de: 11, ate: 50, valor: 24.90 } ]
+            };
+            if (totalFuncionarios <= 0) return 0;
+            if (totalFuncionarios === 1) return configuracaoPrecos.precoIndividual;
+            if (totalFuncionarios === 2) return configuracaoPrecos.precoBase;
+            let precoTotal = configuracaoPrecos.precoBase;
+            const funcionariosExtras = totalFuncionarios - configuracaoPrecos.funcionariosInclusos;
+            let funcionariosJaPrecificados = 0;
+            for (const faixa of configuracaoPrecos.faixasDePrecoExtra) {
+                const funcionariosNaFaixa = (faixa.ate - faixa.de) + 1;
+                const extrasNestaFaixa = Math.min(funcionariosExtras - funcionariosJaPrecificados, funcionariosNaFaixa);
+                if (extrasNestaFaixa > 0) {
+                    precoTotal += extrasNestaFaixa * faixa.valor;
+                    funcionariosJaPrecificados += extrasNestaFaixa;
+                }
+                if (funcionariosJaPrecificados >= funcionariosExtras) break;
+            }
+            return Number(precoTotal.toFixed(2));
+        }
+
+        // =====================================================================
+        // ✅ FUNÇÃO RESTAURADA: Sua lógica original, 100% INALTERADA
+        // =====================================================================
+        function gerarCardsDePlano() {
+            listaPlanosContainer.innerHTML = "";
+            const planosOrdenados = Object.keys(linksDosPlanos).map(Number).sort((a, b) => a - b);
+
+            planosOrdenados.forEach((num) => {
+                const preco = calcularPreco(num);
+                const card = document.createElement("div");
+                const isDesabilitado = num < licencasNecessarias;
+                card.className = `card-plano ${isDesabilitado ? "desabilitado" : ""}`;
+                card.dataset.funcionarios = num;
+                card.innerHTML = `
+                    <h3 class="titulo">Plano para ${num === 1 ? '1' : `até ${num}`} ${num === 1 ? "Funcionário" : "Funcionários"}</h3>
+                    <p class="preco">${preco.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}<span>/mês</span></p>`;
+                
+                card.addEventListener("click", () => {
+                    if (isDesabilitado) {
+                        avisoSelecao.textContent = `Selecione um plano para ${licencasNecessarias} ou mais membros.`;
+                        return;
+                    }
+                    document.querySelectorAll(".card-plano").forEach((c) => c.classList.remove("selecionado"));
+                    card.classList.add("selecionado");
+                    planoSelecionado = num;
+                    precoPlanoSelecionado = preco;
+                    avisoSelecao.textContent = "";
+
+                    botoesAcaoContainer.innerHTML = `
+                        <button id="btn-pagar-mp" class="btn-pagar-opcao mercadopago">
+                            <i class="fa-solid fa-credit-card"></i> Pagar com Mercado Pago
+                        </button>
+                        <button id="btn-pagar-pix" class="btn-pagar-opcao pix">
+                            <i class="fa-brands fa-pix"></i> Pagar com Pix
+                        </button>
+                    `;
+
+                    document.getElementById('btn-pagar-mp').addEventListener('click', handleMercadoPago);
+                    document.getElementById('btn-pagar-pix').addEventListener('click', handlePix);
+                });
+                listaPlanosContainer.appendChild(card);
+            });
+        }
+        
+        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
+        function handleMercadoPago() {
+            if (!planoSelecionado) return;
+            botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Redirecionando...</button>`;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const empresaId = urlParams.get("empresaId");
+            let linkDePagamento = linksDosPlanos[planoSelecionado];
+
+            if (linkDePagamento && empresaId) {
+                linkDePagamento += `&external_reference=${empresaId}`;
+                window.location.href = linkDePagamento;
+            } else {
+                avisoSelecao.textContent = "Erro ao processar pagamento. Tente novamente.";
+                document.querySelector('.card-plano.selecionado')?.click(); 
+            }
+        }
 
         // =====================================================================
         // ✅ INÍCIO DAS NOVAS FUNÇÕES E ALTERAÇÕES
@@ -266,7 +371,7 @@
                 const configRef = doc(db, "configuracoesGlobais", "pagamentos");
                 const configSnap = await getDoc(configRef);
                 if (configSnap.exists()) {
-                    configPagamento = configSnap.data(); // Guarda os dados na variável global
+                    configPagamento = configSnap.data();
                 } else {
                     console.warn("Documento de configurações de pagamento não encontrado.");
                 }
@@ -283,7 +388,6 @@
             infoStatusContainer.style.display = 'none';
             document.querySelector('h1').textContent = 'Pagamento com Pix';
 
-            // Pega a chave Pix e as observações que foram carregadas no início
             const chavePix = configPagamento?.chavePixPlataforma || "Chave Pix não configurada.";
             const observacoes = configPagamento?.observacoesPagamento || "Para concluir, realize o pagamento para a chave Pix abaixo e clique no botão para nos notificar.";
 
@@ -300,21 +404,17 @@
                 </button>
             `;
 
-            // Adiciona a ação ao botão de confirmação (sua lógica original)
             document.getElementById('btn-confirmar-pix').addEventListener('click', confirmarPagamentoPix);
             
-            // Adiciona a nova ação para o botão de copiar
             document.getElementById('btn-copiar-pix').addEventListener('click', () => {
                 const inputPix = document.getElementById('chave-pix-display');
                 const btnCopiar = document.getElementById('btn-copiar-pix');
                 
-                // Seleciona o texto e copia para a área de transferência
                 navigator.clipboard.writeText(inputPix.value).then(() => {
-                    // Feedback visual para o usuário
                     btnCopiar.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
                     setTimeout(() => {
                         btnCopiar.innerHTML = '<i class="fa-solid fa-copy"></i> Copiar';
-                    }, 2000); // Volta ao normal após 2 segundos
+                    }, 2000);
                 }).catch(err => {
                     console.error('Falha ao copiar: ', err);
                 });
@@ -359,13 +459,12 @@
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get("empresaId");
 
-            // Executa as duas buscas de dados em paralelo para otimizar o carregamento
             await Promise.all([
                 buscarDadosEmpresa(empresaId),
                 carregarConfiguracoesPagamento()
             ]);
             
-            gerarCardsDePlano(); // Só gera os cards depois que todos os dados foram carregados
+            gerarCardsDePlano();
         });
     </script>
 </body>
