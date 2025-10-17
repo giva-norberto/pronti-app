@@ -130,7 +130,6 @@
         const btnLogout = document.getElementById('btn-logout');
         const btnAssinar = document.getElementById('btn-assinar');
 
-        // Normaliza um possível Timestamp/Date/string para um objeto Date ou null
         function toDateOrNull(value) {
             if (!value) return null;
             if (typeof value.toDate === 'function') {
@@ -140,9 +139,22 @@
             return isNaN(d.getTime()) ? null : d;
         }
 
-        // Função única de verificação, chamada após onAuthStateChanged confirmar usuário
+        function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+        // Verifica repetidas vezes (até N tentativas) para reduzir race conditions / leituras transitórias.
+        async function confirmarLeituraEstavel(empresaRef, predicate, attempts = 4, delayMs = 250) {
+            for (let i = 0; i < attempts; i++) {
+                const snap = await getDoc(empresaRef);
+                if (!snap.exists()) return false;
+                const data = snap.data() || {};
+                if (predicate(data)) return true;
+                await sleep(delayMs);
+            }
+            return false;
+        }
+
         async function verificarAcessoParaEmpresa(empresaAtivaId, userUid) {
-            // configura link de pagamento
+            // prepara link de pagamento
             btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
 
             const empresaRef = doc(db, "empresarios", empresaAtivaId);
@@ -154,16 +166,20 @@
             }
             const empresaData = empresaSnap.data() || {};
 
-            // 1) Se a administração já marcou como pago/ativo/assinaturaAtiva -> liberar
-            const isEmpresaPago = (
-                empresaData.plano === 'pago' ||
-                empresaData.plano === 'premium' ||
-                empresaData.status === 'ativo' ||
-                empresaData.assinaturaAtiva === true ||
-                empresaData.pago === true
+            // predicate para considerar empresa liberada
+            const isEmpresaPagoPredicate = (data) => (
+                data.plano === 'pago' ||
+                data.plano === 'premium' ||
+                data.status === 'ativo' ||
+                data.assinaturaAtiva === true ||
+                data.pago === true
             );
-            if (isEmpresaPago) {
-                return true;
+
+            // 1) Se a administração já marcou como pago/ativo/assinaturaAtiva -> confirmar leitura estável e liberar
+            if (isEmpresaPagoPredicate(empresaData)) {
+                // confirmar leitura estável (evita condições em que index.html ainda lê valor antigo)
+                const ok = await confirmarLeituraEstavel(empresaRef, isEmpresaPagoPredicate, 5, 300);
+                return ok;
             }
 
             // 2) Se existir um pagamento pendente marcado explicitamente como aguardando, não liberar
@@ -183,7 +199,7 @@
                 // 4) Checa trial configurado na empresa usando trialStart do usuário (se houver)
                 const trialDays = empresaData.freeEmDias ?? 0;
                 if (trialDays > 0) {
-                    const trialStartRaw = userSnap.exists() ? userSnap.data().trialStart : null;
+                    const trialStartRaw = userSnap && userSnap.exists() ? userSnap.data().trialStart : null;
                     const startDate = toDateOrNull(trialStartRaw);
                     if (startDate) {
                         const endDate = new Date(startDate);
@@ -200,7 +216,11 @@
         }
 
         // Único listener de auth (evita múltiplos listeners que podem causar redirecionamentos duplicados)
+        let authInitialized = false;
         onAuthStateChanged(auth, async (user) => {
+            if (authInitialized) return;
+            authInitialized = true;
+
             if (!user) {
                 window.location.replace('login.html');
                 return;
@@ -220,7 +240,10 @@
                     // marca uma flag temporária (timestamp) para sinalizar que acabamos de confirmar o acesso
                     try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) { /* ignore */ }
                     // usar replace para evitar empilhar histórico e reduzir piscadas
-                    window.location.replace('index.html');
+                    // colocamos um pequeno delay extra para dar tempo ao index.html fazer sua leitura local (se necessário)
+                    setTimeout(() => {
+                        window.location.replace('index.html');
+                    }, 350);
                 } else {
                     loader.style.display = 'none';
                     container.style.display = 'block';
@@ -231,10 +254,6 @@
                 loader.style.display = 'none';
                 container.style.display = 'block';
             }
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // nada aqui além dos elementos já carregados; autenticação lida por onAuthStateChanged
         });
 
         btnLogout.addEventListener('click', async () => {
