@@ -8,7 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="style.css"> <style>
+    <link rel="stylesheet" href="style.css">
+    <style>
         /* Estilos para esta página específica, inspirados nos seus outros dashboards */
         body { display: flex; font-family: 'Poppins', sans-serif; margin: 0; background: #f4f5f7; min-height: 100vh; }
         #menu-container { width: 250px; min-width: 250px; flex-shrink: 0; }
@@ -48,8 +49,21 @@
     </main>
 
     <script type="module">
+        // Ajustes importantes:
+        // - usar deleteField() (modular SDK) em vez de FieldValue.delete()
+        // - normalizar timestamps antes de chamar toDate()
+        // - proteger contra campos ausentes e garantir classes CSS válidas para .metodo
+
         import { db, auth } from './firebase-config.js';
-        import { collection, query, where, onSnapshot, doc, runTransaction, serverTimestamp, Timestamp, FieldValue, updateDoc } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
+        import {
+            collection,
+            query,
+            where,
+            onSnapshot,
+            doc,
+            runTransaction,
+            deleteField
+        } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
         const ADMIN_UID = "BX6Q7HrVMrcCBqe72r7K76EBPkX2";
@@ -58,7 +72,7 @@
         let unsubscribePagamentos = null;
         let unsubscribeEmpresas = null;
 
-        // ... Lógica para carregar o menu ...
+        // ... Lógica para carregar o menu (se existir)...
 
         onAuthStateChanged(auth, (user) => {
             if (user && user.uid === ADMIN_UID) {
@@ -69,7 +83,7 @@
                 listaPagamentosDiv.innerHTML = '<p id="empty-message">Acesso restrito a administradores.</p>';
             }
         });
-        
+
         function ouvirTodasAsPendencias() {
             let pendenciasDaColecao = [];
             let pendenciasDoCampo = [];
@@ -77,12 +91,19 @@
             // FONTE 1: Busca na coleção 'pagamentosPendentes'
             const pagamentosRef = collection(db, 'pagamentosPendentes');
             const qPagamentos = query(pagamentosRef, where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp']));
-            
+
             unsubscribePagamentos = onSnapshot(qPagamentos, (snapshot) => {
-                pendenciasDaColecao = snapshot.docs.map(doc => ({ 
-                    id: doc.id, tipo: 'colecao', ...doc.data() 
+                pendenciasDaColecao = snapshot.docs.map(d => ({
+                    id: d.id,
+                    tipo: 'colecao',
+                    // espalha os dados do documento; eventuais campos esperados:
+                    // clienteNome, empresaId, planoNome, valor, metodo, dataCriacao, etc.
+                    ...d.data()
                 }));
                 renderizarListaCombinada();
+            }, (err) => {
+                console.error('Erro ao ouvir pagamentosPendentes:', err);
+                loadingMessage.textContent = 'Erro ao carregar pagamentos.';
             });
 
             // FONTE 2: Busca por empresas com o campo 'pagamentoPendente' (PIX)
@@ -90,20 +111,43 @@
             const qEmpresas = query(empresasRef, where('pagamentoPendente.status', '==', 'aguardando_liberacao'));
 
             unsubscribeEmpresas = onSnapshot(qEmpresas, (snapshot) => {
-                pendenciasDoCampo = snapshot.docs.map(doc => {
-                    const empresaData = doc.data();
+                pendenciasDoCampo = snapshot.docs.map(d => {
+                    const empresaData = d.data() || {};
+                    const pagamentoPendente = empresaData.pagamentoPendente || {};
                     return {
-                        id: doc.id, tipo: 'campo',
-                        clienteNome: empresaData.nomeFantasia,
-                        planoNome: `Plano para ${empresaData.pagamentoPendente.plano} usuários`,
-                        valor: empresaData.pagamentoPendente.valor,
-                        metodo: empresaData.pagamentoPendente.metodo,
-                        dataCriacao: empresaData.pagamentoPendente.dataSolicitacao,
+                        id: d.id,
+                        tipo: 'campo',
+                        clienteNome: empresaData.nomeFantasia || pagamentoPendente.nome || 'Cliente desconhecido',
+                        planoNome: pagamentoPendente.plano ? `Plano para ${pagamentoPendente.plano} usuários` : 'Plano',
+                        valor: pagamentoPendente.valor || 0,
+                        metodo: pagamentoPendente.metodo || 'pix',
+                        dataCriacao: pagamentoPendente.dataSolicitacao || pagamentoPendente.createdAt || null,
                         donoId: empresaData.donoId
                     };
                 });
                 renderizarListaCombinada();
+            }, (err) => {
+                console.error('Erro ao ouvir empresarios:', err);
+                loadingMessage.textContent = 'Erro ao carregar empresas.';
             });
+
+            function normalizeDate(value) {
+                if (!value) return null;
+                // Se for Timestamp do Firestore
+                if (typeof value.toDate === 'function') return value.toDate();
+                // Se já for Date
+                if (value instanceof Date) return value;
+                // Se for string ISO
+                const parsed = new Date(value);
+                if (!isNaN(parsed)) return parsed;
+                return null;
+            }
+
+            function safeCssClassForMetodo(metodo) {
+                if (!metodo) return 'desconhecido';
+                // keep only [a-z0-9_ -] and replace spaces with underscore
+                return String(metodo).toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
+            }
 
             function renderizarListaCombinada() {
                 const todasAsPendencias = [...pendenciasDaColecao, ...pendenciasDoCampo];
@@ -113,21 +157,32 @@
                     listaPagamentosDiv.innerHTML = '<p id="empty-message">Nenhum pagamento pendente no momento.</p>';
                     return;
                 }
-                
+
                 listaPagamentosDiv.innerHTML = '';
                 todasAsPendencias.forEach(pagamento => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'item';
-                    
-                    const metodoTag = `<span class="metodo ${pagamento.metodo}">${pagamento.metodo.replace('_', ' ')}</span>`;
-                    const dataFormatada = pagamento.dataCriacao?.toDate().toLocaleDateString('pt-BR') || 'Data indisponível';
-                    const valorFormatado = (pagamento.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                    const metodoRaw = pagamento.metodo || pagamento.status || 'desconhecido';
+                    const metodoClass = safeCssClassForMetodo(metodoRaw);
+                    const metodoLabel = String(metodoRaw).replace(/_/g, ' ');
+
+                    const dateObj = normalizeDate(pagamento.dataCriacao);
+                    const dataFormatada = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'Data indisponível';
+                    const valorNum = (typeof pagamento.valor === 'number') ? pagamento.valor : Number(pagamento.valor) || 0;
+                    const valorFormatado = valorNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                    const clienteNome = pagamento.clienteNome || pagamento.nomeFantasia || 'Cliente desconhecido';
+                    const docIdDisplay = pagamento.empresaId || pagamento.id || 'ID indisponível';
+                    const planoNome = pagamento.planoNome || 'Plano';
+
+                    const metodoTag = `<span class="metodo ${metodoClass}">${metodoLabel}</span>`;
 
                     itemDiv.innerHTML = `
                         <div class="info">
-                            <p class="nome">${pagamento.clienteNome}</p>
-                            <p class="doc-id">ID da Empresa: ${pagamento.empresaId || pagamento.id}</p>
-                            <p class="plano">${pagamento.planoNome} - ${valorFormatado} ${metodoTag} - ${dataFormatada}</p>
+                            <p class="nome">${clienteNome}</p>
+                            <p class="doc-id">ID da Empresa: ${docIdDisplay}</p>
+                            <p class="plano">${planoNome} - ${valorFormatado} ${metodoTag} - ${dataFormatada}</p>
                         </div>
                         <div class="acoes">
                             <button class="btn-aprovar" data-id="${pagamento.id}" data-tipo="${pagamento.tipo}">Aprovar</button>
@@ -140,13 +195,15 @@
 
         listaPagamentosDiv.addEventListener('click', async (e) => {
             if (e.target && e.target.classList.contains('btn-aprovar')) {
-                const id = e.target.dataset.id;
-                const tipo = e.target.dataset.tipo;
-                
+                const btn = e.target;
+                const id = btn.dataset.id;
+                const tipo = btn.dataset.tipo;
+
                 if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? A assinatura será criada/atualizada.`)) return;
-                
-                e.target.disabled = true;
-                e.target.textContent = 'Aprovando...';
+
+                btn.disabled = true;
+                const previousText = btn.textContent;
+                btn.textContent = 'Aprovando...';
 
                 if (tipo === 'campo') { // Aprovação do PIX (salvo na empresa)
                     try {
@@ -159,15 +216,16 @@
                             // ATUALIZA O PLANO DO DONO PARA "pago" E REMOVE A PENDÊNCIA
                             transaction.update(empresaRef, {
                                 plano: "pago", // Libera o acesso
-                                pagamentoPendente: FieldValue.delete() // Limpa a pendência
+                                pagamentoPendente: deleteField() // Limpa a pendência (usando deleteField modular)
                             });
                         });
+                        btn.textContent = 'Aprovado';
                         alert('Pagamento aprovado e acesso liberado com sucesso!');
                     } catch (error) {
-                         console.error("Erro ao aprovar pagamento de campo:", error);
-                         alert('Falha ao aprovar o pagamento: ' + error.message);
-                         e.target.disabled = false;
-                         e.target.textContent = 'Aprovar';
+                        console.error("Erro ao aprovar pagamento de campo:", error);
+                        alert('Falha ao aprovar o pagamento: ' + (error && error.message ? error.message : error));
+                        btn.disabled = false;
+                        btn.textContent = previousText || 'Aprovar';
                     }
                 } else { // Aprovação do Mercado Pago (salvo em pagamentosPendentes)
                     try {
@@ -175,10 +233,13 @@
                             const pagRef = doc(db, "pagamentosPendentes", id);
                             const pagDoc = await transaction.get(pagRef);
                             if (!pagDoc.exists()) throw new Error("Documento do pagamento não existe mais.");
-                            
-                            const dadosPagamento = pagDoc.data();
-                            const empresaRef = doc(db, "empresarios", dadosPagamento.empresaId);
-                            
+
+                            const dadosPagamento = pagDoc.data() || {};
+                            const empresaId = dadosPagamento.empresaId;
+                            if (!empresaId) throw new Error("empresaId faltando no documento de pagamento.");
+
+                            const empresaRef = doc(db, "empresarios", empresaId);
+
                             // ATUALIZA O PLANO DO DONO PARA "pago"
                             transaction.update(empresaRef, {
                                 plano: "pago" // Libera o acesso
@@ -187,12 +248,13 @@
                             // ATUALIZA O STATUS DO PAGAMENTO PENDENTE
                             transaction.update(pagRef, { status: "aprovado_manual" });
                         });
+                        btn.textContent = 'Aprovado';
                         alert('Pagamento aprovado e acesso liberado com sucesso!');
                     } catch (error) {
                         console.error("Erro ao aprovar pagamento de coleção:", error);
-                        alert('Falha ao aprovar o pagamento: ' + error.message);
-                        e.target.disabled = false;
-                        e.target.textContent = 'Aprovar';
+                        alert('Falha ao aprovar o pagamento: ' + (error && error.message ? error.message : error));
+                        btn.disabled = false;
+                        btn.textContent = previousText || 'Aprovar';
                     }
                 }
             }
