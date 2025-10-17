@@ -130,106 +130,60 @@
         const btnLogout = document.getElementById('btn-logout');
         const btnAssinar = document.getElementById('btn-assinar');
 
-        // converte Timestamp/Date/string para Date ou null
-        function toDateOrNull(value) {
-            if (!value) return null;
-            if (typeof value.toDate === 'function') {
-                try { return value.toDate(); } catch (e) { return null; }
-            }
-            const d = new Date(value);
-            return isNaN(d.getTime()) ? null : d;
-        }
-
-        // lida com a lógica: apenas lê campos do Firestore e decide entrar (index) ou mostrar a tela
-        onAuthStateChanged(auth, async (user) => {
-            // único listener: evita múltiplos redirecionamentos
-            if (!user) {
-                // não autenticado
-                window.location.replace('login.html');
-                return;
-            }
-
-            try {
-                const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-                if (!empresaAtivaId) {
-                    window.location.replace('selecionar-empresa.html');
-                    return;
-                }
-
-                // prepara link do botão de pagamento
-                btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
-
-                // busca empresa
-                const empresaRef = doc(db, "empresarios", empresaAtivaId);
-                const empresaSnap = await getDoc(empresaRef);
-                if (!empresaSnap.exists()) {
-                    window.location.replace('selecionar-empresa.html');
-                    return;
-                }
-                const empresa = empresaSnap.data() || {};
-
-                // 1) checagem direta de campos que o admin/fluxo de aprovação atualiza
-                const empresaLiberada = (
-                    empresa.plano === 'pago' ||
-                    empresa.plano === 'premium' ||
-                    empresa.status === 'ativo' ||
-                    empresa.assinaturaAtiva === true ||
-                    empresa.pago === true
-                );
-                if (empresaLiberada) {
-                    // marca flag temporária para evitar loops entre páginas
-                    try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) { /* ignore */ }
-                    // usamos replace (não empilha histórico)
-                    window.location.replace('index.html');
-                    return;
-                }
-
-                // 2) se existe um pagamento pendente explicitamente aguardando, bloquear
-                if (empresa.pagamentoPendente && empresa.pagamentoPendente.status === 'aguardando_liberacao') {
-                    loader.style.display = 'none';
-                    container.style.display = 'block';
-                    return;
-                }
-
-                // 3) verificar dono/isPremium e trial
-                let donoData = null;
-                if (empresa.donoId) {
-                    const donoRef = doc(db, "usuarios", empresa.donoId);
-                    const donoSnap = await getDoc(donoRef);
-                    if (donoSnap.exists()) donoData = donoSnap.data();
-                }
-
-                // se dono é premium, liberar
-                if (donoData && donoData.isPremium === true) {
-                    try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) {}
-                    window.location.replace('index.html');
-                    return;
-                }
-
-                // checar trial configurado na empresa (freeEmDias) usando trialStart do usuário
-                const trialDays = empresa.freeEmDias ?? 0;
-                if (trialDays > 0 && donoData) {
-                    const trialStart = donoData.trialStart;
-                    const startDate = toDateOrNull(trialStart);
-                    if (startDate) {
-                        const endDate = new Date(startDate);
-                        endDate.setDate(startDate.getDate() + Number(trialDays));
-                        const hoje = new Date();
-                        hoje.setHours(0,0,0,0);
-                        if (endDate >= hoje) {
-                            try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) {}
-                            window.location.replace('index.html');
+        async function checkStatusRapido() {
+            return new Promise((resolve) => {
+                onAuthStateChanged(auth, async (user) => {
+                    if (!user) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    try {
+                        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                        if (!empresaAtivaId) {
+                            window.location.href = 'selecionar-empresa.html';
                             return;
                         }
+                        btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
+                        const empresaRef = doc(db, "empresarios", empresaAtivaId);
+                        const empresaSnap = await getDoc(empresaRef);
+                        if (!empresaSnap.exists()) {
+                           window.location.href = 'selecionar-empresa.html';
+                           return;
+                        }
+                        const empresaData = empresaSnap.data();
+                        const userRef = doc(db, "usuarios", empresaData.donoId);
+                        const userSnap = await getDoc(userRef);
+                        if (!userSnap.exists() || userSnap.data().isPremium) {
+                            resolve(true);
+                            return;
+                        }
+                        const trialDays = empresaData.freeEmDias ?? 0;
+                        if (trialDays > 0) {
+                            const trialStart = userSnap.data().trialStart;
+                            if (trialStart?.seconds) {
+                                const startDate = new Date(trialStart.seconds * 1000);
+                                const endDate = new Date(startDate);
+                                endDate.setDate(startDate.getDate() + trialDays);
+                                const hoje = new Date();
+                                hoje.setHours(0, 0, 0, 0);
+                                resolve(endDate >= hoje);
+                                return;
+                            }
+                        }
+                        resolve(false);
+                    } catch (e) {
+                        console.error("Erro ao verificar status:", e);
+                        resolve(false);
                     }
-                }
+                });
+            });
+        }
 
-                // se chegou aqui: não liberado
-                loader.style.display = 'none';
-                container.style.display = 'block';
-            } catch (err) {
-                console.error('Erro na verificação de assinatura:', err);
-                // se ocorrer erro, mostramos tela de assinatura ao invés de ficar redirecionando em loop
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isAtivo = await checkStatusRapido();
+            if (isAtivo) {
+                window.location.href = 'index.html';
+            } else {
                 loader.style.display = 'none';
                 container.style.display = 'block';
             }
@@ -239,7 +193,7 @@
             await signOut(auth);
             localStorage.clear();
             sessionStorage.clear();
-            window.location.replace('login.html');
+            window.location.href = 'login.html';
         });
     </script>
 </body>
