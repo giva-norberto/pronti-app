@@ -140,109 +140,108 @@
             return isNaN(d.getTime()) ? null : d;
         }
 
-        // Verifica se a empresa deve ser considerada com acesso liberado
-        async function checkStatusRapido() {
-            return new Promise((resolve) => {
-                onAuthStateChanged(auth, async (user) => {
-                    if (!user) {
-                        // não logado -> vai para login
-                        window.location.href = 'login.html';
-                        return;
+        // Função única de verificação, chamada após onAuthStateChanged confirmar usuário
+        async function verificarAcessoParaEmpresa(empresaAtivaId, userUid) {
+            // configura link de pagamento
+            btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
+
+            const empresaRef = doc(db, "empresarios", empresaAtivaId);
+            const empresaSnap = await getDoc(empresaRef);
+            if (!empresaSnap.exists()) {
+                // empresa removida -> voltar para selecionar
+                window.location.replace('selecionar-empresa.html');
+                return false;
+            }
+            const empresaData = empresaSnap.data() || {};
+
+            // 1) Se a administração já marcou como pago/ativo/assinaturaAtiva -> liberar
+            const isEmpresaPago = (
+                empresaData.plano === 'pago' ||
+                empresaData.plano === 'premium' ||
+                empresaData.status === 'ativo' ||
+                empresaData.assinaturaAtiva === true ||
+                empresaData.pago === true
+            );
+            if (isEmpresaPago) {
+                return true;
+            }
+
+            // 2) Se existir um pagamento pendente marcado explicitamente como aguardando, não liberar
+            if (empresaData.pagamentoPendente && empresaData.pagamentoPendente.status === 'aguardando_liberacao') {
+                return false;
+            }
+
+            // 3) Verifica o usuário/dono (isPremium)
+            const donoId = empresaData.donoId;
+            if (donoId) {
+                const userRef = doc(db, "usuarios", donoId);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists() && userSnap.data().isPremium === true) {
+                    return true;
+                }
+
+                // 4) Checa trial configurado na empresa usando trialStart do usuário (se houver)
+                const trialDays = empresaData.freeEmDias ?? 0;
+                if (trialDays > 0) {
+                    const trialStartRaw = userSnap.exists() ? userSnap.data().trialStart : null;
+                    const startDate = toDateOrNull(trialStartRaw);
+                    if (startDate) {
+                        const endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + Number(trialDays));
+                        const hoje = new Date();
+                        hoje.setHours(0, 0, 0, 0);
+                        return endDate >= hoje;
                     }
+                }
+            }
 
-                    try {
-                        const empresaAtivaId = localStorage.getItem('empresaAtivaId');
-                        if (!empresaAtivaId) {
-                            // sem empresa ativa -> selecionar
-                            window.location.href = 'selecionar-empresa.html';
-                            return;
-                        }
-
-                        // configura link de pagamento
-                        btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
-
-                        // carrega empresa do Firestore
-                        const empresaRef = doc(db, "empresarios", empresaAtivaId);
-                        const empresaSnap = await getDoc(empresaRef);
-                        if (!empresaSnap.exists()) {
-                           window.location.href = 'selecionar-empresa.html';
-                           return;
-                        }
-                        const empresaData = empresaSnap.data() || {};
-
-                        // 1) Se a administração já marcou como pago/ativo/assinaturaAtiva -> liberar
-                        const isEmpresaPago = (
-                            empresaData.plano === 'pago' ||
-                            empresaData.plano === 'premium' ||
-                            empresaData.status === 'ativo' ||
-                            empresaData.assinaturaAtiva === true ||
-                            empresaData.pago === true
-                        );
-                        if (isEmpresaPago) {
-                            resolve(true);
-                            return;
-                        }
-
-                        // 2) Se houver pagamentoPendente explícito (aguardando), não liberar
-                        // (se admin removeu o pagamentoPendente, a checagem acima já cobre)
-                        if (empresaData.pagamentoPendente && empresaData.pagamentoPendente.status === 'aguardando_liberacao') {
-                            resolve(false);
-                            return;
-                        }
-
-                        // 3) Verifica o usuário/dono (isPremium)
-                        const donoId = empresaData.donoId;
-                        let userSnap = null;
-                        if (donoId) {
-                            const userRef = doc(db, "usuarios", donoId);
-                            userSnap = await getDoc(userRef);
-                            if (userSnap.exists() && userSnap.data().isPremium === true) {
-                                resolve(true);
-                                return;
-                            }
-                        }
-
-                        // 4) Checa trial configurado na empresa usando trialStart do usuário (se houver)
-                        const trialDays = empresaData.freeEmDias ?? 0;
-                        if (trialDays > 0) {
-                            const trialStartRaw = (userSnap && userSnap.exists()) ? userSnap.data().trialStart : null;
-                            const startDate = toDateOrNull(trialStartRaw);
-                            if (startDate) {
-                                const endDate = new Date(startDate);
-                                endDate.setDate(startDate.getDate() + Number(trialDays));
-                                const hoje = new Date();
-                                hoje.setHours(0, 0, 0, 0);
-                                resolve(endDate >= hoje);
-                                return;
-                            }
-                        }
-
-                        // 5) fallback: sem condição satisfeita -> sem acesso
-                        resolve(false);
-                    } catch (e) {
-                        console.error("Erro ao verificar status:", e);
-                        resolve(false);
-                    }
-                });
-            });
+            // fallback: não liberado
+            return false;
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const isAtivo = await checkStatusRapido();
-            if (isAtivo) {
-                // redireciona para a aplicação principal
-                window.location.href = 'index.html';
-            } else {
+        // Único listener de auth (evita múltiplos listeners que podem causar redirecionamentos duplicados)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.replace('login.html');
+                return;
+            }
+
+            try {
+                const empresaAtivaId = localStorage.getItem('empresaAtivaId');
+                if (!empresaAtivaId) {
+                    window.location.replace('selecionar-empresa.html');
+                    return;
+                }
+
+                // Verifica o status da empresa/usuário
+                const permitido = await verificarAcessoParaEmpresa(empresaAtivaId, user.uid);
+
+                if (permitido) {
+                    // marca uma flag temporária (timestamp) para sinalizar que acabamos de confirmar o acesso
+                    try { sessionStorage.setItem('acessoConfirmadoAt', String(Date.now())); } catch (e) { /* ignore */ }
+                    // usar replace para evitar empilhar histórico e reduzir piscadas
+                    window.location.replace('index.html');
+                } else {
+                    loader.style.display = 'none';
+                    container.style.display = 'block';
+                }
+            } catch (e) {
+                console.error("Erro ao verificar status:", e);
+                // Em caso de erro, mostramos a tela de assinatura (melhor do que redirecionar de forma errática)
                 loader.style.display = 'none';
                 container.style.display = 'block';
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // nada aqui além dos elementos já carregados; autenticação lida por onAuthStateChanged
         });
 
         btnLogout.addEventListener('click', async () => {
             await signOut(auth);
             localStorage.clear();
             sessionStorage.clear();
-            window.location.href = 'login.html';
+            window.location.replace('login.html');
         });
     </script>
 </body>
