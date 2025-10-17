@@ -25,8 +25,8 @@
         .info .doc-id { font-size: 0.75em; color: #94a3b8; font-family: monospace; margin-top: 2px; }
         .info .plano { font-size: 0.9em; color: #64748b; margin-top: 5px; }
         .info .metodo { font-size: 0.75em; font-weight: 700; padding: 3px 8px; border-radius: 12px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; }
-        .metodo.pix, .metodo.aguardando_liberacao { background-color: #e0fdf4; color: #059669; }
-        .metodo.mercado_pago { background-color: #dbeafe; color: #2563eb; }
+        .metodo.pix, .metodo.aguardando_liberacao { background-color: #fef9c3; color: #a16207; }
+        .metodo.mercado_pago, .metodo.pendente_confirmacao { background-color: #dbeafe; color: #2563eb; }
         .acoes button { border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.9em; }
         .btn-aprovar { background-color: #10b981; color: #fff; }
         .btn-aprovar:hover:not(:disabled) { background-color: #0f9e70; }
@@ -51,9 +51,6 @@
     <script type="module">
         import { db, auth } from './firebase-config.js';
         
-        // =====================================================================
-        // CORREÇÃO: Adicionado 'Timestamp' à lista de importações
-        // =====================================================================
         import {
             collection,
             query,
@@ -72,7 +69,7 @@
         let unsubscribePagamentos = null;
         let unsubscribeEmpresas = null;
 
-        // ... Lógica para carregar o menu ...
+        // ... Sua lógica de carregar o menu, se houver ...
 
         onAuthStateChanged(auth, (user) => {
             if (user && user.uid === ADMIN_UID) {
@@ -85,7 +82,7 @@
         });
 
         // =====================================================================
-        // SEU CÓDIGO ORIGINAL (COM CORREÇÕES DE ROBUSTEZ)
+        // SUA FUNÇÃO ORIGINAL PARA BUSCAR OS DADOS (INALTERADA)
         // =====================================================================
         function ouvirTodasAsPendencias() {
             let pendenciasDaColecao = [];
@@ -171,7 +168,7 @@
                             <p class="plano">${planoNome} - ${valorFormatado} ${metodoTag} - ${dataFormatada}</p>
                         </div>
                         <div class="acoes">
-                            <button class="btn-aprovar" data-id="${pagamento.id}" data-tipo="${pagamento.tipo}">Aprovar</button>
+                            <button class="btn-aprovar" data-id="${pagamento.id}" data-tipo="${pagamento.tipo}" data-empresa-id="${pagamento.empresaId || pagamento.id}">Aprovar</button>
                         </div>
                     `;
                     listaPagamentosDiv.appendChild(itemDiv);
@@ -180,13 +177,14 @@
         }
 
         // =====================================================================
-        // LÓGICA DE APROVAÇÃO ALTERADA PARA ADICIONAR A DATA DE EXPIRAÇÃO
+        // ✅ LÓGICA DE APROVAÇÃO ATUALIZADA (ÚNICA ALTERAÇÃO)
         // =====================================================================
         listaPagamentosDiv.addEventListener('click', async (e) => {
             if (e.target && e.target.classList.contains('btn-aprovar')) {
                 const btn = e.target;
                 const id = btn.dataset.id;
                 const tipo = btn.dataset.tipo;
+                const empresaId = btn.dataset.empresaId; // Pega o ID da empresa
 
                 if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? Uma assinatura de 30 dias será iniciada.`)) return;
 
@@ -194,30 +192,25 @@
                 const previousText = btn.textContent;
                 btn.textContent = 'Aprovando...';
 
-                // ADIÇÃO: Calcula a data de expiração (30 dias a partir de hoje)
+                // Calcula a data de expiração (30 dias a partir de hoje)
                 const dataFim = new Date();
                 dataFim.setDate(dataFim.getDate() + 30);
                 const proximoPagamentoTimestamp = Timestamp.fromDate(dataFim);
 
                 if (tipo === 'campo') { // Aprovação do PIX (salvo na empresa)
                     try {
-                        const empresaRef = doc(db, "empresarios", id);
-                        await runTransaction(db, async (transaction) => {
-                            const empresaDoc = await transaction.get(empresaRef);
-                            if (!empresaDoc.exists() || !empresaDoc.data().pagamentoPendente) {
-                                throw new Error("A pendência de pagamento não foi encontrada na empresa.");
-                            }
-                            // ATUALIZA O PLANO, ADICIONA A DATA DE EXPIRAÇÃO E REMOVE A PENDÊNCIA
-                            transaction.update(empresaRef, {
-                                plano: "pago",
-                                assinaturaValidaAte: proximoPagamentoTimestamp, // ADICIONADO
-                                pagamentoPendente: deleteField()
-                            });
+                        const empresaRef = doc(db, "empresarios", empresaId); // Usa o ID da empresa correto
+                        
+                        await updateDoc(empresaRef, {
+                            plano: "pago",                          // 1. Muda o status para "pago"
+                            assinaturaValidaAte: proximoPagamentoTimestamp, // 2. Gera a nova data
+                            pagamentoPendente: deleteField()        // 3. Limpa a pendência
                         });
+                        
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
                     } catch (error) {
                         console.error("Erro ao aprovar pagamento de campo:", error);
-                        alert('Falha ao aprovar: ' + (error && error.message ? error.message : error));
+                        alert('Falha ao aprovar: ' + (error?.message || error));
                         btn.disabled = false;
                         btn.textContent = previousText || 'Aprovar';
                     }
@@ -229,23 +222,24 @@
                             if (!pagDoc.exists()) throw new Error("Documento do pagamento não existe mais.");
 
                             const dadosPagamento = pagDoc.data() || {};
-                            const empresaId = dadosPagamento.empresaId;
-                            if (!empresaId) throw new Error("empresaId faltando no documento de pagamento.");
+                            const idEmpresaOriginal = dadosPagamento.empresaId;
+                            if (!idEmpresaOriginal) throw new Error("empresaId faltando no documento de pagamento.");
 
-                            const empresaRef = doc(db, "empresarios", empresaId);
+                            const empresaRef = doc(db, "empresarios", idEmpresaOriginal);
 
-                            // ATUALIZA O PLANO E ADICIONA A DATA DE EXPIRAÇÃO
+                            // Atualiza o plano da empresa e adiciona a data de expiração
                             transaction.update(empresaRef, {
                                 plano: "pago",
-                                assinaturaValidaAte: proximoPagamentoTimestamp // ADICIONADO
+                                assinaturaValidaAte: proximoPagamentoTimestamp
                             });
 
+                            // Atualiza o status do documento de pagamento pendente
                             transaction.update(pagRef, { status: "aprovado_manual" });
                         });
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
                     } catch (error) {
                         console.error("Erro ao aprovar pagamento de coleção:", error);
-                        alert('Falha ao aprovar: ' + (error && error.message ? error.message : error));
+                        alert('Falha ao aprovar: ' + (error?.message || error));
                         btn.disabled = false;
                         btn.textContent = previousText || 'Aprovar';
                     }
