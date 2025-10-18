@@ -2,6 +2,7 @@
 //  userService.js (REVISÃO FINAL)
 // ✅ REMOVIDA A CHAMADA PARA A FUNÇÃO DE OUVINTE ANTIGA E DESNECESSÁRIA
 // ✨ ADICIONADO EVENTO PARA ATUALIZAÇÃO DE TELA E PROTEÇÃO DE ROTA
+// ✨ PATCH CIRÚRGICO: prevenção de loop index <-> assinatura com flags de sessão
 // =====================================================================
 
 import {
@@ -291,8 +292,49 @@ export async function verificarAcesso() {
                 };
                 console.log("[DEBUG] SessionProfile FINAL:", sessionProfile);
 
-                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html') {
+                // --- INÍCIO: PATCH CIRÚRGICO ANTI-LOOP ---
+                // lê flags de sessão que previnem loops entre index <-> assinatura
+                let assinaturaVerifiedTs = 0;
+                let assinaturaRedirectTs = 0;
+                try {
+                    assinaturaVerifiedTs = Number(sessionStorage.getItem('assinatura_verified_ts') || 0);
+                    assinaturaRedirectTs = Number(sessionStorage.getItem('assinatura_redirect_ts') || 0);
+                } catch (e) {
+                    assinaturaVerifiedTs = 0;
+                    assinaturaRedirectTs = 0;
+                }
+                const now = Date.now();
+                const ASSINATURA_SKIP_WINDOW_MS = 15000; // 15s tolerância
+
+                // se a empresa tem plano ativo, grava flag de verificação para evitar loop
+                try {
+                    if (sessionProfile?.statusAssinatura?.hasActivePlan) {
+                        try {
+                            sessionStorage.setItem('assinatura_verified_ts', String(now));
+                            console.log("[DEBUG] assinatura_verified_ts setado para evitar loop.");
+                        } catch (e) { /* ignore */ }
+                    }
+                } catch (e) {
+                    console.warn("[DEBUG] Falha ao setar assinatura_verified_ts:", e);
+                }
+
+                // calcula skip se qualquer flag recente indicar que devemos pular redirect
+                const skipRedirectToAssinatura = (
+                    (assinaturaVerifiedTs && (now - assinaturaVerifiedTs) < ASSINATURA_SKIP_WINDOW_MS) ||
+                    (assinaturaRedirectTs && (now - assinaturaRedirectTs) < ASSINATURA_SKIP_WINDOW_MS)
+                );
+                // --- FIM: PATCH CIRÚRGICO ANTI-LOOP ---
+
+                if (!isAdmin && !statusAssinatura.hasActivePlan && !statusAssinatura.isTrialActive && currentPage !== 'assinatura.html' && !skipRedirectToAssinatura) {
                     console.log("[DEBUG] Assinatura expirada, redirecionando para assinatura.");
+                    try {
+                        // marca que estamos prestes a redirecionar — ajuda a evitar loop imediato
+                        try {
+                            sessionStorage.setItem('assinatura_redirect_ts', String(Date.now()));
+                        } catch (e) { /* ignore */ }
+                    } catch (e) {
+                        console.warn("[DEBUG] Falha ao setar assinatura_redirect_ts:", e);
+                    }
                     window.location.replace('assinatura.html');
                     cachedSessionProfile = sessionProfile;
                     isProcessing = false;
