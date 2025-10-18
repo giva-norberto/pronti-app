@@ -221,7 +221,7 @@
 
     <script type="module">
         import { db } from './firebase-config.js';
-        import { doc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { doc, getDoc, collection, getDocs, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
         const linksDosPlanos = {
             1: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca1b0887e74842659651f9763f203f13",
@@ -372,7 +372,7 @@
         }
         
         // =====================================================================
-        // ✅ ÚNICA FUNÇÃO ALTERADA PARA CORRIGIR A MONTAGEM DO CÓDIGO PIX
+        // ✅ ÚNICA FUNÇÃO ALTERADA PARA CORRIGIR A MONTAGEM DO CÓDIGO PIX E CRIAR REGISTRO DE PAGAMENTO
         // =====================================================================
         function handlePix() {
             if (!planoSelecionado || !configPagamento) {
@@ -447,7 +447,7 @@
             });
         });
 
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
+        // ALTEREI ESTA FUNÇÃO para também criar/registrar o pagamento na coleção pagamentosPendentes
         async function confirmarPagamentoPix() {
             document.getElementById('pix-modal').style.display = 'none';
             botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Enviando confirmação...</button>`;
@@ -462,15 +462,46 @@
 
             try {
                 const empresaRef = doc(db, "empresarios", empresaId);
+
+                // monta objeto pagamentoPendente com valor/forma/plano/data
+                const pagamentoPendente = {
+                    valor: precoPlanoSelecionado ?? 0,
+                    metodo: "pix",
+                    dataSolicitacao: serverTimestamp(),
+                    plano: String(planoSelecionado ?? ""),
+                    nome: "PIX - confirmação pelo app"
+                };
+
+                // atualiza o documento da empresa (mantendo a lógica original e adicionando pagamentoPendente)
                 await updateDoc(empresaRef, {
-                    plano: "aguardando_liberacao"
+                    plano: "aguardando_liberacao",
+                    pagamentoPendente,
+                    updatedAt: serverTimestamp()
                 });
+
+                // cria um documento em pagamentosPendentes para o fluxo administrativo (para que admin veja valor/método)
+                try {
+                    await addDoc(collection(db, "pagamentosPendentes"), {
+                        empresaId,
+                        valor: precoPlanoSelecionado ?? 0,
+                        metodo: "pix",
+                        status: "aguardando_liberacao",
+                        plano: String(planoSelecionado ?? ""),
+                        nome: pagamentoPendente.nome,
+                        dataSolicitacao: serverTimestamp(),
+                        createdAt: serverTimestamp()
+                    });
+                } catch (err) {
+                    console.warn("Falha ao criar documento em pagamentosPendentes (não crítico):", err);
+                }
 
                 document.getElementById('sucesso-modal').style.display = 'flex';
                 
             } catch (error) {
                 console.error("Erro ao registrar confirmação de pagamento:", error);
                 avisoSelecao.textContent = "Ocorreu um erro ao enviar sua notificação. Tente novamente.";
+                // restaura botões para permitir nova tentativa
+                document.querySelector('.card-plano.selecionado')?.click();
             }
         }
 
