@@ -164,13 +164,10 @@
             if (typeof value.toDate === 'function') {
                 try { return value.toDate(); } catch (e) { /* ignore */ }
             }
-            // Firestore may also have { seconds, nanoseconds }
             if (value && typeof value.seconds === 'number') {
                 return new Date(value.seconds * 1000);
             }
-            // if already Date
             if (value instanceof Date) return value;
-            // if ISO string or number
             const d = new Date(value);
             if (!isNaN(d.getTime())) return d;
             return null;
@@ -237,7 +234,6 @@
                 // checar se plano é 'free' ou freeEmDias
                 const freeEmDias = Number(emp.freeEmDias ?? emp.free_em_dias ?? 0);
                 if (freeEmDias > 0 || (emp.plano && String(emp.plano).toLowerCase() === 'free')) {
-                    // para calcular dias restantes precisamos de trialStart gravado no usuário (conforme seu modelo anterior)
                     let trialEnd = null;
                     try {
                         const userRef = doc(db, "usuarios", emp.donoId || userId);
@@ -254,7 +250,6 @@
                                 result.reason = 'trial_ativo';
                                 result.proximoPagamentoDate = trialEnd;
                                 result.isFree = true;
-                                // compute remaining days
                                 const diffMs = trialEnd.getTime() - hoje.getTime();
                                 result.freeDaysRemaining = Math.ceil(diffMs / (1000*60*60*24));
                                 return result;
@@ -262,7 +257,6 @@
                                 result.freeDaysRemaining = 0;
                             }
                         } else {
-                            // plano marcado como free without trialStart => treat as free but no remaining days
                             if (String(emp.plano).toLowerCase() === 'free') {
                                 result.isFree = true;
                                 result.reason = 'plano_free';
@@ -280,7 +274,6 @@
                     return result;
                 }
 
-                // se chegou aqui, não está ativo
                 result.reason = result.reason || 'assinatura_vencida';
                 return result;
             } catch (err) {
@@ -305,39 +298,28 @@
                             return;
                         }
 
-                        // montar link do botão assinar
                         btnAssinar.href = `pagamento.html?empresaId=${empresaAtivaId}`;
 
-                        // avalia status da empresa
                         const status = await avaliarStatusEmpresa(empresaAtivaId, user.uid);
 
-                        // preenche detalhes para exibição
-                        if (status.empresaNome) empresaNomeEl.textContent = status.empresaNome;
-                        else empresaNomeEl.textContent = '—';
-
+                        if (status.empresaNome) empresaNomeEl.textContent = status.empresaNome; else empresaNomeEl.textContent = '—';
                         planoAtualEl.textContent = status.plano || '—';
+                        if (status.proximoPagamentoDate) proximoPagamentoEl.textContent = formatDatePtBR(status.proximoPagamentoDate);
+                        else proximoPagamentoEl.textContent = 'Data indisponível';
+                        tipoStatusEl.textContent = status.isActive ? (status.isFree ? 'Free (trial)' : 'Ativo') : (status.isFree ? 'Free (expirado)' : 'Expirado');
 
-                        if (status.proximoPagamentoDate) {
-                            proximoPagamentoEl.textContent = formatDatePtBR(status.proximoPagamentoDate);
-                        } else {
-                            proximoPagamentoEl.textContent = 'Data indisponível';
-                        }
-
-                        // tipo/status textual
                         if (status.isActive) {
-                            tipoStatusEl.textContent = status.isFree ? `Free (trial)` : 'Ativo';
-                        } else {
-                            tipoStatusEl.textContent = status.isFree ? `Free (expirado)` : 'Expirado';
-                        }
+                            // marca verificação: evita loop entre index <-> assinatura
+                            try {
+                                sessionStorage.setItem('assinatura_verified_ts', String(Date.now()));
+                            } catch (e) { /* ignore */ }
 
-                        // decide onde enviar o usuário
-                        if (status.isActive) {
-                            // Se ativo, redireciona de volta à app principal
+                            // usa replace para não deixar histórico
+                            window.location.replace('index.html');
                             resolve({ ok: true, status });
                             return;
                         }
 
-                        // não ativo -> mostrar painel de assinatura com detalhes
                         resolve({ ok: false, status });
                         return;
                     } catch (e) {
@@ -351,19 +333,12 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             const { ok, status } = await checkStatusRapido();
-            if (ok) {
-                // empresa ativa: permite entrar
-                // (redireciona para index)
-                window.location.href = 'index.html';
-                return;
-            }
+            if (ok) return; // já redirecionou
 
-            // não ativo -> mostrar tela com informações relevantes
             loader.style.display = 'none';
             container.style.display = 'block';
             detalhesEl.style.display = 'block';
 
-            // se existe próxima data de pagamento futura, atualizar texto para incentivar renovação
             if (status?.proximoPagamentoDate && status.isFree !== true) {
                 tituloEl.textContent = 'Assinatura expirada / Renovação necessária';
                 mensagemEl.innerHTML = `Sua assinatura expirou ou precisa ser renovada. Próximo pagamento detectado em <strong>${formatDatePtBR(status.proximoPagamentoDate)}</strong>. Para continuar usando o Pronti, escolha um plano abaixo.`;
@@ -374,8 +349,6 @@
                 tituloEl.textContent = 'Assinatura expirada';
                 mensagemEl.innerHTML = `Não foi encontrada uma assinatura ativa. Para continuar usando o Pronti, escolha um plano abaixo.`;
             }
-
-            // se quiser, pode ajustar o botão para abrir modal de pagamento — mantivemos o redirecionamento simples
         });
 
         btnLogout.addEventListener('click', async () => {
