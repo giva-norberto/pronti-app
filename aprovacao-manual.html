@@ -60,7 +60,8 @@
             deleteField,
             Timestamp,
             updateDoc,
-            getDocs
+            getDocs,
+            getDoc
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -91,9 +92,45 @@
             // Fonte 1: pagamentosPendentes (documentos)
             const pagamentosRef = collection(db, 'pagamentosPendentes');
             const qPagamentos = query(pagamentosRef, where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp', 'aguardando_liberacao']));
-            unsubscribePagamentos = onSnapshot(qPagamentos, (snapshot) => {
-                pendenciasDaColecao = snapshot.docs.map(d => ({ id: d.id, tipo: 'colecao', ...d.data() }));
-                renderizarListaCombinada();
+
+            // Handler async que enriquece entradas da coleção com nomeFantasia da empresa quando necessário
+            unsubscribePagamentos = onSnapshot(qPagamentos, async (snapshot) => {
+                try {
+                    const docs = await Promise.all(snapshot.docs.map(async d => {
+                        const data = d.data() || {};
+                        const id = d.id;
+                        const empresaId = data.empresaId || null;
+
+                        // prioridade para campos já presentes no documento de pagamento
+                        let clienteNome = data.clienteNome || data.nome || data.nomeFantasia || null;
+
+                        // se não tiver nome, tenta enriquecer buscando a empresa
+                        if (!clienteNome && empresaId) {
+                            try {
+                                const empSnap = await getDoc(doc(db, "empresarios", empresaId));
+                                if (empSnap.exists()) {
+                                    const empData = empSnap.data() || {};
+                                    clienteNome = empData.nomeFantasia || empData.nome || clienteNome;
+                                }
+                            } catch (err) {
+                                console.warn('Erro ao buscar empresa para enriquecer pagamento:', empresaId, err);
+                            }
+                        }
+
+                        return {
+                            id,
+                            tipo: 'colecao',
+                            clienteNome: clienteNome || 'Cliente desconhecido',
+                            empresaId,
+                            ...data
+                        };
+                    }));
+
+                    pendenciasDaColecao = docs;
+                    renderizarListaCombinada();
+                } catch (err) {
+                    console.error('Erro processando pagamentosPendentes:', err);
+                }
             }, (err) => console.error('Erro ao ouvir pagamentosPendentes:', err));
 
             // Fonte 2: empresas com pagamentoPendente.status == 'aguardando_liberacao'
@@ -125,7 +162,6 @@
                     const list = await Promise.all(snapshot.docs.map(async d => {
                         const empresaData = d.data() || {};
 
-                        // preferir pagamentoPendente dentro do documento da empresa
                         const pagamentoPendente = empresaData.pagamentoPendente || null;
                         if (pagamentoPendente && pagamentoPendente.valor) {
                             return {
@@ -141,7 +177,6 @@
                             };
                         }
 
-                        // se não houver, procurar na coleção pagamentosPendentes por empresaId
                         try {
                             const q = query(
                                 collection(db, "pagamentosPendentes"),
@@ -168,7 +203,6 @@
                             console.warn('Erro buscando pagamentosPendentes para empresa', d.id, err);
                         }
 
-                        // fallback: criar entrada genérica para o admin revisar (valor pode ser 0)
                         return {
                             id: d.id,
                             tipo: 'plano',
@@ -224,7 +258,6 @@
                 pendenciasDaColecao.forEach(p => {
                     const empresaKey = p.empresaId || null;
                     const key = empresaKey ? `emp#${empresaKey}` : `pag#${p.id}`;
-                    // armazena origem e dados
                     mapByEmpresa.set(key, Object.assign({ origem: 'colecao' }, p));
                 });
 
@@ -234,7 +267,6 @@
                     if (!mapByEmpresa.has(key)) {
                         mapByEmpresa.set(key, Object.assign({ origem: 'campo' }, p));
                     } else {
-                        // se já existe um doc da colecao, mescla campos faltantes
                         const existing = mapByEmpresa.get(key);
                         if (existing.origem === 'colecao') {
                             existing.valor = existing.valor ?? p.valor;
@@ -280,12 +312,10 @@
                     const dataFormatada = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'Data indisponível';
                     const valorFormatado = formatValor(pagamento.valor ?? 0);
                     const clienteNome = pagamento.clienteNome || pagamento.nomeFantasia || 'Cliente desconhecido';
-                    // preferir mostrar empresaId (chave emp#...), fallback para pagamento id
                     const docIdDisplay = pagamento.empresaId || pagamento.empresaId || pagamento.id || 'ID indisponível';
                     const planoNome = pagamento.planoNome || pagamento.plano || 'Plano';
                     const metodoTag = `<span class="metodo ${metodoClass}">${metodoLabel}</span>`;
 
-                    // tipoBtn: se a origem for 'colecao' então 'colecao', caso contrário 'campo'
                     const tipoBtn = (pagamento.origem === 'colecao' || pagamento.tipo === 'colecao') ? 'colecao' : 'campo';
 
                     itemDiv.innerHTML = `
