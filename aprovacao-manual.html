@@ -60,7 +60,7 @@
             deleteField,
             Timestamp,
             updateDoc,
-            getDoc
+            getDocs
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -123,25 +123,75 @@
                 renderizarListaCombinada();
             }, (err) => console.error('Erro ao ouvir empresas (pagamentoPendente):', err));
 
-            // FONTE 3: empresas com plano == 'aguardando_liberacao' (seu caso: plano armazenado nesse campo)
+            // FONTE 3: empresas com plano == 'aguardando_liberacao'
             const qEmpresasPlano = query(empresasRef, where('plano', '==', 'aguardando_liberacao'));
             unsubscribeEmpresasPlano = onSnapshot(qEmpresasPlano, (snapshot) => {
-                pendenciasDoPlano = snapshot.docs.map(d => {
-                    const empresaData = d.data() || {};
-                    // Aqui não existe um pagamentoPendente detalhado — criamos uma representação mínima
-                    return {
-                        id: d.id,
-                        tipo: 'plano', // tratamos como pendência também
-                        clienteNome: empresaData.nomeFantasia || 'Cliente desconhecido',
-                        planoNome: 'Aguardando liberação (plano)',
-                        valor: empresaData.valorPendencia || 0,
-                        metodo: 'aguardando_liberacao',
-                        dataCriacao: empresaData.updatedAt || empresaData.createdAt || null,
-                        donoId: empresaData.donoId,
-                        empresaId: d.id
-                    };
+                // aqui precisamos fazer leitura extra para tentar achar um pagamentosPendentes relacionado
+                (async () => {
+                    const list = await Promise.all(snapshot.docs.map(async d => {
+                        const empresaData = d.data() || {};
+                        // 1) tenta usar pagamentoPendente se existir
+                        const pagamentoPendente = empresaData.pagamentoPendente || null;
+                        if (pagamentoPendente && pagamentoPendente.valor) {
+                            return {
+                                id: d.id,
+                                tipo: 'campo',
+                                clienteNome: empresaData.nomeFantasia || pagamentoPendente.nome || 'Cliente desconhecido',
+                                planoNome: pagamentoPendente.plano ? `Plano para ${pagamentoPendente.plano} usuários` : 'Plano',
+                                valor: pagamentoPendente.valor || 0,
+                                metodo: pagamentoPendente.metodo || 'pix',
+                                dataCriacao: pagamentoPendente.dataSolicitacao || pagamentoPendente.createdAt || empresaData.updatedAt || empresaData.createdAt || null,
+                                donoId: empresaData.donoId,
+                                empresaId: d.id
+                            };
+                        }
+
+                        // 2) busca na coleção pagamentosPendentes por empresaId para pegar valor/metodo se existir
+                        try {
+                            const q = query(
+                                collection(db, "pagamentosPendentes"),
+                                where("empresaId", "==", d.id),
+                                where("status", "in", ['pendente_confirmacao', 'aguardando_pagamento_mp', 'aguardando_liberacao'])
+                            );
+                            const snapPag = await getDocs(q);
+                            if (!snapPag.empty) {
+                                // pega o primeiro relevante (se tiver vários, o admin verá documento de pagamento na lista também)
+                                const pdoc = snapPag.docs[0];
+                                const pdata = pdoc.data() || {};
+                                return {
+                                    id: pdoc.id,
+                                    tipo: 'colecao',
+                                    clienteNome: empresaData.nomeFantasia || pdata.nome || 'Cliente desconhecido',
+                                    planoNome: pdata.plano ? `Plano para ${pdata.plano} usuários` : 'Plano',
+                                    valor: pdata.valor || pdata.amount || 0,
+                                    metodo: pdata.metodo || pdata.paymentMethod || 'desconhecido',
+                                    dataCriacao: pdata.createdAt || pdata.dataSolicitacao || null,
+                                    donoId: empresaData.donoId,
+                                    empresaId: d.id
+                                };
+                            }
+                        } catch (err) {
+                            console.warn('Erro buscando pagamentosPendentes relacionados à empresa', d.id, err);
+                        }
+
+                        // 3) fallback: não há detalhes de valor, mostramos uma pendência genérica mas com nota para o admin revisar
+                        return {
+                            id: d.id,
+                            tipo: 'plano',
+                            clienteNome: empresaData.nomeFantasia || 'Cliente desconhecido',
+                            planoNome: 'Aguardando liberação (plano)',
+                            valor: empresaData.valorPendencia || 0,
+                            metodo: 'aguardando_liberacao',
+                            dataCriacao: empresaData.updatedAt || empresaData.createdAt || null,
+                            donoId: empresaData.donoId,
+                            empresaId: d.id
+                        };
+                    }));
+                    pendenciasDoPlano = list;
+                    renderizarListaCombinada();
+                })().catch(err => {
+                    console.error('Erro ao processar empresas (plano aguardando):', err);
                 });
-                renderizarListaCombinada();
             }, (err) => console.error('Erro ao ouvir empresas (plano aguardando):', err));
 
             function normalizeDate(value) {
@@ -158,38 +208,42 @@
                 return String(metodo).toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
             }
 
+            function metodoLabelHumanizado(metodo) {
+                if (!metodo) return 'Desconhecido';
+                const m = String(metodo).toLowerCase();
+                if (m.includes('pix')) return 'PIX';
+                if (m.includes('mercado') || m.includes('mercadopago') || m.includes('mp')) return 'Mercado Pago';
+                if (m.includes('boleto')) return 'Boleto';
+                if (m === 'aguardando_liberacao') return 'Aguardando liberação';
+                return metodo;
+            }
+
+            function formatValor(valor) {
+                const num = (typeof valor === 'number') ? valor : Number(valor);
+                if (isNaN(num) || num === 0) return 'R$ 0,00';
+                return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+
             function renderizarListaCombinada() {
                 // unir as três listas evitando duplicatas por empresaId ou id de pagamento
                 const mapByKey = new Map();
 
                 // prioridades: pagamentosDaColecao (documentos de pagamentos), depois pagamentoPendente (campo), depois plano
                 pendenciasDaColecao.forEach(p => {
-                    // chave: pagamento doc id
                     const key = `pag#${p.id}`;
                     mapByKey.set(key, p);
                 });
 
-                // para empresas/pagamentoPendente, usamos empresaId como chave para não duplicar com pendenciasDaColecao
+                // empresa/pagamentoPendente
                 pendenciasDoCampo.forEach(p => {
                     const key = `emp#${p.empresaId}`;
-                    // se já existe um pagamento específico (colecao) talvez seja o mesmo, mas preferimos mostrar o pagamento da coleção
-                    if (!Array.from(mapByKey.keys()).some(k => k.startsWith('pag#'))) {
-                        mapByKey.set(key, p);
-                    } else {
-                        // se já há pagamentos na coleção, ainda assim adicionamos a pendência por empresa se não existir
-                        if (!mapByKey.has(key)) mapByKey.set(key, p);
-                    }
+                    if (!mapByKey.has(key)) mapByKey.set(key, p);
                 });
 
-                // pendenciasDoPlano (plano === 'aguardando_liberacao') — adiciona somente se empresa não estiver presente já
+                // pendenciasDoPlano
                 pendenciasDoPlano.forEach(p => {
                     const key = `emp#${p.empresaId}`;
-                    if (!mapByKey.has(key) && !Array.from(mapByKey.keys()).some(k => k.startsWith('pag#'))) {
-                        mapByKey.set(key, p);
-                    } else if (!mapByKey.has(key)) {
-                        // se há pagamentos na coleção, ainda assim adiciona se não houver registro da empresa
-                        mapByKey.set(key, p);
-                    }
+                    if (!mapByKey.has(key)) mapByKey.set(key, p);
                 });
 
                 const todasAsPendencias = Array.from(mapByKey.values());
@@ -208,20 +262,17 @@
 
                     const metodoRaw = pagamento.metodo || pagamento.status || 'desconhecido';
                     const metodoClass = safeCssClassForMetodo(metodoRaw);
-                    const metodoLabel = String(metodoRaw).replace(/_/g, ' ');
+                    const metodoLabel = metodoLabelHumanizado(metodoRaw);
                     const dateObj = normalizeDate(pagamento.dataCriacao);
                     const dataFormatada = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'Data indisponível';
-                    const valorNum = (typeof pagamento.valor === 'number') ? pagamento.valor : Number(pagamento.valor) || 0;
-                    const valorFormatado = valorNum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const valorFormatado = formatValor(pagamento.valor || 0);
                     const clienteNome = pagamento.clienteNome || pagamento.nomeFantasia || 'Cliente desconhecido';
                     const docIdDisplay = pagamento.empresaId || pagamento.id || 'ID indisponível';
                     const planoNome = pagamento.planoNome || 'Plano';
                     const metodoTag = `<span class="metodo ${metodoClass}">${metodoLabel}</span>`;
 
-                    // definimos tipo de ação: se veio da coleção, tipo='colecao', senão tipo='campo' (empresa)
-                    const dataTipo = pagamento.tipo || (pagamento.id && pagamento.tipo !== 'colecao' ? 'colecao' : (pagamento.tipo === 'plano' ? 'campo' : pagamento.tipo)) || (pagamento.planoNome ? 'campo' : 'colecao');
-                    // para segurança, normalize para 'colecao' (pagamento doc) ou 'campo' (empresa)
-                    const tipoBtn = pagamento.tipo === 'colecao' || (pagamento && pagamento.id && pagamento.tipo === 'colecao') ? 'colecao' : (pagamento.tipo === 'plano' ? 'campo' : (pagamento.tipo === 'campo' ? 'campo' : (pagamento.empresaId ? 'campo' : 'colecao')));
+                    // determinar tipoBtn: 'colecao' se veio de pagamentosPendentes (tem id de pagamento), senão 'campo'
+                    const tipoBtn = (pagamento.tipo === 'colecao' || (pagamento.id && pagamento.tipo === 'colecao')) ? 'colecao' : 'campo';
 
                     itemDiv.innerHTML = `
                         <div class="info">
@@ -238,13 +289,13 @@
             }
         }
 
-        // Clique em Aprovar: agora tratamos tanto pagamentosPendentes quanto empresas com plano='aguardando_liberacao'
+        // Clique em Aprovar: trata pagamentosPendentes e empresas com plano='aguardando_liberacao' / pagamentoPendente
         listaPagamentosDiv.addEventListener('click', async (e) => {
             if (e.target && e.target.classList.contains('btn-aprovar')) {
                 const btn = e.target;
-                const id = btn.dataset.id; // se tipo colecao, é o id do doc de pagamento; se tipo campo/plano, é empresaId
+                const id = btn.dataset.id; // se tipo colecao, id do doc de pagamento; se tipo campo/plano, é empresaId
                 const tipo = btn.dataset.tipo;
-                const empresaId = btn.dataset.empresaId || id; // garanta empresaId
+                const empresaId = btn.dataset.empresaId || id;
 
                 if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? Uma assinatura será iniciada.`)) return;
 
@@ -306,14 +357,21 @@
                             pagamentoPendente: deleteField()
                         });
 
-                        // se havia um documento em pagamentosPendentes relacionado, opcional: marcar como aprovado (não obrigatório aqui)
-                        // tentar localizar um pagamento pendente que referencie esta empresa e marcá-lo aprovado (silencioso, não é crítico)
+                        // opcional: tentar atualizar pagamento pendente correspondente na coleção (se existir)
                         try {
-                            // tentativa sem bloquear o fluxo principal (não obrigatório)
-                            const pagamentosRef = collection(db, "pagamentosPendentes");
-                            // não podemos fazer query aqui sem getDocs imports; omitimos para manter simples
+                            const q = query(
+                                collection(db, "pagamentosPendentes"),
+                                where("empresaId", "==", empresaId),
+                                where("status", "in", ['pendente_confirmacao', 'aguardando_pagamento_mp', 'aguardando_liberacao'])
+                            );
+                            const snap = await getDocs(q);
+                            snap.forEach(pdoc => {
+                                // atualiza status de forma independente (não dentro de transaction)
+                                updateDoc(doc(db, "pagamentosPendentes", pdoc.id), { status: "aprovado_manual" }).catch(()=>{});
+                            });
                         } catch (err) {
-                            // ignore
+                            // não crítico, apenas log
+                            console.warn('Não foi possível atualizar pagamentosPendentes relacionados (opcional):', err);
                         }
 
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
