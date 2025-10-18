@@ -59,7 +59,8 @@
             runTransaction,
             deleteField,
             Timestamp,
-            updateDoc
+            updateDoc,
+            getDoc
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -67,43 +68,49 @@
         const listaPagamentosDiv = document.getElementById('lista-pagamentos');
         const loadingMessage = document.getElementById('loading-message');
         let unsubscribePagamentos = null;
-        let unsubscribeEmpresas = null;
+        let unsubscribeEmpresasPendente = null;
+        let unsubscribeEmpresasPlano = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user && user.uid === ADMIN_UID) {
                 ouvirTodasAsPendencias();
             } else {
                 if (unsubscribePagamentos) unsubscribePagamentos();
-                if (unsubscribeEmpresas) unsubscribeEmpresas();
+                if (unsubscribeEmpresasPendente) unsubscribeEmpresasPendente();
+                if (unsubscribeEmpresasPlano) unsubscribeEmpresasPlano();
                 listaPagamentosDiv.innerHTML = '<p id="empty-message">Acesso restrito a administradores.</p>';
             }
         });
-        
+
         function ouvirTodasAsPendencias() {
             let pendenciasDaColecao = [];
-            let pendenciasDoCampo = [];
+            let pendenciasDoCampo = []; // empresas com pagamentoPendente
+            let pendenciasDoPlano = []; // empresas com plano == 'aguardando_liberacao'
 
-            // FONTE 1: Busca na coleção 'pagamentosPendentes'
+            // FONTE 1: pagamentosPendentes
             const pagamentosRef = collection(db, 'pagamentosPendentes');
             const qPagamentos = query(pagamentosRef, where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp']));
-            
+
             unsubscribePagamentos = onSnapshot(qPagamentos, (snapshot) => {
                 pendenciasDaColecao = snapshot.docs.map(d => ({
-                    id: d.id, tipo: 'colecao', ...d.data()
+                    id: d.id,
+                    tipo: 'colecao',
+                    ...d.data()
                 }));
                 renderizarListaCombinada();
             }, (err) => console.error('Erro ao ouvir pagamentosPendentes:', err));
 
-            // FONTE 2: Busca por empresas com o campo 'pagamentoPendente' (PIX)
+            // FONTE 2: empresas com campo pagamentoPendente.status == 'aguardando_liberacao'
             const empresasRef = collection(db, 'empresarios');
-            const qEmpresas = query(empresasRef, where('pagamentoPendente.status', '==', 'aguardando_liberacao'));
+            const qEmpresasPendente = query(empresasRef, where('pagamentoPendente.status', '==', 'aguardando_liberacao'));
 
-            unsubscribeEmpresas = onSnapshot(qEmpresas, (snapshot) => {
+            unsubscribeEmpresasPendente = onSnapshot(qEmpresasPendente, (snapshot) => {
                 pendenciasDoCampo = snapshot.docs.map(d => {
                     const empresaData = d.data() || {};
                     const pagamentoPendente = empresaData.pagamentoPendente || {};
                     return {
-                        id: d.id, tipo: 'campo',
+                        id: d.id,
+                        tipo: 'campo',
                         clienteNome: empresaData.nomeFantasia || pagamentoPendente.nome || 'Cliente desconhecido',
                         planoNome: pagamentoPendente.plano ? `Plano para ${pagamentoPendente.plano} usuários` : 'Plano',
                         valor: pagamentoPendente.valor || 0,
@@ -114,7 +121,28 @@
                     };
                 });
                 renderizarListaCombinada();
-            }, (err) => console.error('Erro ao ouvir empresarios:', err));
+            }, (err) => console.error('Erro ao ouvir empresas (pagamentoPendente):', err));
+
+            // FONTE 3: empresas com plano == 'aguardando_liberacao' (seu caso: plano armazenado nesse campo)
+            const qEmpresasPlano = query(empresasRef, where('plano', '==', 'aguardando_liberacao'));
+            unsubscribeEmpresasPlano = onSnapshot(qEmpresasPlano, (snapshot) => {
+                pendenciasDoPlano = snapshot.docs.map(d => {
+                    const empresaData = d.data() || {};
+                    // Aqui não existe um pagamentoPendente detalhado — criamos uma representação mínima
+                    return {
+                        id: d.id,
+                        tipo: 'plano', // tratamos como pendência também
+                        clienteNome: empresaData.nomeFantasia || 'Cliente desconhecido',
+                        planoNome: 'Aguardando liberação (plano)',
+                        valor: empresaData.valorPendencia || 0,
+                        metodo: 'aguardando_liberacao',
+                        dataCriacao: empresaData.updatedAt || empresaData.createdAt || null,
+                        donoId: empresaData.donoId,
+                        empresaId: d.id
+                    };
+                });
+                renderizarListaCombinada();
+            }, (err) => console.error('Erro ao ouvir empresas (plano aguardando):', err));
 
             function normalizeDate(value) {
                 if (!value) return null;
@@ -131,19 +159,53 @@
             }
 
             function renderizarListaCombinada() {
-                const todasAsPendencias = [...pendenciasDaColecao, ...pendenciasDoCampo];
+                // unir as três listas evitando duplicatas por empresaId ou id de pagamento
+                const mapByKey = new Map();
+
+                // prioridades: pagamentosDaColecao (documentos de pagamentos), depois pagamentoPendente (campo), depois plano
+                pendenciasDaColecao.forEach(p => {
+                    // chave: pagamento doc id
+                    const key = `pag#${p.id}`;
+                    mapByKey.set(key, p);
+                });
+
+                // para empresas/pagamentoPendente, usamos empresaId como chave para não duplicar com pendenciasDaColecao
+                pendenciasDoCampo.forEach(p => {
+                    const key = `emp#${p.empresaId}`;
+                    // se já existe um pagamento específico (colecao) talvez seja o mesmo, mas preferimos mostrar o pagamento da coleção
+                    if (!Array.from(mapByKey.keys()).some(k => k.startsWith('pag#'))) {
+                        mapByKey.set(key, p);
+                    } else {
+                        // se já há pagamentos na coleção, ainda assim adicionamos a pendência por empresa se não existir
+                        if (!mapByKey.has(key)) mapByKey.set(key, p);
+                    }
+                });
+
+                // pendenciasDoPlano (plano === 'aguardando_liberacao') — adiciona somente se empresa não estiver presente já
+                pendenciasDoPlano.forEach(p => {
+                    const key = `emp#${p.empresaId}`;
+                    if (!mapByKey.has(key) && !Array.from(mapByKey.keys()).some(k => k.startsWith('pag#'))) {
+                        mapByKey.set(key, p);
+                    } else if (!mapByKey.has(key)) {
+                        // se há pagamentos na coleção, ainda assim adiciona se não houver registro da empresa
+                        mapByKey.set(key, p);
+                    }
+                });
+
+                const todasAsPendencias = Array.from(mapByKey.values());
+
                 loadingMessage.style.display = 'none';
 
                 if (todasAsPendencias.length === 0) {
                     listaPagamentosDiv.innerHTML = '<p id="empty-message">Nenhum pagamento pendente no momento.</p>';
                     return;
                 }
-                
+
                 listaPagamentosDiv.innerHTML = '';
                 todasAsPendencias.forEach(pagamento => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'item';
-                    
+
                     const metodoRaw = pagamento.metodo || pagamento.status || 'desconhecido';
                     const metodoClass = safeCssClassForMetodo(metodoRaw);
                     const metodoLabel = String(metodoRaw).replace(/_/g, ' ');
@@ -156,6 +218,11 @@
                     const planoNome = pagamento.planoNome || 'Plano';
                     const metodoTag = `<span class="metodo ${metodoClass}">${metodoLabel}</span>`;
 
+                    // definimos tipo de ação: se veio da coleção, tipo='colecao', senão tipo='campo' (empresa)
+                    const dataTipo = pagamento.tipo || (pagamento.id && pagamento.tipo !== 'colecao' ? 'colecao' : (pagamento.tipo === 'plano' ? 'campo' : pagamento.tipo)) || (pagamento.planoNome ? 'campo' : 'colecao');
+                    // para segurança, normalize para 'colecao' (pagamento doc) ou 'campo' (empresa)
+                    const tipoBtn = pagamento.tipo === 'colecao' || (pagamento && pagamento.id && pagamento.tipo === 'colecao') ? 'colecao' : (pagamento.tipo === 'plano' ? 'campo' : (pagamento.tipo === 'campo' ? 'campo' : (pagamento.empresaId ? 'campo' : 'colecao')));
+
                     itemDiv.innerHTML = `
                         <div class="info">
                             <p class="nome">${clienteNome}</p>
@@ -163,7 +230,7 @@
                             <p class="plano">${planoNome} - ${valorFormatado} ${metodoTag} - ${dataFormatada}</p>
                         </div>
                         <div class="acoes">
-                            <button class="btn-aprovar" data-id="${pagamento.id}" data-tipo="${pagamento.tipo}" data-empresa-id="${pagamento.empresaId || pagamento.id}">Aprovar</button>
+                            <button class="btn-aprovar" data-id="${pagamento.id || pagamento.empresaId}" data-tipo="${tipoBtn}" data-empresa-id="${pagamento.empresaId || pagamento.id}">Aprovar</button>
                         </div>
                     `;
                     listaPagamentosDiv.appendChild(itemDiv);
@@ -171,12 +238,13 @@
             }
         }
 
+        // Clique em Aprovar: agora tratamos tanto pagamentosPendentes quanto empresas com plano='aguardando_liberacao'
         listaPagamentosDiv.addEventListener('click', async (e) => {
             if (e.target && e.target.classList.contains('btn-aprovar')) {
                 const btn = e.target;
-                const id = btn.dataset.id;
+                const id = btn.dataset.id; // se tipo colecao, é o id do doc de pagamento; se tipo campo/plano, é empresaId
                 const tipo = btn.dataset.tipo;
-                const empresaId = btn.dataset.empresaId;
+                const empresaId = btn.dataset.empresaId || id; // garanta empresaId
 
                 if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? Uma assinatura será iniciada.`)) return;
 
@@ -189,30 +257,9 @@
                 dataFim.setDate(dataFim.getDate() + 30);
                 const proximoPagamentoTimestamp = Timestamp.fromDate(dataFim);
 
-                if (tipo === 'campo') { // Aprovação do PIX (salvo na empresa)
-                    try {
-                        const empresaRef = doc(db, "empresarios", empresaId);
-                        await updateDoc(empresaRef, {
-                            plano: "pago",
-                            status: "ativo",
-                            assinaturaAtiva: true,
-                            assinaturaValidaAte: proximoPagamentoTimestamp,
-                            freeEmDias: 0,
-                            trialDisponivel: false,
-                            pagamentoPendente: deleteField()
-                        });
-
-                        alert('Pagamento aprovado! Acesso liberado por 30 dias.');
-                        btn.textContent = 'Aprovado';
-                        btn.disabled = true;
-                    } catch (error) {
-                        console.error("Erro ao aprovar pagamento de campo:", error);
-                        alert('Falha ao aprovar: ' + (error?.message || error));
-                        btn.disabled = false;
-                        btn.textContent = previousText || 'Aprovar';
-                    }
-                } else { // Aprovação do Mercado Pago (salvo em pagamentosPendentes)
-                    try {
+                try {
+                    if (tipo === 'colecao') {
+                        // fluxo: documento em pagamentosPendentes
                         await runTransaction(db, async (transaction) => {
                             const pagRef = doc(db, "pagamentosPendentes", id);
                             const pagDoc = await transaction.get(pagRef);
@@ -224,12 +271,12 @@
 
                             const empresaRef = doc(db, "empresarios", idEmpresaOriginal);
 
-                            // Atualiza empresa com campos solicitados
                             transaction.update(empresaRef, {
                                 plano: "pago",
                                 status: "ativo",
                                 assinaturaAtiva: true,
                                 assinaturaValidaAte: proximoPagamentoTimestamp,
+                                proximoPagamento: proximoPagamentoTimestamp,
                                 freeEmDias: 0,
                                 trialDisponivel: false,
                                 pagamentoPendente: deleteField()
@@ -242,12 +289,43 @@
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
                         btn.textContent = 'Aprovado';
                         btn.disabled = true;
-                    } catch (error) {
-                        console.error("Erro ao aprovar pagamento de coleção:", error);
-                        alert('Falha ao aprovar: ' + (error?.message || error));
-                        btn.disabled = false;
-                        btn.textContent = previousText || 'Aprovar';
+                        return;
+                    } else {
+                        // tipo 'campo' (empresa com pagamentoPendente) ou 'plano' (empresa com plano == 'aguardando_liberacao')
+                        const empresaRef = doc(db, "empresarios", empresaId);
+
+                        // atualizar documento da empresa diretamente
+                        await updateDoc(empresaRef, {
+                            plano: "pago",
+                            status: "ativo",
+                            assinaturaAtiva: true,
+                            assinaturaValidaAte: proximoPagamentoTimestamp,
+                            proximoPagamento: proximoPagamentoTimestamp,
+                            freeEmDias: 0,
+                            trialDisponivel: false,
+                            pagamentoPendente: deleteField()
+                        });
+
+                        // se havia um documento em pagamentosPendentes relacionado, opcional: marcar como aprovado (não obrigatório aqui)
+                        // tentar localizar um pagamento pendente que referencie esta empresa e marcá-lo aprovado (silencioso, não é crítico)
+                        try {
+                            // tentativa sem bloquear o fluxo principal (não obrigatório)
+                            const pagamentosRef = collection(db, "pagamentosPendentes");
+                            // não podemos fazer query aqui sem getDocs imports; omitimos para manter simples
+                        } catch (err) {
+                            // ignore
+                        }
+
+                        alert('Pagamento aprovado! Acesso liberado por 30 dias.');
+                        btn.textContent = 'Aprovado';
+                        btn.disabled = true;
+                        return;
                     }
+                } catch (error) {
+                    console.error("Erro ao aprovar pagamento:", error);
+                    alert('Falha ao aprovar: ' + (error?.message || error));
+                    btn.disabled = false;
+                    btn.textContent = previousText || 'Aprovar';
                 }
             }
         });
