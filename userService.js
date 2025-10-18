@@ -3,6 +3,7 @@
 // ✅ REMOVIDA A CHAMADA PARA A FUNÇÃO DE OUVINTE ANTIGA E DESNECESSÁRIA
 // ✨ ADICIONADO EVENTO PARA ATUALIZAÇÃO DE TELA E PROTEÇÃO DE ROTA
 // ✨ PATCH CIRÚRGICO: prevenção de loop index <-> assinatura com flags de sessão
+// ✨ ATUALIZAÇÃO CIRÚRGICA: checkUserStatus agora considera campos da empresa
 // =====================================================================
 
 import {
@@ -52,10 +53,12 @@ export async function ensureUserAndTrialDoc() {
 }
 
 // --- Função: Checa status de plano/trial corretamente ---
+// ALTERAÇÃO CIRÚRGICA: agora também considera campos do documento da empresa
 async function checkUserStatus(user, empresaData) {
-    // Nenhuma alteração nesta função
     try {
         if (!user) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
+
+        // 1) Verificação direta no documento do usuário (mantida)
         const userRef = doc(db, "usuarios", user.uid);
         const userSnap = await getDoc(userRef);
         console.log("[DEBUG] Usuário para checkUserStatus:", userSnap.exists() ? userSnap.data() : "não existe");
@@ -64,6 +67,52 @@ async function checkUserStatus(user, empresaData) {
         if (!userData) return { hasActivePlan: false, isTrialActive: true, trialDaysRemaining: 0 };
         if (userData.isPremium === true) return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
 
+        // 2) Verificações adicionais usando dados da empresa (ADICIONADAS)
+        // Suporta Firestore Timestamp (has toDate()), objeto { seconds }, Date ou ISO string.
+        const toMillis = (value) => {
+            if (!value) return NaN;
+            try {
+                if (typeof value.toDate === 'function') return value.toDate().getTime();
+                if (value && typeof value.seconds === 'number') return value.seconds * 1000;
+                const d = new Date(value);
+                return isNaN(d.getTime()) ? NaN : d.getTime();
+            } catch (e) {
+                return NaN;
+            }
+        };
+
+        const now = Date.now();
+
+        try {
+            // 2a) assinaturaValidaAte / assinatura_valida_ate + assinaturaAtiva
+            const assinaturaValidaAte = empresaData?.assinaturaValidaAte || empresaData?.assinatura_valida_ate || null;
+            if (empresaData?.assinaturaAtiva === true && assinaturaValidaAte) {
+                const tv = toMillis(assinaturaValidaAte);
+                if (!isNaN(tv) && tv > now) {
+                    console.log("[DEBUG] Empresa com assinaturaAtiva e assinaturaValidaAte no futuro -> considera ativo.");
+                    return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
+                }
+            }
+
+            // 2b) proximoPagamento / proximo_pagamento (se futuro -> considerar ativo)
+            const proximoPag = empresaData?.proximoPagamento || empresaData?.proximo_pagamento || null;
+            if (proximoPag) {
+                const tp = toMillis(proximoPag);
+                if (!isNaN(tp) && tp > now) {
+                    console.log("[DEBUG] Empresa com proximoPagamento no futuro -> considera ativo.");
+                    return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
+                }
+            }
+
+            // 2c) opcional: se campo plano === 'pago' mas sem datas, NÃO considerar automaticamente ativo
+            // (evita falsos positivos). Se quiser forçar, descomente a linha abaixo.
+            // if (String(empresaData?.plano || '').toLowerCase() === 'pago') return { hasActivePlan: true, isTrialActive: false, trialDaysRemaining: 0 };
+        } catch (e) {
+            console.warn("[DEBUG] Erro durante checagens por empresa em checkUserStatus:", e);
+            // não interrompe a verificação do trial abaixo
+        }
+
+        // 3) Checagem de trial do usuário (mantida)
         let trialDurationDays = empresaData?.freeEmDias ?? 15;
         let trialDaysRemaining = 0;
         let isTrialActive = false;
@@ -84,6 +133,7 @@ async function checkUserStatus(user, empresaData) {
             trialDaysRemaining = trialDurationDays;
             console.log(`[DEBUG] Trial: trialStart ausente, usando padrão: diasRestantes ${trialDaysRemaining}`);
         }
+
         return { hasActivePlan: false, isTrialActive, trialDaysRemaining };
     } catch (error) {
         console.error("❌ [checkUserStatus] Erro:", error);
