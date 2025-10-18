@@ -220,8 +220,13 @@
     <script type="module" src="./firebase-config.js"></script>
 
     <script type="module">
-        import { db } from './firebase-config.js';
+        // Mantive layout e lógica. Alterações mínimas:
+        // - garante que o usuário esteja autenticado antes de criar pagamentosPendentes
+        // - inclui createdBy e clienteId na entrada de pagamentosPendentes (suficiente para as regras atuais)
+        // - tratamento de erro mais claro para PERMISSION_DENIED
+        import { db, auth } from './firebase-config.js';
         import { doc, getDoc, collection, getDocs, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
         const linksDosPlanos = {
             1: "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=ca1b0887e74842659651f9763f203f13",
@@ -246,7 +251,7 @@
         let configPagamento = null; 
 
         // =====================================================================
-        // ✅ SUAS FUNÇÕES ORIGINAIS, 100% INALTERADAS
+        // FUNÇÕES ORIGINAIS (preservadas)
         // =====================================================================
         async function buscarDadosEmpresa(empresaId) {
             if (!empresaId) {
@@ -372,7 +377,7 @@
         }
         
         // =====================================================================
-        // ✅ ÚNICA FUNÇÃO ALTERADA PARA CORRIGIR A MONTAGEM DO CÓDIGO PIX E CRIAR REGISTRO DE PAGAMENTO
+        // ALTERAÇÃO MÍNIMA: garantir auth e incluir clienteId na criação do doc
         // =====================================================================
         function handlePix() {
             if (!planoSelecionado || !configPagamento) {
@@ -397,13 +402,11 @@
                 return `${id}${len}${valor}`;
             };
             
-            // --- INÍCIO DA CORREÇÃO ---
+            // Montagem do payload PIX (mantida)
             let payload = "000201";
-            
             const gui = formatarCampo("00", "BR.GOV.BCB.PIX");
             const pixKey = formatarCampo("01", chave);
             payload += formatarCampo("26", gui + pixKey);
-            
             payload += "52040000"; 
             payload += "5303986"; 
             payload += formatarCampo("54", precoPlanoSelecionado.toFixed(2));
@@ -424,7 +427,6 @@
             };
 
             const payloadComCRC = payload + "6304" + crc16(payload + "6304");
-            // --- FIM DA CORREÇÃO ---
 
             const qrcodeContainer = document.getElementById('pix-qrcode');
             qrcodeContainer.innerHTML = "";
@@ -447,7 +449,19 @@
             });
         });
 
-        // ALTEREI ESTA FUNÇÃO para também criar/registrar o pagamento na coleção pagamentosPendentes
+        // Helper para aguardar auth atual (se já logado, retorna imediatamente)
+        function getCurrentUserOnce() {
+            return new Promise((resolve) => {
+                const u = auth.currentUser;
+                if (u) return resolve(u);
+                const unsub = onAuthStateChanged(auth, (user) => {
+                    unsub();
+                    resolve(user);
+                });
+            });
+        }
+
+        // ALTERADO: inclui clienteId (request.rules exige) e createdBy
         async function confirmarPagamentoPix() {
             document.getElementById('pix-modal').style.display = 'none';
             botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Enviando confirmação...</button>`;
@@ -460,6 +474,14 @@
                 return;
             }
 
+            // obtém usuário autenticado (exige autenticação; necessário para regras)
+            const user = await getCurrentUserOnce();
+            if (!user) {
+                avisoSelecao.textContent = "Você precisa estar logado para confirmar pagamento. Faça login e tente novamente.";
+                document.querySelector('.card-plano.selecionado')?.click();
+                return;
+            }
+
             try {
                 const empresaRef = doc(db, "empresarios", empresaId);
 
@@ -469,7 +491,9 @@
                     metodo: "pix",
                     dataSolicitacao: serverTimestamp(),
                     plano: String(planoSelecionado ?? ""),
-                    nome: "PIX - confirmação pelo app"
+                    nome: "PIX - confirmação pelo app",
+                    createdBy: user.uid,
+                    clienteId: user.uid // <-- ADICIONADO para atender a regra create: clienteId == request.auth.uid
                 };
 
                 // atualiza o documento da empresa (mantendo a lógica original e adicionando pagamentoPendente)
@@ -479,7 +503,7 @@
                     updatedAt: serverTimestamp()
                 });
 
-                // cria um documento em pagamentosPendentes para o fluxo administrativo (para que admin veja valor/método)
+                // tenta criar documento em pagamentosPendentes (pode falhar por regras; tratamos o erro)
                 try {
                     await addDoc(collection(db, "pagamentosPendentes"), {
                         empresaId,
@@ -489,10 +513,15 @@
                         plano: String(planoSelecionado ?? ""),
                         nome: pagamentoPendente.nome,
                         dataSolicitacao: serverTimestamp(),
-                        createdAt: serverTimestamp()
+                        createdAt: serverTimestamp(),
+                        createdBy: user.uid,
+                        clienteId: user.uid // <-- ADICIONADO para satisfazer as regras de segurança
                     });
                 } catch (err) {
                     console.warn("Falha ao criar documento em pagamentosPendentes (não crítico):", err);
+                    if (err && (err.code === 'permission-denied' || String(err).toLowerCase().includes('permission'))) {
+                        avisoSelecao.textContent = "Confirmação enviada, porém não foi possível registrar na coleção pagamentosPendentes devido a permissões. O admin verá a pendência no documento da empresa.";
+                    }
                 }
 
                 document.getElementById('sucesso-modal').style.display = 'flex';
@@ -500,12 +529,11 @@
             } catch (error) {
                 console.error("Erro ao registrar confirmação de pagamento:", error);
                 avisoSelecao.textContent = "Ocorreu um erro ao enviar sua notificação. Tente novamente.";
-                // restaura botões para permitir nova tentativa
                 document.querySelector('.card-plano.selecionado')?.click();
             }
         }
 
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
+        // Carregamento inicial (preservado)
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get("empresaId");
