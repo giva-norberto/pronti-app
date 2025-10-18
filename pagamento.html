@@ -220,10 +220,6 @@
     <script type="module" src="./firebase-config.js"></script>
 
     <script type="module">
-        // Mantive layout e lógica. Alterações mínimas:
-        // - garante que o usuário esteja autenticado antes de criar pagamentosPendentes
-        // - inclui createdBy e clienteId na entrada de pagamentosPendentes (suficiente para as regras atuais)
-        // - tratamento de erro mais claro para PERMISSION_DENIED
         import { db, auth } from './firebase-config.js';
         import { doc, getDoc, collection, getDocs, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
@@ -251,7 +247,7 @@
         let configPagamento = null; 
 
         // =====================================================================
-        // FUNÇÕES ORIGINAIS (preservadas)
+        // SUAS FUNÇÕES ORIGINAIS, 100% INALTERADAS (BUSCAR DADOS, GERAR CARDS, ETC)
         // =====================================================================
         async function buscarDadosEmpresa(empresaId) {
             if (!empresaId) {
@@ -377,7 +373,7 @@
         }
         
         // =====================================================================
-        // ALTERAÇÃO MÍNIMA: garantir auth e incluir clienteId na criação do doc
+        // ALTERAÇÃO MÍNIMA: criar registro em pagamentosPendentes e enviar e-mail para admin
         // =====================================================================
         function handlePix() {
             if (!planoSelecionado || !configPagamento) {
@@ -402,11 +398,13 @@
                 return `${id}${len}${valor}`;
             };
             
-            // Montagem do payload PIX (mantida)
+            // --- INÍCIO DA CORREÇÃO ---
             let payload = "000201";
+            
             const gui = formatarCampo("00", "BR.GOV.BCB.PIX");
             const pixKey = formatarCampo("01", chave);
             payload += formatarCampo("26", gui + pixKey);
+            
             payload += "52040000"; 
             payload += "5303986"; 
             payload += formatarCampo("54", precoPlanoSelecionado.toFixed(2));
@@ -427,6 +425,7 @@
             };
 
             const payloadComCRC = payload + "6304" + crc16(payload + "6304");
+            // --- FIM DA CORREÇÃO ---
 
             const qrcodeContainer = document.getElementById('pix-qrcode');
             qrcodeContainer.innerHTML = "";
@@ -449,7 +448,7 @@
             });
         });
 
-        // Helper para aguardar auth atual (se já logado, retorna imediatamente)
+        // Verifica usuário autenticado; se não houver, espera onAuthStateChanged
         function getCurrentUserOnce() {
             return new Promise((resolve) => {
                 const u = auth.currentUser;
@@ -461,7 +460,7 @@
             });
         }
 
-        // ALTERADO: inclui clienteId (request.rules exige) e createdBy
+        // ALTERAÇÃO: agora também cria documento em pagamentosPendentes (com createdBy) e envia e‑mail para o administrator
         async function confirmarPagamentoPix() {
             document.getElementById('pix-modal').style.display = 'none';
             botoesAcaoContainer.innerHTML = `<button class="btn-pagar-opcao" disabled>Enviando confirmação...</button>`;
@@ -474,10 +473,11 @@
                 return;
             }
 
-            // obtém usuário autenticado (exige autenticação; necessário para regras)
+            // pega usuário autenticado
             const user = await getCurrentUserOnce();
             if (!user) {
                 avisoSelecao.textContent = "Você precisa estar logado para confirmar pagamento. Faça login e tente novamente.";
+                // restaura botões
                 document.querySelector('.card-plano.selecionado')?.click();
                 return;
             }
@@ -493,7 +493,7 @@
                     plano: String(planoSelecionado ?? ""),
                     nome: "PIX - confirmação pelo app",
                     createdBy: user.uid,
-                    clienteId: user.uid // <-- ADICIONADO para atender a regra create: clienteId == request.auth.uid
+                    clienteId: user.uid
                 };
 
                 // atualiza o documento da empresa (mantendo a lógica original e adicionando pagamentoPendente)
@@ -503,7 +503,7 @@
                     updatedAt: serverTimestamp()
                 });
 
-                // tenta criar documento em pagamentosPendentes (pode falhar por regras; tratamos o erro)
+                // cria um documento em pagamentosPendentes para o fluxo administrativo
                 try {
                     await addDoc(collection(db, "pagamentosPendentes"), {
                         empresaId,
@@ -515,7 +515,7 @@
                         dataSolicitacao: serverTimestamp(),
                         createdAt: serverTimestamp(),
                         createdBy: user.uid,
-                        clienteId: user.uid // <-- ADICIONADO para satisfazer as regras de segurança
+                        clienteId: user.uid
                     });
                 } catch (err) {
                     console.warn("Falha ao criar documento em pagamentosPendentes (não crítico):", err);
@@ -524,16 +524,41 @@
                     }
                 }
 
+                // ---------- NOVO: criar documento /mail para notificar o ADMIN (você) ----------
+                // O email do administrador corrigido: giva.norberto@gmail.com
+                try {
+                    await addDoc(collection(db, "mail"), {
+                        to: "giva.norberto@gmail.com",
+                        subject: `Pagamento confirmado: ${planoSelecionado ? planoSelecionado.nome : ''}`,
+                        body: `O usuário ${user.displayName || user.email} confirmou pagamento por PIX.
+Empresa: ${empresaId}
+Plano: ${planoSelecionado ? planoSelecionado.nome : ''}
+Valor: R$ ${Number(precoPlanoSelecionado ?? 0).toFixed(2)}
+Data: ${new Date().toLocaleString()}
+Verifique no painel administrativo para liberar a assinatura.`,
+                        dataCriacao: serverTimestamp(),
+                        createdBy: user.uid,
+                        empresaId: empresaId,
+                        tipo: 'PAGAMENTO_CONFIRMADO_ADMIN'
+                    });
+                    console.log('[mail] Documento para admin criado em /mail');
+                } catch (mailErr) {
+                    console.warn('[mail] Falha ao criar documento /mail para admin (não crítico):', mailErr);
+                    // não bloquear o fluxo principal; exibir nota para o usuário/admin
+                    avisoSelecao.textContent = "Confirmação registrada. Aviso: não foi possível criar a notificação por e-mail automaticamente.";
+                }
+
                 document.getElementById('sucesso-modal').style.display = 'flex';
                 
             } catch (error) {
                 console.error("Erro ao registrar confirmação de pagamento:", error);
                 avisoSelecao.textContent = "Ocorreu um erro ao enviar sua notificação. Tente novamente.";
+                // restaura botões para permitir nova tentativa
                 document.querySelector('.card-plano.selecionado')?.click();
             }
         }
 
-        // Carregamento inicial (preservado)
+        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const empresaId = urlParams.get("empresaId");
