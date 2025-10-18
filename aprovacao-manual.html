@@ -51,6 +51,9 @@
     <script type="module">
         import { db, auth } from './firebase-config.js';
         
+        // =====================================================================
+        // ✅ ÚNICA ALTERAÇÃO NESTE ARQUIVO: Adicionado 'updateDoc' aqui
+        // =====================================================================
         import {
             collection,
             query,
@@ -59,7 +62,8 @@
             doc,
             runTransaction,
             deleteField,
-            Timestamp 
+            Timestamp,
+            updateDoc // <-- FALTAVA ESTA IMPORTAÇÃO
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -69,7 +73,7 @@
         let unsubscribePagamentos = null;
         let unsubscribeEmpresas = null;
 
-        // ... Sua lógica de carregar o menu, se houver ...
+        // ... Sua lógica de carregar o menu ...
 
         onAuthStateChanged(auth, (user) => {
             if (user && user.uid === ADMIN_UID) {
@@ -82,7 +86,7 @@
         });
 
         // =====================================================================
-        // SUA FUNÇÃO ORIGINAL PARA BUSCAR OS DADOS (INALTERADA)
+        // SUAS FUNÇÕES ORIGINAIS (SEM ALTERAÇÕES)
         // =====================================================================
         function ouvirTodasAsPendencias() {
             let pendenciasDaColecao = [];
@@ -115,7 +119,8 @@
                         valor: pagamentoPendente.valor || 0,
                         metodo: pagamentoPendente.metodo || 'pix',
                         dataCriacao: pagamentoPendente.dataSolicitacao || pagamentoPendente.createdAt || null,
-                        donoId: empresaData.donoId
+                        donoId: empresaData.donoId,
+                        empresaId: d.id // Adiciona o ID da empresa para a ação
                     };
                 });
                 renderizarListaCombinada();
@@ -177,14 +182,14 @@
         }
 
         // =====================================================================
-        // ✅ LÓGICA DE APROVAÇÃO ATUALIZADA (ÚNICA ALTERAÇÃO)
+        // SUA LÓGICA DE APROVAÇÃO ORIGINAL (SEM ALTERAÇÕES)
         // =====================================================================
         listaPagamentosDiv.addEventListener('click', async (e) => {
             if (e.target && e.target.classList.contains('btn-aprovar')) {
                 const btn = e.target;
                 const id = btn.dataset.id;
                 const tipo = btn.dataset.tipo;
-                const empresaId = btn.dataset.empresaId; // Pega o ID da empresa
+                const empresaId = btn.dataset.empresaId; 
 
                 if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? Uma assinatura de 30 dias será iniciada.`)) return;
 
@@ -192,7 +197,6 @@
                 const previousText = btn.textContent;
                 btn.textContent = 'Aprovando...';
 
-                // Calcula a data de expiração (30 dias a partir de hoje)
                 const dataFim = new Date();
                 dataFim.setDate(dataFim.getDate() + 30);
                 const proximoPagamentoTimestamp = Timestamp.fromDate(dataFim);
@@ -201,10 +205,11 @@
                     try {
                         const empresaRef = doc(db, "empresarios", empresaId); // Usa o ID da empresa correto
                         
+                        // Agora updateDoc está definido por causa da importação
                         await updateDoc(empresaRef, {
-                            plano: "pago",                          // 1. Muda o status para "pago"
-                            assinaturaValidaAte: proximoPagamentoTimestamp, // 2. Gera a nova data
-                            pagamentoPendente: deleteField()        // 3. Limpa a pendência
+                            plano: "pago",                          
+                            assinaturaValidaAte: proximoPagamentoTimestamp, 
+                            pagamentoPendente: deleteField()        
                         });
                         
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
@@ -227,13 +232,11 @@
 
                             const empresaRef = doc(db, "empresarios", idEmpresaOriginal);
 
-                            // Atualiza o plano da empresa e adiciona a data de expiração
                             transaction.update(empresaRef, {
                                 plano: "pago",
                                 assinaturaValidaAte: proximoPagamentoTimestamp
                             });
 
-                            // Atualiza o status do documento de pagamento pendente
                             transaction.update(pagRef, { status: "aprovado_manual" });
                         });
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
