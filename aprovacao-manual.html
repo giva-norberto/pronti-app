@@ -50,10 +50,6 @@
 
     <script type="module">
         import { db, auth } from './firebase-config.js';
-        
-        // =====================================================================
-        // ✅ ÚNICA ALTERAÇÃO NESTE ARQUIVO: Adicionado 'updateDoc' aqui
-        // =====================================================================
         import {
             collection,
             query,
@@ -63,7 +59,7 @@
             runTransaction,
             deleteField,
             Timestamp,
-            updateDoc // <-- FALTAVA ESTA IMPORTAÇÃO
+            updateDoc
         } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
 
@@ -72,8 +68,6 @@
         const loadingMessage = document.getElementById('loading-message');
         let unsubscribePagamentos = null;
         let unsubscribeEmpresas = null;
-
-        // ... Sua lógica de carregar o menu ...
 
         onAuthStateChanged(auth, (user) => {
             if (user && user.uid === ADMIN_UID) {
@@ -84,26 +78,23 @@
                 listaPagamentosDiv.innerHTML = '<p id="empty-message">Acesso restrito a administradores.</p>';
             }
         });
-
-        // =====================================================================
-        // SUAS FUNÇÕES ORIGINAIS (SEM ALTERAÇÕES)
-        // =====================================================================
+        
         function ouvirTodasAsPendencias() {
             let pendenciasDaColecao = [];
             let pendenciasDoCampo = [];
 
+            // FONTE 1: Busca na coleção 'pagamentosPendentes'
             const pagamentosRef = collection(db, 'pagamentosPendentes');
             const qPagamentos = query(pagamentosRef, where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp']));
-
+            
             unsubscribePagamentos = onSnapshot(qPagamentos, (snapshot) => {
                 pendenciasDaColecao = snapshot.docs.map(d => ({
-                    id: d.id,
-                    tipo: 'colecao',
-                    ...d.data()
+                    id: d.id, tipo: 'colecao', ...d.data()
                 }));
                 renderizarListaCombinada();
             }, (err) => console.error('Erro ao ouvir pagamentosPendentes:', err));
 
+            // FONTE 2: Busca por empresas com o campo 'pagamentoPendente' (PIX)
             const empresasRef = collection(db, 'empresarios');
             const qEmpresas = query(empresasRef, where('pagamentoPendente.status', '==', 'aguardando_liberacao'));
 
@@ -112,15 +103,14 @@
                     const empresaData = d.data() || {};
                     const pagamentoPendente = empresaData.pagamentoPendente || {};
                     return {
-                        id: d.id,
-                        tipo: 'campo',
+                        id: d.id, tipo: 'campo',
                         clienteNome: empresaData.nomeFantasia || pagamentoPendente.nome || 'Cliente desconhecido',
                         planoNome: pagamentoPendente.plano ? `Plano para ${pagamentoPendente.plano} usuários` : 'Plano',
                         valor: pagamentoPendente.valor || 0,
                         metodo: pagamentoPendente.metodo || 'pix',
                         dataCriacao: pagamentoPendente.dataSolicitacao || pagamentoPendente.createdAt || null,
                         donoId: empresaData.donoId,
-                        empresaId: d.id // Adiciona o ID da empresa para a ação
+                        empresaId: d.id
                     };
                 });
                 renderizarListaCombinada();
@@ -148,12 +138,12 @@
                     listaPagamentosDiv.innerHTML = '<p id="empty-message">Nenhum pagamento pendente no momento.</p>';
                     return;
                 }
-
+                
                 listaPagamentosDiv.innerHTML = '';
                 todasAsPendencias.forEach(pagamento => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'item';
-
+                    
                     const metodoRaw = pagamento.metodo || pagamento.status || 'desconhecido';
                     const metodoClass = safeCssClassForMetodo(metodoRaw);
                     const metodoLabel = String(metodoRaw).replace(/_/g, ' ');
@@ -181,38 +171,40 @@
             }
         }
 
-        // =====================================================================
-        // SUA LÓGICA DE APROVAÇÃO ORIGINAL (SEM ALTERAÇÕES)
-        // =====================================================================
         listaPagamentosDiv.addEventListener('click', async (e) => {
             if (e.target && e.target.classList.contains('btn-aprovar')) {
                 const btn = e.target;
                 const id = btn.dataset.id;
                 const tipo = btn.dataset.tipo;
-                const empresaId = btn.dataset.empresaId; 
+                const empresaId = btn.dataset.empresaId;
 
-                if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? Uma assinatura de 30 dias será iniciada.`)) return;
+                if (!confirm(`Tem certeza de que deseja APROVAR este pagamento? Uma assinatura será iniciada.`)) return;
 
                 btn.disabled = true;
                 const previousText = btn.textContent;
                 btn.textContent = 'Aprovando...';
 
+                // Calcular validade futura (padrão: 30 dias)
                 const dataFim = new Date();
                 dataFim.setDate(dataFim.getDate() + 30);
                 const proximoPagamentoTimestamp = Timestamp.fromDate(dataFim);
 
                 if (tipo === 'campo') { // Aprovação do PIX (salvo na empresa)
                     try {
-                        const empresaRef = doc(db, "empresarios", empresaId); // Usa o ID da empresa correto
-                        
-                        // Agora updateDoc está definido por causa da importação
+                        const empresaRef = doc(db, "empresarios", empresaId);
                         await updateDoc(empresaRef, {
-                            plano: "pago",                          
-                            assinaturaValidaAte: proximoPagamentoTimestamp, 
-                            pagamentoPendente: deleteField()        
+                            plano: "pago",
+                            status: "ativo",
+                            assinaturaAtiva: true,
+                            assinaturaValidaAte: proximoPagamentoTimestamp,
+                            freeEmDias: 0,
+                            trialDisponivel: false,
+                            pagamentoPendente: deleteField()
                         });
-                        
+
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
+                        btn.textContent = 'Aprovado';
+                        btn.disabled = true;
                     } catch (error) {
                         console.error("Erro ao aprovar pagamento de campo:", error);
                         alert('Falha ao aprovar: ' + (error?.message || error));
@@ -232,14 +224,24 @@
 
                             const empresaRef = doc(db, "empresarios", idEmpresaOriginal);
 
+                            // Atualiza empresa com campos solicitados
                             transaction.update(empresaRef, {
                                 plano: "pago",
-                                assinaturaValidaAte: proximoPagamentoTimestamp
+                                status: "ativo",
+                                assinaturaAtiva: true,
+                                assinaturaValidaAte: proximoPagamentoTimestamp,
+                                freeEmDias: 0,
+                                trialDisponivel: false,
+                                pagamentoPendente: deleteField()
                             });
 
+                            // Atualiza o documento de pagamento na coleção como aprovado manualmente
                             transaction.update(pagRef, { status: "aprovado_manual" });
                         });
+
                         alert('Pagamento aprovado! Acesso liberado por 30 dias.');
+                        btn.textContent = 'Aprovado';
+                        btn.disabled = true;
                     } catch (error) {
                         console.error("Erro ao aprovar pagamento de coleção:", error);
                         alert('Falha ao aprovar: ' + (error?.message || error));
