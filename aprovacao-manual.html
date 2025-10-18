@@ -93,7 +93,6 @@
             const pagamentosRef = collection(db, 'pagamentosPendentes');
             const qPagamentos = query(pagamentosRef, where('status', 'in', ['pendente_confirmacao', 'aguardando_pagamento_mp', 'aguardando_liberacao']));
 
-            // Handler async que enriquece entradas da coleção com nomeFantasia da empresa quando necessário
             unsubscribePagamentos = onSnapshot(qPagamentos, async (snapshot) => {
                 try {
                     const docs = await Promise.all(snapshot.docs.map(async d => {
@@ -101,19 +100,41 @@
                         const id = d.id;
                         const empresaId = data.empresaId || null;
 
-                        // prioridade para campos já presentes no documento de pagamento
-                        let clienteNome = data.clienteNome || data.nome || data.nomeFantasia || null;
+                        // monta dataCriacao a partir dos campos possíveis
+                        const dataCriacao = data.dataCriacao || data.dataSolicitacao || data.createdAt || data.created_at || null;
 
-                        // se não tiver nome, tenta enriquecer buscando a empresa
-                        if (!clienteNome && empresaId) {
+                        // prioridade para clienteNome já presente no documento
+                        let clienteNome = data.clienteNome || data.nome || data.nomeFantasia || null;
+                        let empresaNome = null;
+                        let donoNome = null;
+                        let donoId = null;
+
+                        if (empresaId) {
                             try {
                                 const empSnap = await getDoc(doc(db, "empresarios", empresaId));
                                 if (empSnap.exists()) {
                                     const empData = empSnap.data() || {};
-                                    clienteNome = empData.nomeFantasia || empData.nome || clienteNome;
+                                    empresaNome = empData.nomeFantasia || empData.nome || null;
+                                    // tente pegar donoId do documento da empresa
+                                    donoId = empData.donoId || null;
+                                    // se clienteNome ainda estiver vazio, use o nomeFantasia da empresa
+                                    clienteNome = clienteNome || empresaNome;
                                 }
                             } catch (err) {
                                 console.warn('Erro ao buscar empresa para enriquecer pagamento:', empresaId, err);
+                            }
+                        }
+
+                        // se temos donoId, tenta pegar nome do dono (na coleção usuarios)
+                        if (!donoNome && donoId) {
+                            try {
+                                const userSnap = await getDoc(doc(db, "usuarios", donoId));
+                                if (userSnap.exists()) {
+                                    const udata = userSnap.data() || {};
+                                    donoNome = udata.displayName || udata.nome || udata.email || null;
+                                }
+                            } catch (err) {
+                                console.warn('Erro ao buscar usuário dono para enriquecer pagamento:', donoId, err);
                             }
                         }
 
@@ -121,7 +142,10 @@
                             id,
                             tipo: 'colecao',
                             clienteNome: clienteNome || 'Cliente desconhecido',
+                            empresaNome: empresaNome || null,
+                            donoNome: donoNome || null,
                             empresaId,
+                            dataCriacao,
                             ...data
                         };
                     }));
@@ -144,6 +168,8 @@
                         id: d.id,
                         tipo: 'campo',
                         clienteNome: empresaData.nomeFantasia || pagamentoPendente.nome || 'Cliente desconhecido',
+                        empresaNome: empresaData.nomeFantasia || empresaData.nome || null,
+                        donoNome: null, // podemos preencher via consulta adicional se necessário
                         planoNome: pagamentoPendente.plano ? `Plano para ${pagamentoPendente.plano} usuários` : 'Plano',
                         valor: pagamentoPendente.valor ?? 0,
                         metodo: pagamentoPendente.metodo || 'pix',
@@ -168,6 +194,8 @@
                                 id: d.id,
                                 tipo: 'campo',
                                 clienteNome: empresaData.nomeFantasia || pagamentoPendente.nome || 'Cliente desconhecido',
+                                empresaNome: empresaData.nomeFantasia || empresaData.nome || null,
+                                donoNome: null,
                                 planoNome: pagamentoPendente.plano ? `Plano para ${pagamentoPendente.plano} usuários` : 'Plano',
                                 valor: pagamentoPendente.valor ?? 0,
                                 metodo: pagamentoPendente.metodo || 'pix',
@@ -187,10 +215,13 @@
                             if (!snapPag.empty) {
                                 const pdoc = snapPag.docs[0];
                                 const pdata = pdoc.data() || {};
+                                // tenta enriquecer com nomeFantasia da empresa
                                 return {
                                     id: pdoc.id,
                                     tipo: 'colecao',
                                     clienteNome: empresaData.nomeFantasia || pdata.nome || 'Cliente desconhecido',
+                                    empresaNome: empresaData.nomeFantasia || empresaData.nome || null,
+                                    donoNome: null,
                                     planoNome: pdata.plano ? `Plano para ${pdata.plano} usuários` : 'Plano',
                                     valor: pdata.valor ?? pdata.amount ?? 0,
                                     metodo: pdata.metodo || pdata.paymentMethod || 'desconhecido',
@@ -207,6 +238,8 @@
                             id: d.id,
                             tipo: 'plano',
                             clienteNome: empresaData.nomeFantasia || 'Cliente desconhecido',
+                            empresaNome: empresaData.nomeFantasia || empresaData.nome || null,
+                            donoNome: null,
                             planoNome: 'Aguardando liberação (plano)',
                             valor: empresaData.valorPendencia ?? 0,
                             metodo: 'aguardando_liberacao',
@@ -273,6 +306,9 @@
                             existing.metodo = existing.metodo ?? p.metodo;
                             existing.clienteNome = existing.clienteNome ?? p.clienteNome;
                             existing.planoNome = existing.planoNome ?? p.planoNome;
+                            existing.empresaNome = existing.empresaNome ?? p.empresaNome;
+                            existing.donoNome = existing.donoNome ?? null;
+                            existing.dataCriacao = existing.dataCriacao ?? p.dataCriacao;
                             mapByEmpresa.set(key, existing);
                         }
                     }
@@ -288,6 +324,8 @@
                         existing.valor = existing.valor ?? p.valor;
                         existing.metodo = existing.metodo ?? p.metodo;
                         existing.planoNome = existing.planoNome ?? p.planoNome;
+                        existing.empresaNome = existing.empresaNome ?? p.empresaNome;
+                        existing.dataCriacao = existing.dataCriacao ?? p.dataCriacao;
                         mapByEmpresa.set(key, existing);
                     }
                 });
@@ -308,10 +346,14 @@
                     const metodoRaw = pagamento.metodo || pagamento.status || 'desconhecido';
                     const metodoClass = safeCssClassForMetodo(metodoRaw);
                     const metodoLabel = metodoLabelHumanizado(metodoRaw);
-                    const dateObj = normalizeDate(pagamento.dataCriacao);
+                    const dateObj = normalizeDate(pagamento.dataCriacao || pagamento.createdAt || pagamento.dataSolicitacao || pagamento.dataCriacao);
                     const dataFormatada = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'Data indisponível';
                     const valorFormatado = formatValor(pagamento.valor ?? 0);
-                    const clienteNome = pagamento.clienteNome || pagamento.nomeFantasia || 'Cliente desconhecido';
+
+                    // preferir mostrar nome fantasia da empresa; se não houver, mostra clienteNome
+                    const empresaNomeExibir = pagamento.empresaNome || pagamento.clienteNome || 'Cliente desconhecido';
+                    const donoNomeExibir = pagamento.donoNome || pagamento.donoId || ''; // exibe donoNome se disponível
+
                     const docIdDisplay = pagamento.empresaId || pagamento.empresaId || pagamento.id || 'ID indisponível';
                     const planoNome = pagamento.planoNome || pagamento.plano || 'Plano';
                     const metodoTag = `<span class="metodo ${metodoClass}">${metodoLabel}</span>`;
@@ -320,8 +362,8 @@
 
                     itemDiv.innerHTML = `
                         <div class="info">
-                            <p class="nome">${clienteNome}</p>
-                            <p class="doc-id">ID da Empresa: ${docIdDisplay}</p>
+                            <p class="nome">${empresaNomeExibir}</p>
+                            <p class="doc-id">ID da Empresa: ${docIdDisplay}${donoNomeExibir ? ` — Dono: ${donoNomeExibir}` : ''}</p>
                             <p class="plano">${planoNome} - ${valorFormatado} ${metodoTag} - ${dataFormatada}</p>
                         </div>
                         <div class="acoes">
