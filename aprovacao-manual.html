@@ -72,11 +72,6 @@
         let unsubscribeEmpresasPendente = null;
         let unsubscribeEmpresasPlano = null;
 
-        // Mantivemos o layout exatamente como pediu e acrescentei apenas a lógica necessária para:
-        // - mostrar valor do plano (procurando no pagamentoPendentes ou no pagamentoPendente do documento da empresa)
-        // - mostrar tipo do pagamento (PIX, Mercado Pago, etc.) em badge
-        // - permitir aprovar (atualiza empresa e, quando aplicável, marca pagamento como aprovado_manual)
-
         onAuthStateChanged(auth, (user) => {
             if (user && user.uid === ADMIN_UID) {
                 ouvirTodasAsPendencias();
@@ -126,7 +121,6 @@
             // Fonte 3: empresas com plano == 'aguardando_liberacao' (se seu fluxo gravou nesse campo)
             const qEmpresasPlano = query(empresasRef, where('plano', '==', 'aguardando_liberacao'));
             unsubscribeEmpresasPlano = onSnapshot(qEmpresasPlano, (snapshot) => {
-                // enriquecemos cada empresa tentando localizar um pagamento na coleção (para obter valor e metodo)
                 (async () => {
                     const list = await Promise.all(snapshot.docs.map(async d => {
                         const empresaData = d.data() || {};
@@ -222,21 +216,51 @@
                 return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             }
 
-            // constrói lista única e renderiza
+            // Constrói lista única por empresa e renderiza (evita duplicatas)
             function renderizarListaCombinada() {
-                const mapByKey = new Map();
+                const mapByEmpresa = new Map();
 
-                pendenciasDaColecao.forEach(p => mapByKey.set(`pag#${p.id}`, p));
+                // 1) Prioriza pagamentos da coleção (se houver empresaId, usa emp#empresaId como chave)
+                pendenciasDaColecao.forEach(p => {
+                    const empresaKey = p.empresaId || null;
+                    const key = empresaKey ? `emp#${empresaKey}` : `pag#${p.id}`;
+                    // armazena origem e dados
+                    mapByEmpresa.set(key, Object.assign({ origem: 'colecao' }, p));
+                });
+
+                // 2) Adiciona pendencias do campo (empresa.pagamentoPendente) somente se empresa não estiver presente
                 pendenciasDoCampo.forEach(p => {
                     const key = `emp#${p.empresaId}`;
-                    if (!mapByKey.has(key)) mapByKey.set(key, p);
-                });
-                pendenciasDoPlano.forEach(p => {
-                    const key = `emp#${p.empresaId}`;
-                    if (!mapByKey.has(key)) mapByKey.set(key, p);
+                    if (!mapByEmpresa.has(key)) {
+                        mapByEmpresa.set(key, Object.assign({ origem: 'campo' }, p));
+                    } else {
+                        // se já existe um doc da colecao, mescla campos faltantes
+                        const existing = mapByEmpresa.get(key);
+                        if (existing.origem === 'colecao') {
+                            existing.valor = existing.valor ?? p.valor;
+                            existing.metodo = existing.metodo ?? p.metodo;
+                            existing.clienteNome = existing.clienteNome ?? p.clienteNome;
+                            existing.planoNome = existing.planoNome ?? p.planoNome;
+                            mapByEmpresa.set(key, existing);
+                        }
+                    }
                 });
 
-                const todasAsPendencias = Array.from(mapByKey.values());
+                // 3) Adiciona pendenciasDoPlano (empresas com plano='aguardando_liberacao') se necessário
+                pendenciasDoPlano.forEach(p => {
+                    const key = `emp#${p.empresaId}`;
+                    if (!mapByEmpresa.has(key)) {
+                        mapByEmpresa.set(key, Object.assign({ origem: p.tipo || 'plano' }, p));
+                    } else {
+                        const existing = mapByEmpresa.get(key);
+                        existing.valor = existing.valor ?? p.valor;
+                        existing.metodo = existing.metodo ?? p.metodo;
+                        existing.planoNome = existing.planoNome ?? p.planoNome;
+                        mapByEmpresa.set(key, existing);
+                    }
+                });
+
+                const todasAsPendencias = Array.from(mapByEmpresa.values());
                 loadingMessage.style.display = 'none';
 
                 if (todasAsPendencias.length === 0) {
@@ -256,12 +280,13 @@
                     const dataFormatada = dateObj ? dateObj.toLocaleDateString('pt-BR') : 'Data indisponível';
                     const valorFormatado = formatValor(pagamento.valor ?? 0);
                     const clienteNome = pagamento.clienteNome || pagamento.nomeFantasia || 'Cliente desconhecido';
-                    const docIdDisplay = pagamento.empresaId || pagamento.id || 'ID indisponível';
-                    const planoNome = pagamento.planoNome || 'Plano';
+                    // preferir mostrar empresaId (chave emp#...), fallback para pagamento id
+                    const docIdDisplay = pagamento.empresaId || pagamento.empresaId || pagamento.id || 'ID indisponível';
+                    const planoNome = pagamento.planoNome || pagamento.plano || 'Plano';
                     const metodoTag = `<span class="metodo ${metodoClass}">${metodoLabel}</span>`;
 
-                    // tipoBtn: 'colecao' (doc pagamentosPendentes) ou 'campo' (empresa)
-                    const tipoBtn = (pagamento.tipo === 'colecao' || (pagamento.id && pagamento.tipo === 'colecao')) ? 'colecao' : 'campo';
+                    // tipoBtn: se a origem for 'colecao' então 'colecao', caso contrário 'campo'
+                    const tipoBtn = (pagamento.origem === 'colecao' || pagamento.tipo === 'colecao') ? 'colecao' : 'campo';
 
                     itemDiv.innerHTML = `
                         <div class="info">
