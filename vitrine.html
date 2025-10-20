@@ -37,6 +37,8 @@
         .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
         .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
         .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
+        /* badge para serviços inclusos no plano */
+        .badge-incluso { background: #10b981; color: #fff; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
         .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
         .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
         .header-vitrine-card {
@@ -110,6 +112,8 @@
             margin: 0 auto;
             max-width: 900px;
         }
+        /* estilos básicos para cards de serviço (apenas para consistência visual) */
+        .servico-card { background: #fff; color: #374151; padding: 14px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
     </style>
 </head>
 <body>
@@ -203,7 +207,7 @@
                 <div style="text-align:center;color:#9ca3af;margin:16px 0;">ou</div>
                 <form id="modal-auth-form-login">
                     <input id="modal-auth-login-email" type="email" placeholder="E-mail" required>
-                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>
+                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required autocomplete="current-password">
                     <button class="modal-auth-btn modal-auth-btn-submit">Entrar</button>
                 </form>
                 <div style="text-align:center;margin-top:16px;">
@@ -215,7 +219,7 @@
                 <form id="modal-auth-form-cadastro">
                     <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
                     <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
-                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
+                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required autocomplete="new-password">
                     <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>
                     <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
                 </form>
@@ -380,7 +384,12 @@
             try {
                 await marcarServicosInclusosParaUsuario(listaServicos, empresaId);
             } catch (err) {
-                console.warn('Erro ao marcar serviços por assinatura (não bloqueia render):', err);
+                // tratamos permissão negada de forma silenciosa para não poluir o console
+                if (err && err.code === 'permission-denied') {
+                    console.info('Sem permissão para ler assinaturas; serviços não marcados (permission-denied).');
+                } else {
+                    console.warn('Erro ao marcar serviços por assinatura (não bloqueia render):', err && err.message ? err.message : err);
+                }
             }
 
             const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
