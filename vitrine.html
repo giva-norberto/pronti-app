@@ -37,6 +37,8 @@
         .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
         .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
         .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
+        /* badge para serviços inclusos no plano */
+        .badge-incluso { background: #10b981; color: #fff; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
         .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
         .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
         .header-vitrine-card {
@@ -110,6 +112,8 @@
             margin: 0 auto;
             max-width: 900px;
         }
+        /* estilos básicos para cards de serviço (apenas para consistência visual) */
+        .servico-card { background: #fff; color: #374151; padding: 14px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
     </style>
 </head>
 <body>
@@ -347,9 +351,13 @@
             }
         });
     </script>
+
     <script type="module">
         import { db } from './vitrini-firebase.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        // Import mínimo para marcar serviços inclusos sem alterar outras lógicas
+        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
+
         function getHojeDiaSemana( ) { return new Date().getDay(); }
         async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
             if (!empresaId) return;
@@ -372,12 +380,34 @@
             const servicosRef = collection(db, "empresarios", empresaId, "servicos");
             const snapshot = await getDocs(servicosRef);
             const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
+
+            // aplicar promoções (lógica existente)
             await aplicarPromocoesNaVitrine(listaServicos, empresaId);
+
+            // marcar serviços inclusos para o usuário atual (MUDANÇA MÍNIMA: apenas detecção/flag para UI)
+            // Isso não altera sua lógica existente — apenas adiciona os campos `inclusoAssinatura` e `precoCobrado` na listaServicos
+            try {
+                await marcarServicosInclusosParaUsuario(listaServicos, empresaId);
+            } catch (err) {
+                console.warn("Erro ao marcar serviços por assinatura (não bloqueia render):", err);
+            }
+
             const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
             listaServicosDiv.innerHTML = "";
             listaServicos.forEach(servico => {
                 const div = document.createElement("div"); div.classList.add("servico-card"); let precoHtml = "";
-                if (servico.promocao) { precoHtml = `<span class="preco-original">R$ ${servico.promocao.precoOriginal.toFixed(2)}</span> <span class="preco-promocional">R$ ${servico.promocao.precoComDesconto.toFixed(2)}</span> <span class="badge-promocao">PROMO</span>`; } else { precoHtml = `<span class="preco-promocional">R$ ${servico.preco.toFixed(2)}</span>`; }
+
+                // PREFERE precoCobrado (assinatura) > promocao > preco normal
+                if (servico.precoCobrado != null) {
+                    // quando definido (ex.: 0), exibe preço cobrado (geralmente 0) e badge de incluso
+                    const precoExibido = Number(servico.precoCobrado).toFixed(2);
+                    precoHtml = `<span class="preco-promocional">R$ ${precoExibido}</span> <span class="badge-incluso">Incluso no plano</span>`;
+                } else if (servico.promocao) {
+                    precoHtml = `<span class="preco-original">R$ ${servico.promocao.precoOriginal.toFixed(2)}</span> <span class="preco-promocional">R$ ${servico.promocao.precoComDesconto.toFixed(2)}</span> <span class="badge-promocao">PROMO</span>`;
+                } else {
+                    precoHtml = `<span class="preco-promocional">R$ ${Number(servico.preco).toFixed(2)}</span>`;
+                }
+
                 div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
                 listaServicosDiv.appendChild(div);
             });
@@ -385,6 +415,7 @@
         let empresaId = localStorage.getItem("empresaAtivaId") || null;
         if (empresaId) { renderizarServicosVitrine(empresaId); }
     </script>
+
     <script type="module">
         import { state } from './vitrini-state.js';
         import { fazerLogin } from './vitrini-auth.js';
@@ -411,6 +442,7 @@
             }
         });
     </script>
+
     <script type="module">
         import { db, auth } from './vitrini-firebase.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
