@@ -37,8 +37,6 @@
         .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
         .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
         .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
-        /* badge para serviços inclusos no plano */
-        .badge-incluso { background: #10b981; color: #fff; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
         .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
         .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
         .header-vitrine-card {
@@ -112,8 +110,6 @@
             margin: 0 auto;
             max-width: 900px;
         }
-        /* estilos básicos para cards de serviço (apenas para consistência visual) */
-        .servico-card { background: #fff; color: #374151; padding: 14px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
     </style>
 </head>
 <body>
@@ -351,38 +347,10 @@
             }
         });
     </script>
-
     <script type="module">
-        import { db, auth } from './vitrini-firebase.js';
+        import { db } from './vitrini-firebase.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        // Module loader: dynamic import with fallback and graceful handling.
-        // We avoid a static import that fails with MIME/404 and instead attempt to load possible paths.
-        let marcarServicosInclusosParaUsuario = null;
-
-        async function tryLoadAssinaturaModule() {
-            const candidatePaths = [
-                './vitrine-assinatura-integration.js',
-                './scripts/vitrine-assinatura-integration.js',
-                '/vitrine-assinatura-integration.js'
-            ];
-            for (const p of candidatePaths) {
-                try {
-                    const mod = await import(p);
-                    // try named export then default
-                    marcarServicosInclusosParaUsuario = mod.marcarServicosInclusosParaUsuario || (mod.default && mod.default.marcarServicosInclusosParaUsuario) || mod.default;
-                    if (typeof marcarServicosInclusosParaUsuario === 'function') {
-                        console.info(`Módulo de assinaturas carregado de: ${p}`);
-                        return;
-                    } else {
-                        console.warn(`Módulo importado de ${p} não exporta a função esperada.`);
-                    }
-                } catch (err) {
-                    // silenciar para tentar próximos caminhos
-                    console.debug(`Falha ao importar ${p}:`, err && err.message ? err.message : err);
-                }
-            }
-            console.warn('Não foi possível carregar vitrine-assinatura-integration.js. A vitrine funcionará sem marcar serviços por assinatura.');
-        }
+        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
 
         function getHojeDiaSemana( ) { return new Date().getDay(); }
         async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
@@ -402,14 +370,23 @@
                 }
             });
         }
+        async function renderizarServicosVitrine(empresaId) {
+            const servicosRef = collection(db, "empresarios", empresaId, "servicos");
+            const snapshot = await getDocs(servicosRef);
+            const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
+            await aplicarPromocoesNaVitrine(listaServicos, empresaId);
 
-        // função de renderização isolada (para permitir re-render após marcar assinaturas)
-        function renderListaServicos(listaServicosDiv, listaServicos) {
+            // marca serviços inclusos do assinante (se houver) - alteração mínima
+            try {
+                await marcarServicosInclusosParaUsuario(listaServicos, empresaId);
+            } catch (err) {
+                console.warn('Erro ao marcar serviços por assinatura (não bloqueia render):', err);
+            }
+
+            const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
             listaServicosDiv.innerHTML = "";
             listaServicos.forEach(servico => {
-                const div = document.createElement("div");
-                div.classList.add("servico-card");
-                let precoHtml = "";
+                const div = document.createElement("div"); div.classList.add("servico-card"); let precoHtml = "";
 
                 // PREFERE precoCobrado (assinatura) > promocao > preco normal
                 if (servico.precoCobrado != null) {
@@ -418,68 +395,16 @@
                 } else if (servico.promocao) {
                     precoHtml = `<span class="preco-original">R$ ${servico.promocao.precoOriginal.toFixed(2)}</span> <span class="preco-promocional">R$ ${servico.promocao.precoComDesconto.toFixed(2)}</span> <span class="badge-promocao">PROMO</span>`;
                 } else {
-                    precoHtml = `<span class="preco-promocional">R$ ${Number(servico.preco).toFixed(2)}</span>`;
+                    precoHtml = `<span class="preco-promocional">R$ ${servico.preco.toFixed(2)}</span>`;
                 }
 
                 div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
                 listaServicosDiv.appendChild(div);
             });
         }
-
-        async function renderizarServicosVitrine(empresaId) {
-            const servicosRef = collection(db, "empresarios", empresaId, "servicos");
-            const snapshot = await getDocs(servicosRef);
-            const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
-
-            // aplicar promoções (lógica existente)
-            await aplicarPromocoesNaVitrine(listaServicos, empresaId);
-
-            const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
-
-            // render inicial (sem considerar assinatura)
-            renderListaServicos(listaServicosDiv, listaServicos);
-
-            // tentar carregar o módulo (se ainda não carregado) e marcar serviços por assinatura
-            try {
-                if (!marcarServicosInclusosParaUsuario) {
-                    await tryLoadAssinaturaModule();
-                }
-
-                if (typeof marcarServicosInclusosParaUsuario === 'function') {
-                    // Se o usuário já estiver autenticado, aplica imediatamente
-                    if (auth.currentUser) {
-                        console.info('Usuário autenticado — aplicando marcação de assinaturas...');
-                        await marcarServicosInclusosParaUsuario(listaServicos, empresaId);
-                        renderListaServicos(listaServicosDiv, listaServicos);
-                        console.info('Serviços marcados (assinatura):', listaServicos.filter(s => s.precoCobrado != null));
-                    } else {
-                        // registra listener para aplicar após login (uma vez)
-                        const unsub = onAuthStateChanged(auth, async (user) => {
-                            if (user) {
-                                try {
-                                    console.info('Login detectado — aplicando marcação de assinaturas...');
-                                    await marcarServicosInclusosParaUsuario(listaServicos, empresaId);
-                                    renderListaServicos(listaServicosDiv, listaServicos);
-                                    console.info('Serviços atualizados após login (assinatura):', listaServicos.filter(s => s.precoCobrado != null));
-                                } catch (err) {
-                                    console.warn('Erro ao marcar serviços após login:', err);
-                                } finally {
-                                    unsub();
-                                }
-                            }
-                        });
-                    }
-                } else {
-                    console.debug('Função marcarServicosInclusosParaUsuario não disponível — pulando marcação de assinaturas.');
-                }
-            } catch (err) {
-                console.warn("Erro ao marcar serviços por assinatura (não bloqueia render):", err);
-            }
-        }
         let empresaId = localStorage.getItem("empresaAtivaId") || null;
         if (empresaId) { renderizarServicosVitrine(empresaId); }
     </script>
-
     <script type="module">
         import { state } from './vitrini-state.js';
         import { fazerLogin } from './vitrini-auth.js';
