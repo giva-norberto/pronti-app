@@ -247,20 +247,19 @@
                 }
                 
                 listaPagamentosDiv.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const pagamento = { id: doc.id, ...doc.data() };
+                snapshot.forEach(docSnap => {
+                    const pagamento = { id: docSnap.id, ...docSnap.data() };
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'item';
                     
-                    const metodoTag = `<span class="metodo ${pagamento.metodo}">${pagamento.metodo.replace('_', ' ')}</span>`;
-                    const dataFormatada = pagamento.dataCriacao?.toDate().toLocaleDateString('pt-BR') || 'Data indisponível';
+                    const metodoTag = `<span class="metodo ${pagamento.metodo}">${(pagamento.metodo || '').replace('_', ' ')}</span>`;
+                    const dataFormatada = pagamento.dataCriacao?.toDate?.().toLocaleDateString('pt-BR') || 'Data indisponível';
 
-                    // ##### ALTERAÇÃO AQUI: Adicionado o ID do documento #####
                     itemDiv.innerHTML = `
                         <div class="info">
                             <p class="nome">${pagamento.clienteNome}</p>
                             <p class="doc-id">ID: ${pagamento.id}</p>
-                            <p class="plano">${pagamento.planoNome} - R$ ${pagamento.valor.toFixed(2)} ${metodoTag} - ${dataFormatada}</p>
+                            <p class="plano">${pagamento.planoNome || ''} - R$ ${Number(pagamento.valor || 0).toFixed(2)} ${metodoTag} - ${dataFormatada}</p>
                         </div>
                         <div class="acoes">
                             <button class="btn-aprovar" data-id="${pagamento.id}">Aprovar</button>
@@ -281,14 +280,21 @@
 
                 try {
                     await runTransaction(db, async (transaction) => {
+                        // --- READS: executar todas as leituras primeiro ---
                         const pagRef = doc(db, "pagamentosPendentes", pagamentoId);
                         const pagDoc = await transaction.get(pagRef);
                         if (!pagDoc.exists()) throw new Error("Documento do pagamento não existe mais.");
-                        
                         const dadosPagamento = pagDoc.data();
+
                         const clienteRef = doc(db, `empresarios/${dadosPagamento.empresaId}/clientes/${dadosPagamento.clienteId}`);
-                        
                         const clienteSnap = await transaction.get(clienteRef);
+
+                        // Ler o plano DENTRO da transação (leitura antes de qualquer escrita)
+                        const planoRef = doc(db, `empresarios/${dadosPagamento.empresaId}/planosDeAssinatura/${dadosPagamento.planoId}`);
+                        const planoSnap = await transaction.get(planoRef);
+                        const servicosPlano = planoSnap.exists() ? (Array.isArray(planoSnap.data().servicosInclusos) ? planoSnap.data().servicosInclusos : []) : [];
+
+                        // --- WRITES: agora que todas as leituras foram feitas, podemos escrever ---
                         if (!clienteSnap.exists()) {
                             transaction.set(clienteRef, {
                                 nome: dadosPagamento.clienteNome,
@@ -298,13 +304,8 @@
                         }
                         
                         const dataInicio = new Date();
-                        const dataFim = new Date();
+                        const dataFim = new Date(dataInicio);
                         dataFim.setMonth(dataFim.getMonth() + 1);
-
-                        // Ler o plano dentro da transação para copiar serviços (mantendo lógica existente)
-                        const planoRef = doc(db, `empresarios/${dadosPagamento.empresaId}/planosDeAssinatura/${dadosPagamento.planoId}`);
-                        const planoSnap = await transaction.get(planoRef);
-                        const servicosPlano = planoSnap.exists() ? (Array.isArray(planoSnap.data().servicosInclusos) ? planoSnap.data().servicosInclusos : []) : [];
 
                         // Prepara serviços para a assinatura: quantidadeRestante baseado no plano (0 = ilimitado)
                         const servicosParaAssinatura = servicosPlano.map(s => ({
@@ -358,7 +359,7 @@
                     // opcional: atualizar UI (o onSnapshot cuidará de remover o item)
                 } catch (error) {
                     console.error("Erro ao aprovar pagamento:", error);
-                    alert('Falha ao aprovar o pagamento: ' + error.message);
+                    alert('Falha ao aprovar o pagamento: ' + (error.message || error));
                     e.target.disabled = false;
                     e.target.textContent = 'Aprovar';
                 }
