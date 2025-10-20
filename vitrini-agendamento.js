@@ -1,5 +1,4 @@
-// ======================================================================
-// vitrini-agendamento.js (REVISADO COM ENVIO DE E-MAIL)
+// vitrini-agendamento.js (REVISADO COM ENVIO DE E-MAIL E CAMPOS DE ASSINATURA NO AGENDAMENTO)
 // ======================================================================
 
 // ✅ Conexão correta da vitrine
@@ -167,12 +166,23 @@ async function enviarEmailNotificacao(agendamento, currentUser) {
 
 
 // ======================================================================
-// 🔧 Lógica principal de salvamento de agendamento (LÓGICA 100% PRESERVADA)
+// 🔧 Lógica principal de salvamento de agendamento (LÓGICA 100% PRESERVADA, + CAMPOS NOVOS)
 // ======================================================================
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
-        await addDoc(agendamentosRef, {
+
+        // Preservar valores originais e garantir campos novos para relatórios:
+        const precoOriginal = agendamento?.servico?.precoOriginal != null
+            ? Number(agendamento.servico.precoOriginal)
+            : (agendamento?.servico?.preco != null ? Number(agendamento.servico.preco) : 0);
+
+        const precoCobrado = agendamento?.servico?.precoCobrado != null
+            ? Number(agendamento.servico.precoCobrado)
+            : precoOriginal;
+
+        // Monta o payload incluindo os novos campos:
+        const payload = {
             empresaId: empresaId,
             clienteId: currentUser.uid,
             clienteNome: currentUser.displayName,
@@ -182,12 +192,22 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             servicoId: agendamento.servico.id,
             servicoNome: agendamento.servico.nome,
             servicoDuracao: agendamento.servico.duracao,
-            servicoPreco: agendamento.servico.preco,
+            // campos novos para relatórios e rastreio de origem de pagamento
+            servicoPrecoOriginal: precoOriginal,
+            servicoPrecoCobrado: precoCobrado,
             data: agendamento.data,
             horario: agendamento.horario,
             status: 'ativo',
             criadoEm: serverTimestamp()
-        });
+        };
+
+        // Se o agendamento veio de consumo de assinatura, preserve o consumo/auditoria
+        if (agendamento.assinaturaConsumo) {
+            payload.assinaturaConsumo = agendamento.assinaturaConsumo; // ex: [{assinaturaId, servicoId, quantidade, planoNome}]
+            payload.origemPagamento = 'assinatura';
+        }
+
+        await addDoc(agendamentosRef, payload);
 
         if (agendamento.empresa && agendamento.empresa.donoId) {
             try {
