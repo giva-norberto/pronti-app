@@ -145,9 +145,6 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
             
             // =================== CORREÇÃO: CAMPOS NOVOS NO FIREBASE ===================
-            // Aqui garantimos que os campos trialDisponivel e trialMotivoBloqueio existam no documento Firebase.
-            // Eles NÃO aparecem na tela, mas são sempre criados/atualizados no Firestore.
-            // Se o documento já tem, mantem. Se não tem, cria com valor padrão.
             let trialDisponivel = true;
             let trialMotivoBloqueio = "";
 
@@ -169,6 +166,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 localizacao: elements.localizacaoInput.value.trim(),
                 horarioFuncionamento: elements.horarioFuncionamentoInput.value.trim(),
                 chavePix: elements.chavePixInput.value.trim(),
+                // =================================================================
+                // ✅ ÚNICA LINHA ADICIONADA AQUI (CONFORME SOLICITADO)
+                // =================================================================
+                emailDeNotificacao: currentUser.email,
+                // =================================================================
                 donoId: uid,
                 plano: "free",
                 status: "ativo",
@@ -321,6 +323,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.localizacaoInput) elements.localizacaoInput.value = dadosEmpresa.localizacao || '';
         if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
         if (elements.chavePixInput) elements.chavePixInput.value = dadosEmpresa.chavePix || '';
+        // Não preenchemos o emailDeNotificacao, pois ele não está no HTML, mas ele será salvo automaticamente.
         if (elements.logoPreview) {
             elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         }
