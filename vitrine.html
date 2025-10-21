@@ -90,53 +90,67 @@
             margin-top: 8px;
             display: none;
         }
+
+        /* ===================================================================== */
+        /* ✅ CORREÇÃO: A CLASSE .card VOLTOU AO NORMAL (PUXANDO DO VITRINE.CSS) */
+        /* ===================================================================== */
         .card {
-            /* Removido o background-color: #fff; para que o card principal seja transparente */
+            background-color: #fff;
             color: #374151;
-            box-shadow: none; /* Removendo sombra do card principal */
-            background-color: transparent; /* Card principal transparente */
-            padding: 0; /* Removendo padding do card principal para ele não ter borda branca */
+            /* Seus outros estilos de .card do vitrine.css serão aplicados aqui */
         }
 
-        /* --- INÍCIO DAS ALTERAÇÕES NO CSS PARA OS CARDS DE PLANO --- */
+        .vitrine-card[data-menu-card="assinatura"] {
+            background: linear-gradient(135deg, #10b981 0%, #4f46e5 100%);
+            color: #fff;
+        }
+        .vitrine-card[data-menu-card="assinatura"] i {
+            color: #fff;
+        }
+        
+        /* --- ESTILOS PARA OS CARDS DE PLANO (Sem alterar .card) --- */
+        #menu-assinatura {
+            display: none;
+            margin-top: 36px;
+        }
         #menu-assinatura h2 {
-            color: #fff; /* Título "Planos de Assinatura" em branco */
+            color: #fff;
             font-size: 1.8rem;
             font-weight: 700;
             text-align: center;
-            margin-bottom: 30px; /* Espaço maior entre o título e os cards */
+            margin-bottom: 30px;
         }
         #cards-planos-vitrine {
-            display: grid; /* Usar grid para melhor espaçamento e alinhamento */
-            gap: 25px; /* Espaço entre os cards */
-            padding: 0 15px; /* Padding nas laterais para telas pequenas */
-            max-width: 600px; /* Largura máxima para os cards de planos */
-            margin: 0 auto; /* Centralizar os cards */
+            display: grid;
+            gap: 25px;
+            padding: 0 15px;
+            max-width: 600px;
+            margin: 0 auto;
         }
         .card-plano-vitrine {
             background-color: #fff;
-            border-radius: 18px; /* Bordas mais arredondadas */
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Sombra mais destacada */
+            border-radius: 18px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
             padding: 25px;
             text-align: center;
             color: #333;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Efeitos ao passar o mouse */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
         .card-plano-vitrine:hover {
-            transform: translateY(-5px); /* Efeito de "levantar" */
-            box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Sombra mais intensa */
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
         }
         .card-plano-vitrine h3 {
             color: #4f46e5;
-            font-size: 1.5rem; /* Título do plano maior */
+            font-size: 1.5rem;
             margin-top: 0;
             margin-bottom: 15px;
             font-weight: 600;
         }
         .card-plano-vitrine .preco {
-            color: #10b981; /* Preço em verde para destaque */
+            color: #10b981;
             font-weight: 700;
-            font-size: 1.4em; /* Preço maior */
+            font-size: 1.4em;
             margin-bottom: 15px;
         }
         .card-plano-vitrine p {
@@ -145,13 +159,13 @@
             margin-bottom: 20px;
         }
         .card-plano-vitrine ul {
-            list-style: none; /* Remover o bullet padrão */
+            list-style: none;
             padding-left: 0;
             text-align: left;
             margin-bottom: 25px;
         }
         .card-plano-vitrine ul li {
-            list-style: '✅ '; /* Usar um checkmark como bullet */
+            list-style: '✅ ';
             padding-left: 10px;
             margin-bottom: 8px;
             color: #444;
@@ -161,33 +175,21 @@
             background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
             color: #fff;
             border: none;
-            border-radius: 10px; /* Botão mais arredondado */
-            padding: 12px 25px; /* Padding maior no botão */
+            border-radius: 10px;
+            padding: 12px 25px;
             margin-top: 15px;
-            font-size: 1.1em; /* Fonte do botão maior */
+            font-size: 1.1em;
             font-weight: 600;
             cursor: pointer;
-            width: 100%; /* Botão com largura total */
-            max-width: 250px; /* Limitar largura máxima do botão */
+            width: 100%;
+            max-width: 250px;
             transition: opacity 0.2s ease-in-out;
         }
         .card-plano-vitrine .btn-assinar-plano:hover {
             opacity: 0.9;
         }
-        /* --- FIM DAS ALTERAÇÕES NO CSS PARA OS CARDS DE PLANO --- */
+        /* --- FIM DOS ESTILOS DE PLANO --- */
 
-        .vitrine-card[data-menu-card="assinatura"] {
-            background: linear-gradient(135deg, #10b981 0%, #4f46e5 100%);
-            color: #fff;
-        }
-        .vitrine-card[data-menu-card="assinatura"] i {
-            color: #fff;
-        }
-        #menu-assinatura {
-            display: none;
-            margin-top: 36px;
-        }
-        
         .badge-incluso { background: #10b981; color: #fff; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
         .servico-card { background: #fff; color: #374151; padding: 14px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
     </style>
@@ -229,17 +231,19 @@
                     </a>
                 </div>
             </div>
+            
             <div id="menu-assinatura" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                
                 <h2>Planos de Assinatura</h2> 
                 <div id="cards-planos-vitrine">
-                    <p class="info">A carregar planos disponíveis...</p>
+                    <p class="info" style="color: #fff;">A carregar planos disponíveis...</p>
                 </div>
             </div>
+            
             <div id="menu-agendamento" class="menu-content" style="display: none;">
                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <div class="card">
-                    <h2>Faça o seu Agendamento</h2>
+                <div class="card"> <h2>Faça o seu Agendamento</h2>
                     <div id="agendamento-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p></div>
                     <div class="form-group"><label>1. Escolha um profissional</label><div id="lista-profissionais" class="profissionais-container"></div></div>
                     <div id="agendamento-form-container" style="display: none;">
@@ -312,10 +316,13 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
 
+        // =====================================================================
+        // ✅ FUNÇÃO ALTERADA PARA USAR OS NOVOS ESTILOS
+        // =====================================================================
         async function renderizarPlanosVitrine(empresaId) {
             const container = document.getElementById('cards-planos-vitrine');
             if (!container) return;
-            container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>'; // Corrigi a cor para ser visível no fundo escuro
+            container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>'; // Corrigi a cor
             try {
                 const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
                 const snapshot = await getDocs(planosRef);
@@ -332,9 +339,9 @@
                             ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
                             : '';
                         const card = document.createElement('div');
-                        card.className = 'card-plano-vitrine'; // Usando a nova classe para estilização
+                        card.className = 'card-plano-vitrine'; // Usa a nova classe CSS
 
-                        // O estilo inline foi removido para usar o CSS definido acima na tag <style>
+                        // Não usa mais 'style=' inline, usa a folha de estilo
                         card.innerHTML = `
                             <h3>${plano.nome}</h3>
                             <p class="preco">${precoFormatado} / mês</p>
@@ -342,6 +349,7 @@
                             <ul>${servicosHTML}</ul>
                             <button class="btn-assinar-plano">Assinar</button>
                         `;
+
                         card.querySelector('.btn-assinar-plano').addEventListener('click', () => {
                             if (plano.id && empresaId) {
                                 window.location.href = `vitrine-assinatura.html?planoId=${plano.id}&empresaId=${empresaId}`;
@@ -409,6 +417,7 @@
                         modalAuth.style.display = 'flex';
                         const unsubscribe = onAuthStateChanged(auth, (user) => {
                             if (user) {
+                                // console.log('Login detectado! Fechando modal e continuando agendamento.'); // DEBUG REMOVIDO
                                 unsubscribe(); fecharModal();
                                 setTimeout(() => { btnConfirmarAgendamento.click(); }, 150);
                             }
@@ -446,15 +455,13 @@
             });
         }
         
-        // =====================================================================
-        // ✅ FUNÇÃO ORIGINAL SEM OS LOGS DE DEBUG
-        // =====================================================================
+        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA (JÁ COM A LÓGICA DO PREÇO ZERO)
         async function renderizarServicosVitrine(empresaId) {
             const servicosRef = collection(db, "empresarios", empresaId, "servicos");
             const snapshot = await getDocs(servicosRef);
             const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
             
-            await aplicarPromocoesNaVitrine(listaServicos, empresaId); // Sua lógica original
+            await aplicarPromocoesNaVitrine(listaServicos, empresaId); 
 
             try {
                 await marcarServicosInclusosParaUsuario(listaServicos, empresaId); 
@@ -486,7 +493,7 @@
             });
         }
         
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO, CHAMANDO A FUNÇÃO ALTERADA
+        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO, CHAMANDO A FUNÇÃO
         let empresaId = localStorage.getItem("empresaAtivaId") || null;
         if (empresaId) { renderizarServicosVitrine(empresaId); }
     </script>
@@ -495,20 +502,16 @@
         import { state } from './vitrini-state.js';
         import { fazerLogin } from './vitrini-auth.js';
         
-        // =====================================================================
-        // ✅ LÓGICA DE NAVEGAÇÃO ALTERADA PARA FUNCIONAR CORRETAMENTE
-        // =====================================================================
+        // SUA LÓGICA ORIGINAL DE NAVEGAÇÃO, 100% INALTERADA
         document.addEventListener('DOMContentLoaded', () => {
             const mainNavigationContainer = document.getElementById('main-navigation-container');
             const contentSections = document.querySelectorAll('.main-content-vitrine > .menu-content');
             
-            // Coloca as funções de navegação no escopo global (window)
-            // para que outros scripts (como vitrine.js) possam chamá-las.
-            window.showMainMenu = () => { 
+            function showMainMenu() { 
                 contentSections.forEach(section => section.style.display = 'none'); 
                 mainNavigationContainer.style.display = 'block'; 
             }
-            window.showContentSection = (menuId) => {
+            function showContentSection(menuId) {
                 mainNavigationContainer.style.display = 'none';
                 contentSections.forEach(section => { 
                     section.style.display = section.id === menuId ? 'block' : 'none'; 
@@ -519,10 +522,10 @@
                 const card = e.target.closest('.vitrine-card'); if (!card) return; e.preventDefault();
                 const menuKey = card.dataset.menuCard;
                 if (menuKey === 'perfil' && !state.currentUser) { fazerLogin(); return; }
-                window.showContentSection(`menu-${menuKey}`); // Chama a função global
+                showContentSection(`menu-${menuKey}`);
             });
             document.querySelectorAll('.btn-voltar').forEach(button => { 
-                button.addEventListener('click', window.showMainMenu); // Chama a função global
+                button.addEventListener('click', showMainMenu);
             });
             const cardPerfilTexto = document.getElementById('card-perfil-texto');
             if (cardPerfilTexto) {
