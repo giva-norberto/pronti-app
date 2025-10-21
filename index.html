@@ -67,9 +67,7 @@
             margin-top: 20px;
             display: none;
         }
-        .notification-button:hover {
-            background-color: #f59e42;
-        }
+        .notification-button:hover { background-color: #f59e42; }
         .notification-message {
             margin: 18px auto 0 auto;
             padding: 12px 24px;
@@ -106,11 +104,7 @@
         }
         #btn-logout i { margin-right: 8px; }
         #btn-logout:hover { background: #111827; }
-        @media (max-width: 600px) {
-            #btn-logout {
-                display: block;
-            }
-        }
+        @media (max-width: 600px) { #btn-logout { display: block; } }
         @media (max-width: 900px) { body { flex-direction: column; } main.main-content { height: auto; } }
     </style>
 </head>
@@ -267,7 +261,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker-painel.js')
+                navigator.serviceWorker.register('./service-worker.js')
                     .then(() => console.log('✅ Service Worker registrado com sucesso.'))
                     .catch(err => console.warn('⚠️ Falha ao registrar o Service Worker:', err));
             });
