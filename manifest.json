@@ -9,12 +9,12 @@
   "description": "Painel administrativo do Pronti App",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "LINK_DO_STORAGE_192x192_AQUI_OU_VAZIO",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "LINK_DO_STORAGE_512x512_AQUI_OU_VAZIO",
       "sizes": "512x512",
       "type": "image/png"
     }
