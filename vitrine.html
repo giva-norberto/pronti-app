@@ -121,7 +121,7 @@
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
         <main class="main-content-vitrine">
             <div id="main-navigation-container">
-                <div class="header-vitrine-card">
+                 <div class="header-vitrine-card">
                     <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=..." alt="Logo do Negócio">
                     <h1 id="nome-negocio-publico">Carregando...</h1>
                     <p id="boas-vindas-usuario" class="boas-vindas-usuario">Bem-vindo(a)!</p>
@@ -151,7 +151,7 @@
                 </div>
             </div>
             <div id="menu-assinatura" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card">
                     <h2>Planos de Assinatura</h2>
                     <div id="cards-planos-vitrine">
@@ -160,7 +160,7 @@
                 </div>
             </div>
             <div id="menu-agendamento" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card">
                     <h2>Faça o seu Agendamento</h2>
                     <div id="agendamento-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p></div>
@@ -172,18 +172,18 @@
                 </div>
             </div>
             <div id="menu-informacoes" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card"><h2>Sobre o Negócio</h2><div id="info-negocio"></div></div>
                 <div class="card"><h2>Serviços Oferecidos</h2><div id="info-servicos"></div></div>
                 <div class="card"><h2>Contato e Localização</h2><div id="info-contato"></div></div>
             </div>
             <div id="menu-visualizacao" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card"><h2>Reservas</h2><div id="agendamentos-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p></div><div id="botoes-agendamento" class="botoes-agendamento" style="display: none;"><button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button><button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button></div></div>
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
             <div id="menu-perfil" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+                 <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
                 <div class="card"><h2>Meu Perfil</h2><div id="user-info" style="display: none;"><img id="user-photo" src="" alt="Foto do Utilizador" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;"><p id="user-name" style="font-weight: 600; font-size: 1.2rem;"></p><button id="btn-logout" class="btn-secondary">Sair</button></div><div id="btn-login-container"><button id="btn-login" class="btn-submit">Fazer Login com Google</button></div></div>
             </div>
         </main>
@@ -233,9 +233,6 @@
         import { db, auth } from './vitrini-firebase.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // =====================================================================
-        // ✅ 1. IMPORTAÇÃO NECESSÁRIA ADICIONADA
-        // =====================================================================
         import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
 
         // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
@@ -347,12 +344,11 @@
             }
         });
     </script>
-
     <script type="module">
         import { db } from './vitrini-firebase.js';
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         // =====================================================================
-        // ✅ 2. IMPORTAÇÃO NECESSÁRIA ADICIONADA (REPETIDA PARA CLAREZA)
+        // ✅ IMPORTAÇÃO NECESSÁRIA ADICIONADA (REPETIDA PARA CLAREZA)
         // =====================================================================
         import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
 
@@ -378,47 +374,48 @@
         }
         
         // =====================================================================
-        // ✅ 3. ÚNICA FUNÇÃO ALTERADA NESTE ARQUIVO
+        // ✅ ÚNICA FUNÇÃO ALTERADA NESTE ARQUIVO (PARA CORRIGIR A EXIBIÇÃO DO PREÇO)
         // =====================================================================
         async function renderizarServicosVitrine(empresaId) {
             const servicosRef = collection(db, "empresarios", empresaId, "servicos");
             const snapshot = await getDocs(servicosRef);
             const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
             
-            // Aplica promoções (sua lógica original)
-            await aplicarPromocoesNaVitrine(listaServicos, empresaId);
+            await aplicarPromocoesNaVitrine(listaServicos, empresaId); // Sua lógica original
 
-            // Tenta marcar serviços inclusos na assinatura do cliente
             try {
-                // Chama a função importada para modificar a listaServicos
+                // Chama a função externa que modifica 'listaServicos'
                 await marcarServicosInclusosParaUsuario(listaServicos, empresaId); 
+                // ADIÇÃO DE LOG: Verifique o que a função está retornando/modificando
+                console.log("Lista de Serviços APÓS marcar inclusos:", JSON.stringify(listaServicos, null, 2)); 
             } catch (err) {
-                // Se der erro (ex: permissão), mostra aviso no console mas continua
-                console.info('Não foi possível ler assinaturas do cliente (permissão). Serviços exibidos normalmente.');
+                console.error('ERRO ao tentar marcar serviços inclusos:', err); // Mudado para error para chamar mais atenção
             }
 
             const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
             listaServicosDiv.innerHTML = "";
             
             listaServicos.forEach(servico => {
+                // ADIÇÃO DE LOG: Verifique cada serviço antes de montar o HTML
+                console.log(`Renderizando: ${servico.nome}, Preço Original: ${servico.preco}, Preço Cobrado: ${servico.precoCobrado}, Promoção: ${!!servico.promocao}, Incluso: ${servico.inclusoAssinatura}`);
+
                 const div = document.createElement("div"); div.classList.add("servico-card"); 
                 let precoHtml = "";
 
-                // --- INÍCIO DA CORREÇÃO LÓGICA ---
-                // Verifica se o serviço foi marcado como incluso pela função importada
-                // A função marcarServicosInclusosParaUsuario define servico.precoCobrado = 0
-                if (servico.precoCobrado === 0) {
+                // --- LÓGICA REVISADA PARA EXIBIR O PREÇO ---
+                // Verifica se o serviço foi marcado como incluso (precoCobrado === 0)
+                if (servico.precoCobrado === 0) { 
                     const precoZeroFormatado = Number(0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     precoHtml = `<span class="preco-promocional">${precoZeroFormatado}</span> <span class="badge-incluso">Incluso no plano</span>`;
-                } else if (servico.promocao) { // Se não está incluído, verifica se tem promoção (sua lógica original)
+                } else if (servico.promocao) { // Senão, verifica promoção
                     const precoOriginalFmt = (servico.promocao.precoOriginal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const precoPromoFmt = (servico.promocao.precoComDesconto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     precoHtml = `<span class="preco-original">${precoOriginalFmt}</span> <span class="preco-promocional">${precoPromoFmt}</span> <span class="badge-promocao">PROMO</span>`;
-                } else { // Se não está incluído e não tem promoção, mostra o preço normal (sua lógica original)
+                } else { // Senão, mostra preço normal
                      const precoNormalFmt = (servico.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                      precoHtml = `<span class="preco-promocional">${precoNormalFmt}</span>`;
                 }
-                // --- FIM DA CORREÇÃO LÓGICA ---
+                // --- FIM DA LÓGICA REVISADA ---
 
                 div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
                 listaServicosDiv.appendChild(div);
