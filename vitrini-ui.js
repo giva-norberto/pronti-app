@@ -1,5 +1,5 @@
 // ======================================================================
-//          VITRINI-UI.JS - UI da Vitrine com suporte Multiempresa (REVISADO E COMPLETO)
+//        VITRINI-UI.JS - UI da Vitrine com suporte Multiempresa (REVISADO E CORRIGIDO)
 // ======================================================================
 
 /**
@@ -143,14 +143,24 @@ export function renderizarServicos(servicos, permiteMultiplos = false) {
         const servicosCat = agrupados[catAtual];
         document.getElementById('servicos-por-categoria').innerHTML = servicosCat.map(s => {
             let precoHtml = '';
-            if (s.promocao) {
+            
+            // =====================================================================
+            // ✅ 1. CORREÇÃO APLICADA AQUI (para o card do serviço)
+            // =====================================================================
+            if (s.precoCobrado === 0) { // Se assinatura cobriu o custo
+                const precoZeroFormatado = Number(0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                precoHtml = `<span class="preco-promocional">${precoZeroFormatado}</span> <span class="badge-incluso">Incluso no plano</span>`;
+            } else if (s.promocao) { // Senão, se tem promoção
+                const precoOriginalFmt = (s.promocao.precoOriginal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const precoPromoFmt = (s.promocao.precoComDesconto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 precoHtml = `
-                    <span class="preco-original" style="text-decoration:line-through; color:#ef4444; margin-right:8px;">R$ ${s.promocao.precoOriginal.toFixed(2)}</span>
-                    <span class="preco-promocional" style="color:#059669; font-weight:bold;">R$ ${s.promocao.precoComDesconto.toFixed(2)}</span>
+                    <span class="preco-original" style="text-decoration:line-through; color:#ef4444; margin-right:8px;">${precoOriginalFmt}</span>
+                    <span class="preco-promocional" style="color:#059669; font-weight:bold;">${precoPromoFmt}</span>
                     <span class="badge-promocao" style="background:#facc15; color:#92400e; border-radius:8px; padding:2px 8px; margin-left:8px; font-size:0.86em;">PROMO</span>
                 `;
-            } else {
-                precoHtml = `<span class="preco-promocional">R$ ${s.preco.toFixed(2)}</span>`;
+            } else { // Senão, preço normal
+                const precoNormalFmt = (s.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                precoHtml = `<span class="preco-promocional">${precoNormalFmt}</span>`;
             }
 
             if (permiteMultiplos) {
@@ -452,8 +462,21 @@ export function atualizarResumoAgendamento(servicosSelecionados) {
 
     if (servicosSelecionados.length > 0) {
         const duracaoTotal = servicosSelecionados.reduce((acc, s) => acc + s.duracao, 0);
-        const precoTotal = servicosSelecionados.reduce((acc, s) => acc + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0);
-        textoEl.innerHTML = `<strong>Resumo:</strong> ${servicosSelecionados.length} serviço(s) | <strong>Duração:</strong> ${duracaoTotal} min | <strong>Total:</strong> R$ ${precoTotal.toFixed(2)}`;
+        
+        // =====================================================================
+        // ✅ 2. CORREÇÃO APLICADA AQUI (para o resumo de múltiplos serviços)
+        // =====================================================================
+        const precoTotal = servicosSelecionados.reduce((acc, s) => {
+            if (s.precoCobrado === 0) {
+                return acc + 0;
+            } else if (s.promocao) {
+                return acc + (s.promocao.precoComDesconto || 0);
+            } else {
+                return acc + (s.preco || 0);
+            }
+        }, 0);
+        
+        textoEl.innerHTML = `<strong>Resumo:</strong> ${servicosSelecionados.length} serviço(s) | <strong>Duração:</strong> ${duracaoTotal} min | <strong>Total:</strong> ${precoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
         container.style.display = 'block';
     } else {
         container.style.display = 'none';
@@ -472,17 +495,29 @@ export function atualizarResumoAgendamentoFinal() {
         el.innerHTML = '';
         return;
     }
-    const total = servicos.reduce((soma, s) => soma + (s.promocao ? s.promocao.precoComDesconto : s.preco), 0);
+    
+    // =====================================================================
+    // ✅ 3. CORREÇÃO APLICADA AQUI (para o resumo final)
+    // =====================================================================
+    const total = servicos.reduce((soma, s) => {
+        if (s.precoCobrado === 0) {
+            return soma + 0;
+        } else if (s.promocao) {
+            return soma + (s.promocao.precoComDesconto || 0);
+        } else {
+            return soma + (s.preco || 0);
+        }
+    }, 0);
+    
     const duracao = servicos.reduce((soma, s) => soma + (s.duracao || 0), 0);
+    const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+
     el.innerHTML = `
         <div class="resumo-agendamento">
-            <strong>Serviços:</strong> ${servicos.map(s => s.nome).join(" + ")}  
-
-            <strong>Duração:</strong> ${duracao} min  
-
-            <strong>Total:</strong> R$ ${total.toFixed(2)}  
-
-            <strong>Data:</strong> ${data} <strong>Horário:</strong> ${horario}
+            <strong>Serviços:</strong> ${servicos.map(s => s.nome).join(" + ")} <br>
+            <strong>Duração:</strong> ${duracao} min <br>
+            <strong>Total:</strong> ${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} <br>
+            <strong>Data:</strong> ${dataFormatada} <strong>Horário:</strong> ${horario}
         </div>
         <hr>
     `;
