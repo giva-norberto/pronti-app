@@ -212,7 +212,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     criadoEm: serverTimestamp(), status: "ativo"
                 });
                 if (elements.msgCadastroSucesso) {
-                    elements.msgCadastroSucesso.innerHTML = `...`;
+                    elements.msgCadastroSucesso.innerHTML = `Perfil criado com sucesso!`;
                     elements.msgCadastroSucesso.style.display = "block";
                 }
                 setTimeout(async () => {
@@ -223,7 +223,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
             } else {
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
-                alert("Perfil atualizado com sucesso!");
+                if (elements.msgCadastroSucesso) {
+                    elements.msgCadastroSucesso.innerHTML = `Perfil atualizado com sucesso!`;
+                    elements.msgCadastroSucesso.style.display = "block";
+                }
                 await carregarEmpresasDoUsuario(uid);
             }
         } catch (error) {
@@ -312,13 +315,13 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
 
         // ==========================================================
-        // ✅ ADIÇÃO DO MANIFEST PWA DINÂMICO (SEM AFETAR NADA EXISTENTE)
+        // ✅ ADIÇÃO DO MANIFEST PWA DINÂMICO (CORRIGIDO PARA URLS VÁLIDAS)
         // ==========================================================
         const manifest = {
             name: dadosEmpresa.nomeFantasia || "Pronti Negócio",
             short_name: dadosEmpresa.nomeFantasia?.substring(0, 12) || "Negócio",
-            start_url: "/index.html",
-            scope: "/",
+            start_url: "/",       // URL relativa válida
+            scope: "/",           // URL relativa válida
             display: "standalone",
             background_color: "#4f46e5",
             theme_color: "#4f46e5",
