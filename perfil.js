@@ -1,6 +1,6 @@
 // =====================================================================
-// PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO E VERIFICAÇÃO CORRETA)
-// ====================================================================
+// PERFIL.JS (VERSÃO FINAL - SLUG AUTOMÁTICO + MANIFEST DINÂMICO PWA)
+// =====================================================================
 
 import {
     getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, where, getDocs
@@ -14,38 +14,33 @@ import {
 import { uploadFile } from './uploadService.js';
 import { app, db, auth, storage } from "./firebase-config.js";
 
-// Funções auxiliares para o slug (sem alterações )
+// Funções auxiliares para o slug (sem alterações)
 function criarSlug(texto) {
     if (!texto) return '';
-    const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
-    const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
-    const p = new RegExp(a.split('').join('|'), 'g')
+    const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;';
+    const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------';
+    const p = new RegExp(a.split('').join('|'), 'g');
     return texto.toString().toLowerCase()
         .replace(/\s+/g, '-').replace(p, c => b.charAt(a.indexOf(c)))
         .replace(/&/g, '-e-').replace(/[^\w\-]+/g, '')
         .replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
 }
 
-// ✅ CORREÇÃO: A função agora aceita o ID da empresa atual para ignorá-la na busca
+// Função slug única (sem alterações)
 async function garantirSlugUnico(slugBase, idEmpresaAtual = null) {
     let slugFinal = slugBase;
     let contador = 1;
     let slugExiste = true;
-
     while (slugExiste) {
         const q = query(collection(db, "empresarios"), where("slug", "==", slugFinal));
         const snapshot = await getDocs(q);
-        
-        // Se não encontrou nenhum documento, o slug está livre.
         if (snapshot.empty) {
             slugExiste = false;
         } else {
-            // Se encontrou, verifica se o único documento encontrado é o da própria empresa que estamos editando.
             const docUnico = snapshot.docs.length === 1 ? snapshot.docs[0] : null;
             if (docUnico && docUnico.id === idEmpresaAtual) {
-                slugExiste = false; // É o slug da própria empresa, então está OK.
+                slugExiste = false;
             } else {
-                // O slug pertence a outra empresa, então precisamos de um novo.
                 contador++;
                 slugFinal = `${slugBase}-${contador}`;
             }
@@ -53,7 +48,6 @@ async function garantirSlugUnico(slugBase, idEmpresaAtual = null) {
     }
     return slugFinal;
 }
-
 
 window.addEventListener('DOMContentLoaded', () => {
     const elements = {
@@ -114,7 +108,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     opt.textContent = empresa.nome;
                     elements.selectEmpresa.appendChild(opt);
                 });
-                
                 const primeiraEmpresa = empresasDoDono[0];
                 empresaId = primeiraEmpresa.id;
                 elements.selectEmpresa.value = empresaId;
@@ -143,11 +136,9 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!uid) throw new Error("Utilizador não autenticado.");
             const nomeNegocio = elements.nomeNegocioInput.value.trim();
             if (!nomeNegocio) throw new Error("O nome do negócio é obrigatório.");
-            
-            // =================== CORREÇÃO: CAMPOS NOVOS NO FIREBASE ===================
+
             let trialDisponivel = true;
             let trialMotivoBloqueio = "";
-
             if (empresaId) {
                 const empresaDocRef = doc(db, "empresarios", empresaId);
                 const empresaSnap = await getDoc(empresaDocRef);
@@ -166,16 +157,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 localizacao: elements.localizacaoInput.value.trim(),
                 horarioFuncionamento: elements.horarioFuncionamentoInput.value.trim(),
                 chavePix: elements.chavePixInput.value.trim(),
-                // =================================================================
-                // ✅ ÚNICA LINHA ADICIONADA AQUI (CONFORME SOLICITADO)
-                // =================================================================
                 emailDeNotificacao: currentUser.email,
-                // =================================================================
                 donoId: uid,
                 plano: "free",
                 status: "ativo",
                 updatedAt: serverTimestamp(),
-                // Não aparece na tela, mas sempre salva/atualiza:
                 trialDisponivel: trialDisponivel,
                 trialMotivoBloqueio: trialMotivoBloqueio
             };
@@ -185,7 +171,6 @@ window.addEventListener('DOMContentLoaded', () => {
             const slugBase = criarSlug(textoParaSlug);
 
             if (slugBase) {
-                // A lógica de garantir unicidade agora recebe o ID da empresa atual
                 const slugFinal = await garantirSlugUnico(slugBase, empresaId);
                 dadosEmpresa.slug = slugFinal;
             }
@@ -198,7 +183,6 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!empresaId) {
-                // Lógica de criar nova empresa (sem alterações)
                 const userRef = doc(db, "usuarios", uid);
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) {
@@ -238,7 +222,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
 
             } else {
-                // Lógica de editar empresa existente (sem alterações)
                 await setDoc(doc(db, "empresarios", empresaId), dadosEmpresa, { merge: true });
                 alert("Perfil atualizado com sucesso!");
                 await carregarEmpresasDoUsuario(uid);
@@ -261,20 +244,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.h1Titulo) elements.h1Titulo.textContent = "Crie o Perfil do seu Novo Negócio";
         if (elements.empresaSelectorGroup) elements.empresaSelectorGroup.style.display = 'none';
     }
-    
+
     function adicionarListenersDeEvento() {
         if (elements.form) elements.form.addEventListener('submit', handleFormSubmit);
-        
-        // ✅ CORREÇÃO: Listener para atualizar o slug em tempo real
         if (elements.nomeNegocioInput && elements.slugInput) {
             elements.nomeNegocioInput.addEventListener('input', () => {
-                // Só atualiza o campo de slug se ele estiver vazio (o usuário não digitou nada manualmente)
                 if (elements.slugInput.value.trim() === '') {
                     elements.slugInput.value = criarSlug(elements.nomeNegocioInput.value);
                 }
             });
         }
-
         if (elements.btnCopiarLink) elements.btnCopiarLink.addEventListener('click', copiarLink);
         if (elements.btnUploadLogo) elements.btnUploadLogo.addEventListener('click', () => elements.logoInput.click());
         if (elements.logoInput) elements.logoInput.addEventListener('change', () => {
@@ -285,16 +264,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 reader.readAsDataURL(file);
             }
         });
-        if (elements.btnCriarNovaEmpresa) {
-            elements.btnCriarNovaEmpresa.addEventListener('click', handleCriarNovaEmpresa);
-        }
+        if (elements.btnCriarNovaEmpresa) elements.btnCriarNovaEmpresa.addEventListener('click', handleCriarNovaEmpresa);
         if (elements.btnLogout) elements.btnLogout.addEventListener('click', async () => {
             try {
                 localStorage.removeItem('empresaAtivaId');
                 await signOut(auth);
                 window.location.href = 'login.html';
-            }
-            catch (error) { console.error("Erro no logout:", error); }
+            } catch (error) { console.error("Erro no logout:", error); }
         });
     }
 
@@ -323,14 +299,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.localizacaoInput) elements.localizacaoInput.value = dadosEmpresa.localizacao || '';
         if (elements.horarioFuncionamentoInput) elements.horarioFuncionamentoInput.value = dadosEmpresa.horarioFuncionamento || '';
         if (elements.chavePixInput) elements.chavePixInput.value = dadosEmpresa.chavePix || '';
-        // Não preenchemos o emailDeNotificacao, pois ele não está no HTML, mas ele será salvo automaticamente.
-        if (elements.logoPreview) {
-            elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
-        }
+        if (elements.logoPreview) elements.logoPreview.src = dadosEmpresa.logoUrl || "https://placehold.co/80x80/eef2ff/4f46e5?text=Logo";
         if (!empresaId) return;
-        
-        // ✅ CÓDIGO RESTAURADO PARA O ORIGINAL
-        // Gera o link da vitrine sem parâmetros extras.
+
         const slug = dadosEmpresa.slug;
         const urlCompleta = slug 
             ? `${window.location.origin}/r.html?c=${slug}`
@@ -339,11 +310,39 @@ window.addEventListener('DOMContentLoaded', () => {
         if (elements.urlVitrineEl) elements.urlVitrineEl.textContent = urlCompleta;
         if (elements.btnAbrirVitrine) elements.btnAbrirVitrine.href = urlCompleta;
         if (elements.btnAbrirVitrineInline) elements.btnAbrirVitrineInline.href = urlCompleta;
+
+        // ==========================================================
+        // ✅ ADIÇÃO DO MANIFEST PWA DINÂMICO (SEM AFETAR NADA EXISTENTE)
+        // ==========================================================
+        const manifest = {
+            name: dadosEmpresa.nomeFantasia || "Pronti Negócio",
+            short_name: dadosEmpresa.nomeFantasia?.substring(0, 12) || "Negócio",
+            start_url: "/index.html",
+            scope: "/",
+            display: "standalone",
+            background_color: "#4f46e5",
+            theme_color: "#4f46e5",
+            description: "Painel personalizado do negócio no Pronti",
+            icons: []
+        };
+        if (dadosEmpresa.logoUrl) {
+            manifest.icons.push(
+                { src: dadosEmpresa.logoUrl, sizes: "192x192", type: "image/png" },
+                { src: dadosEmpresa.logoUrl, sizes: "512x512", type: "image/png" }
+            );
+        }
+        const manifestBlob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        let linkManifest = document.querySelector('link[rel="manifest"]');
+        if (!linkManifest) {
+            linkManifest = document.createElement('link');
+            linkManifest.rel = 'manifest';
+            document.head.appendChild(linkManifest);
+        }
+        linkManifest.href = manifestURL;
     }
 
     function copiarLink() {
-        // ✅ CÓDIGO RESTAURADO PARA O ORIGINAL
-        // Copia o link que está sendo exibido na tela.
         const urlCompleta = document.getElementById('url-vitrine-display').textContent;
         if (!urlCompleta) return;
         navigator.clipboard.writeText(urlCompleta).then(() => {
