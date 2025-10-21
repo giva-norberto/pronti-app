@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
+
+    <!-- 🔹 Manifesto PWA -->
+    <link rel="manifest" href="manifest.json">
+
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:400,600,700&display=swap">
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -82,7 +86,6 @@
         .notification-message.success { color: #10b981; background: #f0fdf4; }
         .notification-message.error { color: #dc2626; background: #fef2f2; }
         .notification-message.info { color: #6366f1; background: #eef2ff; }
-        /* Botão Sair (Logout) apenas no celular */
         #btn-logout {
             display: none;
             background: #374151;
@@ -135,14 +138,16 @@
             <a href="permissoes.html" class="menu-card" data-card-id="permissoes"><i class="fa-solid fa-sliders"></i><span>Permissões</span></a>
         </div>
     </main>
-    <!-- Botão sair (logout) só aparece no celular -->
+
     <button id="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+
     <script type="module" src="messaging.js"></script>
     <script type="module">
         import { unlockAudio, iniciarOuvinteDeNotificacoes } from './messaging.js';
         import { verificarAcesso } from './userService.js'; 
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
         function temPermissao(menus, id, papelUsuario ) {
             if (!menus[id]) return false;
             if (Array.isArray(papelUsuario)) {
@@ -156,7 +161,7 @@
                 const permissoesRef = doc(db, "configuracoesGlobais", "permissoes");
                 const permissoesSnap = await getDoc(permissoesRef);
                 const regras = permissoesSnap.exists() ? permissoesSnap.data() : {};
-                const menus = regras; // <-- usa o topo do documento, NÃO regras.menus!
+                const menus = regras;
                 document.querySelectorAll('[data-card-id]').forEach(el => {
                     const id = el.dataset.cardId;
                     const podeVer = temPermissao(menus, id, papelUsuario);
@@ -206,43 +211,30 @@
                 popularCabecalho(sessao);
                 await loadAndSetupMenu(papelUsuario);
                 await aplicarPermissoes(papelUsuario);
-                // --- INÍCIO DA LÓGICA FINAL DE NOTIFICAÇÕES (CORRIGIDA) ---
+
                 const notificationButton = document.querySelector('.notification-button');
                 if ('Notification' in window && iniciarOuvinteDeNotificacoes && unlockAudio) {
                     if (Notification.permission === 'granted') {
-                        console.log('[Init] Permissão já concedida. Aguardando interação para iniciar o ouvinte.');
                         notificationButton.style.display = 'none';
-                        
-                        // CORREÇÃO: Listener mais específico que não interfere com o botão logout
                         const finalizarConfiguracaoPosInteracao = (e) => {
-                            // Ignora cliques no botão de logout
                             if (e.target && (e.target.id === 'btn-logout' || e.target.closest('#btn-logout'))) {
                                 return;
                             }
-                            
                             unlockAudio();
                             iniciarOuvinteDeNotificacoes(sessao.user.uid);
                             window.removeEventListener('click', finalizarConfiguracaoPosInteracao);
                             window.removeEventListener('touchstart', finalizarConfiguracaoPosInteracao);
-                            console.log('[Init] Configuração pós-interação concluída. Áudio liberado e ouvinte iniciado.');
                         };
-                        
                         window.addEventListener('click', finalizarConfiguracaoPosInteracao);
                         window.addEventListener('touchstart', finalizarConfiguracaoPosInteracao);
-                    } 
-                    else if (Notification.permission === 'default') {
-                        console.log('[Init] Permissão de notificação pendente. Exibindo botão.');
+                    } else if (Notification.permission === 'default') {
                         notificationButton.style.display = 'block';
-                    }
-                    else {
-                        console.log('[Init] Permissão de notificação foi bloqueada.');
+                    } else {
                         notificationButton.style.display = 'none';
                     }
                 } else {
-                    console.warn('[Init] Erro crítico: Navegador não suporta notificações ou as funções do módulo não carregaram.');
                     notificationButton.style.display = 'none';
                 }
-                // --- FIM DA LÓGICA FINAL DE NOTIFICAÇÕES ---
             } catch (error) {
                 console.error("Erro crítico ao inicializar a página:", error);
             } finally {
@@ -250,6 +242,7 @@
             }
         }
         inicializarPagina();
+
         window.mostrarMensagemNotificacao = function (texto, tipo = 'info') {
             const el = document.getElementById('notification-message');
             el.textContent = texto;
@@ -258,15 +251,8 @@
             setTimeout(() => { el.style.display = 'none'; }, 3500);
         }
 
-        // Botão sair (logout)
         document.getElementById('btn-logout').addEventListener('click', async function() {
             try {
-                // Adicione aqui sua lógica de logout, por exemplo, usando Firebase Auth:
-                // import { signOut } from "firebase/auth";
-                // import { auth } from "./firebase-config.js";
-                // await signOut(auth);
-                // window.location.href = "login.html";
-                // Exemplo genérico:
                 if (window.firebaseAuth && window.firebaseAuth.signOut) {
                     await window.firebaseAuth.signOut();
                 }
@@ -275,6 +261,17 @@
                 mostrarMensagemNotificacao("Erro ao sair: " + error.message, "error");
             }
         });
+    </script>
+
+    <!-- 🔹 Registro do Service Worker (PWA) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(() => console.log('✅ Service Worker registrado com sucesso.'))
+                    .catch(err => console.warn('⚠️ Falha ao registrar o Service Worker:', err));
+            });
+        }
     </script>
 </body>
 </html>
