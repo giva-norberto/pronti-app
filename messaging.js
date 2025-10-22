@@ -281,13 +281,19 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
         }
 
         // --- DISPARO AUTOMÁTICO DE E-MAIL PARA O DONO ---
-        if (bilhete.clienteNome && bilhete.servico && bilhete.horario) {
+        // Extração compatível com formatos planos e com template.data (sem alterar lógica de envio)
+        const clienteNome = bilhete.clienteNome || bilhete.nomeCliente || bilhete.template?.data?.nomeCliente || null;
+        const servico = bilhete.servico || bilhete.servicoNome || bilhete.template?.data?.servicoNome || null;
+        const horario = bilhete.horario || bilhete.horarioAgendamento || bilhete.template?.data?.horarioAgendamento || null;
+
+        if (clienteNome && servico && horario) {
           fetch("https://script.google.com/macros/s/AKfycby_Va3ads-umFvz2PpKmSS4-yp1y7riOdsow06nY7pfIvQvZ2mwnnOloszlxuwgEn3L/exec", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              nome: bilhete.clienteNome,
-              servico: bilhete.servico,
-              horario: bilhete.horario
+              nome: clienteNome,
+              servico: servico,
+              horario: horario
             })
           }).then(() => console.log("📧 E-mail disparado via Web App."))
             .catch(err => console.error("❌ Erro ao disparar e-mail:", err));
