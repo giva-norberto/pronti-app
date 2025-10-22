@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pronti - Início</title>
 
-    <!-- 🔹 Manifesto PWA -->
     <link rel="manifest" href="manifest.json">
 
+    <meta property="og:title" content="Pronti - Painel de Gestão" />
+    <meta property="og:description" content="Acesse seu painel Pronti para gerenciar sua agenda, clientes e serviços." />
+    <meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://prontiapp.com.br" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:400,600,700&display=swap">
     <link href="style.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -257,7 +261,6 @@
         });
     </script>
 
-    <!-- 🔹 Registro do Service Worker (PWA) -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
