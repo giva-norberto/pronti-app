@@ -2,7 +2,7 @@
   "name": "Pronti App",
   "short_name": "Pronti",
   "description": "Seu aplicativo de agendamento de serviços.",
-  "start_url": "/vitrine.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",
