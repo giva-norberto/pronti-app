@@ -1,11 +1,12 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO COM NOTIFICAÇÕES DESATIVADAS para permitir a implantação das funções de pagamento.
+ * VERSÃO COM NOTIFICAÇÕES ATIVADAS.
  */
 
 // ============================ Imports principais ==============================
-const { onRequest } = require("firebase-functions/v2/https" );
-// const { onDocumentCreated } = require("firebase-functions/v2/firestore"); // Import não é mais necessário
+const { onRequest } = require("firebase-functions/v2/https");
+// ✅ IMPORTAÇÃO ATIVADA
+const { onDocumentCreated } = require("firebase-functions/v2/firestore"); 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { MercadoPagoConfig, Preapproval } = require("mercadopago");
@@ -16,7 +17,8 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 const db = admin.firestore();
-// const fcm = admin.messaging(); // Não é mais necessário para as funções ativas
+// ✅ MESSAGING ATIVADO
+const fcm = admin.messaging(); 
 
 // =========================== Configuração de CORS =============================
 const whitelist = [
@@ -77,7 +79,7 @@ exports.verificarEmpresa = onRequest(
           if (!profissionaisSnapshot.empty) {
             licencasNecessarias = profissionaisSnapshot.size;
           }
-          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
+          functions.logger.info("DEBUG: professionalsSnapshot.size", { size: licencasNecessarias });
         } catch (profErr) {
           functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
         }
@@ -234,9 +236,8 @@ function calcularPreco(totalFuncionarios) {
   return Number(precoTotal.toFixed(2));
 }
 
-/*
 // ============================================================================
-// FUNÇÃO DE NOTIFICAÇÃO (DESATIVADA)
+// ✅ FUNÇÃO DE NOTIFICAÇÃO (ATIVADA E PREENCHIDA)
 // ============================================================================
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
@@ -245,7 +246,69 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     region: "southamerica-east1",
   },
   async (event) => {
-    // A lógica da função foi comentada para evitar erros de implantação.
+    
+    // Pega os dados do novo documento (o "bilhete" de notificação)
+    const bilhete = event.data.data();
+    const bilheteId = event.params.bilheteId;
+
+    if (!bilhete) {
+        functions.logger.log("Bilhete vazio, encerrando.");
+        return;
+    }
+
+    const donoId = bilhete.donoId;
+    const titulo = bilhete.titulo || "Notificação Pronti";
+    const mensagem = bilhete.mensagem || "Você tem uma nova atividade.";
+
+    if (!donoId) {
+        functions.logger.error(`Bilhete ${bilheteId} não tem donoId.`);
+        // Marca como processado para não tentar de novo
+        return event.data.ref.update({ status: "processado_com_erro" });
+    }
+
+    functions.logger.log(`Processando notificação para o dono: ${donoId}`);
+
+    // 1. Buscar o Token FCM do dono na coleção 'mensagensTokens'
+    const tokenRef = db.collection("mensagensTokens").doc(donoId);
+    const tokenSnap = await tokenRef.get();
+
+    if (!tokenSnap.exists || !tokenSnap.data().fcmToken) {
+        functions.logger.warn(`Token FCM não encontrado para o dono: ${donoId}.`);
+        // Marca como processado mesmo assim
+        return event.data.ref.update({ status: "processado_sem_token" });
+    }
+
+    const fcmToken = tokenSnap.data().fcmToken;
+
+    // 2. Montar o payload da notificação push
+    const payload = {
+        notification: {
+            title: titulo,
+            body: mensagem,
+            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164", // Link direto para sua logo
+            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164"  // Ícone para Android
+        },
+        webpush: {
+            fcmOptions: {
+                link: "https://prontiapp.com.br/agenda.html" // O que abre ao clicar
+            }
+        },
+        token: fcmToken
+    };
+
+    // 3. Enviar a mensagem
+    try {
+        functions.logger.log(`Enviando push para o token: ${fcmToken}`);
+        await fcm.send(payload);
+        functions.logger.log("✅ Notificação Push enviada com sucesso!");
+    } catch (error) {
+        functions.logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
+        // (Opcional: se o erro for 'messaging/registration-token-not-registered',
+        // você pode apagar o token do Firestore aqui)
+    }
+
+    // 4. Marcar o bilhete como processado
+    // (O seu 'messaging.js' não precisa mais fazer isso)
+    return event.data.ref.update({ status: "processado" });
   }
 );
-*/
