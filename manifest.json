@@ -1,22 +1,24 @@
 {
-  "name": "Pronti Painel do Dono",
-  "short_name": "Pronti Painel",
-  "start_url": "/index.html",
-  "scope": "/",
+  "name": "Pronti App",
+  "short_name": "Pronti",
+  "description": "Seu aplicativo de agendamento de serviços.",
+  "start_url": "/vitrine.html",
   "display": "standalone",
-  "background_color": "#4f46e5",
+  "background_color": "#ffffff",
   "theme_color": "#4f46e5",
-  "description": "Painel administrativo do Pronti App",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "LINK_DO_STORAGE_192x192_AQUI_OU_VAZIO",
+      "src": "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164",
+      "type": "image/png",
       "sizes": "192x192",
-      "type": "image/png"
+      "purpose": "any"
     },
     {
-      "src": "LINK_DO_STORAGE_512x512_AQUI_OU_VAZIO",
+      "src": "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164",
+      "type": "image/png",
       "sizes": "512x512",
-      "type": "image/png"
+      "purpose": "any"
     }
   ]
 }
