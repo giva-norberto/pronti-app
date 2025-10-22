@@ -5,6 +5,7 @@
 
 // ============================ Imports principais ==============================
 const { onRequest } = require("firebase-functions/v2/https");
+// ✅ IMPORTAÇÃO ATIVADA
 const { onDocumentCreated } = require("firebase-functions/v2/firestore"); 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -20,6 +21,7 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
+// ✅ MESSAGING ATIVADO
 const fcm = admin.messaging(); 
 
 // =========================== Configuração de CORS =============================
@@ -43,7 +45,7 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
-// ENDPOINT 1: verificarEmpresa (Sua Lógica Original - Sem Alterações)
+// ENDPOINT 1: verificarEmpresa (Sua Lógica Original)
 // ============================================================================
 exports.verificarEmpresa = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -96,7 +98,7 @@ exports.verificarEmpresa = onRequest(
 );
 
 // ============================================================================
-// ENDPOINT 2: createPreference (Sua Lógica Original - Sem Alterações)
+// ENDPOINT 2: createPreference (Sua Lógica Original)
 // ============================================================================
 exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -151,7 +153,7 @@ exports.createPreference = onRequest(
 );
 
 // ============================================================================
-// ENDPOINT 3: receberWebhookMercadoPago (Sua Lógica Original - Sem Alterações)
+// ENDPOINT 3: receberWebhookMercadoPago (Sua Lógica Original)
 // ============================================================================
 exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -198,7 +200,7 @@ exports.receberWebhookMercadoPago = onRequest(
 );
 
 // ============================================================================
-// FUNÇÕES AUXILIARES (Sua Lógica Original - Sem Alterações)
+// FUNÇÕES AUXILIARES (Sua Lógica Original)
 // ============================================================================
 function getMercadoPagoClient() {
   const mpToken = process.env.MERCADOPAGO_TOKEN;
