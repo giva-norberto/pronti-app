@@ -12,9 +12,8 @@ const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
 // ========================= Inicialização do Firebase ==========================
-// ✅ CORREÇÃO: Inicialização manual especificando a URL do banco de dados
-// Isso corrige o erro "database '(default)' does not exist" porque
-// seu banco de dados está em 'southamerica-east1'.
+// ✅ CORREÇÃO DE LOCALIZAÇÃO: Especifica a URL do seu banco de dados.
+// Isso corrige o erro "database '(default)' does not exist".
 if (!admin.apps.length) {
   admin.initializeApp({
     databaseURL: "https://pronti-app-37c6e.firebaseio.com" 
@@ -44,7 +43,7 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
-// ENDPOINT 1: verificarEmpresa (Sua Lógica Original)
+// ENDPOINT 1: verificarEmpresa (Sua Lógica Original - Sem Alterações)
 // ============================================================================
 exports.verificarEmpresa = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -97,7 +96,7 @@ exports.verificarEmpresa = onRequest(
 );
 
 // ============================================================================
-// ENDPOINT 2: createPreference (Sua Lógica Original)
+// ENDPOINT 2: createPreference (Sua Lógica Original - Sem Alterações)
 // ============================================================================
 exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -152,7 +151,7 @@ exports.createPreference = onRequest(
 );
 
 // ============================================================================
-// ENDPOINT 3: receberWebhookMercadoPago (Sua Lógica Original)
+// ENDPOINT 3: receberWebhookMercadoPago (Sua Lógica Original - Sem Alterações)
 // ============================================================================
 exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -199,7 +198,7 @@ exports.receberWebhookMercadoPago = onRequest(
 );
 
 // ============================================================================
-// FUNÇÕES AUXILIARES (Sua Lógica Original)
+// FUNÇÕES AUXILIARES (Sua Lógica Original - Sem Alterações)
 // ============================================================================
 function getMercadoPagoClient() {
   const mpToken = process.env.MERCADOPAGO_TOKEN;
