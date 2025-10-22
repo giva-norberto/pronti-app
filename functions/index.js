@@ -1,11 +1,10 @@
 /**
  * Cloud Functions backend para pagamentos e notificações Pronti.
- * VERSÃO COM NOTIFICAÇÕES ATIVADAS.
+ * VERSÃO COM NOTIFICAÇÕES ATIVADAS E CORREÇÃO DE LOCALIZAÇÃO.
  */
 
 // ============================ Imports principais ==============================
 const { onRequest } = require("firebase-functions/v2/https");
-// ✅ IMPORTAÇÃO ATIVADA
 const { onDocumentCreated } = require("firebase-functions/v2/firestore"); 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -13,11 +12,15 @@ const { MercadoPagoConfig, Preapproval } = require("mercadopago");
 const cors = require("cors");
 
 // ========================= Inicialização do Firebase ==========================
+// ✅ CORREÇÃO: Inicialização manual especificando a URL do banco de dados
+// Isso corrige o erro "database '(default)' does not exist" porque
+// seu banco de dados está em 'southamerica-east1'.
 if (!admin.apps.length) {
-  admin.initializeApp();
+  admin.initializeApp({
+    databaseURL: "https://pronti-app-37c6e.firebaseio.com" 
+  });
 }
 const db = admin.firestore();
-// ✅ MESSAGING ATIVADO
 const fcm = admin.messaging(); 
 
 // =========================== Configuração de CORS =============================
@@ -41,7 +44,7 @@ const corsOptions = {
 const corsHandler = cors(corsOptions);
 
 // ============================================================================
-// ENDPOINT 1: verificarEmpresa (Lógica original 100% mantida)
+// ENDPOINT 1: verificarEmpresa (Sua Lógica Original)
 // ============================================================================
 exports.verificarEmpresa = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -79,7 +82,7 @@ exports.verificarEmpresa = onRequest(
           if (!profissionaisSnapshot.empty) {
             licencasNecessarias = profissionaisSnapshot.size;
           }
-          functions.logger.info("DEBUG: professionalsSnapshot.size", { size: licencasNecessarias });
+          functions.logger.info("DEBUG: profissionaisSnapshot.size", { size: licencasNecessarias });
         } catch (profErr) {
           functions.logger.warn("DEBUG: Erro ao buscar subcoleção profissionais, assumindo 0.", { error: profErr });
         }
@@ -94,7 +97,7 @@ exports.verificarEmpresa = onRequest(
 );
 
 // ============================================================================
-// ENDPOINT 2: createPreference (Lógica original 100% mantida)
+// ENDPOINT 2: createPreference (Sua Lógica Original)
 // ============================================================================
 exports.createPreference = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -149,7 +152,7 @@ exports.createPreference = onRequest(
 );
 
 // ============================================================================
-// ENDPOINT 3: receberWebhookMercadoPago (Lógica original 100% mantida)
+// ENDPOINT 3: receberWebhookMercadoPago (Sua Lógica Original)
 // ============================================================================
 exports.receberWebhookMercadoPago = onRequest(
   { region: "southamerica-east1", secrets: ["MERCADOPAGO_TOKEN"] },
@@ -196,7 +199,7 @@ exports.receberWebhookMercadoPago = onRequest(
 );
 
 // ============================================================================
-// FUNÇÕES AUXILIARES (Lógica original 100% mantida)
+// FUNÇÕES AUXILIARES (Sua Lógica Original)
 // ============================================================================
 function getMercadoPagoClient() {
   const mpToken = process.env.MERCADOPAGO_TOKEN;
@@ -236,6 +239,7 @@ function calcularPreco(totalFuncionarios) {
   return Number(precoTotal.toFixed(2));
 }
 
+
 // ============================================================================
 // ✅ FUNÇÃO DE NOTIFICAÇÃO (ATIVADA E PREENCHIDA)
 // ============================================================================
@@ -243,7 +247,7 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
     database: "(default)",
-    region: "southamerica-east1",
+    region: "southamerica-east1", // Especifica a região da função
   },
   async (event) => {
     
@@ -253,6 +257,12 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
 
     if (!bilhete) {
         functions.logger.log("Bilhete vazio, encerrando.");
+        return;
+    }
+
+    // Se o bilhete já foi processado (pelo app aberto), não faz nada.
+    if (bilhete.status === "processado") {
+        functions.logger.log(`Bilhete ${bilheteId} já processado, ignorando.`);
         return;
     }
 
@@ -285,8 +295,9 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         notification: {
             title: titulo,
             body: mensagem,
-            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164", // Link direto para sua logo
-            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164"  // Ícone para Android
+            // (Opcional) Use o seu ícone do PWA
+            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164", 
+            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.firebasestorage.app/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media&token=e01a4e43-a304-4550-8573-c1c15059d164"
         },
         webpush: {
             fcmOptions: {
@@ -303,12 +314,14 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
         functions.logger.log("✅ Notificação Push enviada com sucesso!");
     } catch (error) {
         functions.logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
-        // (Opcional: se o erro for 'messaging/registration-token-not-registered',
-        // você pode apagar o token do Firestore aqui)
+        // Se o token for inválido, apaga ele para não tentar de novo
+        if (error.code === 'messaging/registration-token-not-registered') {
+            await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
+        }
     }
 
     // 4. Marcar o bilhete como processado
-    // (O seu 'messaging.js' não precisa mais fazer isso)
+    // (Isso impede que o 'messaging.js' no app aberto tente processar de novo)
     return event.data.ref.update({ status: "processado" });
   }
 );
