@@ -128,9 +128,8 @@ class MessagingService {
       const notification = new Notification(title, {
         body: body,
         icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
-        badge: '/badge.png',
-        tag: 'prontiapp-notification',
-        renotify: true // ✅ CORREÇÃO APLICADA AQUI
+        badge: '/badge.png'
+        // tag: 'prontiapp-notification', // ✅ LINHA REMOVIDA
       });
 
       notification.onclick = () => {
