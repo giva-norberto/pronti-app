@@ -129,7 +129,8 @@ class MessagingService {
         body: body,
         icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
         badge: '/badge.png',
-        tag: 'prontiapp-notification'
+        tag: 'prontiapp-notification',
+        renotify: true // ✅ CORREÇÃO APLICADA AQUI
       });
 
       notification.onclick = () => {
