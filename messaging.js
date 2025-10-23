@@ -120,6 +120,7 @@ class MessagingService {
     });
   }
 
+  // ✅ FUNÇÃO CORRIGIDA: adiciona tag única e renotify
   showForegroundNotification(payload) {
     const title = payload.notification?.title || payload.data?.title || 'Nova Notificação';
     const body = payload.notification?.body || payload.data?.body || 'Você recebeu uma nova mensagem.';
@@ -128,8 +129,9 @@ class MessagingService {
       const notification = new Notification(title, {
         body: body,
         icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
-        badge: '/badge.png'
-        // tag: 'prontiapp-notification', // ✅ LINHA REMOVIDA
+        badge: '/badge.png',
+        tag: `notif-${Date.now()}`, // 🔧 Tag única a cada notificação
+        renotify: true              // 🔧 Força reexibição mesmo se igual
       });
 
       notification.onclick = () => {
@@ -143,10 +145,10 @@ class MessagingService {
           const ctx = new AudioContext();
           const oscillator = ctx.createOscillator();
           oscillator.type = 'square';
-          oscillator.frequency.setValueAtTime(880, ctx.currentTime); 
+          oscillator.frequency.setValueAtTime(880, ctx.currentTime);
           oscillator.connect(ctx.destination);
           oscillator.start();
-          oscillator.stop(ctx.currentTime + 0.15); 
+          oscillator.stop(ctx.currentTime + 0.15);
         }
       } catch (err) {
         console.error('[Audio] Falha ao tocar som da notificação:', err);
@@ -281,7 +283,6 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
         }
 
         // --- DISPARO AUTOMÁTICO DE E-MAIL PARA O DONO ---
-        // Extração compatível com formatos planos e com template.data (sem alterar lógica de envio)
         const clienteNome = bilhete.clienteNome || bilhete.nomeCliente || bilhete.template?.data?.nomeCliente || null;
         const servico = bilhete.servico || bilhete.servicoNome || bilhete.template?.data?.servicoNome || null;
         const horario = bilhete.horario || bilhete.horarioAgendamento || bilhete.template?.data?.horarioAgendamento || null;
