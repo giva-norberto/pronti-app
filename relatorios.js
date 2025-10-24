@@ -1,9 +1,6 @@
-// relatorios.js (VERSÃO FINAL REVISADA - sem declarar safeVerificarAcesso)
-// Mantive sua lógica de negócio e queries. Corrigi inicialização para evitar erros de
-// referência (setDatasPadrao / carregarAbaDados), e garanti que se exista uma função
-// safeVerificarAcesso/ verificarAcesso em outro script ela seja usada — caso contrário
-// tentamos importar userService dinamicamente. Não declaro safeVerificarAcesso aqui
-// (para evitar o SyntaxError "Identifier 'safeVerificarAcesso' has already been declared").
+// relatorios.js (VERSÃO FINAL - sem declarar safeVerificarAcesso)
+// Mantive sua lógica de negócio e queries. Garantia: popularFiltroProfissionais e setDatasPadrao
+// estão definidos antes do uso. Não declaro safeVerificarAcesso aqui para evitar duplicate declaration.
 
 import { db } from "./firebase-config.js";
 import {
@@ -16,41 +13,14 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-/* ---------- Helpers ---------- */
+/* ----------------------------- Helpers ----------------------------- */
 
 // Formatador BRL
 function fmtBRL(v) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
 }
 
-// Obter sessão de forma segura: usa window.safeVerificarAcesso, window.verificarAcesso,
-// ou tenta importar userService dinamicamente. Não define nenhuma função global aqui.
-async function getSession() {
-  if (typeof window.safeVerificarAcesso === 'function') {
-    return await window.safeVerificarAcesso();
-  }
-  if (typeof window.verificarAcesso === 'function') {
-    return await window.verificarAcesso();
-  }
-  // tentativa de import dinâmica como fallback
-  try {
-    const mod = await import('./userService.js');
-    if (typeof mod.verificarAcesso === 'function') {
-      return await mod.verificarAcesso();
-    }
-  } catch (e) {
-    // ignora — será tratado abaixo
-  }
-  throw new Error('Função verificarAcesso não encontrada. Certifique-se de que userService.js está carregado.');
-}
-
-/* ---------- Variáveis DOM (serão definidas no DOMContentLoaded) ---------- */
-let filtroInicio = null;
-let filtroFim = null;
-let filtroProfissional = null;
-let btnAplicarFiltro = null;
-
-/* ---------- UI: CSV / Tabela responsiva ---------- */
+/* ----------------------------- UI helpers (CSV, tabela responsiva) ----------------------------- */
 
 function exportarTabelaCSV(abaId) {
   const table = document.querySelector(`#${abaId} table`);
@@ -70,9 +40,9 @@ function exportarTabelaCSV(abaId) {
 }
 
 function adicionarBotaoExportar(container, abaId) {
-  const oldBtn = container.querySelector('.btn-exportar-csv');
+  let oldBtn = container.querySelector('.btn-exportar-csv');
   if (oldBtn) oldBtn.remove();
-  const btn = document.createElement('button');
+  let btn = document.createElement('button');
   btn.className = 'btn-exportar-csv';
   btn.innerHTML = '<i class="fa-solid fa-file-csv"></i> Exportar CSV';
   btn.style.marginBottom = '18px';
@@ -80,7 +50,7 @@ function adicionarBotaoExportar(container, abaId) {
   container.prepend(btn);
 }
 
-// Render de tabela responsiva: adiciona data-label automaticamente e wrapper de scroll
+// Render de tabela responsiva (wrapper com overflow-x para mobile) e data-label automático
 function renderTabela(container, colunas, linhas) {
   if (!linhas || !linhas.length) {
     container.innerHTML = "<p>Nenhum dado encontrado no período.</p>";
@@ -108,17 +78,16 @@ function renderTabela(container, colunas, linhas) {
   `;
 }
 
-/* ---------- Firestore helpers ---------- */
+/* ----------------------------- Firestore helpers ----------------------------- */
 
-// Empresa ativa (mantive a obtenção do localStorage)
+// Empresa ativa
 let empresaId = localStorage.getItem("empresaAtivaId");
 if (!empresaId) {
-  // se não definida, tenta obter sessão para preencher (se possível)
-  // mas não alteramos a lógica: se não existir, redireciona como antes
-  console.warn('[relatorios] empresaAtivaId não encontrada em localStorage');
+  alert("Nenhuma empresa ativa encontrada. Selecione uma empresa.");
+  window.location.href = "selecionar-empresa.html";
 }
 
-// Busca agendamentos filtrados do Firestore
+// buscarAgendamentos (mantive sua lógica)
 async function buscarAgendamentos({ inicio, fim, profissionalId, statusFiltro }) {
   const filtros = [
     where("data", ">=", inicio),
@@ -144,30 +113,51 @@ async function buscarAgendamentos({ inicio, fim, profissionalId, statusFiltro })
   }
 }
 
-/* ---------- Relatórios (mantive lógica original) ---------- */
+/* ----------------------------- Funções que antes geravam ReferenceError resolvidas ----------------------------- */
+
+// setDatasPadrao (definida antes do uso)
+function setDatasPadrao() {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const fim = hoje;
+  const pad = n => n.toString().padStart(2, '0');
+  const f = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const elInicio = document.getElementById("filtro-data-inicio");
+  const elFim = document.getElementById("filtro-data-fim");
+  if (elInicio) elInicio.value = f(inicio);
+  if (elFim) elFim.value = f(fim);
+}
+
+// popularFiltroProfissionais (definida antes do uso)
+async function popularFiltroProfissionais() {
+  const sel = document.getElementById("filtro-profissional");
+  if (!sel) return;
+  sel.innerHTML = '<option value="todos">Todos</option>';
+  try {
+    const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      const option = document.createElement("option");
+      option.value = docSnap.id;
+      option.textContent = data.nome || data.name || docSnap.id;
+      sel.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Erro ao buscar profissionais:", error);
+  }
+}
+
+/* ----------------------------- Abas e relatórios (mantive lógica) ----------------------------- */
 
 function carregarAbaDados(abaId) {
   switch (abaId) {
-    case "servicos":
-      carregarRelatorioServicos();
-      break;
-    case "profissionais":
-      carregarRelatorioProfissionais();
-      break;
-    case "faturamento":
-      carregarRelatorioFaturamento();
-      break;
-    case "clientes":
-      carregarRelatorioClientes();
-      break;
-    case "agenda":
-      carregarRelatorioAgenda();
-      break;
-    case "comissao":
-      carregarRelatorioComissao();
-      break;
-    default:
-      carregarAbaPlaceholder(abaId);
+    case "servicos": carregarRelatorioServicos(); break;
+    case "profissionais": carregarRelatorioProfissionais(); break;
+    case "faturamento": carregarRelatorioFaturamento(); break;
+    case "clientes": carregarRelatorioClientes(); break;
+    case "agenda": carregarRelatorioAgenda(); break;
+    case "comissao": carregarRelatorioComissao(); break;
+    default: carregarAbaPlaceholder(abaId);
   }
 }
 
@@ -177,14 +167,15 @@ function carregarAbaPlaceholder(abaId) {
   container.innerHTML = `<p>Conteúdo não disponível.</p>`;
 }
 
+// (Seguem as funções de relatório -- mantive sua lógica original sem alterações funcionais)
 async function carregarRelatorioServicos() {
   const container = document.getElementById("servicos");
   container.innerHTML = "<p>Carregando...</p>";
   try {
     const ags = await buscarAgendamentos({
-      inicio: filtroInicio.value,
-      fim: filtroFim.value,
-      profissionalId: filtroProfissional.value,
+      inicio: document.getElementById("filtro-data-inicio").value,
+      fim: document.getElementById("filtro-data-fim").value,
+      profissionalId: document.getElementById("filtro-profissional").value,
       statusFiltro: ["realizado"]
     });
     const servicos = {};
@@ -209,9 +200,9 @@ async function carregarRelatorioProfissionais() {
   container.innerHTML = "<p>Carregando...</p>";
   try {
     const ags = await buscarAgendamentos({
-      inicio: filtroInicio.value,
-      fim: filtroFim.value,
-      profissionalId: filtroProfissional.value,
+      inicio: document.getElementById("filtro-data-inicio").value,
+      fim: document.getElementById("filtro-data-fim").value,
+      profissionalId: document.getElementById("filtro-profissional").value,
       statusFiltro: ["realizado"]
     });
     const profs = {};
@@ -236,9 +227,9 @@ async function carregarRelatorioFaturamento() {
   container.innerHTML = "<p>Carregando...</p>";
   try {
     const ags = await buscarAgendamentos({
-      inicio: filtroInicio.value,
-      fim: filtroFim.value,
-      profissionalId: filtroProfissional.value,
+      inicio: document.getElementById("filtro-data-inicio").value,
+      fim: document.getElementById("filtro-data-fim").value,
+      profissionalId: document.getElementById("filtro-profissional").value,
       statusFiltro: ["realizado"]
     });
     const totalFaturamento = ags.reduce((tot, ag) => tot + (parseFloat(ag.servicoPreco) || 0), 0);
@@ -283,7 +274,7 @@ async function carregarRelatorioClientes() {
       const ag = docSnap.data();
       if (ag.status !== "realizado") return;
       if (!ag.clienteId) return;
-      if (ag.data < filtroInicio.value || ag.data > filtroFim.value) return;
+      if (ag.data < document.getElementById("filtro-data-inicio").value || ag.data > document.getElementById("filtro-data-fim").value) return;
       if (!agPorCliente[ag.clienteId]) agPorCliente[ag.clienteId] = [];
       agPorCliente[ag.clienteId].push(ag);
     });
@@ -307,9 +298,9 @@ async function carregarRelatorioAgenda() {
   try {
     const statusFiltro = ["ativo", "realizado", "cancelado", "cancelado_pelo_gestor", "nao_compareceu"];
     const ags = await buscarAgendamentos({
-      inicio: filtroInicio.value,
-      fim: filtroFim.value,
-      profissionalId: filtroProfissional.value,
+      inicio: document.getElementById("filtro-data-inicio").value,
+      fim: document.getElementById("filtro-data-fim").value,
+      profissionalId: document.getElementById("filtro-profissional").value,
       statusFiltro
     });
     const contagem = { ativo: 0, realizado: 0, nao_compareceu: 0, cancelado: 0, cancelado_pelo_gestor: 0 };
@@ -330,7 +321,7 @@ async function carregarRelatorioAgenda() {
   }
 }
 
-/* ---------- Comissão (Firestore aggregates + fallback) ---------- */
+/* ---------- Comissão (mantive lógica) ---------- */
 
 async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter = "todos") {
   const candidateGetters = [
@@ -471,9 +462,9 @@ async function carregarRelatorioComissao() {
   const container = document.getElementById("comissao");
   container.innerHTML = "<p>Carregando relatório de comissões...</p>";
   try {
-    const from = filtroInicio.value;
-    const to = filtroFim.value;
-    const profissionalFilter = filtroProfissional.value || "todos";
+    const from = document.getElementById("filtro-data-inicio").value;
+    const to = document.getElementById("filtro-data-fim").value;
+    const profissionalFilter = document.getElementById("filtro-profissional").value || "todos";
 
     let aggregates = await fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter);
     if (!aggregates) {
@@ -497,51 +488,35 @@ async function carregarRelatorioComissao() {
   }
 }
 
-/* ----------------------------- Datas padrão (definição hoisted) ----------------------------- */
-
-function setDatasPadrao() {
-  const hoje = new Date();
-  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  const fim = hoje;
-  const pad = n => n.toString().padStart(2, '0');
-  const f = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  if (filtroInicio) filtroInicio.value = f(inicio);
-  if (filtroFim) filtroFim.value = f(fim);
-}
-
-/* ----------------------------- Inicialização (após DOM pronto) ----------------------------- */
+/* ---------- Inicialização final (após DOM ready) ---------- */
 
 window.addEventListener("DOMContentLoaded", () => {
-  // recapturar referências DOM (garante que botões e containers existem)
-  filtroInicio = document.getElementById("filtro-data-inicio");
-  filtroFim = document.getElementById("filtro-data-fim");
-  filtroProfissional = document.getElementById("filtro-profissional");
-  btnAplicarFiltro = document.getElementById("btn-aplicar-filtro");
+  // recapturar referências DOM
+  setDatasPadrao();
+  popularFiltroProfissionais();
 
-  // configurar listeners de abas (só agora que DOM está pronto)
-  const abas = document.querySelectorAll(".aba");
-  const conteudosAbas = document.querySelectorAll(".aba-conteudo");
-  abas.forEach(botao => {
-    botao.addEventListener("click", () => {
-      abas.forEach(b => b.classList.remove("active"));
-      botao.classList.add("active");
-      const abaSelecionada = botao.dataset.aba;
-      conteudosAbas.forEach(c => {
-        c.classList.toggle("active", c.id === abaSelecionada);
-      });
-      carregarAbaDados(abaSelecionada);
+  // ligar handlers de abas (garantir que as abas existam no DOM)
+  const abasBtns = document.querySelectorAll(".aba");
+  const conteudos = document.querySelectorAll(".aba-conteudo");
+  abasBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      abasBtns.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const aba = btn.dataset.aba;
+      conteudos.forEach(c => c.classList.toggle("active", c.id === aba));
+      carregarAbaDados(aba);
     });
   });
 
-  if (btnAplicarFiltro) {
-    btnAplicarFiltro.addEventListener("click", () => {
-      const abaAtivaBtn = document.querySelector(".aba.active");
-      if (!abaAtivaBtn) return;
-      carregarAbaDados(abaAtivaBtn.dataset.aba);
+  const btnAplicar = document.getElementById("btn-aplicar-filtro");
+  if (btnAplicar) {
+    btnAplicar.addEventListener("click", () => {
+      const ativa = document.querySelector(".aba.active");
+      if (!ativa) return;
+      carregarAbaDados(ativa.dataset.aba);
     });
   }
 
-  setDatasPadrao();
-  popularFiltroProfissionais();
+  // carregar inicial
   carregarAbaDados("servicos");
 });
