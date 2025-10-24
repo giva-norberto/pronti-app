@@ -309,7 +309,7 @@
   </div>
 
   <!-- ================================================================== -->
-  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
+  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO (retry wrapper adicionado) -->
   <!-- ================================================================== -->
   <script type="module">
     import { verificarAcesso } from './userService.js';
@@ -318,11 +318,36 @@
 
     /**
      * Ponto de entrada único que orquestra a inicialização da página.
+     * Mantive toda a lógica original; adicionei um wrapper local obterSessaoComRetries
+     * que trata o erro "Race condition detectada" fazendo retries curtos.
      */
     async function inicializarPagina( ) {
+      // wrapper local para evitar race condition em verificarAcesso()
+      async function obterSessaoComRetries(maxRetries = 6, baseDelayMs = 120) {
+        let attempt = 0;
+        while (attempt < maxRetries) {
+          try {
+            const sess = await verificarAcesso();
+            return sess;
+          } catch (err) {
+            const msg = (err && err.message) ? err.message.toString().toLowerCase() : '';
+            if (msg.includes('race condition') || msg.includes('race condition detectada')) {
+              attempt++;
+              const delay = baseDelayMs * attempt;
+              console.warn(`[relatorios] verificarAcesso: race condition detectada — retry ${attempt}/${maxRetries} em ${delay}ms`);
+              await new Promise(res => setTimeout(res, delay));
+              continue;
+            }
+            // erro diferente: propagar
+            throw err;
+          }
+        }
+        throw new Error('Esgotadas tentativas ao chamar verificarAcesso devido a race condition.');
+      }
+
       try {
-        // 1. Garante que o usuário está logado e obtém a sessão.
-        const sessao = await verificarAcesso();
+        // 1. Garante que o usuário está logado e obtém a sessão (com retries se necessário).
+        const sessao = await obterSessaoComRetries();
         if (!sessao || !sessao.user) {
           return; // verificarAcesso já redireciona.
         }
@@ -370,7 +395,8 @@
 
   <!-- ==================== RELATORIOS (inclui cálculo de comissão e valor líquido) ==================== -->
   <script type="module">
-    // Integrado inline conforme solicitado — mantém a lógica atual e acrescenta o cálculo de comissão
+    // Integrado inline conforme solicitado — mantém a lógica atual e acrescenta cálculo de comissão.
+    // Adicionei safeVerificarAcesso local para evitar a mesma race condition quando relatorios chama verificarAcesso.
     import { verificarAcesso } from './userService.js';
     import { db } from './firebase-config.js';
     import {
@@ -393,6 +419,29 @@
       if (!d) return '';
       const dt = (d instanceof Date) ? d : (d.seconds ? new Date(d.seconds * 1000) : new Date(d));
       return dt.toISOString().slice(0, 10);
+    }
+
+    /* ---------- Safe verificarAcesso wrapper (local) ---------- */
+    async function safeVerificarAcesso(maxRetries = 5, baseDelayMs = 120) {
+      let attempt = 0;
+      while (attempt < maxRetries) {
+        try {
+          const sess = await verificarAcesso();
+          return sess;
+        } catch (err) {
+          attempt++;
+          const msg = (err && err.message) ? err.message.toString().toLowerCase() : '';
+          if (msg.includes('race condition') || msg.includes('race condition detectada')) {
+            const delay = baseDelayMs * attempt;
+            console.warn(`[relatorios] verificarAcesso: race condition detectada — retry ${attempt}/${maxRetries} após ${delay}ms`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          // erro diferente: rethrow
+          throw err;
+        }
+      }
+      throw new Error('safeVerificarAcesso: esgotadas tentativas por race condition.');
     }
 
     /* ---------- Caches ---------- */
@@ -628,7 +677,8 @@
     }
 
     async function handleAplicarFiltro() {
-      const sess = await verificarAcesso();
+      // usar wrapper seguro em vez de chamar verificarAcesso diretamente
+      const sess = await safeVerificarAcesso();
       if (!sess || !sess.empresaId) {
         console.error('[relatorios] sessão inválida');
         return;
@@ -690,7 +740,8 @@
     /* ---------- inicialização da página de relatórios ---------- */
     async function init() {
       try {
-        const sess = await verificarAcesso();
+        // usar wrapper seguro para evitar race condition
+        const sess = await safeVerificarAcesso();
         if (!sess || !sess.empresaId) {
           console.error('[relatorios] usuário sem sessão/empresa');
           return;
