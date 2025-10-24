@@ -279,6 +279,8 @@
           <button class="aba" data-aba="faturamento"><i class="fa-solid fa-coins"></i> Faturamento</button>
           <button class="aba" data-aba="clientes"><i class="fa-solid fa-user-group"></i> Clientes</button>
           <button class="aba" data-aba="agenda"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
+          <!-- NOVA ABA: Comissão -->
+          <button class="aba" data-aba="comissao"><i class="fa-solid fa-percent"></i> Comissão</button>
         </nav>
       </div>
       <!-- Filtros -->
@@ -304,12 +306,14 @@
         <div class="aba-conteudo" id="faturamento"></div>
         <div class="aba-conteudo" id="clientes"></div>
         <div class="aba-conteudo" id="agenda"></div>
+        <!-- NOVA ABA: container da Comissão -->
+        <div class="aba-conteudo" id="comissao"></div>
       </section>
     </main>
   </div>
 
   <!-- ================================================================== -->
-  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO (retry wrapper adicionado) -->
+  <!-- ✅ INÍCIO DA ALTERAÇÃO: SCRIPT DE INICIALIZAÇÃO PADRÃO -->
   <!-- ================================================================== -->
   <script type="module">
     import { verificarAcesso } from './userService.js';
@@ -318,36 +322,11 @@
 
     /**
      * Ponto de entrada único que orquestra a inicialização da página.
-     * Mantive toda a lógica original; adicionei um wrapper local obterSessaoComRetries
-     * que trata o erro "Race condition detectada" fazendo retries curtos.
      */
     async function inicializarPagina( ) {
-      // wrapper local para evitar race condition em verificarAcesso()
-      async function obterSessaoComRetries(maxRetries = 6, baseDelayMs = 120) {
-        let attempt = 0;
-        while (attempt < maxRetries) {
-          try {
-            const sess = await verificarAcesso();
-            return sess;
-          } catch (err) {
-            const msg = (err && err.message) ? err.message.toString().toLowerCase() : '';
-            if (msg.includes('race condition') || msg.includes('race condition detectada')) {
-              attempt++;
-              const delay = baseDelayMs * attempt;
-              console.warn(`[relatorios] verificarAcesso: race condition detectada — retry ${attempt}/${maxRetries} em ${delay}ms`);
-              await new Promise(res => setTimeout(res, delay));
-              continue;
-            }
-            // erro diferente: propagar
-            throw err;
-          }
-        }
-        throw new Error('Esgotadas tentativas ao chamar verificarAcesso devido a race condition.');
-      }
-
       try {
-        // 1. Garante que o usuário está logado e obtém a sessão (com retries se necessário).
-        const sessao = await obterSessaoComRetries();
+        // 1. Garante que o usuário está logado e obtém a sessão.
+        const sessao = await verificarAcesso();
         if (!sessao || !sessao.user) {
           return; // verificarAcesso já redireciona.
         }
@@ -393,114 +372,55 @@
     inicializarPagina();
   </script>
 
-  <!-- ==================== RELATORIOS (inclui cálculo de comissão e valor líquido) ==================== -->
+  <!-- Seus scripts de negócio são mantidos -->
+  <script src="relatorios.js" type="module"></script>
+
+  <!-- ==================== NOVO: Script para popular a aba "Comissão" ==================== -->
   <script type="module">
-    // Integrado inline conforme solicitado — mantém a lógica atual e acrescenta cálculo de comissão.
-    // Adicionei safeVerificarAcesso local para evitar a mesma race condition quando relatorios chama verificarAcesso.
+    // Este módulo adiciona apenas a aba "Comissão" que resume, por profissional:
+    // - valor faturado (somatório dos serviços concluídos no período)
+    // - comissão % (média ponderada baseada nas comissões aplicadas)
+    // - valor funcionário (soma das comissões pagas)
+    // - valor líquido (soma que fica para o dono: faturado - funcionário)
+    //
+    // Mantive a mesma lógica de leitura do Firestore usada pelo relatório existente:
+    // tenta coleções típicas, filtra por status concluído e utiliza comissaoPorServico > comissaoPadrao.
+
     import { verificarAcesso } from './userService.js';
     import { db } from './firebase-config.js';
     import {
       collection, query, where, getDocs, doc, getDoc, orderBy, Timestamp
     } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    /* ---------- Helpers ---------- */
+    const OK_STATUS = ['concluido','concluídos','concluidos','finalizado','finalizado','completed','done'];
+
     function fmtBRL(v) {
       return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
     }
 
-    function calculateNetAmounts(preco, commissionPct) {
-      const pct = (typeof commissionPct === 'number' && !Number.isNaN(commissionPct)) ? commissionPct : 0;
-      const employeeAmount = Number((preco * (pct / 100)).toFixed(2));
-      const ownerAmount = Number((preco - employeeAmount).toFixed(2));
-      return { employeeAmount, ownerAmount };
-    }
-
-    function toISODateInput(d) {
-      if (!d) return '';
-      const dt = (d instanceof Date) ? d : (d.seconds ? new Date(d.seconds * 1000) : new Date(d));
-      return dt.toISOString().slice(0, 10);
-    }
-
-    /* ---------- Safe verificarAcesso wrapper (local) ---------- */
-    async function safeVerificarAcesso(maxRetries = 5, baseDelayMs = 120) {
+    // pequena função de retry para evitar race condition no verificarAcesso
+    async function safeVerificarAcesso(maxRetries = 6, baseDelayMs = 120) {
       let attempt = 0;
       while (attempt < maxRetries) {
         try {
-          const sess = await verificarAcesso();
-          return sess;
+          return await verificarAcesso();
         } catch (err) {
-          attempt++;
           const msg = (err && err.message) ? err.message.toString().toLowerCase() : '';
           if (msg.includes('race condition') || msg.includes('race condition detectada')) {
+            attempt++;
             const delay = baseDelayMs * attempt;
-            console.warn(`[relatorios] verificarAcesso: race condition detectada — retry ${attempt}/${maxRetries} após ${delay}ms`);
+            console.warn(`[comissao] verificarAcesso: retry ${attempt}/${maxRetries} em ${delay}ms`);
             await new Promise(r => setTimeout(r, delay));
             continue;
           }
-          // erro diferente: rethrow
           throw err;
         }
       }
       throw new Error('safeVerificarAcesso: esgotadas tentativas por race condition.');
     }
 
-    /* ---------- Caches ---------- */
-    const profCache = new Map();
-    const servCache = new Map();
-
-    async function getProfessionalData(empresaId, profissionalId) {
-      if (!profissionalId) return null;
-      const key = `${empresaId}::${profissionalId}`;
-      if (profCache.has(key)) return profCache.get(key);
-      try {
-        const ref = doc(db, 'empresarios', empresaId, 'profissionais', profissionalId);
-        const snap = await getDoc(ref);
-        const data = snap && snap.exists() ? snap.data() : null;
-        profCache.set(key, data);
-        return data;
-      } catch (err) {
-        console.error('[relatorios] erro getProfessionalData', err);
-        profCache.set(key, null);
-        return null;
-      }
-    }
-
-    async function getServiceData(empresaId, serviceId) {
-      if (!serviceId) return null;
-      const key = `${empresaId}::${serviceId}`;
-      if (servCache.has(key)) return servCache.get(key);
-      try {
-        const refLocal = doc(db, 'empresarios', empresaId, 'servicos', serviceId);
-        const snapLocal = await getDoc(refLocal);
-        if (snapLocal && snapLocal.exists()) {
-          const d = { id: snapLocal.id, ...snapLocal.data() };
-          servCache.set(key, d);
-          return d;
-        }
-      } catch (e) {
-        // ignore
-      }
-      try {
-        const refGlobal = doc(db, 'servicos', serviceId);
-        const snapG = await getDoc(refGlobal);
-        if (snapG && snapG.exists()) {
-          const d = { id: snapG.id, ...snapG.data() };
-          servCache.set(key, d);
-          return d;
-        }
-      } catch (err) {
-        console.warn('[relatorios] getServiceData fallback erro', err);
-      }
-      servCache.set(key, null);
-      return null;
-    }
-
-    /* ---------- Buscar agendamentos (flexível) ----------
-       Observação: agora o relatório considera apenas agendamentos "concluídos".
-       Para compatibilidade com diferentes nomes de campo de status, aceitamos
-       alguns valores comuns: 'concluido', 'concluídos', 'finalizado', 'completed'.
-    */
-    async function fetchAppointments(empresaId, fromDate, toDate) {
+    // Função reutilizada de busca de agendamentos concluídos (curta e direta, sem alterar lógica do relatório)
+    async function fetchConcludedAppointments(empresaId, fromDate, toDate) {
       let fromTs = null, toTs = null;
       try {
         if (fromDate) fromTs = Timestamp.fromDate(new Date(fromDate + 'T00:00:00'));
@@ -509,79 +429,80 @@
           toTs = Timestamp.fromDate(d);
         }
       } catch (e) {
-        console.warn('[relatorios] erro parse datas', e);
+        console.warn('[comissao] erro parse datas', e);
       }
 
       const candidates = ['agendamentos', 'agenda', 'bookings', 'appointments'];
       for (const col of candidates) {
         try {
           const colRef = collection(db, col);
-
-          // montar query dinâmica (podemos filtrar por empresaId e data se campos existirem)
-          const filters = [];
-          // filtro empresaId
-          filters.push(where('empresaId', '==', empresaId));
+          const filters = [ where('empresaId', '==', empresaId) ];
           if (fromTs) filters.push(where('data', '>=', fromTs));
           if (toTs) filters.push(where('data', '<=', toTs));
-
-          // montar query com orderBy se possível
           let q;
           try {
             q = query(colRef, ...filters, orderBy('data', 'desc'));
           } catch (errQ) {
-            // alguns coleções não têm 'data' indexado — tentar sem orderBy
             q = query(colRef, ...filters);
           }
-
           const snap = await getDocs(q);
           if (!snap.empty) {
-            // mapear e filtrar apenas os concluídos
-            const rawList = snap.docs.map(d => ({ id: d.id, raw: d.data() }));
-            const normalized = rawList.map(item => {
-              const data = item.raw;
-              return {
-                id: item.id,
-                dataRaw: data.data || data.dataAgendamento || data.date || data.createdAt || null,
-                data: data.data ? (data.data.seconds ? new Date(data.data.seconds * 1000).toISOString() : data.data) : (data.dataAgendamento || data.date || ''),
-                clienteNome: data.clienteNome || data.nomeCliente || data.cliente || data.clientName || '',
-                profissionalId: data.profissionalId || data.profissional || data.employeeId || data.professionalId || null,
-                profissionalNome: data.profissionalNome || data.employeeName || data.profissionalName || '',
-                serviceId: data.serviceId || data.servicoId || data.servico || data.service || null,
-                serviceName: data.serviceName || data.servicoNome || data.titulo || '',
-                preco: Number(data.preco || data.valor || data.price || data.fee || 0),
-                status: (data.status || data.estado || '').toString().toLowerCase(),
-                raw: data
-              };
-            });
-
-            // filtrar status concluído (aceitar várias variantes)
-            const okStatus = ['concluido','concluídos','concluidos','finalizado','finalizado','completed','done'];
-            const concluidos = normalized.filter(a => {
-              const s = (a.status || '').toLowerCase();
-              // se não existir campo status, considerar como concluído somente se campo 'concluido' true ou se data < now
-              if (s && okStatus.includes(s)) return true;
-              if (a.raw && typeof a.raw.concluido !== 'undefined') {
-                return Boolean(a.raw.concluido);
+            const results = [];
+            snap.docs.forEach(d => {
+              const data = d.data();
+              const status = (data.status || data.estado || '').toString().toLowerCase();
+              const concluded = (status && OK_STATUS.includes(status)) || (typeof data.concluido !== 'undefined' && Boolean(data.concluido));
+              if (concluded) {
+                results.push({
+                  id: d.id,
+                  raw: data,
+                  preco: Number(data.preco || data.valor || data.price || data.fee || 0),
+                  profissionalId: data.profissionalId || data.profissional || data.employeeId || data.professionalId || null,
+                  serviceId: data.serviceId || data.servicoId || data.servico || data.service || null
+                });
               }
-              return false;
             });
-
-            // retornar somente os concluídos
-            return concluidos;
+            return results;
           }
         } catch (err) {
-          console.warn('[relatorios] fetchAppointments tentou', col, 'erro:', err);
+          console.warn('[comissao] fetch try', col, 'erro', err);
         }
       }
       return [];
     }
 
-    /* ---------- Render da tabela ---------- */
-    function renderTable(rows, container) {
-      container.innerHTML = '';
+    async function getProfessional(empresaId, profissionalId) {
+      if (!profissionalId) return null;
+      try {
+        const ref = doc(db, 'empresarios', empresaId, 'profissionais', profissionalId);
+        const snap = await getDoc(ref);
+        return snap && snap.exists() ? snap.data() : null;
+      } catch (err) {
+        console.warn('[comissao] getProfessional erro', err);
+        return null;
+      }
+    }
 
-      if (!rows || rows.length === 0) {
-        container.innerHTML = '<div style="padding:18px;color:#6b7280">Nenhum agendamento concluído encontrado no período selecionado.</div>';
+    // Calcula comissão para um agendamento dado o profissional e serviceId
+    function calcCommissionForAppointment(preco, profData, serviceId) {
+      let commissionPct = 0;
+      if (profData) {
+        if (profData.comissaoPorServico && serviceId && typeof profData.comissaoPorServico[serviceId] !== 'undefined') {
+          commissionPct = Number(profData.comissaoPorServico[serviceId]) || 0;
+        } else if (typeof profData.comissaoPadrao === 'number') {
+          commissionPct = Number(profData.comissaoPadrao) || 0;
+        }
+      }
+      const employeeAmount = Number((preco * (commissionPct / 100)).toFixed(2));
+      const ownerAmount = Number((preco - employeeAmount).toFixed(2));
+      return { commissionPct, employeeAmount, ownerAmount };
+    }
+
+    // Renderiza a tabela de comissão por profissional
+    function renderComissaoTable(aggregates, container) {
+      container.innerHTML = '';
+      if (!aggregates || aggregates.length === 0) {
+        container.innerHTML = '<div style="padding:18px;color:#6b7280">Nenhum dado para exibir no período selecionado.</div>';
         return;
       }
 
@@ -590,42 +511,37 @@
       table.style.borderCollapse = 'collapse';
 
       const thead = document.createElement('thead');
-      const headRow = document.createElement('tr');
-      ['Data','Cliente','Profissional','Serviço','Preço','Comissão %','Valor funcionário','Valor dono'].forEach(h => {
+      const headerRow = document.createElement('tr');
+      ['Profissional', 'Valor faturado', 'Comissão % (média ponderada)', 'Valor funcionário', 'Valor líquido (dono)'].forEach(h => {
         const th = document.createElement('th');
         th.textContent = h;
         th.style.padding = '10px 8px';
-        headRow.appendChild(th);
+        headerRow.appendChild(th);
       });
-      thead.appendChild(headRow);
+      thead.appendChild(headerRow);
       table.appendChild(thead);
 
       const tbody = document.createElement('tbody');
+      let totalFaturado = 0, totalFuncionario = 0, totalLiquido = 0;
 
-      let totalPrice = 0, totalEmployee = 0, totalOwner = 0;
-
-      rows.forEach(r => {
-        totalPrice += r.preco || 0;
-        totalEmployee += r.employeeAmount || 0;
-        totalOwner += r.ownerAmount || 0;
+      aggregates.forEach(row => {
+        totalFaturado += row.totalFaturado;
+        totalFuncionario += row.totalFuncionario;
+        totalLiquido += row.totalLiquido;
 
         const tr = document.createElement('tr');
-
-        const td = (txt) => {
+        const cell = (txt) => {
           const td = document.createElement('td');
           td.textContent = txt;
           td.style.padding = '8px';
           return td;
         };
 
-        tr.appendChild(td(r.data ? (new Date(r.data)).toLocaleString() : ''));
-        tr.appendChild(td(r.cliente || ''));
-        tr.appendChild(td(r.profissional || ''));
-        tr.appendChild(td(r.servico || ''));
-        tr.appendChild(td(fmtBRL(r.preco)));
-        tr.appendChild(td((r.commissionPct || 0) + '%'));
-        tr.appendChild(td(fmtBRL(r.employeeAmount)));
-        tr.appendChild(td(fmtBRL(r.ownerAmount)));
+        tr.appendChild(cell(row.profissionalNome || '(sem nome)'));
+        tr.appendChild(cell(fmtBRL(row.totalFaturado)));
+        tr.appendChild(cell((row.avgCommissionPct || 0).toFixed(2) + ' %'));
+        tr.appendChild(cell(fmtBRL(row.totalFuncionario)));
+        tr.appendChild(cell(fmtBRL(row.totalLiquido)));
 
         tbody.appendChild(tr);
       });
@@ -636,151 +552,135 @@
       const fr = document.createElement('tr');
       fr.style.fontWeight = '700';
       fr.style.background = '#f3f4fc';
-      const emptyTd = () => {
-        const td = document.createElement('td'); td.style.padding = '8px'; return td;
-      };
+      const emptyTd = () => { const td = document.createElement('td'); td.style.padding = '8px'; return td; };
       fr.appendChild(emptyTd());
-      fr.appendChild(emptyTd());
-      fr.appendChild(emptyTd());
-      fr.appendChild(emptyTd());
-      const tdTotalPrice = document.createElement('td'); tdTotalPrice.textContent = fmtBRL(totalPrice); tdTotalPrice.style.padding='8px';
-      fr.appendChild(tdTotalPrice);
+      const tdTotalFaturado = document.createElement('td'); tdTotalFaturado.textContent = fmtBRL(totalFaturado); tdTotalFaturado.style.padding='8px';
+      fr.appendChild(tdTotalFaturado);
       fr.appendChild((() => { const td=document.createElement('td'); td.textContent='TOTAIS:'; td.style.padding='8px'; return td; })());
-      const tdTotalEmployee = document.createElement('td'); tdTotalEmployee.textContent = fmtBRL(totalEmployee); tdTotalEmployee.style.padding='8px';
-      fr.appendChild(tdTotalEmployee);
-      const tdTotalOwner = document.createElement('td'); tdTotalOwner.textContent = fmtBRL(totalOwner); tdTotalOwner.style.padding='8px';
-      fr.appendChild(tdTotalOwner);
+      const tdTotalFuncionario = document.createElement('td'); tdTotalFuncionario.textContent = fmtBRL(totalFuncionario); tdTotalFuncionario.style.padding='8px';
+      fr.appendChild(tdTotalFuncionario);
+      const tdTotalLiquido = document.createElement('td'); tdTotalLiquido.textContent = fmtBRL(totalLiquido); tdTotalLiquido.style.padding='8px';
+      fr.appendChild(tdTotalLiquido);
       tfoot.appendChild(fr);
       table.appendChild(tfoot);
 
       container.appendChild(table);
     }
 
-    /* ---------- UI & inicialização ---------- */
-    async function preencherFiltroProfissionais(empresaId) {
-      const sel = document.getElementById('filtro-profissional');
-      if (!sel) return;
-      sel.innerHTML = '<option value="todos">Todos</option>';
+    // Função pública que popula a aba comissão (chamada ao abrir aba ou ao aplicar filtros)
+    async function populateComissaoTab() {
       try {
-        const colRef = collection(db, 'empresarios', empresaId, 'profissionais');
-        const snap = await getDocs(colRef);
-        snap.forEach(d => {
-          const data = d.data();
-          const opt = document.createElement('option');
-          opt.value = d.id;
-          opt.textContent = data.nome || data.name || data.displayName || d.id;
-          sel.appendChild(opt);
-        });
-      } catch (err) {
-        console.warn('[relatorios] erro preencherFiltroProfissionais', err);
-      }
-    }
-
-    async function handleAplicarFiltro() {
-      // usar wrapper seguro em vez de chamar verificarAcesso diretamente
-      const sess = await safeVerificarAcesso();
-      if (!sess || !sess.empresaId) {
-        console.error('[relatorios] sessão inválida');
-        return;
-      }
-      const empresaId = sess.empresaId;
-      const from = document.getElementById('filtro-data-inicio').value;
-      const to = document.getElementById('filtro-data-fim').value;
-      const profSel = document.getElementById('filtro-profissional').value;
-
-      const container = document.getElementById('faturamento');
-      container.innerHTML = '<div style="padding:16px;color:#6b7280">Carregando relatório...</div>';
-
-      let appts = await fetchAppointments(empresaId, from, to);
-
-      // filtrar por profissional se necessário
-      if (profSel && profSel !== 'todos') {
-        appts = appts.filter(a => {
-          const pid = a.profissionalId || a.raw?.profissionalId || a.raw?.profissional;
-          return pid === profSel;
-        });
-      }
-
-      // calcular comissões e valores
-      const rows = [];
-      for (const a of appts) {
-        const preco = Number(a.preco || 0);
-        let commissionPct = null;
-
-        // buscar profissional e serviço (com cache)
-        const prof = await getProfessionalData(empresaId, a.profissionalId);
-        const serv = await getServiceData(empresaId, a.serviceId);
-
-        // prioridade: comissão específica do profissional por serviço
-        if (prof && prof.comissaoPorServico && a.serviceId && typeof prof.comissaoPorServico[a.serviceId] !== 'undefined') {
-          commissionPct = Number(prof.comissaoPorServico[a.serviceId]);
-        }
-        if ((commissionPct === null || Number.isNaN(commissionPct)) && prof && typeof prof.comissaoPadrao === 'number') {
-          commissionPct = Number(prof.comissaoPadrao);
-        }
-        if (commissionPct === null || Number.isNaN(commissionPct)) commissionPct = 0;
-
-        const { employeeAmount, ownerAmount } = calculateNetAmounts(preco, commissionPct);
-
-        rows.push({
-          data: a.data || a.dataRaw || '',
-          cliente: a.clienteNome || '',
-          profissional: a.profissionalNome || (prof && (prof.nome || prof.name)) || '',
-          servico: a.serviceName || (serv && (serv.nome || serv.titulo)) || '',
-          preco,
-          commissionPct,
-          employeeAmount,
-          ownerAmount
-        });
-      }
-
-      renderTable(rows, container);
-    }
-
-    /* ---------- inicialização da página de relatórios ---------- */
-    async function init() {
-      try {
-        // usar wrapper seguro para evitar race condition
         const sess = await safeVerificarAcesso();
         if (!sess || !sess.empresaId) {
-          console.error('[relatorios] usuário sem sessão/empresa');
+          console.error('[comissao] sessão inválida');
           return;
         }
         const empresaId = sess.empresaId;
+        const from = document.getElementById('filtro-data-inicio').value;
+        const to = document.getElementById('filtro-data-fim').value;
+        const profFilter = document.getElementById('filtro-profissional').value;
 
-        // preencher profissionais no filtro
-        await preencherFiltroProfissionais(empresaId);
+        const container = document.getElementById('comissao');
+        container.innerHTML = '<div style="padding:16px;color:#6b7280">Carregando relatório de comissões...</div>';
 
-        // definir datas padrão (mês atual)
-        const hoje = new Date();
-        const primeiro = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        document.getElementById('filtro-data-inicio').value = toISODateInput(primeiro);
-        document.getElementById('filtro-data-fim').value = toISODateInput(hoje);
+        const appts = await fetchConcludedAppointments(empresaId, from, to);
 
-        // aplicar filtro inicialmente
-        document.getElementById('btn-aplicar-filtro').addEventListener('click', handleAplicarFiltro);
+        // agrupar por profissional
+        const map = new Map(); // profissionalId -> { totalFaturado, totalFuncionario, totalLiquido, profissionalNome, commissionWeightedSum }
+        for (const a of appts) {
+          const pid = a.profissionalId || '(sem)';
+          if (profFilter && profFilter !== 'todos' && pid !== profFilter) continue;
 
-        // executar primeira vez
-        await handleAplicarFiltro();
+          // obter dados profissionais (cache simples via getProfessional)
+          const profData = await getProfessional(empresaId, pid);
+          const serviceId = a.serviceId;
+          const preco = Number(a.preco || 0);
+          const { commissionPct, employeeAmount, ownerAmount } = calcCommissionForAppointment(preco, profData, serviceId);
 
-        // abas simples (ativa troca)
-        document.querySelectorAll('.aba').forEach(btn => {
-          btn.addEventListener('click', (ev) => {
-            document.querySelectorAll('.aba').forEach(b=>b.classList.remove('active'));
-            btn.classList.add('active');
-            const aba = btn.dataset.aba;
-            document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.remove('active'));
-            const el = document.getElementById(aba);
-            if (el) el.classList.add('active');
-          });
-        });
+          const cur = map.get(pid) || { totalFaturado:0, totalFuncionario:0, totalLiquido:0, profissionalNome: (profData && (profData.nome || profData.name)) || pid, commissionWeightSum:0 };
+          cur.totalFaturado += preco;
+          cur.totalFuncionario += employeeAmount;
+          cur.totalLiquido += ownerAmount;
+          // accumulate weight for average commission pct: sum(employeeAmount) / sum(preco) *100 later
+          cur.commissionWeightSum += employeeAmount;
+          map.set(pid, cur);
+        }
 
+        // build aggregates array sorted by totalFaturado desc
+        const aggregates = Array.from(map.entries()).map(([pid, v]) => {
+          const avgCommissionPct = v.totalFaturado > 0 ? (v.commissionWeightSum / v.totalFaturado) * 100 : 0;
+          return {
+            profissionalId: pid,
+            profissionalNome: v.profissionalNome,
+            totalFaturado: Number(v.totalFaturado.toFixed(2)),
+            totalFuncionario: Number(v.totalFuncionario.toFixed(2)),
+            totalLiquido: Number(v.totalLiquido.toFixed(2)),
+            avgCommissionPct: Number(avgCommissionPct.toFixed(2))
+          };
+        }).sort((a,b) => b.totalFaturado - a.totalFaturado);
+
+        renderComissaoTable(aggregates, container);
       } catch (err) {
-        console.error('[relatorios] erro init', err);
+        console.error('[comissao] erro populateComissaoTab', err);
+        const container = document.getElementById('comissao');
+        if (container) container.innerHTML = '<div style="padding:18px;color:#a00">Erro ao gerar relatório de comissões. Veja console.</div>';
       }
     }
 
-    init();
+    // small safe wrapper using verificarAcesso (same idea as in relatorios.js)
+    async function safeVerificarAcesso(maxRetries = 6, baseDelayMs = 120) {
+      let attempt = 0;
+      while (attempt < maxRetries) {
+        try {
+          return await verificarAcesso();
+        } catch (err) {
+          const msg = (err && err.message) ? err.message.toString().toLowerCase() : '';
+          if (msg.includes('race condition') || msg.includes('race condition detectada')) {
+            attempt++;
+            const delay = baseDelayMs * attempt;
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          throw err;
+        }
+      }
+      throw new Error('safeVerificarAcesso: esgotadas tentativas por race condition.');
+    }
+
+    // Hook: quando usuário clica na aba "Comissão", popular a tabela
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ao clicar na aba, popular
+      document.querySelectorAll('.aba').forEach(btn => {
+        if (btn.dataset.aba === 'comissao') {
+          btn.addEventListener('click', () => {
+            // activate tab UI (existing code in relatorios.js may also do this)
+            document.querySelectorAll('.aba').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.remove('active'));
+            const el = document.getElementById('comissao');
+            if (el) el.classList.add('active');
+
+            // populate content
+            populateComissaoTab();
+          });
+        }
+      });
+
+      // Também popular ao aplicar filtro (mesmo comportamento do faturamento)
+      const btnAplicar = document.getElementById('btn-aplicar-filtro');
+      if (btnAplicar) {
+        btnAplicar.addEventListener('click', () => {
+          // if currently active tab is comissão, repopular
+          const active = document.querySelector('.aba.active');
+          if (active && active.dataset.aba === 'comissao') {
+            populateComissaoTab();
+          }
+        });
+      }
+    });
+
+    // opcional: popular por padrão se quiser (não ativo para não mudar comportamento existente)
+    // populateComissaoTab();
   </script>
 
   <!-- O script do botão voltar e do histórico foi mantido -->
