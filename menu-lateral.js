@@ -1,9 +1,8 @@
 // ======================================================================
 // ARQUIVO: menu-lateral.js
 // FUNÇÃO: Controla o menu lateral, permissões de acesso e logout.
-// Observação: adicionei uma pequena rotina (Opção B) para injetar um
-// botão "Voltar" no sidebar quando o template não puder ser alterado.
-// A lógica original foi preservada sem alterações funcionais.
+// Observação: adicionei rotina (Opção B) para injetar botão "Voltar" no sidebar
+// sem tocar templates; corrigi bug que podia travar o script.
 // ======================================================================
 
 // --- 1. Importações Essenciais ---
@@ -137,11 +136,15 @@ function inserirBotaoVoltarNoSidebar() {
     });
 
     // Observa mutações para garantir que o botão não seja removido inadvertidamente
-    const mo = new MutationObserver(() => {
+    const mo = new MutationObserver((mutations) => {
         if (!document.getElementById(BUTTON_ID)) {
             // re-inserir se removido
-            mohande.disconnect && mohande.disconnect();
-            inserirBotaoVoltarNoSidebar();
+            // desconecta observer temporariamente para evitar loop
+            try { mo.disconnect(); } catch (e) { /* ignore */ }
+            // tentar re-inserir com pequeno delay para evitar conflitos
+            setTimeout(() => {
+                try { inserirBotaoVoltarNoSidebar(); } catch (_) { /* ignore */ }
+            }, 50);
         }
     });
     // start observer (keeps wrapper in DOM)
