@@ -369,7 +369,7 @@ function carregarAbaPlaceholder(abaId) {
    estiverem pré-gerados no Firestore, o código faz o cálculo local (fallback).
    O arquivo tenta localizar os cálculos pré-computados em alguns caminhos comuns:
      - empresarios/{empresaId}/relatoriosComissao (coleção)
-     - empresarios/{empresaId}/relatorios/comissao (subcollection)
+     - documentos em empresarios/{empresaId}/relatorios que podem conter subcollection 'comissao'
      - relatoriosComissao (coleção global filtrada por empresaId)
    ========================================================================== */
 
@@ -381,62 +381,88 @@ function fmtBRL(v) {
 // Tenta carregar aggregates de comissão pré-calculados no Firestore.
 // Retorna array de objetos: { profissionalId, profissionalNome, totalFaturado, totalFuncionario, totalLiquido, avgCommissionPct }
 async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter = "todos") {
-    const candidatePaths = [
-        () => collection(db, 'empresarios', empresaId, 'relatoriosComissao'),
-        () => collection(db, 'empresarios', empresaId, 'relatorios', 'comissao'),
-        () => collection(db, 'relatoriosComissao') // global collection, pode ter campo empresaId
+    const candidateGetters = [
+        () => collection(db, 'empresarios', empresaId, 'relatoriosComissao'), // coleção direta
+        () => collection(db, 'empresarios', empresaId, 'relatorios'), // coleção que pode ter docs com subcollection 'comissao'
+        () => collection(db, 'relatoriosComissao') // coleção global, pode ter campo empresaId
     ];
 
-    for (const getCol of candidatePaths) {
+    for (const getCol of candidateGetters) {
         try {
             const colRef = getCol();
-            // if global collection, we will filter by empresaId
-            let snap;
-            if (colRef.path === `relatoriosComissao`) {
-                // global collection -> filter by empresaId and date range if fields exist
-                let q;
-                try {
-                    q = query(colRef, where('empresaId', '==', empresaId));
-                } catch (e) {
-                    q = colRef;
-                }
-                snap = await getDocs(q);
-            } else {
-                snap = await getDocs(colRef);
-            }
-            if (!snap.empty) {
-                // Map docs -> aggregates (allow optional fields: periodo/from/to)
-                const results = [];
-                snap.forEach(docSnap => {
+            const snap = await getDocs(colRef);
+            if (snap.empty) continue;
+
+            const results = [];
+
+            // Caso seja a coleção 'relatorios' (onde cada doc pode ter subcollection 'comissao')
+            if (colRef.path.endsWith('/relatorios')) {
+                for (const docSnap of snap.docs) {
                     const d = docSnap.data();
-                    // Optional: if the doc stores period, we may filter by it; if not, assume relevant
-                    // Respect profissionalFilter if the stored docs include profissionalId
-                    if (profissionalFilter && profissionalFilter !== "todos" && d.profissionalId && d.profissionalId !== profissionalFilter) {
-                        return; // skip
-                    }
-                    // If documents store empresaId, ensure match
-                    if (d.empresaId && d.empresaId !== empresaId) return;
-                    // Accept docs that look like aggregated entries (have totals)
+                    // Se o documento já contém campos agregados, use-os (e aplique filtros)
                     if (typeof d.totalFaturado !== 'undefined') {
+                        if (d.empresaId && d.empresaId !== empresaId) continue;
+                        if (profissionalFilter !== 'todos' && d.profissionalId && d.profissionalId !== profissionalFilter) continue;
                         results.push({
                             profissionalId: d.profissionalId || docSnap.id,
-                            profissionalNome: d.profissionalNome || d.nome || d.profissional || docSnap.id,
+                            profissionalNome: d.profissionalNome || d.nome || docSnap.id,
                             totalFaturado: Number(d.totalFaturado || 0),
                             totalFuncionario: Number(d.totalFuncionario || 0),
                             totalLiquido: Number(d.totalLiquido || 0),
                             avgCommissionPct: typeof d.avgCommissionPct !== 'undefined' ? Number(d.avgCommissionPct) : (d.totalFaturado ? (Number(d.totalFuncionario) / Number(d.totalFaturado) * 100) : 0)
                         });
-                    } else {
-                        // skip documents without expected fields
+                    }
+
+                    // Tenta também ler subcollection 'comissao' dentro de cada doc
+                    try {
+                        const subColRef = collection(docSnap.ref, 'comissao'); // correto: collection(documentRef, subcol)
+                        const subSnap = await getDocs(subColRef);
+                        subSnap.forEach(subDoc => {
+                            const sd = subDoc.data();
+                            if (sd.empresaId && sd.empresaId !== empresaId) return;
+                            if (profissionalFilter !== 'todos' && sd.profissionalId && sd.profissionalId !== profissionalFilter) return;
+                            if (typeof sd.totalFaturado !== 'undefined') {
+                                results.push({
+                                    profissionalId: sd.profissionalId || subDoc.id,
+                                    profissionalNome: sd.profissionalNome || sd.nome || subDoc.id,
+                                    totalFaturado: Number(sd.totalFaturado || 0),
+                                    totalFuncionario: Number(sd.totalFuncionario || 0),
+                                    totalLiquido: Number(sd.totalLiquido || 0),
+                                    avgCommissionPct: typeof sd.avgCommissionPct !== 'undefined' ? Number(sd.avgCommissionPct) : (sd.totalFaturado ? (Number(sd.totalFuncionario) / Number(sd.totalFaturado) * 100) : 0)
+                                });
+                            }
+                        });
+                    } catch (eSub) {
+                        // subcollection pode não existir — ignora e continua
+                      // console.debug('[comissao] subcollection comissao não existe neste doc:', docSnap.id);
+                    }
+                }
+            } else {
+                // caso normal: a coleção contém documentos agregados diretamente
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    if (d.empresaId && d.empresaId !== empresaId) return; // se global, filtra por empresaId
+                    if (profissionalFilter !== 'todos' && d.profissionalId && d.profissionalId !== profissionalFilter) return;
+                    if (typeof d.totalFaturado !== 'undefined') {
+                        results.push({
+                            profissionalId: d.profissionalId || docSnap.id,
+                            profissionalNome: d.profissionalNome || d.nome || docSnap.id,
+                            totalFaturado: Number(d.totalFaturado || 0),
+                            totalFuncionario: Number(d.totalFuncionario || 0),
+                            totalLiquido: Number(d.totalLiquido || 0),
+                            avgCommissionPct: typeof d.avgCommissionPct !== 'undefined' ? Number(d.avgCommissionPct) : (d.totalFaturado ? (Number(d.totalFuncionario) / Number(d.totalFaturado) * 100) : 0)
+                        });
                     }
                 });
-                if (results.length) return results;
             }
+
+            if (results.length) return results;
         } catch (err) {
-            console.warn('[comissao] fetchCommissionAggregatesFromFirestore tentativa falhou em um caminho, tentando próximo:', err);
+            console.warn('[comissao] fetchCommissionAggregatesFromFirestore tentativa falhou, tentando próximo:', err);
             // tentar próximo caminho
         }
     }
+
     // se nenhum caminho retornou dados, retorna null para sinalizar fallback
     return null;
 }
