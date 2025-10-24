@@ -1,6 +1,9 @@
 // ======================================================================
 // ARQUIVO: menu-lateral.js
 // FUNÇÃO: Controla o menu lateral, permissões de acesso e logout.
+// Observação: adicionei uma pequena rotina (Opção B) para injetar um
+// botão "Voltar" no sidebar quando o template não puder ser alterado.
+// A lógica original foi preservada sem alterações funcionais.
 // ======================================================================
 
 // --- 1. Importações Essenciais ---
@@ -34,8 +37,148 @@ export async function ativarMenuLateral(papelUsuario) {
     await aplicarPermissoesMenuLateral(papelUsuario);
     // Passo B: Destaca o link da página atual.
     marcarLinkAtivo();
+    // Passo B.5: Injeta botão "Voltar" no sidebar (Opção B - injeção via JS, sem tocar templates).
+    // Esta chamada não altera a lógica original do menu, apenas adiciona um botão de navegação se o sidebar existir.
+    try {
+        inserirBotaoVoltarNoSidebar();
+    } catch (e) {
+        // não interrompe fluxo original
+        console.warn('[menu-lateral] não foi possível inserir botão Voltar no sidebar:', e);
+    }
     // Passo C: Garante que o botão de logout funcione corretamente.
     configurarBotaoLogout();
+}
+
+/* ---------------------------------------------------------------------
+   Funções adicionadas: inserirBotaoVoltarNoSidebar, updateVisibilidadeBotaoVoltar
+   - Implementam a Opção B pedida (injeção via JS em um único arquivo).
+   - Não mudam nenhuma lógica existente do menu/relatórios.
+   --------------------------------------------------------------------- */
+
+/**
+ * Detecta se o app está em modo PWA/standalone (iOS/Android).
+ * @returns {boolean}
+ */
+function isPWAInstalled() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || (window.navigator && window.navigator.standalone === true)
+        || (document.referrer && document.referrer.startsWith('android-app://'));
+}
+
+/**
+ * Insere um botão "Voltar" no sidebar (se existir). Não altera templates.
+ * O botão usa history.back() quando houver histórico; caso contrário faz fallback para index.html.
+ * Id do botão: #btn-global-back-sidebar
+ */
+function inserirBotaoVoltarNoSidebar() {
+    const SIDEBAR_ID = 'sidebar';
+    const BUTTON_ID = 'btn-global-back-sidebar';
+    const HOME_URL = window.PRONTI_HOME_URL || '/index.html';
+
+    const sidebar = document.getElementById(SIDEBAR_ID);
+    if (!sidebar) {
+        // nada a fazer se não houver sidebar
+        return;
+    }
+
+    // Se já existe, apenas atualiza visibilidade
+    let existing = document.getElementById(BUTTON_ID);
+    if (existing) {
+        updateVisibilidadeBotaoVoltar();
+        return;
+    }
+
+    // Cria wrapper e botão (coloca logo abaixo do .sidebar-brand se existir)
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sidebar-back-wrapper';
+    wrapper.style.padding = '0 24px 12px 24px';
+
+    const btn = document.createElement('button');
+    btn.id = BUTTON_ID;
+    btn.className = 'sidebar-back';
+    btn.setAttribute('aria-label', 'Voltar');
+    btn.innerHTML = '<i class="fa fa-arrow-left" aria-hidden="true"></i><span class="sidebar-back-text" style="margin-left:8px;">Voltar</span>';
+
+    // Estilos inline mínimos para garantir aparência mesmo sem CSS adicional
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.gap = '8px';
+    btn.style.width = '100%';
+    btn.style.cursor = 'pointer';
+    btn.style.borderRadius = '10px';
+    btn.style.padding = '10px 12px';
+    btn.style.fontWeight = '700';
+    btn.style.background = 'rgba(255,255,255,0.12)';
+    btn.style.color = '#fff';
+    btn.style.border = '1px solid rgba(255,255,255,0.12)';
+
+    wrapper.appendChild(btn);
+
+    const brand = sidebar.querySelector('.sidebar-brand');
+    if (brand && brand.parentNode) {
+        brand.parentNode.insertBefore(wrapper, brand.nextSibling);
+    } else {
+        // insere no topo do sidebar se não achar .sidebar-brand
+        sidebar.insertBefore(wrapper, sidebar.firstChild);
+    }
+
+    // Clique: tenta history.back() senão direciona para HOME_URL
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        try {
+            if (window.history && window.history.length > 1) {
+                history.back();
+                return;
+            }
+        } catch (err) {
+            console.warn('[menu-lateral] history.back falhou:', err);
+        }
+        window.location.href = HOME_URL;
+    });
+
+    // Observa mutações para garantir que o botão não seja removido inadvertidamente
+    const mo = new MutationObserver(() => {
+        if (!document.getElementById(BUTTON_ID)) {
+            // re-inserir se removido
+            mohande.disconnect && mohande.disconnect();
+            inserirBotaoVoltarNoSidebar();
+        }
+    });
+    // start observer (keeps wrapper in DOM)
+    try {
+        mo.observe(document.documentElement, { childList: true, subtree: true });
+    } catch (e) {
+        // se falhar, não é crítico
+    }
+
+    // Atualiza visibilidade baseada em regras
+    updateVisibilidadeBotaoVoltar();
+
+    // Atualiza visibilidade em eventos relevantes
+    window.addEventListener('popstate', updateVisibilidadeBotaoVoltar);
+    window.addEventListener('hashchange', updateVisibilidadeBotaoVoltar);
+    document.addEventListener('visibilitychange', updateVisibilidadeBotaoVoltar);
+    window.addEventListener('resize', updateVisibilidadeBotaoVoltar);
+}
+
+/**
+ * Atualiza a visibilidade do botão "Voltar" injetado.
+ */
+function updateVisibilidadeBotaoVoltar() {
+    const BUTTON_ID = 'btn-global-back-sidebar';
+    const btn = document.getElementById(BUTTON_ID);
+    if (!btn) return;
+    const path = location.pathname || '/';
+    const isHome = (path === '/' || path.endsWith('/index.html'));
+    const hasHistory = (window.history && window.history.length > 1);
+    // Mostrar se houver histórico, se for PWA instalado (user experience) ou se não for a home
+    if (hasHistory || isPWAInstalled() || !isHome) {
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'flex-start';
+    } else {
+        btn.style.display = 'none';
+    }
 }
 
 // --- 3. Lógica de Permissões ---
