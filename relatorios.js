@@ -1,11 +1,8 @@
 // relatorios.js (VERSÃO CORRIGIDA E COMPLETA)
-// Mantive a lógica existente e acrescentei somente a funcionalidade de buscar os cálculos de comissão
-// diretamente do Firestore (com fallback para calcular localmente se os cálculos pré-computados não existirem).
+// Mantive a lógica existente e acrescentei otimizações para a aba COMISSÃO,
+// proteção contra duplicate declaration de safeVerificarAcesso e responsividade.
 
-// CORREÇÃO 1: Importando a instância 'db' do arquivo de configuração central.
 import { db } from "./firebase-config.js";
-
-// CORREÇÃO 2: Atualizando a versão do Firestore para consistência.
 import {
   collection,
   getDocs,
@@ -16,7 +13,60 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-// DOM Elements (mantidos conforme seu arquivo original)
+/* ----------------------------- Helpers ----------------------------- */
+
+// Definir safeVerificarAcesso uma única vez (guard) para evitar "Identifier already declared"
+if (typeof window.safeVerificarAcesso === 'undefined') {
+  window.safeVerificarAcesso = async function(maxRetries = 8, baseDelayMs = 120) {
+    // lock compartilhado para serializar chamadas
+    if (!window.__verificarAcessoLock) window.__verificarAcessoLock = { promise: null, lastResult: null };
+
+    // se já existe uma chamada em andamento, aguarda a mesma
+    if (window.__verificarAcessoLock.promise) {
+      try { return await window.__verificarAcessoLock.promise; } catch (_) { /* se falhar, tentaremos abaixo */ }
+    }
+
+    const sharedPromise = (async () => {
+      let attempt = 0;
+      while (true) {
+        try {
+          // chamar a função global verificarAcesso (assume-se exportada por userService.js)
+          const sess = await verificarAcesso();
+          window.__verificarAcessoLock.lastResult = sess;
+          return sess;
+        } catch (err) {
+          const msg = (err && err.message) ? String(err.message).toLowerCase() : '';
+          if (msg.includes('race condition') || msg.includes('race condition detectada')) {
+            attempt++;
+            if (attempt >= maxRetries) throw new Error('safeVerificarAcesso: esgotadas tentativas por race condition.');
+            const delay = baseDelayMs * attempt;
+            console.warn(`[safeVerificarAcesso] retry ${attempt}/${maxRetries} em ${delay}ms`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          throw err;
+        }
+      }
+    })();
+
+    window.__verificarAcessoLock.promise = sharedPromise;
+    try {
+      return await sharedPromise;
+    } finally {
+      window.__verificarAcessoLock.promise = null;
+      // manter lastResult se desejar
+    }
+  };
+}
+
+// Formatador BRL
+function fmtBRL(v) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
+}
+
+/* ----------------------------- DOM / State ----------------------------- */
+
+// DOM Elements
 const abas = document.querySelectorAll(".aba" );
 const conteudosAbas = document.querySelectorAll(".aba-conteudo");
 const filtroInicio = document.getElementById("filtro-data-inicio");
@@ -24,16 +74,23 @@ const filtroFim = document.getElementById("filtro-data-fim");
 const filtroProfissional = document.getElementById("filtro-profissional");
 const btnAplicarFiltro = document.getElementById("btn-aplicar-filtro");
 
-// ---- EXPORTAÇÃO CSV ----
+// Empresa ativa
+let empresaId = localStorage.getItem("empresaAtivaId");
+if (!empresaId) {
+    alert("Nenhuma empresa ativa encontrada. Selecione uma empresa.");
+    window.location.href = "selecionar-empresa.html";
+}
+
+/* ----------------------------- CSV / UI ----------------------------- */
+
 function exportarTabelaCSV(abaId) {
     const table = document.querySelector(`#${abaId} table`);
     if (!table) return;
     let csv = [];
     for (let row of table.rows) {
         let cols = Array.from(row.cells).map(td => `"${td.innerText.replace(/"/g, '""')}"`);
-        csv.push(cols.join(";")); // Usar ponto e vírgula para compatibilidade com Excel PT-BR
+        csv.push(cols.join(";"));
     }
-    // Adiciona BOM UTF-8 para acentos no Excel
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csv.join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
@@ -43,12 +100,9 @@ function exportarTabelaCSV(abaId) {
     document.body.removeChild(link);
 }
 
-// Adiciona botão de exportação CSV em cada aba (após renderização)
 function adicionarBotaoExportar(container, abaId) {
-    // Remove botão anterior se já existir
     let oldBtn = container.querySelector('.btn-exportar-csv');
     if (oldBtn) oldBtn.remove();
-    // Cria botão
     let btn = document.createElement('button');
     btn.className = 'btn-exportar-csv';
     btn.innerHTML = '<i class="fa-solid fa-file-csv"></i> Exportar CSV';
@@ -57,17 +111,29 @@ function adicionarBotaoExportar(container, abaId) {
     container.prepend(btn);
 }
 
-// Empresa ativa
-let empresaId = localStorage.getItem("empresaAtivaId");
-if (!empresaId) {
-    alert("Nenhuma empresa ativa encontrada. Selecione uma empresa.");
-    window.location.href = "selecionar-empresa.html";
+// Render de tabela responsiva (envolve em wrapper com overflow no eixo X para mobile)
+function renderTabela(container, colunas, linhas) {
+    if (!linhas || !linhas.length) {
+        container.innerHTML = "<p>Nenhum dado encontrado no período.</p>";
+        return;
+    }
+    let ths = colunas.map(c => `<th style="text-align:left;padding:8px 10px;background:#eaeefc;">${c}</th>`).join("");
+    let trs = linhas.map(l => `<tr>${l.map(td => `<td style="padding:8px 10px;background:#f7f9ff;">${td}</td>`).join("")}</tr>`).join("");
+    // wrapper para scroll horizontal em telas pequenas
+    container.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table style="min-width:720px;border-collapse:collapse;border-spacing:0;margin-bottom:12px;">
+          <thead><tr>${ths}</tr></thead>
+          <tbody>${trs}</tbody>
+        </table>
+      </div>
+    `;
 }
 
-// Busca agendamentos filtrados do Firestore, considerando o status conforme o tipo de relatório
+/* ----------------------------- Firestore helpers ----------------------------- */
+
+// Busca agendamentos filtrados do Firestore
 async function buscarAgendamentos({inicio, fim, profissionalId, statusFiltro}) {
-    // Nota: o código original esperava filtros por data/status como strings ISO no campo 'data'
-    // Aqui usamos where com os parâmetros que o seu Firestore espera (mantendo a lógica)
     let filtros = [
         where("data", ">=", inicio),
         where("data", "<=", fim),
@@ -95,21 +161,8 @@ async function buscarAgendamentos({inicio, fim, profissionalId, statusFiltro}) {
     }
 }
 
-// Função utilitária para renderizar tabelas
-function renderTabela(container, colunas, linhas) {
-    if (!linhas || !linhas.length) {
-        container.innerHTML = "<p>Nenhum dado encontrado no período.</p>";
-        return;
-    }
-    let ths = colunas.map(c => `<th style="text-align:left;">${c}</th>`).join("");
-    let trs = linhas.map(l => `<tr>${l.map(td => `<td>${td}</td>`).join("")}</tr>`).join("");
-    container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
-        <thead><tr>${ths}</tr></thead>
-        <tbody>${trs}</tbody>
-    </table>`;
-}
+/* ----------------------------- Abas e relatórios ----------------------------- */
 
-// Troca de abas
 abas.forEach(botao => {
     botao.addEventListener("click", () => {
         abas.forEach(b => b.classList.remove("active"));
@@ -122,30 +175,26 @@ abas.forEach(botao => {
     });
 });
 
-// Aplicar filtro
 btnAplicarFiltro.addEventListener("click", () => {
     const abaAtivaBtn = document.querySelector(".aba.active");
     if (!abaAtivaBtn) return;
     carregarAbaDados(abaAtivaBtn.dataset.aba);
 });
 
-// Datas padrão: mês atual
 function setDatasPadrao() {
     const hoje = new Date();
     const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const fim = hoje;
     const pad = n => n.toString().padStart(2, '0');
     const f = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    filtroInicio.value = f(inicio);
-    filtroFim.value = f(fim);
+    if (filtroInicio) filtroInicio.value = f(inicio);
+    if (filtroFim) filtroFim.value = f(fim);
 }
 
-// Profissionais
 async function popularFiltroProfissionais() {
     if (!filtroProfissional) return;
     filtroProfissional.innerHTML = '<option value="todos">Todos</option>';
     try {
-        // A função 'collection' aqui agora funciona porque 'db' foi importado.
         const snapshot = await getDocs(collection(db, "empresarios", empresaId, "profissionais"));
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
@@ -155,12 +204,10 @@ async function popularFiltroProfissionais() {
             filtroProfissional.appendChild(option);
         });
     } catch (error) {
-        // Esta é a linha 140 do seu erro original.
         console.error("Erro ao buscar profissionais:", error);
     }
 }
 
-// Dados das abas
 function carregarAbaDados(abaId) {
     switch (abaId) {
         case "servicos":
@@ -179,14 +226,15 @@ function carregarAbaDados(abaId) {
             carregarRelatorioAgenda();
             break;
         case "comissao":
-            carregarRelatorioComissao(); // NOVA aba: chama função adicionada ao final do arquivo
+            carregarRelatorioComissao();
             break;
         default:
             carregarAbaPlaceholder(abaId);
     }
 }
 
-// Relatório Serviços - considera somente concluídos (realizado)
+/* ----------------------------- Relatórios pré-existentes ----------------------------- */
+
 async function carregarRelatorioServicos() {
     const container = document.getElementById("servicos");
     container.innerHTML = "<p>Carregando...</p>";
@@ -197,7 +245,6 @@ async function carregarRelatorioServicos() {
             profissionalId: filtroProfissional.value,
             statusFiltro: ["realizado"]
         });
-        // Agrupa
         let servicos = {};
         ags.forEach(ag => {
             if (!ag.servicoNome) return;
@@ -207,7 +254,7 @@ async function carregarRelatorioServicos() {
         });
         let linhas = Object.entries(servicos)
             .sort((a, b) => b[1].qtd - a[1].qtd)
-            .map(([nome, info]) => [nome, info.qtd, `R$ ${info.total.toFixed(2)}`]);
+            .map(([nome, info]) => [nome, info.qtd, fmtBRL(info.total)]);
         renderTabela(container, ["Serviço", "Qtd", "Faturamento"], linhas);
         adicionarBotaoExportar(container, "servicos");
     } catch (e) {
@@ -215,7 +262,6 @@ async function carregarRelatorioServicos() {
     }
 }
 
-// Relatório Profissionais - considera somente concluídos (realizado)
 async function carregarRelatorioProfissionais() {
     const container = document.getElementById("profissionais");
     container.innerHTML = "<p>Carregando...</p>";
@@ -235,7 +281,7 @@ async function carregarRelatorioProfissionais() {
         });
         let linhas = Object.entries(profs)
             .sort((a, b) => b[1].qtd - a[1].qtd)
-            .map(([nome, info]) => [nome, info.qtd, `R$ ${info.total.toFixed(2)}`]);
+            .map(([nome, info]) => [nome, info.qtd, fmtBRL(info.total)]);
         renderTabela(container, ["Profissional", "Qtd Atendimentos", "Faturamento"], linhas);
         adicionarBotaoExportar(container, "profissionais");
     } catch (e) {
@@ -243,7 +289,6 @@ async function carregarRelatorioProfissionais() {
     }
 }
 
-// Relatório Faturamento - considera somente concluídos (realizado)
 async function carregarRelatorioFaturamento() {
     const container = document.getElementById("faturamento");
     container.innerHTML = "<p>Carregando...</p>";
@@ -263,9 +308,9 @@ async function carregarRelatorioFaturamento() {
         });
         let linhas = Object.entries(servicos)
             .sort((a, b) => b[1] - a[1])
-            .map(([nome, total]) => [nome, `R$ ${total.toFixed(2)}`]);
+            .map(([nome, total]) => [nome, fmtBRL(total)]);
         container.innerHTML = `<div>
-            <p><b>Faturamento total:</b> R$ ${totalFaturamento.toFixed(2)}</p>
+            <p><b>Faturamento total:</b> ${fmtBRL(totalFaturamento)}</p>
             <h4 style="margin:18px 0 7px 0;">Por serviço:</h4>
         </div>`;
         if (linhas.length) {
@@ -281,7 +326,6 @@ async function carregarRelatorioFaturamento() {
     }
 }
 
-// Relatório Clientes - considera somente concluídos (realizado), não usa filtro por profissional
 async function carregarRelatorioClientes() {
     const container = document.getElementById("clientes");
     container.innerHTML = "<p>Carregando...</p>";
@@ -292,14 +336,11 @@ async function carregarRelatorioClientes() {
             getDocs(clientesRef),
             getDocs(agendamentosRef)
         ]);
-        // Mapear agendamentos por clienteId e por período
         let agPorCliente = {};
         snapshotAgendamentos.forEach(docSnap => {
             let ag = docSnap.data();
-            // Só conta atendimentos realizados
             if (ag.status !== "realizado") return;
             if (!ag.clienteId) return;
-            // filtro de período (mantendo a mesma comparação que você usa em buscarAgendamentos)
             if (ag.data < filtroInicio.value || ag.data > filtroFim.value) return;
             if (!agPorCliente[ag.clienteId]) agPorCliente[ag.clienteId] = [];
             agPorCliente[ag.clienteId].push(ag);
@@ -318,12 +359,10 @@ async function carregarRelatorioClientes() {
     }
 }
 
-// Nova aba: Relatório Agenda (análise por status)
 async function carregarRelatorioAgenda() {
     const container = document.getElementById("agenda");
     container.innerHTML = "<p>Carregando...</p>";
     try {
-        // Busca todos os agendamentos do período para o profissional (todos status relevantes)
         const statusFiltro = ["ativo", "realizado", "cancelado", "cancelado_pelo_gestor", "nao_compareceu"];
         const ags = await buscarAgendamentos({
             inicio: filtroInicio.value,
@@ -331,7 +370,6 @@ async function carregarRelatorioAgenda() {
             profissionalId: filtroProfissional.value,
             statusFiltro
         });
-        // Conta por status
         let contagem = {
             "ativo": 0,
             "realizado": 0,
@@ -356,35 +394,20 @@ async function carregarRelatorioAgenda() {
     }
 }
 
-// Placeholder
 function carregarAbaPlaceholder(abaId) {
     const container = document.getElementById(abaId);
     if (!container) return;
     container.innerHTML = `<p>Conteúdo não disponível.</p>`;
 }
 
-/* ===================== NOVO: Funções para a aba COMISSÃO =====================
-   Requisito: sem mudar nenhuma lógica atual — apenas buscar os cálculos de comissão
-   no Firestore (se existirem) e apresentar na aba "comissao". Se os cálculos não
-   estiverem pré-gerados no Firestore, o código faz o cálculo local (fallback).
-   O arquivo tenta localizar os cálculos pré-computados em alguns caminhos comuns:
-     - empresarios/{empresaId}/relatoriosComissao (coleção)
-     - documentos em empresarios/{empresaId}/relatorios que podem conter subcollection 'comissao'
-     - relatoriosComissao (coleção global filtrada por empresaId)
-   ========================================================================== */
+/* ----------------------------- Comissão (Firestore + fallback) ----------------------------- */
 
-// Formata BRL
-function fmtBRL(v) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v || 0));
-}
-
-// Tenta carregar aggregates de comissão pré-calculados no Firestore.
-// Retorna array de objetos: { profissionalId, profissionalNome, totalFaturado, totalFuncionario, totalLiquido, avgCommissionPct }
+// Tenta carregar aggregates pré-computados no Firestore
 async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter = "todos") {
     const candidateGetters = [
-        () => collection(db, 'empresarios', empresaId, 'relatoriosComissao'), // coleção direta
-        () => collection(db, 'empresarios', empresaId, 'relatorios'), // coleção que pode ter docs com subcollection 'comissao'
-        () => collection(db, 'relatoriosComissao') // coleção global, pode ter campo empresaId
+        () => collection(db, 'empresarios', empresaId, 'relatoriosComissao'),
+        () => collection(db, 'empresarios', empresaId, 'relatorios'),
+        () => collection(db, 'relatoriosComissao')
     ];
 
     for (const getCol of candidateGetters) {
@@ -395,11 +418,9 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
 
             const results = [];
 
-            // Caso seja a coleção 'relatorios' (onde cada doc pode ter subcollection 'comissao')
             if (colRef.path.endsWith('/relatorios')) {
                 for (const docSnap of snap.docs) {
                     const d = docSnap.data();
-                    // Se o documento já contém campos agregados, use-os (e aplique filtros)
                     if (typeof d.totalFaturado !== 'undefined') {
                         if (d.empresaId && d.empresaId !== empresaId) continue;
                         if (profissionalFilter !== 'todos' && d.profissionalId && d.profissionalId !== profissionalFilter) continue;
@@ -413,9 +434,8 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
                         });
                     }
 
-                    // Tenta também ler subcollection 'comissao' dentro de cada doc
                     try {
-                        const subColRef = collection(docSnap.ref, 'comissao'); // correto: collection(documentRef, subcol)
+                        const subColRef = collection(docSnap.ref, 'comissao');
                         const subSnap = await getDocs(subColRef);
                         subSnap.forEach(subDoc => {
                             const sd = subDoc.data();
@@ -433,15 +453,13 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
                             }
                         });
                     } catch (eSub) {
-                        // subcollection pode não existir — ignora e continua
-                      // console.debug('[comissao] subcollection comissao não existe neste doc:', docSnap.id);
+                        // ignora
                     }
                 }
             } else {
-                // caso normal: a coleção contém documentos agregados diretamente
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
-                    if (d.empresaId && d.empresaId !== empresaId) return; // se global, filtra por empresaId
+                    if (d.empresaId && d.empresaId !== empresaId) return;
                     if (profissionalFilter !== 'todos' && d.profissionalId && d.profissionalId !== profissionalFilter) return;
                     if (typeof d.totalFaturado !== 'undefined') {
                         results.push({
@@ -458,39 +476,37 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
 
             if (results.length) return results;
         } catch (err) {
-            console.warn('[comissao] fetchCommissionAggregatesFromFirestore tentativa falhou, tentando próximo:', err);
-            // tentar próximo caminho
+            console.warn('[comissao] tentativa falhou, tentando próximo caminho:', err);
         }
     }
 
-    // se nenhum caminho retornou dados, retorna null para sinalizar fallback
     return null;
 }
 
-// Fallback: calcula aggregates localmente (reaproveitando buscarAgendamentos)
+// Fallback otimizado: buscar todos os profissionais uma vez para evitar many getDoc calls
 async function calculateCommissionAggregatesLocal(empresaId, from, to, profissionalFilter = "todos") {
-    // busca agendamentos concluídos no período
     const ags = await buscarAgendamentos({
         inicio: from,
         fim: to,
         profissionalId: profissionalFilter === 'todos' ? undefined : profissionalFilter,
         statusFiltro: ["realizado"]
     });
-    // Map profissionalId -> aggregate
+
+    // Buscar todos profissionais uma única vez e montar mapa
+    const profMap = new Map();
+    try {
+        const profSnap = await getDocs(collection(db, 'empresarios', empresaId, 'profissionais'));
+        profSnap.forEach(p => profMap.set(p.id, p.data()));
+    } catch (e) {
+        console.warn('[comissao] não foi possível carregar profissionais em lote:', e);
+    }
+
     const map = new Map();
     for (const a of ags) {
         const pid = a.profissionalId || '(sem)';
-        // obter dados do profissional do Firestore (comissão padrão / por serviço)
-        let profData = null;
-        try {
-            const profRef = doc(db, 'empresarios', empresaId, 'profissionais', pid);
-            const profSnap = await getDoc(profRef);
-            profData = profSnap && profSnap.exists() ? profSnap.data() : null;
-        } catch (e) {
-            profData = null;
-        }
+        const profData = profMap.get(pid) || null;
         const preco = Number(a.servicoPreco || a.preco || a.valor || 0);
-        // determina comissão %
+
         let commissionPct = 0;
         if (profData) {
             if (profData.comissaoPorServico && a.servicoId && typeof profData.comissaoPorServico[a.servicoId] !== 'undefined') {
@@ -506,9 +522,10 @@ async function calculateCommissionAggregatesLocal(empresaId, from, to, profissio
         cur.totalFaturado += preco;
         cur.totalFuncionario += employeeAmount;
         cur.totalLiquido += ownerAmount;
-        cur.commissionWeightSum += employeeAmount; // we'll calculate avg pct = commissionWeightSum / totalFaturado *100
+        cur.commissionWeightSum += employeeAmount;
         map.set(pid, cur);
     }
+
     const aggregates = Array.from(map.entries()).map(([pid, v]) => {
         const avgCommissionPct = v.totalFaturado > 0 ? (v.commissionWeightSum / v.totalFaturado) * 100 : 0;
         return {
@@ -523,7 +540,6 @@ async function calculateCommissionAggregatesLocal(empresaId, from, to, profissio
     return aggregates;
 }
 
-// Função principal que carrega o relatório de comissão (tenta buscar do Firestore primeiro)
 async function carregarRelatorioComissao() {
     const container = document.getElementById("comissao");
     container.innerHTML = "<p>Carregando relatório de comissões...</p>";
@@ -532,15 +548,11 @@ async function carregarRelatorioComissao() {
         const to = filtroFim.value;
         const profissionalFilter = filtroProfissional.value || "todos";
 
-        // 1) tentar buscar precomputed aggregates no Firestore
         let aggregates = await fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter);
-
-        // 2) se não encontrou, calcular localmente (fallback)
         if (!aggregates) {
             aggregates = await calculateCommissionAggregatesLocal(empresaId, from, to, profissionalFilter);
         }
 
-        // preparar linhas para renderTabela (mantendo consistência com outros relatórios)
         const linhas = aggregates.map(a => [
             a.profissionalNome || a.profissionalId,
             fmtBRL(a.totalFaturado),
@@ -549,7 +561,6 @@ async function carregarRelatorioComissao() {
             fmtBRL(a.totalLiquido)
         ]);
 
-        // renderizar com cabeçalho específico
         renderTabela(container, ["Profissional", "Valor faturado", "Comissão % (média ponderada)", "Valor funcionário", "Valor líquido (dono)"], linhas);
         adicionarBotaoExportar(container, "comissao");
 
@@ -559,9 +570,8 @@ async function carregarRelatorioComissao() {
     }
 }
 
-/* ===================== FIM: Aba COMISSÃO ===================== */
+/* ----------------------------- Inicialização ----------------------------- */
 
-// Inicialização
 window.addEventListener("DOMContentLoaded", () => {
     setDatasPadrao();
     popularFiltroProfissionais();
