@@ -1,8 +1,8 @@
 // ======================================================================
 // ARQUIVO: menu-lateral.js
 // FUNÇÃO: Controla o menu lateral, permissões de acesso e logout.
-// Observação: adicionei rotina (Opção B) para injetar botão "Voltar" no sidebar
-// sem tocar templates; corrigi bug que podia travar o script.
+// Atualização: preserva o botão #btn-logout e garante que o botão flutuante
+// "Voltar" não o cubra no desktop; mantém lógica original intacta.
 // ======================================================================
 
 // --- 1. Importações Essenciais ---
@@ -36,22 +36,23 @@ export async function ativarMenuLateral(papelUsuario) {
     await aplicarPermissoesMenuLateral(papelUsuario);
     // Passo B: Destaca o link da página atual.
     marcarLinkAtivo();
-    // Passo B.5: Injeta botão "Voltar" no sidebar (Opção B - injeção via JS, sem tocar templates).
-    // Esta chamada não altera a lógica original do menu, apenas adiciona um botão de navegação se o sidebar existir.
+    // Passo B.5: Injeta botão flutuante "Voltar" próximo ao menu (sem tocar templates).
+    // A rotina preserva qualquer botão #btn-logout já existente e evita sobreposição.
     try {
-        inserirBotaoVoltarNoSidebar();
+        inserirBotaoFlutuanteMenu();
     } catch (e) {
         // não interrompe fluxo original
-        console.warn('[menu-lateral] não foi possível inserir botão Voltar no sidebar:', e);
+        console.warn('[menu-lateral] não foi possível inserir botão flutuante:', e);
     }
     // Passo C: Garante que o botão de logout funcione corretamente.
     configurarBotaoLogout();
 }
 
 /* ---------------------------------------------------------------------
-   Funções adicionadas: inserirBotaoVoltarNoSidebar, updateVisibilidadeBotaoVoltar
-   - Implementam a Opção B pedida (injeção via JS em um único arquivo).
-   - Não mudam nenhuma lógica existente do menu/relatórios.
+   Rotina: inserirBotaoFlutuanteMenu
+   - cria um botão flutuante (círculo) posicionado próximo ao sidebar
+   - comportamento: history.back() quando possível, senão redireciona para index.html
+   - preserva totalmente o botão #btn-logout (não altera/oculta)
    --------------------------------------------------------------------- */
 
 /**
@@ -65,63 +66,53 @@ function isPWAInstalled() {
 }
 
 /**
- * Insere um botão "Voltar" no sidebar (se existir). Não altera templates.
- * O botão usa history.back() quando houver histórico; caso contrário faz fallback para index.html.
- * Id do botão: #btn-global-back-sidebar
+ * Cria/injeta botão flutuante ao lado do menu lateral (ou em posição padrão em mobile).
+ * Evita cobrir #btn-logout caso este exista e esteja visível.
  */
-function inserirBotaoVoltarNoSidebar() {
-    const SIDEBAR_ID = 'sidebar';
-    const BUTTON_ID = 'btn-global-back-sidebar';
+function inserirBotaoFlutuanteMenu() {
+    const BUTTON_ID = 'pronti-floating-back';
     const HOME_URL = window.PRONTI_HOME_URL || '/index.html';
 
-    const sidebar = document.getElementById(SIDEBAR_ID);
-    if (!sidebar) {
-        // nada a fazer se não houver sidebar
+    // Se já existe, apenas atualiza posição/visibilidade
+    let btn = document.getElementById(BUTTON_ID);
+    if (btn) {
+        atualizarPosicaoEVisibilidade();
         return;
     }
 
-    // Se já existe, apenas atualiza visibilidade
-    let existing = document.getElementById(BUTTON_ID);
-    if (existing) {
-        updateVisibilidadeBotaoVoltar();
-        return;
-    }
-
-    // Cria wrapper e botão (coloca logo abaixo do .sidebar-brand se existir)
-    const wrapper = document.createElement('div');
-    wrapper.className = 'sidebar-back-wrapper';
-    wrapper.style.padding = '0 24px 12px 24px';
-
-    const btn = document.createElement('button');
+    // cria botão
+    btn = document.createElement('button');
     btn.id = BUTTON_ID;
-    btn.className = 'sidebar-back';
     btn.setAttribute('aria-label', 'Voltar');
-    btn.innerHTML = '<i class="fa fa-arrow-left" aria-hidden="true"></i><span class="sidebar-back-text" style="margin-left:8px;">Voltar</span>';
+    btn.title = 'Voltar';
+    btn.innerHTML = '<i class="fa fa-arrow-left" aria-hidden="true" style="font-size:18px;"></i>';
 
-    // Estilos inline mínimos para garantir aparência mesmo sem CSS adicional
-    btn.style.display = 'flex';
-    btn.style.alignItems = 'center';
-    btn.style.gap = '8px';
-    btn.style.width = '100%';
-    btn.style.cursor = 'pointer';
-    btn.style.borderRadius = '10px';
-    btn.style.padding = '10px 12px';
-    btn.style.fontWeight = '700';
-    btn.style.background = 'rgba(255,255,255,0.12)';
-    btn.style.color = '#fff';
-    btn.style.border = '1px solid rgba(255,255,255,0.12)';
+    // estilos inline mínimos (garante aparecimento mesmo sem CSS)
+    Object.assign(btn.style, {
+        position: 'fixed',
+        zIndex: '1600',
+        width: '52px',
+        height: '52px',
+        borderRadius: '26px',
+        border: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+        background: '#ffffff',
+        color: 'var(--cor-azul-pronti, #4f46e5)',
+        cursor: 'pointer',
+        transition: 'transform .12s ease, opacity .12s ease',
+        opacity: '0',
+        pointerEvents: 'auto'
+    });
 
-    wrapper.appendChild(btn);
+    // feedback visual
+    btn.addEventListener('pointerdown', () => { btn.style.transform = 'scale(0.96)'; });
+    btn.addEventListener('pointerup', () => { btn.style.transform = ''; });
+    btn.addEventListener('pointerleave', () => { btn.style.transform = ''; });
 
-    const brand = sidebar.querySelector('.sidebar-brand');
-    if (brand && brand.parentNode) {
-        brand.parentNode.insertBefore(wrapper, brand.nextSibling);
-    } else {
-        // insere no topo do sidebar se não achar .sidebar-brand
-        sidebar.insertBefore(wrapper, sidebar.firstChild);
-    }
-
-    // Clique: tenta history.back() senão direciona para HOME_URL
+    // click handler: back or fallback home
     btn.addEventListener('click', (e) => {
         e.preventDefault();
         try {
@@ -135,54 +126,122 @@ function inserirBotaoVoltarNoSidebar() {
         window.location.href = HOME_URL;
     });
 
-    // Observa mutações para garantir que o botão não seja removido inadvertidamente
-    const mo = new MutationObserver((mutations) => {
-        if (!document.getElementById(BUTTON_ID)) {
-            // re-inserir se removido
-            // desconecta observer temporariamente para evitar loop
-            try { mo.disconnect(); } catch (e) { /* ignore */ }
-            // tentar re-inserir com pequeno delay para evitar conflitos
-            setTimeout(() => {
-                try { inserirBotaoVoltarNoSidebar(); } catch (_) { /* ignore */ }
-            }, 50);
+    document.body.appendChild(btn);
+
+    // throttle helper
+    let lastCall = 0;
+    function throttledAtualizar() {
+        const now = Date.now();
+        if (now - lastCall > 80) {
+            lastCall = now;
+            atualizarPosicaoEVisibilidade();
         }
-    });
-    // start observer (keeps wrapper in DOM)
+    }
+
+    // Reposiciona em eventos relevantes
+    window.addEventListener('resize', throttledAtualizar);
+    window.addEventListener('scroll', throttledAtualizar, { passive: true });
+    window.addEventListener('popstate', atualizarPosicaoEVisibilidade);
+    window.addEventListener('hashchange', atualizarPosicaoEVisibilidade);
+    document.addEventListener('visibilitychange', atualizarPosicaoEVisibilidade);
+
+    // Observe alterações no DOM para reposicionar se necessário (não crítico)
     try {
+        const mo = new MutationObserver(() => { throttledAtualizar(); });
         mo.observe(document.documentElement, { childList: true, subtree: true });
-    } catch (e) {
-        // se falhar, não é crítico
+    } catch (err) {
+        // continua sem observer se não suportado
     }
 
-    // Atualiza visibilidade baseada em regras
-    updateVisibilidadeBotaoVoltar();
+    // chamada inicial com pequeno atraso para permitir que DOM finalize
+    setTimeout(() => atualizarPosicaoEVisibilidade(), 20);
 
-    // Atualiza visibilidade em eventos relevantes
-    window.addEventListener('popstate', updateVisibilidadeBotaoVoltar);
-    window.addEventListener('hashchange', updateVisibilidadeBotaoVoltar);
-    document.addEventListener('visibilitychange', updateVisibilidadeBotaoVoltar);
-    window.addEventListener('resize', updateVisibilidadeBotaoVoltar);
-}
+    /**
+     * Posiciona o botão próximo ao sidebar (desktop) ou como botão suspenso (mobile).
+     * Se existe #btn-logout visível, ajusta posição para evitar sobreposição.
+     */
+    function atualizarPosicaoEVisibilidade() {
+        const btnEl = document.getElementById(BUTTON_ID);
+        if (!btnEl) return;
 
-/**
- * Atualiza a visibilidade do botão "Voltar" injetado.
- */
-function updateVisibilidadeBotaoVoltar() {
-    const BUTTON_ID = 'btn-global-back-sidebar';
-    const btn = document.getElementById(BUTTON_ID);
-    if (!btn) return;
-    const path = location.pathname || '/';
-    const isHome = (path === '/' || path.endsWith('/index.html'));
-    const hasHistory = (window.history && window.history.length > 1);
-    // Mostrar se houver histórico, se for PWA instalado (user experience) ou se não for a home
-    if (hasHistory || isPWAInstalled() || !isHome) {
-        btn.style.display = 'flex';
-        btn.style.alignItems = 'center';
-        btn.style.justifyContent = 'flex-start';
-    } else {
-        btn.style.display = 'none';
+        const path = location.pathname || '/';
+        const isHome = (path === '/' || path.endsWith('/index.html'));
+        const hasHistory = (window.history && window.history.length > 1);
+        const shouldShow = hasHistory || isPWAInstalled() || !isHome;
+
+        // default hide if shouldn't show
+        if (!shouldShow) {
+            btnEl.style.opacity = '0';
+            btnEl.style.pointerEvents = 'none';
+        } else {
+            btnEl.style.opacity = '1';
+            btnEl.style.pointerEvents = 'auto';
+        }
+
+        const sidebar = document.getElementById('sidebar');
+        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+
+        // detect logout button bounding box if visible (we must NOT modify it)
+        const logout = document.getElementById('btn-logout');
+        let logoutRect = null;
+        if (logout && logout.offsetParent !== null) { // visible in layout
+            try { logoutRect = logout.getBoundingClientRect(); } catch (e) { logoutRect = null; }
+        }
+
+        if (vw > 900 && sidebar) {
+            // desktop: place button adjacent to sidebar's right edge
+            const rect = sidebar.getBoundingClientRect();
+            let left = rect.right + 12; // gap after sidebar
+            let top = Math.max(rect.top + 20, 20);
+
+            // If logout exists and is near this region, adjust vertical position upward to avoid overlap
+            if (logoutRect) {
+                // if logout is on right side and near bottom-right, and our computed left is near it horizontally,
+                // push the floating button upward so it does not overlap logout.
+                const potentialOverlapX = (logoutRect.left <= left + 60 && logoutRect.right >= left - 60);
+                const potentialOverlapY = (Math.abs((logoutRect.top) - top) < 80);
+                if (potentialOverlapX && potentialOverlapY) {
+                    // push up enough to clear logout
+                    top = Math.max(12, logoutRect.top - 72);
+                }
+            }
+
+            Object.assign(btnEl.style, {
+                left: `${Math.min(Math.max(left, 12), vw - 72)}px`,
+                top: `${top}px`,
+                bottom: 'auto',
+                right: 'auto'
+            });
+        } else {
+            // mobile/tablet: place bottom-left like suspended button, avoid logout if visible bottom-left/right
+            const bottomGap = 22;
+            const left = 16;
+            let bottom = bottomGap;
+
+            if (logoutRect) {
+                // If logout is bottom-right, no horizontal conflict; if logout sits bottom-left and visible, move our button up
+                const logoutNearLeft = (logoutRect.left < vw / 2);
+                if (logoutNearLeft) {
+                    // raise floating button to avoid covering logout
+                    bottom = Math.max(bottomGap + logoutRect.height + 12, bottomGap);
+                }
+            }
+
+            Object.assign(btnEl.style, {
+                left: `${left}px`,
+                bottom: `${bottom}px`,
+                top: 'auto',
+                right: 'auto'
+            });
+        }
     }
 }
+
+/* ---------------------------------------------------------------------
+   Mantive a lógica original de permissões, marcação de link e logout
+   sem alterações funcionais. Abaixo segue o código original
+   (com pequenas correções de robustez).
+   --------------------------------------------------------------------- */
 
 // --- 3. Lógica de Permissões ---
 /**
@@ -247,14 +306,17 @@ function marcarLinkAtivo() {
 
 /**
  * Configura o botão de logout para funcionar de forma segura e confiável.
+ * Esta função preserva o botão existente (#btn-logout) e apenas re-encadeia o listener.
  */
 function configurarBotaoLogout() {
     const btnLogout = document.getElementById("btn-logout");
     if (!btnLogout) {
-        console.error("Botão de logout com id='btn-logout' não foi encontrado no HTML.");
+        // se não existir no DOM agora, não criamos/removemos; apenas logamos e seguimos
+        console.warn("Botão de logout com id='btn-logout' não foi encontrado no HTML. A função simplesmente retorna.");
         return;
     }
 
+    // NÃO alteramos display/estilos do btnLogout — apenas substituímos o elemento por um clone para remover listeners antigos
     const btnClone = btnLogout.cloneNode(true);
     btnLogout.parentNode.replaceChild(btnClone, btnLogout);
 
