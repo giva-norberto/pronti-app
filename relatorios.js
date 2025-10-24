@@ -25,6 +25,37 @@ function toISODateInput(d) {
   return dt.toISOString().slice(0, 10);
 }
 
+/* ---------- Safe verificarAcesso wrapper (retries para race condition) ---------- */
+/*
+  Observação: o erro que você mostrou é "Race condition detectada." vindo de verificarAcesso.
+  Para evitar que isso quebre a página no carregamento, fazemos algumas tentativas
+  com pequeno backoff quando detectamos esse erro específico. Isso não altera a lógica
+  normal, apenas torna a chamada mais resiliente.
+*/
+async function safeVerificarAcesso(maxRetries = 5, baseDelayMs = 120) {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    try {
+      const sess = await verificarAcesso();
+      return sess;
+    } catch (err) {
+      attempt++;
+      // Se o erro contém a mensagem de race condition, tentar novamente
+      const msg = (err && err.message) ? err.message.toString().toLowerCase() : '';
+      if (msg.includes('race condition') || msg.includes('race condition detectada')) {
+        const delay = baseDelayMs * attempt;
+        console.warn(`[relatorios] verificarAcesso: race condition detectada — retry ${attempt}/${maxRetries} após ${delay}ms`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      // erro diferente: rethrow
+      throw err;
+    }
+  }
+  // Depois de esgotar tentativas, lançar erro final
+  throw new Error('safeVerificarAcesso: esgotadas tentativas por race condition.');
+}
+
 /* ---------- Caches ---------- */
 const profCache = new Map();
 const servCache = new Map();
@@ -258,7 +289,8 @@ async function preencherFiltroProfissionais(empresaId) {
 }
 
 async function handleAplicarFiltro() {
-  const sess = await verificarAcesso();
+  // usar safe wrapper para evitar crash por race condition em verificarAcesso
+  const sess = await safeVerificarAcesso();
   if (!sess || !sess.empresaId) {
     console.error('[relatorios] sessão inválida');
     return;
@@ -320,7 +352,8 @@ async function handleAplicarFiltro() {
 /* ---------- inicialização da página de relatórios ---------- */
 async function init() {
   try {
-    const sess = await verificarAcesso();
+    // usar safe wrapper para evitar crash por race condition em verificarAcesso
+    const sess = await safeVerificarAcesso();
     if (!sess || !sess.empresaId) {
       console.error('[relatorios] usuário sem sessão/empresa');
       return;
