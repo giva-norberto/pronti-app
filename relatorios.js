@@ -1,6 +1,5 @@
-// relatorios.js (VERSÃO CORRIGIDA E COMPLETA)
-// Mantive a lógica existente e acrescentei otimizações para a aba COMISSÃO,
-// proteção contra duplicate declaration de safeVerificarAcesso e responsividade.
+// relatorios.js (VERSÃO AJUSTADA - sem declarar safeVerificarAcesso)
+// Mantive sua lógica e melhorias. Se existir window.safeVerificarAcesso ela será usada; senão verificamos diretamente.
 
 import { db } from "./firebase-config.js";
 import {
@@ -14,50 +13,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 /* ----------------------------- Helpers ----------------------------- */
-
-// Definir safeVerificarAcesso uma única vez (guard) para evitar "Identifier already declared"
-if (typeof window.safeVerificarAcesso === 'undefined') {
-  window.safeVerificarAcesso = async function(maxRetries = 8, baseDelayMs = 120) {
-    // lock compartilhado para serializar chamadas
-    if (!window.__verificarAcessoLock) window.__verificarAcessoLock = { promise: null, lastResult: null };
-
-    // se já existe uma chamada em andamento, aguarda a mesma
-    if (window.__verificarAcessoLock.promise) {
-      try { return await window.__verificarAcessoLock.promise; } catch (_) { /* se falhar, tentaremos abaixo */ }
-    }
-
-    const sharedPromise = (async () => {
-      let attempt = 0;
-      while (true) {
-        try {
-          // chamar a função global verificarAcesso (assume-se exportada por userService.js)
-          const sess = await verificarAcesso();
-          window.__verificarAcessoLock.lastResult = sess;
-          return sess;
-        } catch (err) {
-          const msg = (err && err.message) ? String(err.message).toLowerCase() : '';
-          if (msg.includes('race condition') || msg.includes('race condition detectada')) {
-            attempt++;
-            if (attempt >= maxRetries) throw new Error('safeVerificarAcesso: esgotadas tentativas por race condition.');
-            const delay = baseDelayMs * attempt;
-            console.warn(`[safeVerificarAcesso] retry ${attempt}/${maxRetries} em ${delay}ms`);
-            await new Promise(r => setTimeout(r, delay));
-            continue;
-          }
-          throw err;
-        }
-      }
-    })();
-
-    window.__verificarAcessoLock.promise = sharedPromise;
-    try {
-      return await sharedPromise;
-    } finally {
-      window.__verificarAcessoLock.promise = null;
-      // manter lastResult se desejar
-    }
-  };
-}
 
 // Formatador BRL
 function fmtBRL(v) {
@@ -111,7 +66,7 @@ function adicionarBotaoExportar(container, abaId) {
     container.prepend(btn);
 }
 
-// Render de tabela responsiva (envolve em wrapper com overflow no eixo X para mobile)
+// Render de tabela responsiva (wrapper com overflow-x para mobile)
 function renderTabela(container, colunas, linhas) {
     if (!linhas || !linhas.length) {
         container.innerHTML = "<p>Nenhum dado encontrado no período.</p>";
@@ -119,7 +74,6 @@ function renderTabela(container, colunas, linhas) {
     }
     let ths = colunas.map(c => `<th style="text-align:left;padding:8px 10px;background:#eaeefc;">${c}</th>`).join("");
     let trs = linhas.map(l => `<tr>${l.map(td => `<td style="padding:8px 10px;background:#f7f9ff;">${td}</td>`).join("")}</tr>`).join("");
-    // wrapper para scroll horizontal em telas pequenas
     container.innerHTML = `
       <div style="overflow-x:auto;">
         <table style="min-width:720px;border-collapse:collapse;border-spacing:0;margin-bottom:12px;">
@@ -175,11 +129,13 @@ abas.forEach(botao => {
     });
 });
 
-btnAplicarFiltro.addEventListener("click", () => {
-    const abaAtivaBtn = document.querySelector(".aba.active");
-    if (!abaAtivaBtn) return;
-    carregarAbaDados(abaAtivaBtn.dataset.aba);
-});
+if (btnAplicarFiltro) {
+  btnAplicarFiltro.addEventListener("click", () => {
+      const abaAtivaBtn = document.querySelector(".aba.active");
+      if (!abaAtivaBtn) return;
+      carregarAbaDados(abaAtivaBtn.dataset.aba);
+  });
+}
 
 function setDatasPadrao() {
     const hoje = new Date();
@@ -233,7 +189,7 @@ function carregarAbaDados(abaId) {
     }
 }
 
-/* ----------------------------- Relatórios pré-existentes ----------------------------- */
+/* ----------------------------- Relatórios ----------------------------- */
 
 async function carregarRelatorioServicos() {
     const container = document.getElementById("servicos");
@@ -402,7 +358,6 @@ function carregarAbaPlaceholder(abaId) {
 
 /* ----------------------------- Comissão (Firestore + fallback) ----------------------------- */
 
-// Tenta carregar aggregates pré-computados no Firestore
 async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profissionalFilter = "todos") {
     const candidateGetters = [
         () => collection(db, 'empresarios', empresaId, 'relatoriosComissao'),
@@ -483,7 +438,6 @@ async function fetchCommissionAggregatesFromFirestore(empresaId, from, to, profi
     return null;
 }
 
-// Fallback otimizado: buscar todos os profissionais uma vez para evitar many getDoc calls
 async function calculateCommissionAggregatesLocal(empresaId, from, to, profissionalFilter = "todos") {
     const ags = await buscarAgendamentos({
         inicio: from,
