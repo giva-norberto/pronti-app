@@ -4,6 +4,7 @@
  * 
  * Classe para enviar notificações via Firebase Cloud Messaging (FCM)
  * Pode enviar para tokens específicos ou tópicos.
+ * VERSÃO ATUALIZADA: Suporte a payload 'notification' para push automático em PWA.
  */
 
 class FireBaseNotifications {
@@ -29,12 +30,14 @@ class FireBaseNotifications {
      * @param string $mensagem Corpo da notificação
      * @param string|null $icone URL do ícone
      * @param string|null $imagem URL da imagem
+     * @param array|null $dados Extras personalizados em data
      * @return array Resultado da requisição
      */
-    public function sendToTokens(array $tokens, string $titulo, string $mensagem, string $icone = null, string $imagem = null): array {
+    public function sendToTokens(array $tokens, string $titulo, string $mensagem, string $icone = null, string $imagem = null, array $dados = null): array {
         if (empty($tokens)) return ['success' => false, 'error' => 'Nenhum token fornecido'];
 
-        $msg = [
+        // Payload de notification para push automático
+        $notification = [
             'title' => $titulo,
             'body'  => $mensagem,
             'icon'  => $icone,
@@ -43,7 +46,8 @@ class FireBaseNotifications {
 
         $payload = [
             'registration_ids' => $tokens,
-            'data' => $msg,
+            'notification' => $notification,
+            'data' => $dados ?? $notification,
             'priority' => 'high'
         ];
 
@@ -57,10 +61,11 @@ class FireBaseNotifications {
      * @param string $mensagem
      * @param string|null $icone
      * @param string|null $imagem
+     * @param array|null $dados Extras personalizados em data
      * @return array Resultado da requisição
      */
-    public function sendToTopic(string $topic, string $titulo, string $mensagem, string $icone = null, string $imagem = null): array {
-        $msg = [
+    public function sendToTopic(string $topic, string $titulo, string $mensagem, string $icone = null, string $imagem = null, array $dados = null): array {
+        $notification = [
             'title' => $titulo,
             'body'  => $mensagem,
             'icon'  => $icone,
@@ -69,7 +74,8 @@ class FireBaseNotifications {
 
         $payload = [
             'to' => "/topics/{$topic}",
-            'data' => $msg,
+            'notification' => $notification,
+            'data' => $dados ?? $notification,
             'priority' => 'high'
         ];
 
