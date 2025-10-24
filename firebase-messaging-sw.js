@@ -31,7 +31,7 @@ messaging.onBackgroundMessage(function (payload) {
     icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
     image: payload.notification?.image || payload.data?.image,
     badge: '/badge.png',
-    tag: 'agendamento', // Permite agrupar notificações
+    tag: `agendamento-${payload.data?.bilheteId || Date.now()}`, // Tag dinâmica evita sobrescrever notificações
     requireInteraction: true, // Mantém a notificação visível até o usuário interagir
     actions: [
       {
@@ -42,7 +42,8 @@ messaging.onBackgroundMessage(function (payload) {
         action: 'dismiss',
         title: 'Dispensar'
       }
-    ]
+    ],
+    data: payload.data // preserva dados para uso posterior
   };
 
   // Exibe a notificação usando a API de Service Worker
