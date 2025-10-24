@@ -79,7 +79,10 @@ html, body {
     outline: none;
 }
 
-/* Filtros compactos (suporta singular/plural) */
+/* Filtros compactos
+   NOTE: keep both class names to be robust (.filtros-relatorio and .filtros-relatorios)
+   so this CSS works whether HTML uses singular or plural (to avoid breaking existing markup).
+*/
 .filtros-relatorio,
 .filtros-relatorios {
     display: flex;
@@ -121,7 +124,7 @@ html, body {
     outline: none;
 }
 
-/* Table wrapper for horizontal scroll */
+/* Tabela compacta - wrapper para scroll horizontal em mobile */
 .aba-conteudo .table-wrapper,
 .aba-conteudo > div[style*="overflow-x"] {
     overflow-x: auto;
@@ -166,8 +169,13 @@ html, body {
     text-align: center;
 }
 
-/* Card view for very small devices */
+/* Small screens: keep horizontal scroll for wide tables, but provide a "card" fallback
+   for very narrow screens. The CSS below supports both: 1) horizontal scroll, 2) optional
+   card-view when JS adds data-label attributes to td elements (recommended). */
+
+/* Card layout for very small devices */
 @media (max-width: 420px) {
+    /* Use card-style instead of table if data-label exists */
     .aba-conteudo table,
     .aba-conteudo thead,
     .aba-conteudo tbody,
@@ -176,7 +184,11 @@ html, body {
     .aba-conteudo tr {
         display: block;
     }
-    .aba-conteudo thead { display: none; }
+
+    .aba-conteudo thead {
+        display: none;
+    }
+
     .aba-conteudo tr {
         margin: 8px 0;
         background: #fff;
@@ -185,6 +197,7 @@ html, body {
         padding: 8px;
         border: 1px solid #eef2ff;
     }
+
     .aba-conteudo td {
         display: flex;
         justify-content: space-between;
@@ -194,6 +207,8 @@ html, body {
         font-size: 0.95em;
     }
     .aba-conteudo td:last-child { border-bottom: none; }
+
+    /* Show label using data-label when present; if not present, content remains as-is */
     .aba-conteudo td::before {
         content: attr(data-label);
         font-weight: 700;
@@ -203,6 +218,7 @@ html, body {
         font-size: 0.88em;
     }
 
+    /* Filters and buttons compact adjustments */
     .btn-exportar-csv {
         font-size: 0.9em;
         padding: 3px 6px;
