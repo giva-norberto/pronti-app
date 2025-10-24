@@ -66,18 +66,32 @@ function adicionarBotaoExportar(container, abaId) {
     container.prepend(btn);
 }
 
-// Render de tabela responsiva (wrapper com overflow-x para mobile)
+// Render de tabela responsiva:
+// - envelopa em wrapper com overflow-x para mobile
+// - adiciona data-label em cada <td> para permitir card-view via CSS (sem alterar HTML)
 function renderTabela(container, colunas, linhas) {
     if (!linhas || !linhas.length) {
         container.innerHTML = "<p>Nenhum dado encontrado no período.</p>";
         return;
     }
-    let ths = colunas.map(c => `<th style="text-align:left;padding:8px 10px;background:#eaeefc;">${c}</th>`).join("");
-    let trs = linhas.map(l => `<tr>${l.map(td => `<td style="padding:8px 10px;background:#f7f9ff;">${td}</td>`).join("")}</tr>`).join("");
+
+    // montar cabeçalho
+    const theadCells = colunas.map(c => `<th style="text-align:left;padding:8px 10px;background:#eaeefc;">${c}</th>`).join("");
+
+    // montar corpo com data-label em cada td
+    const trs = linhas.map(row => {
+        const tds = row.map((cell, idx) => {
+            const txt = (cell === null || typeof cell === 'undefined') ? '' : cell;
+            const label = colunas[idx] || '';
+            return `<td data-label="${label}" style="padding:8px 10px;background:#f7f9ff;">${txt}</td>`;
+        }).join("");
+        return `<tr>${tds}</tr>`;
+    }).join("");
+
     container.innerHTML = `
-      <div style="overflow-x:auto;">
+      <div class="table-wrapper" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <table style="min-width:720px;border-collapse:collapse;border-spacing:0;margin-bottom:12px;">
-          <thead><tr>${ths}</tr></thead>
+          <thead><tr>${theadCells}</tr></thead>
           <tbody>${trs}</tbody>
         </table>
       </div>
