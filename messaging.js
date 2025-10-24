@@ -247,10 +247,6 @@ window.solicitarPermissaoParaNotificacoes = async function() {
 
 let unsubscribeDeFila = null;
 
-// ======================================================================
-// ✅ FUNÇÃO CORRIGIDA PARA O ENVIO DE E-MAIL
-// ======================================================================
-
 export function iniciarOuvinteDeNotificacoes(donoId) {
   if (unsubscribeDeFila) {
     unsubscribeDeFila();
@@ -287,36 +283,11 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
         }
 
         // --- DISPARO AUTOMÁTICO DE E-MAIL PARA O DONO ---
-        
-        // Plano A: Tentar buscar campos estruturados
-        let clienteNome = bilhete.clienteNome || bilhete.nomeCliente || bilhete.template?.data?.nomeCliente || null;
-        let servico = bilhete.servico || bilhete.servicoNome || bilhete.template?.data?.servicoNome || null;
-        let horario = bilhete.horario || bilhete.horarioAgendamento || bilhete.template?.data?.horarioAgendamento || null;
-
-        // ✅ CORREÇÃO APLICADA AQUI:
-        // Plano B: Se os campos não existirem, extrair (parse) da string 'mensagem'
-        if ((!clienteNome || !servico || !horario) && bilhete.mensagem) {
-            console.log("[Debug E-mail] Dados estruturados não encontrados. Tentando extrair da 'mensagem'...");
-            
-            // Regex para "Cliente agendou Servico com Profissional às Horario."
-            const regex = /(.*) agendou (.*) com .* às (.*)\./;
-            const matches = bilhete.mensagem.match(regex);
-
-            if (matches && matches.length === 4) {
-                clienteNome = matches[1].trim(); // Grupo 1: Cliente
-                servico = matches[2].trim();     // Grupo 2: Serviço
-                horario = matches[3].trim();     // Grupo 3: Horário
-                console.log("[Debug E-mail] Dados extraídos com sucesso da 'mensagem'.");
-            } else {
-                console.warn("[Debug E-mail] Não foi possível extrair dados da 'mensagem'. Formato inesperado.");
-            }
-        }
-        
-        // Log de debug para garantir que os dados foram encontrados
-        console.log(`[Debug E-mail] Dados extraídos: Cliente=${clienteNome}, Servico=${servico}, Horario=${horario}`);
+        const clienteNome = bilhete.clienteNome || bilhete.nomeCliente || bilhete.template?.data?.nomeCliente || null;
+        const servico = bilhete.servico || bilhete.servicoNome || bilhete.template?.data?.servicoNome || null;
+        const horario = bilhete.horario || bilhete.horarioAgendamento || bilhete.template?.data?.horarioAgendamento || null;
 
         if (clienteNome && servico && horario) {
-          console.log("➡️ [Debug E-mail] Condição IF passou. Disparando fetch...");
           fetch("https://script.google.com/macros/s/AKfycby_Va3ads-umFvz2PpKmSS4-yp1y7riOdsow06nY7pfIvQvZ2mwnnOloszlxuwgEn3L/exec", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -327,8 +298,6 @@ export function iniciarOuvinteDeNotificacoes(donoId) {
             })
           }).then(() => console.log("📧 E-mail disparado via Web App."))
             .catch(err => console.error("❌ Erro ao disparar e-mail:", err));
-        } else {
-           console.warn("⚠️ [Debug E-mail] Condição IF falhou. E-mail NÃO disparado. Verifique os dados acima.");
         }
 
         const docRef = doc(db, "filaDeNotificacoes", bilheteId);
