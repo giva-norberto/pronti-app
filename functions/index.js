@@ -33,7 +33,7 @@ const whitelist = [
   "http://localhost:3000",
 ];
 const corsOptions = {
-  origin: function (origin, callback ) {
+  origin: function (origin, callback) {
     if (!origin || whitelist.includes(origin)) {
       callback(null, true);
     } else {
@@ -136,7 +136,7 @@ exports.createPreference = onRequest(
           payer_email: userRecord.email,
           notification_url: notificationUrl,
         };
-        const preapproval = new Preapproval(client );
+        const preapproval = new Preapproval(client);
         const response = await preapproval.create({ body: subscriptionData });
         await db.collection("empresarios").doc(userId).collection("assinatura").doc("dados").set({
           mercadoPagoAssinaturaId: response.id,
@@ -248,7 +248,6 @@ function calcularPreco(totalFuncionarios) {
 exports.enviarNotificacaoFCM = onDocumentCreated(
   {
     document: "filaDeNotificacoes/{bilheteId}",
-    // database: "(default)", // opcional — omitido para evitar problemas se houver configurações específicas
     region: "southamerica-east1",
   },
   async (event) => {
@@ -256,13 +255,13 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     const bilheteId = event.params && event.params.bilheteId ? event.params.bilheteId : null;
 
     if (!bilhete) {
-        logger.log("Bilhete vazio, encerrando.");
-        return;
+      logger.log("Bilhete vazio, encerrando.");
+      return;
     }
 
     if (bilhete.status === "processado") {
-        logger.log(`Bilhete ${bilheteId} já processado, ignorando.`);
-        return;
+      logger.log(`Bilhete ${bilheteId} já processado, ignorando.`);
+      return;
     }
 
     const donoId = bilhete.donoId;
@@ -270,8 +269,8 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     const mensagem = bilhete.mensagem || "Você tem uma nova atividade.";
 
     if (!donoId) {
-        logger.error(`Bilhete ${bilheteId} não tem donoId.`);
-        return event.data.ref.update({ status: "processado_com_erro" });
+      logger.error(`Bilhete ${bilheteId} não tem donoId.`);
+      return event.data.ref.update({ status: "processado_com_erro" });
     }
 
     logger.log(`Processando notificação para o dono: ${donoId}`);
@@ -280,38 +279,43 @@ exports.enviarNotificacaoFCM = onDocumentCreated(
     const tokenSnap = await tokenRef.get();
 
     if (!tokenSnap.exists || !tokenSnap.data().fcmToken) {
-        logger.warn(`Token FCM não encontrado para o dono: ${donoId}.`);
-        return event.data.ref.update({ status: "processado_sem_token" });
+      logger.warn(`Token FCM não encontrado para o dono: ${donoId}.`);
+      return event.data.ref.update({ status: "processado_sem_token" });
     }
 
     const fcmToken = tokenSnap.data().fcmToken;
 
     const payload = {
-        notification: {
-            title: titulo,
-            body: mensagem,
-            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
+      notification: {
+        title: titulo,
+        body: mensagem,
+        icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+        badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
+      },
+      webpush: {
+        fcmOptions: {
+          link: "https://prontiapp.com.br/agenda.html",
         },
-        webpush: {
-            fcmOptions: {
-                link: "https://prontiapp.com.br/agenda.html"
-            }
-        },
-        token: fcmToken
+      },
+      token: fcmToken,
     };
 
     try {
-        logger.log(`Enviando push para o token: ${fcmToken}`);
-        await fcm.send(payload);
-        logger.log("✅ Notificação Push enviada com sucesso!");
+      logger.log(`Enviando push para o token: ${fcmToken}`);
+      await fcm.send(payload);
+      logger.log("✅ Notificação Push enviada com sucesso!");
     } catch (error) {
-        logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
-        if (error.code === 'messaging/registration-token-not-registered') {
-            await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
-        }
+      logger.error(`❌ Erro ao enviar Notificação Push para ${donoId}:`, error);
+      if (error.code === "messaging/registration-token-not-registered") {
+        await tokenRef.update({ fcmToken: admin.firestore.FieldValue.delete() });
+      }
     }
 
     return event.data.ref.update({ status: "processado" });
   }
 );
+
+// ============================================================================
+// NOVA FUNÇÃO: Notificações para clientes
+// ============================================================================
+exports.notificarClientes = require("./notifyClientes").notificarClientes;
