@@ -1,5 +1,5 @@
 // ======================================================================
-// vitrini-agendamento.js (REVISADO COM ENVIO DE E-MAIL E CAMPOS DE ASSINATURA NO AGENDAMENTO)
+// vitrini-agendamento.js (REVISADO COM LEMBRETE DE 5 MIN ANTES)
 // ======================================================================
 
 // ✅ Conexão correta da vitrine
@@ -110,30 +110,22 @@ export async function encontrarPrimeiraDataComSlots(empresaId, profissional, dur
 }
 
 // =====================================================================================
-// 🔔 INÍCIO DA ÚNICA FUNÇÃO ALTERADA (Lógica do E-mail)
+// 🔔 Função de envio de e-mail (LÓGICA ORIGINAL REVISADA)
 // =====================================================================================
 async function enviarEmailNotificacao(agendamento, currentUser) {
     console.log("Tentando enviar e-mail...");
-    
     try {
-        // CORREÇÃO: Buscar o e-mail de notificação diretamente do objeto da empresa,
-        // que já foi carregado e passado no objeto 'agendamento'.
-        // Isso evita a leitura da coleção /usuarios e o erro de permissão.
         const emailDoDono = agendamento?.empresa?.emailDeNotificacao;
 
         if (!emailDoDono) {
-            // Se o campo 'emailDeNotificacao' não foi preenchido no perfil da empresa,
-            // o e-mail não será enviado.
             console.warn("⚠️ E-mail do dono (emailDeNotificacao) não encontrado no documento da empresa. E-mail não enviado.");
-            return; // Interrompe a função silenciosamente.
+            return;
         }
 
-        // Esta é a sua lógica original para enviar o e-mail
-        // (Usando a coleção /mail, o que está correto)
         await addDoc(collection(db, "mail"), {
-            to: emailDoDono, // Usa o e-mail correto
+            to: emailDoDono,
             template: {
-                name: 'novoAgendamento', // (Certifique-se que o nome do template está correto)
+                name: 'novoAgendamento',
                 data: {
                     nomeCliente: currentUser.displayName || currentUser.email,
                     servicoNome: agendamento.servico.nome,
@@ -146,26 +138,18 @@ async function enviarEmailNotificacao(agendamento, currentUser) {
         });
 
         console.log("✅ E-mail para o dono adicionado à fila.");
-
     } catch (error) {
-        // Se a escrita na coleção /mail falhar (o que não deve, pois a regra 'allow create: if request.auth != null' permite)
-        // o erro será capturado aqui.
         console.error("❌ Erro no processo de envio de e-mail:", error);
     }
 }
-// =====================================================================================
-// 🔔 FIM DA ÚNICA FUNÇÃO ALTERADA
-// =====================================================================================
-
 
 // ======================================================================
-// 🔧 Lógica principal de salvamento de agendamento (SUA LÓGICA ORIGINAL)
+// 🔧 Lógica principal de salvamento de agendamento (ALTERAÇÃO ÚNICA ABAIXO)
 // ======================================================================
 export async function salvarAgendamento(empresaId, currentUser, agendamento) {
     try {
         const agendamentosRef = collection(db, 'empresarios', empresaId, 'agendamentos');
 
-        // Preservar valores originais e garantir campos novos para relatórios:
         const precoOriginal = agendamento?.servico?.precoOriginal != null
             ? Number(agendamento.servico.precoOriginal)
             : (agendamento?.servico?.preco != null ? Number(agendamento.servico.preco) : 0);
@@ -174,7 +158,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             ? Number(agendamento.servico.precoCobrado)
             : precoOriginal;
 
-        // Monta o payload incluindo os novos campos:
         const payload = {
             empresaId: empresaId,
             clienteId: currentUser.uid,
@@ -185,7 +168,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             servicoId: agendamento.servico.id,
             servicoNome: agendamento.servico.nome,
             servicoDuracao: agendamento.servico.duracao,
-            // campos novos para relatórios e rastreio de origem de pagamento
             servicoPrecoOriginal: precoOriginal,
             servicoPrecoCobrado: precoCobrado,
             data: agendamento.data,
@@ -194,9 +176,8 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
             criadoEm: serverTimestamp()
         };
 
-        // Se o agendamento veio de consumo de assinatura, preserve o consumo/auditoria
         if (agendamento.assinaturaConsumo) {
-            payload.assinaturaConsumo = agendamento.assinaturaConsumo; // ex: [{assinaturaId, servicoId, quantidade, planoNome}]
+            payload.assinaturaConsumo = agendamento.assinaturaConsumo;
             payload.origemPagamento = 'assinatura';
         }
 
@@ -205,6 +186,7 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
         if (agendamento.empresa && agendamento.empresa.donoId) {
             try {
                 const filaRef = collection(db, "filaDeNotificacoes");
+                // Notificação para o dono
                 await addDoc(filaRef, {
                     donoId: agendamento.empresa.donoId,
                     titulo: "🎉 Novo Agendamento!",
@@ -213,14 +195,38 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                     status: "pendente"
                 });
                 console.log("✅ Bilhete de notificação adicionado à fila.");
+
+                // Notificação para o cliente (confirmação imediata)
+                await addDoc(filaRef, {
+                    donoId: currentUser.uid,
+                    titulo: "✅ Agendamento Confirmado!",
+                    mensagem: `Seu agendamento para ${agendamento.servico.nome} com ${agendamento.profissional.nome} foi confirmado para ${agendamento.data} às ${agendamento.horario}.`,
+                    criadoEm: new Date(),
+                    status: "pendente"
+                });
+                console.log("📩 Notificação de confirmação adicionada para o cliente.");
+
+                // 🔔 LEMBRETE 5 MIN ANTES
+                const [horarioHora, horarioMin] = agendamento.horario.split(':').map(Number);
+                const agendamentoDate = new Date(`${agendamento.data}T${agendamento.horario}:00`);
+                const lembreteDate = new Date(agendamentoDate.getTime() - 5 * 60 * 1000); // 5 min antes
+
+                await addDoc(filaRef, {
+                    donoId: currentUser.uid,
+                    titulo: "⏰ Lembrete de Agendamento",
+                    mensagem: `Seu agendamento de ${agendamento.servico.nome} com ${agendamento.profissional.nome} começa em 5 minutos.`,
+                    criadoEm: lembreteDate,
+                    status: "pendente"
+                });
+                console.log("⏱️ Lembrete de 5 minutos adicionado para o cliente.");
+
             } catch (error) {
-                console.error("❌ Erro ao adicionar notificação à fila:", error);
+                console.error("❌ Erro ao adicionar notificações à fila:", error);
             }
         } else {
             console.warn("AVISO: 'donoId' não foi passado para salvarAgendamento. O bilhete de notificação não foi criado.");
         }
 
-        // --- 💌 Envia o e-mail automático ---
         await enviarEmailNotificacao(agendamento, currentUser);
 
         if (typeof limparUIAgendamento === "function") {
