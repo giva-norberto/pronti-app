@@ -30,14 +30,14 @@ exports.notificarClientes = onRequest(
 
     try {
       const agora = new Date();
-      // <-- 1. CORREÇÃO: Alterado de 15 para 5 minutos, como solicitado
+      // Lembrete de 5 minutos, como solicitado
       const daqui5min = new Date(agora.getTime() + 5 * 60 * 1000);
 
-      // <-- 2. CORREÇÃO: Usando collectionGroup para pesquisar em TODAS as subcoleções "agendamentos"
+      // Usa collectionGroup para pesquisar em TODAS as subcoleções "agendamentos"
       const snap = await db.collectionGroup("agendamentos")
         .where("status", "==", "ativo") // Garante que não pegue cancelados
         .where("hora", ">=", agora.toISOString())
-        .where("hora", "<=", daqui5min.toISOString()) // <-- Corrigido para 5 min
+        .where("hora", "<=", daqui5min.toISOString())
         .get();
 
       if (snap.empty) {
@@ -50,7 +50,7 @@ exports.notificarClientes = onRequest(
         const agendamento = docSnap.data();
         if (!agendamento?.clienteId) continue;
 
-        // <-- 3. CORREÇÃO: Buscando o token na coleção correta "mensagensTokens"
+        // Buscando o token na coleção correta "mensagensTokens"
         const tokenRef = db.collection("mensagensTokens").doc(agendamento.clienteId);
         const tokenSnap = await tokenRef.get();
         const tokenData = tokenSnap.exists ? tokenSnap.data() : null;
@@ -63,17 +63,16 @@ exports.notificarClientes = onRequest(
         const payload = {
           notification: {
             title: "⏰ Lembrete de Agendamento",
-            // <-- Mensagem melhorada, usando os dados do agendamento
             body: `Seu agendamento de ${agendamento.servicoNome || ''} com ${agendamento.profissionalNome || ''} começa em 5 minutos!`,
-            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
-            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
+            icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%2OAZUL.png?alt=media",
+            badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%2OAZUL.png?alt=media"
           },
           webpush: {
             fcmOptions: {
               link: "https://prontiapp.com.br/meus-agendamentos.html"
             }
           },
-          token: tokenData.fcmToken // <-- Corrigido para usar o tokenData
+          token: tokenData.fcmToken
         };
 
         try {
@@ -83,7 +82,6 @@ exports.notificarClientes = onRequest(
         } catch (error) {
           logger.error(`❌ Erro ao enviar notificação para ${agendamento.clienteId}:`, error);
           if (error.code === 'messaging/registration-token-not-registered') {
-            // <-- Corrigido para usar o tokenRef
             await tokenRef.update({
               fcmToken: admin.firestore.FieldValue.delete()
             });
@@ -96,30 +94,7 @@ exports.notificarClientes = onRequest(
       return res.status(200).send(`Notificações enviadas: ${totalEnviadas}`);
     } catch (error) {
       logger.error("🔥 Erro geral na rotina de notificação de clientes:", error);
-      // O "D" perdido estava aqui. Agora está removido.
       return res.status(500).send("Erro interno ao enviar notificações.");
     }
   }
 );
-```
-
----
-
-### 🚀 Próximos Passos (O Plano Final)
-
-1.  **Copie o código** acima e **substitua todo o conteúdo** do seu arquivo `notifyClientes.js` (no seu editor ou no GitHub).
-2.  **Salve** e faça o **push** para o GitHub.
-3.  Volte para o seu **Cloud Shell** (na pasta `functions`).
-4.  Execute `git pull` (para baixar o código corrigido que você acabou de enviar).
-5.  Execute o **comando de deploy** (ele agora vai funcionar, pois não tem mais o `SyntaxError`):
-
-    ```bash
-    gcloud functions deploy notificarClientes \
-      --gen2 \
-      --runtime=nodejs20 \
-      --region=southamerica-east1 \
-      --source=. \
-      --entry-point=notificarClientes \
-      --trigger-http \
-      --service-account=736700619274-compute@developer.gserviceaccount.com
-    
