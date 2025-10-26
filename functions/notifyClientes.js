@@ -96,7 +96,30 @@ exports.notificarClientes = onRequest(
       return res.status(200).send(`Notificações enviadas: ${totalEnviadas}`);
     } catch (error) {
       logger.error("🔥 Erro geral na rotina de notificação de clientes:", error);
-D     return res.status(500).send("Erro interno ao enviar notificações.");
+      // O "D" perdido estava aqui. Agora está removido.
+      return res.status(500).send("Erro interno ao enviar notificações.");
     }
   }
 );
+```
+
+---
+
+### 🚀 Próximos Passos (O Plano Final)
+
+1.  **Copie o código** acima e **substitua todo o conteúdo** do seu arquivo `notifyClientes.js` (no seu editor ou no GitHub).
+2.  **Salve** e faça o **push** para o GitHub.
+3.  Volte para o seu **Cloud Shell** (na pasta `functions`).
+4.  Execute `git pull` (para baixar o código corrigido que você acabou de enviar).
+5.  Execute o **comando de deploy** (ele agora vai funcionar, pois não tem mais o `SyntaxError`):
+
+    ```bash
+    gcloud functions deploy notificarClientes \
+      --gen2 \
+      --runtime=nodejs20 \
+      --region=southamerica-east1 \
+      --source=. \
+      --entry-point=notificarClientes \
+      --trigger-http \
+      --service-account=736700619274-compute@developer.gserviceaccount.com
+    
