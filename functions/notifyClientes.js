@@ -1,16 +1,11 @@
 /**
- * Cloud Function isolada para lembrete de agendamentos próximos (clientes).
- * Versão padronizada com logger, admin e estilo consistente com index.js.
- *
- * Essa função pode ser chamada manualmente (HTTPS)
- * ou configurada no Cloud Scheduler para rodar automaticamente.
+ * Cloud Function para lembrete de agendamentos (120 MINUTOS).
  */
 
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 
-// Inicializa o Firebase Admin (só se ainda não estiver inicializado)
 if (!admin.apps.length) {
   const detectedProjectId =
     process.env.GCLOUD_PROJECT ||
@@ -26,22 +21,24 @@ const fcm = admin.messaging();
 exports.notificarClientes = onRequest(
   { region: "southamerica-east1" },
   async (req, res) => {
-    logger.info("🚀 Iniciando rotina de lembrete de agendamentos (clientes)...");
+    logger.info("🚀 Iniciando rotina de lembrete de 120 MINUTOS...");
 
     try {
       const agora = new Date();
-      // Lembrete de 5 minutos, como solicitado
-      const daqui5min = new Date(agora.getTime() + 5 * 60 * 1000);
+      
+      // LÓGICA DE 120 MINUTOS:
+      // Para evitar spam, só enviamos se o agendamento for entre 115 e 120 minutos a partir de agora.
+      const inicioJanela = new Date(agora.getTime() + 115 * 60 * 1000); // 1h 55min
+      const fimJanela = new Date(agora.getTime() + 120 * 60 * 1000); // 2h
 
-      // Usa collectionGroup para pesquisar em TODAS as subcoleções "agendamentos"
       const snap = await db.collectionGroup("agendamentos")
-        .where("status", "==", "ativo") // Garante que não pegue cancelados
-        .where("hora", ">=", agora.toISOString())
-        .where("hora", "<=", daqui5min.toISOString())
+        .where("status", "==", "ativo")
+        .where("hora", ">=", inicioJanela.toISOString())
+        .where("hora", "<=", fimJanela.toISOString())
         .get();
 
       if (snap.empty) {
-        logger.info("✅ Nenhum agendamento próximo encontrado.");
+        logger.info("✅ Nenhum agendamento encontrado na janela de 120 minutos.");
         return res.status(200).send("Sem agendamentos próximos para notificar.");
       }
 
@@ -50,7 +47,6 @@ exports.notificarClientes = onRequest(
         const agendamento = docSnap.data();
         if (!agendamento?.clienteId) continue;
 
-        // Buscando o token na coleção correta "mensagensTokens"
         const tokenRef = db.collection("mensagensTokens").doc(agendamento.clienteId);
         const tokenSnap = await tokenRef.get();
         const tokenData = tokenSnap.exists ? tokenSnap.data() : null;
@@ -63,8 +59,7 @@ exports.notificarClientes = onRequest(
         const payload = {
           notification: {
             title: "⏰ Lembrete de Agendamento",
-            body: `Seu agendamento de ${agendamento.servicoNome || ''} com ${agendamento.profissionalNome || ''} começa em 5 minutos!`,
-            // CORREÇÃO: A URL original tinha %2O (letra O) ao invés de %20 (espaço)
+            body: `Seu agendamento de ${agendamento.servicoNome || ''} com ${agendamento.profissionalNome || ''} começa em 2 horas!`, // <-- Mensagem atualizada
             icon: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media",
             badge: "https://firebasestorage.googleapis.com/v0/b/pronti-app-37c6e.appspot.com/o/logos%2FBX6Q7HrVMrcCBqe72r7K76EBPkX2%2F1758126224738-LOGO%20PRONTI%20FUNDO%20AZUL.png?alt=media"
           },
@@ -79,7 +74,7 @@ exports.notificarClientes = onRequest(
         try {
           await fcm.send(payload);
           totalEnviadas++;
-          logger.info(`📩 Notificação enviada para cliente ${agendamento.clienteId}`);
+          logger.info(`📩 Notificação de 120min enviada para cliente ${agendamento.clienteId}`);
         } catch (error) {
           logger.error(`❌ Erro ao enviar notificação para ${agendamento.clienteId}:`, error);
           if (error.code === 'messaging/registration-token-not-registered') {
@@ -91,7 +86,7 @@ exports.notificarClientes = onRequest(
         }
       }
 
-      logger.info(`✨ Rotina concluída. Total enviadas: ${totalEnviadas}`);
+      logger.info(`✨ Rotina de 120min concluída. Total enviadas: ${totalEnviadas}`);
       return res.status(200).send(`Notificações enviadas: ${totalEnviadas}`);
     } catch (error) {
       logger.error("🔥 Erro geral na rotina de notificação de clientes:", error);
