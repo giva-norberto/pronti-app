@@ -207,7 +207,6 @@ export async function salvarAgendamento(empresaId, currentUser, agendamento) {
                 console.log("📩 Notificação de confirmação adicionada para o cliente.");
 
                 // 🔔 LEMBRETE 5 MIN ANTES
-                const [horarioHora, horarioMin] = agendamento.horario.split(':').map(Number);
                 const agendamentoDate = new Date(`${agendamento.data}T${agendamento.horario}:00`);
                 const lembreteDate = new Date(agendamentoDate.getTime() - 5 * 60 * 1000); // 5 min antes
 
