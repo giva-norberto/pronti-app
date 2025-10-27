@@ -1,13 +1,13 @@
 /**
  * Cloud Function para lembrete de agendamentos (120 MINUTOS).
- * DEBUG: Consulta inicial simplificada (sem .where) para testar o collectionGroup.
+ * DEBUG: Consulta inicial SIMPLIFICADA (sem .where) e Init com ProjectID.
  */
 
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 
-// Inicialização Explícita
+// Inicialização Explícita (Como tínhamos antes)
 if (!admin.apps.length) {
   const detectedProjectId =
     process.env.GCLOUD_PROJECT ||
@@ -19,7 +19,6 @@ if (!admin.apps.length) {
 } else {
     logger.debug("Firebase Admin SDK já inicializado.");
 }
-
 
 const db = admin.firestore();
 const fcm = admin.messaging();
@@ -65,9 +64,9 @@ exports.notificarClientes = onRequest(
       logger.info(`[DEBUG] Busca SIMPLIFICADA collectionGroup concluída. Total documentos encontrados: ${snapAgendamentos.size}`);
       // =============================================================
 
+
       if (snapAgendamentos.empty) {
         logger.info("✅ Nenhum agendamento encontrado no geral via collectionGroup.");
-        // Isso seria estranho se você tiver agendamentos
         return res.status(200).send("Nenhum agendamento encontrado.");
       }
 
@@ -115,7 +114,9 @@ exports.notificarClientes = onRequest(
       // =============================================================
       logger.info("[DEBUG] Iniciando loop para enviar notificações...");
       for (const tokenDoc of agendamentosFiltrados) {
-        const agendamento = tokenDoc.data();
+        // ... (o restante do código do loop é idêntico ao anterior) ...
+        // ... (busca token, monta payload, envia fcm.send) ...
+         const agendamento = tokenDoc.data();
         const agendamentoId = tokenDoc.id;
         logger.info(`--------------------------------------------------------`);
         logger.info(`[LOOP] Processando agendamento ${agendamentoId}`);
@@ -193,6 +194,7 @@ exports.notificarClientes = onRequest(
         }
       } // Fim loop
 
+
       logger.info(`✨ =======================================================`);
       logger.info(`✨ Rotina de lembrete concluída. Total notificações enviadas: ${totalEnviadas}`);
       logger.info(`✨ =======================================================`);
@@ -205,3 +207,4 @@ exports.notificarClientes = onRequest(
     }
   }
 );
+
