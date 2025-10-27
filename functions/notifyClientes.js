@@ -1,34 +1,34 @@
 /**
  * Cloud Function para lembrete de agendamentos (120 MINUTOS).
- * CORRIGIDO: Busca todos ativos e filtra manualmente data/hora (strings).
- * DEBUG COMPLETO ADICIONADO
+ * DEBUG: Consulta inicial simplificada (sem .where) para testar o collectionGroup.
  */
 
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const logger = require("firebase-functions/logger");
 
-// Inicialização Simplificada
+// Inicialização Explícita
 if (!admin.apps.length) {
-  logger.info("Inicializando Firebase Admin SDK...");
-  admin.initializeApp();
+  const detectedProjectId =
+    process.env.GCLOUD_PROJECT ||
+    process.env.GCP_PROJECT ||
+    "pronti-app-37c6e";
+  logger.info(`Inicializando Firebase Admin SDK para projeto ${detectedProjectId}...`);
+  admin.initializeApp({ projectId: detectedProjectId });
   logger.info("Firebase Admin SDK inicializado.");
 } else {
-  logger.debug("Firebase Admin SDK já inicializado.");
+    logger.debug("Firebase Admin SDK já inicializado.");
 }
 
 
 const db = admin.firestore();
 const fcm = admin.messaging();
 
-// Fuso horário do Brasil (importante para construir a data corretamente)
-const TIMEZONE = "America/Sao_Paulo"; // Confirmar se este é o TZ correto para -03:00 sempre
+const TIMEZONE = "America/Sao_Paulo";
 
-// Função auxiliar para criar Date com fuso horário
 function createDateInTimezone(dateString, timeString) {
     logger.debug(`createDateInTimezone - Entrada: date='${dateString}', time='${timeString}'`);
     try {
-        // Assume -03:00. CUIDADO com horário de verão.
         const dateObj = new Date(`${dateString}T${timeString}:00.000-03:00`);
         if (isNaN(dateObj.getTime())) {
             throw new Error("Data inválida gerada.");
@@ -45,7 +45,7 @@ exports.notificarClientes = onRequest(
   { region: "southamerica-east1" },
   async (req, res) => {
     logger.info("🚀 ========================================================");
-    logger.info("🚀 Iniciando rotina de lembrete de 120 MINUTOS...");
+    logger.info("🚀 Iniciando rotina de lembrete (CONSULTA SIMPLIFICADA)...");
     logger.info("🚀 ========================================================");
 
     try {
@@ -56,59 +56,67 @@ exports.notificarClientes = onRequest(
       logger.info(`[DEBUG] Janela de busca (ISO): ${inicioJanela.toISOString()} até ${fimJanela.toISOString()}`);
 
       // =============================================================
-      //  ↓↓↓ BUSCA DE AGENDAMENTOS ATIVOS ↓↓↓
+      //  ↓↓↓ CONSULTA SIMPLIFICADA: SEM FILTRO .where() ↓↓↓
       // =============================================================
-      logger.info("[DEBUG] Iniciando busca collectionGroup('agendamentos').where('status', '==', 'ativo')...");
+      logger.info("[DEBUG] Iniciando busca SIMPLIFICADA collectionGroup('agendamentos').get()...");
       const snapAgendamentos = await db.collectionGroup("agendamentos")
-        .where("status", "==", "ativo")
+        // .where("status", "==", "ativo") // <<< REMOVIDO PARA TESTE
         .get();
-      logger.info(`[DEBUG] Busca collectionGroup concluída. Total documentos encontrados: ${snapAgendamentos.size}`);
-
+      logger.info(`[DEBUG] Busca SIMPLIFICADA collectionGroup concluída. Total documentos encontrados: ${snapAgendamentos.size}`);
+      // =============================================================
 
       if (snapAgendamentos.empty) {
-        logger.info("✅ Nenhum agendamento ATIVO encontrado no geral.");
-        return res.status(200).send("Sem agendamentos ativos para verificar.");
+        logger.info("✅ Nenhum agendamento encontrado no geral via collectionGroup.");
+        // Isso seria estranho se você tiver agendamentos
+        return res.status(200).send("Nenhum agendamento encontrado.");
       }
 
       // =============================================================
-      //  ↓↓↓ FILTRAGEM MANUAL POR JANELA DE 120 MINUTOS ↓↓↓
+      //  ↓↓↓ FILTRAGEM MANUAL (status + janela de tempo) ↓↓↓
       // =============================================================
-      logger.info("[DEBUG] Iniciando filtragem manual pela janela de tempo...");
+      logger.info("[DEBUG] Iniciando filtragem manual (status + janela)...");
       const agendamentosFiltrados = snapAgendamentos.docs.filter(doc => {
         logger.debug(`[FILTER] Verificando doc ${doc.id}`);
         const ag = doc.data();
-        if (!ag.data || !ag.horario) {
-            logger.warn(`[FILTER] Agendamento ${doc.id} sem data ou horario definidos. Ignorando.`);
+
+        // Filtro 1: Status
+        if (ag.status !== "ativo") {
+            logger.debug(`[FILTER] Agendamento ${doc.id} não está ativo (${ag.status}). Ignorando.`);
             return false;
         }
 
+        // Filtro 2: Data/Hora
+        if (!ag.data || !ag.horario) {
+            logger.warn(`[FILTER] Agendamento ativo ${doc.id} sem data ou horario definidos. Ignorando.`);
+            return false;
+        }
         const dataCompletaAgendamento = createDateInTimezone(ag.data, ag.horario);
         if (!dataCompletaAgendamento) {
-             logger.warn(`[FILTER] Agendamento ${doc.id} com data/horario inválido: ${ag.data} ${ag.horario}. Ignorando.`);
+             logger.warn(`[FILTER] Agendamento ativo ${doc.id} com data/horario inválido: ${ag.data} ${ag.horario}. Ignorando.`);
              return false;
         }
-
         const estaNaJanela = dataCompletaAgendamento >= inicioJanela && dataCompletaAgendamento <= fimJanela;
-        logger.info(`[FILTER] Agendamento ${doc.id}: ${ag.data} ${ag.horario} => ${dataCompletaAgendamento.toISOString()} | Na janela [${inicioJanela.toISOString()} - ${fimJanela.toISOString()}]: ${estaNaJanela}`);
+        logger.info(`[FILTER] Agendamento ativo ${doc.id}: ${ag.data} ${ag.horario} => ${dataCompletaAgendamento.toISOString()} | Na janela [${inicioJanela.toISOString()} - ${fimJanela.toISOString()}]: ${estaNaJanela}`);
         return estaNaJanela;
       });
       logger.info(`[DEBUG] Filtragem manual concluída. Agendamentos na janela: ${agendamentosFiltrados.length}`);
+      // =============================================================
 
 
       if (agendamentosFiltrados.length === 0) {
-        logger.info("✅ Nenhum agendamento ativo encontrado NA JANELA de 120 minutos.");
+        logger.info("✅ Nenhum agendamento ativo encontrado NA JANELA de 120 minutos após filtragem manual.");
         return res.status(200).send("Sem agendamentos na janela para notificar.");
       }
 
       let totalEnviadas = 0;
 
       // =============================================================
-      //  ↓↓↓ LOOP PARA ENVIAR NOTIFICAÇÕES ↓↓↓
+      //  ↓↓↓ LOOP PARA ENVIAR NOTIFICAÇÕES (Idêntico a antes) ↓↓↓
       // =============================================================
       logger.info("[DEBUG] Iniciando loop para enviar notificações...");
       for (const tokenDoc of agendamentosFiltrados) {
         const agendamento = tokenDoc.data();
-        const agendamentoId = tokenDoc.id; // Pegar o ID do documento de agendamento para logs
+        const agendamentoId = tokenDoc.id;
         logger.info(`--------------------------------------------------------`);
         logger.info(`[LOOP] Processando agendamento ${agendamentoId}`);
 
@@ -169,7 +177,6 @@ exports.notificarClientes = onRequest(
           logger.info(`[LOOP] ✅ SUCESSO ao enviar para cliente ${clienteIdParaToken}`);
         } catch (error) {
           logger.error(`[LOOP] 🔥🔥🔥 FALHA no fcm.send() para cliente ${clienteIdParaToken}`);
-          // Loga TODO o objeto de erro, não apenas a mensagem
           logger.error("[LOOP] Objeto de erro completo do fcm.send:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
 
           if (error.code === 'messaging/registration-token-not-registered') {
@@ -183,18 +190,15 @@ exports.notificarClientes = onRequest(
                  logger.error(`[LOOP] FALHA ao tentar remover token inválido ${tokenDocToken.id}:`, updateError);
             }
           }
-           // Adicionar outros tratamentos de erro específicos do FCM se necessário
-           // Ex: 'messaging/invalid-argument', 'messaging/quota-exceeded', etc.
         }
       } // Fim loop
 
       logger.info(`✨ =======================================================`);
-      logger.info(`✨ Rotina de 120min concluída. Total notificações enviadas: ${totalEnviadas}`);
+      logger.info(`✨ Rotina de lembrete concluída. Total notificações enviadas: ${totalEnviadas}`);
       logger.info(`✨ =======================================================`);
       return res.status(200).send(`Notificações enviadas: ${totalEnviadas}`);
 
     } catch (error) {
-      // Este catch pega erros GERAIS, incluindo a falha na busca inicial
       logger.error("🔥🔥🔥 Erro GERAL e INESPERADO na rotina:", error);
       logger.error("Detalhes do erro geral:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
       return res.status(500).send("Erro interno ao processar lembretes.");
