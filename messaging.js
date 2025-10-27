@@ -59,11 +59,20 @@ class MessagingService {
         return false;
       }
 
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
-      console.log('[DEBUG][messaging.js] Service Worker registrado:', registration);
+      // ==================================================================
+      //  ✅ ALTERAÇÃO CRÍTICA: Registra o Service Worker ÚNICO (fundido)
+      // ==================================================================
+      const registration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+      console.log('[DEBUG][messaging.js] Service Worker ÚNICO (Cache+Push) registrado:', registration);
+      
+      // Passa o registro para o Firebase Messaging
+      // (Esta linha já estava no seu código, mas era implícita no getToken. 
+      //  Vamos torná-la explícita se a biblioteca permitir, ou 
+      //  apenas garantir que getToken use a 'registration' correta.)
+      // Nota: o 'getToken' usa o 'registration' que passamos, então está correto.
 
       await this.waitForServiceWorker(registration);
-      await this.getMessagingToken(registration);
+      await this.getMessagingToken(registration); // Passa o registro correto
       this.setupForegroundMessageListener();
 
       console.log('[DEBUG][messaging.js] Serviço de Messaging inicializado com sucesso!');
@@ -96,7 +105,7 @@ class MessagingService {
     try {
       const currentToken = await getToken(messaging, {
         vapidKey: this.vapidKey,
-        serviceWorkerRegistration: registration
+        serviceWorkerRegistration: registration // Usa o registro do SW único
       });
       if (currentToken) {
         this.token = currentToken;
@@ -131,7 +140,7 @@ class MessagingService {
         icon: payload.notification?.icon || payload.data?.icon || '/icon.png',
         badge: '/badge.png',
         tag: `notif-${Date.now()}`, // 🔧 Tag única a cada notificação
-        renotify: true              // 🔧 Força reexibição mesmo se igual
+        renotify: true           // 🔧 Força reexibição mesmo se igual
       });
 
       notification.onclick = () => {
