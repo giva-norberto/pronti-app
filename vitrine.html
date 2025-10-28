@@ -594,5 +594,117 @@
         }
         document.addEventListener('DOMContentLoaded', inicializarPagina);
     </script>
+
+    <!-- =========================
+         NOVO: Listener para atualizar a tela AUTOMATICAMENTE
+         após confirmação do agendamento (sem alterar a lógica existente)
+         ========================= -->
+    <script type="module">
+        // Este pequeno trecho apenas escuta o evento 'agendamento:salvo'
+        // (emitido pela função salvarAgendamento no seu módulo de agendamento)
+        // e então navega para a aba "Minhas Reservas" e dispara o botão "Ver Ativos".
+        // Não altera nenhuma lógica de negócio; apenas dispara os mesmos handlers UI
+        // que o clique manual do usuário faria.
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener('agendamento:salvo', (e) => {
+                // 1) opcional: mostrar uma confirmação rápida (UI existente)
+                try {
+                    if (window.UI && typeof UI.mostrarToast === 'function') {
+                        UI.mostrarToast('Agendamento confirmado!', 'success');
+                    } else if (typeof window.alert === 'function') {
+                        // pequeno fallback não intrusivo (remova se não quiser)
+                        // alert('Agendamento confirmado!');
+                    }
+                } catch (err) {
+                    // não interrompe fluxo por erro em UI
+                    console.warn('Erro ao mostrar toast de confirmação:', err);
+                }
+
+                // 2) navegar para a aba "visualizacao" (mesma ação do clique do usuário)
+                const visualCard = document.querySelector('.vitrine-card[data-menu-card="visualizacao"]');
+                if (visualCard) {
+                    // Dispara o clique para reutilizar toda a lógica de navegação já existente
+                    visualCard.click();
+
+                    // 3) garantir que o botão "Ver Ativos" seja acionado para carregar os agendamentos
+                    //    com pequeno delay para permitir que a aba seja exibida
+                    setTimeout(() => {
+                        const btnAtivos = document.getElementById('btn-ver-ativos');
+                        if (btnAtivos) {
+                            // Simula clique para acionar handleFiltroAgendamentos
+                            btnAtivos.click();
+                        } else {
+                            // fallback: se handleFiltroAgendamentos estiver exposto globalmente, chama diretamente
+                            try {
+                                if (typeof window.handleFiltroAgendamentos === 'function') {
+                                    window.handleFiltroAgendamentos({ target: document.getElementById('btn-ver-ativos') });
+                                }
+                            } catch (err) {
+                                console.warn('Não foi possível disparar carregamento dos agendamentos automaticamente:', err);
+                            }
+                        }
+                    }, 200);
+                } else {
+                    console.warn('Elemento de navegação para "Minhas Reservas" não encontrado.');
+                }
+            });
+        });
+    </script>
+
+    <!-- =========================
+         NOVO: Auto-scroll após seleção de serviço
+         (sem alterar lógica existente — apenas melhora UX)
+         ========================= -->
+    <script type="module">
+        // Comportamento desejado:
+        // - Ao clicar em um card de serviço (.card-servico), se a área de data/horário
+        //   estiver visível (ou for tornada visível pela lógica existente), a página
+        //   descerá automaticamente para #data-e-horario-container.
+        // - Ao clicar em "Escolher Data e Horário" (btn-prosseguir-data), desce também.
+        // Implementação: adiciona listeners leves que não alteram lógica existente,
+        // apenas executam scrollIntoView() logo após os handlers nativos.
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Helper: tenta rolar para o container de data/hora se estiver visível
+            function scrollToDateHorarioIfVisible() {
+                const container = document.getElementById('data-e-horario-container');
+                if (!container) return;
+                const style = window.getComputedStyle(container);
+                if (style.display !== 'none' && container.offsetParent !== null) {
+                    try {
+                        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // opcional: focar o input de data se disponível
+                        const dateInput = document.getElementById('data-agendamento');
+                        if (dateInput && !dateInput.disabled) {
+                            dateInput.focus({ preventScroll: true });
+                        }
+                    } catch (err) {
+                        // se scroll falhar, não interrompe nada
+                        console.warn('scrollToDateHorarioIfVisible erro:', err);
+                    }
+                }
+            }
+
+            // 1) Escuta cliques em cards de serviço. Usa setTimeout curto para garantir
+            // que o handler original (em vitrine.js) rode primeiro e exiba o container.
+            document.addEventListener('click', (e) => {
+                const card = e.target.closest('.card-servico');
+                if (!card) return;
+                // Delay curto para garantir que a lógica de seleção tenha atualizado o DOM
+                setTimeout(scrollToDateHorarioIfVisible, 120);
+            });
+
+            // 2) Escuta clique no botão "Escolher Data e Horário"
+            const btnProsseguir = document.getElementById('btn-prosseguir-data');
+            if (btnProsseguir) {
+                btnProsseguir.addEventListener('click', () => {
+                    // A lógica existente já mostra o container e busca a primeira data.
+                    // Aqui apenas garantimos que, após isso, a UI desça para exibir o container.
+                    setTimeout(scrollToDateHorarioIfVisible, 220);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
