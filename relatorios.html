@@ -26,14 +26,14 @@
       align-items: flex-start;
     }
     .main-relatorios {
-      max-width: 100%; /* Ajuste para ocupar toda a largura em mobile */
+      max-width: 1100px; /* Mantido o max-width original para desktop */
       width: 100%; /* Garante que ocupe a largura disponível */
-      margin: 10px auto 0 auto; /* Reduzido de 28px para 10px */
+      margin: 28px auto 0 auto; /* Mantido o margin original para desktop */
       padding: 0;
       min-height: 90vh;
       background: #fff;
-      border-radius: 8px; /* Reduzido de 18px para 8px */
-      box-shadow: 0 2px 10px #4f46e515; /* Sombra mais suave */
+      border-radius: 18px; /* Mantido o border-radius original para desktop */
+      box-shadow: 0 4px 28px #4f46e525;
       overflow: hidden;
     }
     .top-actions {
@@ -41,26 +41,26 @@
       justify-content: space-between;
       align-items: center;
       background: linear-gradient(90deg,#6366f1,#38bdf8 70%);
-      padding: 10px 8px 6px 8px; /* Reduzido de 18px para 10px e 8px */
-      border-radius: 8px 8px 0 0; /* Reduzido de 18px para 8px */
+      padding: 18px 18px 10px 18px; /* Mantido o padding original para desktop */
+      border-radius: 18px 18px 0 0; /* Mantido o border-radius original para desktop */
       color: #fff;
     }
     .btn-voltar {
       background: #fff;
       color: #6366f1;
       border: none;
-      padding: 4px 10px 4px 6px; /* Reduzido de 6px 16px 6px 10px */
-      border-radius: 6px; /* Reduzido de 8px para 6px */
-      font-size: 0.9em; /* Reduzido de 0.96em para 0.9em */
+      padding: 6px 16px 6px 10px;
+      border-radius: 8px;
+      font-size: 0.96em;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 1px 4px #4f46e51c;
+      box-shadow: 0 2px 8px #4f46e51c;
       transition: background 0.17s, color 0.18s;
       display: flex;
       align-items: center;
-      gap: 5px; /* Reduzido de 7px para 5px */
-      min-height: 28px; /* Reduzido de 32px para 28px */
-      min-width: 50px; /* Reduzido de 64px para 50px */
+      gap: 7px;
+      min-height: 32px;
+      min-width: 64px;
     }
     .btn-voltar:hover {
       background: #38bdf8;
@@ -76,28 +76,28 @@
       scrollbar-width: none;
       align-items: flex-end;
       flex: 1;
-      margin-left: 8px; /* Reduzido de 12px para 8px */
+      margin-left: 12px;
     }
     .abas-container::-webkit-scrollbar { display: none; }
     .aba {
-      padding: 4px 10px; /* Reduzido de 6px 14px para 4px 10px */
-      font-size: 0.9em; /* Reduzido de 0.97em para 0.9em */
+      padding: 6px 14px;
+      font-size: 0.97em;
       font-weight: 600;
       border: none;
       background: none;
       color: #fff;
       margin: 0;
-      border-radius: 5px 5px 0 0; /* Reduzido de 7px para 5px */
+      border-radius: 7px 7px 0 0;
       cursor: pointer;
       transition: background 0.15s, color 0.15s;
-      min-width: 50px; /* Reduzido de 60px para 50px */
+      min-width: 60px;
       white-space: nowrap;
       flex-shrink: 0;
       opacity: 0.87;
       outline: none;
       display: flex;
       align-items: center;
-      gap: 5px; /* Reduzido de 8px para 5px */
+      gap: 8px;
     }
     .aba:not(.active):hover {
       background: #f1f4fa;
@@ -108,36 +108,36 @@
       background: #fff;
       color: var(--cor-primaria);
       font-weight: 800;
-      box-shadow: 0 -1px 4px #4f46e51a; /* Sombra mais suave */
+      box-shadow: 0 -1px 9px #4f46e51a;
       opacity: 1;
-      border-bottom: 2px solid var(--cor-primaria); /* Reduzido de 2.5px para 2px */
+      border-bottom: 2.5px solid var(--cor-primaria);
     }
     /* FILTROS COMPACTOS */
     .filtros-relatorios {
       display: flex;
-      gap: 8px; /* Reduzido de 12px para 8px */
+      gap: 12px;
       align-items: center;
       background: #f7fafd;
-      padding: 6px 10px; /* Reduzido de 8px 14px para 6px 10px */
-      border-radius: 0 0 8px 8px; /* Reduzido de 13px para 8px */
-      margin-bottom: 4px; /* Reduzido de 5px para 4px */
+      padding: 8px 14px;
+      border-radius: 0 0 13px 13px;
+      margin-bottom: 5px;
       flex-wrap: wrap;
-      border-bottom: 1px solid #e0e7ff; /* Reduzido de 1.3px para 1px */
+      border-bottom: 1.3px solid #e0e7ff;
     }
     .filtros-relatorios label {
       font-weight: 600;
       color: var(--cor-primaria);
-      margin-right: 2px; /* Reduzido de 3px para 2px */
-      font-size: 0.9em; /* Reduzido de 0.96em para 0.9em */
+      margin-right: 3px;
+      font-size: 0.96em;
     }
     .filtros-relatorios input, 
     .filtros-relatorios select {
-      padding: 4px 6px; /* Reduzido de 5px 8px para 4px 6px */
-      border-radius: 5px; /* Reduzido de 6px para 5px */
-      border: 1px solid #b3bcf7; /* Reduzido de 1.1px para 1px */
-      font-size: 0.88em; /* Reduzido de 0.95em para 0.88em */
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1.1px solid #b3bcf7;
+      font-size: 0.95em;
       outline: none;
-      min-width: 70px; /* Reduzido de 85px para 70px */
+      min-width: 85px;
       background: #fff;
       color: #3730a3;
       font-weight: 500;
@@ -152,37 +152,37 @@
       background: var(--cor-primaria);
       color: #fff;
       border: none;
-      padding: 4px 10px; /* Reduzido de 6px 14px para 4px 10px */
-      border-radius: 5px; /* Reduzido de 7px para 5px */
+      padding: 6px 14px;
+      border-radius: 7px;
       font-weight: bold;
       cursor: pointer;
-      font-size: 0.9em; /* Reduzido de 0.95em para 0.9em */
+      font-size: 0.95em;
       display: flex;
       align-items: center;
-      gap: 5px; /* Reduzido de 7px para 5px */
+      gap: 7px;
       box-shadow: 0 1px 4px #38bdf812;
       transition: background 0.18s;
-      min-height: 26px; /* Reduzido de 30px para 26px */
+      min-height: 30px;
     }
     .filtros-relatorios button:hover {
       background: #38bdf8;
     }
     .conteudo-abas {
       margin-top: 0;
-      padding-bottom: 16px; /* Reduzido de 32px para 16px */
+      padding-bottom: 32px;
       background: #f7f8fa;
-      border-radius: 0 0 8px 8px; /* Reduzido de 18px para 8px */
+      border-radius: 0 0 18px 18px;
     }
     .aba-conteudo {
       display: none;
       animation: fadeIn .22s;
       background: #fff;
-      border-radius: 8px; /* Reduzido de 14px para 8px */
-      margin: 10px 4px 0 4px; /* Reduzido de 24px 10px para 10px 4px */
-      padding: 12px 6px 10px 6px; /* Reduzido de 22px 8px 18px 8px */
+      border-radius: 14px;
+      margin: 24px 10px 0 10px;
+      padding: 22px 8px 18px 8px;
       min-height: 240px;
-      box-shadow: 0 1px 6px #4f46e510; /* Sombra mais suave */
-      border: 1px solid #e0e7ff; /* Reduzido de 1.3px para 1px */
+      box-shadow: 0 2px 10px #4f46e510;
+      border: 1.3px solid #e0e7ff;
       /* ✅ CORREÇÃO DE CELULAR: Permite rolagem horizontal da tabela */
       overflow-x: auto;
     }
@@ -193,14 +193,14 @@
     table {
       width: 100%;
       border-collapse: separate;
-      border-spacing: 0 3px; /* Reduzido de 5px para 3px */
+      border-spacing: 0 5px;
       background: transparent;
-      font-size: 0.9em; /* Reduzido de 0.98em para 0.9em */
+      font-size: 0.98em;
     }
     th, td {
       text-align: left;
-      padding: 5px 6px; /* Reduzido de 7px 6px para 5px 6px */
-      font-size: 0.9em; /* Reduzido de 0.98em para 0.9em */
+      padding: 7px 6px;
+      font-size: 0.98em;
       border: none;
       background: #f3f4fc;
     }
@@ -208,13 +208,13 @@
       background: #e0e7ff;
       color: var(--cor-primaria);
       font-weight: 700;
-      font-size: 0.95em; /* Reduzido de 1em para 0.95em */
-      border-radius: 5px 5px 0 0; /* Reduzido de 7px para 5px */
-      border-bottom: 1.5px solid #c7d2fe; /* Reduzido de 2px para 1.5px */
+      font-size: 1em;
+      border-radius: 7px 7px 0 0;
+      border-bottom: 2px solid #c7d2fe;
     }
     tr {
-      border-radius: 4px; /* Reduzido de 5px para 4px */
-      box-shadow: 0 1px 3px #4f46e508; /* Sombra mais suave */
+      border-radius: 5px;
+      box-shadow: 0 1.2px 4px #4f46e508;
     }
     tr:nth-child(even) td {
       background: #f7f8fa;
@@ -223,24 +223,87 @@
       from { opacity: 0;}
       to { opacity: 1;}
     }
-    /* Media query para telas menores que 900px (incluindo mobile) */
+    /* ================================================================= */
+    /* ✅ INÍCIO DOS AJUSTES DE RESPONSIVIDADE (SEM ALTERAR LÓGICA) */
+    /* ================================================================= */
     @media (max-width: 900px) {
       .main-relatorios {
-        margin: 0; /* Ajuste para ocupar a tela toda */
+        max-width: 100%; /* Ocupa a largura total em telas menores */
+        margin: 0; /* Remove margem superior e lateral */
         border-radius: 0; /* Remove bordas arredondadas em mobile */
         min-height: 100vh;
       }
       .top-actions {
-        padding: 8px 4px 4px 4px; /* Mais compacto */
-        border-radius: 0; /* Remove bordas arredondadas */
+        padding: 10px 8px 6px 8px; /* Mais compacto */
+        border-radius: 0;
       }
+      .btn-voltar {
+        padding: 4px 10px 4px 6px;
+        font-size: 0.9em;
+        min-height: 28px;
+        gap: 5px;
+      }
+      .abas-container {
+        margin-left: 8px;
+      }
+      .aba {
+        font-size: 0.9em;
+        padding: 4px 10px;
+        min-width: 50px;
+        gap: 5px;
+      }
+      .aba.active, .aba:focus {
+        border-bottom: 2px solid var(--cor-primaria); /* Ajuste de 2.5px para 2px */
+      }
+      .filtros-relatorios {
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 0;
+        margin-bottom: 4px;
+      }
+      .filtros-relatorios label {
+        font-size: 0.9em;
+      }
+      .filtros-relatorios input, 
+      .filtros-relatorios select {
+        padding: 4px 6px;
+        min-width: 70px;
+        font-size: 0.88em;
+      }
+      .filtros-relatorios button {
+        padding: 4px 10px;
+        font-size: 0.9em;
+        min-height: 26px;
+      }
+      .conteudo-abas {
+        padding-bottom: 16px;
+        background: #f7f8fa;
+        border-radius: 0;
+      }
+      .aba-conteudo {
+        margin: 10px 4px 0 4px;
+        padding: 12px 6px 10px 6px;
+        border-radius: 8px;
+        border: 1px solid #e0e7ff;
+      }
+      table {
+        font-size: 0.9em;
+        border-spacing: 0 3px;
+      }
+      th, td {
+        padding: 5px 6px;
+        font-size: 0.9em;
+      }
+      th {
+        font-size: 0.95em;
+      }
+    }
+    /* Ajustes mais agressivos para telas muito pequenas (smartphones) */
+    @media (max-width: 480px) {
       .btn-voltar {
         padding: 3px 8px 3px 5px;
         font-size: 0.85em;
         min-height: 24px;
-      }
-      .abas-container {
-        margin-left: 4px;
       }
       .aba {
         font-size: 0.85em;
@@ -251,7 +314,6 @@
       .filtros-relatorios {
         gap: 4px;
         padding: 4px 6px;
-        border-radius: 0; /* Remove bordas arredondadas */
         margin-bottom: 2px;
       }
       .filtros-relatorios label {
@@ -268,19 +330,9 @@
         font-size: 0.85em;
         min-height: 24px;
       }
-      .conteudo-abas {
-        padding-bottom: 8px;
-        background: #fff; /* Fundo branco para mobile */
-      }
       .aba-conteudo {
         margin: 8px 2px 0 2px;
         padding: 8px 4px;
-        border-radius: 6px;
-        border: 1px solid #e0e7ff;
-      }
-      table {
-        font-size: 0.85em;
-        border-spacing: 0 2px;
       }
       th, td {
         padding: 4px 5px;
@@ -290,6 +342,9 @@
         font-size: 0.9em;
       }
     }
+    /* ================================================================= */
+    /* ✅ FIM DOS AJUSTES DE RESPONSIVIDADE (SEM ALTERAR LÓGICA) */
+    /* ================================================================= */
   </style>
 </head>
 <body>
@@ -519,7 +574,7 @@
       ['Profissional', 'Valor faturado', 'Comissão % (média ponderada)', 'Valor funcionário', 'Valor líquido (dono)'].forEach(h => {
         const th = document.createElement('th');
         th.textContent = h;
-        th.style.padding = '5px 6px'; /* Ajuste de padding inline */
+        th.style.padding = '7px 6px'; /* Revertido para o padding original */
         headerRow.appendChild(th);
       });
       thead.appendChild(headerRow);
@@ -537,7 +592,7 @@
         const cell = (txt) => {
           const td = document.createElement('td');
           td.textContent = txt;
-          td.style.padding = '5px 6px'; /* Ajuste de padding inline */
+          td.style.padding = '7px 6px'; /* Revertido para o padding original */
           return td;
         };
 
@@ -555,15 +610,15 @@
       const tfoot = document.createElement('tfoot');
       const fr = document.createElement('tr');
       fr.style.fontWeight = '700';
-      fr.style.background = '#e0e7ff'; /* Fundo mais claro para o total */
-      const emptyTd = () => { const td = document.createElement('td'); td.style.padding = '5px 6px'; td.style.background = '#e0e7ff'; return td; }; /* Ajuste de padding inline */
+      fr.style.background = '#f3f4fc'; /* Revertido para o background original */
+      const emptyTd = () => { const td = document.createElement('td'); td.style.padding = '7px 6px'; return td; }; /* Revertido para o padding original */
       fr.appendChild(emptyTd());
-      const tdTotalFaturado = document.createElement('td'); tdTotalFaturado.textContent = fmtBRL(totalFaturado); tdTotalFaturado.style.padding='5px 6px'; tdTotalFaturado.style.background = '#e0e7ff';
+      const tdTotalFaturado = document.createElement('td'); tdTotalFaturado.textContent = fmtBRL(totalFaturado); tdTotalFaturado.style.padding='7px 6px'; tdTotalFaturado.style.background = '#f3f4fc';
       fr.appendChild(tdTotalFaturado);
-      fr.appendChild((() => { const td=document.createElement('td'); td.textContent='TOTAIS:'; td.style.padding='5px 6px'; td.style.background = '#e0e7ff'; return td; })());
-      const tdTotalFuncionario = document.createElement('td'); tdTotalFuncionario.textContent = fmtBRL(totalFuncionario); tdTotalFuncionario.style.padding='5px 6px'; tdTotalFuncionario.style.background = '#e0e7ff';
+      fr.appendChild((() => { const td=document.createElement('td'); td.textContent='TOTAIS:'; td.style.padding='7px 6px'; td.style.background = '#f3f4fc'; return td; })());
+      const tdTotalFuncionario = document.createElement('td'); tdTotalFuncionario.textContent = fmtBRL(totalFuncionario); tdTotalFuncionario.style.padding='7px 6px'; tdTotalFuncionario.style.background = '#f3f4fc';
       fr.appendChild(tdTotalFuncionario);
-      const tdTotalLiquido = document.createElement('td'); tdTotalLiquido.textContent = fmtBRL(totalLiquido); tdTotalLiquido.style.padding='5px 6px'; tdTotalLiquido.style.background = '#e0e7ff';
+      const tdTotalLiquido = document.createElement('td'); tdTotalLiquido.textContent = fmtBRL(totalLiquido); tdTotalLiquido.style.padding='7px 6px'; tdTotalLiquido.style.background = '#f3f4fc';
       fr.appendChild(tdTotalLiquido);
       tfoot.appendChild(fr);
       table.appendChild(tfoot);
