@@ -6,192 +6,26 @@
     <title>Agendamento Online</title>
     
     <link rel="stylesheet" href="vitrine.css">
-    <link rel="stylesheet" href="menu-principal.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
     <style>
-        /* === SEU CSS ORIGINAL - SEM ALTERAÇÕES ESSENCIAIS AQUI === */
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            background: linear-gradient(135deg, #4f46e5 0%, #222664 100%);
-            color: #fff;
-            min-height: 100vh;
-        }
-        .modal-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; animation: modalFadeIn 0.3s ease-out; }
-        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .modal-auth-container { background: white; padding: 2rem 1.5rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); position: relative; color: #333; }
-        #modal-auth-close-btn { position: absolute; top: 10px; right: 10px; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
-        #modal-auth-close-btn:hover { background: #e2e8f0; transform: rotate(90deg); }
-        .modal-auth-step h2 { font-size: 1.5rem; color: #1e293b; text-align: center; margin-top: 0; margin-bottom: 24px; }
-        .modal-auth-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; border: 1px solid #d1d5db; }
-        #modal-auth-btn-google { background-color: #ffffff; color: #374151; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        #modal-auth-btn-google:hover { background-color: #f9fafb; border-color: #adb5bd; }
-        .modal-auth-btn-submit { background-color: #4f46e5; color: white; border: none; }
-        .modal-auth-btn-submit:hover { opacity: 0.9; }
-        .modal-auth-step input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 1rem; margin-bottom: 10px; }
-        .modal-auth-step a { color: #4f46e5; text-decoration: none; font-weight: 600; }
-        .modal-auth-step a:hover { text-decoration: underline; }
-        .preco-original { text-decoration: line-through; color: #888; margin-right: 6px; font-size: 1em; }
-        .preco-promocional { color: #10b981; font-weight: 700; font-size: 1.18em; }
-        .badge-promocao { background: #facc15; color: #b45309; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
-        .dashboard-grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; width: 100%; }
-        .btn-voltar { background: #eef2ff; color: #4f46e5; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
-        .header-vitrine-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            border-radius: 22px;
-            padding: 32px 28px 20px 28px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 380px;
-            margin: 0 auto 32px auto;
-        }
-        .header-vitrine-card #logo-publico {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 16px;
-            border: 3px solid #fff;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-            background: #fff;
-        }
-        .header-vitrine-card #nome-negocio-publico {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0 0 6px 0;
-            color: #fff;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            text-align: center;
-        }
-        .header-vitrine-card .boas-vindas-usuario {
-            font-size: 1.05rem;
-            color: #e0e7ff;
-            font-weight: 400;
-            text-align: center;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        }
-        .header-vitrine-card .usuario-logado-nome {
-            font-size: 1.02rem;
-            color: #fff;
-            background: rgba(0,0,0,0.2);
-            padding: 4px 14px;
-            border-radius: 12px;
-            font-weight: 600;
-            margin-top: 8px;
-            display: none;
-        }
-
-        /* ===================================================================== */
-        /* ✅ CORREÇÃO: A CLASSE .card VOLTOU AO NORMAL (PUXANDO DO VITRINE.CSS) */
-        /* ===================================================================== */
-        .card {
-            background-color: #fff;
-            color: #374151;
-            /* Seus outros estilos de .card do vitrine.css serão aplicados aqui */
-        }
-
-        .vitrine-card[data-menu-card="assinatura"] {
-            background: linear-gradient(135deg, #10b981 0%, #4f46e5 100%);
-            color: #fff;
-        }
-        .vitrine-card[data-menu-card="assinatura"] i {
-            color: #fff;
-        }
-        
-        /* --- ESTILOS PARA OS CARDS DE PLANO (Sem alterar .card) --- */
-        #menu-assinatura {
-            display: none;
-            margin-top: 36px;
-        }
-        #menu-assinatura h2 {
-            color: #fff;
-            font-size: 1.8rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        #cards-planos-vitrine {
-            display: grid;
-            gap: 25px;
-            padding: 0 15px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .card-plano-vitrine {
-            background-color: #fff;
-            border-radius: 18px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            padding: 25px;
-            text-align: center;
-            color: #333;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .card-plano-vitrine:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
-        }
-        .card-plano-vitrine h3 {
-            color: #4f46e5;
-            font-size: 1.5rem;
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        .card-plano-vitrine .preco {
-            color: #10b981;
-            font-weight: 700;
-            font-size: 1.4em;
-            margin-bottom: 15px;
-        }
-        .card-plano-vitrine p {
-            font-size: 1rem;
-            color: #555;
-            margin-bottom: 20px;
-        }
-        .card-plano-vitrine ul {
-            list-style: none;
-            padding-left: 0;
-            text-align: left;
-            margin-bottom: 25px;
-        }
-        .card-plano-vitrine ul li {
-            list-style: '✅ ';
-            padding-left: 10px;
-            margin-bottom: 8px;
-            color: #444;
-            font-size: 0.95rem;
-        }
-        .card-plano-vitrine .btn-assinar-plano {
-            background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 25px;
-            margin-top: 15px;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            max-width: 250px;
-            transition: opacity 0.2s ease-in-out;
-        }
-        .card-plano-vitrine .btn-assinar-plano:hover {
-            opacity: 0.9;
-        }
-        /* --- FIM DOS ESTILOS DE PLANO --- */
-
-        .badge-incluso { background: #10b981; color: #fff; border-radius: 4px; font-size: 0.85em; font-weight: 700; padding: 2px 7px; margin-left: 8px; }
-        .servico-card { background: #fff; color: #374151; padding: 14px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+      /* Pequenos estilos locais para botões de horário (não altera lógica) */
+      .horario-btn {
+        display: inline-block;
+        margin: 6px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.08);
+        background: #fff;
+        color: #374151;
+        cursor: pointer;
+      }
+      .horario-btn.selected {
+        background: linear-gradient(90deg,#6366f1,#4f46e5);
+        color: #fff;
+        border-color: rgba(0,0,0,0.12);
+      }
     </style>
 </head>
 <body>
@@ -200,480 +34,472 @@
     </div>
 
     <div id="vitrine-content" class="vitrine-container" style="display: none;">
+        <!-- Sidebar para desktop (desaparece no mobile) -->
+        <aside class="sidebar-vitrine">
+            <div class="header-vitrine">
+                <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio">
+                <h1 id="nome-negocio-publico">Nome do Negócio</h1>
+            </div>
+            <nav class="sidebar-menu">
+                <button class="menu-btn ativo" data-menu="agendamento">Agendar</button>
+                <button class="menu-btn" data-menu="informacoes">Informações</button>
+                <button class="menu-btn" data-menu="visualizacao">Reservas</button>
+                <button class="menu-btn" data-menu="perfil">👤 Perfil</button>
+            </nav>
+        </aside>
+
         <main class="main-content-vitrine">
-            <div id="main-navigation-container">
-                <div class="header-vitrine-card">
-                    <img id="logo-publico" src="https://placehold.co/100x100/e0e7ff/6366f1?text=..." alt="Logo do Negócio">
-                    <h1 id="nome-negocio-publico">Carregando...</h1>
-                    <p id="boas-vindas-usuario" class="boas-vindas-usuario">Bem-vindo(a)!</p>
-                    <div id="usuario-logado-nome" class="usuario-logado-nome"></div>
-                </div>
-                <div class="dashboard-grid-cards" id="vitrine-cards-grid">
-                    <a href="#" class="vitrine-card" data-menu-card="agendamento" style="background: linear-gradient(135deg, #6366f1, #4facfe);">
-                        <i class="fa-solid fa-calendar-check"></i>
-                        <span>Agendar</span>
-                    </a>
-                    <a href="#" class="vitrine-card" data-menu-card="visualizacao" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
-                        <i class="fa-solid fa-list-check"></i>
-                        <span>Minhas Reservas</span>
-                    </a>
-                    <a href="#" class="vitrine-card" data-menu-card="informacoes" style="background: linear-gradient(135deg, #f59e42, #ff5858);">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <span>Sobre o Local</span>
-                    </a>
-                    <a href="#" class="vitrine-card" data-menu-card="perfil" style="background: linear-gradient(135deg, #374151, #111827);">
-                        <i class="fa-solid fa-user-circle"></i>
-                        <span id="card-perfil-texto">Perfil</span>
-                    </a>
-                    <a href="#" class="vitrine-card" data-menu-card="assinatura" style="background: linear-gradient(135deg, #10b981 0%, #4f46e5 100%);">
-                        <i class="fa-solid fa-crown"></i>
-                        <span>Assinatura</span>
-                    </a>
-                </div>
+            <!-- HEADER MOBILE: Logo + Nome aparecem no topo só no mobile -->
+            <div class="header-vitrine-mobile" style="display: none;">
+                <img id="logo-publico-mobile" src="https://placehold.co/100x100/e0e7ff/6366f1?text=Logo" alt="Logótipo do Negócio" style="width:70px;height:70px;border-radius:50%;margin-bottom:10px;">
+                <h1 id="nome-negocio-publico-mobile" style="font-size:1.1rem;font-weight:700;margin:0 0 12px 0;background:linear-gradient(135deg, #4F46E5, #7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Nome do Negócio</h1>
             </div>
-            
-            <div id="menu-assinatura" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                
-                <h2>Planos de Assinatura</h2> 
-                <div id="cards-planos-vitrine">
-                    <p class="info" style="color: #fff;">A carregar planos disponíveis...</p>
-                </div>
-            </div>
-            
-            <div id="menu-agendamento" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <div class="card"> <h2>Faça o seu Agendamento</h2>
-                    <div id="agendamento-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p></div>
-                    <div class="form-group"><label>1. Escolha um profissional</label><div id="lista-profissionais" class="profissionais-container"></div></div>
+            <!-- TELA: Agendamento -->
+            <div id="menu-agendamento" class="menu-content ativo">
+                <div class="card">
+                    <h2>Faça o seu Agendamento</h2>
+                    <div id="agendamento-login-prompt" style="display: none;">
+                        <p>Você precisa <a href="#" id="login-link-agendamento">fazer login</a> para agendar um horário.</p>
+                    </div>
+                    <div class="form-group">
+                        <label>1. Escolha um profissional</label>
+                        <div id="lista-profissionais" class="profissionais-container"></div>
+                    </div>
+                    
                     <div id="agendamento-form-container" style="display: none;">
-                        <div class="form-group"><label id="label-servicos">2. Escolha o(s) serviço(s)</label><div id="lista-servicos" class="servicos-container-cards"></div><div id="servicos-resumo-container" style="display: none; margin-top: 20px;"><div class="servicos-resumo"><p id="resumo-texto"></p></div><button id="btn-prosseguir-data" class="btn-prosseguir">Escolher Data e Horário</button></div></div>
-                        <div id="data-e-horario-container" style="display:none;"><div class="form-group"><label for="data-agendamento">3. Escolha uma data</label><input type="date" id="data-agendamento" required disabled></div><div class="form-group"><label>4. Escolha um horário</label><div id="grade-horarios" class="horarios-container-grid"><p class="aviso-horarios">Selecione um profissional e um serviço.</p></div></div><div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div><button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button></div>
+                        <div class="form-group">
+                            <label id="label-servicos">2. Escolha o(s) serviço(s)</label>
+                            <div id="lista-servicos" class="servicos-container-cards"></div>
+                            
+                            <!-- Container para o resumo e botão de prosseguir (para múltiplos serviços) -->
+                            <div id="servicos-resumo-container" style="display: none; margin-top: 20px;">
+                                <div class="servicos-resumo">
+                                    <p id="resumo-texto"></p>
+                                </div>
+                                <button id="btn-prosseguir-data" class="btn-prosseguir">Escolher Data e Horário</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Data, horário, resumo final e botão confirmar -->
+                        <div id="data-e-horario-container" style="display:none;">
+                            <div class="form-group">
+                                <label for="data-agendamento">3. Escolha uma data</label>
+                                <input type="date" id="data-agendamento" required disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>4. Escolha um horário</label>
+                                <div id="grade-horarios" class="horarios-container-grid">
+                                    <p class="aviso-horarios">Selecione um profissional e um serviço.</p>
+                                </div>
+                            </div>
+                            <!-- RESUMO FINAL DO AGENDAMENTO -->
+                            <div id="resumo-agendamento-final" style="margin: 24px 0 8px 0;"></div>
+                            <button id="btn-confirmar-agendamento" disabled>Confirmar Agendamento</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div id="menu-informacoes" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <div class="card"><h2>Sobre o Negócio</h2><div id="info-negocio"></div></div>
-                <div class="card"><h2>Serviços Oferecidos</h2><div id="info-servicos"></div></div>
-                <div class="card"><h2>Contato e Localização</h2><div id="info-contato"></div></div>
+
+            <!-- TELA: Informações -->
+            <div id="menu-informacoes" class="menu-content">
+                <div class="card">
+                    <h2>Sobre o Negócio</h2>
+                    <div id="info-negocio"></div>
+                </div>
+                <div class="card">
+                    <h2>Serviços Oferecidos</h2>
+                    <div id="info-servicos"></div>
+                </div>
+                <div class="card">
+                    <h2>Contato e Localização</h2>
+                    <div id="info-contato"></div>
+                </div>
             </div>
-            <div id="menu-visualizacao" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <div class="card"><h2>Reservas</h2><div id="agendamentos-login-prompt" style="display: none;"><p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p></div><div id="botoes-agendamento" class="botoes-agendamento" style="display: none;"><button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button><button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button></div></div>
+            
+            <!-- TELA: Visualização de Agendamentos -->
+            <div id="menu-visualizacao" class="menu-content">
+                <div class="card">
+                    <h2>Reservas</h2>
+                    <div id="agendamentos-login-prompt" style="display: none;">
+                        <p>Você precisa <a href="#" id="login-link-visualizacao">fazer login</a> para ver seus agendamentos.</p>
+                    </div>
+                    <div id="botoes-agendamento" class="botoes-agendamento" style="display: none;">
+                        <button id="btn-ver-ativos" class="btn-toggle ativo">Ver Ativos</button>
+                        <button id="btn-ver-historico" class="btn-toggle">Ver Histórico</button>
+                    </div>
+                </div>
                 <div id="lista-agendamentos-visualizacao" class="lista-agendamentos-resultado"></div>
             </div>
-            <div id="menu-perfil" class="menu-content" style="display: none;">
-                <button class="btn-voltar"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
-                <div class="card"><h2>Meu Perfil</h2><div id="user-info" style="display: none;"><img id="user-photo" src="" alt="Foto do Utilizador" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;"><p id="user-name" style="font-weight: 600; font-size: 1.2rem;"></p><button id="btn-logout" class="btn-secondary">Sair</button></div><div id="btn-login-container"><button id="btn-login" class="btn-submit">Fazer Login com Google</button></div></div>
+            
+            <!-- TELA: Perfil -->
+            <div id="menu-perfil" class="menu-content">
+                <div class="card">
+                    <h2>Meu Perfil</h2>
+                    <div id="user-info" style="display: none;">
+                        <img id="user-photo" src="" alt="Foto do Utilizador" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 15px;">
+                        <p id="user-name" style="font-weight: 600; font-size: 1.2rem;"></p>
+                        <button id="btn-logout" class="btn-secondary">Sair</button>
+                    </div>
+                    <div id="btn-login-container">
+                        <button id="btn-login" class="btn-submit">Fazer Login com Google</button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
-    <div id="custom-confirm-modal" class="modal-overlay"><div class="modal-box"><h3 id="modal-titulo">Confirmar Ação</h3><p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p><div class="modal-botoes"><button id="modal-btn-cancelar">Cancelar</button><button id="modal-btn-confirmar">Confirmar</button></div></div></div>
-    <div id="modal-auth-janela" class="modal-overlay">
-        <div class="modal-auth-container">
-            <button id="modal-auth-close-btn" title="Fechar">&times;</button>
+    <!-- Bottom Navigation para Mobile -->
+    <nav class="bottom-nav-vitrine">
+        <button class="ativo" data-menu="agendamento">📅<span>Agendar</span></button>
+        <button data-menu="informacoes">📋<span>Info</span></button>
+        <button data-menu="visualizacao">📋<span>Meus</span></button>
+        <button data-menu="perfil">👤<span>Perfil</span></button>
+    </nav>
+
+    <!-- MODAL DE CONFIRMAÇÃO -->
+    <div id="custom-confirm-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modal-titulo">Confirmar Ação</h3>
+            <p id="modal-mensagem">Tem a certeza que deseja prosseguir?</p>
+            <div class="modal-botoes">
+                <button id="modal-btn-cancelar">Cancelar</button>
+                <button id="modal-btn-confirmar">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE AUTENTICAÇÃO -->
+    <div id="modal-auth-janela" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;">
+        <div style="background:white;padding:2rem 1.5rem;border-radius:8px;min-width:320px;max-width:95vw;box-shadow:0 2px 16px #0003;">
             <div id="modal-auth-loading" style="display:none;text-align:center;margin-bottom:1rem;">Carregando...</div>
             <div id="modal-auth-login" class="modal-auth-step">
-                <h2>Faça seu Login</h2>
-                <p style="text-align:center; margin-top: -15px; margin-bottom: 24px; color: #64748b;">para continuar com o agendamento.</p>
-                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon" style="width: 18px; height: 18px;">
-                    <span>Entrar com Google</span>
-                </button>
-                <div style="text-align:center;color:#9ca3af;margin:16px 0;">ou</div>
+                <h2>Entrar</h2>
+                <button type="button" class="modal-auth-btn" id="modal-auth-btn-google" style="width:100%;margin-bottom:1em;">Entrar com Google</button>
+                <div style="text-align:center;color:#888;margin:8px 0;">ou</div>
                 <form id="modal-auth-form-login">
-                    <input id="modal-auth-login-email" type="email" placeholder="E-mail" required>
-                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required>
-                    <button class="modal-auth-btn modal-auth-btn-submit">Entrar</button>
+                    <input id="modal-auth-login-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-login-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:10px;">
+                    <button class="modal-auth-btn" style="width:100%;">Entrar</button>
                 </form>
-                <div style="text-align:center;margin-top:16px;">
+                <div style="text-align:center;margin-top:10px;">
                     <a href="#" id="modal-auth-btn-to-cadastro">Criar nova conta</a>
                 </div>
             </div>
             <div id="modal-auth-cadastro" class="modal-auth-step" style="display:none;">
-                <h2>Crie sua Conta</h2>
+                <h2>Criar Conta</h2>
                 <form id="modal-auth-form-cadastro">
-                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required>
-                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required>
-                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required>
-                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp )" required>
-                    <button class="modal-auth-btn modal-auth-btn-submit">Cadastrar</button>
+                    <input id="modal-auth-cadastro-nome" type="text" placeholder="Nome completo" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-cadastro-email" type="email" placeholder="Email" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-cadastro-senha" type="password" placeholder="Senha" required style="width:100%;margin-bottom:6px;">
+                    <input id="modal-auth-cadastro-telefone" type="tel" placeholder="Telefone (WhatsApp)" required style="width:100%;margin-bottom:10px;">
+                    <button class="modal-auth-btn" style="width:100%;">Cadastrar</button>
                 </form>
-                <div style="text-align:center;margin-top:16px;">
+                <div style="text-align:center;margin-top:10px;">
                     <a href="#" id="modal-auth-btn-to-login">Já tenho conta</a>
                 </div>
             </div>
         </div>
     </div>
     
+    <!-- SCRIPTS -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        // Mostra logo e nome no topo do main-content no mobile
+        function toggleMobileHeader() {
+          if(window.innerWidth <= 900) {
+            document.querySelector('.header-vitrine-mobile').style.display = "flex";
+            // Sincroniza logo e nome (pode ser dinâmico do Firebase)
+            document.getElementById('logo-publico-mobile').src = document.getElementById('logo-publico').src;
+            document.getElementById('nome-negocio-publico-mobile').textContent = document.getElementById('nome-negocio-publico').textContent;
+          } else {
+            document.querySelector('.header-vitrine-mobile').style.display = "none";
+          }
+        }
+        toggleMobileHeader();
+        window.addEventListener('resize', toggleMobileHeader);
+
+        function showMenu(menu) {
+          document.querySelectorAll('.sidebar-menu .menu-btn').forEach(b => b.classList.remove('ativo'));
+          document.querySelectorAll('.bottom-nav-vitrine button').forEach(b => b.classList.remove('ativo'));
+          document.querySelectorAll('.main-content-vitrine .menu-content').forEach(sec => sec.classList.remove('ativo'));
+          let btnSide = document.querySelector('.sidebar-menu .menu-btn[data-menu="' + menu + '"]');
+          let btnMob = document.querySelector('.bottom-nav-vitrine button[data-menu="' + menu + '"]');
+          let tela = document.getElementById('menu-' + menu);
+          if(btnSide) btnSide.classList.add('ativo');
+          if(btnMob) btnMob.classList.add('ativo');
+          if(tela) tela.classList.add('ativo');
+          if(menu === "informacoes" && window.renderInformacoes) window.renderInformacoes();
+          if(menu === "agendamento" && window.renderAgendamento) window.renderAgendamento();
+          if(menu === "visualizacao" && window.renderVisualizacao) window.renderVisualizacao();
+          if(menu === "perfil" && window.renderPerfil) window.renderPerfil();
+        }
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
+          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); });
+        });
+        // Bottom navigation
+        function toggleNavs() {
+          if(window.innerWidth <= 900) {
+            document.querySelector('.bottom-nav-vitrine').style.display = "flex";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "none";
+          } else {
+            document.querySelector('.bottom-nav-vitrine').style.display = "none";
+            if(document.querySelector('.sidebar-vitrine')) document.querySelector('.sidebar-vitrine').style.display = "";
+          }
+        }
+        toggleNavs();
+        window.addEventListener('resize', toggleNavs);
+
+        document.querySelectorAll('.bottom-nav-vitrine button').forEach(btn => {
+          btn.addEventListener('click', function() { showMenu(btn.dataset.menu); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        });
+
+        // Seleção de profissional visual (mobile e desktop)
+        document.getElementById('lista-profissionais').addEventListener('click', function(e) {
+          const card = e.target.closest('.card-profissional');
+          if (!card) return;
+          document.querySelectorAll('.card-profissional').forEach(c => c.classList.remove('selecionado'));
+          card.classList.add('selecionado');
+          window.state = window.state || {};
+          window.state.agendamento = window.state.agendamento || {};
+          window.state.agendamento.profissionalId = card.dataset.id;
+          if(window.onProfissionalSelecionado) window.onProfissionalSelecionado(card.dataset.id);
+        });
+      });
+    </script>
+
+    <script type="module" src="./vitrini-firebase.js"></script>
+    <script type="module" src="./vitrini-utils.js"></script>
+    <script type="module" src="./vitrini-profissionais.js"></script>
+    <script type="module" src="./vitrini-agendamento.js"></script>
+    <script type="module" src="./vitrini-state.js"></script>
+    <script type="module" src="./vitrini-ui.js"></script>
+    <script type="module" src="./vitrini-auth.js"></script>
     <script type="module" src="./vitrine.js"></script>
-    
-    <script type="module">
-        import { db, auth } from './vitrini-firebase.js';
-        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
+    <script type="module" src="./vitrine-auth-modal.js"></script>
 
-        // =====================================================================
-        // ✅ FUNÇÃO ALTERADA PARA USAR OS NOVOS ESTILOS
-        // =====================================================================
-        async function renderizarPlanosVitrine(empresaId) {
-            const container = document.getElementById('cards-planos-vitrine');
-            if (!container) return;
-            container.innerHTML = '<p class="info" style="color: #fff;">A carregar planos disponíveis...</p>'; // Corrigi a cor
+    <!-- ======= Integração mínima para RESPEITAR a agenda/ausências do profissional
+                  e tratar múltiplos serviços (não altera lógica de servidor) ======= -->
+    <script type="module">
+      import { db } from './vitrini-firebase.js';
+      // Este módulo intercepta o clique "Escolher Data e Horário" e:
+      //  - calcula duração total dos serviços selecionados,
+      //  - garante que a busca de data/horários respeite ausências do profissional,
+      //    usando profissional.ausencias se disponível, ou tentando ler a subcoleção
+      //    com tratamento silencioso para permission-denied,
+      //  - chama as funções existentes de vitrini-agendamento.js (buscarAgendamentosDoDia,
+      //    calcularSlotsDisponiveis, encontrarPrimeiraDataComSlots quando disponível),
+      //  - renderiza os horários disponíveis no #grade-horarios e habilita o botão confirmar.
+      //
+      // Razoável, robusto e não altera a lógica de criação/cancelamento no servidor.
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const btnProsseguir = document.getElementById('btn-prosseguir-data');
+        if (!btnProsseguir) return;
+
+        btnProsseguir.addEventListener('click', async (ev) => {
+          ev.preventDefault();
+          try {
+            btnProsseguir.disabled = true;
+            const originalText = btnProsseguir.textContent;
+            btnProsseguir.textContent = 'Buscando datas...';
+
+            const empresaId = localStorage.getItem('empresaAtivaId');
+            if (!empresaId) throw new Error('Empresa não encontrada.');
+
+            // 1) calcula duração total dos serviços selecionados a partir do estado (quando preenchido)
+            const stateAg = (window.state && window.state.agendamento) ? window.state.agendamento : {};
+            let servicos = Array.isArray(stateAg.servicos) ? stateAg.servicos.slice() : [];
+
+            // Se não houver serviços no estado, tenta ler do DOM (cards marcados)
+            if (!servicos || servicos.length === 0) {
+              const selectedEls = document.querySelectorAll('.servico-card.selecionado, .servico-card.selected');
+              selectedEls.forEach(el => {
+                const dur = Number(el.dataset.duracao || el.getAttribute('data-duracao') || 0);
+                const id = el.dataset.id || el.getAttribute('data-id') || null;
+                servicos.push({ id, duracao: dur });
+              });
+            }
+
+            // Duração total em minutos
+            const totalDuration = servicos.reduce((acc, s) => acc + (Number(s.duracao) || 0), 0);
+            if (!totalDuration || totalDuration <= 0) {
+              // Pode ser que o seu fluxo espere um serviço selecionado; não altera lógica do servidor
+              throw new Error('Selecione um serviço válido antes de prosseguir.');
+            }
+
+            // 2) identifica profissional selecionado
+            const profissionalId = stateAg.profissionalId || (document.querySelector('.card-profissional.selecionado')?.dataset?.id);
+            if (!profissionalId) throw new Error('Selecione um profissional.');
+
+            // 3) obtém objeto profissional (tenta usar caches/estado já existentes, senão busca doc)
+            let profissional = null;
             try {
-                const planosRef = collection(db, `empresarios/${empresaId}/planosDeAssinatura`);
-                const snapshot = await getDocs(planosRef);
-                if (snapshot.empty) {
-                    container.innerHTML = '<p style="color: #fff;">Nenhum plano disponível no momento.</p>'; // Corrigi a cor
-                    return;
-                }
-                container.innerHTML = '';
-                snapshot.docs.forEach(doc => {
-                    const plano = { id: doc.id, ...doc.data() };
-                    if (plano.ativo) {
-                        const precoFormatado = (plano.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        const servicosHTML = Array.isArray(plano.servicosInclusos)
-                            ? plano.servicosInclusos.map(s => `<li>${s.quantidade}x ${s.nomeServico}</li>`).join('')
-                            : '';
-                        const card = document.createElement('div');
-                        card.className = 'card-plano-vitrine'; // Usa a nova classe CSS
+              // tenta encontrar em state (vitrini-profissionais.js normalmente popula)
+              if (window.state && Array.isArray(window.state.profissionais)) {
+                profissional = window.state.profissionais.find(p => String(p.id) === String(profissionalId));
+              }
+              // mapa global se existir
+              if (!profissional && window.profissionaisMap) profissional = window.profissionaisMap[profissionalId];
 
-                        // Não usa mais 'style=' inline, usa a folha de estilo
-                        card.innerHTML = `
-                            <h3>${plano.nome}</h3>
-                            <p class="preco">${precoFormatado} / mês</p>
-                            <p>${plano.descricao || ''}</p>
-                            <ul>${servicosHTML}</ul>
-                            <button class="btn-assinar-plano">Assinar</button>
-                        `;
-
-                        card.querySelector('.btn-assinar-plano').addEventListener('click', () => {
-                            if (plano.id && empresaId) {
-                                window.location.href = `vitrine-assinatura.html?planoId=${plano.id}&empresaId=${empresaId}`;
-                            } else {
-                                console.error('ID do plano ou da empresa não encontrado.');
-                                alert('Ocorreu um erro ao selecionar o plano.');
-                            }
-                        });
-                        container.appendChild(card);
-                    }
-                });
-            } catch (err) {
-                console.error("Erro ao carregar planos:", err);
-                container.innerHTML = '<p style="color: #fff;">Ocorreu um erro ao carregar os planos.</p>'; // Corrigi a cor
-            }
-        }
-
-        // SUA LÓGICA ORIGINAL DE NAVEGAÇÃO, 100% INALTERADA
-        document.addEventListener('DOMContentLoaded', () => {
-            const cardsGrid = document.getElementById('vitrine-cards-grid');
-            const menuAssinatura = document.getElementById('menu-assinatura');
-            const mainNavigationContainer = document.getElementById('main-navigation-container');
-            const empresaId = localStorage.getItem("empresaAtivaId");
-
-            if (cardsGrid && menuAssinatura) {
-                cardsGrid.addEventListener('click', (e) => {
-                    const card = e.target.closest('.vitrine-card');
-                    if (!card) return;
-                    if (card.dataset.menuCard === 'assinatura') {
-                        e.preventDefault();
-                        mainNavigationContainer.style.display = 'none';
-                        menuAssinatura.style.display = 'block';
-                        if (empresaId) {
-                            renderizarPlanosVitrine(empresaId);
-                        } else {
-                            document.getElementById('cards-planos-vitrine').innerHTML = '<p style="color: #fff;">Erro: ID da empresa não encontrado.</p>';
-                        }
-                    }
-                });
-            }
-
-            if (menuAssinatura) {
-                 const btnVoltarAssinatura = menuAssinatura.querySelector('.btn-voltar');
-                btnVoltarAssinatura.addEventListener('click', () => {
-                    menuAssinatura.style.display = 'none';
-                    mainNavigationContainer.style.display = 'block';
-                });
-            }
-        });
-    </script>
-
-    <script type="module">
-        import { auth } from './vitrini-firebase.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // SUA LÓGICA ORIGINAL DE AUTENTICAÇÃO NO AGENDAMENTO, 100% INALTERADA
-        document.addEventListener('DOMContentLoaded', ( ) => {
-            const btnConfirmarAgendamento = document.getElementById('btn-confirmar-agendamento');
-            const modalAuth = document.getElementById('modal-auth-janela');
-            const btnCloseModal = document.getElementById('modal-auth-close-btn');
-            if (btnConfirmarAgendamento && modalAuth && btnCloseModal) {
-                const fecharModal = () => { modalAuth.style.display = 'none'; };
-                btnConfirmarAgendamento.addEventListener('click', (event) => {
-                    if (!auth.currentUser) {
-                        event.preventDefault(); event.stopImmediatePropagation();
-                        modalAuth.style.display = 'flex';
-                        const unsubscribe = onAuthStateChanged(auth, (user) => {
-                            if (user) {
-                                // console.log('Login detectado! Fechando modal e continuando agendamento.'); // DEBUG REMOVIDO
-                                unsubscribe(); fecharModal();
-                                setTimeout(() => { btnConfirmarAgendamento.click(); }, 150);
-                            }
-                        });
-                    }
-                }, true);
-                btnCloseModal.addEventListener('click', fecharModal);
-                modalAuth.addEventListener('click', (event) => { if (event.target === modalAuth) { fecharModal(); } });
-            }
-        });
-    </script>
-    <script type="module">
-        import { db } from './vitrini-firebase.js';
-        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { marcarServicosInclusosParaUsuario } from './vitrine-assinatura-integration.js';
-
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
-        function getHojeDiaSemana( ) { return new Date().getDay(); }
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA
-        async function aplicarPromocoesNaVitrine(listaServicos, empresaId) {
-            if (!empresaId) return;
-            const promocoesRef = collection(db, "empresarios", empresaId, "precos_especiais");
-            const snapshot = await getDocs(promocoesRef);
-            const promocoesAtivas = []; const hoje = getHojeDiaSemana();
-            snapshot.forEach(doc => { const promo = doc.data(); if (promo.ativo && promo.diasSemana && promo.diasSemana.includes(hoje)) { promocoesAtivas.push({ id: doc.id, ...promo }); } });
-            listaServicos.forEach(servico => {
-                let melhorPromocao = null;
-                for (let promo of promocoesAtivas) { if (promo.servicoIds && promo.servicoIds.includes(servico.id)) { melhorPromocao = promo; break; } }
-                if (!melhorPromocao) { melhorPromocao = promocoesAtivas.find(promo => promo.servicoIds == null || (Array.isArray(promo.servicoIds) && promo.servicoIds.length === 0)); }
-                if (melhorPromocao) {
-                    let precoAntigo = servico.preco; let precoNovo = precoAntigo;
-                    if (melhorPromocao.tipoDesconto === "percentual") { precoNovo = precoAntigo * (1 - melhorPromocao.valor / 100); } else if (melhorPromocao.tipoDesconto === "valorFixo") { precoNovo = Math.max(precoAntigo - melhorPromocao.valor, 0); }
-                    servico.promocao = { nome: melhorPromocao.nome, precoOriginal: precoAntigo, precoComDesconto: precoNovo, tipoDesconto: melhorPromocao.tipoDesconto, valorDesconto: melhorPromocao.valor };
-                }
-            });
-        }
-        
-        // SUA FUNÇÃO ORIGINAL, 100% INALTERADA (JÁ COM A LÓGICA DO PREÇO ZERO)
-        async function renderizarServicosVitrine(empresaId) {
-            const servicosRef = collection(db, "empresarios", empresaId, "servicos");
-            const snapshot = await getDocs(servicosRef);
-            const listaServicos = []; snapshot.forEach(doc => { listaServicos.push({ id: doc.id, ...doc.data() }); });
-            
-            await aplicarPromocoesNaVitrine(listaServicos, empresaId); 
-
-            try {
-                await marcarServicosInclusosParaUsuario(listaServicos, empresaId); 
-            } catch (err) {
-                console.info('Não foi possível ler assinaturas do cliente (permissão?). Serviços exibidos normalmente.');
-            }
-
-            const listaServicosDiv = document.getElementById("lista-servicos"); if (!listaServicosDiv) return;
-            listaServicosDiv.innerHTML = "";
-            
-            listaServicos.forEach(servico => {
-                const div = document.createElement("div"); div.classList.add("servico-card"); 
-                let precoHtml = "";
-
-                if (servico.precoCobrado === 0) { 
-                    const precoZeroFormatado = Number(0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    precoHtml = `<span class="preco-promocional">${precoZeroFormatado}</span> <span class="badge-incluso">Incluso no plano</span>`;
-                } else if (servico.promocao) {
-                    const precoOriginalFmt = (servico.promocao.precoOriginal || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    const precoPromoFmt = (servico.promocao.precoComDesconto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    precoHtml = `<span class="preco-original">${precoOriginalFmt}</span> <span class="preco-promocional">${precoPromoFmt}</span> <span class="badge-promocao">PROMO</span>`;
-                } else { 
-                     const precoNormalFmt = (servico.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                     precoHtml = `<span class="preco-promocional">${precoNormalFmt}</span>`;
-                }
-
-                div.innerHTML = `<h4>${servico.nome}</h4> <p>${servico.descricao || ""}</p> <div>${precoHtml}</div>`;
-                listaServicosDiv.appendChild(div);
-            });
-        }
-        
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO, CHAMANDO A FUNÇÃO
-        let empresaId = localStorage.getItem("empresaAtivaId") || null;
-        if (empresaId) { renderizarServicosVitrine(empresaId); }
-    </script>
-    
-    <script type="module">
-        import { state } from './vitrini-state.js';
-        import { fazerLogin } from './vitrini-auth.js';
-        
-        // SUA LÓGICA ORIGINAL DE NAVEGAÇÃO, 100% INALTERADA
-        document.addEventListener('DOMContentLoaded', () => {
-            const mainNavigationContainer = document.getElementById('main-navigation-container');
-            const contentSections = document.querySelectorAll('.main-content-vitrine > .menu-content');
-            
-            function showMainMenu() { 
-                contentSections.forEach(section => section.style.display = 'none'); 
-                mainNavigationContainer.style.display = 'block'; 
-            }
-            function showContentSection(menuId) {
-                mainNavigationContainer.style.display = 'none';
-                contentSections.forEach(section => { 
-                    section.style.display = section.id === menuId ? 'block' : 'none'; 
-                });
-            }
-
-            mainNavigationContainer.addEventListener('click', (e) => {
-                const card = e.target.closest('.vitrine-card'); if (!card) return; e.preventDefault();
-                const menuKey = card.dataset.menuCard;
-                if (menuKey === 'perfil' && !state.currentUser) { fazerLogin(); return; }
-                showContentSection(`menu-${menuKey}`);
-            });
-            document.querySelectorAll('.btn-voltar').forEach(button => { 
-                button.addEventListener('click', showMainMenu);
-            });
-            const cardPerfilTexto = document.getElementById('card-perfil-texto');
-            if (cardPerfilTexto) {
-                const observer = new MutationObserver(() => { cardPerfilTexto.textContent = state.currentUser ? 'Meu Perfil' : 'Login'; });
-                const userInfoDiv = document.getElementById('user-info');
-                if(userInfoDiv) { observer.observe(userInfoDiv, { attributes: true, childList: true, subtree: true }); }
-            }
-        });
-    </script>
-
-    <script type="module">
-        import { db, auth } from './vitrini-firebase.js';
-        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-        // SUA LÓGICA ORIGINAL DE ATUALIZAÇÃO DO HEADER, 100% INALTERADA
-        function atualizarHeaderCard(dadosEmpresa, usuario) {
-            const logoEl = document.getElementById('logo-publico');
-            const nomeNegocioEl = document.getElementById('nome-negocio-publico');
-            const boasVindasEl = document.getElementById('boas-vindas-usuario');
-            const nomeUsuarioEl = document.getElementById('usuario-logado-nome');
-            const nomeDaEmpresa = dadosEmpresa ? dadosEmpresa.nomeFantasia : "Negócio";
-            const logoDaEmpresa = dadosEmpresa ? dadosEmpresa.logoUrl : null;
-            nomeNegocioEl.textContent = nomeDaEmpresa;
-            document.title = nomeDaEmpresa; 
-            if (logoDaEmpresa) {
-                logoEl.src = logoDaEmpresa;
-                logoEl.alt = `Logo de ${nomeDaEmpresa}`;
-            }
-            if (usuario) {
-                boasVindasEl.textContent = `Olá, seja bem-vindo(a)!`; 
-                const primeiroNome = usuario.displayName ? usuario.displayName.split(' ')[0] : 'Cliente';
-                nomeUsuarioEl.textContent = primeiroNome;
-                nomeUsuarioEl.style.display = 'inline-block'; 
-            } else {
-                boasVindasEl.textContent = "Faça seu agendamento!";
-                nomeUsuarioEl.style.display = 'none'; 
-                nomeUsuarioEl.textContent = '';
-            }
-        }
-        // SUA LÓGICA ORIGINAL DE INICIALIZAÇÃO DA PÁGINA, 100% INALTERADA
-        async function inicializarPagina() {
-            const loader = document.getElementById('vitrine-loader');
-            const content = document.getElementById('vitrine-content');
-            const empresaId = localStorage.getItem("empresaAtivaId");
-            let dadosEmpresa = null;
-            if (empresaId) {
+              // se ainda não, tenta buscar doc direto (com tratamento silencioso)
+              if (!profissional && empresaId) {
                 try {
-                    const docRef = doc(db, "empresarios", empresaId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        dadosEmpresa = docSnap.data();
-                    } else {
-                        console.error("Empresa não encontrada:", empresaId);
-                    }
-                } catch (error) {
-                    console.error("Erro ao buscar dados da empresa:", error);
+                  const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+                  const profRef = doc(db, 'empresarios', empresaId, 'profissionais', profissionalId);
+                  const snap = await getDoc(profRef);
+                  if (snap.exists()) profissional = { id: snap.id, ...snap.data() };
+                } catch (errFetch) {
+                  // se permissão ou outro erro ao ler, não interrompe; deixamos profissional nulo e tentamos seguir com o que houver
+                  console.warn('Não foi possível carregar profissional por fetch (segue com o que já houver):', errFetch && errFetch.message ? errFetch.message : errFetch);
                 }
+              }
+            } catch (errProf) {
+              console.warn('Erro ao obter objeto do profissional (continua tentativa):', errProf);
+            }
+
+            if (!profissional) {
+              throw new Error('Dados do profissional não disponíveis no cliente. Recarregue a página e tente novamente.');
+            }
+
+            // 4) prepara o conjunto de ausências: usa profissional.ausencias se existir; caso contrário,
+            //    tenta ler a subcoleção 'ausencias' do profissional (com try/catch que silencia permission-denied)
+            let ausenciasSet = new Set();
+            if (Array.isArray(profissional.ausencias) && profissional.ausencias.length > 0) {
+              profissional.ausencias.forEach(d => ausenciasSet.add(String(d)));
             } else {
-                console.error("ID da empresa não encontrado no localStorage.");
-            }
-            onAuthStateChanged(auth, (usuario) => {
-                atualizarHeaderCard(dadosEmpresa, usuario);
-            });
-            loader.style.display = 'none';
-            content.style.display = 'block';
-        }
-        document.addEventListener('DOMContentLoaded', inicializarPagina);
-    </script>
-
-    <!-- ======= Correção mínima cliente-side: filtrar agendamentos "ativos" já passados ======= -->
-    <script type="module">
-        // Sem alterar nenhuma lógica de servidor/nem criação/cancelamento.
-        // Apenas filtra localmente agendamentos "ativos" cujo datetime já passou,
-        // antes de renderizar a lista na vitrine.
-
-        document.addEventListener('DOMContentLoaded', () => {
-            function parseDataHorarioLocal(dataStr, horarioStr) {
-                if (!dataStr) return null;
-                const parts = dataStr.split('-').map(Number);
-                if (parts.length !== 3) return null;
-                const [yyyy, mm, dd] = parts;
-                let hh = 0, mi = 0;
-                if (horarioStr && typeof horarioStr === 'string' && horarioStr.includes(':')) {
-                    const t = horarioStr.split(':').map(Number);
-                    hh = Number.isFinite(t[0]) ? t[0] : 0;
-                    mi = Number.isFinite(t[1]) ? t[1] : 0;
+              // tenta ler subcoleção (se permitido), sem poluir console em caso de permission-denied
+              try {
+                const { collection, query, getDocs } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
+                const ausRef = collection(db, 'empresarios', empresaId, 'profissionais', profissionalId, 'ausencias');
+                const q = query(ausRef);
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                  snap.forEach(doc => {
+                    const d = doc.data();
+                    if (d && d.data) ausenciasSet.add(String(d.data));
+                  });
                 }
-                return new Date(yyyy, mm - 1, dd, hh, mi, 0);
-            }
-
-            async function carregarAgendamentosFiltrados(modo) {
-                try {
-                    if (!window.state || !state.empresaId) {
-                        if (typeof window.handleFiltroAgendamentos === 'function') {
-                            return window.handleFiltroAgendamentos({ target: document.getElementById(modo === 'ativos' ? 'btn-ver-ativos' : 'btn-ver-historico') });
-                        }
-                        return;
-                    }
-
-                    if (typeof UI.selecionarFiltro === 'function') UI.selecionarFiltro(modo);
-                    if (typeof UI.renderizarAgendamentosComoCards === 'function') {
-                        UI.renderizarAgendamentosComoCards([], 'A buscar agendamentos...');
-                    }
-
-                    const agendamentos = await buscarAgendamentosDoCliente(state.empresaId, state.currentUser, modo);
-
-                    let resultado = agendamentos;
-                    if (modo === 'ativos' && Array.isArray(agendamentos)) {
-                        const agora = new Date();
-                        resultado = agendamentos.filter(ag => {
-                            try {
-                                const dt = parseDataHorarioLocal(ag.data, ag.horario);
-                                if (!dt) return true;
-                                return dt.getTime() >= agora.getTime();
-                            } catch (err) {
-                                console.warn('Filtro agendamentos: erro ao processar item, mantendo-o', err, ag);
-                                return true;
-                            }
-                        });
-                    }
-
-                    if (typeof UI.renderizarAgendamentosComoCards === 'function') {
-                        UI.renderizarAgendamentosComoCards(resultado, modo);
-                    } else {
-                        console.warn('UI.renderizarAgendamentosComoCards não encontrada.');
-                    }
-                } catch (err) {
-                    console.error('Erro ao carregar agendamentos com filtro:', err);
-                    if (typeof UI.mostrarAlerta === 'function') {
-                        UI.mostrarAlerta('Erro de Busca', 'Ocorreu um erro ao buscar os seus agendamentos.');
-                    }
-                    if (typeof UI.renderizarAgendamentosComoCards === 'function') {
-                        UI.renderizarAgendamentosComoCards([], 'Não foi possível carregar os seus agendamentos.');
-                    }
+              } catch (errAus) {
+                const code = errAus && (errAus.code || errAus.message || '').toString().toLowerCase();
+                if (code.includes('permission') || code.includes('permission-denied')) {
+                  // suprime — comportamento intencional para não quebrar UX
+                } else {
+                  console.warn('Aviso ao ler ausências do profissional (continua):', errAus);
                 }
+              }
             }
 
-            document.body.addEventListener('click', (ev) => {
-                const btn = ev.target.closest('#btn-ver-ativos, #btn-ver-historico');
-                if (!btn) return;
-                ev.preventDefault();
-                ev.stopImmediatePropagation();
-                const modo = btn.id === 'btn-ver-ativos' ? 'ativos' : 'historico';
-                carregarAgendamentosFiltrados(modo);
-            });
+            // 5) busca primeira data com slots respeitando ausências e a agenda do profissional
+            //    usamos a função existente quando disponível; caso contrário, iteramos nós mesmos
+            const agModule = await import('./vitrini-agendamento.js'); // usa as funções já existentes (buscarAgendamentosDoDia, calcularSlotsDisponiveis)
+            let primeiraData = null;
 
-            window.carregarAgendamentosComFiltro = carregarAgendamentosFiltrados;
+            // Se o módulo exportar encontrarPrimeiraDataComSlots e você confia nele, use-o,
+            // caso contrário, iteramos manualmente (mantendo comportamento compatível).
+            if (typeof agModule.encontrarPrimeiraDataComSlots === 'function') {
+              try {
+                // Passamos totalDuration para a função (ela espera duracaoServico)
+                primeiraData = await agModule.encontrarPrimeiraDataComSlots(empresaId, { ...profissional, ausencias: Array.from(ausenciasSet) }, totalDuration);
+              } catch (errUseModule) {
+                // se por algum motivo o método do módulo falhar, caímos para implementação local abaixo
+                console.warn('Método built-in encontrarPrimeiraDataComSlots falhou, usando fallback local:', errUseModule);
+                primeiraData = null;
+              }
+            }
+
+            if (!primeiraData) {
+              // fallback local: percorre 90 dias respeitando ausenciasSet e usando buscarAgendamentosDoDia + calcularSlotsDisponiveis
+              const hoje = new Date();
+              for (let i = 0; i < 90 && !primeiraData; i++) {
+                const dataAtual = new Date(hoje);
+                dataAtual.setDate(hoje.getDate() + i);
+                const y = dataAtual.getFullYear();
+                const m = String(dataAtual.getMonth() + 1).padStart(2, '0');
+                const d = String(dataAtual.getDate()).padStart(2, '0');
+                const dataString = `${y}-${m}-${d}`;
+
+                if (ausenciasSet.size > 0 && ausenciasSet.has(dataString)) continue;
+
+                // buscar agendamentos do dia usando função do módulo
+                const ags = await agModule.buscarAgendamentosDoDia(empresaId, dataString);
+                const agsProf = ags.filter(a => String(a.profissionalId) === String(profissionalId));
+
+                const slots = agModule.calcularSlotsDisponiveis(dataString, agsProf, profissional.horarios, totalDuration);
+                if (slots && slots.length > 0) {
+                  primeiraData = dataString;
+                  break;
+                }
+              }
+            }
+
+            if (!primeiraData) {
+              alert('Não há datas com slots disponíveis nos próximos 90 dias para este profissional.');
+              btnProsseguir.disabled = false;
+              btnProsseguir.textContent = originalText;
+              return;
+            }
+
+            // 6) populate UI: coloca data no input, mostra container e renderiza horários disponíveis
+            const dateInput = document.getElementById('data-agendamento');
+            dateInput.value = primeiraData;
+            document.getElementById('data-e-horario-container').style.display = 'block';
+
+            // busca agendamentos do dia e calcula slots com a duração total
+            const agendamentosDia = await agModule.buscarAgendamentosDoDia(empresaId, primeiraData);
+            const agsProfFinal = agendamentosDia.filter(a => String(a.profissionalId) === String(profissionalId));
+            const slotsFinais = agModule.calcularSlotsDisponiveis(primeiraData, agsProfFinal, profissional.horarios, totalDuration);
+
+            const grade = document.getElementById('grade-horarios');
+            grade.innerHTML = '';
+            if (!slotsFinais || slotsFinais.length === 0) {
+              grade.innerHTML = '<p class="aviso-horarios">Nenhum horário disponível nessa data.</p>';
+            } else {
+              slotsFinais.forEach(slot => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'horario-btn';
+                b.textContent = slot;
+                b.addEventListener('click', () => {
+                  // seleciona visualmente e atualiza state
+                  document.querySelectorAll('.horario-btn.selected').forEach(x => x.classList.remove('selected'));
+                  b.classList.add('selected');
+
+                  window.state = window.state || {};
+                  window.state.agendamento = window.state.agendamento || {};
+                  window.state.agendamento.data = primeiraData;
+                  window.state.agendamento.horario = slot;
+                  // atualiza serviços no state também (garante envio correto)
+                  window.state.agendamento.servicos = servicos;
+                  // habilita confirmar
+                  const btnConfirm = document.getElementById('btn-confirmar-agendamento');
+                  if (btnConfirm) btnConfirm.disabled = false;
+
+                  // atualiza resumo final
+                  const resumo = document.getElementById('resumo-agendamento-final');
+                  if (resumo) {
+                    const servText = servicos.map(s => (s.nome || s.servicoNome || s.id || 'Serviço') + (s.duracao ? ` (${s.duracao}min)` : '')).join(', ');
+                    resumo.innerHTML = `<strong>${(profissional.nome || 'Profissional')}</strong><br>${servText}<br>${primeiraData} às ${slot}`;
+                  }
+                });
+                grade.appendChild(b);
+              });
+            }
+
+            // scroll to horarios
+            try { document.getElementById('data-e-horario-container').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+
+            btnProsseguir.disabled = false;
+            btnProsseguir.textContent = originalText;
+
+          } catch (err) {
+            console.error('Erro no fluxo de pesquisa de datas/horários:', err);
+            alert(err && err.message ? err.message : 'Erro ao buscar datas/horários. Tente novamente.');
+            btnProsseguir.disabled = false;
+            btnProsseguir.textContent = 'Escolher Data e Horário';
+          }
         });
+      });
     </script>
 </body>
 </html>
